@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<!--
+    Base configuration for grid participating in data center replication.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
+    <!--
+        Optional description.
+    -->
+    <description>
+        Common configuration for sample data center replication configuration.
+    </description>
+
+    <!--
+        Base configuration for grid participating in data center replication.
+    -->
+    <bean id="cfgBase" class="org.gridgain.grid.GridConfiguration" abstract="true">
+        <!-- Data center ID must be set for grid participating in data center replication. -->
+        <property name="dataCenterId" value="2"/>
+
+        <!-- Discovery configuration. -->
+        <property name="discoverySpi">
+            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.GridTcpDiscoveryMulticastIpFinder">
+                        <property name="multicastPort" value="47402"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+</beans>

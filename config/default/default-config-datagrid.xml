@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+    <description>Main Spring file for grid configuration.</description>
+
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+        <!--
+            For better performance set this property to false in case
+            peer deployment is not used. If peer-class-loading is
+            disabled then all classes have to be available on all nodes.
+
+            The easiest way is to put your classes on classpath of every node
+            or to put your JAR files under GRIDGAIN_HOME/libs/ext folder.
+
+            Default value is false.
+        -->
+        <property name="peerClassLoadingEnabled" value="false"/>
+
+        <!--
+            Configure optimized marshaller with list of classes you plan to
+            either store in cache or send for task/closure execution.
+            If omitted, GridGain will have to pass full class names.
+        -->
+        <property name="marshaller">
+            <bean class="org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller">
+                <!--
+                    Require only serializable classes for better performance.
+
+                    Note, that it is recommended to implement java.io.Externalizable
+                    instead of java.io.Serializable for smaller network footprint
+                    and even better performance.
+                -->
+                <property name="requireSerializable" value="true"/>
+
+                <property name="classNames">
+                    <list>
+                        <!--
+                            Specify class names you plan to store in cache or execute as closures
+                            for better performance.
+                        -->
+                    </list>
+                </property>
+            </bean>
+        </property>
+
+        <!--
+            Specify list of cache configurations here. For example
+            purposed the following 4 caches are configured:
+
+            - PARTITIONED, ATOMIC (best performance)
+            - PARTITIONED, TRANSACTIONAL
+            - REPLICATED
+            - LOCAL (non-distributed local cache)
+
+            Any property from GridCacheConfiguration interface can be configured here.
+            Note that absolutely all configuration properties are optional.
+        -->
+        <property name="cacheConfiguration">
+            <list>
+                <!--
+                    Partitioned cache example configuration (ATOMIC mode).
+
+                    ATOMIC mode provides the best performance for distributed cache.
+                -->
+                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                    <property name="name" value="partitioned"/>
+
+                    <property name="cacheMode" value="PARTITIONED"/>
+
+                    <!--
+                        Only atomic updates will be supported.
+                        ATOMIC mode provides better performance than TRANSACTIONAL mode.
+                     -->
+                    <property name="atomicityMode" value="ATOMIC"/>
+
+                    <!--
+                        Set to PRIMARY_SYNC to wait for writes to complete
+                        on primary node (backups will be updated asynchronously).
+
+                        If return value of write operation is not important,
+                        set write mode to FULL_ASYNC for better performance.
+                        Caller will not wait for writes to complete.
+                    -->
+                    <property name="writeSynchronizationMode" value="PRIMARY_SYNC"/>
+
+                    <!--
+                        Disable near cache. For better performance use colocated
+                        closure execution to execute logic and transactions on the grid.
+                    -->
+                    <property name="partitionedDistributionMode" value="PARTITIONED_ONLY"/>
+
+                    <!--
+                        Initial cache size. Should be about 150% of the number
+                        of entries you are planning to have to avoid resizing.
+                        Change accordingly to your application requirements.
+                    -->
+                    <property name="startSize" value="1500000"/>
+
+                    <!--
+                        For better performance set this property to false in case
+                        cache queries are not used.
+                        Default value is true.
+                    -->
+                    <property name="queryIndexEnabled" value="false"/>
+
+                    <!--
+                        This shows how to configure number of backups. The best performance
+                        is achieved with 0 backup copies.
+                    -->
+                    <property name="affinity">
+                        <bean class="org.gridgain.grid.cache.affinity.partitioned.GridCachePartitionedAffinity">
+                            <property name="keyBackups" value="0"/>
+                        </bean>
+                    </property>
+                </bean>
+
+                <!--
+                    Partitioned cache example configuration (TRANSACTIONAL mode).
+                -->
+                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                    <property name="name" value="partitioned_tx"/>
+
+                    <property name="cacheMode" value="PARTITIONED"/>
+
+                    <!--
+                        Transactional updates supported. If transactions are not needed,
+                        use ATOMIC mode instead for better performance.
+                    -->
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+
+                    <!--
+                        Disable near cache. For better performance use colocated
+                        closure execution to execute logic and transactions on the grid.
+                    -->
+                    <property name="partitionedDistributionMode" value="PARTITIONED_ONLY"/>
+
+                    <!--
+                        Initial cache size. Should be about 150% of the number
+                        of entries you are planning to have to avoid resizing.
+                        Change accordingly to your application requirements.
+                    -->
+                    <property name="startSize" value="1500000"/>
+
+                    <!--
+                        Set write mode to FULL_ASYNC for better performance.
+                        Caller will not wait for writes to complete.
+                    -->
+                    <property name="writeSynchronizationMode" value="FULL_ASYNC"/>
+
+                    <!--
+                        For better performance set this property to false in case
+                        cache queries are not used.
+                        Default value is true.
+                    -->
+                    <property name="queryIndexEnabled" value="false"/>
+
+                    <!--
+                        This shows how to configure number of backups. The best performance
+                        is achieved with 0 backup copies.
+                    -->
+                    <property name="affinity">
+                        <bean class="org.gridgain.grid.cache.affinity.partitioned.GridCachePartitionedAffinity">
+                            <property name="keyBackups" value="0"/>
+                        </bean>
+                    </property>
+                </bean>
+
+                <!--
+                    Replicated cache example configuration.
+                -->
+                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                    <property name="name" value="replicated"/>
+
+                    <!--
+                        Set write mode to FULL_ASYNC for better performance.
+                        Caller will not wait for writes to complete.
+                    -->
+                    <property name="writeSynchronizationMode" value="FULL_ASYNC"/>
+
+                    <!-- REPLICATED cache mode. -->
+                    <property name="cacheMode" value="REPLICATED"/>
+
+                    <!--
+                        For better performance set this property to false in case
+                        cache queries are not used.
+                        Default value is true.
+                    -->
+                    <property name="queryIndexEnabled" value="false"/>
+
+                    <!--
+                        Initial cache size. Should be about 150% of the number
+                        of entries you are planning to have to avoid resizing.
+                        Change accordingly to your application requirements.
+                    -->
+                    <property name="startSize" value="1500000"/>
+                </bean>
+
+                <!--
+                    Local cache example configuration.
+                -->
+                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                    <!-- Cache name is 'local'. -->
+                    <property name="name" value="local"/>
+
+                    <!-- LOCAL cache mode. -->
+                    <property name="cacheMode" value="LOCAL"/>
+
+                    <!-- Initial cache size. -->
+                    <property name="startSize" value="150000"/>
+                </bean>
+            </list>
+        </property>
+
+        <!--
+            Uncomment this to provide TCP discovery SPI (Amazon EC2).
+        -->
+        <!--
+        <property name="discoverySpi">
+            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.s3.GridTcpDiscoveryS3IpFinder">
+                        <property name="awsCredentials">
+                            <bean class="com.amazonaws.auth.BasicAWSCredentials">
+                                <constructor-arg value="YOUR_ACCESS_KEY_ID" />
+                                <constructor-arg value="YOUR_SECRET_ACCESS_KEY" />
+                            </bean>
+                        </property>
+                        <property name="bucketName" value="YOUR_BUCKET_NAME_IP_FINDER"/>
+                    </bean>
+                </property>
+                <property name="heartbeatFrequency" value="2000"/>
+            </bean>
+        </property>
+        -->
+
+        <!--
+            Uncomment this to provide TCP discovery SPI (Local network).
+
+            If path to shared file system is not explicitly provided,
+            then only local nodes will be able to discover each other.
+        -->
+        <!--
+        <property name="discoverySpi">
+            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs.GridTcpDiscoverySharedFsIpFinder">
+                        <property name="path" value="work/disco/tcp"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+        -->
+
+        <!--
+            TCP discovery SPI configuration with multicast-based IP finder.
+            Use the addresses list to provide IP addresses of initial nodes in the grid
+            (at least one address must be provided).
+
+            Note:
+            =====
+            If running in distributed environment, you should change IP addresses to the actual IP addresses
+            of the servers on your network. Not all addresses need to be specified, only the addresses
+            of one or more servers which will always be started first.
+        -->
+        <property name="discoverySpi">
+            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.GridTcpDiscoveryMulticastIpFinder">
+                        <!--
+                            In addition to addresses received via multicast this finder can work with pre-configured
+                            list of addresses (e.g., you can use it if multicast is disabled in your network).
+
+                            If running in distributed environment, you should change IP addresses to the actual IP
+                            addresses of the servers on your network. Not all addresses need to be specified, only
+                            the addresses of one or more servers which will always be started first.
+                        -->
+                        <!--
+                        <property name="addresses">
+                            <list>
+                                <value>host1:port1</value>
+                                <value>host2:port2</value>
+                            </list>
+                        </property>
+                        -->
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+</beans>

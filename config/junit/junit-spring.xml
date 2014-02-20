@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<!--
+    Command line (default) grid configuration.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd">
+    <description>Main Spring file for grid configuration.</description>
+
+    <!--
+        Grid default configuration.
+
+        All configuration properties are commented. Uncomment any property to
+        provide a non-default value for it.
+    -->
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+        <!--
+            Uncomment to specify non-default grid instance name.
+            By default, grid name will be null.
+        -->
+        <property name="gridName" value="junit"/>
+
+        <!-- Enable p2p class loading. -->
+        <property name="peerClassLoadingEnabled" value="true"/>
+
+        <!-- This property needs to be enabled in order to run JUnit tasks on grid. -->
+        <property name="marshalLocalJobs" value="true"/>
+
+        <!--
+            Logger to use. By default 'config/log4j/gridgain-log4j.xml' logger file will
+            be used. If such file is not found, then default GridGain configuration
+            for logging will be used.
+        -->
+        <property name="gridLogger">
+            <bean class="org.gridgain.grid.logger.log4j.GridLog4jLogger">
+                <constructor-arg type="java.lang.String" value="config/junit/junit-log4j.xml"/>
+            </bean>
+        </property>
+
+        <!--
+            Custom configuration for executor service.
+        -->
+        <property name="executorService">
+            <bean class="org.gridgain.grid.test.GridTestExecutorService">
+                <!-- Grid name. -->
+                <constructor-arg type="java.lang.String" value="junit"/>
+                <!-- Core pool size. -->
+                <constructor-arg type="int" value="50"/>
+                <!-- Maximum pool size. -->
+                <constructor-arg type="int" value="50"/>
+                <!-- Keep-alive time. -->
+                <constructor-arg type="long">
+                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
+                </constructor-arg>
+                <!-- Blocking queue. -->
+                <constructor-arg type="java.util.concurrent.BlockingQueue">
+                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
+                </constructor-arg>
+            </bean>
+        </property>
+
+        <property name="deploymentMode" value="PRIVATE"/>
+
+        <!--
+            Do not start caches for JUnits by default.
+        -->
+        <property name="cacheConfiguration">
+            <list/>
+        </property>
+
+        <!--
+            Uncomment to disable peer class loading.
+        -->
+        <!--
+        <property name="peerClassLoadingEnabled" value="false"/>
+        -->
+
+        <!--
+            Uncomment to provide non-default configuration for Priority Queue Collision SPI.
+
+            Note that "parallelJobsNumber" parameter controls how may JUnit tests
+            can run in parallel (default is boundless).
+        -->
+        <!--
+        <property name="collisionSpi">
+            <bean class="org.gridgain.grid.spi.collision.priorityqueue.GridPriorityQueueCollisionSpi">
+                <property name="parallelJobsNumber" value="1"/>
+            </bean>
+        </property>
+        -->
+
+        <!--
+            Uncomment to use FIFO Collision SPI and provide configuration for it.
+            Note that FIFO Collision SPI is used be default, so there is no need
+            to uncomment this section if you don't plan to change any default
+            configuration properties.
+
+            Note that "parallelJobsNumber" parameter controls how may JUnit tests
+            can run in parallel (default is boundless).
+        -->
+        <!--
+        <property name="collisionSpi">
+            <bean class="org.gridgain.grid.spi.collision.fifoqueue.GridFifoQueueCollisionSpi">
+                <property name="parallelJobsNumber" value="1"/>
+            </bean>
+        </property>
+        -->
+    </bean>
+</beans>
