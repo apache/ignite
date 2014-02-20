@@ -11,6 +11,9 @@
 -->
 <!--
     POM file.
+
+    Note that GridGain also provides repository for its Maven artifacts.
+    Contact GridGain team at info@gridgain.com to obtain login credentials.
 -->
 <project
     xmlns="http://maven.apache.org/POM/4.0.0"
@@ -18,22 +21,23 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <artifactId>gridgain-os</artifactId>
+    <packaging>pom</packaging>
+
     <parent>
         <groupId>org.gridgain</groupId>
-        <artifactId>gridgain-os</artifactId>
+        <artifactId>gridgain-parent</artifactId>
         <version>${gridgain.version}</version>
-        <relativePath>../..</relativePath>
     </parent>
 
-    <artifactId>gridgain-core</artifactId>
-
-    <build>
-        <sourceDirectory>java</sourceDirectory>
-
-        <resources>
-            <resource>
-                <directory>java</directory>
-            </resource>
-        </resources>
-    </build>
+    <modules>
+        <module>modules/core</module>
+        <module>modules/clients</module>
+        <module>modules/router</module>
+        <module>examples</module>
+        <module>modules/scalar</module>
+        <module>modules/scalar-examples</module>
+        <module>modules/visor-console</module>
+        <module>modules/jdbc-driver</module>
+    </modules>
 </project>
