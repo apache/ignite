@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<!--
+    GridGain data center replication configuration.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
+    <!--
+        Optional description.
+    -->
+    <description>
+        GridGain data center replication configuration.
+    </description>
+
+    <!--
+        Import common configuration.
+    -->
+    <import resource="default-dr2-base.xml"/>
+
+    <!--
+        Configuration below demonstrates how to setup cache for data center replication.
+    -->
+    <bean id="grid.cfg" parent="cfgBase" scope="singleton">
+        <!--
+            List of cache configurations.
+        -->
+        <property name="cacheConfiguration">
+            <list>
+                <!--
+                    Cache configuration.
+                -->
+                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                    <!-- Cache name. -->
+                    <property name="name" value="drCache"/>
+
+                    <!-- Cache mode. -->
+                    <property name="cacheMode" value="PARTITIONED"/>
+
+                    <!-- Configuration for sending cache participating in data center replication. -->
+                    <property name="drSenderConfiguration">
+                        <bean class="org.gridgain.grid.dr.cache.sender.GridDrSenderCacheConfiguration">
+                            <!-- Replication mode. -->
+                            <property name="mode" value="DR_ASYNC"/>
+                        </bean>
+                    </property>
+
+                    <!-- Configuration for receiving cache participating in data center replication. -->
+                    <property name="drReceiverConfiguration">
+                        <bean class="org.gridgain.grid.dr.cache.receiver.GridDrReceiverCacheConfiguration">
+                            <!-- Conflict resolver mode. -->
+                            <property name="conflictResolverMode" value="DR_AUTO"/>
+
+                            <!-- Custom conflict resolver. -->
+                            <!--
+                            <property name="conflictResolver" ref="customResolverBean"/>
+                            -->
+                        </bean>
+                    </property>
+                </bean>
+            </list>
+        </property>
+    </bean>
+</beans>
