@@ -35,7 +35,7 @@
           message="Please specify Ant property GG_HOME (environment variable GRIDGAIN_HOME will also work)."/>
 
     <property name="base.dir" value="${gridgain.home}"/>
-    <property name="examples.gar.dir" value="${base.dir}/examples/gar"/>
+    <property name="examples.gar.dir" value="${base.dir}/os/examples/gar"/>
     <property name="examples.gar.src.dir" value="${examples.gar.dir}/src"/>
     <property name="examples.gar.deploy.dir" value="${examples.gar.dir}/deploy"/>
     <property name="libs.dir" value="${base.dir}/libs"/>
@@ -119,7 +119,7 @@
 
             <!-- Create imported jar file. -->
             <jar destfile="${examples.gar.deploy.dir}/tmpgar/lib/depend.jar"
-                basedir="${examples.gar.deploy.dir}/tmpgar/lib/dependlib">
+                 basedir="${examples.gar.deploy.dir}/tmpgar/lib/dependlib">
             </jar>
 
             <delete dir="${examples.gar.deploy.dir}/tmpgar/lib/dependlib"/>
@@ -128,12 +128,12 @@
                 Special task for creating GAR files.
             -->
             <taskdef name="gar" classname="org.gridgain.grid.util.antgar.GridDeploymentGarAntTask"
-                classpathref="gg.libs.path"/>
+                     classpathref="gg.libs.path"/>
 
             <!-- Create GAR file. -->
             <gar destfile="${examples.gar.deploy.dir}/${gar.name}"
-                descrdir="${examples.gar.dir}/META-INF"
-                basedir="${examples.gar.deploy.dir}/tmpgar"/>
+                 descrdir="${examples.gar.dir}/META-INF"
+                 basedir="${examples.gar.deploy.dir}/tmpgar"/>
 
             <!-- Cleanup temporary binary directories. -->
             <delete dir="${examples.gar.deploy.dir}/tmpgar"/>
