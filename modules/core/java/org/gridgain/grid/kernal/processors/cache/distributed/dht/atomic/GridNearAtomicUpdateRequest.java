@@ -1,0 +1,921 @@
+// @java.file.header
+
+/*  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
+
+import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.tostring.*;
+import org.jetbrains.annotations.*;
+
+import java.io.*;
+import java.nio.*;
+import java.util.*;
+
+import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
+
+/**
+ * Lite DHT cache update request sent from near node to primary node.
+ *
+ * @author @java.author
+ * @version @java.version
+ */
+public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+    /** Message index. */
+    public static final int CACHE_MSG_IDX = nextIndexId();
+
+    /** Target node ID. */
+    @GridDirectTransient
+    private UUID nodeId;
+
+    /** Future version. */
+    private GridCacheVersion futVer;
+
+    /** Fast map flag. */
+    private boolean fastMap;
+
+    /** Update version. Set to non-null if fastMap is {@code true}. */
+    private GridCacheVersion updateVer;
+
+    /** Topology version. */
+    private long topVer;
+
+    /** Write synchronization mode. */
+    private GridCacheWriteSynchronizationMode syncMode;
+
+    /** Update operation. */
+    private GridCacheOperation op;
+
+    /** Keys to update. */
+    @GridDirectTransient
+    @GridToStringInclude
+    private List<K> keys;
+
+    /** Key bytes. */
+    @GridDirectCollection(byte[].class)
+    private List<byte[]> keyBytes;
+
+    /** Values to update. */
+    @GridDirectTransient
+    private List<Object> vals;
+
+    /** Value bytes. */
+    @GridDirectCollection(GridCacheValueBytes.class)
+    private List<GridCacheValueBytes> valBytes;
+
+    /** DR versions. */
+    @GridDirectCollection(GridCacheVersion.class)
+    private List<GridCacheVersion> drVers;
+
+    /** DR TTLs. */
+    private GridLongList drTtls;
+
+    /** DR TTLs. */
+    private GridLongList drExpireTimes;
+
+    /** Return value flag. */
+    private boolean retval;
+
+    /** Time to live. */
+    private long ttl;
+
+    /** Filter. */
+    @GridDirectTransient
+    private GridPredicate<? super GridCacheEntry<K, V>>[] filter;
+
+    /** Filter bytes. */
+    private byte[][] filterBytes;
+
+    /** Flag indicating whether request contains primary keys. */
+    private boolean hasPrimary;
+
+    /**
+     * Empty constructor required by {@link Externalizable}.
+     */
+    public GridNearAtomicUpdateRequest() {
+        // No-op.
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param nodeId Node ID.
+     * @param futVer Future version.
+     * @param fastMap Fast map scheme flag.
+     * @param updateVer Update version set if fast map is performed.
+     * @param topVer Topology version.
+     * @param syncMode Synchronization mode.
+     * @param op Cache update operation.
+     * @param retval Return value required flag.
+     * @param ttl Time to live.
+     * @param filter Optional filter for atomic check.
+     */
+    public GridNearAtomicUpdateRequest(
+        UUID nodeId,
+        GridCacheVersion futVer,
+        boolean fastMap,
+        @Nullable GridCacheVersion updateVer,
+        long topVer,
+        GridCacheWriteSynchronizationMode syncMode,
+        GridCacheOperation op,
+        boolean retval,
+        long ttl,
+        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter
+    ) {
+        this.nodeId = nodeId;
+        this.futVer = futVer;
+        this.fastMap = fastMap;
+        this.updateVer = updateVer;
+
+        this.topVer = topVer;
+        this.syncMode = syncMode;
+        this.op = op;
+        this.retval = retval;
+        this.ttl = ttl;
+        this.filter = filter;
+
+        keys = new ArrayList<>();
+        vals = new ArrayList<>();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int lookupIndex() {
+        return CACHE_MSG_IDX;
+    }
+
+    /**
+     * @return Mapped node ID.
+     */
+    public UUID nodeId() {
+        return nodeId;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     */
+    public void nodeId(UUID nodeId) {
+        this.nodeId = nodeId;
+    }
+
+    /**
+     * @return Future version.
+     */
+    public GridCacheVersion futureVersion() {
+        return futVer;
+    }
+
+    /**
+     * @return Flag indicating whether this is fast-map udpate.
+     */
+    public boolean fastMap() {
+        return fastMap;
+    }
+
+    /**
+     * @return Update version for fast-map request.
+     */
+    public GridCacheVersion updateVersion() {
+        return updateVer;
+    }
+
+    /**
+     * @return Topology version.
+     */
+    public long topologyVersion() {
+        return topVer;
+    }
+
+    /**
+     * @return Cache write synchronization mode.
+     */
+    public GridCacheWriteSynchronizationMode writeSynchronizationMode() {
+        return syncMode;
+    }
+
+    /**
+     * @return Time to live.
+     */
+    public long ttl() {
+        return ttl;
+    }
+
+    /**
+     * @return Return value flag.
+     */
+    public boolean returnValue() {
+        return retval;
+    }
+
+    /**
+     * @return Filter.
+     */
+    @Nullable public GridPredicate<? super GridCacheEntry<K, V>>[] filter() {
+        return filter;
+    }
+
+    /**
+     * @param key Key to add.
+     * @param val Optional update value.
+     * @param drTtl DR TTL (optional).
+     * @param drExpireTime DR expire time (optional).
+     * @param drVer DR version (optional).
+     * @param primary If given key is primary on this mapping.
+     */
+    public void addUpdateEntry(K key, @Nullable Object val, long drTtl, long drExpireTime,
+        @Nullable GridCacheVersion drVer, boolean primary) {
+        assert val != null || op == DELETE;
+        assert op != TRANSFORM || val instanceof GridClosure;
+
+        keys.add(key);
+        vals.add(val);
+
+        hasPrimary |= primary;
+
+        // In case there is no DR, do not create the list.
+        if (drVer != null) {
+            if (drVers == null) {
+                drVers = new ArrayList<>();
+
+                for (int i = 0; i < keys.size() - 1; i++)
+                    drVers.add(null);
+            }
+
+            drVers.add(drVer);
+        }
+        else if (drVers != null)
+            drVers.add(drVer);
+
+        if (drTtl >= 0) {
+            if (drTtls == null) {
+                drTtls = new GridLongList(keys.size());
+
+                for (int i = 0; i < keys.size() - 1; i++)
+                    drTtls.add(-1);
+            }
+
+            drTtls.add(drTtl);
+        }
+
+        if (drExpireTime >= 0) {
+            if (drExpireTimes == null) {
+                drExpireTimes = new GridLongList(keys.size());
+
+                for (int i = 0; i < keys.size() - 1; i++)
+                    drExpireTimes.add(-1);
+            }
+
+            drExpireTimes.add(drExpireTime);
+        }
+    }
+
+    /**
+     * @return Keys for this update request.
+     */
+    public List<K> keys() {
+        return keys;
+    }
+
+    /**
+     * @return Values for this update request.
+     */
+    public List<Object> values() {
+        return vals;
+    }
+
+    /**
+     * @return Update operation.
+     */
+    public GridCacheOperation operation() {
+        return op;
+    }
+
+    /**
+     * @param idx Key index.
+     * @return Value.
+     */
+    public V value(int idx) {
+        assert op == UPDATE;
+
+        return (V)vals.get(idx);
+    }
+
+    /**
+     * @param idx Key index.
+     * @return Transform closure.
+     */
+    public GridClosure<V, V> transformClosure(int idx) {
+        assert op == TRANSFORM;
+
+        return (GridClosure<V, V>)vals.get(idx);
+    }
+
+    /**
+     * @param idx Index to get.
+     * @return Write value - either value, or transform closure.
+     */
+    public Object writeValue(int idx) {
+        if (vals != null) {
+            Object val = vals.get(idx);
+
+            if (val != null)
+                return val;
+        }
+
+        if (valBytes != null) {
+            GridCacheValueBytes valBytesTuple = valBytes.get(idx);
+
+            if (valBytesTuple != null && valBytesTuple.isPlain())
+                return valBytesTuple.get();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param idx Key index.
+     * @return Value bytes.
+     */
+    public byte[] valueBytes(int idx) {
+        if (op != TRANSFORM && valBytes != null) {
+            GridCacheValueBytes valBytesTuple = valBytes.get(idx);
+
+            if (valBytesTuple != null && !valBytesTuple.isPlain())
+                return valBytesTuple.get();
+        }
+
+        return null;
+    }
+
+    /**
+     * @return DR versions.
+     */
+    @Nullable public List<GridCacheVersion> drVersions() {
+        return drVers;
+    }
+
+    /**
+     * @param idx Index.
+     * @return DR version.
+     */
+    @Nullable public GridCacheVersion drVersion(int idx) {
+        if (drVers != null) {
+            assert idx >= 0 && idx < drVers.size();
+
+            return drVers.get(idx);
+        }
+
+        return null;
+    }
+
+    /**
+     * @return DR TTLs.
+     */
+    @Nullable public GridLongList drTtls() {
+        return drTtls;
+    }
+
+    /**
+     * @param idx Index.
+     * @return DR TTL.
+     */
+    public long drTtl(int idx) {
+        if (drTtls != null) {
+            assert idx >= 0 && idx < drTtls.size();
+
+            return drTtls.get(idx);
+        }
+
+        return -1L;
+    }
+
+    /**
+     * @return DR TTLs.
+     */
+    @Nullable public GridLongList drExpireTimes() {
+        return drExpireTimes;
+    }
+
+    /**
+     * @param idx Index.
+     * @return DR TTL.
+     */
+    public long drExpireTime(int idx) {
+        if (drExpireTimes != null) {
+            assert idx >= 0 && idx < drExpireTimes.size();
+
+            return drExpireTimes.get(idx);
+        }
+
+        return -1L;
+    }
+
+    /**
+     * @return Flag indicating whether this request contains primary keys.
+     */
+    public boolean hasPrimary() {
+        return hasPrimary;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+        super.prepareMarshal(ctx);
+
+        keyBytes = marshalCollection(keys, ctx);
+        valBytes = marshalValuesCollection(vals, ctx);
+        filterBytes = marshalFilter(filter, ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+        super.finishUnmarshal(ctx, ldr);
+
+        keys = unmarshalCollection(keyBytes, ctx, ldr);
+        vals = unmarshalValueBytesCollection(valBytes, ctx, ldr);
+        filter = unmarshalFilter(filterBytes, ctx, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
+    @Override public GridTcpCommunicationMessageAdapter clone() {
+        GridNearAtomicUpdateRequest _clone = new GridNearAtomicUpdateRequest();
+
+        clone0(_clone);
+
+        return _clone;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+        super.clone0(_msg);
+
+        GridNearAtomicUpdateRequest _clone = (GridNearAtomicUpdateRequest)_msg;
+
+        _clone.nodeId = nodeId;
+        _clone.futVer = futVer;
+        _clone.fastMap = fastMap;
+        _clone.updateVer = updateVer;
+        _clone.topVer = topVer;
+        _clone.syncMode = syncMode;
+        _clone.op = op;
+        _clone.keys = keys;
+        _clone.keyBytes = keyBytes;
+        _clone.vals = vals;
+        _clone.valBytes = valBytes;
+        _clone.drVers = drVers;
+        _clone.drTtls = drTtls;
+        _clone.drExpireTimes = drExpireTimes;
+        _clone.retval = retval;
+        _clone.ttl = ttl;
+        _clone.filter = filter;
+        _clone.filterBytes = filterBytes;
+        _clone.hasPrimary = hasPrimary;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("all")
+    @Override public boolean writeTo(ByteBuffer buf) {
+        commState.setBuffer(buf);
+
+        if (!super.writeTo(buf))
+            return false;
+
+        if (!commState.typeWritten) {
+            if (!commState.putByte(directType()))
+                return false;
+
+            commState.typeWritten = true;
+        }
+
+        switch (commState.idx) {
+            case 2:
+                if (!commState.putLongList(drExpireTimes))
+                    return false;
+
+                commState.idx++;
+
+            case 3:
+                if (!commState.putLongList(drTtls))
+                    return false;
+
+                commState.idx++;
+
+            case 4:
+                if (drVers != null) {
+                    if (commState.it == null) {
+                        if (!commState.putInt(drVers.size()))
+                            return false;
+
+                        commState.it = drVers.iterator();
+                    }
+
+                    while (commState.it.hasNext() || commState.cur != NULL) {
+                        if (commState.cur == NULL)
+                            commState.cur = commState.it.next();
+
+                        if (!commState.putCacheVersion((GridCacheVersion)commState.cur))
+                            return false;
+
+                        commState.cur = NULL;
+                    }
+
+                    commState.it = null;
+                } else {
+                    if (!commState.putInt(-1))
+                        return false;
+                }
+
+                commState.idx++;
+
+            case 5:
+                if (!commState.putBoolean(fastMap))
+                    return false;
+
+                commState.idx++;
+
+            case 6:
+                if (filterBytes != null) {
+                    if (commState.it == null) {
+                        if (!commState.putInt(filterBytes.length))
+                            return false;
+
+                        commState.it = arrayIterator(filterBytes);
+                    }
+
+                    while (commState.it.hasNext() || commState.cur != NULL) {
+                        if (commState.cur == NULL)
+                            commState.cur = commState.it.next();
+
+                        if (!commState.putByteArray((byte[])commState.cur))
+                            return false;
+
+                        commState.cur = NULL;
+                    }
+
+                    commState.it = null;
+                } else {
+                    if (!commState.putInt(-1))
+                        return false;
+                }
+
+                commState.idx++;
+
+            case 7:
+                if (!commState.putCacheVersion(futVer))
+                    return false;
+
+                commState.idx++;
+
+            case 8:
+                if (!commState.putBoolean(hasPrimary))
+                    return false;
+
+                commState.idx++;
+
+            case 9:
+                if (keyBytes != null) {
+                    if (commState.it == null) {
+                        if (!commState.putInt(keyBytes.size()))
+                            return false;
+
+                        commState.it = keyBytes.iterator();
+                    }
+
+                    while (commState.it.hasNext() || commState.cur != NULL) {
+                        if (commState.cur == NULL)
+                            commState.cur = commState.it.next();
+
+                        if (!commState.putByteArray((byte[])commState.cur))
+                            return false;
+
+                        commState.cur = NULL;
+                    }
+
+                    commState.it = null;
+                } else {
+                    if (!commState.putInt(-1))
+                        return false;
+                }
+
+                commState.idx++;
+
+            case 10:
+                if (!commState.putEnum(op))
+                    return false;
+
+                commState.idx++;
+
+            case 11:
+                if (!commState.putBoolean(retval))
+                    return false;
+
+                commState.idx++;
+
+            case 12:
+                if (!commState.putEnum(syncMode))
+                    return false;
+
+                commState.idx++;
+
+            case 13:
+                if (!commState.putLong(topVer))
+                    return false;
+
+                commState.idx++;
+
+            case 14:
+                if (!commState.putLong(ttl))
+                    return false;
+
+                commState.idx++;
+
+            case 15:
+                if (!commState.putCacheVersion(updateVer))
+                    return false;
+
+                commState.idx++;
+
+            case 16:
+                if (valBytes != null) {
+                    if (commState.it == null) {
+                        if (!commState.putInt(valBytes.size()))
+                            return false;
+
+                        commState.it = valBytes.iterator();
+                    }
+
+                    while (commState.it.hasNext() || commState.cur != NULL) {
+                        if (commState.cur == NULL)
+                            commState.cur = commState.it.next();
+
+                        if (!commState.putValueBytes((GridCacheValueBytes)commState.cur))
+                            return false;
+
+                        commState.cur = NULL;
+                    }
+
+                    commState.it = null;
+                } else {
+                    if (!commState.putInt(-1))
+                        return false;
+                }
+
+                commState.idx++;
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("all")
+    @Override public boolean readFrom(ByteBuffer buf) {
+        commState.setBuffer(buf);
+
+        if (!super.readFrom(buf))
+            return false;
+
+        switch (commState.idx) {
+            case 2:
+                GridLongList drExpireTimes0 = commState.getLongList();
+
+                if (drExpireTimes0 == LONG_LIST_NOT_READ)
+                    return false;
+
+                drExpireTimes = drExpireTimes0;
+
+                commState.idx++;
+
+            case 3:
+                GridLongList drTtls0 = commState.getLongList();
+
+                if (drTtls0 == LONG_LIST_NOT_READ)
+                    return false;
+
+                drTtls = drTtls0;
+
+                commState.idx++;
+
+            case 4:
+                if (commState.readSize == -1) {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.readSize = commState.getInt();
+                }
+
+                if (commState.readSize >= 0) {
+                    if (drVers == null)
+                        drVers = new ArrayList<>(commState.readSize);
+
+                    for (int i = commState.readItems; i < commState.readSize; i++) {
+                        GridCacheVersion _val = commState.getCacheVersion();
+
+                        if (_val == CACHE_VER_NOT_READ)
+                            return false;
+
+                        drVers.add((GridCacheVersion)_val);
+
+                        commState.readItems++;
+                    }
+                }
+
+                commState.readSize = -1;
+                commState.readItems = 0;
+
+                commState.idx++;
+
+            case 5:
+                if (buf.remaining() < 1)
+                    return false;
+
+                fastMap = commState.getBoolean();
+
+                commState.idx++;
+
+            case 6:
+                if (commState.readSize == -1) {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.readSize = commState.getInt();
+                }
+
+                if (commState.readSize >= 0) {
+                    if (filterBytes == null)
+                        filterBytes = new byte[commState.readSize][];
+
+                    for (int i = commState.readItems; i < commState.readSize; i++) {
+                        byte[] _val = commState.getByteArray();
+
+                        if (_val == BYTE_ARR_NOT_READ)
+                            return false;
+
+                        filterBytes[i] = (byte[])_val;
+
+                        commState.readItems++;
+                    }
+                }
+
+                commState.readSize = -1;
+                commState.readItems = 0;
+
+                commState.idx++;
+
+            case 7:
+                GridCacheVersion futVer0 = commState.getCacheVersion();
+
+                if (futVer0 == CACHE_VER_NOT_READ)
+                    return false;
+
+                futVer = futVer0;
+
+                commState.idx++;
+
+            case 8:
+                if (buf.remaining() < 1)
+                    return false;
+
+                hasPrimary = commState.getBoolean();
+
+                commState.idx++;
+
+            case 9:
+                if (commState.readSize == -1) {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.readSize = commState.getInt();
+                }
+
+                if (commState.readSize >= 0) {
+                    if (keyBytes == null)
+                        keyBytes = new ArrayList<>(commState.readSize);
+
+                    for (int i = commState.readItems; i < commState.readSize; i++) {
+                        byte[] _val = commState.getByteArray();
+
+                        if (_val == BYTE_ARR_NOT_READ)
+                            return false;
+
+                        keyBytes.add((byte[])_val);
+
+                        commState.readItems++;
+                    }
+                }
+
+                commState.readSize = -1;
+                commState.readItems = 0;
+
+                commState.idx++;
+
+            case 10:
+                Object op0 = commState.getEnum(GridCacheOperation.class);
+
+                if (op0 == ENUM_NOT_READ)
+                    return false;
+
+                op = (GridCacheOperation)op0;
+
+                commState.idx++;
+
+            case 11:
+                if (buf.remaining() < 1)
+                    return false;
+
+                retval = commState.getBoolean();
+
+                commState.idx++;
+
+            case 12:
+                Object syncMode0 = commState.getEnum(GridCacheWriteSynchronizationMode.class);
+
+                if (syncMode0 == ENUM_NOT_READ)
+                    return false;
+
+                syncMode = (GridCacheWriteSynchronizationMode)syncMode0;
+
+                commState.idx++;
+
+            case 13:
+                if (buf.remaining() < 8)
+                    return false;
+
+                topVer = commState.getLong();
+
+                commState.idx++;
+
+            case 14:
+                if (buf.remaining() < 8)
+                    return false;
+
+                ttl = commState.getLong();
+
+                commState.idx++;
+
+            case 15:
+                GridCacheVersion updateVer0 = commState.getCacheVersion();
+
+                if (updateVer0 == CACHE_VER_NOT_READ)
+                    return false;
+
+                updateVer = updateVer0;
+
+                commState.idx++;
+
+            case 16:
+                if (commState.readSize == -1) {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.readSize = commState.getInt();
+                }
+
+                if (commState.readSize >= 0) {
+                    if (valBytes == null)
+                        valBytes = new ArrayList<>(commState.readSize);
+
+                    for (int i = commState.readItems; i < commState.readSize; i++) {
+                        GridCacheValueBytes _val = commState.getValueBytes();
+
+                        if (_val == VAL_BYTES_NOT_READ)
+                            return false;
+
+                        valBytes.add((GridCacheValueBytes)_val);
+
+                        commState.readItems++;
+                    }
+                }
+
+                commState.readSize = -1;
+                commState.readItems = 0;
+
+                commState.idx++;
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 17;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridNearAtomicUpdateRequest.class, this, "filter", Arrays.toString(filter),
+            "parent", super.toString());
+    }
+}

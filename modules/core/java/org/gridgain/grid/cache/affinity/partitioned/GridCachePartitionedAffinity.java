@@ -1,0 +1,678 @@
+// @java.file.header
+
+/*  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+package org.gridgain.grid.cache.affinity.partitioned;
+
+import org.gridgain.grid.*;
+import org.gridgain.grid.cache.affinity.*;
+import org.gridgain.grid.lang.*;
+import org.gridgain.grid.resources.*;
+import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
+
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
+
+/**
+ * Affinity function for partitioned cache. This function supports the following
+ * configuration:
+ * <ul>
+ * <li>
+ *      {@code backups} - Use this flag to control how many back up nodes will be
+ *      assigned to every key. The default value is {@code 0}.
+ * </li>
+ * <li>
+ *      {@code replicas} - Generally the more replicas a node gets, the more key assignments
+ *      it will receive. You can configure different number of replicas for a node by
+ *      setting user attribute with name {@link #getReplicaCountAttributeName()} to some
+ *      number. Default value is {@code 512} defined by {@link #DFLT_REPLICA_COUNT} constant.
+ * </li>
+ * <li>
+ *      {@code backupFilter} - Optional filter for back up nodes. If provided, then only
+ *      nodes that pass this filter will be selected as backup nodes. If not provided, then
+ *      primary and backup nodes will be selected out of all nodes available for this cache.
+ * </li>
+ * </ul>
+ *
+ * @author @java.author
+ * @version @java.version
+ */
+public class GridCachePartitionedAffinity implements GridCacheAffinity {
+    /** Flag to enable/disable consistency check (for internal use only). */
+    private static final boolean AFFINITY_CONSISTENCY_CHECK = Boolean.getBoolean("GRIDGAIN_AFFINITY_CONSISTENCY_CHECK");
+
+    /** Default number of partitions. */
+    public static final int DFLT_PARTITION_COUNT = 10000;
+
+    /** Default number of backups. */
+    public static final int DFLT_BACKUP_COUNT = 0;
+
+    /** Default replica count for partitioned caches. */
+    public static final int DFLT_REPLICA_COUNT = 128;
+
+    /**
+     * Name of node attribute to specify number of replicas for a node.
+     * Default value is {@code gg:affinity:node:replicas}.
+     */
+    public static final String DFLT_REPLICA_COUNT_ATTR_NAME = "gg:affinity:node:replicas";
+
+    /** Node hash. */
+    private transient GridConsistentHash<NodeInfo> nodeHash;
+
+    /** Total number of partitions. */
+    private int parts = DFLT_PARTITION_COUNT;
+
+    /** */
+    private int replicas = DFLT_REPLICA_COUNT;
+
+    /** */
+    @SuppressWarnings("RedundantFieldInitialization")
+    private int backups = DFLT_BACKUP_COUNT;
+
+    /** */
+    private String attrName = DFLT_REPLICA_COUNT_ATTR_NAME;
+
+    /** */
+    private boolean exclNeighbors;
+
+    /**
+     * Optional backup filter. First node passed to this filter is primary node,
+     * and second node is a node being tested.
+     */
+    private GridBiPredicate<GridNode, GridNode> backupFilter;
+
+    /** */
+    private GridCachePartitionedHashResolver hashIdRslvr = new GridCachePartitionedConsistentIdHashResolver();
+
+    /** Injected grid. */
+    @GridInstanceResource
+    private Grid grid;
+
+    /** Initialization flag. */
+    @SuppressWarnings("TransientFieldNotInitialized")
+    private transient AtomicBoolean init = new AtomicBoolean();
+
+    /** Latch for initializing. */
+    @SuppressWarnings({"TransientFieldNotInitialized"})
+    private transient CountDownLatch initLatch = new CountDownLatch(1);
+
+    /** Nodes IDs. */
+    @GridToStringInclude
+    @SuppressWarnings({"TransientFieldNotInitialized"})
+    private transient ConcurrentMap<UUID, NodeInfo> addedNodes = new ConcurrentHashMap<>();
+
+    /** Optional backup filter. */
+    @GridToStringExclude
+    private final GridBiPredicate<NodeInfo, NodeInfo> backupIdFilter = new GridBiPredicate<NodeInfo, NodeInfo>() {
+        @Override public boolean apply(NodeInfo primaryNodeInfo, NodeInfo nodeInfo) {
+            return backupFilter == null || backupFilter.apply(primaryNodeInfo.node(), nodeInfo.node());
+        }
+    };
+
+    /** Map of neighbors. */
+    @SuppressWarnings("TransientFieldNotInitialized")
+    private transient ConcurrentMap<UUID, Collection<UUID>> neighbors =
+        new ConcurrentHashMap8<>();
+
+    /**
+     * Empty constructor with all defaults.
+     */
+    public GridCachePartitionedAffinity() {
+        // No-op.
+    }
+
+    /**
+     * Initializes affinity with specified number of backups.
+     *
+     * @param backups Number of back up servers per key.
+     */
+    public GridCachePartitionedAffinity(int backups) {
+        this.backups = backups;
+    }
+
+    /**
+     * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other
+     * and specified number of backups.
+     * <p>
+     * Note that {@code excludeNeighbors} parameter is ignored if {@code #getBackupFilter()} is set.
+     *
+     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
+     *      of each other.
+     * @param backups Number of back up servers per key.
+     */
+    public GridCachePartitionedAffinity(boolean exclNeighbors, int backups) {
+        this.exclNeighbors = exclNeighbors;
+        this.backups = backups;
+    }
+
+    /**
+     * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other,
+     * and specified number of backups and partitions.
+     * <p>
+     * Note that {@code excludeNeighbors} parameter is ignored if {@code #getBackupFilter()} is set.
+     *
+     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
+     *      of each other.
+     * @param backups Number of back up servers per key.
+     * @param parts Total number of partitions.
+     */
+    public GridCachePartitionedAffinity(boolean exclNeighbors, int backups, int parts) {
+        this.exclNeighbors = exclNeighbors;
+        this.backups = backups;
+        this.parts = parts;
+    }
+
+    /**
+     * Initializes optional counts for replicas and backups.
+     * <p>
+     * Note that {@code excludeNeighbors} parameter is ignored if {@code backupFilter} is set.
+     *
+     * @param backups Backups count.
+     * @param parts Total number of partitions.
+     * @param backupFilter Optional back up filter for nodes. If provided, backups will be selected
+     *      from all nodes that pass this filter. First argument for this filter is primary node, and second
+     *      argument is node being tested.
+     * <p>
+     * Note that {@code excludeNeighbors} parameter is ignored if {@code backupFilter} is set.
+     */
+    public GridCachePartitionedAffinity(int backups, int parts,
+        @Nullable GridBiPredicate<GridNode,GridNode> backupFilter) {
+        this.backups = backups;
+        this.parts = parts;
+        this.backupFilter = backupFilter;
+    }
+
+    /**
+     * Gets default count of virtual replicas in consistent hash ring.
+     * <p>
+     * To determine node replicas, node attribute with {@link #getReplicaCountAttributeName()}
+     * name will be checked first. If it is absent, then this value will be used.
+     *
+     * @return Count of virtual replicas in consistent hash ring.
+     */
+    public int getDefaultReplicas() {
+        return replicas;
+    }
+
+    /**
+     * Sets default count of virtual replicas in consistent hash ring.
+     * <p>
+     * To determine node replicas, node attribute with {@link #getReplicaCountAttributeName} name
+     * will be checked first. If it is absent, then this value will be used.
+     *
+     * @param replicas Count of virtual replicas in consistent hash ring.s
+     */
+    public void setDefaultReplicas(int replicas) {
+        this.replicas = replicas;
+    }
+
+    /**
+     * Gets count of key backups for redundancy.
+     *
+     * @return Key backup count.
+     */
+    public int getKeyBackups() {
+        return backups;
+    }
+
+    /**
+     * Sets count of key backups for redundancy.
+     *
+     * @param backups Key backup count.
+     */
+    public void setKeyBackups(int backups) {
+        this.backups = backups;
+    }
+
+    /**
+     * Gets total number of key partitions. To ensure that all partitions are
+     * equally distributed across all nodes, please make sure that this
+     * number is significantly larger than a number of nodes. Also, partition
+     * size should be relatively small. Try to avoid having partitions with more
+     * than quarter million keys.
+     * <p>
+     * Note that for fully replicated caches this method should always
+     * return {@code 1}.
+     *
+     * @return Total partition count.
+     */
+    public int getPartitions() {
+        return parts;
+    }
+
+    /**
+     * Sets total number of partitions.
+     *
+     * @param parts Total number of partitions.
+     */
+    public void setPartitions(int parts) {
+        this.parts = parts;
+    }
+
+    /**
+     * Gets hash ID resolver for nodes. This resolver is used to provide
+     * alternate hash ID, other than node ID.
+     * <p>
+     * Node IDs constantly change when nodes get restarted, which causes them to
+     * be placed on different locations in the hash ring, and hence causing
+     * repartitioning. Providing an alternate hash ID, which survives node restarts,
+     * puts node on the same location on the hash ring, hence minimizing required
+     * repartitioning.
+     *
+     * @return Hash ID resolver.
+     */
+    public GridCachePartitionedHashResolver getHashIdResolver() {
+        return hashIdRslvr;
+    }
+
+    /**
+     * Sets hash ID resolver for nodes. This resolver is used to provide
+     * alternate hash ID, other than node ID.
+     * <p>
+     * Node IDs constantly change when nodes get restarted, which causes them to
+     * be placed on different locations in the hash ring, and hence causing
+     * repartitioning. Providing an alternate hash ID, which survives node restarts,
+     * puts node on the same location on the hash ring, hence minimizing required
+     * repartitioning.
+     *
+     * @param hashIdRslvr Hash ID resolver.
+     */
+    public void setHashIdResolver(GridCachePartitionedHashResolver hashIdRslvr) {
+        this.hashIdRslvr = hashIdRslvr;
+    }
+
+    /**
+     * Gets optional backup filter. If not {@code null}, backups will be selected
+     * from all nodes that pass this filter. First node passed to this filter is primary node,
+     * and second node is a node being tested.
+     * <p>
+     * Note that {@code excludeNeighbors} parameter is ignored if {@code backupFilter} is set.
+     *
+     * @return Optional backup filter.
+     */
+    @Nullable public GridBiPredicate<GridNode, GridNode> getBackupFilter() {
+        return backupFilter;
+    }
+
+    /**
+     * Sets optional backup filter. If provided, then backups will be selected from all
+     * nodes that pass this filter. First node being passed to this filter is primary node,
+     * and second node is a node being tested.
+     * <p>
+     * Note that {@code excludeNeighbors} parameter is ignored if {@code backupFilter} is set.
+     *
+     * @param backupFilter Optional backup filter.
+     */
+    public void setBackupFilter(@Nullable GridBiPredicate<GridNode, GridNode> backupFilter) {
+        this.backupFilter = backupFilter;
+    }
+
+    /**
+     * Gets optional attribute name for replica count. If not provided, the
+     * default is {@link #DFLT_REPLICA_COUNT_ATTR_NAME}.
+     *
+     * @return User attribute name for replica count for a node.
+     */
+    public String getReplicaCountAttributeName() {
+        return attrName;
+    }
+
+    /**
+     * Sets optional attribute name for replica count. If not provided, the
+     * default is {@link #DFLT_REPLICA_COUNT_ATTR_NAME}.
+     *
+     * @param attrName User attribute name for replica count for a node.
+     */
+    public void setReplicaCountAttributeName(String attrName) {
+        this.attrName = attrName;
+    }
+
+    /**
+     * Checks flag to exclude same-host-neighbors from being backups of each other (default is {@code false}).
+     * <p>
+     * Note that {@code excludeNeighbors} parameter is ignored if {@code #getBackupFilter()} is set.
+     *
+     * @return {@code True} if nodes residing on the same host may not act as backups of each other.
+     */
+    public boolean isExcludeNeighbors() {
+        return exclNeighbors;
+    }
+
+    /**
+     * Sets flag to exclude same-host-neighbors from being backups of each other (default is {@code false}).
+     * <p>
+     * Note that {@code excludeNeighbors} parameter is ignored if {@code #getBackupFilter()} is set.
+     *
+     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups of each other.
+     */
+    public void setExcludeNeighbors(boolean exclNeighbors) {
+        this.exclNeighbors = exclNeighbors;
+    }
+
+    /**
+     * Gets neighbors for a node.
+     *
+     * @param node Node.
+     * @return Neighbors.
+     */
+    private Collection<UUID> neighbors(final GridNode node) {
+        Collection<UUID> ns = neighbors.get(node.id());
+
+        if (ns == null) {
+            Collection<GridNode> nodes = grid.forHost(node).nodes();
+
+            ns = F.addIfAbsent(neighbors, node.id(), new ArrayList<>(F.nodeIds(nodes)));
+        }
+
+        return ns;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridNode> nodes(int part, Collection<GridNode> nodes) {
+        if (nodes == null)
+            return Collections.emptyList();
+
+        int nodesSize = nodes.size();
+
+        if (nodesSize == 0)
+            return Collections.emptyList();
+
+        if (nodesSize == 1) // Minor optimization.
+            return nodes;
+
+        initialize();
+
+        final Map<NodeInfo, GridNode> lookup = new GridLeanMap<>(nodesSize);
+
+        // Store nodes in map for fast lookup.
+        for (GridNode n : nodes)
+            // Add nodes into hash circle, if absent.
+            lookup.put(resolveNodeInfo(n), n);
+
+        Collection<NodeInfo> selected;
+
+        if (backupFilter != null) {
+            final GridPredicate<NodeInfo> p = new P1<NodeInfo>() {
+                @Override public boolean apply(NodeInfo id) {
+                    return lookup.containsKey(id);
+                }
+            };
+
+            final NodeInfo primaryId = nodeHash.node(part, p);
+
+            GridPredicate<NodeInfo> backupPrimaryIdFilter = new GridPredicate<NodeInfo>() {
+                @Override public boolean apply(NodeInfo node) {
+                    return backupIdFilter.apply(primaryId, node);
+                }
+            };
+
+            Collection<NodeInfo> backupIds = nodeHash.nodes(part, backups, p, backupPrimaryIdFilter);
+
+            if (F.isEmpty(backupIds) && primaryId != null) {
+                GridNode n = lookup.get(primaryId);
+
+                assert n != null;
+
+                return Collections.singletonList(n);
+            }
+
+            selected = primaryId != null ? F.concat(false, primaryId, backupIds) : backupIds;
+        }
+        else {
+            if (!exclNeighbors) {
+                selected = nodeHash.nodes(part, backups + 1, new P1<NodeInfo>() {
+                    @Override public boolean apply(NodeInfo id) {
+                        return lookup.containsKey(id);
+                    }
+                });
+
+                if (selected.size() == 1) {
+                    NodeInfo id = F.first(selected);
+
+                    assert id != null : "Node ID cannot be null in affinity node ID collection: " + selected;
+
+                    GridNode n = lookup.get(id);
+
+                    assert n != null;
+
+                    return Collections.singletonList(n);
+                }
+            }
+            else {
+                selected = new ArrayList<>(1 + backups);
+
+                final Collection<NodeInfo> selected0 = selected;
+
+                List<NodeInfo> ids = nodeHash.nodes(part, backups + 1, new P1<NodeInfo>() {
+                    @Override public boolean apply(NodeInfo id) {
+                        GridNode n = lookup.get(id);
+
+                        if (n == null)
+                            return false;
+
+                        Collection<UUID> neighbors = neighbors(n);
+
+                        if (!F.containsAny(selected0, neighbors)) {
+                            selected0.add(id);
+
+                            return true;
+                        }
+
+                        return false;
+                    }
+                });
+
+                if (AFFINITY_CONSISTENCY_CHECK)
+                    assert F.eqOrdered(ids, selected);
+            }
+        }
+
+        Collection<GridNode> ret = new ArrayList<>(1 + backups);
+
+        for (NodeInfo id : selected) {
+            GridNode n = lookup.get(id);
+
+            assert n != null;
+
+            ret.add(n);
+        }
+
+        return ret;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition(Object key) {
+        initialize();
+
+        return U.safeAbs(key.hashCode() % parts);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partitions() {
+        initialize();
+
+        return parts;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reset() {
+        addedNodes = new ConcurrentHashMap<>();
+        neighbors = new ConcurrentHashMap8<>();
+
+        initLatch = new CountDownLatch(1);
+
+        init = new AtomicBoolean();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeNode(UUID nodeId) {
+        NodeInfo info = addedNodes.remove(nodeId);
+
+        if (info == null)
+            return;
+
+        nodeHash.removeNode(info);
+
+        neighbors.clear();
+    }
+
+    /**
+     * Resolve node info for specified node.
+     * Add node to hash circle if this is the first node invocation.
+     *
+     * @param n Node to get info for.
+     * @return Node info.
+     */
+    private NodeInfo resolveNodeInfo(GridNode n) {
+        UUID nodeId = n.id();
+        NodeInfo nodeInfo = addedNodes.get(nodeId);
+
+        if (nodeInfo != null)
+            return nodeInfo;
+
+        assert hashIdRslvr != null;
+
+        nodeInfo = new NodeInfo(nodeId, hashIdRslvr.resolve(n), n);
+
+        neighbors.clear();
+
+        nodeHash.addNode(nodeInfo, replicas(n));
+
+        addedNodes.put(nodeId, nodeInfo);
+
+        return nodeInfo;
+    }
+
+    /** {@inheritDoc} */
+    private void initialize() {
+        if (!init.get() && init.compareAndSet(false, true)) {
+            nodeHash = new GridConsistentHash<>();
+
+            initLatch.countDown();
+        }
+        else {
+            if (initLatch.getCount() > 0) {
+                try {
+                    U.await(initLatch);
+                }
+                catch (GridInterruptedException ignored) {
+                    // Recover interrupted state flag.
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+    }
+
+    /**
+     * @param n Node.
+     * @return Replicas.
+     */
+    private int replicas(GridNode n) {
+        Integer nodeReplicas = n.attribute(attrName);
+
+        if (nodeReplicas == null)
+            nodeReplicas = replicas;
+
+        return nodeReplicas;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridCachePartitionedAffinity.class, this);
+    }
+
+    /**
+     * Node hash ID.
+     */
+    private static final class NodeInfo implements Comparable<NodeInfo> {
+        /** Node ID. */
+        private UUID nodeId;
+
+        /** Hash ID. */
+        private Object hashId;
+
+        /** Grid node. */
+        private GridNode node;
+
+        /**
+         * @param nodeId Node ID.
+         * @param hashId Hash ID.
+         * @param node Rich node.
+         */
+        private NodeInfo(UUID nodeId, Object hashId, GridNode node) {
+            assert nodeId != null;
+            assert hashId != null;
+
+            this.hashId = hashId;
+            this.nodeId = nodeId;
+            this.node = node;
+        }
+
+        /**
+         * @return Node ID.
+         */
+        public UUID nodeId() {
+            return nodeId;
+        }
+
+        /**
+         * @return Hash ID.
+         */
+        public Object hashId() {
+            return hashId;
+        }
+
+        /**
+         * @return Node.
+         */
+        public GridNode node() {
+            return node;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return hashId.hashCode();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            if (!(obj instanceof NodeInfo))
+                return false;
+
+            NodeInfo that = (NodeInfo)obj;
+
+            // If objects are equal, hash codes should be the same.
+            // Cannot use that.hashId.equals(hashId) due to Comparable<N> interface restrictions.
+            return that.nodeId.equals(nodeId) && that.hashCode() == hashCode();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compareTo(NodeInfo o) {
+            int diff = nodeId.compareTo(o.nodeId);
+
+            if (diff == 0) {
+                int h1 = hashCode();
+                int h2 = o.hashCode();
+
+                diff = h1 == h2 ? 0 : (h1 < h2 ? -1 : 1);
+            }
+
+            return diff;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(NodeInfo.class, this);
+        }
+    }
+}

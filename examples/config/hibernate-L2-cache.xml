@@ -1,0 +1,59 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+    "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+    "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<!--
+    Configuration file for GridHibernateL2CacheExample.
+-->
+
+<hibernate-configuration>
+    <session-factory>
+        <!-- Database connection settings -->
+        <property name="connection.url">jdbc:h2:mem:example;DB_CLOSE_DELAY=-1</property>
+
+        <!-- Drop and re-create the database schema on startup. -->
+        <property name="hbm2ddl.auto">create</property>
+
+        <!-- Enable L2 cache. -->
+        <property name="cache.use_second_level_cache">true</property>
+
+        <!-- Enable query cache. -->
+        <property name="cache.use_query_cache">true</property>
+
+        <!-- Generate L2 cache statistics. -->
+        <property name="generate_statistics">true</property>
+
+        <!-- Specify GridGain as L2 cache provider. -->
+        <property name="cache.region.factory_class">org.gridgain.grid.cache.hibernate.GridHibernateRegionFactory</property>
+
+        <!-- Specify the name of the grid, that will be used for second level caching. -->
+        <property name="org.gridgain.hibernate.grid_name">hibernate-grid</property>
+
+        <!-- Specify connection release mode. -->
+        <property name="connection.release_mode">on_close</property>
+
+        <!-- Set default L2 cache access type. -->
+        <property name="org.gridgain.hibernate.default_access_type">READ_ONLY</property>
+
+        <!-- Specify the entity classes for mapping. -->
+        <mapping class="org.gridgain.examples.datagrid.hibernate.User"/>
+        <mapping class="org.gridgain.examples.datagrid.hibernate.Post"/>
+
+        <!-- Per-class L2 cache settings. -->
+        <class-cache class="org.gridgain.examples.datagrid.hibernate.User" usage="read-only"/>
+        <class-cache class="org.gridgain.examples.datagrid.hibernate.Post" usage="read-only"/>
+        <collection-cache collection="org.gridgain.examples.datagrid.hibernate.User.posts" usage="read-only"/>
+    </session-factory>
+</hibernate-configuration>

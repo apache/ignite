@@ -1,0 +1,330 @@
+// @java.file.header
+
+/*  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+package org.gridgain.grid.kernal.processors.rest.protocols.http.jetty;
+
+import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.util.*;
+import org.eclipse.jetty.xml.*;
+import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.rest.*;
+import org.gridgain.grid.kernal.processors.rest.protocols.*;
+import org.gridgain.grid.spi.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.xml.sax.*;
+
+import java.io.*;
+import java.net.*;
+
+import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.spi.GridPortProtocol.*;
+
+/**
+ * Jetty REST protocol implementation.
+ *
+ * @author @java.author
+ * @version @java.version
+ */
+public class GridJettyRestProtocol extends GridRestProtocolAdapter {
+    /** Default Jetty configuration file path. */
+    public static final String DFLT_CFG_PATH = "config/rest/rest-jetty.xml";
+
+    /** Jetty handler. */
+    private GridJettyRestHandler jettyHnd;
+
+    /** HTTP server. */
+    private Server httpSrv;
+
+    /**
+     * @param ctx Context.
+     */
+    public GridJettyRestProtocol(GridKernalContext ctx) {
+        super(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return "Jetty REST";
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("BusyWait")
+    @Override public void start(GridRestProtocolHandler hnd) throws GridException {
+        InetAddress locHost;
+
+        try {
+            locHost = U.resolveLocalHost(ctx.config().getLocalHost());
+        }
+        catch (IOException e) {
+            throw new GridException("Failed to resolve local host to bind address: " + ctx.config().getLocalHost(), e);
+        }
+
+        System.setProperty(GG_JETTY_HOST, locHost.getHostAddress());
+
+        jettyHnd = new GridJettyRestHandler(hnd, new C1<String, Boolean>() {
+            @Override public Boolean apply(String tok) {
+                return F.isEmpty(secretKey) || authenticate(tok);
+            }
+        }, log);
+
+        String jettyPath = ctx.config().getRestJettyPath();
+
+        if (jettyPath == null)
+            jettyPath = DFLT_CFG_PATH;
+
+        final URL cfgUrl = U.resolveGridGainUrl(jettyPath);
+
+        if (cfgUrl == null)
+            throw new GridSpiException("Invalid Jetty configuration file: " + jettyPath);
+        else if (log.isDebugEnabled())
+            log.debug("Jetty configuration file: " + cfgUrl);
+
+        loadJettyConfiguration(cfgUrl);
+
+        AbstractNetworkConnector connector = getJettyConnector();
+
+        try {
+            host = InetAddress.getByName(connector.getHost());
+        }
+        catch (UnknownHostException e) {
+            throw new GridException("Failed to resolve Jetty host address: " + connector.getHost(), e);
+        }
+
+        int initPort = connector.getPort();
+
+        int lastPort = initPort + ctx.config().getRestPortRange() - 1;
+
+        for (port = initPort; port <= lastPort; port++) {
+            connector.setPort(port);
+
+            if (startJetty()) {
+                if (log.isInfoEnabled())
+                    log.info(startInfo());
+
+                return;
+            }
+        }
+
+        U.warn(log, "Failed to start Jetty REST server (possibly all ports in range are in use) " +
+            "[firstPort=" + initPort + ", lastPort=" + lastPort + ']');
+    }
+
+    /**
+     * Checks {@link GridSystemProperties#GG_JETTY_PORT} system property
+     * and overrides default connector port if it present.
+     * Then initializes {@code port} with the found value.
+     *
+     * @param con Jetty connector.
+     */
+    private void override(AbstractNetworkConnector con) {
+        String host = System.getProperty(GG_JETTY_HOST);
+
+        if (!F.isEmpty(host))
+            con.setHost(host);
+
+        int currPort = con.getPort();
+
+        Integer overridePort = Integer.getInteger(GG_JETTY_PORT);
+
+        if (overridePort != null && overridePort != 0)
+            currPort = overridePort;
+
+        con.setPort(currPort);
+        port = currPort;
+    }
+
+    /**
+     * Gets "on" or "off" string for given boolean value.
+     *
+     * @param b Boolean value to convert.
+     * @return Result string.
+     */
+    private String onOff(boolean b) {
+        return b ? "on" : "off";
+    }
+
+    /**
+     * @throws GridException If failed.
+     * @return {@code True} if Jetty started.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    private boolean startJetty() throws GridException {
+        try {
+            httpSrv.start();
+
+            if (httpSrv.isStarted()) {
+                for (Connector con : httpSrv.getConnectors()) {
+                    int connPort = ((NetworkConnector)con).getPort();
+
+                    if (connPort > 0)
+                        ctx.ports().registerPort(connPort, TCP, getClass());
+                }
+
+                return true;
+            }
+
+            return  false;
+        }
+        catch (SocketException ignore) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to bind HTTP server to configured port.");
+
+            stopJetty();
+
+            return false;
+        }
+        catch (MultiException e) {
+            if (log.isDebugEnabled())
+                log.debug("Caught multi exception: " + e);
+
+            for (Object obj : e.getThrowables())
+                if (!(obj instanceof SocketException))
+                    throw new GridException("Failed to start Jetty HTTP server.", e);
+
+            if (log.isDebugEnabled())
+                log.debug("Failed to bind HTTP server to configured port.");
+
+            stopJetty();
+
+            return false;
+        }
+        catch (Exception e) {
+            throw new GridException("Failed to start Jetty HTTP server.", e);
+        }
+    }
+
+    /**
+     * Loads jetty configuration from the given URL.
+     *
+     * @param cfgUrl URL to load configuration from.
+     * @throws GridException if load failed.
+     */
+    private void loadJettyConfiguration(URL cfgUrl) throws GridException {
+        XmlConfiguration cfg;
+
+        try {
+            cfg = new XmlConfiguration(cfgUrl);
+        }
+        catch (FileNotFoundException e) {
+            throw new GridSpiException("Failed to find configuration file: " + cfgUrl, e);
+        }
+        catch (SAXException e) {
+            throw new GridSpiException("Failed to parse configuration file: " + cfgUrl, e);
+        }
+        catch (IOException e) {
+            throw new GridSpiException("Failed to load configuration file: " + cfgUrl, e);
+        }
+        catch (Exception e) {
+            throw new GridSpiException("Failed to start HTTP server with configuration file: " + cfgUrl, e);
+        }
+
+        try {
+            httpSrv = (Server)cfg.configure();
+        }
+        catch (Exception e) {
+            throw new GridException("Failed to start Jetty HTTP server.", e);
+        }
+
+        assert httpSrv != null;
+
+        httpSrv.setHandler(jettyHnd);
+
+        override(getJettyConnector());
+    }
+
+    /**
+     * Checks that the only connector configured for the current jetty instance
+     * and returns it.
+     *
+     * @return Connector instance.
+     * @throws GridException If no or more than one connectors found.
+     */
+    private AbstractNetworkConnector getJettyConnector() throws GridException {
+        if (httpSrv.getConnectors().length == 1) {
+            Connector connector = httpSrv.getConnectors()[0];
+
+            if (!(connector instanceof AbstractNetworkConnector))
+                throw new GridException("Error in jetty configuration. Jetty connector should extend " +
+                    "AbstractNetworkConnector class." );
+
+            return (AbstractNetworkConnector)connector;
+        }
+        else
+            throw new GridException("Error in jetty configuration [connectorsFound=" +
+                httpSrv.getConnectors().length + "connectorsExpected=1]");
+    }
+
+    /**
+     * Stops Jetty.
+     */
+    private void stopJetty() {
+        // Jetty does not really stop the server if port is busy.
+        try {
+            if (httpSrv != null) {
+                // If server was successfully started, deregister ports.
+                if (httpSrv.isStarted())
+                    ctx.ports().deregisterPorts(getClass());
+
+                // Record current interrupted status of calling thread.
+                boolean interrupted = Thread.interrupted();
+
+                try {
+                    httpSrv.stop();
+                }
+                finally {
+                    // Reset interrupted flag on calling thread.
+                    if (interrupted)
+                        Thread.currentThread().interrupt();
+                }
+            }
+        }
+        catch (InterruptedException ignored) {
+            if (log.isDebugEnabled())
+                log.debug("Thread has been interrupted.");
+
+            Thread.currentThread().interrupt();
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to stop Jetty HTTP server.", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        stopJetty();
+
+        httpSrv = null;
+        jettyHnd = null;
+
+        if (log.isInfoEnabled())
+            log.info(stopInfo());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected String getAddressPropertyName() {
+        return GridNodeAttributes.ATTR_REST_JETTY_ADDRS;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected String getHostNamePropertyName() {
+        return GridNodeAttributes.ATTR_REST_JETTY_HOST_NAMES;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected String getPortPropertyName() {
+        return GridNodeAttributes.ATTR_REST_JETTY_PORT;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridJettyRestProtocol.class, this);
+    }
+}

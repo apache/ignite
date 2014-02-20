@@ -1,0 +1,220 @@
+// @java.file.header
+
+/*  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+package org.gridgain.grid.kernal.processors.cache.distributed.near;
+
+import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.tostring.*;
+
+import java.io.*;
+import java.nio.*;
+import java.util.*;
+
+/**
+ * Near transaction finish request.
+ *
+ * @author @java.author
+ * @version @java.version
+ */
+public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishRequest<K, V> {
+    /** Mini future ID. */
+    private GridUuid miniId;
+
+    /** Explicit lock flag. */
+    private boolean explicitLock;
+
+    /** Topology version. */
+    private long topVer;
+
+    /**
+     * Empty constructor required for {@link Externalizable}.
+     */
+    public GridNearTxFinishRequest() {
+        // No-op.
+    }
+
+    /**
+     * @param futId Future ID.
+     * @param xidVer Transaction ID.
+     * @param threadId Thread ID.
+     * @param commit Commit flag.
+     * @param invalidate Invalidate flag.
+     * @param explicitLock Explicit lock flag.
+     * @param topVer Topology version.
+     * @param baseVer Base version.
+     * @param committedVers Committed versions.
+     * @param rolledbackVers Rolled back versions.
+     * @param txSize Expected transaction size.
+     * @param writeEntries Write entries.
+     * @param reply Reply flag.
+     * @param recoverEntries Recover entries.
+     */
+    public GridNearTxFinishRequest(
+        GridUuid futId,
+        GridCacheVersion xidVer,
+        long threadId,
+        boolean commit,
+        boolean invalidate,
+        boolean explicitLock,
+        long topVer,
+        GridCacheVersion baseVer,
+        Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers,
+        int txSize,
+        Collection<GridCacheTxEntry<K, V>> writeEntries,
+        Collection<GridCacheTxEntry<K, V>> recoverEntries,
+        boolean reply) {
+        super(xidVer, futId, null, threadId, commit, invalidate, baseVer, committedVers, rolledbackVers, txSize,
+            writeEntries, recoverEntries, reply, null);
+
+        this.explicitLock = explicitLock;
+        this.topVer = topVer;
+    }
+
+    /**
+     * @return Explicit lock flag.
+     */
+    public boolean explicitLock() {
+        return explicitLock;
+    }
+
+    /**
+     * @return Mini future ID.
+     */
+    public GridUuid miniId() {
+        return miniId;
+    }
+
+    /**
+     * @param miniId Mini future ID.
+     */
+    public void miniId(GridUuid miniId) {
+        this.miniId = miniId;
+    }
+
+    /**
+     * @return Topology version.
+     */
+    public long topologyVersion() {
+        return topVer;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
+    @Override public GridTcpCommunicationMessageAdapter clone() {
+        GridNearTxFinishRequest _clone = new GridNearTxFinishRequest();
+
+        clone0(_clone);
+
+        return _clone;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+        super.clone0(_msg);
+
+        GridNearTxFinishRequest _clone = (GridNearTxFinishRequest)_msg;
+
+        _clone.miniId = miniId;
+        _clone.explicitLock = explicitLock;
+        _clone.topVer = topVer;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("all")
+    @Override public boolean writeTo(ByteBuffer buf) {
+        commState.setBuffer(buf);
+
+        if (!super.writeTo(buf))
+            return false;
+
+        if (!commState.typeWritten) {
+            if (!commState.putByte(directType()))
+                return false;
+
+            commState.typeWritten = true;
+        }
+
+        switch (commState.idx) {
+            case 18:
+                if (!commState.putBoolean(explicitLock))
+                    return false;
+
+                commState.idx++;
+
+            case 19:
+                if (!commState.putGridUuid(miniId))
+                    return false;
+
+                commState.idx++;
+
+            case 20:
+                if (!commState.putLong(topVer))
+                    return false;
+
+                commState.idx++;
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("all")
+    @Override public boolean readFrom(ByteBuffer buf) {
+        commState.setBuffer(buf);
+
+        if (!super.readFrom(buf))
+            return false;
+
+        switch (commState.idx) {
+            case 18:
+                if (buf.remaining() < 1)
+                    return false;
+
+                explicitLock = commState.getBoolean();
+
+                commState.idx++;
+
+            case 19:
+                GridUuid miniId0 = commState.getGridUuid();
+
+                if (miniId0 == GRID_UUID_NOT_READ)
+                    return false;
+
+                miniId = miniId0;
+
+                commState.idx++;
+
+            case 20:
+                if (buf.remaining() < 8)
+                    return false;
+
+                topVer = commState.getLong();
+
+                commState.idx++;
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 48;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return GridToStringBuilder.toString(GridNearTxFinishRequest.class, this, "super", super.toString());
+    }
+}

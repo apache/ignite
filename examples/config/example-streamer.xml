@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<!--
+    GridGain Spring configuration file to startup grid with streamers.
+
+    When starting a standalone GridGain node, you need to execute the following command:
+    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-streamer.xml
+
+    When starting GridGain from Java IDE, pass path to this file into GridFactory:
+    GridFactory.start("examples/config/example-streamer.xml");
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+    <!--
+        Optional description.
+    -->
+    <description>
+        Spring file for grid configuration with benchmark.
+    </description>
+
+    <!--
+        Configuration below demonstrates how to setup caches within grid nodes.
+    -->
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+        <property name="deploymentMode" value="SHARED"/>
+
+        <!-- Set to local host address just for examples. -->
+        <property name="localHost" value="127.0.0.1"/>
+
+        <!-- Disable peer class loading for better performance. -->
+        <property name="peerClassLoadingEnabled" value="false"/>
+
+        <!--
+            Configure optimized marshaller.
+        -->
+        <property name="marshaller">
+            <bean class="org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller">
+                <!--
+                    For better performance set this property to true in case
+                    all marshalled classes implement java.io.Serializable.
+                    Default value is true.
+
+                    Note, that it is recommended to implement java.io.Externalizable
+                    instead of java.io.Serializable for smaller network footprint
+                    and even better performance.
+                -->
+                <property name="requireSerializable" value="false"/>
+            </bean>
+        </property>
+
+        <!-- Streamer configurations. -->
+        <property name="streamerConfiguration">
+            <!--
+                Specify list of streamer configurations here.
+            -->
+            <list>
+                <!--
+                    Streamer for GridStreamingRunningAverageExample.
+                -->
+                <bean class="org.gridgain.grid.streamer.GridStreamerConfiguration">
+                    <property name="name" value="running-average"/>
+
+                    <property name="windows">
+                        <!--
+                            Window size is 500, so we will be computing running average over
+                            the last 500 events.
+                        -->
+                        <bean class="org.gridgain.grid.streamer.window.GridStreamerBoundedSizeWindow">
+                            <property name="maximumSize" value="500"/>
+                        </bean>
+                    </property>
+
+                    <property name="stages">
+                        <list>
+                            <bean class="org.gridgain.examples.streaming.GridStreamingRunningAverageExample$StreamerStage"/>
+                        </list>
+                    </property>
+
+                    <property name="router">
+                        <!--
+                            Use random event router to execute streamer stages on random nodes
+                            just for demonstration purposes.
+                        -->
+                        <bean class="org.gridgain.grid.streamer.router.GridStreamerRandomEventRouter"/>
+                        <!--
+                        <bean class="org.gridgain.grid.streamer.router.GridStreamerLocalEventRouter"/>
+                        -->
+                    </property>
+
+                    <!--
+                        If at-least-once is set, then we may wish to configure maximum
+                        amount of concurrent sessions to prevent overloading the system.
+                    -->
+                    <!--
+                    <property name="maximumConcurrentSessions" value="200"/>
+                    <property name="atLeastOnce" value="true"/>
+                    -->
+                </bean>
+
+                <!--
+                    Streamer for GridStreamingPopularNumbersExample.
+                -->
+                <bean class="org.gridgain.grid.streamer.GridStreamerConfiguration">
+                    <property name="name" value="popular-numbers"/>
+
+                    <property name="windows">
+                        <!--
+                            For this example we use a running window with upper bound of 10,000 events.
+                            This means that streamer will find most popular numbers among last 10,000 events.
+                        -->
+                        <bean class="org.gridgain.grid.streamer.window.GridStreamerBoundedSizeWindow">
+                            <property name="maximumSize" value="10000"/>
+
+                            <property name="indexes">
+                                <list>
+                                    <bean class="org.gridgain.grid.streamer.index.tree.GridStreamerTreeIndexProvider">
+                                        <property name="updater">
+                                            <bean class="org.gridgain.examples.streaming.GridStreamingPopularNumbersExample$IndexUpdater"/>
+                                        </property>
+                                    </bean>
+                                </list>
+                            </property>
+                        </bean>
+                    </property>
+
+                    <property name="stages">
+                        <list>
+                            <bean class="org.gridgain.examples.streaming.GridStreamingPopularNumbersExample$StreamerStage"/>
+                        </list>
+                    </property>
+
+                    <property name="maximumConcurrentSessions" value="200"/>
+
+                    <property name="router">
+                        <!--
+                            For this example we use affinity event router to make sure that
+                            identical numbers are routed to the same node. This is important
+                            because we keep counters for all numbers in the stream and if
+                            numbers are pushed to wrong nodes, the counters will become
+                            inaccurate.
+                        -->
+                        <bean class="org.gridgain.grid.streamer.router.GridStreamerAffinityEventRouter"/>
+                    </property>
+
+                    <!--
+                        If at-least-once is set, then we may wish to configure maximum
+                        amount of concurrent sessions to prevent overloading the system.
+                    -->
+                    <!--
+                    <property name="maximumConcurrentSessions" value="200"/>
+                    <property name="atLeastOnce" value="true"/>
+                    -->
+                </bean>
+
+                <!--
+                    Streamer for GridStreamingOpenHighLowCloseExample.
+                -->
+                <bean class="org.gridgain.grid.streamer.GridStreamerConfiguration">
+                    <property name="name" value="priceBars"/>
+
+                    <property name="windows">
+                        <list>
+                            <!--
+                                For this example we use a running batch window with upper bound of 1 second.
+                                This means that streamer composes a batch with events within 1 second time interval.
+                            -->
+                            <bean class="org.gridgain.grid.streamer.window.GridStreamerBoundedTimeBatchWindow">
+                                <property name="name" value="stage1"/>
+                                <property name="batchTimeInterval" value="1000"/>
+                                <property name="batchSize" value="2147483647"/>
+                                <property name="maximumBatches" value="2147483647"/>
+                            </bean>
+
+                            <!--
+                                For this example we use a running batch window with upper bound of 2 seconds.
+                                This means that streamer composes a batch with events within 2 seconds time interval.
+                            -->
+                            <bean class="org.gridgain.grid.streamer.window.GridStreamerBoundedTimeBatchWindow">
+                                <property name="name" value="stage2"/>
+                                <property name="batchTimeInterval" value="2000"/>
+                                <property name="batchSize" value="2147483647"/>
+                                <property name="maximumBatches" value="2147483647"/>
+                            </bean>
+                        </list>
+                    </property>
+
+                    <property name="stages">
+                        <list>
+                            <bean class="org.gridgain.examples.streaming.GridStreamingPriceBarsExample$FirstStage"/>
+                            <bean class="org.gridgain.examples.streaming.GridStreamingPriceBarsExample$SecondStage"/>
+                        </list>
+                    </property>
+
+                    <property name="router">
+                        <!--
+                            For this example we use affinity event router to make sure that
+                            quotes for identical instruments are routed to the same node.
+                        -->
+                        <bean class="org.gridgain.grid.streamer.router.GridStreamerAffinityEventRouter"/>
+                    </property>
+                </bean>
+
+                <!--
+                    Streamer for GridStreamingCheckInExample.
+                -->
+                <bean class="org.gridgain.grid.streamer.GridStreamerConfiguration">
+                    <property name="name" value="check-in"/>
+
+                    <property name="windows">
+                        <list>
+                            <!--
+                                For this example we use windows with 10 seconds time interval.
+                                This means that only events for last 10 seconds will be present in
+                                these windows (other events are marked for eviction).
+                            -->
+                            <bean class="org.gridgain.grid.streamer.window.GridStreamerBoundedTimeWindow">
+                                <property name="name" value="AddToWindowStage"/>
+                                <property name="timeInterval" value="10000"/>
+
+                                <!--
+                                    We use a unique index to avoid repetitive check-ins in a specified period
+                                    of time.
+                                -->
+                                <property name="indexes">
+                                    <list>
+                                        <bean class="org.gridgain.grid.streamer.index.hash.GridStreamerHashIndexProvider">
+                                            <property name="unique" value="true"/>
+
+                                            <property name="updater">
+                                                <bean class="org.gridgain.examples.streaming.GridStreamingCheckInExample$CheckInEventIndexUpdater"/>
+                                            </property>
+                                        </bean>
+                                    </list>
+                                </property>
+                            </bean>
+                            <bean class="org.gridgain.grid.streamer.window.GridStreamerBoundedTimeWindow">
+                                <property name="name" value="DetectPlacesStage"/>
+                                <property name="timeInterval" value="10000"/>
+
+                                <property name="indexes">
+                                    <list>
+                                        <bean class="org.gridgain.grid.streamer.index.hash.GridStreamerHashIndexProvider">
+                                            <property name="unique" value="true"/>
+
+                                            <property name="updater">
+                                                <bean class="org.gridgain.examples.streaming.GridStreamingCheckInExample$PlacesIndexUpdater"/>
+                                            </property>
+                                        </bean>
+                                    </list>
+                                </property>
+                            </bean>
+                        </list>
+                    </property>
+
+                    <property name="stages">
+                        <list>
+                            <bean class="org.gridgain.examples.streaming.GridStreamingCheckInExample$AddToWindowStage"/>
+                            <bean class="org.gridgain.examples.streaming.GridStreamingCheckInExample$DetectPlacesStage"/>
+                        </list>
+                    </property>
+                </bean>
+            </list>
+        </property>
+
+        <!--
+            TCP discovery SPI configuration with predefined addresses.
+            Use the addresses list to provide IP addresses of initial nodes in the grid
+            (at least one address must be provided).
+
+            Note:
+            =====
+            If running in distributed environment, you should change IP addresses to the actual IP addresses
+            of the servers on your network. Not all addresses need to be specified, only the addresses
+            of one or more servers which will always be started first.
+        -->
+        <property name="discoverySpi">
+            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <!--
+                                    List all IP/port configurations that potentially
+                                    can be started first in examples. We are assuming
+                                    grid of size 10 or less.
+                                -->
+                                <value>127.0.0.1:47500</value>
+                                <value>127.0.0.1:47501</value>
+                                <value>127.0.0.1:47502</value>
+                                <value>127.0.0.1:47503</value>
+                                <value>127.0.0.1:47504</value>
+                                <value>127.0.0.1:47505</value>
+                                <value>127.0.0.1:47506</value>
+                                <value>127.0.0.1:47507</value>
+                                <value>127.0.0.1:47508</value>
+                                <value>127.0.0.1:47509</value>
+                            </list>
+                        </property>
+                    </bean>
+                    <!--
+                    Uncomment this to provide IP finder using multicast for nodes discovery.
+                    In addition to addresses received via multicast this finder can work with pre-configured
+                    list of addresses.
+                    -->
+                    <!--
+                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.GridTcpDiscoveryMulticastIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>host1:port1</value>
+                                <value>host2:port2</value>
+                            </list>
+                        </property>
+                    </bean>
+                    -->
+                </property>
+            </bean>
+        </property>
+    </bean>
+</beans>

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<!--
+    GridGain Spring configuration file to startup grid with node benchmarks enabled.
+
+    When starting a standalone GridGain node, you need to execute the following command:
+    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-benchmark.xml
+
+    When starting GridGain from Java IDE, pass path to this file into GridFactory:
+    GridFactory.start("examples/config/example-benchmark.xml");
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd">
+    <!--
+        Optional description.
+    -->
+    <description>
+        Spring file for grid configuration with benchmark.
+    </description>
+
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+        <!--
+            For better performance set this property to false in case
+            peer deployment is not used.
+            Default value is false.
+        -->
+        <property name="peerClassLoadingEnabled" value="true"/>
+
+        <!--
+            Configure optimized marshaller.
+        -->
+        <property name="marshaller">
+            <bean class="org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller">
+                <!--
+                    For better performance set this property to true in case
+                    all marshalled classes implement java.io.Serializable.
+                    Default value is true.
+
+                    Note, that it is recommended to implement java.io.Externalizable
+                    instead of java.io.Serializable for smaller network footprint
+                    and even better performance.
+                -->
+                <property name="requireSerializable" value="false"/>
+            </bean>
+        </property>
+
+        <!--
+            Grid local node benchmark is a good example of a complex attribute that
+            can be added to the node at startup.
+
+            Note that you will have to use 'grid.node.benchmark' grid node attribute name
+            to get the benchmark for the given node.
+        -->
+        <property name="userAttributes">
+            <map>
+                <entry key="grid.node.benchmark">
+                    <bean class="org.gridgain.grid.benchmarks.GridLocalNodeBenchmark" init-method="start"/>
+                </entry>
+            </map>
+        </property>
+
+        <!--
+            Load balancing SPI that takes node benchmarks into account. Note that
+            you are free to configure which benchmark scores to use. The configuration
+            below ignores I/O and trigonometry scores.
+        -->
+        <property name="loadBalancingSpi">
+            <bean class="org.gridgain.grid.spi.loadbalancing.adaptive.GridAdaptiveLoadBalancingSpi">
+                <property name="loadProbe">
+                    <bean class="org.gridgain.grid.spi.loadbalancing.adaptive.GridAdaptiveBenchmarkLoadProbe">
+                        <!-- Specify name of benchmark node attribute (the same as above). -->
+                        <property name="benchmarkAttributeName" value="grid.node.benchmark"/>
+
+                        <!-- Benchmarks scores to use. -->
+                        <property name="useIntegerScore" value="true"/>
+                        <property name="useLongScore" value="true"/>
+                        <property name="useDoubleScore" value="true"/>
+                        <property name="useIoScore" value="false"/>
+                        <property name="useTrigonometryScore" value="false"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+</beans>
