@@ -2431,6 +2431,20 @@ public abstract class GridUtils {
             }
         }
 
+        // TODO: 7461.
+        f = resolveGridGainPath("os/" + path);
+
+        if (f != null) {
+            try {
+                // Note: we use that method's chain instead of File.getURL() with due
+                // Sun bug http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6179468
+                return f.toURI().toURL();
+            }
+            catch (MalformedURLException e) {
+                // No-op.
+            }
+        }
+
         String locPath = (metaInf ? "META-INF/" : "") + path.replaceAll("\\\\", "/");
 
         return Thread.currentThread().getContextClassLoader().getResource(locPath);
