@@ -20,7 +20,7 @@
 
     <parent>
         <groupId>org.gridgain</groupId>
-        <artifactId>gridgain-os</artifactId>
+        <artifactId>gridgain</artifactId>
         <version>${gridgain.version}</version>
         <relativePath>..</relativePath>
     </parent>
