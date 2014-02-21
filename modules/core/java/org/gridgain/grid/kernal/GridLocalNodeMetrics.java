@@ -117,21 +117,6 @@ public class GridLocalNodeMetrics implements GridNodeMetricsMBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getFileSystemFreeSpace() {
-        return node.metrics().getFileSystemFreeSpace();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getFileSystemTotalSpace() {
-        return node.metrics().getFileSystemTotalSpace();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getFileSystemUsableSpace() {
-        return node.metrics().getFileSystemUsableSpace();
-    }
-
-    /** {@inheritDoc} */
     @Override public long getHeapMemoryCommitted() {
         return node.metrics().getHeapMemoryCommitted();
     }

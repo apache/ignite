@@ -64,9 +64,6 @@ public final class GridDiscoveryMetricsHelper {
         4/*peak thread count*/ +
         8/*total started thread count*/ +
         4/*daemon thread count*/ +
-        8/*file system free space*/ +
-        8/*file system total space*/ +
-        8/*file system usable space*/ +
         8/*last data version.*/ +
         4/*sent messages count*/ +
         8/*sent bytes count*/ +
@@ -134,9 +131,6 @@ public final class GridDiscoveryMetricsHelper {
         off = U.intToBytes(metrics.getMaximumThreadCount(), data, off);
         off = U.longToBytes(metrics.getTotalStartedThreadCount(), data, off);
         off = U.intToBytes(metrics.getCurrentDaemonThreadCount(), data, off);
-        off = U.longToBytes(metrics.getFileSystemFreeSpace(), data, off);
-        off = U.longToBytes(metrics.getFileSystemTotalSpace(), data, off);
-        off = U.longToBytes(metrics.getFileSystemUsableSpace(), data, off);
         off = U.longToBytes(metrics.getLastDataVersion(), data, off);
         off = U.intToBytes(metrics.getSentMessagesCount(), data, off);
         off = U.longToBytes(metrics.getSentBytesCount(), data, off);
@@ -334,18 +328,6 @@ public final class GridDiscoveryMetricsHelper {
         metrics.setCurrentDaemonThreadCount(U.bytesToInt(data, off));
 
         off += 4;
-
-        metrics.setFileSystemFreeSpace(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setFileSystemTotalSpace(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setFileSystemUsableSpace(U.bytesToLong(data, off));
-
-        off += 8;
 
         metrics.setLastDataVersion(U.bytesToLong(data, off));
 

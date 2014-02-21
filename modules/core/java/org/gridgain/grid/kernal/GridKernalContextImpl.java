@@ -20,16 +20,15 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.managers.failover.*;
 import org.gridgain.grid.kernal.managers.indexing.*;
 import org.gridgain.grid.kernal.managers.loadbalancer.*;
-import org.gridgain.grid.kernal.managers.metrics.*;
 import org.gridgain.grid.kernal.managers.securesession.*;
 import org.gridgain.grid.kernal.managers.swapspace.*;
-import org.gridgain.grid.kernal.managers.topology.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
+import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.job.*;
@@ -45,14 +44,13 @@ import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -102,19 +100,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringExclude
-    private GridTopologyManager topMgr;
-
-    /** */
-    @GridToStringExclude
     private GridCollisionManager colMgr;
 
     /** */
     @GridToStringExclude
     private GridLoadBalancerManager loadMgr;
-
-    /** */
-    @GridToStringExclude
-    private GridLocalMetricsManager metricsMgr;
 
     /** */
     @GridToStringExclude
@@ -322,12 +312,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             evtMgr = (GridEventStorageManager)comp;
         else if (comp instanceof GridFailoverManager)
             failoverMgr = (GridFailoverManager)comp;
-        else if (comp instanceof GridTopologyManager)
-            topMgr = (GridTopologyManager)comp;
         else if (comp instanceof GridCollisionManager)
             colMgr = (GridCollisionManager)comp;
-        else if (comp instanceof GridLocalMetricsManager)
-            metricsMgr = (GridLocalMetricsManager)comp;
         else if (comp instanceof GridAuthenticationManager)
             authMgr = (GridAuthenticationManager)comp;
         else if (comp instanceof GridSecureSessionManager)
@@ -563,18 +549,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridTopologyManager topology() {
-        return topMgr;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCollisionManager collision() {
         return colMgr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridLocalMetricsManager localMetric() {
-        return metricsMgr;
     }
 
     /** {@inheritDoc} */

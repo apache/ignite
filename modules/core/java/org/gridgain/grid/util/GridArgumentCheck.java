@@ -11,6 +11,8 @@ package org.gridgain.grid.util;
 
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * This class encapsulates argument check (null and range) for public facing APIs. Unlike asserts
  * it throws "normal" exceptions with standardized messages.
@@ -25,6 +27,9 @@ public class GridArgumentCheck {
 
     /** Invalid argument error message prefix. */
     private static final String INVALID_ARG_MSG_PREFIX = "Ouch! Argument is invalid: ";
+
+    /** Not empty argument error message suffix. */
+    private static final String NOT_EMPTY_SUFFIX = " must not be empty.";
 
     /**
      * Checks if given argument value is not {@code null}. Otherwise - throws {@link NullPointerException}.
@@ -96,5 +101,44 @@ public class GridArgumentCheck {
     public static void ensure(boolean cond, String desc) {
         if (!cond)
             throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + desc);
+    }
+
+    /**
+     * Checks that given collection is not empty.
+     *
+     * @param c Collection.
+     * @param name Argument name.
+     */
+    public static void notEmpty(Collection<?> c, String name) {
+        notNull(c, name);
+
+        if (c.isEmpty())
+            throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
+    }
+
+    /**
+     * Checks that given array is not empty.
+     *
+     * @param arr Array.
+     * @param name Argument name.
+     */
+    public static void notEmpty(Object[] arr, String name) {
+        notNull(arr, name);
+
+        if (arr.length == 0)
+            throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
+    }
+
+    /**
+     * Checks that given array is not empty.
+     *
+     * @param arr Array.
+     * @param name Argument name.
+     */
+    public static void notEmpty(int[] arr, String name) {
+        notNull(arr, name);
+
+        if (arr.length == 0)
+            throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
     }
 }

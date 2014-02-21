@@ -429,7 +429,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 47;
+        return 51;
     }
 
     /** {@inheritDoc} */

@@ -232,9 +232,6 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
             metricsBean.setCurrentRejectedJobs(metrics.getCurrentRejectedJobs());
             metricsBean.setCurrentThreadCount(metrics.getCurrentThreadCount());
             metricsBean.setCurrentWaitingJobs(metrics.getCurrentWaitingJobs());
-            metricsBean.setFileSystemFreeSpace(metrics.getFileSystemFreeSpace());
-            metricsBean.setFileSystemTotalSpace(metrics.getFileSystemTotalSpace());
-            metricsBean.setFileSystemUsableSpace(metrics.getFileSystemUsableSpace());
             metricsBean.setHeapMemoryCommitted(metrics.getHeapMemoryCommitted());
             metricsBean.setHeapMemoryInitialized(metrics.getHeapMemoryInitialized());
             metricsBean.setHeapMemoryMaximum(metrics.getHeapMemoryMaximum());

@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.spi;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
@@ -17,9 +16,9 @@ import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.swapspace.*;
+import org.gridgain.grid.util.json.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.json.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
@@ -705,11 +704,6 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
 
         /** {@inheritDoc} */
         @Override public Collection<GridNode> remoteNodes() {
-            return Collections.emptyList();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<GridNode> topology(GridComputeTaskSession taskSes, Collection<? extends GridNode> grid) {
             return Collections.emptyList();
         }
 

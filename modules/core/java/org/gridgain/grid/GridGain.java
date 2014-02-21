@@ -44,14 +44,10 @@ import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.spi.indexing.h2.*;
 import org.gridgain.grid.spi.loadbalancing.*;
 import org.gridgain.grid.spi.loadbalancing.roundrobin.*;
-import org.gridgain.grid.spi.metrics.*;
-import org.gridgain.grid.spi.metrics.jdk.*;
 import org.gridgain.grid.spi.securesession.*;
 import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.spi.swapspace.file.*;
-import org.gridgain.grid.spi.topology.*;
-import org.gridgain.grid.spi.topology.basic.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
@@ -1462,12 +1458,10 @@ public class GridGain {
             GridDiscoverySpi discoSpi = cfg.getDiscoverySpi();
             GridEventStorageSpi evtSpi = cfg.getEventStorageSpi();
             GridCollisionSpi colSpi = cfg.getCollisionSpi();
-            GridLocalMetricsSpi metricsSpi = cfg.getMetricsSpi();
             GridAuthenticationSpi authSpi = cfg.getAuthenticationSpi();
             GridSecureSessionSpi sesSpi = cfg.getSecureSessionSpi();
             GridDeploymentSpi deploySpi = cfg.getDeploymentSpi();
             GridCheckpointSpi[] cpSpi = cfg.getCheckpointSpi();
-            GridTopologySpi[] topSpi = cfg.getTopologySpi();
             GridFailoverSpi[] failSpi = cfg.getFailoverSpi();
             GridLoadBalancingSpi[] loadBalancingSpi = cfg.getLoadBalancingSpi();
             GridSwapSpaceSpi swapspaceSpi = cfg.getSwapSpaceSpi();
@@ -1658,9 +1652,6 @@ public class GridGain {
             if (colSpi == null)
                 colSpi = new GridNoopCollisionSpi();
 
-            if (metricsSpi == null)
-                metricsSpi = new GridJdkLocalMetricsSpi();
-
             if (authSpi == null)
                 authSpi = new GridNoopAuthenticationSpi();
 
@@ -1672,9 +1663,6 @@ public class GridGain {
 
             if (cpSpi == null)
                 cpSpi = new GridCheckpointSpi[] {new GridNoopCheckpointSpi()};
-
-            if (topSpi == null)
-                topSpi = new GridTopologySpi[] {new GridBasicTopologySpi()};
 
             if (failSpi == null)
                 failSpi = new GridFailoverSpi[] {new GridAlwaysFailoverSpi()};
@@ -1692,11 +1680,9 @@ public class GridGain {
             myCfg.setDiscoverySpi(discoSpi);
             myCfg.setCheckpointSpi(cpSpi);
             myCfg.setEventStorageSpi(evtSpi);
-            myCfg.setMetricsSpi(metricsSpi);
             myCfg.setAuthenticationSpi(authSpi);
             myCfg.setSecureSessionSpi(sesSpi);
             myCfg.setDeploymentSpi(deploySpi);
-            myCfg.setTopologySpi(topSpi);
             myCfg.setFailoverSpi(failSpi);
             myCfg.setCollisionSpi(colSpi);
             myCfg.setLoadBalancingSpi(loadBalancingSpi);
@@ -1883,10 +1869,8 @@ public class GridGain {
                 ensureMultiInstanceSupport(discoSpi);
                 ensureMultiInstanceSupport(cpSpi);
                 ensureMultiInstanceSupport(evtSpi);
-                ensureMultiInstanceSupport(topSpi);
                 ensureMultiInstanceSupport(colSpi);
                 ensureMultiInstanceSupport(failSpi);
-                ensureMultiInstanceSupport(metricsSpi);
                 ensureMultiInstanceSupport(authSpi);
                 ensureMultiInstanceSupport(sesSpi);
                 ensureMultiInstanceSupport(loadBalancingSpi);

@@ -478,7 +478,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 51;
+        return 55;
     }
 
     /** {@inheritDoc} */

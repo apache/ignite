@@ -266,7 +266,7 @@ public class GridReplicatedForceKeysRequest<K, V> extends GridCacheMessage<K, V>
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 53;
+        return 57;
     }
 
     /** {@inheritDoc} */

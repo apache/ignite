@@ -9,10 +9,9 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -68,22 +67,16 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     private volatile boolean closed;
 
     /** */
-    private String topSpi;
+    private volatile String cpSpi;
 
     /** */
-    private String cpSpi;
+    private volatile String failSpi;
 
     /** */
-    private String failSpi;
-
-    /** */
-    private String loadSpi;
+    private volatile String loadSpi;
 
     /** */
     private final Object mux = new Object();
-
-    /** */
-    private final GridPredicate<GridNode> nodeFilter;
 
     /** */
     private final AtomicInteger usage = new AtomicInteger(1);
@@ -91,18 +84,21 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** */
     private final boolean fullSup;
 
+    /** */
+    private final Collection<UUID> top;
+
     /**
      * @param taskNodeId Task node ID.
      * @param taskName Task name.
      * @param dep Deployment.
      * @param taskClsName Task class name.
      * @param sesId Task session ID.
+     * @param top Topology.
      * @param startTime Task execution start time.
      * @param endTime Task execution end time.
      * @param siblings Collection of siblings.
      * @param attrs Session attributes.
      * @param ctx Grid Kernal Context.
-     * @param nodeFilter Topology projection filter.
      * @param fullSup Session full support enabled flag.
      */
     public GridTaskSessionImpl(
@@ -111,12 +107,12 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         @Nullable GridDeployment dep,
         String taskClsName,
         GridUuid sesId,
+        @Nullable Collection<UUID> top,
         long startTime,
         long endTime,
         Collection<GridComputeJobSibling> siblings,
         @Nullable Map<Object, Object> attrs,
         GridKernalContext ctx,
-        GridPredicate<GridNode> nodeFilter,
         boolean fullSup) {
         assert taskNodeId != null;
         assert taskName != null;
@@ -126,6 +122,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.taskNodeId = taskNodeId;
         this.taskName = taskName;
         this.dep = dep;
+        this.top = top;
 
         // Note that class name might be null here if task was not explicitly
         // deployed.
@@ -142,7 +139,6 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
             this.attrs.putAll(attrs);
         }
 
-        this.nodeFilter = nodeFilter;
         this.fullSup = fullSup;
     }
 
@@ -740,8 +736,8 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> getTopology() throws GridException {
-        return F.nodeIds(ctx.topology().getTopology(this, ctx.discovery().allNodes()));
+    @Override public Collection<UUID> getTopology() {
+        return top != null ? top : F.nodeIds(ctx.discovery().allNodes());
     }
 
     /**
@@ -764,20 +760,6 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         }
 
         return false;
-    }
-
-    /**
-     * @return Topology SPI name.
-     */
-    @Override public String getTopologySpi() {
-        return topSpi;
-    }
-
-    /**
-     * @param topSpi Topology SPI name.
-     */
-    public void setTopologySpi(String topSpi) {
-        this.topSpi = topSpi;
     }
 
     /** {@inheritDoc} */
@@ -837,10 +819,5 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridTaskSessionImpl.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridPredicate<GridNode> getNodeFilter() {
-        return nodeFilter;
     }
 }

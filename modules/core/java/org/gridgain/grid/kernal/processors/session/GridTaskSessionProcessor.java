@@ -14,7 +14,6 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
@@ -63,11 +62,11 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
      * @param taskName Task name.
      * @param dep Deployment.
      * @param taskClsName Task class name.
+     * @param top Topology.
      * @param startTime Execution start time.
      * @param endTime Execution end time.
      * @param siblings Collection of siblings.
      * @param attrs Map of attributes.
-     * @param nodeFilter Projection filter predicates.
      * @param fullSup {@code True} to enable distributed session attributes
      *      and checkpoints.
      * @return New session if one did not exist, or existing one.
@@ -78,11 +77,11 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
         String taskName,
         @Nullable GridDeployment dep,
         String taskClsName,
+        @Nullable Collection<UUID> top,
         long startTime,
         long endTime,
         Collection<GridComputeJobSibling> siblings,
         Map<Object, Object> attrs,
-        @Nullable GridPredicate<GridNode> nodeFilter,
         boolean fullSup) {
         if (!fullSup) {
             return new GridTaskSessionImpl(
@@ -91,12 +90,12 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                 dep,
                 taskClsName,
                 sesId,
+                top,
                 startTime,
                 endTime,
                 siblings,
                 attrs,
                 ctx,
-                nodeFilter,
                 fullSup);
         }
 
@@ -112,12 +111,12 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                         dep,
                         taskClsName,
                         sesId,
+                        top,
                         startTime,
                         endTime,
                         siblings,
                         attrs,
                         ctx,
-                        nodeFilter,
                         fullSup));
 
                 if (old != null)

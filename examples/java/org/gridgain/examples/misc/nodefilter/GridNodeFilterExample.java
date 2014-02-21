@@ -9,10 +9,8 @@
 
 package org.gridgain.examples.misc.nodefilter;
 
-import org.gridgain.examples.misc.multispi.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.spi.topology.nodefilter.*;
 
 import java.io.*;
 import java.util.*;
@@ -23,10 +21,6 @@ import java.util.*;
  * Two different node instances are started in this example, and only one has
  * user attribute defined. Then we are using node filter API to receive only one node
  * with right user attribute.
- * <p>
- * For example of how to use node filter for filter-based
- * {@link GridNodeFilterTopologySpi}
- * refer to {@link GridMultipleTopologyExample} documentation.
  *
  * @author @java.author
  * @version @java.version

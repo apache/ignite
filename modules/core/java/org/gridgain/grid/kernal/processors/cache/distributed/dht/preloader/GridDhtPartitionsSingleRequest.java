@@ -83,7 +83,7 @@ public class GridDhtPartitionsSingleRequest<K, V> extends GridDhtPartitionsAbstr
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 31;
+        return 47;
     }
 
     /** {@inheritDoc} */

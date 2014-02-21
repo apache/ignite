@@ -166,14 +166,13 @@ public class GridAlwaysFailoverSpi extends GridSpiAdapter implements GridFailove
             log.debug("Received failed job result: " + ctx.getJobResult());
 
         if (top.isEmpty()) {
-            U.warn(log, "Received empty topology for failover and is forced to fail (check topology SPI?)");
+            U.warn(log, "Received empty topology for failover and is forced to fail.");
 
             // Nowhere to failover to.
             return null;
         }
 
-        Collection<UUID> failedNodes =
-            (Collection<UUID>)ctx.getJobResult().getJobContext().getAttribute(FAILED_NODE_LIST_ATTR);
+        Collection<UUID> failedNodes = ctx.getJobResult().getJobContext().getAttribute(FAILED_NODE_LIST_ATTR);
 
         if (failedNodes == null)
             failedNodes = new HashSet<>(1);

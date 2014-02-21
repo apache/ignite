@@ -16,7 +16,6 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -128,15 +127,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     }
                 }
                 else {
-                    try {
-                        for (GridNode node : ctx.discovery().nodes(task.getSession().getTopology())) {
-                            if (ctx.localNodeId().equals(node.id()))
-                                ctx.job().masterLeaveLocal(task.getSession().getId());
-                        }
-                    }
-                    catch (GridException e) {
-                        U.error(log, "Failed to execute master-leave callback on local jobs [name=" +
-                            task.getSession().getTaskName() + ", sesId=" + task.getSession().getId() + ']', e);
+                    for (GridNode node : ctx.discovery().nodes(task.getSession().getTopology())) {
+                        if (ctx.localNodeId().equals(node.id()))
+                            ctx.job().masterLeaveLocal(task.getSession().getId());
                     }
 
                     task.cancel();
@@ -477,6 +470,10 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         boolean fullSup = map.containsKey(TC_SES_FULL_SUPPORT) ||
             (dep != null && taskCls!= null && dep.annotation(taskCls, GridComputeTaskSessionFullSupport.class) != null);
 
+        Collection<? extends GridNode> nodes = (Collection<? extends GridNode>)map.get(TC_SUBGRID);
+
+        Collection<UUID> top = nodes != null ? F.nodeIds(nodes) : null;
+
         // Creates task session with task name and task version.
         GridTaskSessionImpl ses = ctx.session().createTaskSession(
             sesId,
@@ -484,11 +481,11 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             taskName,
             dep,
             taskCls == null ? null : taskCls.getName(),
+            top,
             startTime,
             endTime,
             Collections.<GridComputeJobSibling>emptyList(),
             Collections.emptyMap(),
-            (GridPredicate<GridNode>)map.get(TC_PREDICATE),
             fullSup);
 
         GridTaskFutureImpl<R> fut = new GridTaskFutureImpl<>(ses, ctx);
@@ -497,67 +494,54 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             if (dep == null || !dep.acquire())
                 handleException(new GridDeploymentException("Task not deployed: " + ses.getTaskName()), fut);
             else {
-                Collection<? extends GridNode> subgrid = (Collection<? extends GridNode>)map.get(TC_SUBGRID);
+                GridTaskWorker<?, ?> taskWorker = new GridTaskWorker<>(
+                    ctx,
+                    arg,
+                    ses,
+                    fut,
+                    taskCls,
+                    task,
+                    dep,
+                    new TaskEventListener(),
+                    map);
 
-                if (subgrid == null)
-                    subgrid = ctx.discovery().allNodes();
+                if (task != null) {
+                    // Check if someone reuses the same task instance by walking
+                    // through the "tasks" map
+                    for (GridTaskWorker worker : tasks.values()) {
+                        GridComputeTask workerTask = worker.getTask();
 
-                if (subgrid.isEmpty()) {
-                    release(dep);
-
-                    handleException(new GridEmptyProjectionException("Projection is empty."), fut);
-                }
-                else {
-                    GridTaskWorker<?, ?> taskWorker = new GridTaskWorker<>(
-                        ctx,
-                        arg,
-                        ses,
-                        fut,
-                        taskCls,
-                        task,
-                        dep,
-                        new TaskEventListener(),
-                        map
-                    );
-
-                    if (task != null) {
-                        // Check if someone reuses the same task instance by walking
-                        // through the "tasks" map
-                        for (GridTaskWorker worker : tasks.values()) {
-                            GridComputeTask workerTask = worker.getTask();
-
-                            // Check that the same instance of task is being used by comparing references.
-                            if (workerTask != null && task == workerTask)
-                                U.warn(log, "Most likely the same task instance is being executed. " +
-                                    "Please avoid executing the same task instances in parallel because " +
-                                    "they may have concurrent resources access and conflict each other: " + task);
-                        }
+                        // Check that the same instance of task is being used by comparing references.
+                        if (workerTask != null && task == workerTask)
+                            U.warn(log, "Most likely the same task instance is being executed. " +
+                                "Please avoid executing the same task instances in parallel because " +
+                                "they may have concurrent resources access and conflict each other: " + task);
                     }
-
-                    GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
-
-                    assert taskWorker0 == null : "Session ID is not unique: " + sesId;
-
-                    if (dep.annotation(taskCls, GridComputeTaskMapAsync.class) != null) {
-                        try {
-                            // Start task execution in another thread.
-                            if (sys)
-                                ctx.config().getSystemExecutorService().execute(taskWorker);
-                            else
-                                ctx.config().getExecutorService().execute(taskWorker);
-                        }
-                        catch (RejectedExecutionException e) {
-                            tasks.remove(sesId);
-
-                            release(dep);
-
-                            handleException(new GridComputeExecutionRejectedException("Failed to execute task " +
-                                "due to thread pool execution rejection: " + taskName, e), fut);
-                        }
-                    }
-                    else
-                        taskWorker.run();
                 }
+
+                GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
+
+                assert taskWorker0 == null : "Session ID is not unique: " + sesId;
+
+                if (dep.annotation(taskCls, GridComputeTaskMapAsync.class) != null) {
+                    try {
+                        // Start task execution in another thread.
+                        if (sys)
+                            ctx.config().getSystemExecutorService().execute(taskWorker);
+                        else
+                            ctx.config().getExecutorService().execute(taskWorker);
+                    }
+                    catch (RejectedExecutionException e) {
+                        tasks.remove(sesId);
+
+                        release(dep);
+
+                        handleException(new GridComputeExecutionRejectedException("Failed to execute task " +
+                            "due to thread pool execution rejection: " + taskName, e), fut);
+                    }
+                }
+                else
+                    taskWorker.run();
             }
         }
         else

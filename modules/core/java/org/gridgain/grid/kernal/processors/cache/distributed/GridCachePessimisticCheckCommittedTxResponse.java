@@ -212,7 +212,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 36;
+        return 21;
     }
 
     /** {@inheritDoc} */

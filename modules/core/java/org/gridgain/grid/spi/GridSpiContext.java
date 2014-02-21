@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.spi;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -145,17 +144,6 @@ public interface GridSpiContext {
      * @return Whether or not all provided event types are recordable..
      */
     public boolean isEventRecordable(int... types);
-
-    /**
-     * Obtain grid node topology for a given task.
-     *
-     * @param taskSes Task session.
-     * @param grid Available grid nodes.
-     * @return Topology for given task session.
-     * @throws GridSpiException If failed to get topology.
-     */
-    public Collection<? extends GridNode> topology(GridComputeTaskSession taskSes, Collection<? extends GridNode> grid)
-        throws GridSpiException;
 
     /**
      * Records local event.

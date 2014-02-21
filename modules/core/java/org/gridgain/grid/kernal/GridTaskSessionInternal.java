@@ -26,11 +26,6 @@ public interface GridTaskSessionInternal extends GridComputeTaskSession {
     public String getCheckpointSpi();
 
     /**
-     * @return Topology SPI name.
-     */
-    public String getTopologySpi();
-
-    /**
      * @return Job ID (possibly <tt>null</tt>).
      */
     @Nullable public GridUuid getJobId();

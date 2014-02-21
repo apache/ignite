@@ -326,7 +326,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 20;
+        return 30;
     }
 
     /** {@inheritDoc} */

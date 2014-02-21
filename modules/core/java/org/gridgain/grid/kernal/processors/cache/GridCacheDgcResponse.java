@@ -183,7 +183,7 @@ public class GridCacheDgcResponse<K, V> extends GridCacheMessage<K, V> implement
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 58;
+        return 15;
     }
 
     /** {@inheritDoc} */

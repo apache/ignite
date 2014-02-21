@@ -259,7 +259,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 60;
+        return 17;
     }
 
     /** {@inheritDoc} */

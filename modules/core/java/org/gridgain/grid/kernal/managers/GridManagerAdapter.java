@@ -354,16 +354,6 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         return true;
                     }
 
-                    @Override public Collection<? extends GridNode> topology(GridComputeTaskSession taskSes,
-                        Collection<? extends GridNode> grid) throws GridSpiException {
-                        try {
-                            return ctx.topology().getTopology((GridTaskSessionInternal)taskSes, grid);
-                        }
-                        catch (GridException e) {
-                            throw unwrapException(e);
-                        }
-                    }
-
                     @Override public void recordEvent(GridEvent evt) {
                         A.notNull(evt, "evt");
 

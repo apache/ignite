@@ -313,6 +313,6 @@ public class GridDrInternalRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 69;
+        return 67;
     }
 }

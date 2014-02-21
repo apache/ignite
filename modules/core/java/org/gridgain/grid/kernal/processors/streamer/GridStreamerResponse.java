@@ -145,6 +145,6 @@ public class GridStreamerResponse extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 83;
+        return 81;
     }
 }

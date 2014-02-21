@@ -326,22 +326,6 @@ public interface GridKernalMBean {
     public String getLoadBalancingSpiFormatted();
 
     /**
-     * Gets a formatted instance of fully configured topology SPI implementation.
-     *
-     * @return Grid topology SPI implementation.
-     */
-    @GridMBeanDescription("Formatted instance of fully configured topology SPI implementation.")
-    public String getTopologySpiFormatted();
-
-    /**
-     * Gets a formatted instance of fully configured local metrics SPI implementation.
-     *
-     * @return Grid local metrics SPI implementation.
-     */
-    @GridMBeanDescription("Formatted instance of fully configured local metrics SPI implementation.")
-    public String getMetricsSpiFormatted();
-
-    /**
      * Gets a formatted instance of fully configured authentication SPI implementation.
      *
      * @return Grid authentication SPI implementation.

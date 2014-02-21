@@ -85,13 +85,10 @@ public interface GridMessaging {
      * @param p Predicate that is called on each received message. If predicate returns {@code true},
      *      the implementation will continue listening for the new messages. Otherwise, the implementation
      *      will unregister the listener and stop receiving messages.
-     *      <p>
-     *      If none provided - this method is no-op.
-     * @param <T> Type of the message.
      * @see GridMessagingListenActor
      * @see #remoteListen(Object, GridBiPredicate)
      */
-    public <T> void localListen(@Nullable Object topic, @Nullable GridBiPredicate<UUID, T> p);
+    public void localListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p);
 
     /**
      * Registers given message listener on <b>all nodes defined by this projection</b> to listen for
@@ -113,14 +110,11 @@ public interface GridMessaging {
      * @param p Predicate that is called on each received message. If predicate returns {@code true},
      *      the implementation will continue listening for the new messages. Otherwise, the implementation
      *      will unregister the listener and stop receiving messages.
-     *      <p>
-     *      If none provided - this method is no-op.
-     * @param <T> Type of the message.
      * @return Future for this distributed operation.
      * @see GridMessagingListenActor
      * @see #localListen(Object, GridBiPredicate)
      * @see #send(Object, Object)
      * @see #send(Object, Collection)
      */
-    public <T> GridFuture<?> remoteListen(@Nullable Object topic, @Nullable GridBiPredicate<UUID, T> p);
+    public GridFuture<?> remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p);
 }

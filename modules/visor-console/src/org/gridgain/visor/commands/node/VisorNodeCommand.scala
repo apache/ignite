@@ -238,9 +238,6 @@ class VisorNodeCommand {
                             t += ("Maximum thread count", nmFmt.format(m.getMaximumThreadCount))
                             t += ("Total started thread count", nmFmt.format(m.getTotalStartedThreadCount))
                             t += ("Current daemon thread count", nmFmt.format(m.getCurrentDaemonThreadCount))
-                            t += ("File system free space", kbFmt.format(m.getFileSystemFreeSpace / MB) + "mb")
-                            t += ("File system total space", kbFmt.format(m.getFileSystemTotalSpace / MB) + "mb")
-                            t += ("File system usable space", kbFmt.format(m.getFileSystemUsableSpace / MB) + "mb")
                         }
                         else {
                             t += ("OS info", "" +

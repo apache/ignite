@@ -195,7 +195,7 @@ public class GridJobStealingFailoverSpi extends GridSpiAdapter implements GridFa
         assert top != null;
 
         if (top.isEmpty()) {
-            U.warn(log, "Received empty subgrid and is forced to fail (check topology SPI?).");
+            U.warn(log, "Received empty subgrid and is forced to fail.");
 
             // Nowhere to failover to.
             return null;

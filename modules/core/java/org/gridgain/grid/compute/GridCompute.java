@@ -29,19 +29,6 @@ import java.util.concurrent.*;
  * grid nodes. These operations are defined in {@link GridCompute} interface and called
  * <tt>monadic</tt> as they are equally defined on any arbitrary set of nodes.
  *
- * <h1 class="header">Nullable and Monads</h1>
- * Many methods in this interface accepts nullable parameters. Although it may seem counter intuitive
- * for some of them - it is done to promote monadic usage of this interface. Java doesn't natively support
- * concepts like <tt>Option</tt> in Scala and returning, accepting, and properly handling
- * {@code null} values is Java's way to support such monadic invocations.
- * <p>
- * All methods that accept {@code null} values (for monadic purposes) will gracefully handle it by
- * either returning a finished future, or empty collection, {@code null} value, or combination of the
- * above. Most method calls therefore can be chained without an explicit checks for {@code null}s.
- * <p>
- * The downside of this approach that inadvertent errors of passing {@code null} will not result
- * in {@link NullPointerException} and may be harder to catch.
- *
  * @author @java.author
  * @version @java.version
  */
@@ -78,12 +65,11 @@ public interface GridCompute {
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
      * @param job Closure to affinity co-located on the node with given affinity key and execute.
-     * @return Non-cancellable future of this execution.
+     * @return Future of this execution.
      * @see #withCheckpointSpi(String)
      * @see #withFailoverSpi(String)
      * @see #withName(String)
      * @see #withResultClosure(GridBiClosure)
-     * @see #withTopologySpi(String)
      * @see GridComputeJobContext#cacheName()
      * @see GridComputeJobContext#affinityKey()
      */
@@ -116,19 +102,17 @@ public interface GridCompute {
      * context with all marshallers currently shipped with GridGain.
      *
      * @param cacheName Name of the cache to use for affinity co-location.
-     * @param affKeys Collection of affinity keys. All dups will be ignored. If {@code null} or
-     *      empty - this method is no-op.
+     * @param affKeys Collection of affinity keys. All dups will be ignored.
      * @param job Closure to execute on the node with given affinity key.
      *      Note that in case of dynamic projection this method will take a snapshot of all the
      *      nodes at the time of this call, apply all filtering predicates, if any, and if the
      *      resulting collection of nodes is empty - the exception will be thrown.
-     * @return Non-cancellable future of this execution.
+     * @return Future of this execution.
      * @see #affinityRun(String, Object, Runnable)
      * @see #withCheckpointSpi(String)
      * @see #withFailoverSpi(String)
      * @see #withName(String)
      * @see #withResultClosure(GridBiClosure)
-     * @see #withTopologySpi(String)
      * @see GridComputeJobContext#cacheName()
      * @see GridComputeJobContext#affinityKey()
      */
@@ -152,10 +136,9 @@ public interface GridCompute {
      * context with all marshallers currently shipped with GridGain.
      *
      * @param cacheName Name of the cache to use for affinity co-location.
-     * @param affKey Affinity key. If {@code null} - this method is no-op.
+     * @param affKey Affinity key.
      * @param job Closure to affinity co-located on the node with given affinity key and execute.
-     *      If {@code null} - this method is no-op.
-     * @return Non-cancellable closure result future.
+     * @return Closure result future.
      *      Note that in case of dynamic projection this method will take a snapshot of all the
      *      nodes at the time of this call, apply all filtering predicates, if any, and if the
      *      resulting collection of nodes is empty - the exception will be thrown.
@@ -164,7 +147,6 @@ public interface GridCompute {
      * @see #withFailoverSpi(String)
      * @see #withName(String)
      * @see #withResultClosure(GridBiClosure)
-     * @see #withTopologySpi(String)
      * @see GridComputeJobContext#cacheName()
      * @see GridComputeJobContext#affinityKey()
      */
@@ -193,7 +175,7 @@ public interface GridCompute {
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKeys Collection of affinity keys. All dups will be ignored.
      * @param job Closure to execute on the node with given affinity key.
-     * @return Non-cancellable future of closure results. Upon successful execution number of results
+     * @return Future of closure results. Upon successful execution number of results
      *      will be equal to number of affinity keys provided.
      *      Note that in case of dynamic projection this method will take a snapshot of all the
      *      nodes at the time of this call, apply all filtering predicates, if any, and if the
@@ -203,39 +185,11 @@ public interface GridCompute {
      * @see #withFailoverSpi(String)
      * @see #withName(String)
      * @see #withResultClosure(GridBiClosure)
-     * @see #withTopologySpi(String)
      * @see GridComputeJobContext#cacheName()
      * @see GridComputeJobContext#affinityKey()
      */
     public <R> GridFuture<Collection<R>> affinityCall(@Nullable String cacheName, Collection<?> affKeys,
         Callable<R> job);
-
-    /**
-     * Executes a task on the grid. For information on how task gets split into remote
-     * jobs and how results are reduced back into one see {@link GridComputeTask} documentation.
-     * <p>
-     * If task for given name has not been deployed yet, then {@code taskName} will be
-     * used as task class name to auto-deploy the task (see Grid#deployTask() method
-     * for deployment algorithm).
-     * <p>
-     * Note that if projection is empty after applying filtering predicates, the result
-     * future will finish with exception. In case of dynamic projection this method
-     * will take a snapshot of all nodes in the projection, apply all filtering predicates,
-     * if any, and if the resulting set of nodes is empty the returned future will
-     * finish with exception.
-     *
-     * @param taskName Name of the task to execute. If task class has {@link GridComputeTaskName} annotation,
-     *      then task is deployed under a name specified within annotation. Otherwise, full
-     *      class name is used as task's name.
-     * @param arg Optional argument of task execution, can be {@code null}.
-     * @return Task future.
-     * @see GridComputeTask for information about task execution.
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
-     * @see #withName(String)
-     * @see #withTopologySpi(String)
-     */
-    public <T, R> GridComputeTaskFuture<R> execute(String taskName, @Nullable T arg);
 
     /**
      * Executes a task on the grid. For information on how task gets split into remote
@@ -264,7 +218,6 @@ public interface GridCompute {
      * @see #withCheckpointSpi(String)
      * @see #withFailoverSpi(String)
      * @see #withName(String)
-     * @see #withTopologySpi(String)
      */
     public <T, R> GridComputeTaskFuture<R> execute(Class<? extends GridComputeTask<T, R>> taskCls, @Nullable T arg);
 
@@ -295,7 +248,6 @@ public interface GridCompute {
      * @see #withCheckpointSpi(String)
      * @see #withFailoverSpi(String)
      * @see #withName(String)
-     * @see #withTopologySpi(String)
      */
     public <T, R> GridComputeTaskFuture<R> execute(GridComputeTask<T, R> task, @Nullable T arg);
 
@@ -322,16 +274,41 @@ public interface GridCompute {
      * context with all marshallers currently shipped with GridGain.
      *
      * @param job Job closure to execute.
-     * @return Non-cancellable future of this execution.
+     * @return Future of this execution.
      * @see #broadcast(Callable)
      * @see #broadcast(GridClosure, Object)
      * @see #withCheckpointSpi(String)
      * @see #withFailoverSpi(String)
      * @see #withName(String)
      * @see #withResultClosure(GridBiClosure)
-     * @see #withTopologySpi(String)
      */
     public GridFuture<?> broadcast(Runnable job);
+
+    /**
+     * Executes a task on the grid. For information on how task gets split into remote
+     * jobs and how results are reduced back into one see {@link GridComputeTask} documentation.
+     * <p>
+     * If task for given name has not been deployed yet, then {@code taskName} will be
+     * used as task class name to auto-deploy the task (see Grid#deployTask() method
+     * for deployment algorithm).
+     * <p>
+     * Note that if projection is empty after applying filtering predicates, the result
+     * future will finish with exception. In case of dynamic projection this method
+     * will take a snapshot of all nodes in the projection, apply all filtering predicates,
+     * if any, and if the resulting set of nodes is empty the returned future will
+     * finish with exception.
+     *
+     * @param taskName Name of the task to execute. If task class has {@link GridComputeTaskName} annotation,
+     *      then task is deployed under a name specified within annotation. Otherwise, full
+     *      class name is used as task's name.
+     * @param arg Optional argument of task execution, can be {@code null}.
+     * @return Task future.
+     * @see GridComputeTask for information about task execution.
+     * @see #withCheckpointSpi(String)
+     * @see #withFailoverSpi(String)
+     * @see #withName(String)
+     */
+    public <T, R> GridComputeTaskFuture<R> execute(String taskName, @Nullable T arg);
 
     /**
      * Asynchronously executes given closure on all nodes in this projection.
@@ -356,14 +333,13 @@ public interface GridCompute {
      * context with all marshallers currently shipped with GridGain.
      *
      * @param job Job closure to execute.
-     * @return Non-cancellable future of this execution.
+     * @return Future of this execution.
      * @see #broadcast(Runnable)
      * @see #broadcast(GridClosure, Object)
      * @see #withCheckpointSpi(String)
      * @see #withFailoverSpi(String)
      * @see #withName(String)
      * @see #withResultClosure(GridBiClosure)
-     * @see #withTopologySpi(String)
      */
     public <R> GridFuture<Collection<R>> broadcast(Callable<R> job);
 
@@ -391,14 +367,13 @@ public interface GridCompute {
      *
      * @param job Job closure to execute.
      * @param arg Closure argument.
-     * @return Non-cancellable future of this execution.
+     * @return Future of this execution.
      * @see #broadcast(Runnable)
      * @see #broadcast(Callable)
      * @see #withCheckpointSpi(String)
      * @see #withFailoverSpi(String)
      * @see #withName(String)
      * @see #withResultClosure(GridBiClosure)
-     * @see #withTopologySpi(String)
      */
     public <R, T> GridFuture<Collection<R>> broadcast(GridClosure<T, R> job, @Nullable T arg);
 
@@ -425,14 +400,13 @@ public interface GridCompute {
      * context with all marshallers currently shipped with GridGain.
      *
      * @param job Job closure to execute.
-     * @return Non-cancellable future of this execution.
+     * @return Future of this execution.
      * @see PN
      * @see #call(Callable)
      * @see #withCheckpointSpi(String)
      * @see #withFailoverSpi(String)
      * @see #withName(String)
      * @see #withResultClosure(GridBiClosure)
-     * @see #withTopologySpi(String)
      */
     public GridFuture<?> run(Runnable job);
 
@@ -459,7 +433,7 @@ public interface GridCompute {
      * context with all marshallers currently shipped with GridGain.
      *
      * @param jobs Job closures to execute.
-     * @return Non-cancellable future of this execution.
+     * @return Future of this execution.
      * @see PN
      */
     public GridFuture<?> run(Collection<? extends Runnable> jobs);
@@ -487,12 +461,11 @@ public interface GridCompute {
      * context with all marshallers currently shipped with GridGain.
      *
      * @param job Closure to invoke.
-     * @return Non-cancellable closure result future.
+     * @return Closure result future.
      * @see PN
      * @see #withCheckpointSpi(String)
      * @see #withFailoverSpi(String)
      * @see #withName(String)
-     * @see #withTopologySpi(String)
      */
     public <R> GridFuture<R> call(Callable<R> job);
 
@@ -525,7 +498,6 @@ public interface GridCompute {
      * @see #withCheckpointSpi(String)
      * @see #withFailoverSpi(String)
      * @see #withName(String)
-     * @see #withTopologySpi(String)
      */
     public <R> GridFuture<Collection<R>> call(Collection<? extends Callable<R>> jobs);
 
@@ -569,7 +541,6 @@ public interface GridCompute {
      * @see #withFailoverSpi(String)
      * @see #withName(String)
      * @see #withResultClosure(GridBiClosure)
-     * @see #withTopologySpi(String)
      */
     public <R1, R2> GridFuture<R2> call(Collection<? extends Callable<R1>> jobs, GridReducer<R1, R2> rdc);
 
@@ -580,13 +551,12 @@ public interface GridCompute {
      *
      * @param job Job to run.
      * @param arg Job argument.
-     * @return Non-cancellable closure result future.
+     * @return Closure result future.
      * @see #call(Callable)
      * @see #withCheckpointSpi(String)
      * @see #withFailoverSpi(String)
      * @see #withName(String)
      * @see #withResultClosure(GridBiClosure)
-     * @see #withTopologySpi(String)
      */
     public <R, T> GridFuture<R> apply(GridClosure<T, R> job, @Nullable T arg);
 
@@ -605,7 +575,6 @@ public interface GridCompute {
      * @see #withCheckpointSpi(String)
      * @see #withFailoverSpi(String)
      * @see #withName(String)
-     * @see #withTopologySpi(String)
      */
     public <T, R> GridFuture<Collection<R>> apply(GridClosure<T, R> job, @Nullable Collection<? extends T> args);
 
@@ -624,7 +593,6 @@ public interface GridCompute {
      * @see #withFailoverSpi(String)
      * @see #withName(String)
      * @see #withResultClosure(GridBiClosure)
-     * @see #withTopologySpi(String)
      */
     public <R1, R2, T> GridFuture<R2> apply(GridClosure<T, R1> job, @Nullable Collection<? extends T> args,
         GridReducer<R1, R2> rdc);
@@ -668,15 +636,15 @@ public interface GridCompute {
     /**
      * Cancels task with the given ID, if it currently running inside this projection.
      *
-     * @param sesId Task session ID. If {@code null} - this method is no-op.
+     * @param sesId Task session ID.
      * @throws GridException If task cancellation failed.
      */
-    public void cancelTask(@Nullable GridUuid sesId) throws GridException;
+    public void cancelTask(GridUuid sesId) throws GridException;
 
     /**
      * Cancels job with the given ID, if it currently running inside this projection.
      *
-     * @param jobId Job ID. If {@code null} - this method is no-op.
+     * @param jobId Job ID.
      * @throws GridException If task cancellation failed.
      */
     public void cancelJob(GridUuid jobId) throws GridException;
@@ -703,7 +671,7 @@ public interface GridCompute {
      * @param taskName Task name.
      * @return Grid projection ({@code this}).
      */
-    public GridCompute withName(@Nullable String taskName);
+    public GridCompute withName(String taskName);
 
     /**
      * Sets task timeout for the next executed task on this projection in the <b>current thread</b>.
@@ -754,7 +722,7 @@ public interface GridCompute {
      * @return Grid projection ({@code this}).
      * @see X#NO_FAILOVER
      */
-    public GridCompute withResultClosure(@Nullable GridBiClosure<GridComputeJobResult, List<GridComputeJobResult>,
+    public GridCompute withResultClosure(GridBiClosure<GridComputeJobResult, List<GridComputeJobResult>,
         GridComputeJobResultPolicy> res);
 
     /**
@@ -781,7 +749,7 @@ public interface GridCompute {
      * @return Grid projection ({@code this}).
      * @see GridComputeTaskSpis
      */
-    public GridCompute withFailoverSpi(@Nullable String spiName);
+    public GridCompute withFailoverSpi(String spiName);
 
     /**
      * Sets checkpoint SPI for the next executed task on this projection in the <b>current thread</b>.
@@ -807,7 +775,7 @@ public interface GridCompute {
      * @return Grid projection ({@code this}).
      * @see GridComputeTaskSpis
      */
-    public GridCompute withCheckpointSpi(@Nullable String spiName);
+    public GridCompute withCheckpointSpi(String spiName);
 
     /**
      * Sets load balancing SPI for the next executed task on this projection in the <b>current thread</b>.
@@ -833,33 +801,7 @@ public interface GridCompute {
      * @return Grid projection ({@code this}).
      * @see GridComputeTaskSpis
      */
-    public GridCompute withLoadBalancingSpi(@Nullable String spiName);
-
-    /**
-     * Sets topology SPI for the next executed task on this projection in the <b>current thread</b>.
-     * When task starts execution the topology SPI set here is reset - so it is valid only
-     * for one execution from the current thread.
-     * <p>
-     * You may use this method to set specific topology SPI when you cannot use
-     * {@link GridComputeTaskSpis} annotation.
-     * <p>
-     * Here is an example.
-     * <pre name="code" class="java">
-     * GridGain.grid().withTopologySpi("MyTopologySpi").call(
-     *     BROADCAST,
-     *     new CAX() {
-     *         &#64;Override public void applyx() throws GridException {
-     *             System.out.println("Hello!");
-     *         }
-     *     }
-     * );
-     * </pre>
-     *
-     * @param spiName Checkpoint SPI name to use.
-     * @return Grid projection ({@code this}).
-     * @see GridComputeTaskSpis
-     */
-    public GridCompute withTopologySpi(@Nullable String spiName);
+    public GridCompute withLoadBalancingSpi(String spiName);
 
     /**
      * Enables task session attributes and checkpoints for the next executed task on this projection in the

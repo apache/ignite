@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.*;
+
 import java.util.*;
 
 /**
@@ -27,7 +28,7 @@ import java.util.*;
  * </ul>
  * or local only query:
  * <ul>
- *      <li>{@link GridEvents#queryLocal(GridPredicate[])}</li>
+ *      <li>{@link GridEvents#queryLocal(GridPredicate)}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
  * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
@@ -43,13 +44,12 @@ import java.util.*;
 public interface GridEventStorageSpi extends GridSpi, GridSpiJsonConfigurable {
     /**
      * Queries locally-stored events only. Events could be filtered out
-     * by given predicate filters.
+     * by given predicate filter.
      *
-     * @param p Event predicate filters. If no filters are provided - all local events
-     *      will be returned.
+     * @param p Event predicate filter.
      * @return Collection of events.
      */
-    public Collection<GridEvent> localEvents(GridPredicate<? super GridEvent>... p);
+    public Collection<GridEvent> localEvents(GridPredicate<? super GridEvent> p);
 
     /**
      * Records single event.

@@ -1156,10 +1156,10 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param topic Topic to subscribe to.
      * @param p Message predicate.
      */
-    public <T> void listenAsync(@Nullable final Object topic, @Nullable final GridBiPredicate<UUID, ? super T> p) {
+    public void listenAsync(@Nullable final Object topic, @Nullable final GridBiPredicate<UUID, ?> p) {
         if (p != null) {
             try {
-                addMessageListener(TOPIC_COMM_USER, new GridUserMessageListener<>(topic, p));
+                addMessageListener(TOPIC_COMM_USER, new GridUserMessageListener(topic, (GridBiPredicate<UUID, Object>)p));
             }
             catch (GridException e) {
                 throw new GridRuntimeException(e);
@@ -1582,9 +1582,9 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
     /**
      * This class represents a message listener wrapper that knows about peer deployment.
      */
-    private class GridUserMessageListener<T> implements GridMessageListener {
+    private class GridUserMessageListener implements GridMessageListener {
         /** Predicate listeners. */
-        private final GridBiPredicate<UUID, ? super T> predLsnr;
+        private final GridBiPredicate<UUID, Object> predLsnr;
 
         /** User message topic. */
         private final Object topic;
@@ -1594,7 +1594,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
          * @param predLsnr Predicate listener.
          * @throws GridException If failed to inject resources to predicates.
          */
-        GridUserMessageListener(@Nullable Object topic, @Nullable GridBiPredicate<UUID, ? super T> predLsnr)
+        GridUserMessageListener(@Nullable Object topic, @Nullable GridBiPredicate<UUID, Object> predLsnr)
             throws GridException {
             this.topic = topic;
             this.predLsnr = predLsnr;
@@ -1682,7 +1682,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
 
             if (msgBody != null) {
                 if (predLsnr != null) {
-                    if (!predLsnr.apply(nodeId, (T)msgBody))
+                    if (!predLsnr.apply(nodeId, msgBody))
                         removeMessageListener(TOPIC_COMM_USER, this);
                 }
             }

@@ -207,6 +207,6 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 25;
+        return 35;
     }
 }

@@ -910,7 +910,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 17;
+        return 39;
     }
 
     /** {@inheritDoc} */

@@ -708,29 +708,20 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
                         }
 
                         // Check that waiting job has thief node in topology.
-                        try {
-                            Collection<? extends GridNode> top = ctx.topology(waitCtx.getTaskSession(), ctx.nodes());
+                        boolean found = false;
 
-                            boolean found = false;
+                        for (UUID id : waitCtx.getTaskSession().getTopology()) {
+                            if (id.equals(nodeId)) {
+                                found = true;
 
-                            for (GridNode node : top) {
-                                if (node.id().equals(nodeId)) {
-                                    found = true;
-
-                                    break;
-                                }
-                            }
-
-                            if (!found) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Thief node does not belong to task topology [thief=" + nodeId +
-                                        ", task=" + waitCtx.getTaskSession() + ']');
-
-                                continue;
+                                break;
                             }
                         }
-                        catch (GridSpiException e) {
-                            U.error(log, "Failed to check topology for job: " + waitCtx.getTaskSession(), e);
+
+                        if (!found) {
+                            if (log.isDebugEnabled())
+                                log.debug("Thief node does not belong to task topology [thief=" + nodeId +
+                                    ", task=" + waitCtx.getTaskSession() + ']');
 
                             continue;
                         }

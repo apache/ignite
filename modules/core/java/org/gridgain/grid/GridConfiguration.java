@@ -42,13 +42,10 @@ import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.spi.indexing.h2.*;
 import org.gridgain.grid.spi.loadbalancing.*;
 import org.gridgain.grid.spi.loadbalancing.roundrobin.*;
-import org.gridgain.grid.spi.metrics.*;
 import org.gridgain.grid.spi.securesession.*;
 import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.spi.swapspace.file.*;
-import org.gridgain.grid.spi.topology.*;
-import org.gridgain.grid.spi.topology.basic.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -344,9 +341,6 @@ public class GridConfiguration {
     /** Collision SPI. */
     private GridCollisionSpi colSpi;
 
-    /** Metrics SPI. */
-    private GridLocalMetricsSpi metricsSpi;
-
     /** Authentication SPI. */
     private GridAuthenticationSpi authSpi;
 
@@ -361,9 +355,6 @@ public class GridConfiguration {
 
     /** Failover SPI. */
     private GridFailoverSpi[] failSpi;
-
-    /** Topology SPI. */
-    private GridTopologySpi[] topSpi;
 
     /** Load balancing SPI. */
     private GridLoadBalancingSpi[] loadBalancingSpi;
@@ -522,8 +513,6 @@ public class GridConfiguration {
         cpSpi = cfg.getCheckpointSpi();
         colSpi = cfg.getCollisionSpi();
         failSpi = cfg.getFailoverSpi();
-        topSpi = cfg.getTopologySpi();
-        metricsSpi = cfg.getMetricsSpi();
         authSpi = cfg.getAuthenticationSpi();
         sesSpi = cfg.getSecureSessionSpi();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
@@ -1915,27 +1904,6 @@ public class GridConfiguration {
     }
 
     /**
-     * Should return fully configured metrics SPI implementation. If not provided,
-     * {@link GridLocalMetricsSpi} will be used.
-     *
-     * @return Grid metrics SPI implementation or {@code null} to use default implementation.
-     */
-    public GridLocalMetricsSpi getMetricsSpi() {
-        return metricsSpi;
-    }
-
-    /**
-     * Sets fully configured instance of {@link GridLocalMetricsSpi}.
-     *
-     * @param metricsSpi Fully configured instance of {@link GridLocalMetricsSpi} or
-     *      {@code null} if no SPI provided.
-     * @see GridConfiguration#getMetricsSpi()
-     */
-    public void setMetricsSpi(GridLocalMetricsSpi metricsSpi) {
-        this.metricsSpi = metricsSpi;
-    }
-
-    /**
      * Should return fully configured authentication SPI implementation. If not provided,
      * {@link GridNoopAuthenticationSpi} will be used.
      *
@@ -2036,27 +2004,6 @@ public class GridConfiguration {
      */
     public void setFailoverSpi(GridFailoverSpi... failSpi) {
         this.failSpi = failSpi;
-    }
-
-    /**
-     * Should return fully configured topology SPI implementation. If not provided,
-     * {@link GridBasicTopologySpi} will be used.
-     *
-     * @return Grid topology SPI implementation or {@code null} to use default implementation.
-     */
-    public GridTopologySpi[] getTopologySpi() {
-        return topSpi;
-    }
-
-    /**
-     * Sets fully configured instance of {@link GridTopologySpi}.
-     *
-     * @param topSpi Fully configured instance of {@link GridTopologySpi} or
-     *      {@code null} if no SPI provided.
-     * @see GridConfiguration#getTopologySpi()
-     */
-    public void setTopologySpi(GridTopologySpi... topSpi) {
-        this.topSpi = topSpi;
     }
 
     /**

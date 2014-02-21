@@ -378,7 +378,7 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 75;
+        return 73;
     }
 
     /** {@inheritDoc} */

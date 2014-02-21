@@ -593,7 +593,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
         addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(GridEvent evt) {
-                if (p != null && p.apply(evt) || p == null) {
+                if (p == null || p.apply(evt)) {
                     fut.onDone(evt);
 
                     removeLocalEventListener(this);
@@ -674,7 +674,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @param p Grid event predicate.
      * @return Collection of grid events.
      */
-    public Collection<GridEvent> localEvents(GridPredicate<? super GridEvent>... p) {
+    public Collection<GridEvent> localEvents(GridPredicate<? super GridEvent> p) {
         assert p != null;
 
         return getSpi().localEvents(p);

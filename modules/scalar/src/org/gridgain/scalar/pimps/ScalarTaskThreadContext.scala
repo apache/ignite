@@ -44,14 +44,6 @@ trait ScalarTaskThreadContext[T <: GridProjection] extends ScalarConversions { t
         value.compute().withFailoverSpi(spiName).asInstanceOf[T]
 
     /**
-     * Properly typed version of `GridProjection#withTopologySpi(...)` method.
-     *
-     * @param spiName Name of the SPI.
-     */
-    def withTopologySpi$(@Nullable spiName: String): T =
-        value.compute().withTopologySpi(spiName).asInstanceOf[T]
-
-    /**
      * Properly typed version of `GridProjection#withCheckpointSpi(...)` method.
      *
      * @param spiName Name of the SPI.

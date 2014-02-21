@@ -227,15 +227,12 @@ public class GridMemoryEventStorageSpi extends GridSpiAdapter implements GridEve
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridEvent> localEvents(GridPredicate<? super GridEvent>... p) {
+    @Override public Collection<GridEvent> localEvents(GridPredicate<? super GridEvent> p) {
+        A.notNull(p, "p");
+
         cleanupQueue();
 
-        // In case when no predicates provided - we return an empty
-        // collection. This exception from the regular rule is made to ensure
-        // that user doesn't get flood of the events if he forgets to
-        // pass the filter (which is allowed by the compiler).
-        // Essentially, the user is forced to pass a filter.
-        return p.length == 0 ? Collections.<GridEvent>emptyList() : F.retain(evts, true, p);
+        return F.retain(evts, true, p);
     }
 
     /** {@inheritDoc} */

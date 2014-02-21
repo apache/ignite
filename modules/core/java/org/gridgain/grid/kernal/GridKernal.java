@@ -12,8 +12,8 @@ package org.gridgain.grid.kernal;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.dr.*;
 import org.gridgain.grid.dataload.*;
+import org.gridgain.grid.dr.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.authentication.*;
@@ -26,10 +26,8 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.managers.failover.*;
 import org.gridgain.grid.kernal.managers.indexing.*;
 import org.gridgain.grid.kernal.managers.loadbalancer.*;
-import org.gridgain.grid.kernal.managers.metrics.*;
 import org.gridgain.grid.kernal.managers.securesession.*;
 import org.gridgain.grid.kernal.managers.swapspace.*;
-import org.gridgain.grid.kernal.managers.topology.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -62,12 +60,12 @@ import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.streamer.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nodestart.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import org.springframework.context.*;
 
@@ -81,12 +79,12 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.kernal.GridProductImpl.*;
-import static org.gridgain.grid.product.GridProductEdition.*;
 import static org.gridgain.grid.GridLifecycleEventType.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.kernal.GridKernalState.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.gridgain.grid.kernal.GridProductImpl.*;
+import static org.gridgain.grid.product.GridProductEdition.*;
 import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
 
 /**
@@ -319,13 +317,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @Override public String getMetricsSpiFormatted() {
-        assert cfg != null;
-
-        return cfg.getMetricsSpi().toString();
-    }
-
-    /** {@inheritDoc} */
     @Override public String getAuthenticationSpiFormatted() {
         assert cfg != null;
 
@@ -337,13 +328,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         assert cfg != null;
 
         return cfg.getSecureSessionSpi().toString();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getTopologySpiFormatted() {
-        assert cfg != null;
-
-        return Arrays.toString(cfg.getTopologySpi());
     }
 
     /** {@inheritDoc} */
@@ -671,7 +655,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
-            startManager(ctx, new GridLocalMetricsManager(ctx), attrs);
             startManager(ctx, createComponent(GridAuthenticationManager.class, ctx), attrs);
             startManager(ctx, createComponent(GridSecureSessionManager.class, ctx), attrs);
             startManager(ctx, new GridIoManager(ctx), attrs);
@@ -682,7 +665,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startManager(ctx, new GridLoadBalancerManager(ctx), attrs);
             startManager(ctx, new GridFailoverManager(ctx), attrs);
             startManager(ctx, new GridCollisionManager(ctx), attrs);
-            startManager(ctx, new GridTopologyManager(ctx), attrs);
             startManager(ctx, new GridSwapSpaceManager(ctx), attrs);
             startManager(ctx, new GridIndexingManager(ctx), attrs);
 
@@ -994,13 +976,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         A.notNull(cfg.getDeploymentSpi(), "cfg.getDeploymentSpi()");
         A.notNull(cfg.getDiscoverySpi(), "cfg.getDiscoverySpi()");
         A.notNull(cfg.getEventStorageSpi(), "cfg.getEventStorageSpi()");
-        A.notNull(cfg.getMetricsSpi(), "cfg.getMetricsSpi()");
         A.notNull(cfg.getAuthenticationSpi(), "cfg.getAuthenticationSpi()");
         A.notNull(cfg.getSecureSessionSpi(), "cfg.getSecureSessionSpi()");
         A.notNull(cfg.getCollisionSpi(), "cfg.getCollisionSpi()");
         A.notNull(cfg.getFailoverSpi(), "cfg.getFailoverSpi()");
         A.notNull(cfg.getLoadBalancingSpi(), "cfg.getLoadBalancingSpi()");
-        A.notNull(cfg.getTopologySpi(), "cfg.getTopologySpi()");
         A.notNull(cfg.getIndexingSpi(), "cfg.getIndexingSpi()");
 
         A.ensure(cfg.getNetworkTimeout() > 0, "cfg.getNetworkTimeout() > 0");
@@ -1222,14 +1202,12 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         // Stick in SPI versions and classes attributes.
         addAttributes(attrs, cfg.getCollisionSpi());
         addAttributes(attrs, cfg.getSwapSpaceSpi());
-        addAttributes(attrs, cfg.getTopologySpi());
         addAttributes(attrs, cfg.getDiscoverySpi());
         addAttributes(attrs, cfg.getFailoverSpi());
         addAttributes(attrs, cfg.getCommunicationSpi());
         addAttributes(attrs, cfg.getEventStorageSpi());
         addAttributes(attrs, cfg.getCheckpointSpi());
         addAttributes(attrs, cfg.getLoadBalancingSpi());
-        addAttributes(attrs, cfg.getMetricsSpi());
         addAttributes(attrs, cfg.getAuthenticationSpi());
         addAttributes(attrs, cfg.getSecureSessionSpi());
         addAttributes(attrs, cfg.getDeploymentSpi());
@@ -1564,6 +1542,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /**
      * Acks ASCII-logo. Thanks to http://patorjk.com/software/taag
+     *
+     * @param build Build.
      */
     private void ackAsciiLogo(String build) {
         assert log != null;
@@ -2087,7 +2067,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      *
      * @return {@code True} if remote JMX management is enabled - {@code false} otherwise.
      */
-    public boolean isJmxRemoteEnabled() {
+    @Override public boolean isJmxRemoteEnabled() {
         return System.getProperty("com.sun.management.jmxremote") != null;
     }
 
@@ -2099,7 +2079,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @return {@code True} if restart mode is enabled, {@code false} otherwise.
      * @see GridGain#restart(boolean)
      */
-    public boolean isRestartEnabled() {
+    @Override public boolean isRestartEnabled() {
         return System.getProperty(GG_SUCCESS_FILE) != null;
     }
 
@@ -2119,7 +2099,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @see GridConfiguration#isSmtpStartTls()
      * @see #sendAdminEmailAsync(String, String, boolean)
      */
-    public boolean isSmtpEnabled() {
+    @Override public boolean isSmtpEnabled() {
         assert cfg != null;
 
         return cfg.getSmtpHost() != null;
@@ -2143,11 +2123,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             log.debug("Grid event storage SPI  : " + cfg.getEventStorageSpi());
             log.debug("Grid failover SPI       : " + Arrays.toString(cfg.getFailoverSpi()));
             log.debug("Grid load balancing SPI : " + Arrays.toString(cfg.getLoadBalancingSpi()));
-            log.debug("Grid metrics SPI        : " + cfg.getMetricsSpi());
             log.debug("Grid authentication SPI : " + cfg.getAuthenticationSpi());
             log.debug("Grid secure session SPI : " + cfg.getSecureSessionSpi());
             log.debug("Grid swap space SPI     : " + cfg.getSwapSpaceSpi());
-            log.debug("Grid topology SPI       : " + Arrays.toString(cfg.getTopologySpi()));
         }
     }
 
@@ -2416,7 +2394,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @see #isSmtpEnabled()
      * @see GridConfiguration#getAdminEmails()
      */
-    public GridFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html) {
+    @Override public GridFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html) {
         A.notNull(subj, "subj");
         A.notNull(body, "body");
 

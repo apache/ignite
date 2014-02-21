@@ -125,11 +125,10 @@ public interface GridEvents {
      *
      * @param consumeId Consume ID that was returned from
      *      {@link #consumeRemote(GridBiPredicate, GridPredicate, int...)} method.
-     *      If {@code null}, this method is no-op.
      * @return Future that finishes when all listeners are unregistered.
      * @see #consumeRemote(GridBiPredicate, GridPredicate, int...)
      */
-    public GridFuture<?> stopConsume(@Nullable UUID consumeId);
+    public GridFuture<?> stopConsume(UUID consumeId);
 
     /**
      * Gets event future that allows for asynchronous waiting for the specified events.
@@ -160,15 +159,10 @@ public interface GridEvents {
      *
      * @param p Mandatory predicates to filter events. All predicates must be satisfied for the
      *      event to be returned.
-     *      <p>
-     *      <b>Note:</b> unlike other methods in GridGain APIs if no predicates is provided this
-     *      method will return no results. This exception is made to avoid situation when all local
-     *      events are erroneously returned. Returning all local events may result in creating
-     *      collection with tens of thousands elements seriously compromising the system's performance.
      * @return Collection of grid events found on local node.
      * @see PE
      */
-    public Collection<GridEvent> queryLocal(@Nullable GridPredicate<GridEvent>... p);
+    public Collection<GridEvent> queryLocal(GridPredicate<GridEvent> p);
 
     /**
      * Records locally generated event. Registered local listeners will be notified, if any. This
@@ -211,37 +205,8 @@ public interface GridEvents {
      * @throws GridRuntimeException Thrown in case when passed in array of event types is empty.
      * @see GridEvent
      * @see GridEventType
-     * @see #addLocalListener(GridLocalEventListener, int, int...)
      */
-    public void addLocalListener(GridLocalEventListener lsnr, int[] types);
-
-    /**
-     * Adds an event listener for local events.
-     * <p>
-     * Note that by default all events in GridGain are enabled and therefore generated and stored
-     * by whatever event storage SPI is configured. GridGain can and often does generate thousands events per seconds
-     * under the load and therefore it creates a significant additional load on the system. If these events are
-     * not needed by the application this load is unnecessary and leads to significant performance degradation.
-     * <p>
-     * It is <b>highly recommended</b> to enable only those events that your application logic requires
-     * by using {@link GridConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
-     * events are required for GridGain's internal operations and such events will still be generated but not stored by
-     * event storage SPI if they are disabled in GridGain configuration.
-     * <p>
-     * Note that unlike its sibling method this method never throws an exception because its signature
-     * guarantees that there is at least one event type to subscribe for.
-     * <p>
-     * Note also that since event types are defined as integer the unknown (invalid) event types cannot be detected
-     * and therefore will be ignored (because there is no way to know which user-defined types are used).
-     *
-     * @param lsnr Event listener for local events to add.
-     * @param type Event type for which this listener will be notified.
-     * @param types Optional event types for which this listener will be notified.
-     * @see GridEvent
-     * @see GridEventType
-     * @see #addLocalListener(GridLocalEventListener, int[])
-     */
-    public void addLocalListener(GridLocalEventListener lsnr, int type, @Nullable int... types);
+    public void addLocalListener(GridLocalEventListener lsnr, int... types);
 
     /**
      * Removes local event listener.
@@ -259,55 +224,20 @@ public interface GridEvents {
      * Enables provided events. Allows to start recording events that
      * were disabled before. Can be used to enable event recording
      * temporarily for monitoring purposes. Recording can be disabled
-     * by {@link #disableLocal(int[])} or {@link #disableLocal(int, int...)}
-     * method.
+     * by {@link #disableLocal(int[])} method.
      *
      * @param types Events to enable.
-     * @see #enableLocal(int, int...)
      * @see #disableLocal(int[])
-     * @see #disableLocal(int, int...)
      */
-    public void enableLocal(int[] types);
-
-    /**
-     * Enables provided events. Allows to start recording events that
-     * were disabled before. Can be used to enable event recording
-     * temporarily for monitoring purposes. Recording can be disabled
-     * by {@link #disableLocal(int[])} or {@link #disableLocal(int, int...)}
-     * method.
-     *
-     * @param type Event to enable.
-     * @param types Events to enable.
-     * @see #enableLocal(int[])
-     * @see #disableLocal(int[])
-     * @see #disableLocal(int, int...)
-     */
-    public void enableLocal(int type, @Nullable int... types);
+    public void enableLocal(int... types);
 
     /**
      * Disables provided events. Allows to stop recording events that
      * were enabled before. Any disabled events can be enabled again
-     * by {@link #enableLocal(int[])} or {@link #enableLocal(int, int...)}
-     * method.
+     * by {@link #enableLocal(int[])} method.
      *
      * @param types Events to disable.
-     * @see #disableLocal(int, int...)
      * @see #enableLocal(int[])
-     * @see #enableLocal(int, int...)
      */
-    public void disableLocal(int[] types);
-
-    /**
-     * Disables provided events. Allows to stop recording events that
-     * were enabled before. Any disabled events can be enabled again
-     * by {@link #enableLocal(int[])} or {@link #enableLocal(int, int...)}
-     * method.
-     *
-     * @param type Event to disable.
-     * @param types Events to disable.
-     * @see #disableLocal(int[])
-     * @see #enableLocal(int[])
-     * @see #enableLocal(int, int...)
-     */
-    public void disableLocal(int type, @Nullable int... types);
+    public void disableLocal(int... types);
 }

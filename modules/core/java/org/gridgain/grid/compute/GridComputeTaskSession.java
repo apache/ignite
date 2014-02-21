@@ -10,10 +10,8 @@
 package org.gridgain.grid.compute;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.checkpoint.*;
-import org.gridgain.grid.spi.topology.*;
 import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
@@ -473,20 +471,9 @@ public interface GridComputeTaskSession {
     public boolean removeCheckpoint(String key) throws GridException;
 
     /**
-     * Gets a collection of grid nodes IDs. Grid nodes are discovered via underlying
-     * {@link GridTopologySpi} implementation used to obtain a topology for the task's split.
+     * Gets a collection of grid nodes IDs.
      *
      * @return Collection of grid nodes IDs for the task's split.
-     * @throws GridException Thrown in case of any errors.
      */
-    public Collection<UUID> getTopology() throws GridException;
-
-    /**
-     * Gets the topology projection predicate,
-     * which selects the nodes for sub-projection.
-     *
-     * @return Topology projection predicates or null, if not set.
-     * @throws GridException If failed to unmarshal node filter.
-     */
-    @Nullable public GridPredicate<GridNode> getNodeFilter() throws GridException;
+    public Collection<UUID> getTopology();
 }

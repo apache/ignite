@@ -14,7 +14,6 @@ import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.resources.*;
-import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -111,42 +110,40 @@ public class GridMessagingImpl implements GridMessaging {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <T> void localListen(@Nullable Object topic, @Nullable GridBiPredicate<UUID, T> p) {
-        if (p != null) {
-            guard();
+    @Override public void localListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) {
+        A.notNull(p, "p");
 
-            try {
-                ctx.io().listenAsync(topic, p);
-            }
-            finally {
-                unguard();
-            }
+        guard();
+
+        try {
+            ctx.io().listenAsync(topic, p);
+        }
+        finally {
+            unguard();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridFuture<?> remoteListen(@Nullable Object topic, @Nullable GridBiPredicate<UUID, T> p) {
-        if (p != null) {
-            guard();
+    @Override public GridFuture<?> remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) {
+        A.notNull(p, "p");
 
-            try {
-                GridContinuousHandler hnd = new GridMessageListenHandler(topic, (GridBiPredicate<UUID, Object>)p);
+        guard();
 
-                return ctx.continuous().startRoutine(hnd, 1, 0, false, prj.predicate()).chain(
-                    new CX1<GridFuture<UUID>, Object>() {
-                        @Override public Object applyx(GridFuture<UUID> f) throws GridException {
-                            f.get();
+        try {
+            GridContinuousHandler hnd = new GridMessageListenHandler(topic, (GridBiPredicate<UUID, Object>)p);
 
-                            return null;
-                        }
-                    });
-            }
-            finally {
-                unguard();
-            }
+            return ctx.continuous().startRoutine(hnd, 1, 0, false, prj.predicate()).chain(
+                new CX1<GridFuture<UUID>, Object>() {
+                    @Override public Object applyx(GridFuture<UUID> f) throws GridException {
+                        f.get();
+
+                        return null;
+                    }
+                });
         }
-        else
-            return new GridFinishedFuture<>(ctx);
+        finally {
+            unguard();
+        }
     }
 
     /**
@@ -161,46 +158,5 @@ public class GridMessagingImpl implements GridMessaging {
      */
     private void unguard() {
         ctx.gateway().readUnlock();
-    }
-
-    /**
-     * Runnable that registers given listeners from given nodes. This class
-     * is used for registering listeners on the remote nodes.
-     */
-    @SuppressWarnings({"UnusedDeclaration"})
-    private static class RemoteListenAsyncJob<T> extends GridRunnable {
-        /** */
-        @GridInstanceResource
-        private Grid grid;
-
-        /** */
-        private Collection<UUID> nodeIds;
-
-        /** */
-        private GridBiPredicate<UUID, ? super T> p;
-
-        /** */
-        @Nullable private Object topic;
-
-        /**
-         * @param topic Topic.
-         * @param nodeIds IDs of nodes to listen messages from.
-         * @param p Set of message listeners to register.
-         */
-        RemoteListenAsyncJob(@Nullable Object topic, Collection<UUID> nodeIds, GridBiPredicate<UUID, ? super T> p) {
-            assert nodeIds != null;
-            assert p != null;
-
-            this.topic = topic;
-            this.nodeIds = nodeIds;
-            this.p = p;
-
-            peerDeployLike(U.peerDeployAware0(topic, p));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            grid.forNodeIds(nodeIds).message().localListen(topic, p);
-        }
     }
 }

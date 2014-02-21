@@ -9,13 +9,10 @@
 
 package org.gridgain.grid.kernal;
 
-import org.apache.commons.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.future.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -86,19 +83,17 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> stopConsume(@Nullable UUID consumeId) {
-        if (consumeId != null) {
-            guard();
+    @Override public GridFuture<?> stopConsume(UUID consumeId) {
+        A.notNull(consumeId, "consumeId");
 
-            try {
-                return ctx.continuous().stopRoutine(consumeId);
-            }
-            finally {
-                unguard();
-            }
+        guard();
+
+        try {
+            return ctx.continuous().stopRoutine(consumeId);
         }
-        else
-            return new GridFinishedFuture<>(ctx);
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */
@@ -115,9 +110,8 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridEvent> queryLocal(@Nullable GridPredicate<GridEvent>... p) {
-        if (F.isEmpty(p))
-            return Collections.emptyList();
+    @Override public Collection<GridEvent> queryLocal(GridPredicate<GridEvent> p) {
+        A.notNull(p, "p");
 
         guard();
 
@@ -150,32 +144,12 @@ public class GridEventsImpl implements GridEvents {
     /** {@inheritDoc} */
     @Override public void addLocalListener(GridLocalEventListener lsnr, int[] types) {
         A.notNull(lsnr, "lsnr");
-        A.notNull(types, "types");
+        A.notEmpty(types, "types");
 
         guard();
 
         try {
-            if (types.length == 0)
-                throw new GridRuntimeException("Array of event types cannot be empty.");
-
             ctx.event().addLocalEventListener(lsnr, types);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addLocalListener(GridLocalEventListener lsnr, int type, @Nullable int... types) {
-        A.notNull(lsnr, "lsnr");
-
-        guard();
-
-        try {
-            addLocalListener(lsnr, new int[]{type});
-
-            if (types != null && types.length > 0)
-                addLocalListener(lsnr, types);
         }
         finally {
             unguard();
@@ -198,7 +172,7 @@ public class GridEventsImpl implements GridEvents {
 
     /** {@inheritDoc} */
     @Override public void enableLocal(int[] types) {
-        A.notNull(types, "types");
+        A.notEmpty(types, "types");
 
         guard();
 
@@ -211,37 +185,13 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public void enableLocal(int type, @Nullable int... types) {
-        guard();
-
-        try {
-            ctx.event().enableEvents(!F.isEmpty(types) ? ArrayUtils.add(types, type) : new int[] {type});
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void disableLocal(int[] types) {
-        A.notNull(types, "types");
+        A.notEmpty(types, "types");
 
         guard();
 
         try {
             ctx.event().disableEvents(types);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void disableLocal(int type, @Nullable int... types) {
-        guard();
-
-        try {
-            ctx.event().disableEvents(!F.isEmpty(types) ? ArrayUtils.add(types, type) : new int[] {type});
         }
         finally {
             unguard();

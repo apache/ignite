@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.discovery;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.metrics.*;
+import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -159,15 +159,6 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
 
     /** */
     private int daemonThreadCnt = -1;
-
-    /** */
-    private long fileSysFreeSpace = -1;
-
-    /** */
-    private long fileSysTotalSpace = -1;
-
-    /** */
-    private long fileSysUsableSpace = -1;
 
     /** */
     private long lastDataVer = -1;
@@ -637,21 +628,6 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Override public long getFileSystemFreeSpace() {
-        return fileSysFreeSpace;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getFileSystemTotalSpace() {
-        return fileSysTotalSpace;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getFileSystemUsableSpace() {
-        return fileSysUsableSpace;
-    }
-
-    /** {@inheritDoc} */
     @Override public long getLastDataVersion() {
         return lastDataVer;
     }
@@ -848,34 +824,6 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
     }
 
     /**
-     * Sets the number of unallocated bytes in the partition.
-     *
-     * @param fileSysFreeSpace The number of unallocated bytes in the partition.
-     */
-    public void setFileSystemFreeSpace(long fileSysFreeSpace) {
-        this.fileSysFreeSpace = fileSysFreeSpace;
-    }
-
-    /**
-     * Sets size of the partition.
-     *
-     * @param fileSysTotalSpace Size of the partition.
-     */
-    public void setFileSystemTotalSpace(long fileSysTotalSpace) {
-        this.fileSysTotalSpace = fileSysTotalSpace;
-    }
-
-    /**
-     * Sets the number of bytes available to this virtual machine on the partition.
-     *
-     * @param fileSysUsableSpace The number of bytes available to
-     *      this virtual machine on the partition.
-     */
-    public void setFileSystemUsableSpace(long fileSysUsableSpace) {
-        this.fileSysUsableSpace = fileSysUsableSpace;
-    }
-
-    /**
      * Sets last data version.
      *
      * @param lastDataVer Last data version.
@@ -966,9 +914,6 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
         out.writeInt(peakThreadCnt);
         out.writeLong(startedThreadCnt);
         out.writeInt(daemonThreadCnt);
-        out.writeLong(fileSysFreeSpace);
-        out.writeLong(fileSysTotalSpace);
-        out.writeLong(fileSysUsableSpace);
         out.writeLong(lastDataVer);
         out.writeInt(sentMsgsCnt);
         out.writeLong(sentBytesCnt);
@@ -1024,9 +969,6 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
         peakThreadCnt = in.readInt();
         startedThreadCnt = in.readLong();
         daemonThreadCnt = in.readInt();
-        fileSysFreeSpace = in.readLong();
-        fileSysTotalSpace = in.readLong();
-        fileSysUsableSpace = in.readLong();
         lastDataVer = in.readLong();
         sentMsgsCnt = in.readInt();
         sentBytesCnt = in.readLong();
@@ -1088,9 +1030,6 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
             totalExecTasks == other.totalExecTasks &&
             totalIdleTime == other.totalIdleTime &&
             totalRejectedJobs == other.totalRejectedJobs &&
-            fileSysFreeSpace == other.fileSysFreeSpace &&
-            fileSysTotalSpace == other.fileSysTotalSpace &&
-            fileSysUsableSpace == other.fileSysUsableSpace &&
             upTime == other.upTime;
     }
 

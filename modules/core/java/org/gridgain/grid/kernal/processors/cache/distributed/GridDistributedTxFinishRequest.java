@@ -594,7 +594,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 39;
+        return 24;
     }
 
     /** {@inheritDoc} */

@@ -265,7 +265,7 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
 
     /** {@inheritDoc} */
     @Override public GridProjection forNodes(Collection<? extends GridNode> nodes) {
-        A.ensure(!F.isEmpty(nodes), "nodes must not be empty.");
+        A.notEmpty(nodes, "nodes");
 
         Set<UUID> nodeIds = new HashSet<>(nodes.size());
 
@@ -298,7 +298,7 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
 
     /** {@inheritDoc} */
     @Override public GridProjection forNodeIds(Collection<UUID> ids) {
-        A.ensure(!F.isEmpty(ids), "ids must not be empty.");
+        A.notEmpty(ids, "ids");
 
         // Static projection.
         return newProjection(new HashSet<>(ids), true);

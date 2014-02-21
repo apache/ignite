@@ -351,7 +351,7 @@ public class GridReplicatedPreloadSupplyMessage<K, V> extends GridCacheMessage<K
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 56;
+        return 60;
     }
 
     /** {@inheritDoc} */

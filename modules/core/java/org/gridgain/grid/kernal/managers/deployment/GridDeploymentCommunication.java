@@ -301,20 +301,20 @@ class GridDeploymentCommunication {
 
     /**
      * @param rsrcName Resource to undeploy.
+     * @param rmtNodes Nodes to send request to.
      * @throws GridException If request could not be sent.
      */
-    void sendUndeployRequest(String rsrcName) throws GridException {
-        GridTcpCommunicationMessageAdapter req = new GridDeploymentRequest(null, null, rsrcName, true);
+    void sendUndeployRequest(String rsrcName, Collection<GridNode> rmtNodes) throws GridException {
+        assert !rmtNodes.contains(ctx.discovery().localNode());
 
-        Collection<GridNode> rmtNodes = ctx.discovery().remoteNodes();
+        GridTcpCommunicationMessageAdapter req = new GridDeploymentRequest(null, null, rsrcName, true);
 
         if (!rmtNodes.isEmpty()) {
             ctx.io().send(
                 rmtNodes,
                 TOPIC_CLASSLOAD,
                 req,
-                GridIoPolicy.P2P_POOL
-            );
+                GridIoPolicy.P2P_POOL);
         }
     }
 

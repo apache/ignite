@@ -20,16 +20,15 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.managers.failover.*;
 import org.gridgain.grid.kernal.managers.indexing.*;
 import org.gridgain.grid.kernal.managers.loadbalancer.*;
-import org.gridgain.grid.kernal.managers.metrics.*;
 import org.gridgain.grid.kernal.managers.securesession.*;
 import org.gridgain.grid.kernal.managers.swapspace.*;
-import org.gridgain.grid.kernal.managers.topology.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
+import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.email.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.job.*;
@@ -37,7 +36,6 @@ import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.port.*;
-import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.schedule.*;
@@ -357,25 +355,11 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     public GridFailoverManager failover();
 
     /**
-     * Gets topology manager.
-     *
-     * @return Topology manager.
-     */
-    public GridTopologyManager topology();
-
-    /**
      * Gets collision manager.
      *
      * @return Collision manager.
      */
     public GridCollisionManager collision();
-
-    /**
-     * Gets local metrics manager.
-     *
-     * @return Metrics manager.
-     */
-    public GridLocalMetricsManager localMetric();
 
     /**
      * Gets authentication manager.

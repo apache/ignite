@@ -16,7 +16,6 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;
@@ -321,13 +320,15 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         GridComputeTaskSpis spis = dep.annotation(taskCls, GridComputeTaskSpis.class);
 
         if (spis != null) {
-            ses.setTopologySpi(spis.topologySpi());
             ses.setLoadBalancingSpi(spis.loadBalancingSpi());
             ses.setFailoverSpi(spis.failoverSpi());
             ses.setCheckpointSpi(spis.checkpointSpi());
         }
 
         // Thread-local overrides annotation based setting.
+
+        if (thCtx == null)
+            return;
 
         String spi = getThreadContext(TC_FAILOVER_SPI);
 
@@ -343,11 +344,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         if (spi != null)
             ses.setLoadBalancingSpi(spi);
-
-        spi = getThreadContext(TC_TOPOLOGY_SPI);
-
-        if (spi != null)
-            ses.setTopologySpi(spi);
     }
 
     /**
@@ -540,20 +536,16 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @throws GridException Thrown in case of any error.
      */
     private List<GridNode> getTaskTopology() throws GridException {
-        Collection<? extends GridNode> subgrid = getThreadContext(TC_SUBGRID);
+        Collection<UUID> top = ses.getTopology();
 
-        if (subgrid == null)
-            subgrid = ctx.discovery().allNodes();
+        Collection<? extends GridNode> subgrid = top != null ? ctx.discovery().nodes(top) : ctx.discovery().allNodes();
 
-        // Obtain topology from topology SPI.
-        Collection<? extends GridNode> nodes = ctx.topology().getTopology(ses, subgrid);
-
-        if (F.isEmpty(nodes))
+        if (F.isEmpty(subgrid))
             throw new GridEmptyProjectionException("Topology projection is empty.");
 
-        List<GridNode> shuffledNodes = new ArrayList<>(nodes.size());
+        List<GridNode> shuffledNodes = new ArrayList<>(subgrid.size());
 
-        for (GridNode node : nodes)
+        for (GridNode node : subgrid)
             shuffledNodes.add(node);
 
         if (shuffledNodes.size() > 1)
@@ -1092,8 +1084,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     Map<? extends Serializable, ? extends Serializable> jobAttrs =
                         (Map<? extends Serializable, ? extends Serializable>)res.getJobContext().getAttributes();
 
-                    GridPredicate<GridNode> nodeFilter = ses.getNodeFilter();
-
                     boolean forceLocDep = internal || !ctx.deploy().enabled();
 
                     req = new GridJobExecuteRequest(
@@ -1106,6 +1096,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         loc ? res.getJob() : null,
                         ses.getStartTime(),
                         timeout,
+                        ses.getTopology(),
                         loc ? null : marsh.marshal(ses.getJobSiblings()),
                         loc ? ses.getJobSiblings() : null,
                         loc ? null : marsh.marshal(sesAttrs),
@@ -1117,8 +1108,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         dep.deployMode(),
                         continuous,
                         dep.participants(),
-                        !loc && nodeFilter != null ? marsh.marshal(nodeFilter) : null,
-                        nodeFilter,
                         forceLocDep,
                         ses.isFullSupport(),
                         internal);

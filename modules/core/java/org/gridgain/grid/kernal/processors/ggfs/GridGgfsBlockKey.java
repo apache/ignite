@@ -261,7 +261,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 72;
+        return 70;
     }
 
     /** {@inheritDoc} */

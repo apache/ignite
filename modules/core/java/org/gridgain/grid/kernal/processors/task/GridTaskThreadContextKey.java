@@ -21,9 +21,6 @@ public enum GridTaskThreadContextKey {
     /** Failover SPI name. */
     TC_FAILOVER_SPI,
 
-    /** Topology SPI name. */
-    TC_TOPOLOGY_SPI,
-
     /** Load balancing SPI name. */
     TC_LOAD_BALANCING_SPI,
 
@@ -38,9 +35,6 @@ public enum GridTaskThreadContextKey {
 
     /** Projection for the task. */
     TC_SUBGRID,
-
-    /** Predicate associated with the task. */
-    TC_PREDICATE,
 
     /** Timeout in milliseconds associated with the task. */
     TC_TIMEOUT,

@@ -391,7 +391,7 @@ public interface GridNodeMetrics extends Serializable {
     public int getTotalCpus();
 
     /**
-     * Returns the CPU usage usage in <code>[0, 1]</code> range.
+     * Returns the CPU usage usage in {@code [0, 1]} range.
      * The exact way how this number is calculated depends on SPI implementation.
      * <p>
      * If the CPU usage is not available, a negative value is returned.
@@ -400,7 +400,7 @@ public interface GridNodeMetrics extends Serializable {
      * and may be queried frequently. The load average may be unavailable on
      * some platform where it is expensive to implement this method.
      *
-     * @return The estimated CPU usage in <code>[0, 1]</code> range.
+     * @return The estimated CPU usage in {@code [0, 1]} range.
      *      Negative value if not available.
      */
     @GridMBeanDescription("The system load average; or a negative value if not available.")
@@ -417,7 +417,7 @@ public interface GridNodeMetrics extends Serializable {
      * <li>{@link GridConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
-     * @return Average of CPU load value in <code>[0, 1]</code> range over all metrics kept
+     * @return Average of CPU load value in {@code [0, 1]} range over all metrics kept
      *      in the history.
      */
     @GridMBeanDescription("Average of CPU load values over all metrics kept in the history.")
@@ -638,30 +638,6 @@ public interface GridNodeMetrics extends Serializable {
      */
     @GridMBeanDescription("Current number of live daemon threads.")
     public int getCurrentDaemonThreadCount();
-
-    /**
-     * Returns the number of unallocated bytes in the partition.
-     *
-     * @return Number of unallocated bytes in the partition.
-     */
-    @GridMBeanDescription("Number of unallocated bytes in the partition.")
-    public long getFileSystemFreeSpace();
-
-    /**
-     *  Returns the size of the partition.
-     *
-     * @return Size of the partition.
-     */
-    @GridMBeanDescription("Size of the partition.")
-    public long getFileSystemTotalSpace();
-
-    /**
-     * Returns the number of bytes available to this virtual machine on the partition.
-     *
-     * @return Number of bytes available to this virtual machine on the partition.
-     */
-    @GridMBeanDescription("Number of bytes available to this virtual machine on the partition.")
-    public long getFileSystemUsableSpace();
 
     /**
      * In-Memory Data Grid assigns incremental versions to all cache operations. This method provides

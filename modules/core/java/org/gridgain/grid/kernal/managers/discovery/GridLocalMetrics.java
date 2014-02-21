@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.metrics;
+package org.gridgain.grid.kernal.managers.discovery;
 
 import java.io.*;
 
@@ -208,25 +208,4 @@ public interface GridLocalMetrics extends Serializable {
      * @return The current number of live daemon threads.
      */
     public int getDaemonThreadCount();
-
-    /**
-     * Returns the number of unallocated bytes in the partition.
-     *
-     * @return Number of unallocated bytes in the partition.
-     */
-    public long getFileSystemFreeSpace();
-
-    /**
-     * Returns size of the partition.
-     *
-     * @return Size of the partition.
-     */
-    public long getFileSystemTotalSpace();
-
-    /**
-     * Returns the number of bytes available to this virtual machine on the partition.
-     *
-     * @return Number of bytes available to this virtual machine on the partition.
-     */
-    public long getFileSystemUsableSpace();
 }

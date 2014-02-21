@@ -139,7 +139,10 @@ public class GridStreamerContextImpl implements GridStreamerContext {
         ctx.gateway().readLock();
 
         try {
-            GridProjection prj = projection0().forNodes(nodes);
+            GridProjection prj = projection0();
+
+            if (!F.isEmpty(nodes))
+                prj = prj.forNodes(nodes);
 
             prj.compute().execute(new GridStreamerBroadcastTask(clo, streamer.name()), null).get();
         }
@@ -160,7 +163,10 @@ public class GridStreamerContextImpl implements GridStreamerContext {
         ctx.gateway().readLock();
 
         try {
-            GridProjection prj = projection0().forNodes(nodes);
+            GridProjection prj = projection0();
+
+            if (!F.isEmpty(nodes))
+                prj = prj.forNodes(nodes);
 
             return prj.compute().execute(new GridStreamerReduceTask<>(clo, rdc, streamer.name()), null).get();
         }

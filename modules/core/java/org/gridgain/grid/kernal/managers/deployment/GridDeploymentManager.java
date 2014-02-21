@@ -193,15 +193,19 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
 
     /**
      * @param taskName Task name.
+     * @param locUndeploy Local undeploy flag.
+     * @param rmtNodes Nodes to send request to.
      */
-    public void undeployTask(String taskName) {
+    public void undeployTask(String taskName, boolean locUndeploy, Collection<GridNode> rmtNodes) {
         assert taskName != null;
+        assert !rmtNodes.contains(ctx.discovery().localNode());
 
         if (locDep == null) {
-            locStore.explicitUndeploy(null, taskName);
+            if (locUndeploy)
+                locStore.explicitUndeploy(null, taskName);
 
             try {
-                comm.sendUndeployRequest(taskName);
+                comm.sendUndeployRequest(taskName, rmtNodes);
             }
             catch (GridException e) {
                 U.error(log, "Failed to send undeployment request for task: " + taskName, e);
@@ -536,6 +540,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public void undeploy() {
             // No-op.
         }
@@ -555,6 +560,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public void release() {
             // No-op.
         }

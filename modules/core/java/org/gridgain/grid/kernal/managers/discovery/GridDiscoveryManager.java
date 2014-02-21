@@ -21,7 +21,6 @@ import org.gridgain.grid.product.*;
 import org.gridgain.grid.segmentation.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
-import org.gridgain.grid.spi.metrics.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -32,6 +31,7 @@ import org.gridgain.grid.util.worker.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.lang.management.*;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -53,10 +53,28 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     /** Fake key for {@code null}-named caches. Used inside {@link DiscoCache}. */
     private static final String NULL_CACHE_NAME = UUID.randomUUID().toString();
 
+    /** Metrics update frequency. */
+    private static final long METRICS_UPDATE_FREQ = 3000;
+
     /** Dynamically proxy-enabled methods for shadow. */
     private static final String[] SHADOW_PROXY_METHODS = new String[] {
         "id", "attribute", "attributes", "order"
     };
+
+    /** */
+    private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
+
+    /** */
+    private static final OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
+
+    /** */
+    private static final RuntimeMXBean rt = ManagementFactory.getRuntimeMXBean();
+
+    /** */
+    private static final ThreadMXBean threads = ManagementFactory.getThreadMXBean();
+
+    /** */
+    private static final Collection<GarbageCollectorMXBean> gc = ManagementFactory.getGarbageCollectorMXBeans();
 
     /** */
     private static final String PREFIX = "Topology snapshot";
@@ -89,9 +107,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     /** Discovery event worker. */
     private final DiscoveryWorker discoWrk = new DiscoveryWorker();
 
-    /** Discovery event worker thread. */
-    private GridThread discoWrkThread;
-
     /** Network segment check worker. */
     private SegmentCheckWorker segChkWrk;
 
@@ -100,9 +115,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
     /** Reconnect worker. */
     private ReconnectWorker reconWrk;
-
-    /** Reconnect thread. */
-    private GridThread reconThread;
 
     /** Last logged topology. */
     private final AtomicLong lastLoggedTop = new AtomicLong();
@@ -145,10 +157,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     /** Local node join to topology event. */
     private GridDiscoveryEvent locJoinEvt;
 
-    /** @param ctx Context. */
-    public GridDiscoveryManager(GridKernalContext ctx) {
-        super(ctx, ctx.config().getDiscoverySpi());
-    }
+    /** GC CPU load. */
+    private volatile double gcCpuLoad;
+
+    /** CPU load. */
+    private volatile double cpuLoad;
+
+    /** Metrics. */
+    private final GridLocalMetrics metrics = createMetrics();
+
+    /** Metrics update worker. */
+    private final MetricsUpdater metricsUpdater = new MetricsUpdater();
 
     /**
      * Checks that node shadow has all methods used in proxy.
@@ -173,6 +192,32 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         }
     }
 
+    /** @param ctx Context. */
+    public GridDiscoveryManager(GridKernalContext ctx) {
+        super(ctx, ctx.config().getDiscoverySpi());
+    }
+
+    /**
+     * @return Memory usage of non-heap memory.
+     */
+    private MemoryUsage nonHeapMemoryUsage() {
+        // Workaround of exception in WebSphere.
+        // We received the following exception:
+        // java.lang.IllegalArgumentException: used value cannot be larger than the committed value
+        // at java.lang.management.MemoryUsage.<init>(MemoryUsage.java:105)
+        // at com.ibm.lang.management.MemoryMXBeanImpl.getNonHeapMemoryUsageImpl(Native Method)
+        // at com.ibm.lang.management.MemoryMXBeanImpl.getNonHeapMemoryUsage(MemoryMXBeanImpl.java:143)
+        // at org.gridgain.grid.spi.metrics.jdk.GridJdkLocalMetricsSpi.getMetrics(GridJdkLocalMetricsSpi.java:242)
+        //
+        // We so had to workaround this with exception handling, because we can not control classes from WebSphere.
+        try {
+            return mem.getNonHeapMemoryUsage();
+        }
+        catch (IllegalArgumentException ignored) {
+            return new MemoryUsage(0, 0, 0, 0);
+        }
+    }
+
     /**
      * Sets local node attributes into discovery SPI.
      *
@@ -180,6 +225,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param ver Version.
      */
     public void setNodeAttributes(Map<String, Object> attrs, GridProductVersion ver) {
+        // TODO GG-7574 move to metrics processor?
+        long totSysMemory = -1;
+
+        try {
+            totSysMemory = U.<Long>property(os, "totalPhysicalMemorySize");
+        }
+        catch (RuntimeException ignored) {
+            // No-op.
+        }
+
+        attrs.put(GridNodeAttributes.ATTR_PHY_RAM, totSysMemory);
+
         getSpi().setNodeAttributes(attrs, ver);
     }
 
@@ -206,95 +263,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             checkSegmentOnStart();
         }
 
-        getSpi().setMetricsProvider(new GridDiscoveryMetricsProvider() {
-            /** */
-            private final long startTime = U.currentTimeMillis();
+        new GridThread(metricsUpdater).start();
 
-            /** {@inheritDoc} */
-            @Override public GridNodeMetrics getMetrics() {
-                GridJobMetrics jm = ctx.jobMetric().getJobMetrics();
-
-                GridDiscoveryMetricsAdapter nm = new GridDiscoveryMetricsAdapter();
-
-                nm.setLastUpdateTime(U.currentTimeMillis());
-
-                // Job metrics.
-                nm.setMaximumActiveJobs(jm.getMaximumActiveJobs());
-                nm.setCurrentActiveJobs(jm.getCurrentActiveJobs());
-                nm.setAverageActiveJobs(jm.getAverageActiveJobs());
-                nm.setMaximumWaitingJobs(jm.getMaximumWaitingJobs());
-                nm.setCurrentWaitingJobs(jm.getCurrentWaitingJobs());
-                nm.setAverageWaitingJobs(jm.getAverageWaitingJobs());
-                nm.setMaximumRejectedJobs(jm.getMaximumRejectedJobs());
-                nm.setCurrentRejectedJobs(jm.getCurrentRejectedJobs());
-                nm.setAverageRejectedJobs(jm.getAverageRejectedJobs());
-                nm.setMaximumCancelledJobs(jm.getMaximumCancelledJobs());
-                nm.setCurrentCancelledJobs(jm.getCurrentCancelledJobs());
-                nm.setAverageCancelledJobs(jm.getAverageCancelledJobs());
-                nm.setTotalRejectedJobs(jm.getTotalRejectedJobs());
-                nm.setTotalCancelledJobs(jm.getTotalCancelledJobs());
-                nm.setTotalExecutedJobs(jm.getTotalExecutedJobs());
-                nm.setMaximumJobWaitTime(jm.getMaximumJobWaitTime());
-                nm.setCurrentJobWaitTime(jm.getCurrentJobWaitTime());
-                nm.setAverageJobWaitTime(jm.getAverageJobWaitTime());
-                nm.setMaximumJobExecuteTime(jm.getMaximumJobExecuteTime());
-                nm.setCurrentJobExecuteTime(jm.getCurrentJobExecuteTime());
-                nm.setAverageJobExecuteTime(jm.getAverageJobExecuteTime());
-                nm.setCurrentIdleTime(jm.getCurrentIdleTime());
-                nm.setTotalIdleTime(jm.getTotalIdleTime());
-                nm.setAverageCpuLoad(jm.getAverageCpuLoad());
-
-                // Job metrics.
-                nm.setTotalExecutedTasks(ctx.task().getTotalExecutedTasks());
-
-                GridLocalMetrics lm = ctx.localMetric().metrics();
-
-                // VM metrics.
-                nm.setAvailableProcessors(lm.getAvailableProcessors());
-                nm.setCurrentCpuLoad(lm.getCurrentCpuLoad());
-                nm.setCurrentGcCpuLoad(lm.getCurrentGcCpuLoad());
-                nm.setHeapMemoryInitialized(lm.getHeapMemoryInitialized());
-                nm.setHeapMemoryUsed(lm.getHeapMemoryUsed());
-                nm.setHeapMemoryCommitted(lm.getHeapMemoryCommitted());
-                nm.setHeapMemoryMaximum(lm.getHeapMemoryMaximum());
-                nm.setNonHeapMemoryInitialized(lm.getNonHeapMemoryInitialized());
-                nm.setNonHeapMemoryUsed(lm.getNonHeapMemoryUsed());
-                nm.setNonHeapMemoryCommitted(lm.getNonHeapMemoryCommitted());
-                nm.setNonHeapMemoryMaximum(lm.getNonHeapMemoryMaximum());
-                nm.setUpTime(lm.getUptime());
-                nm.setStartTime(lm.getStartTime());
-                nm.setNodeStartTime(startTime);
-                nm.setCurrentThreadCount(lm.getThreadCount());
-                nm.setMaximumThreadCount(lm.getPeakThreadCount());
-                nm.setTotalStartedThreadCount(lm.getTotalStartedThreadCount());
-                nm.setCurrentDaemonThreadCount(lm.getDaemonThreadCount());
-                nm.setFileSystemFreeSpace(lm.getFileSystemFreeSpace());
-                nm.setFileSystemTotalSpace(lm.getFileSystemTotalSpace());
-                nm.setFileSystemUsableSpace(lm.getFileSystemUsableSpace());
-
-                // Data metrics.
-                nm.setLastDataVersion(ctx.cache().lastDataVersion());
-
-                GridIoManager io = ctx.io();
-
-                // IO metrics.
-                nm.setSentMessagesCount(io.getSentMessagesCount());
-                nm.setSentBytesCount(io.getSentBytesCount());
-                nm.setReceivedMessagesCount(io.getReceivedMessagesCount());
-                nm.setReceivedBytesCount(io.getReceivedBytesCount());
-
-                return nm;
-            }
-        });
+        getSpi().setMetricsProvider(createMetricsProvider());
 
         // Start reconnect worker first.
         // We should always start it, even if we have no resolvers.
         if (ctx.config().getSegmentationPolicy() == RECONNECT) {
             reconWrk = new ReconnectWorker();
 
-            reconThread = new GridThread(reconWrk);
-
-            reconThread.start();
+            new GridThread(reconWrk).start();
         }
 
         getSpi().setListener(new GridDiscoverySpiListener() {
@@ -394,14 +372,175 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         topVer.setIfGreater(locNode.order());
 
         // Start discovery worker.
-        discoWrkThread = new GridThread(ctx.gridName(), "disco-event-worker", discoWrk);
-
-        discoWrkThread.start();
+        new GridThread(discoWrk).start();
 
         ctx.versionConverter().onStart(discoCache().remoteNodes());
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
+    }
+
+    /**
+     * @return Metrics.
+     */
+    private GridLocalMetrics createMetrics() {
+        return new GridLocalMetrics() {
+            @Override public int getAvailableProcessors() {
+                return os.getAvailableProcessors();
+            }
+
+            @Override public double getCurrentCpuLoad() {
+                return cpuLoad;
+            }
+
+            @Override public double getCurrentGcCpuLoad() {
+                return gcCpuLoad;
+            }
+
+            @Override public long getHeapMemoryInitialized() {
+                return mem.getHeapMemoryUsage().getInit();
+            }
+
+            @Override public long getHeapMemoryUsed() {
+                return mem.getHeapMemoryUsage().getUsed();
+            }
+
+            @Override public long getHeapMemoryCommitted() {
+                return mem.getHeapMemoryUsage().getCommitted();
+            }
+
+            @Override public long getHeapMemoryMaximum() {
+                return mem.getHeapMemoryUsage().getMax();
+            }
+
+            @Override public long getNonHeapMemoryInitialized() {
+                return nonHeapMemoryUsage().getInit();
+            }
+
+            @Override public long getNonHeapMemoryUsed() {
+                return nonHeapMemoryUsage().getUsed();
+            }
+
+            @Override public long getNonHeapMemoryCommitted() {
+                return nonHeapMemoryUsage().getCommitted();
+            }
+
+            @Override public long getNonHeapMemoryMaximum() {
+                return nonHeapMemoryUsage().getMax();
+            }
+
+            @Override public long getUptime() {
+                return rt.getUptime();
+            }
+
+            @Override public long getStartTime() {
+                return rt.getStartTime();
+            }
+
+            @Override public int getThreadCount() {
+                return threads.getThreadCount();
+            }
+
+            @Override public int getPeakThreadCount() {
+                return threads.getPeakThreadCount();
+            }
+
+            @Override public long getTotalStartedThreadCount() {
+                return threads.getTotalStartedThreadCount();
+            }
+
+            @Override public int getDaemonThreadCount() {
+                return threads.getDaemonThreadCount();
+            }
+        };
+    }
+
+    /**
+     * @return Metrics provider.
+     */
+    private GridDiscoveryMetricsProvider createMetricsProvider() {
+        return new GridDiscoveryMetricsProvider() {
+            /** */
+            private final long startTime = U.currentTimeMillis();
+
+            /** {@inheritDoc} */
+            @Override public GridNodeMetrics getMetrics() {
+                GridJobMetrics jm = ctx.jobMetric().getJobMetrics();
+
+                GridDiscoveryMetricsAdapter nm = new GridDiscoveryMetricsAdapter();
+
+                nm.setLastUpdateTime(U.currentTimeMillis());
+
+                // Job metrics.
+                nm.setMaximumActiveJobs(jm.getMaximumActiveJobs());
+                nm.setCurrentActiveJobs(jm.getCurrentActiveJobs());
+                nm.setAverageActiveJobs(jm.getAverageActiveJobs());
+                nm.setMaximumWaitingJobs(jm.getMaximumWaitingJobs());
+                nm.setCurrentWaitingJobs(jm.getCurrentWaitingJobs());
+                nm.setAverageWaitingJobs(jm.getAverageWaitingJobs());
+                nm.setMaximumRejectedJobs(jm.getMaximumRejectedJobs());
+                nm.setCurrentRejectedJobs(jm.getCurrentRejectedJobs());
+                nm.setAverageRejectedJobs(jm.getAverageRejectedJobs());
+                nm.setMaximumCancelledJobs(jm.getMaximumCancelledJobs());
+                nm.setCurrentCancelledJobs(jm.getCurrentCancelledJobs());
+                nm.setAverageCancelledJobs(jm.getAverageCancelledJobs());
+                nm.setTotalRejectedJobs(jm.getTotalRejectedJobs());
+                nm.setTotalCancelledJobs(jm.getTotalCancelledJobs());
+                nm.setTotalExecutedJobs(jm.getTotalExecutedJobs());
+                nm.setMaximumJobWaitTime(jm.getMaximumJobWaitTime());
+                nm.setCurrentJobWaitTime(jm.getCurrentJobWaitTime());
+                nm.setAverageJobWaitTime(jm.getAverageJobWaitTime());
+                nm.setMaximumJobExecuteTime(jm.getMaximumJobExecuteTime());
+                nm.setCurrentJobExecuteTime(jm.getCurrentJobExecuteTime());
+                nm.setAverageJobExecuteTime(jm.getAverageJobExecuteTime());
+                nm.setCurrentIdleTime(jm.getCurrentIdleTime());
+                nm.setTotalIdleTime(jm.getTotalIdleTime());
+                nm.setAverageCpuLoad(jm.getAverageCpuLoad());
+
+                // Job metrics.
+                nm.setTotalExecutedTasks(ctx.task().getTotalExecutedTasks());
+
+                // VM metrics.
+                nm.setAvailableProcessors(metrics.getAvailableProcessors());
+                nm.setCurrentCpuLoad(metrics.getCurrentCpuLoad());
+                nm.setCurrentGcCpuLoad(metrics.getCurrentGcCpuLoad());
+                nm.setHeapMemoryInitialized(metrics.getHeapMemoryInitialized());
+                nm.setHeapMemoryUsed(metrics.getHeapMemoryUsed());
+                nm.setHeapMemoryCommitted(metrics.getHeapMemoryCommitted());
+                nm.setHeapMemoryMaximum(metrics.getHeapMemoryMaximum());
+                nm.setNonHeapMemoryInitialized(metrics.getNonHeapMemoryInitialized());
+                nm.setNonHeapMemoryUsed(metrics.getNonHeapMemoryUsed());
+                nm.setNonHeapMemoryCommitted(metrics.getNonHeapMemoryCommitted());
+                nm.setNonHeapMemoryMaximum(metrics.getNonHeapMemoryMaximum());
+                nm.setUpTime(metrics.getUptime());
+                nm.setStartTime(metrics.getStartTime());
+                nm.setNodeStartTime(startTime);
+                nm.setCurrentThreadCount(metrics.getThreadCount());
+                nm.setMaximumThreadCount(metrics.getPeakThreadCount());
+                nm.setTotalStartedThreadCount(metrics.getTotalStartedThreadCount());
+                nm.setCurrentDaemonThreadCount(metrics.getDaemonThreadCount());
+
+                // Data metrics.
+                nm.setLastDataVersion(ctx.cache().lastDataVersion());
+
+                GridIoManager io = ctx.io();
+
+                // IO metrics.
+                nm.setSentMessagesCount(io.getSentMessagesCount());
+                nm.setSentBytesCount(io.getSentBytesCount());
+                nm.setReceivedMessagesCount(io.getReceivedMessagesCount());
+                nm.setReceivedBytesCount(io.getReceivedBytesCount());
+
+                return nm;
+            }
+        };
+    }
+
+    /**
+     * @return Local metrics.
+     */
+    public GridLocalMetrics metrics() {
+        return metrics;
     }
 
     /** @return {@code True} if ordering is supported. */
@@ -671,11 +810,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         }
 
         // Stop reconnect worker.
-        if (reconWrk != null) {
-            reconWrk.cancel();
-
-            U.join(reconThread, log);
-        }
+        U.cancel(reconWrk);
+        U.join(reconWrk, log);
     }
 
     /** {@inheritDoc} */
@@ -684,9 +820,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         getSpi().setListener(null);
 
         // Stop discovery worker.
-        discoWrk.cancel();
+        U.cancel(discoWrk);
+        U.join(discoWrk, log);
 
-        U.join(discoWrkThread, log);
+        // Stop metrics updater.
+        U.cancel(metricsUpdater);
+        U.join(metricsUpdater, log);
 
         // Stop SPI itself.
         stopSpi();
@@ -1234,7 +1373,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
          *
          */
         private DiscoveryWorker() {
-            super(ctx.gridName(), "discovery-worker", log);
+            super(ctx.gridName(), "disco-event-worker", log);
         }
 
         /**
@@ -1549,6 +1688,97 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(DiscoveryWorker.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private class MetricsUpdater extends GridWorker {
+        /** */
+        private long prevGcTime = -1;
+
+        /** */
+        private long prevCpuTime = -1;
+
+        /**
+         *
+         */
+        private MetricsUpdater() {
+            super(ctx.gridName(), "metrics-updater", log);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws GridInterruptedException {
+            while (!isCancelled()) {
+                U.sleep(METRICS_UPDATE_FREQ);
+
+                gcCpuLoad = getGcCpuLoad();
+                cpuLoad = getCpuLoad();
+            }
+        }
+
+        /**
+         * @return GC CPU load.
+         */
+        private double getGcCpuLoad() {
+            long gcTime = 0;
+
+            for (GarbageCollectorMXBean bean : gc) {
+                long colTime = bean.getCollectionTime();
+
+                if (colTime > 0)
+                    gcTime += colTime;
+            }
+
+            gcTime /= metrics.getAvailableProcessors();
+
+            double gc = 0;
+
+            if (prevGcTime > 0) {
+                long gcTimeDiff = gcTime - prevGcTime;
+
+                gc = (double)gcTimeDiff / METRICS_UPDATE_FREQ;
+            }
+
+            prevGcTime = gcTime;
+
+            return gc;
+        }
+
+        /**
+         * @return CPU load.
+         */
+        private double getCpuLoad() {
+            long cpuTime;
+
+            try {
+                cpuTime = U.<Long>property(os, "processCpuTime");
+            }
+            catch (GridRuntimeException ignored) {
+                return -1;
+            }
+
+            // Method reports time in nanoseconds across all processors.
+            cpuTime /= 1000000 * metrics.getAvailableProcessors();
+
+            double cpu = 0;
+
+            if (prevCpuTime > 0) {
+                long cpuTimeDiff = cpuTime - prevCpuTime;
+
+                // CPU load could go higher than 100% because calculating of cpuTimeDiff also takes some time.
+                cpu = Math.min(1.0, (double)cpuTimeDiff / METRICS_UPDATE_FREQ);
+            }
+
+            prevCpuTime = cpuTime;
+
+            return cpu;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(MetricsUpdater.class, this, super.toString());
         }
     }
 

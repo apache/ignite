@@ -684,6 +684,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 advance();
                             }
 
+                            /**
+                             *
+                             */
                             void advance() {
                                 assert w == null;
 
@@ -742,6 +745,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 advance();
                             }
 
+                            /**
+                             *
+                             */
                             void advance() {
                                 assert w == null;
 
@@ -873,7 +879,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             m.setMaximumExecutionTime(maxFinishedTime);
 
         // CPU load.
-        m.setCpuLoad(ctx.localMetric().metrics().getCurrentCpuLoad());
+        m.setCpuLoad(ctx.discovery().metrics().getCurrentCpuLoad());
 
         ctx.jobMetric().addSnapshot(m);
     }
@@ -977,31 +983,17 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             req.getTaskName(),
                             dep,
                             req.getTaskClassName(),
+                            req.topology(),
                             req.getStartTaskTime(),
                             endTime,
                             siblings,
                             sesAttrs,
-                            req.getNodeFilter(),
                             req.isSessionFullSupport());
 
                         taskSes.setCheckpointSpi(req.getCheckpointSpi());
                         taskSes.setClassLoader(dep.classLoader());
 
-                        final byte[] nodeFilterBytes = req.getNodeFilterBytes();
-
-                        jobSes = new GridJobSessionImpl(ctx, taskSes, req.getJobId()) {
-                            @Override public GridPredicate<GridNode> getNodeFilter() throws GridException {
-                                GridPredicate<GridNode> ret = super.getNodeFilter();
-
-                                if (ret != null)
-                                    return ret;
-
-                                if (nodeFilterBytes != null)
-                                    return ctx.config().getMarshaller().unmarshal(nodeFilterBytes, dep.classLoader());
-
-                                return null;
-                            }
-                        };
+                        jobSes = new GridJobSessionImpl(ctx, taskSes, req.getJobId());
 
                         Map<? extends Serializable, ? extends Serializable> jobAttrs = req.getJobAttributes();
 

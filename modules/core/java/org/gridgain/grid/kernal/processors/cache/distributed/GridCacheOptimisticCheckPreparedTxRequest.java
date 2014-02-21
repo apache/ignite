@@ -208,7 +208,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 33;
+        return 18;
     }
 
     /** {@inheritDoc} */

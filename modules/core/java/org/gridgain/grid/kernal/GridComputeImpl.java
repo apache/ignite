@@ -59,12 +59,13 @@ public class GridComputeImpl implements GridCompute {
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> affinityRun(@Nullable String cacheName, Object affKey, Runnable job) {
+        A.notNull(affKey, "affKey");
+        A.notNull(job, "job");
+
         guard();
 
         try {
-            return (affKey == null || job == null) ?
-                new GridFinishedFuture(ctx) :
-                ctx.closure().runAsync(BALANCE, wrapRun(cacheName, affKey, job), prj.nodes());
+            return ctx.closure().runAsync(BALANCE, wrapRun(cacheName, affKey, job), prj.nodes());
         }
         catch (GridException e) {
             return new GridFinishedFuture<>(ctx, e);
@@ -77,12 +78,13 @@ public class GridComputeImpl implements GridCompute {
     /** {@inheritDoc} */
     @Override public GridFuture<?> affinityRun(@Nullable final String cacheName, Collection<?> affKeys,
         final Runnable job) {
+        A.notEmpty(affKeys, "affKeys");
+        A.notNull(job, "job");
+
         guard();
 
         try {
-            return (affKeys == null || affKeys.isEmpty() || job == null) ?
-                new GridFinishedFuture(ctx) :
-                ctx.closure().runAsync(BALANCE, F.transform(affKeys, new CX1<Object, CA>() {
+            return ctx.closure().runAsync(BALANCE, F.transform(affKeys, new CX1<Object, CA>() {
                     @Override public CA applyx(Object affKey) throws GridException {
                         return wrapRun(cacheName, affKey, job);
                     }
@@ -95,12 +97,13 @@ public class GridComputeImpl implements GridCompute {
 
     /** {@inheritDoc} */
     @Override public <R> GridFuture<R> affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job) {
+        A.notNull(affKey, "affKey");
+        A.notNull(job, "job");
+
         guard();
 
         try {
-            return (affKey == null || job == null) ?
-                new GridFinishedFuture<R>(ctx) :
-                ctx.closure().callAsync(BALANCE, wrapCall(cacheName, affKey, job), prj.nodes());
+            return ctx.closure().callAsync(BALANCE, wrapCall(cacheName, affKey, job), prj.nodes());
         }
         catch (GridException e) {
             return new GridFinishedFuture<>(ctx, e);
@@ -113,12 +116,13 @@ public class GridComputeImpl implements GridCompute {
     /** {@inheritDoc} */
     @Override public <R> GridFuture<Collection<R>> affinityCall(@Nullable final String cacheName, Collection<?> affKeys,
         final Callable<R> job) {
+        A.notEmpty(affKeys, "affKeys");
+        A.notNull(job, "job");
+
         guard();
 
         try {
-            return (affKeys == null || affKeys.isEmpty() || job== null) ?
-                new GridFinishedFuture<Collection<R>>(ctx) :
-                ctx.closure().callAsync(
+            return ctx.closure().callAsync(
                     BALANCE,
                     F.transform(affKeys, new CX1<Object, CO<R>>() {
                         @Override public CO<R> applyx(Object affKey) throws GridException {
@@ -141,7 +145,6 @@ public class GridComputeImpl implements GridCompute {
 
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
-            ctx.task().setThreadContextIfNotNull(TC_PREDICATE, prj.predicate());
 
             return ctx.task().execute(taskName, arg);
         }
@@ -159,7 +162,6 @@ public class GridComputeImpl implements GridCompute {
 
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
-            ctx.task().setThreadContextIfNotNull(TC_PREDICATE, prj.predicate());
 
             return ctx.task().execute(taskCls, arg);
         }
@@ -176,8 +178,6 @@ public class GridComputeImpl implements GridCompute {
 
         try {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
-            ctx.task().setThreadContextIfNotNull(TC_PREDICATE, prj.predicate());
-
 
             return ctx.task().execute(task, arg);
         }
@@ -244,7 +244,7 @@ public class GridComputeImpl implements GridCompute {
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> run(Collection<? extends Runnable> jobs) {
-        A.notNull(jobs, "jobs");
+        A.notEmpty(jobs, "jobs");
 
         guard();
 
@@ -286,7 +286,7 @@ public class GridComputeImpl implements GridCompute {
 
     /** {@inheritDoc} */
     @Override public <R> GridFuture<Collection<R>> call(Collection<? extends Callable<R>> jobs) {
-        A.notNull(jobs, "jobs");
+        A.notEmpty(jobs, "jobs");
 
         guard();
 
@@ -334,7 +334,7 @@ public class GridComputeImpl implements GridCompute {
 
     /** {@inheritDoc} */
     @Override public <R1, R2> GridFuture<R2> call(Collection<? extends Callable<R1>> jobs, GridReducer<R1, R2> rdc) {
-        A.notNull(jobs, "jobs");
+        A.notEmpty(jobs, "jobs");
         A.notNull(rdc, "rdc");
 
         guard();
@@ -385,7 +385,7 @@ public class GridComputeImpl implements GridCompute {
     }
 
     /** {@inheritDoc} */
-    @Override public void cancelTask(@Nullable GridUuid sesId) throws GridException {
+    @Override public void cancelTask(GridUuid sesId) throws GridException {
         A.notNull(sesId, "sesId");
 
         guard();
@@ -437,16 +437,16 @@ public class GridComputeImpl implements GridCompute {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCompute withName(@Nullable String taskName) {
-        if (taskName != null) {
-            guard();
+    @Override public GridCompute withName(String taskName) {
+        A.notNull(taskName, "taskName");
 
-            try {
-                ctx.task().setThreadContext(TC_TASK_NAME, taskName);
-            }
-            finally {
-                unguard();
-            }
+        guard();
+
+        try {
+            ctx.task().setThreadContext(TC_TASK_NAME, taskName);
+        }
+        finally {
+            unguard();
         }
 
         return this;
@@ -469,81 +469,65 @@ public class GridComputeImpl implements GridCompute {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCompute withResultClosure(@Nullable GridBiClosure<GridComputeJobResult, List<GridComputeJobResult>,
-            GridComputeJobResultPolicy> res) {
-        if (res != null) {
-            guard();
+    @Override public GridCompute withResultClosure(GridBiClosure<GridComputeJobResult, List<GridComputeJobResult>,
+        GridComputeJobResultPolicy> res) {
+        A.notNull(res, "res");
 
-            try {
-                ctx.task().setThreadContext(TC_RESULT, res);
-            }
-            finally {
-                unguard();
-            }
+        guard();
+
+        try {
+            ctx.task().setThreadContext(TC_RESULT, res);
+        }
+        finally {
+            unguard();
         }
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCompute withFailoverSpi(@Nullable String spiName) {
-        if (spiName != null) {
-            guard();
+    @Override public GridCompute withFailoverSpi(String spiName) {
+        A.notNull(spiName, "spiName");
 
-            try {
-                ctx.task().setThreadContext(TC_FAILOVER_SPI, spiName);
-            }
-            finally {
-                unguard();
-            }
+        guard();
+
+        try {
+            ctx.task().setThreadContext(TC_FAILOVER_SPI, spiName);
+        }
+        finally {
+            unguard();
         }
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCompute withCheckpointSpi(@Nullable String spiName) {
-        if (spiName != null) {
-            guard();
+    @Override public GridCompute withCheckpointSpi(String spiName) {
+        A.notNull(spiName, "spiName");
 
-            try {
-                ctx.task().setThreadContext(TC_CHECKPOINT_SPI, spiName);
-            }
-            finally {
-                unguard();
-            }
+        guard();
+
+        try {
+            ctx.task().setThreadContext(TC_CHECKPOINT_SPI, spiName);
+        }
+        finally {
+            unguard();
         }
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCompute withLoadBalancingSpi(@Nullable String spiName) {
-        if (spiName != null) {
-            guard();
+    @Override public GridCompute withLoadBalancingSpi(String spiName) {
+        A.notNull(spiName, "spiName");
 
-            try {
-                ctx.task().setThreadContext(TC_LOAD_BALANCING_SPI, spiName);
-            }
-            finally {
-                unguard();
-            }
+        guard();
+
+        try {
+            ctx.task().setThreadContext(TC_LOAD_BALANCING_SPI, spiName);
         }
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCompute withTopologySpi(@Nullable String spiName) {
-        if (spiName != null) {
-            guard();
-
-            try {
-                ctx.task().setThreadContext(TC_TOPOLOGY_SPI, spiName);
-            }
-            finally {
-                unguard();
-            }
+        finally {
+            unguard();
         }
 
         return this;
@@ -599,7 +583,7 @@ public class GridComputeImpl implements GridCompute {
         guard();
 
         try {
-            ctx.deploy().undeployTask(taskName);
+            ctx.deploy().undeployTask(taskName, prj.node(ctx.localNodeId()) != null, prj.forRemotes().nodes());
         }
         finally {
             unguard();

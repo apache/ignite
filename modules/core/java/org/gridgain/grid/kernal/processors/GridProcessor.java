@@ -27,6 +27,7 @@ public interface GridProcessor extends GridComponent {
      * Adds attributes from this component to map of all node attributes.
      *
      * @param attrs Map of all attributes.
+     * @throws GridException If failed.
      */
     public void addAttributes(Map<String, Object> attrs) throws GridException;
 }

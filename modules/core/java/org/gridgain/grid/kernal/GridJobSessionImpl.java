@@ -9,9 +9,8 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -79,11 +78,6 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     /** {@inheritDoc} */
     @Override public String getCheckpointSpi() {
         return ses.getCheckpointSpi();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getTopologySpi() {
-        return ses.getTopologySpi();
     }
 
     /** {@inheritDoc} */
@@ -284,13 +278,8 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> getTopology() throws GridException {
+    @Override public Collection<UUID> getTopology() {
         return ses.getTopology();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridPredicate<GridNode> getNodeFilter() throws GridException {
-        return ses.getNodeFilter();
     }
 
     /** {@inheritDoc} */

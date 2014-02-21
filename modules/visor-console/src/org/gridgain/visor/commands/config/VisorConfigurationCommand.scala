@@ -278,13 +278,11 @@ class VisorConfigurationCommand {
             spisT += ("Communication", cfg.spis.commSpi)
             spisT += ("Event storage", cfg.spis.evtSpi)
             spisT += ("Collision", cfg.spis.colSpi)
-            spisT += ("Local metrics", cfg.spis.metricsSpi)
             spisT += ("Authentication", cfg.spis.authSpi)
             spisT += ("Secure session", cfg.spis.sesSpi)
             spisT += ("Deployment", cfg.spis.deploySpi)
             spisT += ("Checkpoints", cfg.spis.cpSpis.split(CS).toList)
             spisT += ("Failovers", cfg.spis.failSpis.split(CS).toList)
-            spisT += ("Topologys", cfg.spis.topSpis.split(CS).toList)
             spisT += ("Load balancings", cfg.spis.loadBalancingSpis.split(CS).toList)
             spisT += ("Swap spaces", cfg.spis.swapSpaceSpis.split(CS).toList)
 
@@ -596,13 +594,11 @@ private class GridConfigurationCallable extends GridCallable[Config] {
                 commSpi = compactObject(c.getCommunicationSpi),
                 evtSpi = compactObject(c.getEventStorageSpi),
                 colSpi = compactObject(c.getCollisionSpi),
-                metricsSpi = compactObject(c.getMetricsSpi),
                 authSpi = compactObject(c.getAuthenticationSpi),
                 sesSpi = compactObject(c.getSecureSessionSpi),
                 deploySpi = compactObject(c.getDeploymentSpi),
                 cpSpis = compactArray(c.getCheckpointSpi),
                 failSpis = compactArray(c.getFailoverSpi),
-                topSpis = compactArray(c.getTopologySpi),
                 loadBalancingSpis = compactArray(c.getLoadBalancingSpi),
                 swapSpaceSpis = compactObject(c.getSwapSpaceSpi)
             ),
@@ -1045,13 +1041,11 @@ private case class SpisConfig(
     commSpi: String,
     evtSpi: String,
     colSpi: String,
-    metricsSpi: String,
     authSpi: String,
     sesSpi: String,
     deploySpi: String,
     cpSpis: String,
     failSpis: String,
-    topSpis: String,
     loadBalancingSpis: String,
     swapSpaceSpis: String
 )

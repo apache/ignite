@@ -188,7 +188,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 74;
+        return 72;
     }
 
     /** {@inheritDoc} */
