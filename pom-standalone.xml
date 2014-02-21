@@ -27,7 +27,7 @@
     </properties>
 
     <groupId>org.gridgain</groupId>
-    <artifactId>gridgain-parent</artifactId>
+    <artifactId>gridgain</artifactId>
     <version>${gridgain.version}</version>
     <packaging>pom</packaging>
 
