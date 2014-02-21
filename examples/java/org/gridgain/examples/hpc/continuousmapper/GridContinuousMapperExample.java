@@ -67,7 +67,7 @@ public class GridContinuousMapperExample {
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-default.xml")) {
             GridComputeTaskFuture<Integer> fut = g.compute().execute(
-                GridContinuousMapperTask.class, "Hello Continuous Mapper", 0);
+                GridContinuousMapperTask.class, "Hello Continuous Mapper");
 
             // Wait for task completion.
             int phraseLen = fut.get();

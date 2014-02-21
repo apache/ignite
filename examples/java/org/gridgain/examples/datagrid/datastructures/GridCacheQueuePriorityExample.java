@@ -18,7 +18,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.GridClosureCallMode.*;
 import static org.gridgain.grid.cache.datastructures.GridCacheQueueType.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
@@ -102,7 +101,7 @@ public class GridCacheQueuePriorityExample {
         final String queueName = queue.name();
 
         // Read queue items on each node.
-        g.compute().run(BROADCAST, new QueueClosure(CACHE_NAME, queueName, false)).get();
+        g.compute().run(new QueueClosure(CACHE_NAME, queueName, false)).get();
 
         print("Queue size after reading [expected=0, actual=" + queue.size() + ']');
     }
@@ -117,7 +116,7 @@ public class GridCacheQueuePriorityExample {
         final String queueName = queue.name();
 
         // Write queue items on each node.
-        g.compute().run(BROADCAST, new QueueClosure(CACHE_NAME, queueName, true)).get();
+        g.compute().run(new QueueClosure(CACHE_NAME, queueName, true)).get();
 
         print("Queue size after writing [expected=" + g.nodes().size() * RETRIES +
             ", actual=" + queue.size() + ']');

@@ -57,8 +57,7 @@ public class GridMasterLeaveExample {
                 // Start GridMasterLeaveTask execution on worker node.
                 System.out.println(">>> Starting GridMasterLeaveJob on remote node ...");
 
-                g.forRemotes().compute().call(
-                    GridClosureCallMode.UNICAST, new GridMasterLeaveJob(USER_JOB_ID));
+                g.forRemotes().compute().call(new GridMasterLeaveJob(USER_JOB_ID));
 
                 // Show pop-up asking to stop the master.
                 System.out.println(">>> Please stop this node and check worker node's output.");

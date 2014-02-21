@@ -57,7 +57,7 @@ public interface GridEvents {
      * @param timeout Maximum time to wait for result, {@code 0} to wait forever.
      * @return Collection of grid events returned from specified nodes.
      */
-    public GridFuture<List<GridEvent>> queryRemote(GridPredicate<? super GridEvent> pe, long timeout);
+    public GridFuture<List<GridEvent>> queryRemote(GridPredicate<GridEvent> pe, long timeout);
 
     /**
      * Starts consuming remote events. This will register event listeners on <b>all nodes defined by
@@ -82,7 +82,7 @@ public interface GridEvents {
      * @see #stopConsume(UUID)
      */
     public <T extends GridEvent> GridFuture<UUID> consumeRemote(@Nullable GridBiPredicate<UUID, T> cb,
-        @Nullable GridPredicate<? super T> filter, @Nullable int... types);
+        @Nullable GridPredicate<T> filter, @Nullable int... types);
 
     /**
      * Starts consuming remote events. This will register event listeners on <b>all nodes defined by
@@ -116,7 +116,7 @@ public interface GridEvents {
      * @see #stopConsume(UUID)
      */
     public <T extends GridEvent> GridFuture<UUID> consumeRemote(int bufSize, long interval,
-        boolean autoUnsubscribe, @Nullable GridBiPredicate<UUID, T> cb, @Nullable GridPredicate<? super T> filter,
+        boolean autoUnsubscribe, @Nullable GridBiPredicate<UUID, T> cb, @Nullable GridPredicate<T> filter,
         @Nullable int... types);
 
     /**
@@ -153,8 +153,7 @@ public interface GridEvents {
      * @param types Types of the events to wait for.
      * @return Grid event future.
      */
-    public GridFuture<GridEvent> waitForLocal(@Nullable GridPredicate<? super GridEvent> p,
-        @Nullable int... types);
+    public GridFuture<GridEvent> waitForLocal(@Nullable GridPredicate<GridEvent> p, @Nullable int... types);
 
     /**
      * Queries local node for events using passed-in predicate filters for event selection.
@@ -169,7 +168,7 @@ public interface GridEvents {
      * @return Collection of grid events found on local node.
      * @see PE
      */
-    public Collection<GridEvent> queryLocal(@Nullable GridPredicate<? super GridEvent>... p);
+    public Collection<GridEvent> queryLocal(@Nullable GridPredicate<GridEvent>... p);
 
     /**
      * Records locally generated event. Registered local listeners will be notified, if any. This

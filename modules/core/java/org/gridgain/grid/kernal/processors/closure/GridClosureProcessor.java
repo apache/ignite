@@ -14,6 +14,7 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -129,40 +130,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param mode Distribution mode.
      * @param jobs Closures to execute.
      * @param nodes Grid nodes.
-     * @param timeout Optional timeout for this closure execution in milliseconds. If 0, then the system will wait
-     *     indefinitely for execution completion.
-     * @return Task execution future.
-     */
-    public GridFuture<?> runAsync(GridClosureCallMode mode, @Nullable Collection<? extends Runnable> jobs,
-        @Nullable Collection<GridNode> nodes, long timeout) {
-        return runAsync(mode, jobs, nodes, timeout, false);
-    }
-
-    /**
-     * @param mode Distribution mode.
-     * @param jobs Closures to execute.
-     * @param nodes Grid nodes.
      * @param sys If {@code true}, then system pool will be used.
      * @return Task execution future.
      */
     public GridFuture<?> runAsync(GridClosureCallMode mode, @Nullable Collection<? extends Runnable> jobs,
         @Nullable Collection<GridNode> nodes, boolean sys) {
-        return runAsync(mode, jobs, nodes, 0, sys);
-    }
-
-    /**
-     * @param mode Distribution mode.
-     * @param jobs Closures to execute.
-     * @param nodes Grid nodes.
-     * @param timeout Optional timeout for this closure execution in milliseconds. If 0, then the system will wait
-     *     indefinitely for execution completion.
-     * @param sys If {@code true}, then system pool will be used.
-     * @return Task execution future.
-     */
-    public GridFuture<?> runAsync(GridClosureCallMode mode, @Nullable Collection<? extends Runnable> jobs,
-        @Nullable Collection<GridNode> nodes, long timeout, boolean sys) {
         assert mode != null;
-        assert timeout >= 0;
 
         enterBusy();
 
@@ -183,7 +156,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     (GridClosure2X<GridComputeJobResult, List<GridComputeJobResult>, GridComputeJobResultPolicy>)
                         ctx.task().getThreadContext(TC_RESULT)
                 ),
-                null, timeout, sys
+                null, sys
             );
         }
         finally {
@@ -195,7 +168,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * Task that is free of dragged in enclosing context for the method
      * {@link GridClosureProcessor#runAsync(GridClosureCallMode, Collection, Collection)}.
      */
-    private static class T1 extends GridComputeTaskNoReduceAdapter<Void> {
+    private class T1 extends GridComputeTaskNoReduceAdapter<Void> {
         /** */
         @GridLoadBalancerResource
         private GridComputeLoadBalancer lb;
@@ -212,7 +185,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param mode Call mode.
          * @param jobs Collection of jobs.
          * @param nodes Collection of nodes.
-         * @param res Ad-hoc {@link org.gridgain.grid.compute.GridComputeTask#result(org.gridgain.grid.compute.GridComputeJobResult, List)} method implementation.
+         * @param res Ad-hoc {@link org.gridgain.grid.compute.GridComputeTask#result(org.gridgain.grid.compute.GridComputeJobResult, List)}
+         *      method implementation.
          */
         private T1(
             GridClosureCallMode mode,
@@ -230,7 +204,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd)
+            throws GridException {
             return t.get4() == null ? super.result(res, rcvd) : t.get4().apply(res, rcvd);
         }
 
@@ -256,40 +231,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param mode Distribution mode.
      * @param job Closure to execute.
      * @param nodes Grid nodes.
-     * @param timeout Optional timeout for this closure execution in milliseconds. If 0, then the system will wait
-     *     indefinitely for execution completion.
-     * @return Task execution future.
-     */
-    public GridFuture<?> runAsync(GridClosureCallMode mode, @Nullable Runnable job,
-        @Nullable Collection<GridNode> nodes, long timeout) {
-        return runAsync(mode, job, nodes, timeout, false);
-    }
-
-    /**
-     * @param mode Distribution mode.
-     * @param job Closure to execute.
-     * @param nodes Grid nodes.
      * @param sys If {@code true}, then system pool will be used.
      * @return Task execution future.
      */
     public GridFuture<?> runAsync(GridClosureCallMode mode, @Nullable Runnable job,
         @Nullable Collection<GridNode> nodes, boolean sys) {
-        return runAsync(mode, job, nodes, 0, sys);
-    }
-
-    /**
-     * @param mode Distribution mode.
-     * @param job Closure to execute.
-     * @param nodes Grid nodes.
-     * @param timeout Optional timeout for this closure execution in milliseconds. If 0, then the system will wait
-     *     indefinitely for execution completion.
-     * @param sys If {@code true}, then system pool will be used.
-     * @return Task execution future.
-     */
-    public GridFuture<?> runAsync(GridClosureCallMode mode, @Nullable Runnable job,
-        @Nullable Collection<GridNode> nodes, long timeout, boolean sys) {
         assert mode != null;
-        assert timeout >= 0;
 
         enterBusy();
 
@@ -310,7 +257,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     (GridClosure2X<GridComputeJobResult, List<GridComputeJobResult>, GridComputeJobResultPolicy>)
                         ctx.task().getThreadContext(TC_RESULT)
                 ),
-                null, timeout, sys
+                null, sys
             );
         }
         finally {
@@ -322,7 +269,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * Task that is free of dragged in enclosing context for the method
      * {@link GridClosureProcessor#runAsync(GridClosureCallMode, Runnable, Collection)}.
      */
-    private static class T2 extends GridComputeTaskNoReduceAdapter<Void> {
+    private class T2 extends GridComputeTaskNoReduceAdapter<Void> {
         /** */
         @GridLoadBalancerResource
         private GridComputeLoadBalancer lb;
@@ -339,7 +286,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param mode Call mode.
          * @param job Job.
          * @param nodes Collection of nodes.
-         * @param res Ad-hoc {@link org.gridgain.grid.compute.GridComputeTask#result(org.gridgain.grid.compute.GridComputeJobResult, List)} method implementation.
+         * @param res Ad-hoc {@link org.gridgain.grid.compute.GridComputeTask#result(org.gridgain.grid.compute.GridComputeJobResult, List)}
+         *      method implementation.
          */
         private T2(
             GridClosureCallMode mode,
@@ -348,16 +296,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             GridClosure2X<GridComputeJobResult, List<GridComputeJobResult>, GridComputeJobResultPolicy> res) {
             super(U.peerDeployAware(job));
 
-            t = F.<
-                GridClosureCallMode,
-                Runnable,
-                Collection<GridNode>,
-                GridClosure2X<GridComputeJobResult, List<GridComputeJobResult>, GridComputeJobResultPolicy>
-                >t(mode, job, nodes, res);
+            t = F.t(mode, job, nodes, res);
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd)
+            throws GridException {
             return t.get4() == null ? super.result(res, rcvd) : t.get4().apply(res, rcvd);
         }
 
@@ -378,7 +322,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @throws GridException Thrown in case of any errors.
      * @return Mapping.
      */
-    private static Map<GridComputeJob, GridNode> absMap(GridClosureCallMode mode, Collection<? extends Runnable> jobs,
+    private Map<GridComputeJob, GridNode> absMap(GridClosureCallMode mode, Collection<? extends Runnable> jobs,
         Collection<GridNode> nodes, GridComputeLoadBalancer lb) throws GridException {
         assert mode != null;
         assert jobs != null;
@@ -388,24 +332,13 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         if (!F.isEmpty(jobs) && !F.isEmpty(nodes)) {
             Map<GridComputeJob, GridNode> map = new HashMap<>(jobs.size(), 1);
 
+            JobMapper mapper = new JobMapper(map);
+
             switch (mode) {
                 case BROADCAST: {
                     for (GridNode n : nodes)
                         for (Runnable r : jobs)
-                            map.put(new GridComputeJobWrapper(F.job(r), true), n);
-
-                    break;
-                }
-
-                case SPREAD: {
-                    Iterator<GridNode> n = nodes.iterator();
-
-                    for (Runnable r : jobs) {
-                        if (!n.hasNext())
-                            n = nodes.iterator();
-
-                        map.put(F.job(r), n.next());
-                    }
+                            mapper.map(new GridComputeJobWrapper(F.job(r), true), n);
 
                     break;
                 }
@@ -414,17 +347,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     for (Runnable r : jobs) {
                         GridComputeJob job = F.job(r);
 
-                        map.put(job, lb.getBalancedNode(job, null));
+                        mapper.map(job, lb.getBalancedNode(job, null));
                     }
-
-                    break;
-                }
-
-                case UNICAST: {
-                    GridNode n = lb.getBalancedNode(F.job(F.rand(jobs)), null);
-
-                    for (Runnable r : jobs)
-                        map.put(F.job(r), n);
 
                     break;
                 }
@@ -447,8 +371,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @throws GridException Thrown in case of any errors.
      * @return Mapping.
      */
-    private static <R> Map<GridComputeJob, GridNode> outMap(GridClosureCallMode mode, Collection<? extends Callable<R>> jobs,
-        Collection<GridNode> nodes, GridComputeLoadBalancer lb) throws GridException {
+    private <R> Map<GridComputeJob, GridNode> outMap(GridClosureCallMode mode,
+        Collection<? extends Callable<R>> jobs, Collection<GridNode> nodes, GridComputeLoadBalancer lb)
+        throws GridException {
         assert mode != null;
         assert jobs != null;
         assert nodes != null;
@@ -457,33 +382,13 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         if (!F.isEmpty(jobs) && !F.isEmpty(nodes)) {
             Map<GridComputeJob, GridNode> map = new HashMap<>(jobs.size(), 1);
 
+            JobMapper mapper = new JobMapper(map);
+
             switch (mode) {
                 case BROADCAST: {
                     for (GridNode n : nodes)
                         for (Callable<R> c : jobs)
-                            map.put(new GridComputeJobWrapper(F.job(c), true), n);
-
-                    break;
-                }
-
-                case SPREAD: {
-                    Iterator<GridNode> n = nodes.iterator();
-
-                    for (Callable<R> c : jobs) {
-                        if (!n.hasNext())
-                            n = nodes.iterator();
-
-                        map.put(F.job(c), n.next());
-                    }
-
-                    break;
-                }
-
-                case UNICAST: {
-                    GridNode n = lb.getBalancedNode(F.job(F.rand(jobs)), null);
-
-                    for (Callable<R> c : jobs)
-                        map.put(F.job(c), n);
+                            mapper.map(new GridComputeJobWrapper(F.job(c), true), n);
 
                     break;
                 }
@@ -492,7 +397,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     for (Callable<R> c : jobs) {
                         GridComputeJob job = F.job(c);
 
-                        map.put(job, lb.getBalancedNode(job, null));
+                        mapper.map(job, lb.getBalancedNode(job, null));
                     }
 
                     break;
@@ -518,25 +423,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     public <R1, R2> GridFuture<R2> forkjoinAsync(GridClosureCallMode mode,
         @Nullable Collection<? extends Callable<R1>> jobs,
         @Nullable GridReducer<R1, R2> rdc, @Nullable Collection<GridNode> nodes) {
-        return forkjoinAsync(mode, jobs, rdc, nodes, 0);
-    }
-
-    /**
-     * @param mode Distribution mode.
-     * @param jobs Closures to execute.
-     * @param rdc Reducer.
-     * @param nodes Grid nodes.
-     * @param timeout Optional timeout for this closure execution in milliseconds. If 0, then the system will wait
-     *     indefinitely for execution completion.
-     * @param <R1> Type.
-     * @param <R2> Type.
-     * @return Reduced result.
-     */
-    public <R1, R2> GridFuture<R2> forkjoinAsync(GridClosureCallMode mode,
-        @Nullable Collection<? extends Callable<R1>> jobs,
-        @Nullable GridReducer<R1, R2> rdc, @Nullable Collection<GridNode> nodes, long timeout) {
         assert mode != null;
-        assert timeout >= 0;
 
         enterBusy();
 
@@ -555,10 +442,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     jobs,
                     rdc,
                     nodes,
-                    (GridClosure2X<GridComputeJobResult, List<GridComputeJobResult>, GridComputeJobResultPolicy>)ctx.task().
-                        getThreadContext(TC_RESULT)
+                    (GridClosure2X<GridComputeJobResult, List<GridComputeJobResult>, GridComputeJobResultPolicy>)ctx.
+                        task().getThreadContext(TC_RESULT)
                 ),
-                null, timeout
+                null
             );
         }
         finally {
@@ -570,7 +457,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * Task that is free of dragged in enclosing context for the method
      * {@link GridClosureProcessor#forkjoinAsync(GridClosureCallMode, Collection, GridReducer, Collection)}
      */
-    private static class T3<R1, R2> extends GridComputeTaskAdapter<Void, R2> {
+    private class T3<R1, R2> extends GridComputeTaskAdapter<Void, R2> {
         /** */
         @GridLoadBalancerResource
         private GridComputeLoadBalancer lb;
@@ -590,7 +477,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param jobs Collection of jobs.
          * @param rdc Reducer.
          * @param nodes Collection of nodes.
-         * @param res Ad-hoc {@link org.gridgain.grid.compute.GridComputeTask#result(org.gridgain.grid.compute.GridComputeJobResult, List)} method implementation.
+         * @param res Ad-hoc {@link org.gridgain.grid.compute.GridComputeTask#result(org.gridgain.grid.compute.GridComputeJobResult, List)}
+         *      method implementation.
          */
         private T3(
             GridClosureCallMode mode,
@@ -616,7 +504,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd)
+            throws GridException {
             GridComputeJobResultPolicy resPlc = t.get5() == null ? super.result(res, rcvd) : t.get5().apply(res, rcvd);
 
             if (res.getException() == null && resPlc != FAILOVER && !t.get3().collect((R1)res.getData()))
@@ -627,208 +516,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public R2 reduce(List<GridComputeJobResult> res) {
-            return t.get3().apply();
-        }
-    }
-
-    /**
-     * @param mapper Mapper.
-     * @param jobs Closures to execute.
-     * @return Grid future.
-     * @param nodes Grid nodes.
-     */
-    public GridFuture<?> runAsync(@Nullable GridMapper<Runnable, GridNode> mapper,
-        @Nullable Collection<? extends Runnable> jobs, @Nullable Collection<GridNode> nodes) {
-        return runAsync(mapper, jobs, nodes, false);
-    }
-
-    /**
-     * @param mapper Mapper.
-     * @param jobs Closures to execute.
-     * @param nodes Grid nodes.
-     * @param timeout Optional timeout for this closure execution in milliseconds. If 0, then the system will wait
-     *     indefinitely for execution completion.
-     * @return Grid future.
-     */
-    public GridFuture<?> runAsync(@Nullable GridMapper<Runnable, GridNode> mapper,
-        @Nullable Collection<? extends Runnable> jobs, @Nullable Collection<GridNode> nodes, long timeout) {
-        return runAsync(mapper, jobs, nodes, timeout, false);
-    }
-
-    /**
-     * @param mapper Mapper.
-     * @param jobs Closures to execute.
-     * @param nodes Grid nodes.
-     * @param sys If {@code true}, then system pool will be used.
-     * @return Grid future.
-     */
-    public GridFuture<?> runAsync(@Nullable GridMapper<Runnable, GridNode> mapper,
-        @Nullable Collection<? extends Runnable> jobs, @Nullable Collection<GridNode> nodes, boolean sys) {
-        return runAsync(mapper, jobs, nodes, 0, sys);
-    }
-
-    /**
-     * @param mapper Mapper.
-     * @param jobs Closures to execute.
-     * @param nodes Grid nodes.
-     * @param timeout Optional timeout for this closure execution in milliseconds. If 0, then the system will wait
-     *     indefinitely for execution completion.
-     * @param sys If {@code true}, then system pool will be used.
-     * @return Grid future.
-     */
-    public GridFuture<?> runAsync(@Nullable GridMapper<Runnable, GridNode> mapper,
-        @Nullable Collection<? extends Runnable> jobs, @Nullable Collection<GridNode> nodes, long timeout,
-        boolean sys) {
-        assert timeout >= 0;
-
-        enterBusy();
-
-        try {
-            if (mapper == null || F.isEmpty(jobs))
-                return new GridFinishedFuture(ctx);
-
-            if (F.isEmpty(nodes))
-                return new GridFinishedFuture(ctx, makeException());
-
-            ctx.task().setThreadContext(TC_SUBGRID, nodes);
-
-            return ctx.task().execute(
-                new T4(
-                    mapper,
-                    jobs,
-                    nodes,
-                    ctx
-                ),
-                null, timeout, sys);
-        }
-        finally {
-            leaveBusy();
-        }
-    }
-
-    /**
-     * Task that is free of dragged in enclosing context for the method
-     * {@link GridClosureProcessor#runAsync(GridMapper, Collection, Collection)}
-     */
-    private static class T4 extends GridComputeTaskNoReduceAdapter<Void> {
-        /** */
-        private GridTuple5<
-            GridMapper<Runnable, GridNode>,
-            Collection<? extends Runnable>,
-            Collection<GridNode>,
-            GridKernalContext,
-            GridClosure2X<GridComputeJobResult, List<GridComputeJobResult>, GridComputeJobResultPolicy>
-            > t;
-
-        /**
-         *
-         * @param mapper Mapper.
-         * @param jobs Collection of jobs.
-         * @param nodes Collection of nodes.
-         * @param ctx Kernal context.
-         */
-        private T4(
-            GridMapper<Runnable, GridNode> mapper,
-            Collection<? extends Runnable> jobs,
-            Collection<GridNode> nodes,
-            GridKernalContext ctx) {
-            super(U.peerDeployAware0(jobs));
-
-            t = F.<
-                GridMapper<Runnable, GridNode>,
-                Collection<? extends Runnable>,
-                Collection<GridNode>,
-                GridKernalContext,
-                GridClosure2X<GridComputeJobResult, List<GridComputeJobResult>, GridComputeJobResultPolicy>
-                >t(mapper, jobs, nodes, ctx,
-                    (GridClosure2X<GridComputeJobResult, List<GridComputeJobResult>, GridComputeJobResultPolicy>)ctx.task().
-                        getThreadContext(TC_RESULT));
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
-            return t.get5() == null ? super.result(res, rcvd) : t.get5().apply(res, rcvd);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg) {
-            t.get1().collect(F.retain(t.get3(), true, subgrid));
-
-            Map<GridComputeJob, GridNode> map = new HashMap<>(t.get2().size(), 1);
-
-            for (Runnable r : t.get2())
-                map.put(F.job(r), t.get1().apply(r));
-
-            return map;
-        }
-    }
-
-    /**
-     * @param mapper Mapper.
-     * @param jobs Closures to execute.
-     * @return Grid future.
-     * @param nodes Grid nodes.
-     */
-    public <R> GridFuture<Collection<R>> callAsync(@Nullable GridMapper<Callable<R>, GridNode> mapper,
-        @Nullable Collection<? extends Callable<R>> jobs, @Nullable Collection<GridNode> nodes) {
-        return callAsync(mapper, jobs, nodes, false);
-    }
-
-    /**
-     * @param mapper Mapper.
-     * @param jobs Closures to execute.
-     * @param nodes Grid nodes.
-     * @param timeout Optional timeout for this closure execution in milliseconds. If 0, then the system will wait
-     *     indefinitely for execution completion.
-     * @return Grid future.
-     */
-    public <R> GridFuture<Collection<R>> callAsync(@Nullable GridMapper<Callable<R>, GridNode> mapper,
-        @Nullable Collection<? extends Callable<R>> jobs, @Nullable Collection<GridNode> nodes,
-        long timeout) {
-        return callAsync(mapper, jobs, nodes, timeout, false);
-    }
-
-    /**
-     * @param mapper Mapper.
-     * @param jobs Closures to execute.
-     * @param nodes Grid nodes.
-     * @param sys If {@code true}, then system pool will be used.
-     * @return Grid future.
-     */
-    public <R> GridFuture<Collection<R>> callAsync(@Nullable GridMapper<Callable<R>, GridNode> mapper,
-        @Nullable Collection<? extends Callable<R>> jobs, @Nullable Collection<GridNode> nodes, boolean sys) {
-        return callAsync(mapper, jobs, nodes, 0, sys);
-    }
-
-    /**
-     * @param mapper Mapper.
-     * @param jobs Closures to execute.
-     * @param nodes Grid nodes.
-     * @param timeout Optional timeout for this closure execution in milliseconds. If 0, then the system will wait
-     *     indefinitely for execution completion.
-     * @param sys If {@code true}, then system pool will be used.
-     * @return Grid future.
-     */
-    public <R> GridFuture<Collection<R>> callAsync(@Nullable GridMapper<Callable<R>, GridNode> mapper,
-        @Nullable Collection<? extends Callable<R>> jobs, @Nullable Collection<GridNode> nodes, long timeout,
-        boolean sys) {
-        assert timeout >= 0;
-
-        enterBusy();
-
-        try {
-            if (mapper == null || F.isEmpty(jobs))
-                return new GridFinishedFuture<>(ctx);
-
-            if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, makeException());
-
-            ctx.task().setThreadContext(TC_SUBGRID, nodes);
-
-            return ctx.task().execute(new T5<>(mapper, jobs, nodes, ctx), null, timeout, sys);
-        }
-        finally {
-            leaveBusy();
+            return t.get3().reduce();
         }
     }
 
@@ -839,197 +527,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     private GridEmptyProjectionException makeException() {
         return new GridEmptyProjectionException("Topology projection is empty.");
-    }
-
-    /**
-     * Task that is free of dragged in enclosing context for the method
-     * {@link GridClosureProcessor#callAsync(GridMapper, Collection, Collection)}
-     */
-    private static class T5<R> extends GridComputeTaskAdapter<Void, Collection<R>> {
-        /** */
-        private GridTuple5<
-            GridMapper<Callable<R>, GridNode>,
-            Collection<? extends Callable<R>>,
-            Collection<GridNode>,
-            GridKernalContext,
-            GridClosure2X<GridComputeJobResult, List<GridComputeJobResult>, GridComputeJobResultPolicy>
-            > t;
-
-        /**
-         *
-         * @param mapper Mapper.
-         * @param jobs Collection of jobs.
-         * @param nodes Collection of nodes.
-         * @param ctx Kernal context.
-         */
-        private T5(
-            GridMapper<Callable<R>, GridNode> mapper,
-            Collection<? extends Callable<R>> jobs,
-            Collection<GridNode> nodes,
-            GridKernalContext ctx) {
-            super(U.peerDeployAware0(jobs));
-
-            t = F.<
-                    GridMapper<Callable<R>, GridNode>,
-                    Collection<? extends Callable<R>>,
-                    Collection<GridNode>,
-                    GridKernalContext,
-                    GridClosure2X<GridComputeJobResult, List<GridComputeJobResult>, GridComputeJobResultPolicy>
-                >t(
-                    mapper,
-                    jobs,
-                    nodes,
-                    ctx,
-                    (GridClosure2X<GridComputeJobResult, List<GridComputeJobResult>, GridComputeJobResultPolicy>)ctx.task().
-                        getThreadContext(TC_RESULT)
-                );
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg) {
-            t.get1().collect(F.retain(t.get3(), true, subgrid));
-
-            Map<GridComputeJob, GridNode> map = new HashMap<>(t.get2().size(), 1);
-
-            for (Callable<R> c : t.get2())
-                map.put(F.job(c), t.get1().apply(c));
-
-            return map;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
-            return t.get5() == null ? super.result(res, rcvd) : t.get5().apply(res, rcvd);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<R> reduce(List<GridComputeJobResult> res) {
-            return F.jobResults(res);
-        }
-    }
-
-    /**
-     * @param mapper Mapper.
-     * @param jobs Closures to execute.
-     * @param rdc Reducer.
-     * @param nodes Grid nodes.
-     * @param <R1> Type.
-     * @param <R2> Type.
-     * @param <C> Any subclass or {@code Callable<R1>}.
-     * @return Reduced result future.
-     */
-    public <R1, R2, C extends Callable<R1>> GridFuture<R2> forkjoinAsync(@Nullable GridMapper<C, GridNode> mapper,
-        @Nullable Collection<C> jobs, @Nullable GridReducer<R1, R2> rdc,
-        @Nullable Collection<GridNode> nodes) {
-        return forkjoinAsync(mapper, jobs, rdc, nodes, 0);
-    }
-
-    /**
-     * @param mapper Mapper.
-     * @param jobs Closures to execute.
-     * @param rdc Reducer.
-     * @param nodes Grid nodes.
-     * @param timeout Optional timeout for this closure execution in milliseconds. If 0, then the system will wait
-     *     indefinitely for execution completion.
-     * @param <R1> Type.
-     * @param <R2> Type.
-     * @param <C> Any subclass or {@code Callable<R1>}.
-     * @return Reduced result future.
-     */
-    public <R1, R2, C extends Callable<R1>> GridFuture<R2> forkjoinAsync(@Nullable GridMapper<C, GridNode> mapper,
-        @Nullable Collection<C> jobs, @Nullable GridReducer<R1, R2> rdc,
-        @Nullable Collection<GridNode> nodes, long timeout) {
-        assert timeout >= 0;
-
-        enterBusy();
-
-        try {
-            if (mapper == null || F.isEmpty(jobs) || rdc == null)
-                return new GridFinishedFuture<>(ctx);
-
-            if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, makeException());
-
-            ctx.task().setThreadContext(TC_SUBGRID, nodes);
-
-            return ctx.task().execute(new T6<>(mapper, jobs, rdc, nodes, ctx), null, timeout);
-        }
-        finally {
-            leaveBusy();
-        }
-    }
-
-    /**
-     * Task that is free of dragged in enclosing context for the method
-     * {@link GridClosureProcessor#forkjoinAsync(GridMapper, Collection, GridReducer, Collection)}
-     */
-    private static class T6<R1, R2, C extends Callable<R1>> extends GridComputeTaskAdapter<Void, R2> {
-        /** */
-        private GridTuple5<
-            GridMapper<C, GridNode>,
-            Collection<C>,
-            GridReducer<R1, R2>,
-            Collection<GridNode>,
-            GridKernalContext
-            > t;
-
-        /** */
-        private GridClosure2X<GridComputeJobResult, List<GridComputeJobResult>, GridComputeJobResultPolicy> f;
-
-        /**
-         *
-         * @param mapper Mapper.
-         * @param jobs Collection of jobs.
-         * @param rdc Reducer.
-         * @param nodes Collection of nodes.
-         * @param ctx Kernal context.
-         */
-        private T6(
-            GridMapper<C, GridNode> mapper,
-            Collection<C> jobs,
-            GridReducer<R1, R2> rdc,
-            Collection<GridNode> nodes,
-            GridKernalContext ctx) {
-            super(U.peerDeployAware0(jobs));
-
-            t = F.<
-                    GridMapper<C, GridNode>,
-                    Collection<C>,
-                    GridReducer<R1, R2>,
-                    Collection<GridNode>,
-                    GridKernalContext
-                >t(
-                    mapper,
-                    jobs,
-                    rdc,
-                    nodes,
-                    ctx
-                );
-
-            f = ctx.task().getThreadContext(TC_RESULT);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg) {
-            t.get1().collect(F.retain(t.get4(), true, subgrid));
-
-            Map<GridComputeJob, GridNode> map = new HashMap<>(t.get2().size(), 1);
-
-            for (C c : t.get2())
-                map.put(F.job(c), t.get1().apply(c));
-
-            return map;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
-            return f == null ? super.result(res, rcvd) : f.apply(res, rcvd);
-        }
-
-        /** {@inheritDoc} */
-        @Override public R2 reduce(List<GridComputeJobResult> res) {
-            return F.reduce(F.<R1>jobResults(res), t.get3());
-        }
     }
 
     /**
@@ -1050,22 +547,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param mode Distribution mode.
      * @param jobs Closures to execute.
      * @param nodes Grid nodes.
-     * @param timeout Optional timeout for this closure execution in milliseconds. If 0, then the system will wait
-     *     indefinitely for execution completion.
-     * @param <R> Type.
-     * @return Grid future for collection of closure results.
-     */
-    public <R> GridFuture<Collection<R>> callAsync(
-        GridClosureCallMode mode,
-        @Nullable Collection<? extends Callable<R>> jobs,
-        @Nullable Collection<GridNode> nodes, long timeout) {
-        return callAsync(mode, jobs, nodes, timeout, false);
-    }
-
-    /**
-     * @param mode Distribution mode.
-     * @param jobs Closures to execute.
-     * @param nodes Grid nodes.
      * @param sys If {@code true}, then system pool will be used.
      * @param <R> Type.
      * @return Grid future for collection of closure results.
@@ -1073,24 +554,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     public <R> GridFuture<Collection<R>> callAsync(GridClosureCallMode mode,
         @Nullable Collection<? extends Callable<R>> jobs, @Nullable Collection<GridNode> nodes,
         boolean sys) {
-        return callAsync(mode, jobs, nodes, 0, sys);
-    }
-
-    /**
-     * @param mode Distribution mode.
-     * @param jobs Closures to execute.
-     * @param nodes Grid nodes.
-     * @param timeout Optional timeout for this closure execution in milliseconds. If 0, then the system will wait
-     *     indefinitely for execution completion.
-     * @param sys If {@code true}, then system pool will be used.
-     * @param <R> Type.
-     * @return Grid future for collection of closure results.
-     */
-    public <R> GridFuture<Collection<R>> callAsync(GridClosureCallMode mode,
-        @Nullable Collection<? extends Callable<R>> jobs, @Nullable Collection<GridNode> nodes, long timeout,
-        boolean sys) {
         assert mode != null;
-        assert timeout >= 0;
 
         enterBusy();
 
@@ -1103,7 +567,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T7<>(mode, jobs, nodes, ctx), null, timeout, sys);
+            return ctx.task().execute(new T7<>(mode, jobs, nodes, ctx), null, sys);
         }
         finally {
             leaveBusy();
@@ -1114,7 +578,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * Task that is free of dragged in enclosing context for the method
      * {@link GridClosureProcessor#callAsync(GridClosureCallMode, Collection, Collection)}
      */
-    private static class T7<R> extends GridComputeTaskAdapter<Void, Collection<R>> {
+    private class T7<R> extends GridComputeTaskAdapter<Void, Collection<R>> {
         /** */
         private final GridClosureCallMode mode;
 
@@ -1125,7 +589,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private final Collection<GridNode> nodes;
 
         /** */
-        private final GridClosure2X<GridComputeJobResult, List<GridComputeJobResult>, GridComputeJobResultPolicy> resHndl;
+        private final GridClosure2X<GridComputeJobResult, List<GridComputeJobResult>,
+            GridComputeJobResultPolicy> resHndl;
 
         /**
          *
@@ -1159,7 +624,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd)
+            throws GridException {
             return resHndl == null ? super.result(res, rcvd) : resHndl.apply(res, rcvd);
         }
 
@@ -1183,21 +649,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
-     *
-     * @param mode Distribution mode.
-     * @param job Closure to execute.
-     * @param nodes Grid nodes.
-     * @param timeout Optional timeout for this closure execution in milliseconds. If 0, then the system will wait
-     *     indefinitely for execution completion.
-     * @param <R> Type.
-     * @return Grid future for collection of closure results.
-     */
-    public <R> GridFuture<R> callAsync(GridClosureCallMode mode,
-        @Nullable Callable<R> job, @Nullable Collection<GridNode> nodes, long timeout) {
-        return callAsync(mode, job, nodes, timeout, false);
-    }
-
-    /**
      * @param mode Distribution mode.
      * @param job Closure to execute.
      * @param nodes Grid nodes.
@@ -1207,23 +658,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     public <R> GridFuture<R> callAsyncNoFailover(GridClosureCallMode mode, @Nullable Callable<R> job,
         @Nullable Collection<GridNode> nodes, boolean sys) {
-        return callAsyncNoFailover(mode, job, nodes, 0, sys);
-    }
-
-    /**
-     * @param mode Distribution mode.
-     * @param job Closure to execute.
-     * @param nodes Grid nodes.
-     * @param timeout Optional timeout for this closure execution in milliseconds. If 0, then the system will wait
-     *     indefinitely for execution completion.
-     * @param sys If {@code true}, then system pool will be used.
-     * @param <R> Type.
-     * @return Grid future for collection of closure results.
-     */
-    public <R> GridFuture<R> callAsyncNoFailover(GridClosureCallMode mode, @Nullable Callable<R> job,
-        @Nullable Collection<GridNode> nodes, long timeout, boolean sys) {
         assert mode != null;
-        assert timeout >= 0;
 
         enterBusy();
 
@@ -1235,10 +670,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 return new GridFinishedFuture<>(ctx, makeException());
 
             ctx.task().setThreadContext(TC_RESULT, X.NO_FAILOVER);
-
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T8<>(mode, job, nodes, ctx), null, timeout, sys);
+            return ctx.task().execute(new T8<>(mode, job, nodes, ctx), null, sys);
         }
         finally {
             leaveBusy();
@@ -1256,24 +690,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     public <R> GridFuture<Collection<R>> callAsyncNoFailover(GridClosureCallMode mode,
         @Nullable Collection<? extends Callable<R>> jobs, @Nullable Collection<GridNode> nodes,
         boolean sys) {
-        return callAsyncNoFailover(mode, jobs, nodes, 0, sys);
-    }
-
-    /**
-     * @param mode Distribution mode.
-     * @param jobs Closures to execute.
-     * @param nodes Grid nodes.
-     * @param timeout Optional timeout for this closure execution in milliseconds. If 0, then the system will wait
-     *     indefinitely for execution completion.
-     * @param sys If {@code true}, then system pool will be used.
-     * @param <R> Type.
-     * @return Grid future for collection of closure results.
-     */
-    public <R> GridFuture<Collection<R>> callAsyncNoFailover(GridClosureCallMode mode,
-        @Nullable Collection<? extends Callable<R>> jobs, @Nullable Collection<GridNode> nodes, long timeout,
-        boolean sys) {
         assert mode != null;
-        assert timeout >= 0;
 
         enterBusy();
 
@@ -1285,10 +702,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 return new GridFinishedFuture<>(ctx, makeException());
 
             ctx.task().setThreadContext(TC_RESULT, X.NO_FAILOVER);
-
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T7<>(mode, jobs, nodes, ctx), null, timeout, sys);
+            return ctx.task().execute(new T7<>(mode, jobs, nodes, ctx), null, sys);
         }
         finally {
             leaveBusy();
@@ -1305,23 +721,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     public <R> GridFuture<R> callAsync(GridClosureCallMode mode,
         @Nullable Callable<R> job, @Nullable Collection<GridNode> nodes, boolean sys) {
-        return callAsync(mode, job, nodes, 0, sys);
-    }
-
-    /**
-     * @param mode Distribution mode.
-     * @param job Closure to execute.
-     * @param nodes Grid nodes.
-     * @param timeout Optional timeout for this closure execution in milliseconds. If 0, then the system will wait
-     *     indefinitely for execution completion.
-     * @param sys If {@code true}, then system pool will be used.
-     * @param <R> Type.
-     * @return Grid future for collection of closure results.
-     */
-    public <R> GridFuture<R> callAsync(GridClosureCallMode mode,
-        @Nullable Callable<R> job, @Nullable Collection<GridNode> nodes, long timeout, boolean sys) {
         assert mode != null;
-        assert timeout >= 0;
 
         enterBusy();
 
@@ -1334,7 +734,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T8<>(mode, job, nodes, ctx), null, timeout, sys);
+            return ctx.task().execute(new T8<>(mode, job, nodes, ctx), null, sys);
         }
         finally {
             leaveBusy();
@@ -1345,7 +745,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * Task that is free of dragged in enclosing context for the method
      * {@link GridClosureProcessor#callAsync(GridClosureCallMode, Callable, Collection)}
      */
-    private static class T8<R> extends GridComputeTaskAdapter<Void, R> {
+    private class T8<R> extends GridComputeTaskAdapter<Void, R> {
         /** */
         private GridTuple4<
             GridClosureCallMode,
@@ -1387,7 +787,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) throws GridException {
+        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd)
+            throws GridException {
             return t.get4() == null ? super.result(res, rcvd) : t.get4().apply(res, rcvd);
         }
 
@@ -1628,6 +1029,47 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             // If failed for other reasons - return error future.
             else
                 return new GridFinishedFuture<>(ctx, U.cast(e));
+        }
+    }
+
+    /** */
+    private class JobMapper {
+        /** */
+        private final Map<GridComputeJob, GridNode> map;
+
+        /** */
+        private boolean hadLocNode;
+
+        /**
+         * @param map Jobs map.
+         */
+        private JobMapper(Map<GridComputeJob, GridNode> map) {
+            assert map != null;
+            assert map.isEmpty();
+
+            this.map = map;
+        }
+
+        /**
+         * @param job Job.
+         * @param node Node.
+         * @throws GridException In case of error.
+         */
+        public void map(GridComputeJob job, GridNode node) throws GridException {
+            assert job != null;
+            assert node != null;
+
+            if (ctx.localNodeId().equals(node.id())) {
+                if (hadLocNode) {
+                    GridMarshaller marsh = ctx.config().getMarshaller();
+
+                    job = marsh.unmarshal(marsh.marshal(job), null);
+                }
+                else
+                    hadLocNode = true;
+            }
+
+            map.put(job, node);
         }
     }
 }

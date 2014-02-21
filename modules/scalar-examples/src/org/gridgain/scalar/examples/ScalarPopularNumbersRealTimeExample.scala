@@ -49,7 +49,7 @@ object ScalarPopularNumbersRealTimeExample extends App {
             query(NUM_CNT)
 
             // Clean up after ourselves.
-            grid$.forCaches(null).bcastRun(() => grid$.cache(null).clearAll(), null)
+            grid$.forCache(null).bcastRun(() => grid$.cache(null).clearAll(), null)
         }
         finally {
             timer.cancel()

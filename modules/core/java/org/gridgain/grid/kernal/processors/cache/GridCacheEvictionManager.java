@@ -695,7 +695,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @throws GridException If failed to evict entry.
      */
     private boolean evict0(GridCacheAdapter<K, V> cache, GridCacheEntryEx<K, V> entry, GridCacheVersion obsoleteVer,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter, boolean explicit) throws GridException {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter, boolean explicit) throws GridException {
         assert cache != null;
         assert entry != null;
         assert obsoleteVer != null;
@@ -874,7 +874,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @throws GridException In case of error.
      */
     public boolean evict(@Nullable GridCacheEntryEx<K, V> entry, @Nullable GridCacheVersion obsoleteVer,
-        boolean explicit, @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException {
+        boolean explicit, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         if (entry == null)
             return true;
 
@@ -1005,7 +1005,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param filter Filter.
      * @throws GridCacheEntryRemovedException If entry got removed.
      */
-    private void enqueue(GridCacheEntryEx<K, V> entry, GridPredicate<? super GridCacheEntry<K, V>>[] filter)
+    private void enqueue(GridCacheEntryEx<K, V> entry, GridPredicate<GridCacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException {
         Node<EvictionInfo> node = entry.meta(meta);
 
@@ -1250,7 +1250,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param info Eviction info.
      * @return Version aware filter.
      */
-    private GridPredicate<? super GridCacheEntry<K, V>>[] versionFilter(final EvictionInfo info) {
+    private GridPredicate<GridCacheEntry<K, V>>[] versionFilter(final EvictionInfo info) {
         // If version has changed since we started the whole process
         // then we should not evict entry.
         return cctx.vararg(new P1<GridCacheEntry<K, V>>() {
@@ -1478,7 +1478,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         private GridCacheVersion ver;
 
         /** Filter to pass before entry will be evicted. */
-        private GridPredicate<? super GridCacheEntry<K, V>>[] filter;
+        private GridPredicate<GridCacheEntry<K, V>>[] filter;
 
         /**
          * @param entry Entry.
@@ -1486,7 +1486,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
          * @param filter Filter.
          */
         EvictionInfo(GridCacheEntryEx<K, V> entry, GridCacheVersion ver,
-            GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+            GridPredicate<GridCacheEntry<K, V>>[] filter) {
             assert entry != null;
             assert ver != null;
 
@@ -1512,7 +1512,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         /**
          * @return Filter.
          */
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter() {
+        GridPredicate<GridCacheEntry<K, V>>[] filter() {
             return filter;
         }
 

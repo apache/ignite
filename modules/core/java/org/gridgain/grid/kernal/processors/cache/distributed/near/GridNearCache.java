@@ -229,7 +229,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
         boolean forcePrimary,
         boolean skipTx,
         @Nullable final GridCacheEntryEx<K, V> entry,
-        @Nullable final GridPredicate<? super GridCacheEntry<K, V>>[] filter
+        @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         ctx.denyOnFlag(LOCAL);
 
@@ -252,13 +252,13 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
     @Override public GridFuture<Object> readThroughAllAsync(Collection<? extends K> keys, boolean reload,
-        GridCacheTxEx<K, V> tx, GridPredicate<? super GridCacheEntry<K, V>>[] filter, GridBiInClosure<K, V> vis) {
+        GridCacheTxEx<K, V> tx, GridPredicate<GridCacheEntry<K, V>>[] filter, GridBiInClosure<K, V> vis) {
         return (GridFuture)loadAsync(tx, keys, reload, false, filter);
     }
 
     /** {@inheritDoc} */
     @Override public void reloadAll(@Nullable Collection<? extends K> keys,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) throws GridException {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         dht().reloadAll(keys, filter);
 
         super.reloadAll(keys, filter);
@@ -267,7 +267,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         GridCompoundFuture fut = new GridCompoundFuture(ctx.kernalContext());
 
         fut.add(super.reloadAllAsync(keys, filter));
@@ -280,7 +280,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V reload(K key, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter)
+    @Override public V reload(K key, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridException {
         V val;
 
@@ -318,7 +318,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public GridFuture<?> reloadAllAsync(@Nullable GridPredicate<? super GridCacheEntry<K, V>> filter) {
+    @Override public GridFuture<?> reloadAllAsync(@Nullable GridPredicate<GridCacheEntry<K, V>> filter) {
         GridCompoundFuture fut = new GridCompoundFuture(ctx.kernalContext());
 
         fut.add(super.reloadAllAsync());
@@ -338,7 +338,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
      * @return Loaded values.
      */
     public GridFuture<Map<K, V>> loadAsync(@Nullable GridCacheTxEx tx, @Nullable Collection<? extends K> keys,
-        boolean reload, boolean forcePrimary, @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        boolean reload, boolean forcePrimary, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
@@ -359,7 +359,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
      * @return Future.
      */
     GridFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx, @Nullable Collection<? extends K> keys,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         assert tx != null;
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, false, false, tx, filter);
@@ -903,7 +903,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override protected GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
-        GridCacheTxIsolation isolation, GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        GridCacheTxIsolation isolation, GridPredicate<GridCacheEntry<K, V>>[] filter) {
         GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx, keys, (GridNearTxLocal<K, V>)tx, isRead,
             retval, timeout, filter);
 
@@ -945,7 +945,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys, GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+    @Override public void unlockAll(Collection<? extends K> keys, GridPredicate<GridCacheEntry<K, V>>[] filter) {
         if (keys.isEmpty())
             return;
 
@@ -1183,7 +1183,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public Set<GridCacheEntry<K, V>> entrySet(
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         return new EntrySet(super.entrySet(filter), dht.entrySet(filter));
     }
 
@@ -1194,7 +1194,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public Set<GridCacheEntry<K, V>> primaryEntrySet(
-        @Nullable final GridPredicate<? super GridCacheEntry<K, V>>... filter) {
+        @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) {
         Collection<GridCacheEntry<K, V>> entries =
             F.flat(
                 F.viewReadOnly(
@@ -1225,7 +1225,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public Set<K> keySet(@Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+    @Override public Set<K> keySet(@Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return new GridCacheKeySet<>(ctx, entrySet(filter), null);
     }
 
@@ -1233,32 +1233,32 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
      * @param filter Entry filter.
      * @return Keys for near cache only.
      */
-    public Set<K> nearKeySet(@Nullable GridPredicate<? super GridCacheEntry<K, V>> filter) {
+    public Set<K> nearKeySet(@Nullable GridPredicate<GridCacheEntry<K, V>> filter) {
         return super.keySet(filter);
     }
 
     /** {@inheritDoc} */
-    @Override public Set<K> primaryKeySet(@Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) {
+    @Override public Set<K> primaryKeySet(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         return new GridCacheKeySet<>(ctx, primaryEntrySet(filter), null);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<V> values(GridPredicate<? super GridCacheEntry<K, V>>... filter) {
+    @Override public Collection<V> values(GridPredicate<GridCacheEntry<K, V>>... filter) {
         return new GridCacheValueCollection<>(ctx, entrySet(filter), ctx.vararg(F.<K, V>cacheHasPeekValue()));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<V> primaryValues(@Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) {
+    @Override public Collection<V> primaryValues(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         return new GridCacheValueCollection<>(ctx, entrySet(filter), ctx.vararg(F.<K, V>cachePrimary()));
     }
 
     /** {@inheritDoc} */
-    @Override public boolean containsKey(K key, GridPredicate<? super GridCacheEntry<K, V>> filter) {
+    @Override public boolean containsKey(K key, GridPredicate<GridCacheEntry<K, V>> filter) {
         return super.containsKey(key, filter) || dht.containsKey(key, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean evict(K key, @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+    @Override public boolean evict(K key, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         // Use unary 'and' to make sure that both sides execute.
         return super.evict(key, filter) & dht.evict(key, filter);
     }
@@ -1268,13 +1268,13 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
      * @param filter Optional filter.
      * @return {@code True} if evicted.
      */
-    public boolean evictNearOnly(K key, @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+    public boolean evictNearOnly(K key, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return super.evict(key, filter);
     }
 
     /** {@inheritDoc} */
     @Override public void evictAll(Collection<? extends K> keys,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         super.evictAll(keys, filter);
 
         dht.evictAll(keys, filter);
@@ -1282,7 +1282,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean compact(K key,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         return super.compact(key, filter) | dht().compact(key, filter);
     }
 
@@ -1314,7 +1314,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V peek(K key, @Nullable GridPredicate<? super GridCacheEntry<K, V>> filter) {
+    @Override public V peek(K key, @Nullable GridPredicate<GridCacheEntry<K, V>> filter) {
         try {
             GridTuple<V> res = peek0(false, key, SMART, filter);
 
@@ -1354,7 +1354,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public Map<K, V> peekAll(@Nullable Collection<? extends K> keys,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         final Map<K, V> resMap = super.peekAll(keys, filter);
 
         if (resMap.size() != keys.size())
@@ -1368,13 +1368,13 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean clear0(K key, @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+    @Override public boolean clear0(K key, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return super.clear0(key, filter) | dht.clear0(key, filter);
     }
 
     /** {@inheritDoc} */
     @Override public void clearAll0(Collection<? extends K> keys,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         super.clearAll0(keys, filter);
 
         dht.clearAll0(keys, filter);

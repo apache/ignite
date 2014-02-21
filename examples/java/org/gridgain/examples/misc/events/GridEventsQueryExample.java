@@ -38,7 +38,7 @@ public final class GridEventsQueryExample {
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start(args.length == 0 ? "examples/config/example-default.xml" : args[0])) {
             // Executes example task to generate events.
-            g.compute().execute(GridEventsExampleTask.class, null, 0).get();
+            g.compute().execute(GridEventsExampleTask.class, null).get();
 
             // Retrieve and filter nodes events.
             List<GridEvent> evts = g.events().queryRemote(

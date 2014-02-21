@@ -32,8 +32,9 @@ object ScalarPiCalculationExample {
 
     def main(args: Array[String]) {
         scalar("examples/config/example-default.xml") {
-            println("Pi estimate: " +
-                grid$.spreadReduce(for (i <- 0 until grid$.nodes().size()) yield () => calcPi(i * N))(_.sum, null))
+            val jobs = for (i <- 0 until grid$.nodes().size()) yield () => calcPi(i * N)
+
+            println("Pi estimate: " + grid$.reduce$[Double, Double](jobs, _.sum, null))
         }
     }
 

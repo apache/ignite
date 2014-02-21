@@ -66,7 +66,7 @@ public class GridMergeSortContinuationExample {
 
             long startTime = System.currentTimeMillis();
 
-            int[] res = g.compute().execute(new GridMergeSortTask(), bigArr, 0).get();
+            int[] res = g.compute().execute(new GridMergeSortTask(), bigArr).get();
 
             System.out.println("Sorted array: " + arrayToString(res));
             System.out.println("Execution time: " + (System.currentTimeMillis() - startTime) + "ms");

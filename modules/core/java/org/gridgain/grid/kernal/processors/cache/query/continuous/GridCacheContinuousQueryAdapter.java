@@ -46,7 +46,7 @@ class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuousQuery<
     private final Object topic;
 
     /** Projection predicate */
-    private final GridPredicate<? super GridCacheEntry<K, V>> prjPred;
+    private final GridPredicate<GridCacheEntry<K, V>> prjPred;
 
     /** Logger. */
     private final GridLogger log;
@@ -76,7 +76,7 @@ class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuousQuery<
      * @param prjPred Projection predicate.
      */
     GridCacheContinuousQueryAdapter(GridCacheContext<K, V> ctx, Object topic,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>> prjPred) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>> prjPred) {
         assert ctx != null;
         assert topic != null;
 
@@ -188,7 +188,7 @@ class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuousQuery<
         if (prj == null)
             prj = ctx.grid();
 
-        prj = prj.forCaches(ctx.name());
+        prj = prj.forCache(ctx.name());
 
         if (prj.nodes().isEmpty())
             throw new GridTopologyException("Failed to execute query (projection is empty): " + this);

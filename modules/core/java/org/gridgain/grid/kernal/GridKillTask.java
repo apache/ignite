@@ -69,14 +69,6 @@ class GridKillTask extends GridComputeTaskNoReduceAdapter<Boolean> {
     private class GridKillJob extends GridComputeJobAdapter {
         /** {@inheritDoc} */
         @Override public Object execute() throws GridException {
-            return null;
-        }
-
-        /**
-         * Restarts or kills nodes.
-         */
-        @GridComputeJobAfterExecute
-        public void afterSend() {
             if (restart)
                 new Thread(new Runnable() {
                     @Override public void run() {
@@ -91,6 +83,8 @@ class GridKillTask extends GridComputeTaskNoReduceAdapter<Boolean> {
                     }
                 },
                 "grid-stopper").start();
+
+            return null;
         }
     }
 }

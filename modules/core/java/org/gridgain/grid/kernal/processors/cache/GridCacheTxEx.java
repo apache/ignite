@@ -294,7 +294,7 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
      * @throws GridCacheFilterFailedException If filter failed and failFast is {@code true}.
      */
      @Nullable public GridTuple<V> peek(boolean failFast, K key,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridCacheFilterFailedException;
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridCacheFilterFailedException;
 
     /**
      * @return Start version.

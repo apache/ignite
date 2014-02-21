@@ -11,7 +11,6 @@ package org.gridgain.grid.util.lang;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
@@ -30,11 +29,23 @@ import java.util.*;
 public class GridNodePredicate<T extends GridNode> extends GridPredicate<T> implements Iterable<UUID> {
     /** */
     @GridToStringInclude
-    private UUID[] ids;
+    private final Set<UUID> ids;
 
     /** */
     @GridToStringExclude
     private int hash = Integer.MIN_VALUE;
+
+    /**
+     * Creates node predicate that evaluates to {@code true} for all
+     * provided node IDs. Implementation will not make a defensive copy.
+     *
+     * @param ids Optional node IDs. If none provided - predicate will always return {@code false}.
+     */
+    public GridNodePredicate(Set<UUID> ids) {
+        assert ids != null;
+
+        this.ids = ids;
+    }
 
     /**
      * Creates node predicate that evaluates to {@code true} for all
@@ -43,34 +54,25 @@ public class GridNodePredicate<T extends GridNode> extends GridPredicate<T> impl
      * @param ids Optional node IDs. If none provided - predicate will always return {@code false}.
      */
     public GridNodePredicate(@Nullable Collection<UUID> ids) {
-        if (!F.isEmpty(ids)) {
-            assert ids != null;
-
-            // Implicit defensive copy.
-            this.ids = ids.toArray(new UUID[ids.size()]);
-
-            dedup();
-
-            Arrays.sort(this.ids);
-        }
+        this.ids = F.isEmpty(ids) ? Collections.<UUID>emptySet() : ids.size() == 1 ?
+            Collections.singleton(F.first(ids)) : new HashSet<>(ids);
     }
 
     /**
      * Creates node predicate that evaluates to {@code true} for all
-     * provided node IDs. No defensive copying will be made.
+     * provided node IDs. Implementation will make a defensive copy.
      *
      * @param ids Optional node IDs. If none provided - predicate will always return {@code false}.
      */
     public GridNodePredicate(@Nullable UUID... ids) {
-        if (!F.isEmpty(ids)) {
-            assert ids != null;
+        if (F.isEmpty(ids))
+            this.ids = Collections.emptySet();
+        else if (ids.length == 1)
+            this.ids = Collections.singleton(ids[0]);
+        else {
+            this.ids = new HashSet<>(ids.length);
 
-            // No defensive copy.
-            this.ids = ids;
-
-            dedup();
-
-            Arrays.sort(this.ids);
+            Collections.addAll(this.ids, ids);
         }
     }
 
@@ -82,61 +84,47 @@ public class GridNodePredicate<T extends GridNode> extends GridPredicate<T> impl
      *      will always return {@code false}.
      */
     public GridNodePredicate(@Nullable GridNode... nodes) {
-        if (!F.isEmpty(nodes)) {
-            assert nodes != null;
+        if (F.isEmpty(nodes))
+            ids = Collections.emptySet();
+        else if (nodes.length == 1)
+            ids = Collections.singleton(nodes[0].id());
+        else {
+            ids = new HashSet<>(nodes.length);
 
-            // Implicit defensive copy.
-            ids = F.nodeIds(Arrays.asList(nodes)).toArray(new UUID[nodes.length]);
-
-            dedup();
-
-            Arrays.sort(ids);
+            for (GridNode n : nodes)
+                ids.add(n.id());
         }
     }
 
     /**
-     * De-dups array of IDs.
-     */
-    private void dedup() {
-        assert ids != null;
-
-        Set<UUID> set = new GridLeanSet<>();
-
-        set.addAll(Arrays.asList(ids));
-
-        ids = set.toArray(new UUID[set.size()]);
-    }
-
-    /**
-     * Gets array of node IDs this predicate is based on. Note that for performance
-     * reasons this methods return the internal array that <b>should not</b> be
+     * Gets set of node IDs this predicate is based on. Note that for performance
+     * reasons this methods return the internal set that <b>should not</b> be
      * modified by the caller.
      *
-     * @return Array of node IDs this predicate is based on. Returns {@code null}
-     *      if predicate has no IDs.
+     * @return Set of node IDs this predicate is based on.
      */
-    public UUID[] nodeIds() {
+    public Set<UUID> nodeIds(){
         return ids;
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<UUID> iterator() {
-        return F.isEmpty(ids) ? F.<UUID>emptyIterator() : Collections.unmodifiableList(Arrays.asList(ids)).iterator();
+        return ids.iterator();
     }
 
     /** {@inheritDoc} */
     @Override public boolean apply(GridNode n) {
         assert n != null;
 
-        return !F.isEmpty(ids) && Arrays.binarySearch(ids, n.id()) >= 0;
+        return ids.contains(n.id());
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         // Allow for multiple hash calculations to avoid
         // synchronization cost. Note that array of IDs don't change.
-        if (hash == Integer.MIN_VALUE && !F.isEmpty(ids))
-            hash = Arrays.hashCode(ids);
+        if (hash == Integer.MIN_VALUE)
+            hash = ids.hashCode();
 
         return hash;
     }
@@ -151,8 +139,7 @@ public class GridNodePredicate<T extends GridNode> extends GridPredicate<T> impl
 
         GridNodePredicate it = (GridNodePredicate)o;
 
-        return !(F.isEmpty(ids) && !F.isEmpty(it.ids)) && !(!F.isEmpty(ids) && F.isEmpty(it.ids)) &&
-            F.eqArray(ids, it.ids, true, false);
+        return ids.equals(it.ids);
     }
 
     /** {@inheritDoc} */

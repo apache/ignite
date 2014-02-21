@@ -17,7 +17,6 @@ import org.gridgain.grid.product.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.GridClosureCallMode.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
@@ -77,7 +76,7 @@ public class GridCacheAffinityExample2 {
                     // Bring computations to the nodes where the data resides (i.e. collocation).
                     // Note that this code does not account for node crashes, in which case you
                     // would get an exception and would have to remap the keys assigned to this node.
-                    g.forNode(node).compute().run(UNICAST, new GridRunnable() {
+                    g.forNode(node).compute().run(new GridRunnable() {
                         @Override public void run() {
                             info("Executing affinity job for keys: " + mappedKeys);
 
@@ -112,7 +111,7 @@ public class GridCacheAffinityExample2 {
      * @throws GridException If failed.
      */
     private static void populateCache(final Grid g, Collection<String> keys) throws GridException {
-        GridProjection prj = g.forCaches(NAME);
+        GridProjection prj = g.forCache(NAME);
 
         // Give preference to local node.
         if (prj.nodes().contains(g.localNode()))
@@ -121,8 +120,8 @@ public class GridCacheAffinityExample2 {
         // Populate cache on some node (possibly this node) which has cache with given name started.
         // Note that CIX1 is a short type alias for GridInClosureX class. If you
         // find it too cryptic, you can use GridInClosureX class directly.
-        prj.compute().run(UNICAST, new GridInClosure<Collection<String>>() {
-            @Override public void apply(Collection<String> keys) {
+        prj.compute().apply(new GridClosure<Collection<String>, Void>() {
+            @Override public Void apply(Collection<String> keys) {
                 info("Storing keys in cache: " + keys);
 
                 GridCache<String, String> c = g.cache(NAME);
@@ -134,6 +133,8 @@ public class GridCacheAffinityExample2 {
                 catch (GridException e) {
                     throw new GridRuntimeException(e);
                 }
+
+                return null;
             }
         }, keys).get();
     }

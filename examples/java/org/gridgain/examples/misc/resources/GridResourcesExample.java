@@ -36,7 +36,7 @@ public final class GridResourcesExample {
         try (Grid g = GridGain.start(args.length == 0 ? "examples/config/example-default.xml" : args[0])) {
             // Execute task.
             GridComputeTaskFuture<Integer> fut = g.compute().execute(GridResourcesTask.class,
-                "Grid Computing Made Simple with GridGain", 0);
+                "Grid Computing Made Simple with GridGain");
 
             // Wait for task completion.
             int phraseLen = fut.get();

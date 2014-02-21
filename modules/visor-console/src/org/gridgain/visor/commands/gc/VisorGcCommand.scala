@@ -12,7 +12,7 @@
 package org.gridgain.visor.commands.gc
 
 import org.gridgain.grid._
-import kernal.GridEx
+import org.gridgain.grid.kernal.{GridClosureCallMode, GridEx}
 import GridClosureCallMode._
 import resources.GridInstanceResource
 import org.gridgain.grid.util.typedef._
@@ -166,11 +166,11 @@ class VisorGcCommand {
                     grid.forNode(node)
                         .compute()
                         .withResultClosure(X.NO_FAILOVER)
-                        .run(UNICAST, f)
+                        .run(f)
                 else
                     grid.compute()
                         .withResultClosure(X.NO_FAILOVER)
-                        .run(BROADCAST, f)
+                        .run(f)
             }
         }
     }

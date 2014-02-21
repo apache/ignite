@@ -79,7 +79,7 @@ public class GridPopularWordsRealTimeExample {
             popularWordsQryTimer.cancel();
 
             // Clean up caches on all nodes after run.
-            g.compute().run(GridClosureCallMode.BROADCAST, new Runnable() {
+            g.compute().run(new Runnable() {
                 @Override public void run() {
                     if (g.cache(null) == null)
                         System.err.println("Default cache not found (is example-cache-popularcounts.xml " +

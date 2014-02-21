@@ -20,8 +20,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.zip.*;
 
-import static org.gridgain.grid.GridClosureCallMode.*;
-
 /**
  * Demonstrates various messaging APIs. This example implements a classic
  * streaming processing problem for continues processing of large data sets
@@ -91,7 +89,7 @@ public class GridMessagingNodeLocalExample {
             final int MSG_NUM = 1 + new Random().nextInt(100);
 
             // Configure listener on remote node.
-            rmt.compute().run(UNICAST, new GridRunnable() {
+            rmt.compute().run(new GridRunnable() {
                 @GridInstanceResource
                 private Grid g;
 
@@ -134,7 +132,7 @@ public class GridMessagingNodeLocalExample {
 
             // Wait for all messages to be successfully processed
             // on the remote node.
-            rmt.compute().run(UNICAST, new GridRunnable() {
+            rmt.compute().run(new GridRunnable() {
                 @GridInstanceResource
                 private Grid g;
 
@@ -152,7 +150,7 @@ public class GridMessagingNodeLocalExample {
 
             // Retrieve and print final CRC32 value from the remote node.
             // For example's sake we do it in a separate call (extra network trip).
-            Long crc32 = rmt.compute().call(UNICAST, new Callable<Long>() {
+            Long crc32 = rmt.compute().call(new Callable<Long>() {
                 @GridInstanceResource
                 private Grid g;
 

@@ -253,7 +253,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @return See {@link GridCacheProjection#put(Object, Object, GridPredicate[])}.
      * @throws GridException See {@link GridCacheProjection#put(Object, Object, GridPredicate[])}.
      */
-    @Nullable public V set(V val, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) throws GridException;
+    @Nullable public V set(V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
      * This method has the same semantic as
@@ -263,7 +263,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @param filter See {@link GridCacheProjection#putAsync(Object, Object, GridPredicate[])}.
      * @return See {@link GridCacheProjection#putAsync(Object, Object, GridPredicate[])}.
      */
-    public GridFuture<V> setAsync(V val, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter);
+    public GridFuture<V> setAsync(V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * This method has the same semantic as
@@ -293,7 +293,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @return See {@link GridCacheProjection#putx(Object, Object, GridPredicate[])}.
      * @throws GridException See {@link GridCacheProjection#putx(Object, Object, GridPredicate[])}.
      */
-    public boolean setx(V val, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter)
+    public boolean setx(V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridException;
 
     /**
@@ -305,7 +305,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @return See {@link GridCacheProjection#putxAsync(Object, Object, GridPredicate[])}.
      */
     public GridFuture<Boolean> setxAsync(V val,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter);
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * This method has the same semantic as
@@ -414,7 +414,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @return See {@link GridCacheProjection#remove(Object, GridPredicate[])}.
      * @throws GridException See {@link GridCacheProjection#remove(Object, GridPredicate[])}.
      */
-    @Nullable public V remove(@Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) throws GridException;
+    @Nullable public V remove(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
      * This method has the same semantic as
@@ -423,7 +423,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @param filter See {@link GridCacheProjection#removeAsync(Object, GridPredicate[])}.
      * @return See {@link GridCacheProjection#removeAsync(Object, GridPredicate[])}.
      */
-    public GridFuture<V> removeAsync(@Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter);
+    public GridFuture<V> removeAsync(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * This method has the same semantic as
@@ -509,7 +509,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @throws GridException If lock acquisition resulted in error.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public boolean lock(long timeout, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter)
+    public boolean lock(long timeout, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridException;
 
     /**
@@ -534,7 +534,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @throws GridCacheFlagException If flags validation failed.
      */
     public GridFuture<Boolean> lockAsync(long timeout,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter);
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Unlocks this entry only if current thread owns the lock. If optional filter
@@ -553,7 +553,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @throws GridException If unlock execution resulted in error.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public void unlock(GridPredicate<? super GridCacheEntry<K, V>>... filter) throws GridException;
+    public void unlock(GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
      * Checks whether entry is currently present in cache or not. If entry is not in

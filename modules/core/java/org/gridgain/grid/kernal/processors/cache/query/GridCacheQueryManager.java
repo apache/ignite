@@ -36,7 +36,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.GridClosureCallMode.*;
+import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
@@ -659,7 +659,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             if (!it.hasNext()) {
                 if (rdc != null)
-                    data = Collections.singletonList(rdc.apply());
+                    data = Collections.singletonList(rdc.reduce());
 
                 onFieldsPageReady(qryInfo.local(), qryInfo, meta, entities, data, true, null);
 
@@ -739,7 +739,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             if (rdc != null) {
                 onFieldsPageReady(qryInfo.local(), qryInfo, meta, null,
-                    Collections.singletonList(rdc.apply()), true, null);
+                    Collections.singletonList(rdc.reduce()), true, null);
             }
         }
         catch (GridException e) {
@@ -914,7 +914,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 // Reduce.
                 if (rdc != null) {
                     if (!rdc.collect(F.t(key, val)) || !iter.hasNext()) {
-                        onPageReady(loc, qryInfo, Collections.singletonList(rdc.apply()), true, null);
+                        onPageReady(loc, qryInfo, Collections.singletonList(rdc.reduce()), true, null);
 
                         pageSent = true;
 
@@ -969,7 +969,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     onPageReady(loc, qryInfo, data, true, null);
                 }
                 else
-                    onPageReady(loc, qryInfo, Collections.singletonList(rdc.apply()), true, null);
+                    onPageReady(loc, qryInfo, Collections.singletonList(rdc.reduce()), true, null);
             }
         }
         catch (Throwable e) {

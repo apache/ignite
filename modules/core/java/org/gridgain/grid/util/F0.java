@@ -141,20 +141,20 @@ public class F0 {
         }
 
         if ((e1 || isAllNodePredicates(p1)) && (e2 || isAllNodePredicates(p2))) {
-            Collection<UUID> ids = new GridLeanSet<>();
+            Set<UUID> ids = new GridLeanSet<>();
 
             if (!e1) {
                 assert p1 != null;
 
                 for (GridPredicate<? super T> p : p1)
-                    ids.addAll(Arrays.asList(((GridNodePredicate)p).nodeIds()));
+                    ids.addAll(((GridNodePredicate)p).nodeIds());
             }
 
             if (!e2) {
                 assert p2 != null;
 
                 for (GridPredicate<? super T> p : p2)
-                    ids.addAll(Arrays.asList(((GridNodePredicate)p).nodeIds()));
+                    ids.addAll(((GridNodePredicate)p).nodeIds());
             }
 
             // T must be <T extends GridNode>.
@@ -212,10 +212,10 @@ public class F0 {
         if (isAllNodePredicates(ps)) {
             assert ps != null;
 
-            Collection<UUID> ids = new ArrayList<>();
+            Set<UUID> ids = new GridLeanSet<>();
 
             for (GridPredicate<? super T> p : ps) {
-                Collection<UUID> list = Arrays.asList(((GridNodePredicate)p).nodeIds());
+                Collection<UUID> list = ((GridNodePredicate)p).nodeIds();
 
                 if (ids.isEmpty())
                     ids.addAll(list);

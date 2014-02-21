@@ -1056,7 +1056,7 @@ public class GridFunc {
                 return true;
             }
 
-            @Override public Double apply() {
+            @Override public Double reduce() {
                 synchronized (lock) {
                     return sum / i;
                 }
@@ -1118,7 +1118,7 @@ public class GridFunc {
                 return true;
             }
 
-            @Override public Double apply() {
+            @Override public Double reduce() {
                 synchronized (lock) {
                     return Math.sqrt(sum / i);
                 }
@@ -1175,7 +1175,7 @@ public class GridFunc {
                 return true;
             }
 
-            @Override public Double apply() {
+            @Override public Double reduce() {
                 synchronized (lock) {
                     return Math.pow(sum, 1f / i);
                 }
@@ -1257,7 +1257,7 @@ public class GridFunc {
                 return false;
             }
 
-            @Override public T apply() {
+            @Override public T reduce() {
                 return obj;
             }
         };
@@ -1265,9 +1265,9 @@ public class GridFunc {
 
     /**
      * Gets reducer which always returns {@code true} from {@link GridReducer#collect(Object)}
-     * method and passed in {@code element} from {@link GridReducer#apply()} method.
+     * method and passed in {@code element} from {@link GridReducer#reduce()} method.
      *
-     * @param elem Element to return from {@link GridReducer#apply()} method.
+     * @param elem Element to return from {@link GridReducer#reduce()} method.
      * @param <T> Reducer element type.
      * @param <R> Return element type.
      * @return Passed in element.
@@ -1278,7 +1278,7 @@ public class GridFunc {
                 return true;
             }
 
-            @Override public R apply() {
+            @Override public R reduce() {
                 return elem;
             }
         };
@@ -1286,9 +1286,9 @@ public class GridFunc {
 
     /**
      * Gets reducer which always returns {@code true} from {@link GridReducer#collect(Object)}
-     * method and passed in {@code element} from {@link GridReducer#apply()} method.
+     * method and passed in {@code element} from {@link GridReducer#reduce()} method.
      *
-     * @param elem Element to return from {@link GridReducer#apply()} method.
+     * @param elem Element to return from {@link GridReducer#reduce()} method.
      * @param <T> Reducer element type.
      * @return Passed in element.
      */
@@ -1298,7 +1298,7 @@ public class GridFunc {
                 return true;
             }
 
-            @Override public T apply() {
+            @Override public T reduce() {
                 return elem;
             }
         };
@@ -1329,7 +1329,7 @@ public class GridFunc {
                 return true;
             }
 
-            @Override public Double apply() {
+            @Override public Double reduce() {
                 synchronized (lock) {
                     return i / sum;
                 }
@@ -1355,7 +1355,7 @@ public class GridFunc {
                 return true;
             }
 
-            @Override public Integer apply() {
+            @Override public Integer reduce() {
                 return sum.get();
             }
         };
@@ -1379,7 +1379,7 @@ public class GridFunc {
                 return true;
             }
 
-            @Override public Long apply() {
+            @Override public Long reduce() {
                 return sum.get();
             }
         };
@@ -1408,7 +1408,7 @@ public class GridFunc {
                 return true;
             }
 
-            @Override public Double apply() {
+            @Override public Double reduce() {
                 synchronized (lock) {
                     return sum;
                 }
@@ -1462,7 +1462,7 @@ public class GridFunc {
                 return true;
             }
 
-            @Override public BigDecimal apply() {
+            @Override public BigDecimal reduce() {
                 synchronized (lock) {
                     return sum;
                 }
@@ -1493,7 +1493,7 @@ public class GridFunc {
                 return true;
             }
 
-            @Override public BigInteger apply() {
+            @Override public BigInteger reduce() {
                 synchronized (lock) {
                     return sum;
                 }
@@ -1528,7 +1528,7 @@ public class GridFunc {
                 return true;
             }
 
-            @Override public String apply() {
+            @Override public String reduce() {
                 synchronized (lock) {
                     return sb.toString();
                 }
@@ -5028,10 +5028,10 @@ public class GridFunc {
         assert ps != null;
 
         if (F0.isAllNodePredicates(ps)) {
-            Collection<UUID> ids = new ArrayList<>();
+            Set<UUID> ids = new GridLeanSet<>();
 
             for (GridPredicate<? super T> p : ps) {
-                Collection<UUID> list = Arrays.asList(((GridNodePredicate)p).nodeIds());
+                Collection<UUID> list = ((GridNodePredicate)p).nodeIds();
 
                 if (ids.isEmpty()) {
                     ids.addAll(list);
@@ -5111,13 +5111,13 @@ public class GridFunc {
         }
 
         if ((e1 || F0.isAllNodePredicates(p1)) && (e2 || F0.isAllNodePredicates(p2))) {
-            Collection<UUID> ids = new GridLeanSet<>();
+            Set<UUID> ids = new GridLeanSet<>();
 
             if (!e1) {
                 assert p1 != null;
 
                 for (GridPredicate<? super T> p : p1) {
-                    ids.addAll(Arrays.asList(((GridNodePredicate)p).nodeIds()));
+                    ids.addAll(((GridNodePredicate)p).nodeIds());
                 }
             }
 
@@ -5125,7 +5125,7 @@ public class GridFunc {
                 assert p2 != null;
 
                 for (GridPredicate<? super T> p : p2) {
-                    ids.addAll(Arrays.asList(((GridNodePredicate)p).nodeIds()));
+                    ids.addAll(((GridNodePredicate)p).nodeIds());
                 }
             }
 
@@ -5200,11 +5200,11 @@ public class GridFunc {
         if (F0.isAllNodePredicates(ps)) {
             assert ps != null;
 
-            Collection<UUID> ids = new ArrayList<>();
+            Set<UUID> ids = new HashSet<>();
 
             for (GridPredicate<? super T> p : ps) {
                 if (p != null) {
-                    Collection<UUID> list = Arrays.asList(((GridNodePredicate)p).nodeIds());
+                    Collection<UUID> list = ((GridNodePredicate)p).nodeIds();
 
                     if (ids.isEmpty())
                         ids.addAll(list);
@@ -5256,11 +5256,11 @@ public class GridFunc {
             assert ps != null;
 
             if (F0.isAllNodePredicates(ps)) {
-                Collection<UUID> ids = new GridLeanSet<>();
+                Set<UUID> ids = new GridLeanSet<>();
 
                 for (GridPredicate<? super T> p : ps) {
                     if (p != null)
-                        ids.addAll(Arrays.asList(((GridNodePredicate)p).nodeIds()));
+                        ids.addAll(((GridNodePredicate)p).nodeIds());
                 }
 
                 // T must be <T extends GridNode>.
@@ -5337,13 +5337,13 @@ public class GridFunc {
         }
 
         if ((e1 || F0.isAllNodePredicates(p1)) && (e2 || F0.isAllNodePredicates(p2))) {
-            Collection<UUID> ids = new GridLeanSet<>();
+            Set<UUID> ids = new GridLeanSet<>();
 
             if (!e1) {
                 assert p1 != null;
 
                 for (GridPredicate<? super T> p : p1) {
-                    ids.addAll(Arrays.asList(((GridNodePredicate)p).nodeIds()));
+                    ids.addAll(((GridNodePredicate)p).nodeIds());
                 }
             }
 
@@ -5351,7 +5351,7 @@ public class GridFunc {
                 assert p2 != null;
 
                 for (GridPredicate<? super T> p : p2) {
-                    ids.addAll(Arrays.asList(((GridNodePredicate)p).nodeIds()));
+                    ids.addAll(((GridNodePredicate)p).nodeIds());
                 }
             }
 
@@ -5422,12 +5422,12 @@ public class GridFunc {
             }
             else {
                 if (F0.isAllNodePredicates(ps)) {
-                    Collection<UUID> ids = new GridLeanSet<>();
+                    Set<UUID> ids = new GridLeanSet<>();
 
                     assert ps != null;
 
                     for (GridPredicate<? super T> p : ps) {
-                        ids.addAll(Arrays.asList(((GridNodePredicate)p).nodeIds()));
+                        ids.addAll(((GridNodePredicate)p).nodeIds());
                     }
 
                     // T must be <T extends GridNode>.
@@ -6104,7 +6104,7 @@ public class GridFunc {
             if (!f.collect(x))
                 break;
 
-        return f.apply();
+        return f.reduce();
     }
 
     /**
@@ -8442,11 +8442,23 @@ public class GridFunc {
      * delegates to {@link java.util.Map.Entry#getKey()} method.
      *
      * @param <K> Key type.
-    * @return Closure that returns key for an entry.
+     * @return Closure that returns key for an entry.
      */
     @SuppressWarnings({"unchecked"})
     public static <K> GridClosure<Map.Entry<K, ?>, K> mapEntry2Key() {
         return (GridClosure<Map.Entry<K, ?>, K>)MAP_ENTRY_KEY;
+    }
+
+    /**
+     * Gets closure that returns key for cache entry. The closure internally
+     * delegates to {@link java.util.Map.Entry#getKey()} method.
+     *
+     * @param <K> Key type.
+     * @return Closure that returns key for an entry.
+     */
+    @SuppressWarnings({"unchecked"})
+    public static <K, V> GridClosure<GridCacheEntry<K, V>, K> cacheEntry2Key() {
+        return (GridClosure<GridCacheEntry<K, V>, K>)MAP_ENTRY_KEY;
     }
 
     /**
@@ -9339,7 +9351,7 @@ public class GridFunc {
                 rdc.collect(t);
         }
 
-        return rdc == null ? null : rdc.apply();
+        return rdc == null ? null : rdc.reduce();
     }
 
     /**

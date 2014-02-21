@@ -10,7 +10,7 @@ import java.util.*;
  * Demonstrates a simple use of GridGain grid with {@link org.gridgain.grid.compute.GridComputeTaskSplitAdapter}.
  * <p>
  * String "Hello Grid Enabled World!" is passed as an argument to
- * {@link GridCompute#execute(String, Object, long)} method.
+ * {@link GridCompute#execute(String, Object)} method.
  * This method also takes as an argument a task instance, which splits the
  * string into words and wraps each word into a child job, which prints
  * the word to standard output and returns the word length. Those jobs
@@ -84,7 +84,7 @@ public class GridHelloWorldTaskSplitExample {
         };
 
         try (Grid g = GridGain.start("examples/config/example-default.xml")) {
-            GridComputeTaskFuture<Integer> fut = g.compute().execute(task, "Hello Grid Enabled World!", 0);
+            GridComputeTaskFuture<Integer> fut = g.compute().execute(task, "Hello Grid Enabled World!");
 
             // Wait for task completion.
             int phraseLen = fut.get();

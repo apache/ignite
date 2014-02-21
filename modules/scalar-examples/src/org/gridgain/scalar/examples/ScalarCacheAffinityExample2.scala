@@ -17,7 +17,6 @@ import org.gridgain.grid._
 import collection.JavaConversions._
 import scala.util.control.Breaks._
 import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
-import GridClosureCallMode._
 
 /**
  * Note that affinity routing is enabled for all caches.
@@ -60,7 +59,7 @@ object ScalarCacheAffinityExample2 {
                 val mappedKeys = mapping._2
 
                 if (node != null) {
-                    grid$.forNode(node) *< (UNICAST, () => {
+                    grid$.forNode(node) *< (() => {
                         breakable {
                             println(">>> Executing affinity job for keys: " + mappedKeys)
 
@@ -91,7 +90,7 @@ object ScalarCacheAffinityExample2 {
      * @param keys Keys to populate.
      */
     private def populateCache(g: Grid, keys: Seq[String]) {
-        var prj = g.forCaches(NAME)
+        var prj = g.forCache(NAME)
 
         // Give preference to local node.
         if (prj.nodes().contains(g.localNode))
@@ -99,7 +98,7 @@ object ScalarCacheAffinityExample2 {
 
         // Populate cache on some node (possibly this node)
         // which has cache with given name started.
-        prj.ucastRun(
+        prj.run$(
             () => {
                 println(">>> Storing keys in cache: " + keys)
 

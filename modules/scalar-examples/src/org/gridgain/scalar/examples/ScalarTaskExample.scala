@@ -30,7 +30,7 @@ import org.gridgain.grid.compute._
  */
 object ScalarTaskExample extends App {
     scalar("examples/config/example-default.xml") {
-        grid$.compute().execute(classOf[GridHelloWorld], "Hello Cloud World!", 0).get
+        grid$.compute().execute(classOf[GridHelloWorld], "Hello Cloud World!").get
     }
 
     /**

@@ -12,9 +12,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.commons.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.lang.*;
@@ -22,7 +20,6 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.T2;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -84,14 +81,6 @@ public class GridCacheUtils {
         new C1<Integer, GridCacheVersion[]>() {
             @Override public GridCacheVersion[] apply(Integer size) {
                 return new GridCacheVersion[size];
-            }
-        };
-
-    /** */
-    private static final GridClosure<Integer, GridPredicate<? super GridCacheEntry>[]> FILTER_ARR_FACTORY =
-        new C1<Integer, GridPredicate<? super GridCacheEntry>[]>() {
-            @Override public GridPredicate<? super GridCacheEntry>[] apply(Integer size) {
-                return (GridPredicate<? super GridCacheEntry>[])new GridPredicate[size];
             }
         };
 
@@ -682,16 +671,16 @@ public class GridCacheUtils {
      * @return Empty filter.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridPredicate<? super GridCacheEntry<K, V>>[] empty() {
-        return (GridPredicate<? super GridCacheEntry<K, V>>[])EMPTY_FILTER;
+    public static <K, V> GridPredicate<GridCacheEntry<K, V>>[] empty() {
+        return (GridPredicate<GridCacheEntry<K, V>>[])EMPTY_FILTER;
     }
 
     /**
      * @return Always false filter.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> GridPredicate<? super GridCacheEntry<K, V>>[] alwaysFalse() {
-        return (GridPredicate<? super GridCacheEntry<K, V>>[])ALWAYS_FALSE;
+    public static <K, V> GridPredicate<GridCacheEntry<K, V>>[] alwaysFalse() {
+        return (GridPredicate<GridCacheEntry<K, V>>[])ALWAYS_FALSE;
     }
 
     /**
@@ -817,7 +806,7 @@ public class GridCacheUtils {
                 return bool.get();
             }
 
-            @Override public Boolean apply() {
+            @Override public Boolean reduce() {
                 return bool.get();
             }
 
@@ -846,7 +835,7 @@ public class GridCacheUtils {
                 return true;
             }
 
-            @Override public Map<K, V> apply() {
+            @Override public Map<K, V> reduce() {
                 return ret;
             }
 
@@ -874,7 +863,7 @@ public class GridCacheUtils {
                 return true;
             }
 
-            @Override public Collection<T> apply() {
+            @Override public Collection<T> reduce() {
                 return ret;
             }
 
@@ -902,7 +891,7 @@ public class GridCacheUtils {
                 return true;
             }
 
-            @Override public Collection<T> apply() {
+            @Override public Collection<T> reduce() {
                 return ret;
             }
         };
@@ -1216,7 +1205,7 @@ public class GridCacheUtils {
      * @param asc {@code True} for ascending.
      * @return Descending order comparator.
      */
-    public static Comparator<? super GridNode> nodeComparator(final boolean asc) {
+    public static Comparator<GridNode> nodeComparator(final boolean asc) {
         return new Comparator<GridNode>() {
             @Override public int compare(GridNode n1, GridNode n2) {
                 long o1 = n1.order();
@@ -1236,13 +1225,6 @@ public class GridCacheUtils {
      */
     public static GridClosure<Integer, GridCacheVersion[]> versionArrayFactory() {
         return VER_ARR_FACTORY;
-    }
-
-    /**
-     * @return Filter array factory.
-     */
-    public static GridClosure<Integer, GridPredicate<? super GridCacheEntry>[]> filterArrayFactory() {
-        return FILTER_ARR_FACTORY;
     }
 
     /**

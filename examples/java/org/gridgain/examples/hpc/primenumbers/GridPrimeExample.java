@@ -15,8 +15,6 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.GridClosureCallMode.*;
-
 /**
  * Prime Number calculation example based on GridGain 3.0 API.
  * <p>
@@ -59,25 +57,21 @@ public final class GridPrimeExample {
             long start = System.currentTimeMillis();
 
             for (long checkVal : checkVals) {
-                Long divisor = g.compute().reduce(
-                    SPREAD,
-                    closures(g.nodes().size(), checkVal),
-                    new GridReducer<Long, Long>() {
-                        /** Last divisor value. */
-                        private Long divisor;
+                Long divisor = g.compute().call(closures(g.nodes().size(), checkVal), new GridReducer<Long, Long>() {
+                    /** Last divisor value. */
+                    private Long divisor;
 
-                        /** {@inheritDoc} */
-                        @Override public boolean collect(Long e) {
-                            // If divisor is found then stop collecting.
-                            return (divisor = e) == null;
-                        }
-
-                        /** {@inheritDoc} */
-                        @Override public Long apply() {
-                            return divisor;
-                        }
+                    /** {@inheritDoc} */
+                    @Override public boolean collect(Long e) {
+                        // If divisor is found then stop collecting.
+                        return (divisor = e) == null;
                     }
-                ).get();
+
+                    /** {@inheritDoc} */
+                    @Override public Long reduce() {
+                        return divisor;
+                    }
+                }).get();
 
                 if (divisor == null)
                     System.out.println(">>> Value '" + checkVal + "' is a prime number");

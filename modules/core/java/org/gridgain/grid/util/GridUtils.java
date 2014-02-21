@@ -1181,24 +1181,22 @@ public abstract class GridUtils {
      * Reads array from input stream.
      *
      * @param in Input stream.
-     * @param factory Array factory.
-     * @param <T> Array type.
      * @return Deserialized array.
      * @throws IOException If failed.
      * @throws ClassNotFoundException If class not found.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public static <T> T[] readArray(ObjectInput in, GridClosure<Integer, T[]> factory) throws IOException,
-        ClassNotFoundException {
+    @SuppressWarnings("unchecked")
+    @Nullable public static <K, V> GridPredicate<GridCacheEntry<K, V>>[] readEntryFilterArray(ObjectInput in)
+        throws IOException, ClassNotFoundException {
         int len = in.readInt();
 
-        T[] arr = null;
+        GridPredicate<GridCacheEntry<K, V>>[] arr = null;
 
         if (len > 0) {
-            arr = factory.apply(len);
+            arr = new GridPredicate[len];
 
             for (int i = 0; i < len; i++)
-                arr[i] = (T)in.readObject();
+                arr[i] = (GridPredicate<GridCacheEntry<K, V>>)in.readObject();
         }
 
         return arr;

@@ -285,7 +285,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         else {
             return ctx.grid().forPredicate(F.nodeForNodeId(destId)).compute().
                 withResultClosure(X.NO_FAILOVER).
-                call(GridClosureCallMode.UNICAST, new FlaggedCacheOperationCallable(cacheName, flags, op, key));
+                call(new FlaggedCacheOperationCallable(cacheName, flags, op, key));
         }
     }
 
@@ -317,7 +317,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         else {
             return ctx.grid().forPredicate(F.nodeForNodeId(destId)).compute().
                 withResultClosure(X.NO_FAILOVER).
-                call(GridClosureCallMode.UNICAST, new CacheOperationCallable(cacheName, op, key));
+                call(new CacheOperationCallable(cacheName, op, key));
         }
     }
 

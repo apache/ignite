@@ -39,7 +39,7 @@ public class GridTaskExample3 {
     public static void main(String[] args) throws GridException {
         try (Grid g = args.length == 0 ? GridGain.start("examples/config/example-default.xml") : GridGain.start(args[0])) {
             // Executes task.
-            g.compute().execute(new GridMessageBroadcastTask(g.nodes()), ">>>>>\n>>>>> Hello Node! :)\n>>>>>", 0).get();
+            g.compute().execute(new GridMessageBroadcastTask(g.nodes()), ">>>>>\n>>>>> Hello Node! :)\n>>>>>").get();
 
             // Prints.
             System.out.println(">>>>> Check all nodes for numbers output.");

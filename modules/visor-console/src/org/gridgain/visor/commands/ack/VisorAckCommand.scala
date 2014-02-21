@@ -11,7 +11,8 @@
 
 package org.gridgain.visor.commands.ack
 
-import org.gridgain.grid.GridClosureCallMode._
+import org.gridgain.grid.kernal.GridClosureCallMode
+import GridClosureCallMode._
 import org.gridgain.grid._
 import org.gridgain.grid.lang._
 import org.gridgain.grid.resources.GridInstanceResource
@@ -118,7 +119,7 @@ class VisorAckCommand {
                     withName$("visor-ack").
                     withResultClosure$(X.NO_FAILOVER).
                     compute().
-                    run(BROADCAST, new VisorAckTask(gg => gg.localNode.id.toString))
+                    run(new VisorAckTask(gg => gg.localNode.id.toString))
             catch {
                 case _: GridEmptyProjectionException => scold("Topology is empty.")
                 case e: Exception => scold("System error: " + e.getMessage)
@@ -164,7 +165,7 @@ class VisorAckCommand {
                     withName$("visor-ack").
                     withResultClosure$(X.NO_FAILOVER).
                     compute().
-                    run(BROADCAST, new VisorAckTask(_ => arg))
+                    run(new VisorAckTask(_ => arg))
             catch {
                 case _: GridEmptyProjectionException => scold("Topology is empty.")
                 case e: Exception => scold("System error: " + e.getMessage)

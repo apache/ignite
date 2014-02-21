@@ -31,6 +31,6 @@ class ScalarReducerFunction[E1, R](val inner: GridReducer[E1, R]) extends GridLa
     def apply(s: Seq[E1]) = {
         s foreach inner.collect _
 
-        inner.apply()
+        inner.reduce()
     }
 }

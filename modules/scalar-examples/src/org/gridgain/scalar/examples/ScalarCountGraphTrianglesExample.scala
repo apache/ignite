@@ -16,8 +16,7 @@ import scalar._
 import org.gridgain.grid._
 import cache._
 import resources._
-import java.util.concurrent.Callable
-import org.gridgain.grid.lang.GridOutClosure
+import org.gridgain.grid.lang.{GridCallable, GridOutClosure}
 import org.gridgain.grid.compute.GridComputeJobContext
 import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
 import scala.collection.JavaConversions._
@@ -107,86 +106,82 @@ object ScalarCountGraphTrianglesExample {
         // For each vertex we take all its neighbors (directly from adjacency list),
         // generate the list of all possible edges between neighbors and check their existence.
         // Existence of the edge means existence of triangle.
-        val counts = grid.compute().affinityCall[Int](CACHE_NAME, toJavaCollection(vertices), new GridOutClosure[Callable[Int]] {
-            override def apply(): Callable[Int] = {
-                new GridOutClosure[Int] {
-                    @GridJobContextResource
-                    @transient
-                    private val ctx: GridComputeJobContext = null
+        val counts = grid.compute().affinityCall[Int](CACHE_NAME, toJavaCollection(vertices), new GridCallable[Int] {
+            @GridJobContextResource
+            @transient
+            private val ctx: GridComputeJobContext = null
 
-                    @GridInstanceResource
-                    @transient
-                    private val grid: Grid = null
+            @GridInstanceResource
+            @transient
+            private val grid: Grid = null
 
-                    private var futs: Seq[GridFuture[Boolean]] = null
+            private var futs: Seq[GridFuture[Boolean]] = null
 
-                    override def apply(): Int = {
-                        if (futs == null) {
-                            // Get currently processed vertex from job context.
-                            val keyVertex = ctx.affinityKey[Int]
+            override def call(): Int = {
+                if (futs == null) {
+                    // Get currently processed vertex from job context.
+                    val keyVertex = ctx.affinityKey[Int]
 
-                            println(">>> Processing vertex #" + keyVertex)
+                    println(">>> Processing vertex #" + keyVertex)
 
-                            // Get neighbors of the vertex.
-                            val list = cache(grid).peek(keyVertex)
+                    // Get neighbors of the vertex.
+                    val list = cache(grid).peek(keyVertex)
 
-                            // We used 'peek' method to get neighbors, but it should never
-                            // be 'null', because computations are co-located with data.
-                            // We never transfer data to computation node.
-                            assert(list != null)
+                    // We used 'peek' method to get neighbors, but it should never
+                    // be 'null', because computations are co-located with data.
+                    // We never transfer data to computation node.
+                    assert(list != null)
 
-                            futs = Seq.empty[GridFuture[Boolean]]
+                    futs = Seq.empty[GridFuture[Boolean]]
 
-                            // Loop through all neighbors.
-                            list.foreach(i => {
-                                // We include only neighbors that have larger number than current vertex.
-                                // This is done to count edges only once (e.g., we count edge (3 -> 5), but
-                                // not (5 -> 3), even if both of them are found in adjacency lists).
-                                if (i > keyVertex) {
-                                    // Nested loop to create all possible pairs of vertices (i.e. edges).
-                                    list.foreach(j => {
-                                        // Again, we count each edge only once.
-                                        if (j > i) {
-                                            // Check if edge (i -> j) exists. To do this, we run a closure on the
-                                            // node that stores adjacency list for vertex 'i' and check whether
-                                            // vertex 'j' is found among its neighbors.
-                                            futs :+= grid.compute().affinityCall(CACHE_NAME, i, new GridOutClosure[Boolean] {
-                                                @GridInstanceResource
-                                                private val grid: Grid = null
+                    // Loop through all neighbors.
+                    list.foreach(i => {
+                        // We include only neighbors that have larger number than current vertex.
+                        // This is done to count edges only once (e.g., we count edge (3 -> 5), but
+                        // not (5 -> 3), even if both of them are found in adjacency lists).
+                        if (i > keyVertex) {
+                            // Nested loop to create all possible pairs of vertices (i.e. edges).
+                            list.foreach(j => {
+                                // Again, we count each edge only once.
+                                if (j > i) {
+                                    // Check if edge (i -> j) exists. To do this, we run a closure on the
+                                    // node that stores adjacency list for vertex 'i' and check whether
+                                    // vertex 'j' is found among its neighbors.
+                                    futs :+= grid.compute().affinityCall(CACHE_NAME, i, new GridOutClosure[Boolean] {
+                                        @GridInstanceResource
+                                        private val grid: Grid = null
 
-                                                override def apply(): Boolean = {
-                                                    val list = cache(grid).peek(i)
+                                        override def apply(): Boolean = {
+                                            val list = cache(grid).peek(i)
 
-                                                    assert(list != null)
+                                            assert(list != null)
 
-                                                    list.contains(j)
-                                                }
-                                            })
+                                            list.contains(j)
                                         }
                                     })
                                 }
                             })
+                        }
+                    })
 
-                            if (futs.nonEmpty) {
-                                val lsnr = (f: GridFuture[Boolean]) => {
-                                    // If all futures are done, resume the continuation.
-                                    if (futs.forall(_.isDone))
-                                        ctx.callcc()
-                                }
-
-                                // Attach listener to all futures.
-                                futs.foreach(_.listenAsync(lsnr))
-
-                                // Hold (suspend) job execution.
-                                // It will be resumed in listener above via 'callcc()' call
-                                // once all futures are done.
-                                return ctx.holdcc()
-                            }
+                    if (futs.nonEmpty) {
+                        val lsnr = (f: GridFuture[Boolean]) => {
+                            // If all futures are done, resume the continuation.
+                            if (futs.forall(_.isDone))
+                                ctx.callcc()
                         }
 
-                        futs.count(_.get)
+                        // Attach listener to all futures.
+                        futs.foreach(_.listenAsync(lsnr))
+
+                        // Hold (suspend) job execution.
+                        // It will be resumed in listener above via 'callcc()' call
+                        // once all futures are done.
+                        return ctx.holdcc()
                     }
                 }
+
+                futs.count(_.get)
             }
         })
 

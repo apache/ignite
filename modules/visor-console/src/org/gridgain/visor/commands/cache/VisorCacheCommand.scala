@@ -421,7 +421,7 @@ class VisorCacheCommand {
         try {
             val prj = if (node.isDefined) grid.forNode(node.get) else grid
 
-            prj.compute().execute(classOf[VisorCacheDataTask], name, 0).get().toList
+            prj.compute().execute(classOf[VisorCacheDataTask], name).get().toList
         }
         catch {
             case e: GridException => Nil

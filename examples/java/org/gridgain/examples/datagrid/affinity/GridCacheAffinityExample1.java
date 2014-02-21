@@ -18,7 +18,6 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.GridClosureCallMode.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
@@ -71,9 +70,7 @@ public class GridCacheAffinityExample1 {
 
             // Bring computations to the nodes where the data resides (i.e. collocation).
             for (final String key : keys) {
-                String res = g.compute().call(
-                    BALANCE,
-                    new GridCallable<String>() {
+                String res = g.compute().call(new GridCallable<String>() {
                         // This annotation allows to route job to the node
                         // where the key is cached.
                         @GridCacheAffinityMapped
@@ -126,7 +123,7 @@ public class GridCacheAffinityExample1 {
      * @throws GridException If failed.
      */
     private static void populateCache(final Grid g, Collection<String> keys) throws GridException {
-        GridProjection prj = g.forCaches(NAME);
+        GridProjection prj = g.forCache(NAME);
 
         // Give preference to local node.
         if (prj.nodes().contains(g.localNode()))
@@ -135,7 +132,7 @@ public class GridCacheAffinityExample1 {
         // Populate cache on some node (possibly this node) which has cache with given name started.
         // Note that CIX1 is a short type alias for GridInClosureX class. If you
         // find it too cryptic, you can use GridInClosureX class directly.
-        prj.compute().call(UNICAST, new GridClosure<Collection<String>, Object>() {
+        prj.compute().apply(new GridClosure<Collection<String>, Object>() {
             @Override public Object apply(Collection<String> keys) {
                 info("Storing keys in cache: " + keys);
 

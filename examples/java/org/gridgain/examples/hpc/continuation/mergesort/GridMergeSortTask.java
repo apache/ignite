@@ -63,7 +63,7 @@ public class GridMergeSortTask extends GridComputeTaskSplitAdapter<int[], int[]>
                     // not null after callcc() is called.
                     if (fut == null) {
                         // Launch the recursive child task asynchronously.
-                        fut = grid.compute().execute(new GridMergeSortTask(), arr, 0);
+                        fut = grid.compute().execute(new GridMergeSortTask(), arr);
 
                         // CONTINUATION:
                         // =============

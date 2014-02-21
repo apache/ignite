@@ -89,7 +89,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     private GridLogger log;
 
     /** Filter. */
-    private GridPredicate<? super GridCacheEntry<K, V>>[] filter;
+    private GridPredicate<GridCacheEntry<K, V>>[] filter;
 
     /** Transaction. */
     @GridToStringExclude
@@ -131,7 +131,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         boolean read,
         boolean retval,
         long timeout,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
         assert cctx != null;
         assert keys != null;

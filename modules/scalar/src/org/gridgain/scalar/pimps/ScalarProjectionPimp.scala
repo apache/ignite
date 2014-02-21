@@ -14,7 +14,6 @@ package org.gridgain.scalar.pimps
 import org.gridgain.grid._
 import org.gridgain.grid.lang._
 import org.jetbrains.annotations._
-import GridClosureCallMode._
 
 /**
  * Companion object.
@@ -98,15 +97,21 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
     protected type Pred3[E1, E2, E3] = (E1, E2, E3) => Boolean
 
     /** Type alias for node filter predicate. */
-    protected type NF = GridPredicate[_ >: GridNode]
-
-    /** Type alias. */
-    protected type GCM = GridClosureCallMode
+    protected type NF = GridPredicate[GridNode]
 
     /**
      * Gets iterator for this projection's nodes.
      */
     def iterator = nodes$(null).iterator
+
+    /**
+     * Utility function to workaround issue that `GridProjection` does not permit `null` predicates.
+     *
+     * @param p Optional predicate.
+     * @return If `p` not `null` return projection for this predicate otherwise return pimped projection.
+     */
+    private def forPredicate(@Nullable p: NF): GridProjection =
+        if (p != null) value.forPredicate(p) else value
 
     /**
      * Gets sequence of all nodes in this projection for given predicate.
@@ -115,7 +120,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @see `org.gridgain.grid.GridProjection.nodes(...)`
      */
     def nodes$(@Nullable p: NF): Seq[GridNode] =
-        toScalaSeq(value.forPredicate(p).nodes())
+        toScalaSeq(forPredicate(p).nodes())
 
     /**
      * Gets sequence of all remote nodes in this projection for given predicate.
@@ -124,7 +129,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @see `org.gridgain.grid.GridProjection.remoteNodes(...)`
      */
     def remoteNodes$(@Nullable p: NF = null): Seq[GridNode] =
-        toScalaSeq(value.forRemotes().forPredicate(p).nodes())
+        toScalaSeq(forPredicate(p).forRemotes().nodes())
 
     /**
      * <b>Alias</b> for method `send$(...)`.
@@ -135,7 +140,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @see `org.gridgain.grid.GridProjection.send(...)`
      */
     def !<(@Nullable obj: AnyRef, @Nullable p: NF) {
-        value.forPredicate(p).message().send(null, obj)
+        forPredicate(p).message().send(null, obj)
     }
 
     /**
@@ -148,7 +153,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @see `org.gridgain.grid.GridProjection.send(...)`
      */
     def !<(@Nullable seq: Seq[AnyRef], @Nullable p: NF) {
-        value.forPredicate(p).message().send(null, seq)
+        forPredicate(p).message().send(null, seq)
     }
 
     /**
@@ -160,7 +165,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @see `org.gridgain.grid.GridProjection.send(...)`
      */
     def send$(@Nullable obj: AnyRef, @Nullable p: NF) {
-        value.forPredicate(p).message().send(null, obj)
+        forPredicate(p).message().send(null, obj)
     }
 
     /**
@@ -172,50 +177,35 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @see `org.gridgain.grid.GridProjection.send(...)`
      */
     def send$(@Nullable seq: Seq[AnyRef], @Nullable p: NF) {
-        value.forPredicate(p).message().send(null, seq)
+        forPredicate(p).message().send(null, seq)
     }
 
     /**
      * Synchronous closures call on this projection with return value.
      * This call will block until all results are received and ready.
      *
-     * @param mode Closure call mode.
      * @param s Optional sequence of closures to call. If empty or `null` - this method is no-op and returns `null`.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Sequence of result values from all nodes where given closures were executed or `null` (see above).
      */
-    def call$[R](mode: GCM, @Nullable s: Seq[Call[R]], @Nullable p: NF): Seq[R] =
-        toScalaSeq(callAsync$(mode, s, p).get)
-
-    /*
-    * Utility shortcuts.
-    */
-    def callOpt[R](mode: GCM, @Nullable s: Seq[Call[R]], @Nullable p: NF): Option[Seq[R]] = Option(call$(mode, s, p))
-    def ucastCall[R](@Nullable s: Seq[Call[R]], @Nullable p: NF): Seq[R] = call$(UNICAST, s, p)
-    def bcastCall[R](@Nullable s: Seq[Call[R]], @Nullable p: NF): Seq[R] = call$(BROADCAST, s, p)
-    def spreadCall[R](@Nullable s: Seq[Call[R]], @Nullable p: NF): Seq[R] = call$(SPREAD, s, p)
-    def balanceCall[R](@Nullable s: Seq[Call[R]], @Nullable p: NF): Seq[R] = call$(BALANCE, s, p)
-    def ucastCallOpt[R](@Nullable s: Seq[Call[R]], @Nullable p: NF): Option[Seq[R]] = Option(call$(UNICAST, s, p))
-    def bcastCallOpt[R](@Nullable s: Seq[Call[R]], @Nullable p: NF): Option[Seq[R]] = Option(call$(BROADCAST, s, p))
-    def spreadCallOpt[R](@Nullable s: Seq[Call[R]], @Nullable p: NF): Option[Seq[R]] = Option(call$(SPREAD, s, p))
-    def balanceCallOpt[R](@Nullable s: Seq[Call[R]], @Nullable p: NF): Option[Seq[R]] = Option(call$(BALANCE, s, p))
+    def call$[R](@Nullable s: Seq[Call[R]], @Nullable p: NF): Seq[R] =
+        toScalaSeq(callAsync$(s, p).get)
 
     /**
      * Synchronous closures call on this projection with return value.
      * This call will block until all results are received and ready. If this projection
      * is empty than `dflt` closure will be executed and its result returned.
      *
-     * @param mode Closure call mode.
      * @param s Optional sequence of closures to call. If empty or `null` - this method is no-op and returns `null`.
      * @param dflt Closure to execute if projection is empty.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Sequence of result values from all nodes where given closures were executed or `null` (see above).
      */
-    def callSafe[R](mode: GCM, @Nullable s: Seq[Call[R]], dflt: () => Seq[R], @Nullable p: NF): Seq[R] = {
+    def callSafe[R](@Nullable s: Seq[Call[R]], dflt: () => Seq[R], @Nullable p: NF): Seq[R] = {
         assert(dflt != null)
 
         try
-            call$(mode, s, p)
+            call$(s, p)
         catch {
             case _: GridEmptyProjectionException => dflt()
         }
@@ -224,58 +214,42 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
     /**
      * <b>Alias</b> for the same function `call$`.
      *
-     * @param mode Closure call mode.
      * @param s Optional sequence of closures to call. If empty or `null` - this method is no-op and returns `null`.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Sequence of result values from all nodes where given closures were executed or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.call(...)`
      */
-    def #<[R](mode: GCM, @Nullable s: Seq[Call[R]], @Nullable p: NF): Seq[R] =
-        call$(mode, s, p)
+    def #<[R](@Nullable s: Seq[Call[R]], @Nullable p: NF): Seq[R] =
+        call$(s, p)
 
     /**
      * Synchronous closure call on this projection with return value.
      * This call will block until all results are received and ready.
      *
-     * @param mode Closure call mode.
      * @param s Optional closure to call. If `null` - this method is no-op and returns `null`.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Sequence of result values from all nodes where given closures were executed or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.call(...)`
      */
-    def call$[R](mode: GCM, @Nullable s: Call[R], @Nullable p: NF): Seq[R] =
-        call$(mode, Seq(s), p)
-
-    /*
-     * Utility shortcuts.
-     */
-    def callOpt[R](mode: GCM, @Nullable s: Call[R], @Nullable p: NF): Option[Seq[R]] = Option(call$(mode, s, p))
-    def ucastCall[R](@Nullable s: Call[R], @Nullable p: NF): Seq[R] = call$(UNICAST, s, p)
-    def bcastCall[R](@Nullable s: Call[R], @Nullable p: NF): Seq[R] = call$(BROADCAST, s, p)
-    def spreadCall[R](@Nullable s: Call[R], @Nullable p: NF): Seq[R] = call$(SPREAD, s, p)
-    def balanceCall[R](@Nullable s: Call[R], @Nullable p: NF): Seq[R] = call$(BALANCE, s, p)
-    def ucastCallOpt[R](@Nullable s: Call[R], @Nullable p: NF): Option[Seq[R]] = Option(call$(UNICAST, s, p))
-    def bcastCallOpt[R](@Nullable s: Call[R], @Nullable p: NF): Option[Seq[R]] = Option(call$(BROADCAST, s, p))
-    def spreadCallOpt[R](@Nullable s: Call[R], @Nullable p: NF): Option[Seq[R]] = Option(call$(SPREAD, s, p))
-    def balanceCallOpt[R](@Nullable s: Call[R], @Nullable p: NF): Option[Seq[R]] = Option(call$(BALANCE, s, p))
+    def call$[R](@Nullable s: Call[R], @Nullable p: NF): Seq[R] =
+        call$(Seq(s), p)
 
     /**
      * Synchronous closure call on this projection with return value.
      * This call will block until all results are received and ready. If this projection
      * is empty than `dflt` closure will be executed and its result returned.
      *
-     * @param mode Closure call mode.
      * @param s Optional closure to call. If `null` - this method is no-op and returns `null`.
      * @param dflt Closure to execute if projection is empty.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Sequence of result values from all nodes where given closures were executed or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.call(...)`
      */
-    def callSafe[R](mode: GCM, @Nullable s: Call[R], dflt: () => Seq[R], @Nullable p: NF): Seq[R] = {
+    def callSafe[R](@Nullable s: Call[R], dflt: () => Seq[R], @Nullable p: NF): Seq[R] = {
         assert(dflt != null)
 
         try
-            call$(mode, Seq(s), p)
+            call$(Seq(s), p)
         catch {
             case _: GridEmptyProjectionException => dflt()
         }
@@ -284,52 +258,51 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
     /**
      * <b>Alias</b> for the same function `call$`.
      *
-     * @param mode Closure call mode.
      * @param s Optional closure to call. If `null` - this method is no-op and returns `null`.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Sequence of result values from all nodes where given closures were executed
      *      or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.call(...)`
      */
-    def #<[R](mode: GCM, @Nullable s: Call[R], @Nullable p: NF): Seq[R] =
-        call$(mode, s, p)
+    def #<[R](@Nullable s: Call[R], @Nullable p: NF): Seq[R] =
+        call$(s, p)
 
     /**
      * Synchronous closures call on this projection without return value.
      * This call will block until all executions are complete.
      *
-     * @param mode Closure call mode.
      * @param s Optional sequence of closures to call. If empty or `null` - this method is no-op.
      * @param p Optional node filter predicate. If `null` provided- all nodes in projection will be used.
      * @see `org.gridgain.grid.GridProjection.run(...)`
      */
-    def run$(mode: GCM, @Nullable s: Seq[Run], @Nullable p: NF) {
-        runAsync$(mode, s, p).get
+    def run$(@Nullable s: Seq[Run], @Nullable p: NF) {
+        runAsync$(s, p).get
     }
 
-    /*
-     * Utility shortcuts.
+    /**
+     * Synchronous broadcast closure call on this projection without return value.
+     *
+     * @param r Closure to run all nodes in projection.
+     * @param p Optional node filter predicate. If `null` provided- all nodes in projection will be used.
      */
-    def ucastRun(@Nullable s: Seq[Run], @Nullable p: NF) { run$(UNICAST, s, p) }
-    def bcastRun(@Nullable s: Seq[Run], @Nullable p: NF) { run$(BROADCAST, s, p) }
-    def spreadRun(@Nullable s: Seq[Run], @Nullable p: NF) { run$(SPREAD, s, p) }
-    def balanceRun(@Nullable s: Seq[Run], @Nullable p: NF) { run$(BALANCE, s, p) }
+    def bcastRun(@Nullable r: Run, @Nullable p: NF) {
+        forPredicate(p).compute().broadcast(toRunnable(r)).get
+    }
 
     /**
      * Synchronous closures call on this projection without return value.
      * This call will block until all executions are complete. If this projection
      * is empty than `dflt` closure will be executed.
      *
-     * @param mode Closure call mode.
      * @param s Optional sequence of closures to call. If empty or `null` - this
      *      method is no-op.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @param dflt Closure to execute if projection is empty.
      * @see `org.gridgain.grid.GridProjection.run(...)`
      */
-    def runSafe(mode: GCM, @Nullable s: Seq[Run], @Nullable dflt: Run, @Nullable p: NF) {
+    def runSafe(@Nullable s: Seq[Run], @Nullable dflt: Run, @Nullable p: NF) {
         try {
-            run$(mode, s, p)
+            run$(s, p)
         }
         catch {
             case _: GridEmptyProjectionException => if (dflt != null) dflt() else ()
@@ -339,50 +312,39 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
     /**
      * <b>Alias</b> alias for the same function `run$`.
      *
-     * @param mode Closure call mode.
      * @param s Optional sequence of closures to call. If empty or `null` - this method is no-op.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @see `org.gridgain.grid.GridProjection.run(...)`
      */
-    def *<(mode: GCM, @Nullable s: Seq[Run], @Nullable p: NF) {
-        run$(mode, s, p)
+    def *<(@Nullable s: Seq[Run], @Nullable p: NF) {
+        run$(s, p)
     }
 
     /**
      * Synchronous closure call on this projection without return value.
      * This call will block until all executions are complete.
      *
-     * @param mode Closure call mode.
      * @param s Optional closure to call. If empty or `null` - this method is no-op.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @see `org.gridgain.grid.GridProjection.run(...)`
      */
-    def run$(mode: GCM, @Nullable s: Run, @Nullable p: NF) {
-        run$(mode, Seq(s), p)
+    def run$(@Nullable s: Run, @Nullable p: NF) {
+        run$(Seq(s), p)
     }
-
-    /*
-     * Utility shortcuts.
-     */
-    def ucastRun(@Nullable s: Run, @Nullable p: NF) { run$(UNICAST, s, p) }
-    def bcastRun(@Nullable s: Run, @Nullable p: NF) { run$(BROADCAST, s, p) }
-    def spreadRun(@Nullable s: Run, @Nullable p: NF) { run$(SPREAD, s, p) }
-    def balanceRun(@Nullable s: Run, @Nullable p: NF) { run$(BALANCE, s, p) }
 
     /**
      * Synchronous closure call on this projection without return value.
      * This call will block until all executions are complete. If this projection
      * is empty than `dflt` closure will be executed.
      *
-     * @param mode Closure call mode.
      * @param s Optional closure to call. If empty or `null` - this method is no-op.
      * @param dflt Closure to execute if projection is empty.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @see `org.gridgain.grid.GridProjection.run(...)`
      */
-    def runSafe(mode: GCM, @Nullable s: Run, @Nullable dflt: Run, @Nullable p: NF) {
+    def runSafe(@Nullable s: Run, @Nullable dflt: Run, @Nullable p: NF) {
         try {
-            run$(mode, s, p)
+            run$(s, p)
         }
         catch {
             case _: GridEmptyProjectionException => if (dflt != null) dflt() else ()
@@ -392,20 +354,18 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
     /**
      * <b>Alias</b> for the same function `run$`.
      *
-     * @param mode Closure call mode.
      * @param s Optional closure to call. If empty or `null` - this method is no-op.
      * @param p Optional node filter predicate. If none provided or `null` - all nodes in projection will be used.
      * @see `org.gridgain.grid.GridProjection.run(...)`
      */
-    def *<(mode: GCM, @Nullable s: Run, @Nullable p: NF) {
-        run$(mode, s, p)
+    def *<(@Nullable s: Run, @Nullable p: NF) {
+        run$(s, p)
     }
 
     /**
      * Asynchronous closures call on this projection with return value. This call will
      * return immediately with the future that can be used to wait asynchronously for the results.
      *
-     * @param mode Closure call mode.
      * @param s Optional sequence of closures to call. If empty or `null` - this method
      *      is no-op and finished future over `null` is returned.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
@@ -413,17 +373,14 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      *      closures were executed or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.call(...)`
      */
-    def callAsync$[R](mode: GCM, @Nullable s: Seq[Call[R]], @Nullable p: NF):
+    def callAsync$[R](@Nullable s: Seq[Call[R]], @Nullable p: NF):
         GridFuture[java.util.Collection[R]] = {
-        assert(mode != null)
-
-        value.forPredicate(p).compute().call[R](mode, toJavaCollection(s, (f: Call[R]) => toCallable(f)))
+        forPredicate(p).compute().call[R](toJavaCollection(s, (f: Call[R]) => toCallable(f)))
     }
 
     /**
      * <b>Alias</b> for the same function `callAsync$`.
      *
-     * @param mode Closure call mode.
      * @param s Optional sequence of closures to call. If empty or `null` - this method
      *      is no-op and finished future over `null` is returned.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
@@ -431,15 +388,14 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      *      closures were executed or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.call(...)`
      */
-    def #?[R](mode: GCM, @Nullable s: Seq[Call[R]], @Nullable p: NF): GridFuture[java.util.Collection[R]] = {
-        callAsync$(mode, s, p)
+    def #?[R](@Nullable s: Seq[Call[R]], @Nullable p: NF): GridFuture[java.util.Collection[R]] = {
+        callAsync$(s, p)
     }
 
     /**
      * Asynchronous closure call on this projection with return value. This call will
      * return immediately with the future that can be used to wait asynchronously for the results.
      *
-     * @param mode Closure call mode.
      * @param s Optional closure to call. If `null` - this method is no-op and finished
      *      future over `null` is returned.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
@@ -447,14 +403,13 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      *      closures were executed or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.call(...)`
      */
-    def callAsync$[R](mode: GCM, @Nullable s: Call[R], @Nullable p: NF): GridFuture[java.util.Collection[R]] = {
-        callAsync$(mode, Seq(s), p)
+    def callAsync$[R](@Nullable s: Call[R], @Nullable p: NF): GridFuture[java.util.Collection[R]] = {
+        callAsync$(Seq(s), p)
     }
 
     /**
      * <b>Alias</b> for the same function `callAsync$`.
      *
-     * @param mode Closure call mode.
      * @param s Optional closure to call. If `null` - this method is no-op and finished
      *      future over `null` is returned.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
@@ -462,71 +417,64 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      *      closures were executed or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.call(...)`
      */
-    def #?[R](mode: GCM, @Nullable s: Call[R], @Nullable p: NF): GridFuture[java.util.Collection[R]] = {
-        callAsync$(mode, s, p)
+    def #?[R](@Nullable s: Call[R], @Nullable p: NF): GridFuture[java.util.Collection[R]] = {
+        callAsync$(s, p)
     }
 
     /**
      * Asynchronous closures call on this projection without return value. This call will
      * return immediately with the future that can be used to wait asynchronously for the results.
      *
-     * @param mode Closure call mode.
      * @param s Optional sequence of absolute closures to call. If empty or `null` - this method
      *      is no-op and finished future over `null` will be returned.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @see `org.gridgain.grid.GridProjection.call(...)`
      */
-    def runAsync$(mode: GCM, @Nullable s: Seq[Run], @Nullable p: NF): GridFuture[_] = {
-        assert(mode != null)
-
-        value.forPredicate(p).compute().run(mode, toJavaCollection(s, (f: Run) => toRunnable(f)))
+    def runAsync$(@Nullable s: Seq[Run], @Nullable p: NF): GridFuture[_] = {
+        forPredicate(p).compute().run(toJavaCollection(s, (f: Run) => toRunnable(f)))
     }
 
     /**
      * <b>Alias</b> for the same function `runAsync$`.
      *
-     * @param mode Closure call mode.
      * @param s Optional sequence of absolute closures to call. If empty or `null` - this method
      *      is no-op and finished future over `null` will be returned.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @see `org.gridgain.grid.GridProjection.call(...)`
      */
-    def *?(mode: GCM, @Nullable s: Seq[Run], @Nullable p: NF): GridFuture[_] = {
-        runAsync$(mode, s, p)
+    def *?(@Nullable s: Seq[Run], @Nullable p: NF): GridFuture[_] = {
+        runAsync$(s, p)
     }
 
     /**
      * Asynchronous closure call on this projection without return value. This call will
      * return immediately with the future that can be used to wait asynchronously for the results.
      *
-     * @param mode Closure call mode.
      * @param s Optional absolute closure to call. If `null` - this method
      *      is no-op and finished future over `null` will be returned.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @see `org.gridgain.grid.GridProjection.run(...)`
      */
-    def runAsync$(mode: GCM, @Nullable s: Run, @Nullable p: NF): GridFuture[_] = {
-        runAsync$(mode, Seq(s), p)
+    def runAsync$(@Nullable s: Run, @Nullable p: NF): GridFuture[_] = {
+        runAsync$(Seq(s), p)
     }
 
     /**
      * <b>Alias</b> for the same function `runAsync$`.
      *
-     * @param mode Closure call mode.
      * @param s Optional absolute closure to call. If `null` - this method
      *      is no-op and finished future over `null` will be returned.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @see `org.gridgain.grid.GridProjection.run(...)`
      */
-    def *?(mode: GCM, @Nullable s: Run, @Nullable p: NF): GridFuture[_] = {
-        runAsync$(mode, s, p)
+    def *?(@Nullable s: Run, @Nullable p: NF): GridFuture[_] = {
+        runAsync$(s, p)
     }
 
     /**
      * Asynchronous closures execution on this projection with reduction. This call will
      * return immediately with the future that can be used to wait asynchronously for the results.
      *
-     * @param mode Closure call mode.
      * @param s Optional sequence of closures to call. If empty or `null` - this method
      *      is no-op and will return finished future over `null`.
      * @param r Optional reduction function. If `null` - this method
@@ -535,16 +483,15 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @return Future over the reduced result or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.reduce(...)`
      */
-    def reduceAsync$[R1, R2](mode: GCM, s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): GridFuture[R2] = {
-        assert(mode != null && s != null && r != null)
+    def reduceAsync$[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): GridFuture[R2] = {
+        assert(s != null && r != null)
 
-        value.forPredicate(p).compute().reduce(mode, toJavaCollection(s, (f: Call[R1]) => toCallable(f)), r)
+        forPredicate(p).compute().call(toJavaCollection(s, (f: Call[R1]) => toCallable(f)), r)
     }
 
     /**
      * <b>Alias</b> for the same function `reduceAsync$`.
      *
-     * @param mode Closure call mode.
      * @param s Optional sequence of closures to call. If empty or `null` - this method
      *      is no-op and will return finished future over `null`.
      * @param r Optional reduction function. If `null` - this method
@@ -553,15 +500,14 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @return Future over the reduced result or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.reduce(...)`
      */
-    def @?[R1, R2](mode: GCM, s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): GridFuture[R2] = {
-        reduceAsync$(mode, s, r, p)
+    def @?[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): GridFuture[R2] = {
+        reduceAsync$(s, r, p)
     }
 
     /**
      * Synchronous closures execution on this projection with reduction.
      * This call will block until all results are reduced.
      *
-     * @param mode Closure call mode.
      * @param s Optional sequence of closures to call. If empty or `null` - this method
      *      is no-op and will return `null`.
      * @param r Optional reduction function. If `null` - this method
@@ -570,37 +516,14 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @return Reduced result or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.reduce(...)`
      */
-    def reduce$[R1, R2](mode: GCM, @Nullable s: Seq[Call[R1]], @Nullable r: Seq[R1] => R2, @Nullable p: NF): R2 =
-        reduceAsync$(mode, s, r, p).get
-
-    /*
-     * Utility shortcuts.
-     */
-    def reduceOpt[R1, R2](mode: GCM, @Nullable s: Seq[Call[R1]])(@Nullable r: Seq[R1] => R2, @Nullable p: NF): Option[R2] =
-        Option(reduce$(mode, s, r, p))
-    def ucastReduce[R1, R2](@Nullable s: Seq[Call[R1]])(@Nullable r: Seq[R1] => R2, @Nullable p: NF): R2 =
-        reduce$(UNICAST, s, r, p)
-    def bcastReduce[R1, R2](@Nullable s: Seq[Call[R1]])(@Nullable r: Seq[R1] => R2, @Nullable p: NF): R2 =
-        reduce$(BROADCAST, s, r, p)
-    def spreadReduce[R1, R2](@Nullable s: Seq[Call[R1]])(@Nullable r: Seq[R1] => R2, @Nullable p: NF): R2 =
-        reduce$(SPREAD, s, r, p)
-    def balanceReduce[R1, R2](@Nullable s: Seq[Call[R1]])(@Nullable r: Seq[R1] => R2, @Nullable p: NF): R2 =
-        reduce$(BALANCE, s, r, p)
-    def ucastReduceOpt[R1, R2](@Nullable s: Seq[Call[R1]])(@Nullable r: Seq[R1] => R2, @Nullable p: NF): Option[R2] =
-        Option(reduce$(UNICAST, s, r, p))
-    def bcastReduceOpt[R1, R2](@Nullable s: Seq[Call[R1]])(@Nullable r: Seq[R1] => R2, @Nullable p: NF): Option[R2] =
-        Option(reduce$(BROADCAST, s, r, p))
-    def spreadReduceOpt[R1, R2](@Nullable s: Seq[Call[R1]])(@Nullable r: Seq[R1] => R2, @Nullable p: NF): Option[R2] =
-        Option(reduce$(SPREAD, s, r, p))
-    def balanceReduceOpt[R1, R2](@Nullable s: Seq[Call[R1]])(@Nullable r: Seq[R1] => R2, @Nullable p: NF): Option[R2] =
-        Option(reduce$(BALANCE, s, r, p))
+    def reduce$[R1, R2](@Nullable s: Seq[Call[R1]], @Nullable r: Seq[R1] => R2, @Nullable p: NF): R2 =
+        reduceAsync$(s, r, p).get
 
     /**
      * Synchronous closures execution on this projection with reduction.
      * This call will block until all results are reduced. If this projection
      * is empty than `dflt` closure will be executed and its result returned.
      *
-     * @param mode Closure call mode.
      * @param s Optional sequence of closures to call. If empty or `null` - this method
      *      is no-op and will return `null`.
      * @param r Optional reduction function. If `null` - this method
@@ -610,12 +533,12 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @return Reduced result or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.reduce(...)`
      */
-    def reduceSafe[R1, R2](mode: GCM, @Nullable s: Seq[Call[R1]], @Nullable r: Seq[R1] => R2,
+    def reduceSafe[R1, R2](@Nullable s: Seq[Call[R1]], @Nullable r: Seq[R1] => R2,
         dflt: () => R2, @Nullable p: NF): R2 = {
         assert(dflt != null)
 
         try
-            reduceAsync$(mode, s, r, p).get
+            reduceAsync$(s, r, p).get
         catch {
             case _: GridEmptyProjectionException => dflt()
         }
@@ -624,80 +547,14 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
     /**
      * <b>Alias</b> for the same function `reduce$`.
      *
-     * @param mode Closure call mode.
-     * @param s Optional sequence of closures to call. If empty or `null` - this method
-     *      is no-op and will return `null`.
+     * @param s Optional sequence of closures to call. If empty or `null` - this method is no-op and will return `null`.
      * @param r Optional reduction function. If `null` - this method is no-op and will return `null`.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Reduced result or `null` (see above).
      * @see `org.gridgain.grid.GridProjection.reduce(...)`
      */
-    def @<[R1, R2](mode: GCM, @Nullable s: Seq[Call[R1]], @Nullable r: Seq[R1] => R2, @Nullable p: NF): R2 =
-        reduceAsync$(mode, s, r, p).get
-
-    /**
-     * Asynchronous closures execution on this projection with mapping and reduction.
-     * This call will return immediately with the future that can be used to wait asynchronously for
-     * the results.
-     *
-     * @param m Mapping function.
-     * @param s Optional sequence of closures to call. If empty or `null` - this method
-     *      is no-op and will return `null`.
-     * @param r Optional reduction function. If `null` - this method is no-op and will return `null`.
-     * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
-     * @return Future over the reduced result or `null` (see above).
-     * @see `org.gridgain.grid.GridProjection.mapreduce(...)`
-     */
-    def mapreduceAsync$[R1, R2](m: Seq[GridNode] => (java.util.concurrent.Callable[R1] => GridNode),
-        @Nullable s: Seq[Call[R1]], @Nullable r: Seq[R1] => R2, @Nullable p: NF): GridFuture[R2] = {
-        assert(m != null)
-
-        value.forPredicate(p).compute().mapreduce(toMapper(m), toJavaCollection[Call[R1], java.util.concurrent.Callable[R1]](s,
-            (f: Call[R1]) => toCallable(f)), toReducer(r))
-    }
-
-    /**
-     * Synchronous closures execution on this projection with mapping and reduction.
-     * This call will block until all results are reduced.
-     *
-     * @param m Mapping function.
-     * @param s Optional sequence of closures to call. If empty or `null` - this method
-     *      is no-op and will return `null`.
-     * @param r Optional reduction function. If `null` - this method
-     *      is no-op and will return `null`.
-     * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
-     * @return Reduced result or `null` (see above).
-     * @see `org.gridgain.grid.GridProjection.mapreduce(...)`
-     */
-    def mapreduce$[R1, R2](m: Seq[GridNode] => (java.util.concurrent.Callable[R1] => GridNode),
-        @Nullable s: Seq[Call[R1]], @Nullable r: Seq[R1] => R2, @Nullable p: NF): R2 =
-        mapreduceAsync$(m, s, r, p).get
-
-    /**
-     * Synchronous closures execution on this projection with mapping and reduction.
-     * This call will block until all results are reduced. If this projection
-     * is empty than `dflt` closure will be executed and its result returned.
-     *
-     * @param m Mapping function.
-     * @param s Optional sequence of closures to call. If empty or `null` - this method
-     *      is no-op and will return `null`.
-     * @param r Optional reduction function. If `null` - this method
-     *      is no-op and will return `null`.
-     * @param dflt Closure to execute if projection is empty.
-     * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
-     * @return Reduced result or `null` (see above).
-     * @see `org.gridgain.grid.GridProjection.mapreduce(...)`
-     */
-    def mapreduceSafe[R1, R2](m: Seq[GridNode] => (java.util.concurrent.Callable[R1] => GridNode),
-        @Nullable s: Seq[Call[R1]], @Nullable r: Seq[R1] => R2, dflt: () => R2, @Nullable p: NF): R2 = {
-        assert(dflt != null)
-
-        try
-            mapreduce$(m, s, r, p)
-        catch {
-            case _: GridEmptyProjectionException => dflt()
-        }
-    }
+    def @<[R1, R2](@Nullable s: Seq[Call[R1]], @Nullable r: Seq[R1] => R2, @Nullable p: NF): R2 =
+        reduceAsync$(s, r, p).get
 
     /**
      * Executes given closure on the nodes where data for provided affinity keys are located. This
@@ -733,9 +590,8 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @throws GridInterruptedException Subclass of `GridException` thrown if the wait was interrupted.
      * @throws GridFutureCancelledException Subclass of `GridException` thrown if computation was cancelled.
      */
-    def affinityRun$(cacheName: String, @Nullable affKeys: Seq[_], @Nullable r: Run,
-        @Nullable p: NF) {
-        value.forPredicate(p).compute().affinityRun(cacheName, toJavaCollection(affKeys), toOutClosureX(toFactory(r)))
+    def affinityRun$(cacheName: String, @Nullable affKeys: Seq[_], @Nullable r: Run, @Nullable p: NF) {
+        affinityRunAsync$(cacheName, affKeys, r, p).get
     }
 
     /**
@@ -782,6 +638,6 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      */
     def affinityRunAsync$(cacheName: String, @Nullable affKeys: Seq[_], @Nullable r: Run,
         @Nullable p: NF): GridFuture[_] = {
-        value.forPredicate(p).compute().affinityRun(cacheName, toJavaCollection(affKeys), toOutClosureX(toFactory(r)))
+        forPredicate(p).compute().affinityRun(cacheName, toJavaCollection(affKeys), toRunnable(r))
     }
 }

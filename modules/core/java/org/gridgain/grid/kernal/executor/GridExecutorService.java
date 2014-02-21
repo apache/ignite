@@ -236,7 +236,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         deployTask(GridExecutorCallableTask.class, task);
 
-        return addFuture(prj.compute().execute(new GridExecutorCallableTask<T>(task.getClass()), task, 0));
+        return addFuture(prj.compute().execute(new GridExecutorCallableTask<T>(task.getClass()), task));
     }
 
     /** {@inheritDoc} */
@@ -248,7 +248,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
         deployTask(GridExecutorCallableTask.class, task);
 
         return addFuture(prj.compute().execute(new GridExecutorCallableTask<T>(task.getClass()),
-            new GridExecutorRunnableAdapter<>(task, res), 0));
+            new GridExecutorRunnableAdapter<>(task, res)));
     }
 
     /** {@inheritDoc} */
@@ -259,7 +259,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         deployTask(GridExecutorRunnableTask.class, task);
 
-        return addFuture(prj.compute().execute(new GridExecutorRunnableTask(task.getClass()), task, 0));
+        return addFuture(prj.compute().execute(new GridExecutorRunnableTask(task.getClass()), task));
     }
 
     /**
@@ -318,7 +318,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
             // Execute task without predefined timeout.
             // GridFuture.cancel() will be called if timeout elapsed.
-            GridComputeTaskFuture<T> fut = prj.compute().execute(new GridExecutorCallableTask<T>(task.getClass()), task, 0);
+            GridComputeTaskFuture<T> fut = prj.compute().execute(new GridExecutorCallableTask<T>(task.getClass()), task);
 
             taskFuts.add(fut);
 
@@ -445,7 +445,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         for (Callable<T> cmd : tasks) {
             // Execute task with predefined timeout.
-            GridComputeTaskFuture<T> fut = prj.compute().execute(new GridExecutorCallableTask<T>(cmd.getClass()), cmd, 0);
+            GridComputeTaskFuture<T> fut = prj.compute().execute(new GridExecutorCallableTask<T>(cmd.getClass()), cmd);
 
             taskFuts.add(fut);
         }
@@ -517,7 +517,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         deployTask(GridExecutorRunnableTask.class, cmd);
 
-        addFuture(prj.compute().execute(new GridExecutorRunnableTask(cmd.getClass()), cmd, 0));
+        addFuture(prj.compute().execute(new GridExecutorRunnableTask(cmd.getClass()), cmd));
     }
 
     /**

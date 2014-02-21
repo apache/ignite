@@ -29,7 +29,7 @@ public class GridCacheIterator<K, V, T> implements GridSerializableIterator<T> {
     private final Iterator<? extends GridCacheEntry<K, V>> it;
 
     /** Transformer. */
-    private final GridClosure<? super GridCacheEntry<K, V>, T> trans;
+    private final GridClosure<GridCacheEntry<K, V>, T> trans;
 
     /** Current element. */
     private GridCacheEntry<K, V> cur;
@@ -39,9 +39,9 @@ public class GridCacheIterator<K, V, T> implements GridSerializableIterator<T> {
      * @param trans Transformer.
      * @param filter Filter.
      */
-    public GridCacheIterator(Collection<? extends GridCacheEntry<K, V>> c,
-        GridClosure<? super GridCacheEntry<K, V>, T> trans,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+    public GridCacheIterator(Iterable<? extends GridCacheEntry<K, V>> c,
+        GridClosure<GridCacheEntry<K, V>, T> trans,
+        GridPredicate<GridCacheEntry<K, V>>[] filter) {
         it = F.iterator0(c, false, filter);
 
         this.trans = trans;

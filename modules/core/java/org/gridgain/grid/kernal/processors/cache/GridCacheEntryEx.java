@@ -190,7 +190,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridException If swap could not be released.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public boolean invalidate(@Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter)
+    public boolean invalidate(@Nullable GridPredicate<GridCacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException, GridException;
 
     /**
@@ -201,7 +201,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridException If operation failed.
      * @return {@code true} if entry was not being used and could be removed.
      */
-    public boolean compact(@Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter)
+    public boolean compact(@Nullable GridPredicate<GridCacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException, GridException;
 
     /**
@@ -212,7 +212,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridException In case of error.
      */
     public boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException;
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException;
 
     /**
      * Evicts entry when batch evict is performed. When called, does not write entry data to swap, but instead
@@ -271,7 +271,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      */
     @Nullable public V innerGet(@Nullable GridCacheTxEx<K, V> tx, boolean readSwap, boolean readThrough,
         boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException,
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException,
         GridCacheFilterFailedException;
 
     /**
@@ -283,7 +283,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     @Nullable
-    public V innerReload(GridPredicate<? super GridCacheEntry<K, V>>... filter) throws GridException,
+    public V innerReload(GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException,
         GridCacheEntryRemovedException;
 
     /**
@@ -317,7 +317,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         long ttl,
         boolean evt,
         boolean metrics,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter,
+        GridPredicate<GridCacheEntry<K, V>>[] filter,
         GridDrType drType,
         long drExpireTime,
         @Nullable GridCacheVersion explicitVer
@@ -347,7 +347,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         boolean retval,
         boolean evt,
         boolean metrics,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter,
+        GridPredicate<GridCacheEntry<K, V>>[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer
     ) throws GridException, GridCacheEntryRemovedException;
@@ -395,7 +395,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         boolean metrics,
         boolean primary,
         boolean checkVer,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter,
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
         GridDrType drType,
         long drTtl,
         long drExpireTime,
@@ -415,7 +415,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @return {@code True} if entry was not being used, passed the filter and could be removed.
      */
     public boolean clear(GridCacheVersion ver, boolean swap, boolean readers,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException;
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException;
 
     /**
      * This locks is called by transaction manager during prepare step
@@ -496,7 +496,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public V peek(GridCachePeekMode mode, GridPredicate<? super GridCacheEntry<K, V>>... filter)
+    @Nullable public V peek(GridCachePeekMode mode, GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridCacheEntryRemovedException;
 
     /**
@@ -507,7 +507,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public V peek(Collection<GridCachePeekMode> modes, GridPredicate<? super GridCacheEntry<K, V>>... filter)
+    @Nullable public V peek(Collection<GridCachePeekMode> modes, GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridCacheEntryRemovedException;
 
     /**
@@ -520,7 +520,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridCacheFilterFailedException If {@code failFast} is {@code true} and
      *      filter didn't pass.
      */
-    @Nullable public V peekFailFast(GridCachePeekMode mode, GridPredicate<? super GridCacheEntry<K, V>>... filter)
+    @Nullable public V peekFailFast(GridCachePeekMode mode, GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException;
 
     /**
@@ -535,7 +535,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable public GridTuple<V> peek0(boolean failFast, GridCachePeekMode mode,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter, @Nullable GridCacheTxEx<K, V> tx)
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter, @Nullable GridCacheTxEx<K, V> tx)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, GridException;
 
     /**

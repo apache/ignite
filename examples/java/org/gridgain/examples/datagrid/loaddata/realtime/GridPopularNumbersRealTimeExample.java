@@ -55,10 +55,7 @@ public class GridPopularNumbersRealTimeExample {
     public static void main(String[] args) throws Exception {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
 
-        // Start grid.
-        final Grid g = GridGain.start("examples/config/example-cache-popularcounts.xml");
-
-        try {
+        try (Grid g = GridGain.start("examples/config/example-cache-popularcounts.xml")) {
             TimerTask task = scheduleQuery(g, popularNumbersQryTimer, POPULAR_NUMBERS_CNT);
 
             streamData(g);
@@ -69,7 +66,7 @@ public class GridPopularNumbersRealTimeExample {
             popularNumbersQryTimer.cancel();
 
             // Clean up caches on all nodes after run.
-            g.compute().run(GridClosureCallMode.BROADCAST, new Runnable() {
+            g.compute().run(new Runnable() {
                 @Override public void run() {
                     if (g.cache(null) == null)
                         System.err.println("Default cache not found (is example-cache-popularcounts.xml " +
@@ -81,9 +78,6 @@ public class GridPopularNumbersRealTimeExample {
                     }
                 }
             }).get();
-        }
-        finally {
-            GridGain.stop(true);
         }
     }
 

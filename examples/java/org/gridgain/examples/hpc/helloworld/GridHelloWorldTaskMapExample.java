@@ -11,7 +11,7 @@ import java.util.*;
  * {@link org.gridgain.grid.compute.GridComputeTaskAdapter}.
  * <p>
  * String "Hello Grid Enabled World!" is passed as an argument to
- * {@link GridCompute#execute(String, Object, long)} method.
+ * {@link GridCompute#execute(String, Object)} method.
  * This method also takes as an argument a task instance, which splits the
  * string into words and wraps each word into a child job, which prints
  * the word to standard output and returns the word length. Those jobs
@@ -94,7 +94,7 @@ public class GridHelloWorldTaskMapExample {
         };
 
         try (Grid g = GridGain.start("examples/config/example-default.xml")) {
-            GridComputeTaskFuture<Integer> fut = g.compute().execute(task, "Hello Grid Enabled World!", 0);
+            GridComputeTaskFuture<Integer> fut = g.compute().execute(task, "Hello Grid Enabled World!");
 
             // Wait for task completion.
             int phraseLen = fut.get();

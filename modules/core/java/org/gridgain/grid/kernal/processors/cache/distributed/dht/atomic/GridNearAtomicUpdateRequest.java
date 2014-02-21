@@ -93,7 +93,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
     /** Filter. */
     @GridDirectTransient
-    private GridPredicate<? super GridCacheEntry<K, V>>[] filter;
+    private GridPredicate<GridCacheEntry<K, V>>[] filter;
 
     /** Filter bytes. */
     private byte[][] filterBytes;
@@ -132,7 +132,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         GridCacheOperation op,
         boolean retval,
         long ttl,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         this.nodeId = nodeId;
         this.futVer = futVer;
@@ -221,7 +221,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     /**
      * @return Filter.
      */
-    @Nullable public GridPredicate<? super GridCacheEntry<K, V>>[] filter() {
+    @Nullable public GridPredicate<GridCacheEntry<K, V>>[] filter() {
         return filter;
     }
 

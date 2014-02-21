@@ -362,7 +362,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
         }
 
         /** {@inheritDoc} */
-        @Override public GridCacheCommittedTxInfo<K, V> apply() {
+        @Override public GridCacheCommittedTxInfo<K, V> reduce() {
             return collected.get();
         }
     }

@@ -17,7 +17,7 @@ import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import visor._
 import org.gridgain.grid._
-import kernal.GridEx
+import org.gridgain.grid.kernal.{GridClosureCallMode, GridEx}
 import resources._
 import GridClosureCallMode._
 import collection.JavaConversions._
@@ -105,7 +105,7 @@ class VisorCacheCompactCommand {
 
             val caches = getVariable(cacheName)
 
-            val prj = grid.forCaches(caches)
+            val prj = grid.forCache(caches)
 
             if (prj.isEmpty) {
                 val msg =
@@ -120,7 +120,7 @@ class VisorCacheCompactCommand {
             val res = prj.compute()
                 .withName("visor-ccompact-task")
                 .withResultClosure(X.NO_FAILOVER)
-                .call(BROADCAST, new CompactClosure(caches)).get
+                .call(new CompactClosure(caches)).get
 
             val t = VisorTextTable()
 

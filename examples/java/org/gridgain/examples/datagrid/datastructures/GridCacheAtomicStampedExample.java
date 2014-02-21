@@ -16,7 +16,6 @@ import org.gridgain.grid.product.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.GridClosureCallMode.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
@@ -65,7 +64,7 @@ public final class GridCacheAtomicStampedExample {
             Runnable c = new StampedUpdateClosure(CACHE_NAME, stampedName);
 
             // Check atomic stamped on all grid nodes.
-            g.compute().run(BROADCAST, c).get();
+            g.compute().run(c).get();
 
             // Make new value of atomic stamped.
             String newVal = UUID.randomUUID().toString();
@@ -79,7 +78,7 @@ public final class GridCacheAtomicStampedExample {
 
             // Check atomic stamped on all grid nodes.
             // Atomic stamped value and stamp shouldn't be changed.
-            g.compute().run(BROADCAST, c).get();
+            g.compute().run(c).get();
 
             print("Try to change value and stamp of atomic stamped with correct value and stamp.");
 
@@ -87,7 +86,7 @@ public final class GridCacheAtomicStampedExample {
 
             // Check atomic stamped on all grid nodes.
             // Atomic stamped value and stamp should be changed.
-            g.compute().run(BROADCAST, c).get();
+            g.compute().run(c).get();
         }
 
         print("");

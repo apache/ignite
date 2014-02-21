@@ -68,7 +68,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     private GridCacheTxLocalEx<K, V> tx;
 
     /** Filters. */
-    private GridPredicate<? super GridCacheEntry<K, V>>[] filters;
+    private GridPredicate<GridCacheEntry<K, V>>[] filters;
 
     /** Logger. */
     private GridLogger log;
@@ -121,7 +121,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         boolean reload,
         boolean forcePrimary,
         @Nullable GridCacheTxLocalEx<K, V> tx,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filters
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
 

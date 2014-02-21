@@ -119,20 +119,20 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     private volatile long lastFlushTime = U.currentTimeMillis();
 
     /** */
-    private final DelayQueue<GridDataLoaderImpl<K, V>> flushQue;
+    private final DelayQueue<GridDataLoaderImpl<K, V>> flushQ;
 
     /**
      * @param ctx Grid kernal context.
      * @param cacheName Cache name.
-     * @param flushQue Flush queue.
+     * @param flushQ Flush queue.
      */
     public GridDataLoaderImpl(final GridKernalContext ctx, @Nullable final String cacheName,
-        DelayQueue<GridDataLoaderImpl<K, V>> flushQue) {
+        DelayQueue<GridDataLoaderImpl<K, V>> flushQ) {
         assert ctx != null;
 
         this.ctx = ctx;
         this.cacheName = cacheName;
-        this.flushQue = flushQue;
+        this.flushQ = flushQ;
 
         log = U.logger(ctx, logRef, GridDataLoaderImpl.class);
 
@@ -268,9 +268,9 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
             this.autoFlushFreq = autoFlushFreq;
 
             if (autoFlushFreq != 0 && old == 0)
-                flushQue.add(this);
+                flushQ.add(this);
             else if (autoFlushFreq == 0 && old != 0)
-                flushQue.remove(this);
+                flushQ.remove(this);
         }
     }
 
@@ -363,7 +363,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
                 assert key != null;
 
                 if (initPda) {
-                    jobPda = new DataLoaderPda(key, entry.value());
+                    jobPda = new DataLoaderPda(key, entry.value(), updater);
 
                     initPda = false;
                 }
@@ -875,18 +875,20 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
                 GridDeployment dep = null;
 
+                GridPeerDeployAware jobPda0 = jobPda;
+
                 if (ctx.deploy().enabled()) {
                     try {
-                        dep = ctx.deploy().deploy(jobPda.deployClass(), jobPda.classLoader());
+                        dep = ctx.deploy().deploy(jobPda0.deployClass(), jobPda0.classLoader());
                     }
                     catch (GridException e) {
-                        U.error(log, "Failed to deploy class (request will not be sent): " + jobPda.deployClass(), e);
+                        U.error(log, "Failed to deploy class (request will not be sent): " + jobPda0.deployClass(), e);
 
                         return;
                     }
 
                     if (dep == null)
-                        U.warn(log, "Failed to deploy class (request will be sent): " + jobPda.deployClass());
+                        U.warn(log, "Failed to deploy class (request will be sent): " + jobPda0.deployClass());
                 }
 
                 long reqId = idGen.incrementAndGet();
@@ -903,7 +905,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
                     entriesBytes,
                     true,
                     dep != null ? dep.deployMode() : null,
-                    dep != null ? dep.sampleClassName() : null,
+                    dep != null ? jobPda0.deployClass().getName() : null,
                     dep != null ? dep.userVersion() : null,
                     dep != null ? dep.participants() : null,
                     dep != null ? dep.classLoaderId() : null,

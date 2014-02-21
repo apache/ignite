@@ -15,7 +15,6 @@ import org.gridgain.scalar.scalar
 import scalar._
 import scala.util.Random
 import scala.util.control.Breaks._
-import org.gridgain.grid.GridClosureCallMode._
 
 /**
  * Scalar-based Monte-Carlo example.
@@ -62,7 +61,7 @@ object ScalarCreditRiskExample {
             // aware if method was executed just locally or on the 100s of grid nodes.
             // Credit risk crdRisk is the minimal amount that creditor has to have
             // available to cover possible defaults.
-            val crdRisk = grid$ @< (SPREAD, closures(grid$.nodes().size(), portfolio, horizon, iter, percentile),
+            val crdRisk = grid$ @< (closures(grid$.nodes().size(), portfolio, horizon, iter, percentile),
                 (s: Seq[Double]) => s.sum / s.size, null)
 
             println("Credit risk [crdRisk=" + crdRisk + ", duration=" +

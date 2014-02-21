@@ -139,7 +139,7 @@ object ScalarPingPongExample extends App {
             // 1. Sets latch into node local storage so that local actor could use it.
             // 2. Sends first 'PING' to 'n1'.
             // 3. Waits until all messages are exchanged between two remote nodes.
-            n2p.ucastRun(() => {
+            n2p.run$(() => {
                 val latch = new CountDownLatch(10)
 
                 g.nodeLocalMap[String, CountDownLatch].put("latch", latch)

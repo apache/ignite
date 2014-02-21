@@ -82,7 +82,7 @@ public class GridStreamingPriceBarsExample {
 
             // Reset all streamers on all nodes to make sure that
             // consecutive executions start from scratch.
-            g.compute().run(GridClosureCallMode.BROADCAST, new Runnable() {
+            g.compute().run(new Runnable() {
                 @Override public void run() {
                     GridStreamer streamer = g.streamer("priceBars");
 
@@ -140,7 +140,7 @@ public class GridStreamingPriceBarsExample {
                                 return true;
                             }
 
-                            @Override public Collection<Bar> apply() {
+                            @Override public Collection<Bar> reduce() {
                                 return res;
                             }
                         }

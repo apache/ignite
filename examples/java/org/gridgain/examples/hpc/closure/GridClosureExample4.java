@@ -36,37 +36,30 @@ public class GridClosureExample4 {
     public static void main(String[] args) throws Exception {
         try (Grid g = GridGain.start(args.length == 0 ? "examples/config/example-default.xml" : args[0])) {
             // Broadcast closure to all nodes for gathering their system information.
-            String res = g.compute().reduce(GridClosureCallMode.BROADCAST,
-                Collections.<GridOutClosure<String>>singleton(
-                    new GridOutClosure<String>() {
-                        @Override public String apply() {
-                            StringBuilder buf = new StringBuilder();
+            String res = g.compute().call(Collections.<GridOutClosure<String>>singleton(new GridOutClosure<String>() {
+                @Override public String apply() {
+                    StringBuilder buf = new StringBuilder();
 
-                            buf.append("OS: ").append(System.getProperty("os.name"))
-                                .append(" ").append(System.getProperty("os.version"))
-                                .append(" ").append(System.getProperty("os.arch"))
-                                .append("\nUser: ").append(System.getProperty("user.name"))
-                                .append("\nJRE: ").append(System.getProperty("java.runtime.name"))
-                                .append(" ").append(System.getProperty("java.runtime.version"));
+                    buf.append("OS: ").append(System.getProperty("os.name")).append(" ").append(System.getProperty
+                        ("os.version")).append(" ").append(System.getProperty("os.arch")).append("\nUser: ").append
+                        (System.getProperty("user.name")).append("\nJRE: ").append(System.getProperty("java.runtime" +
+                        ".name")).append(" ").append(System.getProperty("java.runtime.version"));
 
-                            return buf.toString();
-                        }
-                    }
-                ),
-                new GridReducer<String, String>() {
-                    private StringBuilder buf = new StringBuilder();
-
-                    @Override public boolean collect(String s) {
-                        buf.append("\n").append(s).append("\n");
-
-                        return true;
-                    }
-
-                    @Override public String apply() {
-                        return buf.toString();
-                    }
+                    return buf.toString();
                 }
-            ).get();
+            }), new GridReducer<String, String>() {
+                private StringBuilder buf = new StringBuilder();
+
+                @Override public boolean collect(String s) {
+                    buf.append("\n").append(s).append("\n");
+
+                    return true;
+                }
+
+                @Override public String reduce() {
+                    return buf.toString();
+                }
+            }).get();
 
             // Print result.
             System.out.println("Nodes system information:");

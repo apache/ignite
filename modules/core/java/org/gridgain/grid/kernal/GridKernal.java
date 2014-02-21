@@ -2339,14 +2339,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridPredicate<GridNode> predicate() {
-        guard();
-
-        try {
-            return F.alwaysTrue();
-        }
-        finally {
-            unguard();
-        }
+        return F.alwaysTrue();
     }
 
     /** {@inheritDoc} */
@@ -2396,7 +2389,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     @SuppressWarnings("unchecked")
     @Override public String executeTask(String taskName, String arg) throws JMException {
         try {
-            return compute().<String, String>execute(taskName, arg, 0).get();
+            return compute().<String, String>execute(taskName, arg).get();
         }
         catch (GridException e) {
             throw U.jmException(e);
@@ -2558,7 +2551,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                 if (neighbors != null) {
                     if (restart && !neighbors.isEmpty()) {
                         try {
-                            forNodes(neighbors).compute().execute(GridKillTask.class, false, 0).get();
+                            forNodes(neighbors).compute().execute(GridKillTask.class, false).get();
                         }
                         catch (GridEmptyProjectionException ignored) {
                             // No-op, nothing to restart.
@@ -2673,7 +2666,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         guard();
 
         try {
-            compute().execute(GridKillTask.class, false, 0).get();
+            compute().execute(GridKillTask.class, false).get();
         }
         finally {
             unguard();
@@ -2685,7 +2678,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         guard();
 
         try {
-            forNodeIds(ids).compute().execute(GridKillTask.class, false, 0).get();
+            forNodeIds(ids).compute().execute(GridKillTask.class, false).get();
         }
         finally {
             unguard();
@@ -2697,7 +2690,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         guard();
 
         try {
-            compute().execute(GridKillTask.class, true, 0).get();
+            compute().execute(GridKillTask.class, true).get();
         }
         finally {
             unguard();
@@ -2709,7 +2702,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         guard();
 
         try {
-            forNodeIds(ids).compute().execute(GridKillTask.class, true, 0).get();
+            forNodeIds(ids).compute().execute(GridKillTask.class, true).get();
         }
         finally {
             unguard();
@@ -2936,7 +2929,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         ctx.gateway().readLock();
 
         try {
-            return new GridProjectionImpl(this, ctx, F.asArray(cfg.getNodeId()));
+            return new GridProjectionImpl(this, ctx, Collections.singleton(cfg.getNodeId()));
         }
         finally {
             ctx.gateway().readUnlock();

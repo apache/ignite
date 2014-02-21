@@ -16,7 +16,6 @@ import org.gridgain.grid.product.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.GridClosureCallMode.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
@@ -62,7 +61,7 @@ public final class GridCacheAtomicReferenceExample {
             Runnable c = new ReferenceClosure(CACHE_NAME, refName);
 
             // Check atomic reference on all grid nodes.
-            g.compute().run(BROADCAST, c).get();
+            g.compute().run(c).get();
 
             // Make new value of atomic reference.
             String newVal = UUID.randomUUID().toString();
@@ -73,7 +72,7 @@ public final class GridCacheAtomicReferenceExample {
 
             // Check atomic reference on all grid nodes.
             // Atomic reference value shouldn't be changed.
-            g.compute().run(BROADCAST, c).get();
+            g.compute().run(c).get();
 
             print("Try to change value of atomic reference with correct expected value.");
 
@@ -81,7 +80,7 @@ public final class GridCacheAtomicReferenceExample {
 
             // Check atomic reference on all grid nodes.
             // Atomic reference value should be changed.
-            g.compute().run(BROADCAST, c).get();
+            g.compute().run(c).get();
         }
 
         print("");

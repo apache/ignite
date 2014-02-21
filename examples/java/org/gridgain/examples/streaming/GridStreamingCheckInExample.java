@@ -119,7 +119,7 @@ public class GridStreamingCheckInExample {
 
             // Reset all streamers on all nodes to make sure that
             // consecutive executions start from scratch.
-            g.compute().run(GridClosureCallMode.BROADCAST, new Runnable() {
+            g.compute().run(new Runnable() {
                 @Override public void run() {
                     GridStreamer streamer = g.streamer(STREAMER_NAME);
 
@@ -189,7 +189,7 @@ public class GridStreamingCheckInExample {
                                 return true;
                             }
 
-                            @Override public Map<String, Place> apply() {
+                            @Override public Map<String, Place> reduce() {
                                 return map;
                             }
                         }

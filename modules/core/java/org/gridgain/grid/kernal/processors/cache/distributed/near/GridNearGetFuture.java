@@ -69,7 +69,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     private GridCacheTxLocalEx<K, V> tx;
 
     /** Filters. */
-    private GridPredicate<? super GridCacheEntry<K, V>>[] filters;
+    private GridPredicate<GridCacheEntry<K, V>>[] filters;
 
     /** Logger. */
     private GridLogger log;
@@ -122,7 +122,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         boolean reload,
         boolean forcePrimary,
         @Nullable GridCacheTxLocalEx<K, V> tx,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filters
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
 

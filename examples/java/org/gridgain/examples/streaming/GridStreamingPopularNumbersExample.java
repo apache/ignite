@@ -71,7 +71,7 @@ public class GridStreamingPopularNumbersExample {
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridStreamerIndexEntry<Integer, Integer, Long>> apply() {
+        @Override public Collection<GridStreamerIndexEntry<Integer, Integer, Long>> reduce() {
             Collections.sort(sorted, cmp);
 
             return sorted.subList(0, POPULAR_NUMBERS_CNT < sorted.size() ? POPULAR_NUMBERS_CNT : sorted.size());
@@ -103,7 +103,7 @@ public class GridStreamingPopularNumbersExample {
 
             // Reset all streamers on all nodes to make sure that
             // consecutive executions start from scratch.
-            g.compute().run(GridClosureCallMode.BROADCAST, new Runnable() {
+            g.compute().run(new Runnable() {
                 @Override public void run() {
                     GridStreamer streamer = g.streamer("popular-numbers");
 

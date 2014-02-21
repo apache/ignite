@@ -30,7 +30,7 @@ class ScalarReducer[E, R](private val r: Seq[E] => R) extends GridReducer[E, R] 
     /**
      * Delegates to passed in function.
      */
-    def apply = r(buf.toSeq)
+    def reduce = r(buf.toSeq)
 
     /**
      * Collects given value.

@@ -29,7 +29,7 @@ public class GridCacheEntrySet<K, V> extends AbstractSet<GridCacheEntry<K, V>> {
     private final GridCacheContext<K, V> ctx;
 
     /** Filter. */
-    private final GridPredicate<? super GridCacheEntry<K, V>>[] filter;
+    private final GridPredicate<GridCacheEntry<K, V>>[] filter;
 
     /** Base set. */
     private final Set<GridCacheEntry<K, V>> set;
@@ -40,7 +40,7 @@ public class GridCacheEntrySet<K, V> extends AbstractSet<GridCacheEntry<K, V>> {
      * @param filter Filter.
      */
     public GridCacheEntrySet(GridCacheContext<K, V> ctx, Collection<? extends GridCacheEntry<K, V>> c,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         set = new HashSet<>(c.size(), 1.0f);
 
         assert ctx != null;

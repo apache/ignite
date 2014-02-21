@@ -81,7 +81,7 @@ public class GridStreamingRunningAverageExample {
                                     return true;
                                 }
 
-                                @Override public Double apply() {
+                                @Override public Double reduce() {
                                     return avg.average();
                                 }
                             }

@@ -195,13 +195,13 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V set(V val, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter)
+    @Nullable @Override public V set(V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridException {
         throw new UnsupportedOperationException("set");
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<V> setAsync(V val, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) {
+    @Override public GridFuture<V> setAsync(V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         throw new UnsupportedOperationException("setAsync");
     }
 
@@ -216,14 +216,14 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean setx(V val, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter)
+    @Override public boolean setx(V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridException {
         throw new UnsupportedOperationException("setx");
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<Boolean> setxAsync(V val,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         throw new UnsupportedOperationException("setxAsync");
     }
 
@@ -278,13 +278,13 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V remove(@Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter)
+    @Nullable @Override public V remove(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridException {
         throw new UnsupportedOperationException("remove");
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<V> removeAsync(@Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) {
+    @Override public GridFuture<V> removeAsync(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         throw new UnsupportedOperationException("removeAsync");
     }
 
@@ -325,19 +325,19 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lock(long timeout, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter)
+    @Override public boolean lock(long timeout, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridException {
         throw new UnsupportedOperationException("lock");
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<Boolean> lockAsync(long timeout,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         throw new UnsupportedOperationException("lockAsync");
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(GridPredicate<? super GridCacheEntry<K, V>>... filter) throws GridException {
+    @Override public void unlock(GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         throw new UnsupportedOperationException("unlock");
     }
 

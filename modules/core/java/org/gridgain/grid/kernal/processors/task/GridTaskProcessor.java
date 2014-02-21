@@ -264,12 +264,11 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     /**
      * @param taskCls Task class.
      * @param arg Optional execution argument.
-     * @param timeout Execution timeout.
      * @return Task future.
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> GridComputeTaskFuture<R> execute(Class<? extends GridComputeTask<T, R>> taskCls, @Nullable T arg, long timeout) {
+    public <T, R> GridComputeTaskFuture<R> execute(Class<? extends GridComputeTask<T, R>> taskCls, @Nullable T arg) {
         assert taskCls != null;
 
         lock.readLock();
@@ -278,7 +277,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + taskCls);
 
-            return startTask(null, taskCls, null, GridUuid.fromUuid(ctx.localNodeId()), timeout, arg, false);
+            return startTask(null, taskCls, null, GridUuid.fromUuid(ctx.localNodeId()), arg, false);
         }
         finally {
             lock.readUnlock();
@@ -288,33 +287,30 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     /**
      * @param task Actual task.
      * @param arg Optional task argument.
-     * @param timeout Task timeout.
      * @return Task future.
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> GridComputeTaskFuture<R> execute(GridComputeTask<T, R> task, @Nullable T arg, long timeout) {
-        return execute(task, arg, timeout, false);
+    public <T, R> GridComputeTaskFuture<R> execute(GridComputeTask<T, R> task, @Nullable T arg) {
+        return execute(task, arg, false);
     }
 
     /**
      * @param task Actual task.
      * @param arg Optional task argument.
-     * @param timeout Task timeout.
      * @param sys If {@code true}, then system pool will be used.
      * @return Task future.
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> GridComputeTaskFuture<R> execute(GridComputeTask<T, R> task, @Nullable T arg, long timeout,
-        boolean sys) {
+    public <T, R> GridComputeTaskFuture<R> execute(GridComputeTask<T, R> task, @Nullable T arg, boolean sys) {
         lock.readLock();
 
         try {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + task);
 
-            return startTask(null, null, task, GridUuid.fromUuid(ctx.localNodeId()), timeout, arg, sys);
+            return startTask(null, null, task, GridUuid.fromUuid(ctx.localNodeId()), arg, sys);
         }
         finally {
             lock.readUnlock();
@@ -324,14 +320,12 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     /**
      * @param taskName Task name.
      * @param arg Optional execution argument.
-     * @param timeout Execution timeout.
      * @return Task future.
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> GridComputeTaskFuture<R> execute(String taskName, @Nullable T arg, long timeout) {
+    public <T, R> GridComputeTaskFuture<R> execute(String taskName, @Nullable T arg) {
         assert taskName != null;
-        assert timeout >= 0;
 
         lock.readLock();
 
@@ -339,7 +333,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + taskName);
 
-            return startTask(taskName, null, null, GridUuid.fromUuid(ctx.localNodeId()), timeout, arg, false);
+            return startTask(taskName, null, null, GridUuid.fromUuid(ctx.localNodeId()), arg, false);
         }
         finally {
             lock.readUnlock();
@@ -351,7 +345,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param taskCls Task class.
      * @param task Task.
      * @param sesId Task session ID.
-     * @param timeout Timeout.
      * @param arg Optional task argument.
      * @param sys If {@code true}, then system pool will be used.
      * @return Task future.
@@ -362,7 +355,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         @Nullable Class<?> taskCls,
         @Nullable GridComputeTask<T, R> task,
         GridUuid sesId,
-        long timeout,
         @Nullable T arg,
         boolean sys) {
         assert sesId != null;
@@ -376,9 +368,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             // Reset thread-local context.
             thCtx.remove();
 
-        Long tcTimeout = (Long)map.get(TC_TIMEOUT);
+        Long timeout = (Long)map.get(TC_TIMEOUT);
 
-        long timeout0 = timeout == 0 ? (tcTimeout == null ? Long.MAX_VALUE : tcTimeout) : timeout;
+        long timeout0 = timeout == null || timeout == 0 ? Long.MAX_VALUE : timeout;
 
         long startTime = U.currentTimeMillis();
 

@@ -91,7 +91,7 @@ public interface GridMessaging {
      * @see GridMessagingListenActor
      * @see #remoteListen(Object, GridBiPredicate)
      */
-    public <T> void localListen(@Nullable Object topic, @Nullable GridBiPredicate<UUID, ? super T> p);
+    public <T> void localListen(@Nullable Object topic, @Nullable GridBiPredicate<UUID, T> p);
 
     /**
      * Registers given message listener on <b>all nodes defined by this projection</b> to listen for
@@ -122,5 +122,5 @@ public interface GridMessaging {
      * @see #send(Object, Object)
      * @see #send(Object, Collection)
      */
-    public <T> GridFuture<?> remoteListen(@Nullable Object topic, @Nullable GridBiPredicate<UUID, ? super T> p);
+    public <T> GridFuture<?> remoteListen(@Nullable Object topic, @Nullable GridBiPredicate<UUID, T> p);
 }

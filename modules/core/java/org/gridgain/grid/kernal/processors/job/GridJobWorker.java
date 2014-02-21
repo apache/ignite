@@ -763,15 +763,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                             if (ctx.event().isRecordable(EVT_JOB_FAILED))
                                 evts = addEvent(evts, EVT_JOB_FAILED, msg);
                         }
-                        finally {
-                            try {
-                                // Callback.
-                                ctx.resource().invokeAnnotated(dep, job, GridComputeJobAfterExecute.class);
-                            }
-                            catch (GridException e) {
-                                LT.error(log, e, "Failed to execute GridComputeJobAfterExecute callback.");
-                            }
-                        }
                     }
                 }
                 else {

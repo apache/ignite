@@ -26,7 +26,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.GridClosureCallMode.*;
+import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.processors.affinity.GridAffinityUtils.*;
@@ -336,7 +336,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     private GridAffinityCache affinityFromNode(@Nullable String cacheName, GridNode n)
         throws GridException {
         GridTuple3<GridAffinityMessage, GridAffinityMessage, GridException> t = ctx.closure()
-            .callAsyncNoFailover(UNICAST, affinityJob(cacheName), F.asList(n), true/*system pool*/).get();
+            .callAsyncNoFailover(BALANCE, affinityJob(cacheName), F.asList(n), true/*system pool*/).get();
 
         // Throw exception if remote node failed to deploy result.
         GridException err = t.get3();

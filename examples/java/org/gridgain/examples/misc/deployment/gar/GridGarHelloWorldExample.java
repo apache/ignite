@@ -77,7 +77,7 @@ public final class GridGarHelloWorldExample {
         try {
             try (Grid g = GridGain.start(args.length == 0 ? "examples/config/example-gar.xml" : args[0])) {
                 // Execute Hello World task from GAR file.
-                g.compute().execute("GridGarHelloWorldTask", "HELLOWORLD.MSG", 0).get();
+                g.compute().execute("GridGarHelloWorldTask", "HELLOWORLD.MSG").get();
 
                 System.out.println(">>>");
                 System.out.println(">>> Finished executing Grid \"Hello World\" example with custom task.");
