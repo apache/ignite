@@ -62,7 +62,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
     /** Filters. */
     @GridDirectTransient
-    private GridPredicate<? super GridCacheEntry<K, V>>[] filter;
+    private GridPredicate<GridCacheEntry<K, V>>[] filter;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -81,7 +81,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
      * @param filter Filter.
      */
     public GridNearGetRequest(GridUuid futId, GridUuid miniId, GridCacheVersion ver, LinkedHashMap<K, Boolean> keys,
-        boolean reload, long topVer, GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        boolean reload, long topVer, GridPredicate<GridCacheEntry<K, V>>[] filter) {
         assert futId != null;
         assert miniId != null;
         assert ver != null;
@@ -139,7 +139,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     /**
      * @return Filters.
      */
-    public GridPredicate<? super GridCacheEntry<K, V>>[] filter() {
+    public GridPredicate<GridCacheEntry<K, V>>[] filter() {
         return filter;
     }
 

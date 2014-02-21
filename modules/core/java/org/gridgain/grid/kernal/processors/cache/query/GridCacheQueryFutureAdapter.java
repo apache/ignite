@@ -396,7 +396,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                     if (onPage(nodeId, finished)) {
                         clear();
 
-                        List<R> resCol = Collections.singletonList((R)locRdc.apply());
+                        List<R> resCol = Collections.singletonList((R)locRdc.reduce());
 
                         enqueue(resCol);
 

@@ -44,7 +44,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     private GridBiPredicate<K, V> filter;
 
     /** Projection predicate */
-    private GridPredicate<? super GridCacheEntry<K, V>> prjPred;
+    private GridPredicate<GridCacheEntry<K, V>> prjPred;
 
     /** Deployable object for filter. */
     private DeployableObject filterDep;
@@ -71,7 +71,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      */
     GridCacheContinuousQueryHandler(@Nullable String cacheName, Object topic,
         GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb, @Nullable GridBiPredicate<K, V> filter,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>> prjPred) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>> prjPred) {
         assert topic != null;
         assert cb != null;
 
@@ -291,7 +291,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         if (b)
             prjPredDep = (DeployableObject)in.readObject();
         else
-            prjPred = (GridPredicate<? super GridCacheEntry<K, V>>)in.readObject();
+            prjPred = (GridPredicate<GridCacheEntry<K, V>>)in.readObject();
     }
 
     /**

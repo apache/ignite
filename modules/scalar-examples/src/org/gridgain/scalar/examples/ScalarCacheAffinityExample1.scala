@@ -60,7 +60,7 @@ object ScalarCacheAffinityExample1 {
             var results = Map.empty[String, String]
 
             keys.foreach(key => {
-                val res = grid$.balanceCall(
+                val res = grid$.call$(
                     new Callable[String] {
                         @GridCacheAffinityMapped
                         def affinityKey(): String = key
@@ -102,14 +102,14 @@ object ScalarCacheAffinityExample1 {
      * @param keys Keys to populate.
      */
     private def populateCache(g: Grid, keys: Seq[String]) {
-        var prj = g.forCaches(NAME)
+        var prj = g.forCache(NAME)
 
         // Give preference to local node.
         if (prj.nodes().contains(g.localNode))
             prj = g.forLocal()
 
         // Populate cache on some node (possibly this node) which has cache with given name started.
-        prj.ucastRun(() => {
+        prj.run$(() => {
             println(">>> Storing keys in cache: " + keys)
 
             val c = cache$[String, String](NAME).get

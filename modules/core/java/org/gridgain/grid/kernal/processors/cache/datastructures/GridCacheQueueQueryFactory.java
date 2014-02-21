@@ -255,7 +255,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
                                 return !(found = e.getValue().userObject().equals(item));
                             }
 
-                            @Override public Integer apply() {
+                            @Override public Integer reduce() {
                                 return found ? rownum : -1;
                             }
                         };
@@ -333,7 +333,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
                                 return true;
                             }
 
-                            @Override public GridBiTuple<Integer, GridException> apply() {
+                            @Override public GridBiTuple<Integer, GridException> reduce() {
                                 try {
                                     if (!keys.isEmpty()) {
                                         GridCacheTx tx = CU.txStartInternal(cctx, itemView, PESSIMISTIC,
@@ -383,7 +383,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
                                 return true;
                             }
 
-                            @Override public GridBiTuple<Integer, GridException> apply() {
+                            @Override public GridBiTuple<Integer, GridException> reduce() {
                                 return retVal;
                             }
                         };
@@ -466,7 +466,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
                                 return true;
                             }
 
-                            @Override public GridBiTuple<Integer, GridException> apply() {
+                            @Override public GridBiTuple<Integer, GridException> reduce() {
                                 //If exception already happened.
                                 if (retVal.get2() != null)
                                     return retVal;
@@ -513,7 +513,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
                                 return true;
                             }
 
-                            @Override public GridBiTuple<Integer, GridException> apply() {
+                            @Override public GridBiTuple<Integer, GridException> reduce() {
                                 return retVal;
                             }
                         };
@@ -563,7 +563,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
                                 return !found;
                             }
 
-                            @Override public boolean[] apply() {
+                            @Override public boolean[] reduce() {
                                 return retVal;
                             }
                         };
@@ -592,7 +592,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
                                 return true;
                             }
 
-                            @Override public Boolean apply() {
+                            @Override public Boolean reduce() {
                                 boolean retVal = true;
 
                                 for (boolean f : arr)
@@ -630,7 +630,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
                         return false;
                     }
 
-                    @Override public Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> apply() {
+                    @Override public Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> reduce() {
                         return entry;
                     }
                 };
@@ -679,7 +679,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
                             return true;
                         }
 
-                        @Override public Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> apply() {
+                        @Override public Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> reduce() {
                             if (items.isEmpty())
                                 return null;
 
@@ -723,7 +723,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
                             return true;
                         }
 
-                        @Override public Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> apply() {
+                        @Override public Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> reduce() {
                             if (items.isEmpty())
                                 return null;
 

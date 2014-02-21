@@ -13,7 +13,6 @@ package org.gridgain.scalar.examples
 
 import org.gridgain.scalar.scalar
 import scalar._
-import org.gridgain.grid._
 import scala.util.control.Breaks._
 import java.util
 
@@ -57,7 +56,8 @@ object ScalarPrimeExample {
             val g = grid$
 
             checkVals.foreach(checkVal => {
-                val divisor = g.spreadReduce(closures(g.nodes().size(), checkVal))(_.find(_.isDefined), null)
+                val divisor = g.reduce$[Option[Long], Option[Option[Long]]](
+                    closures(g.nodes().size(), checkVal), _.find(_.isDefined), null)
 
                 if (!divisor.isDefined)
                     println(">>> Value '" + checkVal + "' is a prime number")

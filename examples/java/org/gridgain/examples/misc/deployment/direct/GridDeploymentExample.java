@@ -62,7 +62,7 @@ public final class GridDeploymentExample {
 
             // Execute the task passing its name as a parameter. The system will find
             // the deployed task by its name and execute it.
-            g.compute().execute(TASK_NAME, null, 0).get();
+            g.compute().execute(TASK_NAME, null).get();
 
             // Execute the task passing class name as a parameter. The system will find
             // the deployed task by its class name and execute it.

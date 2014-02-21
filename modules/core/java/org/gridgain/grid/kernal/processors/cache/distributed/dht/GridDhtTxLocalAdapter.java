@@ -635,7 +635,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      */
     private GridFuture<GridCacheReturn<V>> obtainLockAsync(GridCacheReturn<V> ret,
         final Collection<? extends K> passedKeys, boolean read, final Set<K> skipped,
-        @Nullable final GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter) {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys [passedKeys=" + passedKeys + ", skipped=" +
                 skipped + ']');

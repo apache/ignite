@@ -81,7 +81,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 return true;
             }
 
-            @Override public GridCacheTxEx<K, V> apply() {
+            @Override public GridCacheTxEx<K, V> reduce() {
                 // Nothing to aggregate.
                 return tx;
             }

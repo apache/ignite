@@ -17,6 +17,7 @@ import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import visor._
 import org.gridgain.grid._
+import org.gridgain.grid.kernal.GridClosureCallMode
 import GridClosureCallMode._
 import org.gridgain.grid.util.typedef._
 import resources.GridInstanceResource
@@ -282,7 +283,7 @@ class VisorLicenseCommand {
 
                 grid.foreach(n => {
                     try {
-                        val lic = grid.forNode(n).compute().withResultClosure(X.NO_FAILOVER).call(UNICAST, f).get
+                        val lic = grid.forNode(n).compute().withResultClosure(X.NO_FAILOVER).call(f).get
 
                         val id = lic.id
 
@@ -359,7 +360,7 @@ class VisorLicenseCommand {
             try {
                 grid.compute()
                     .withResultClosure(X.NO_FAILOVER)
-                    .run(BROADCAST, new LicenseUpdater(UUID.fromString(licId), Source.fromFile(licPath).getLines().toList))
+                    .run(new LicenseUpdater(UUID.fromString(licId), Source.fromFile(licPath).getLines().toList))
 
                 println("All licenses have been updated.")
 

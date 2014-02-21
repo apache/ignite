@@ -43,7 +43,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
     /** Filter. */
     @GridDirectTransient
-    private GridPredicate<? super GridCacheEntry<K, V>>[] filter;
+    private GridPredicate<GridCacheEntry<K, V>>[] filter;
 
     /** Synchronous commit flag. */
     private boolean syncCommit;
@@ -163,7 +163,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     /**
      * @return Filter.
      */
-    public GridPredicate<? super GridCacheEntry<K, V>>[] filter() {
+    public GridPredicate<GridCacheEntry<K, V>>[] filter() {
         return filter;
     }
 
@@ -172,7 +172,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      * @param ctx Context.
      * @throws GridException If failed.
      */
-    public void filter(GridPredicate<? super GridCacheEntry<K, V>>[] filter, GridCacheContext<K, V> ctx)
+    public void filter(GridPredicate<GridCacheEntry<K, V>>[] filter, GridCacheContext<K, V> ctx)
         throws GridException {
         this.filter = filter;
     }

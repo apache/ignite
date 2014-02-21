@@ -189,16 +189,14 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                 final GridFuture<Object> taskFut =
                     locExec ?
-                        ctx.grid().compute().execute(
+                        ctx.grid().compute().withTimeout(timeout).execute(
                             name,
-                            !params.isEmpty() ? params.size() == 1 ? params.get(0) : params.toArray() : null,
-                            timeout)
+                            !params.isEmpty() ? params.size() == 1 ? params.get(0) : params.toArray() : null)
                         :
                         // Using predicate instead of node intentionally
                         // in order to provide user well-structured EmptyProjectionException.
                         ctx.grid().forPredicate(F.nodeForNodeId(req.getDestId())).
-                            compute().withResultClosure(X.NO_FAILOVER).call(GridClosureCallMode.UNICAST,
-                            new ExeCallable(name, params, timeout0));
+                            compute().withResultClosure(X.NO_FAILOVER).call(new ExeCallable(name, params, timeout0));
 
                 if (async) {
                     if (locExec) {
@@ -586,8 +584,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         @Override public Object call() throws Exception {
             return g.compute().execute(
                 name,
-                !params.isEmpty() ? params.size() == 1 ? params.get(0) : params.toArray() : null,
-                timeout).get();
+                !params.isEmpty() ? params.size() == 1 ? params.get(0) : params.toArray() : null).get();
         }
 
         /** {@inheritDoc} */

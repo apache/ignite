@@ -227,7 +227,7 @@ public class GridCacheQueryExample {
                             return true;
                         }
 
-                        @Override public GridBiTuple<Double, Integer> apply() {
+                        @Override public GridBiTuple<Double, Integer> reduce() {
                             return new GridBiTuple<>(sum, cnt);
                         }
                     };
@@ -254,7 +254,7 @@ public class GridCacheQueryExample {
                         return true;
                     }
 
-                    @Override public Double apply() {
+                    @Override public Double reduce() {
                         double avg = cnt == 0 ? 0 : sum / cnt;
 
                         // Reset reducer state to correctly execute query several times.

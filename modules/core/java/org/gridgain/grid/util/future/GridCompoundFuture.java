@@ -234,7 +234,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
             && finished.compareAndSet(false, true)) {
             try {
                 if (err == null && rdc != null && !res.isMarked())
-                    res.compareAndSet(null, rdc.apply(), false, true);
+                    res.compareAndSet(null, rdc.reduce(), false, true);
             }
             catch (RuntimeException e) {
                 U.error(log, "Failed to execute compound future reducer: " + this, e);
@@ -303,7 +303,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
 
                 try {
                     if (rdc != null && !rdc.collect(t) && !res.isMarked())
-                        res.compareAndSet(null, rdc.apply(), false, true);
+                        res.compareAndSet(null, rdc.reduce(), false, true);
                 }
                 catch (RuntimeException e) {
                     U.error(log, "Failed to execute compound future reducer: " + this, e);

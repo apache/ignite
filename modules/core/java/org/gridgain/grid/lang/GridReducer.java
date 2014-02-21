@@ -33,21 +33,21 @@ import org.jetbrains.annotations.*;
  */
 public abstract class GridReducer<E1, R> extends GridLambdaAdapter {
     /**
-     * Collects given value. All values will be reduced by {@link #apply()} method.
+     * Collects given value. All values will be reduced by {@link #reduce()} method.
      * <p>
      * The {@code null}s could be passed if the data being collected is indeed {@code null}.
      * If execution failed this method will not be called.
      *
      * @param e Value to collect.
      * @return {@code true} to continue collecting, {@code false} to instruct caller to stop
-     *      collecting and call {@link #apply()} method.
+     *      collecting and call {@link #reduce()} method.
      */
     public abstract boolean collect(@Nullable E1 e);
 
     /**
-     * Factory closure body.
+     * Reduces collected values.
      *
-     * @return Element.
+     * @return Reduced value.
      */
-    public abstract R apply();
+    public abstract R reduce();
 }

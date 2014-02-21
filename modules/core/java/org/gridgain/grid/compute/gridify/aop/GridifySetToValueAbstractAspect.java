@@ -152,8 +152,8 @@ public class GridifySetToValueAbstractAspect {
                 }
             }
             else {
-                res = subgrid.compute().execute(new GridifyDefaultRangeTask(cls, nodeFilter, threshold, splitSize, true),
-                    taskArg, timeout == 0 ? 0L : (end - now)).get();
+                res = subgrid.compute().withTimeout(timeout == 0 ? 0L : (end - now)).execute(
+                    new GridifyDefaultRangeTask(cls, nodeFilter, threshold, splitSize, true), taskArg).get();
             }
 
             now = U.currentTimeMillis();

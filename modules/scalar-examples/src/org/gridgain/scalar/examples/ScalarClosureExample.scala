@@ -30,7 +30,6 @@ object ScalarClosureExample extends App {
         helloWorld()
         helloWorld2()
         broadcast()
-        unicast()
         println("Count of non-whitespace is: " + count("Scalar is cool!"))
         greetRemotes()
         greetRemotesAgain()
@@ -50,14 +49,14 @@ object ScalarClosureExample extends App {
         // Notice the example usage of Java-side closure 'F.println(...)' and method 'scala'
         // that explicitly converts Java side object to a proper Scala counterpart.
         // This method is required since implicit conversion won't be applied here.
-        grid$.spreadRun(for (w <- "Hello World!".split(" ")) yield () => println(w), null)
+        grid$.run$(for (w <- "Hello World!".split(" ")) yield () => println(w), null)
     }
 
     /**
      * Obligatory example - cloud enabled Hello World!
      */
     def helloWorld() {
-        grid$.spreadRun("HELLO WORLD!".split(" ") map (w => () => println(w)), null)
+        grid$.run$("HELLO WORLD!".split(" ") map (w => () => println(w)), null)
     }
 
     /**
@@ -68,20 +67,12 @@ object ScalarClosureExample extends App {
     }
 
     /**
-     * One way to execute closures on the grid.
-     */
-    def unicast() {
-        // Note Java-based closure usage (implicit conversion will apply).
-        grid$.forLocal().ucastRun(() => println("Howdy!"), null)
-    }
-
-    /**
      * Count non-whitespace characters by spreading workload to the cloud and reducing
      * on the local node.
      */
     // Same as 'count2' but with for-expression.
     def count(msg: String): Int =
-        grid$.spreadReduce(for (w <- msg.split(" ")) yield () => w.length)(_.sum, null)
+        grid$.reduce$[Int, Int](for (w <- msg.split(" ")) yield () => w.length, _.sum, null)
 
     /**
      * Count non-whitespace characters by spreading workload to the cloud and reducing
@@ -90,7 +81,7 @@ object ScalarClosureExample extends App {
     // Same as 'count' but without for-expression.
     // Note that map's parameter type inference doesn't work in 2.9.0.
     def count2(msg: String): Int =
-        grid$.spreadReduce(msg.split(" ") map (s => () => s.length))(_.sum, null)
+        grid$.reduce$[Int, Int](msg.split(" ") map (s => () => s.length), _.sum, null)
 
     /**
      *  Greats all remote nodes only.

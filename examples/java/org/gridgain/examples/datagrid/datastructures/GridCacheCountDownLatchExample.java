@@ -16,7 +16,6 @@ import org.gridgain.grid.product.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.GridClosureCallMode.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
@@ -60,7 +59,7 @@ public class GridCacheCountDownLatchExample {
 
             // Start waiting on the latch on all grid nodes.
             for (int i = 0; i < INITIAL_COUNT; i++)
-                g.compute().run(UNICAST, new LatchClosure(CACHE_NAME, latchName)).get();
+                g.compute().run(new LatchClosure(CACHE_NAME, latchName)).get();
 
             // Wait for latch to go down which essentially means that all remote closures completed.
             latch.await();

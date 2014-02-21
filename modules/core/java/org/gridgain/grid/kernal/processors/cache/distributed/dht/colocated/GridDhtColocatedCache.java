@@ -16,17 +16,15 @@ import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 
-import static java.util.Collections.emptyMap;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.*;
@@ -198,7 +196,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean forcePrimary,
         boolean skipTx,
         @Nullable final GridCacheEntryEx<K, V> entry,
-        @Nullable final GridPredicate<? super GridCacheEntry<K, V>>[] filter
+        @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         ctx.denyOnFlag(LOCAL);
 
@@ -229,7 +227,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean containsKey(K key, @Nullable GridPredicate<? super GridCacheEntry<K, V>> filter) {
+    @Override public boolean containsKey(K key, @Nullable GridPredicate<GridCacheEntry<K, V>> filter) {
         A.notNull(key, "key");
 
         // We need detached entry here because if there is an ongoing transaction,
@@ -255,7 +253,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @return Loaded values.
      */
     public GridFuture<Map<K, V>> loadAsync(@Nullable Collection<? extends K> keys, boolean reload,
-        boolean forcePrimary, @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        boolean forcePrimary, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
@@ -345,7 +343,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     @Override public GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         @Nullable GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
-        @Nullable GridCacheTxIsolation isolation, GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        @Nullable GridCacheTxIsolation isolation, GridPredicate<GridCacheEntry<K, V>>[] filter) {
         assert tx == null || tx instanceof GridDhtColocatedTxLocal;
 
         GridDhtColocatedTxLocal<K, V> txx = (GridDhtColocatedTxLocal<K, V>)tx;
@@ -373,7 +371,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void unlockAll(Collection<? extends K> keys,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) {
         if (keys.isEmpty())
             return;
 
@@ -623,7 +621,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final Collection<K> keys,
         final boolean txRead,
         final long timeout,
-        @Nullable final GridPredicate<? super GridCacheEntry<K, V>>[] filter
+        @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         assert keys != null;
 
@@ -677,7 +675,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     private GridFuture<Exception> lockAllAsync0(@Nullable final GridDhtColocatedTxLocal<K, V> tx, long threadId,
         final GridCacheVersion ver, final long topVer, final Collection<K> keys, final boolean txRead,
-        final long timeout, @Nullable final GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        final long timeout, @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter) {
         int cnt = keys.size();
 
         if (tx == null) {

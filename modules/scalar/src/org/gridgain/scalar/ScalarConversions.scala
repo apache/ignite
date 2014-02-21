@@ -749,14 +749,6 @@ trait ScalarConversions {
     }
 
     /**
-     * Implicit converter from Scala mapping function to `GridMapper`.
-     *
-     * @param f Scala mapping function.
-     */
-    implicit def toMapper[T1, T2 >: GridNode](f: Seq[T2] => (T1 => T2)): GridMapper[T1, T2] =
-        new ScalarMapper(f)
-
-    /**
      * Implicit converter from Scala function to `GridAbsClosure`.
      *
      * @param f Scala function to convert.
@@ -765,17 +757,6 @@ trait ScalarConversions {
         f match {
             case (f: ScalarAbsClosureFunction) => f.inner
             case _ => new ScalarAbsClosure(f)
-        }
-
-    /**
-     * Implicit converter from Scala function to `Runnable` factory.
-     *
-     * @param f Scala function to convert.
-     */
-    implicit def toFactory(f: () => Unit): () => Runnable =
-        f match {
-            case (f: ScalarAbsClosureFunction) => () => f.inner
-            case _ => () => new ScalarAbsClosure(f)
         }
 
     /**

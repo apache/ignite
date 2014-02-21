@@ -50,7 +50,7 @@ public class GridTaskExample2 {
             }
 
             // Executes task.
-            g.compute().execute(new GridNumberCalculationTask(), pairs, 0).get();
+            g.compute().execute(new GridNumberCalculationTask(), pairs).get();
 
             // Prints.
             System.out.println(">>>>> Check all nodes for number and their GCD and LCM output.");

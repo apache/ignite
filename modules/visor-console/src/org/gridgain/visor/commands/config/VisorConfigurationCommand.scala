@@ -29,7 +29,8 @@ import java.util.{Locale, Date}
 import java.text._
 import scala.reflect.ClassTag
 import org.gridgain.grid.lang.GridCallable
-import org.gridgain.grid.GridClosureCallMode._
+import org.gridgain.grid.kernal.{GridClosureCallMode, GridEx}
+import GridClosureCallMode._
 import org.gridgain.grid.kernal.GridEx
 
 
@@ -193,7 +194,7 @@ class VisorConfigurationCommand {
                 cfg = grid.forNode(node)
                     .compute()
                     .withResultClosure(X.NO_FAILOVER)
-                    .call(UNICAST, new GridConfigurationCallable)
+                    .call(new GridConfigurationCallable)
                     .get
             catch {
                 case e: GridException =>

@@ -14,8 +14,6 @@ import org.gridgain.grid.lang.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.GridClosureCallMode.*;
-
 /**
  * Monte-Carlo example based on GridGain 3.0 API.
  * <p>
@@ -73,28 +71,27 @@ public final class GridCreditRiskExample {
             // Credit risk crdRisk is the minimal amount that creditor has to have
             // available to cover possible defaults.
 
-            double crdRisk = g.compute().reduce(SPREAD, closures(g.nodes().size(), portfolio, horizon, iter, percentile),
+            double crdRisk = g.compute().call(closures(g.nodes().size(), portfolio, horizon, iter, percentile),
                 new GridReducer<Double, Double>() {
-                    /** Collected values sum. */
-                    private double sum;
+                /** Collected values sum. */
+                private double sum;
 
-                    /** Collected values count. */
-                    private int cnt;
+                /** Collected values count. */
+                private int cnt;
 
-                    /** {@inheritDoc} */
-                    @Override public synchronized boolean collect(Double e) {
-                        sum += e;
-                        cnt++;
+                /** {@inheritDoc} */
+                @Override public synchronized boolean collect(Double e) {
+                    sum += e;
+                    cnt++;
 
-                        return true;
-                    }
-
-                    /** {@inheritDoc} */
-                    @Override public synchronized Double apply() {
-                        return sum / cnt;
-                    }
+                    return true;
                 }
-            ).get();
+
+                /** {@inheritDoc} */
+                @Override public synchronized Double reduce() {
+                    return sum / cnt;
+                }
+            }).get();
 
             System.out.println("Credit risk [crdRisk=" + crdRisk + ", duration=" +
                 (System.currentTimeMillis() - start) + "ms]");

@@ -57,9 +57,10 @@ public interface GridProjection {
     /**
      * // TODO
      * @param node Node to get projection for.
+     * @param nodes Optional additional nodes to include into projection.
      * @return Grid projection for given node.
      */
-    public GridProjection forNode(GridNode node);
+    public GridProjection forNode(GridNode node, GridNode... nodes);
 
     /**
      * // TODO
@@ -79,6 +80,15 @@ public interface GridProjection {
     public GridProjection forNodeIds(Collection<UUID> ids);
 
     /**
+     * TODO: javadoc
+     *
+     * @param nodeId Node ID to get projection for.
+     * @param nodeIds Optional additional node IDs to include into projection.
+     * @return Projection over node with specified node ID.
+     */
+    public GridProjection forNodeId(UUID nodeId, UUID... nodeIds);
+
+    /**
      * Creates monadic projection with the nodes from this projection that also satisfy given
      * set of predicates.
      *
@@ -87,7 +97,7 @@ public interface GridProjection {
      * @return Monadic projection.
      * @see PN
      */
-    public GridProjection forPredicate(GridPredicate<? super GridNode> p);
+    public GridProjection forPredicate(GridPredicate<GridNode> p);
 
     /**
      * Creates monadic projection with the nodes from this projection that have given node
@@ -106,10 +116,10 @@ public interface GridProjection {
      * be included to result projection.
      *
      * @param cacheName Cache name.
-     * @param cacheNames Cache names.
-     * @return Monadic projection.
+     * @param cacheNames Optional additional cache names to include into projection.
+     * @return Projection over nodes that have specified cache running.
      */
-    public GridProjection forCaches(@Nullable String cacheName, @Nullable String... cacheNames);
+    public GridProjection forCache(String cacheName, @Nullable String... cacheNames);
 
     /**
      * Creates monadic projection with the nodes from this projection that have configured
@@ -117,10 +127,10 @@ public interface GridProjection {
      * be included to result projection.
      *
      * @param streamerName Streamer name.
-     * @param streamerNames Streamer names.
-     * @return Monadic projection.
+     * @param streamerNames Optional additional streamer names to include into projection.
+     * @return Projection over nodes that have specified streamer running.
      */
-    public GridProjection forStreamers(@Nullable String streamerName, @Nullable String... streamerNames);
+    public GridProjection forStreamer(String streamerName, @Nullable String... streamerNames);
 
     /**
      * Gets monadic projection consisting from the nodes in this projection excluding the local node, if any.
@@ -153,6 +163,13 @@ public interface GridProjection {
      * @return Monadic projection consisting from the daemon nodes in this projection.
      */
     public GridProjection forDaemons();
+
+    /**
+     * Creates monadic projection with one random node from current projection.
+     *
+     * @return Monadic projection.
+     */
+    public GridProjection forRandom();
 
     /**
      * Gets read-only collections of nodes in this projection.

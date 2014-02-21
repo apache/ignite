@@ -16,7 +16,6 @@ import org.gridgain.grid.product.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.GridClosureCallMode.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
@@ -62,7 +61,7 @@ public final class GridCacheAtomicLongExample {
 
             // Try increment atomic long from all grid nodes.
             // Note that this node is also part of the grid.
-            g.compute().call(BROADCAST, new IncrementClosure(CACHE_NAME, atomicName)).get();
+            g.compute().call(new IncrementClosure(CACHE_NAME, atomicName)).get();
 
             print("");
             print("AtomicLong after incrementing [expected=" + (nodes * RETRIES) + ", actual=" + atomicLong.get() + ']');

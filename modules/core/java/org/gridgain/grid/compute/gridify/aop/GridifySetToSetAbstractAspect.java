@@ -137,11 +137,9 @@ public class GridifySetToSetAbstractAspect {
             throw new GridComputeTaskTimeoutException("Timeout occurred while waiting for completion.");
         }
 
-        Collection<?> res = subgrid.compute().execute(
+        Collection<?> res = subgrid.compute().withTimeout(timeout == 0 ? 0L : (end - now)).execute(
             new GridifyDefaultRangeTask(cls, nodeFilter, threshold, splitSize, false),
-            arg,
-            timeout == 0 ? 0L : (end - now)
-        ).get();
+            arg).get();
 
         return result(arg.getMethodReturnType(), res);
     }

@@ -152,7 +152,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
         for (SnapshotsQueue q : im.snapshotsQueues)
             q.reduce(rdc, now);
 
-        GridJobMetrics m = rdc.apply();
+        GridJobMetrics m = rdc.reduce();
 
         // Set idle times.
         m.setCurrentIdleTime(im.curIdleTime);
@@ -367,7 +367,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridJobMetrics apply() {
+        @Override public GridJobMetrics reduce() {
             // Current metrics.
             if (lastSnapshot != null) {
                 m.setCurrentActiveJobs(lastSnapshot.getActiveJobs());

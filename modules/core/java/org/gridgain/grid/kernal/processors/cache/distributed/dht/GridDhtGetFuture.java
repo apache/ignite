@@ -67,7 +67,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     private GridCacheTxLocalEx<K, V> tx;
 
     /** Filters. */
-    private GridPredicate<? super GridCacheEntry<K, V>>[] filters;
+    private GridPredicate<GridCacheEntry<K, V>>[] filters;
 
     /** Logger. */
     private GridLogger log;
@@ -100,7 +100,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         boolean reload,
         @Nullable GridCacheTxLocalEx<K, V> tx,
         long topVer,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filters) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filters) {
         super(cctx.kernalContext(), CU.<GridCacheEntryInfo<K, V>>collectionsReducer());
 
         assert reader != null;

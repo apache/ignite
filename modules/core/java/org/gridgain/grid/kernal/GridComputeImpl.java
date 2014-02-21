@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.GridClosureCallMode.*;
+import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
@@ -76,25 +76,17 @@ public class GridComputeImpl implements GridCompute {
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> affinityRun(@Nullable final String cacheName, Collection<?> affKeys,
-        final GridOutClosure<Runnable> jobFactory) {
+        final Runnable job) {
         guard();
 
         try {
-            return (affKeys == null || affKeys.isEmpty() || jobFactory == null) ?
+            return (affKeys == null || affKeys.isEmpty() || job == null) ?
                 new GridFinishedFuture(ctx) :
-                ctx.closure().runAsync(
-                    BALANCE,
-                    F.transform(
-                        affKeys,
-                        new CX1<Object, CA>() {
-                            @Override
-                            public CA applyx(Object affKey) throws GridException {
-                                return wrapRun(cacheName, affKey, jobFactory.apply());
-                            }
-                        }
-                    ),
-                    prj.nodes()
-                );
+                ctx.closure().runAsync(BALANCE, F.transform(affKeys, new CX1<Object, CA>() {
+                    @Override public CA applyx(Object affKey) throws GridException {
+                        return wrapRun(cacheName, affKey, job);
+                    }
+                }), prj.nodes());
         }
         finally {
             unguard();
@@ -120,22 +112,19 @@ public class GridComputeImpl implements GridCompute {
 
     /** {@inheritDoc} */
     @Override public <R> GridFuture<Collection<R>> affinityCall(@Nullable final String cacheName, Collection<?> affKeys,
-        final GridOutClosure<Callable<R>> jobFactory) {
+        final Callable<R> job) {
         guard();
 
         try {
-            return (affKeys == null || affKeys.isEmpty() || jobFactory == null) ?
+            return (affKeys == null || affKeys.isEmpty() || job== null) ?
                 new GridFinishedFuture<Collection<R>>(ctx) :
                 ctx.closure().callAsync(
                     BALANCE,
-                    F.transform(
-                        affKeys,
-                        new CX1<Object, CO<R>>() {
-                            @Override public CO<R> applyx(Object affKey) throws GridException {
-                                return wrapCall(cacheName, affKey, jobFactory.apply());
-                            }
+                    F.transform(affKeys, new CX1<Object, CO<R>>() {
+                        @Override public CO<R> applyx(Object affKey) throws GridException {
+                            return wrapCall(cacheName, affKey, job);
                         }
-                    ),
+                    }),
                     prj.nodes()
                 );
         }
@@ -145,9 +134,8 @@ public class GridComputeImpl implements GridCompute {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> GridComputeTaskFuture<R> execute(String taskName, @Nullable T arg, long timeout) {
+    @Override public <T, R> GridComputeTaskFuture<R> execute(String taskName, @Nullable T arg) {
         A.notNull(taskName, "taskName");
-        A.ensure(timeout >= 0, "timeout >= 0");
 
         guard();
 
@@ -155,7 +143,7 @@ public class GridComputeImpl implements GridCompute {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
             ctx.task().setThreadContextIfNotNull(TC_PREDICATE, prj.predicate());
 
-            return ctx.task().execute(taskName, arg, timeout);
+            return ctx.task().execute(taskName, arg);
         }
         finally {
             unguard();
@@ -163,96 +151,17 @@ public class GridComputeImpl implements GridCompute {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> GridComputeTaskFuture<R> execute(Class<? extends GridComputeTask<T, R>> taskCls, @Nullable T arg,
-        long timeout) {
-        A.notNull(taskCls, "taskCls");
-        A.ensure(timeout >= 0, "timeout >= 0");
-
-        guard();
-
-        try {
-            ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
-            ctx.task().setThreadContextIfNotNull(TC_PREDICATE, prj.predicate());
-
-            return ctx.task().execute(taskCls, arg, timeout);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T, R> GridComputeTaskFuture<R> execute(GridComputeTask<T, R> task, @Nullable T arg, long timeout) {
-        A.notNull(task, "task");
-        A.ensure(timeout >= 0, "timeout >= 0");
-
-        guard();
-
-        try {
-            ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
-            ctx.task().setThreadContextIfNotNull(TC_PREDICATE, prj.predicate());
-
-
-            return ctx.task().execute(task, arg, timeout);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<?> run(GridClosureCallMode mode, Runnable job) {
-        A.notNull(mode, "mode");
-
-        guard();
-
-        try {
-            return ctx.closure().runAsync(mode, job, prj.nodes());
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> GridFuture<?> run(GridClosureCallMode mode, GridInClosure<? super T> job, @Nullable T arg) {
-        A.notNull(mode, "mode");
-
-        guard();
-
-        try {
-            return job == null ? new GridFinishedFuture<T>(ctx) : ctx.closure().runAsync(mode, F.curry(job, arg),
-                prj.nodes());
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<?> run(GridClosureCallMode mode, Collection<? extends Runnable> jobs) {
-        A.notNull(mode, "mode");
-
-        guard();
-
-        try {
-            return ctx.closure().runAsync(mode, jobs, prj.nodes());
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R, T> GridFuture<R> call(GridClosureCallMode mode, GridClosure<? super T, R> job,
+    @Override public <T, R> GridComputeTaskFuture<R> execute(Class<? extends GridComputeTask<T, R>> taskCls,
         @Nullable T arg) {
-        A.notNull(mode, "mode", job, "job");
+        A.notNull(taskCls, "taskCls");
 
         guard();
 
         try {
-            return job == null ? new GridFinishedFuture<R>(ctx) : ctx.closure().callAsync(mode, F.curry(job, arg),
-                prj.nodes());
+            ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
+            ctx.task().setThreadContextIfNotNull(TC_PREDICATE, prj.predicate());
+
+            return ctx.task().execute(taskCls, arg);
         }
         finally {
             unguard();
@@ -260,13 +169,17 @@ public class GridComputeImpl implements GridCompute {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridFuture<R> call(GridClosureCallMode mode, @Nullable Callable<R> job) {
-        A.notNull(mode, "mode");
+    @Override public <T, R> GridComputeTaskFuture<R> execute(GridComputeTask<T, R> task, @Nullable T arg) {
+        A.notNull(task, "task");
 
         guard();
 
         try {
-            return ctx.closure().callAsync(mode, job, prj.nodes());
+            ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
+            ctx.task().setThreadContextIfNotNull(TC_PREDICATE, prj.predicate());
+
+
+            return ctx.task().execute(task, arg);
         }
         finally {
             unguard();
@@ -274,14 +187,111 @@ public class GridComputeImpl implements GridCompute {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridFuture<Collection<R>> call(GridClosureCallMode mode,
-        Collection<? extends Callable<R>> jobs) {
-        A.notNull(mode, "mode");
+    @Override public GridFuture<?> broadcast(Runnable job) {
+        A.notNull(job, "job");
 
         guard();
 
         try {
-            return ctx.closure().callAsync(mode, jobs, prj.nodes());
+            return ctx.closure().runAsync(BROADCAST, job, prj.nodes());
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> GridFuture<Collection<R>> broadcast(Callable<R> job) {
+        A.notNull(job, "job");
+
+        guard();
+
+        try {
+            return ctx.closure().callAsync(BROADCAST, Arrays.asList(job), prj.nodes());
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R, T> GridFuture<Collection<R>> broadcast(GridClosure<T, R> job, @Nullable T arg) {
+        A.notNull(job, "job");
+
+        guard();
+
+        try {
+            return ctx.closure().callAsync(BALANCE, Arrays.asList(F.curry(job, arg)), prj.nodes());
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> run(Runnable job) {
+        A.notNull(job, "job");
+
+        guard();
+
+        try {
+            return ctx.closure().runAsync(BALANCE, job, prj.nodes());
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> run(Collection<? extends Runnable> jobs) {
+        A.notNull(jobs, "jobs");
+
+        guard();
+
+        try {
+            return ctx.closure().runAsync(BALANCE, jobs, prj.nodes());
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R, T> GridFuture<R> apply(GridClosure<T, R> job, @Nullable T arg) {
+        A.notNull(job, "job");
+
+        guard();
+
+        try {
+            return ctx.closure().callAsync(BALANCE, F.curry(job, arg), prj.nodes());
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> GridFuture<R> call(Callable<R> job) {
+        A.notNull(job, "job");
+
+        guard();
+
+        try {
+            return ctx.closure().callAsync(BALANCE, job, prj.nodes());
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> GridFuture<Collection<R>> call(Collection<? extends Callable<R>> jobs) {
+        A.notNull(jobs, "jobs");
+
+        guard();
+
+        try {
+            return ctx.closure().callAsync(BALANCE, jobs, prj.nodes());
         }
         finally {
             unguard();
@@ -301,33 +311,18 @@ public class GridComputeImpl implements GridCompute {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> GridFuture<Collection<R>> call(GridClosureCallMode mode,
-        Collection<? extends GridClosure<? super T, R>> jobs, @Nullable Collection<? extends T> args) {
-        A.notNull(mode, "mode");
+    @Override public <T, R> GridFuture<Collection<R>> apply(final GridClosure<T, R> job,
+        @Nullable Collection<? extends T> args) {
+        A.notNull(job, "job");
 
         guard();
 
         try {
-            return ctx.closure().callAsync(mode, F.curry(jobs, args), prj.nodes());
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T, R> GridFuture<Collection<R>> call(GridClosureCallMode mode,
-        final GridOutClosure<GridClosure<? super T, R>> jobFactory, @Nullable Collection<? extends T> args) {
-        A.notNull(mode, "mode");
-
-        guard();
-
-        try {
-            return jobFactory == null ? new GridFinishedFuture<Collection<R>>(ctx) :
-                ctx.closure().callAsync(mode,
+            return job == null ? new GridFinishedFuture<Collection<R>>(ctx) :
+                ctx.closure().callAsync(BALANCE,
                     F.transform(args, new C1<T, Callable<R>>() {
                         @Override public Callable<R> apply(T arg) {
-                            return F.curry(jobFactory.apply(), arg);
+                            return F.curry(job, arg);
                         }
                     }),
                     prj.nodes());
@@ -338,12 +333,14 @@ public class GridComputeImpl implements GridCompute {
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2, T extends Callable<R1>> GridFuture<R2> mapreduce(
-        @Nullable GridMapper<T, GridNode> mapper, @Nullable Collection<T> jobs, @Nullable GridReducer<R1, R2> rdc) {
+    @Override public <R1, R2> GridFuture<R2> call(Collection<? extends Callable<R1>> jobs, GridReducer<R1, R2> rdc) {
+        A.notNull(jobs, "jobs");
+        A.notNull(rdc, "rdc");
+
         guard();
 
         try {
-            return ctx.closure().forkjoinAsync(mapper, jobs, rdc, prj.nodes());
+            return ctx.closure().forkjoinAsync(BALANCE, jobs, rdc, prj.nodes());
         }
         finally {
             unguard();
@@ -351,85 +348,19 @@ public class GridComputeImpl implements GridCompute {
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2, T> GridFuture<R2> mapreduce(GridMapper<GridOutClosure<R1>, GridNode> mapper,
-        Collection<? extends GridClosure<? super T, R1>> jobs, @Nullable Collection<? extends T> args,
-        GridReducer<R1, R2> rdc) {
-        guard();
-
-        try {
-            return ctx.closure().forkjoinAsync(mapper, F.curry(jobs, args), rdc, prj.nodes());
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R1, R2, T> GridFuture<R2> mapreduce(GridMapper<GridOutClosure<R1>, GridNode> mapper,
-        final GridOutClosure<GridClosure<? super T, R1>> jobFactory, @Nullable Collection<? extends T> args,
-        GridReducer<R1, R2> rdc) {
-        guard();
-
-        try {
-            return jobFactory == null ? new GridFinishedFuture<R2>(ctx) :
-                ctx.closure().forkjoinAsync(mapper,
-                    F.transform(args, new C1<T, GridOutClosure<R1>>() {
-                        @Override public GridOutClosure<R1> apply(T arg) {
-                            return F.curry(jobFactory.apply(), arg);
-                        }
-                    }),
-                    rdc, prj.nodes());
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R1, R2> GridFuture<R2> reduce(GridClosureCallMode mode,
-        @Nullable Collection<? extends Callable<R1>> jobs, @Nullable GridReducer<R1, R2> rdc) {
-        A.notNull(mode, "mode");
+    @Override public <R1, R2, T> GridFuture<R2> apply(final GridClosure<T, R1> job,
+        @Nullable Collection<? extends T> args, GridReducer<R1, R2> rdc) {
+        A.notNull(job, "job");
+        A.notNull(rdc, "rdc");
 
         guard();
 
         try {
-            return ctx.closure().forkjoinAsync(mode, jobs, rdc, prj.nodes());
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R1, R2, T> GridFuture<R2> reduce(GridClosureCallMode mode,
-        @Nullable Collection<? extends GridClosure<? super T, R1>> jobs, @Nullable Collection<? extends T> args,
-        @Nullable GridReducer<R1, R2> rdc) {
-        A.notNull(mode, "mode");
-
-        guard();
-
-        try {
-            return ctx.closure().forkjoinAsync(mode, F.curry(jobs, args), rdc, prj.nodes());
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R1, R2, T> GridFuture<R2> reduce(GridClosureCallMode mode,
-        @Nullable final GridOutClosure<GridClosure<? super T, R1>> jobFactory,
-        @Nullable Collection<? extends T> args, @Nullable GridReducer<R1, R2> rdc) {
-        A.notNull(mode, "mode");
-
-        guard();
-
-        try {
-            return jobFactory == null ? new GridFinishedFuture<R2>(ctx) :
-                ctx.closure().forkjoinAsync(mode,
+            return job == null ? new GridFinishedFuture<R2>(ctx) :
+                ctx.closure().forkjoinAsync(BALANCE,
                     F.transform(args, new C1<T, Callable<R1>>() {
                         @Override public Callable<R1> apply(T arg) {
-                            return F.curry(jobFactory.apply(), arg);
+                            return F.curry(job, arg);
                         }
                     }),
                     rdc, prj.nodes());

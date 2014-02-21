@@ -910,7 +910,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Array containing single predicate.
      */
     @SuppressWarnings({"unchecked"})
-    public GridPredicate<GridCacheEntry<K, V>>[] vararg(GridPredicate<? super GridCacheEntry<K, V>> p) {
+    public GridPredicate<GridCacheEntry<K, V>>[] vararg(GridPredicate<GridCacheEntry<K, V>> p) {
         return p == null ? CU.<K, V>empty() : new GridPredicate[]{p};
     }
 
@@ -925,7 +925,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     @SuppressWarnings({"ErrorNotRethrown"})
     public <K, V> boolean isAll(GridCacheEntryEx<K, V> e,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] p) throws GridException {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] p) throws GridException {
         return F.isEmpty(p) || isAll(e.wrap(false), p);
     }
 

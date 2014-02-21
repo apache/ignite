@@ -16,8 +16,6 @@ import scalar._
 import org.gridgain.grid.cache._
 import org.gridgain.grid.events.{GridLocalEventListener, GridEventType, GridEvent}
 import GridEventType._
-import org.gridgain.grid._
-import org.gridgain.grid.GridClosureCallMode._
 import collection.JavaConversions._
 import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
 
@@ -121,7 +119,7 @@ object ScalarCacheExample extends App {
     def registerListener() {
         val g = grid$
 
-        g *< (BROADCAST, () => {
+        g *< (() => {
             val lsnr = new GridLocalEventListener {
                 def onEvent(e: GridEvent) {
                     println(e.shortDisplay)

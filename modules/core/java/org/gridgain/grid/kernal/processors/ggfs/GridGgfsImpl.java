@@ -31,7 +31,6 @@ import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.T2;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -474,7 +473,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     /** {@inheritDoc} */
     @Override public GridGgfsStatus globalSpace() throws GridException {
         GridBiTuple<Long, Long> space = ggfsCtx.kernalContext().grid().compute().execute(
-            new GgfsGlobalSpaceTask(name()), null, 0).get();
+            new GgfsGlobalSpaceTask(name()), null).get();
 
         return new GridGgfsStatus(space.get1(), space.get2());
     }
@@ -1750,7 +1749,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
         throws GridException {
         return ggfsCtx.kernalContext().task().execute(task, new GridGgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr,
-            skipNonExistentFiles, maxRangeLen, arg), 0).get();
+            skipNonExistentFiles, maxRangeLen, arg)).get();
     }
 
     /** {@inheritDoc} */
@@ -1763,7 +1762,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     @Override public <T, R> GridFuture<R> executeAsync(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
         Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
         return ggfsCtx.kernalContext().task().execute(task, new GridGgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr,
-            skipNonExistentFiles, maxRangeLen, arg), 0);
+            skipNonExistentFiles, maxRangeLen, arg));
     }
 
     /** {@inheritDoc} */
@@ -1778,7 +1777,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) throws GridException {
         return ggfsCtx.kernalContext().task().execute((Class<GridGgfsTask<T, R>>)taskCls,
-            new GridGgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr,  skipNonExistentFiles,maxRangeLen, arg), 0).get();
+            new GridGgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr,  skipNonExistentFiles,maxRangeLen, arg)).get();
     }
 
     /** {@inheritDoc} */
@@ -1793,7 +1792,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeSize, @Nullable T arg) {
         return ggfsCtx.kernalContext().task().execute((Class<GridGgfsTask<T, R>>)taskCls,
-            new GridGgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr, skipNonExistentFiles, maxRangeSize, arg), 0);
+            new GridGgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr, skipNonExistentFiles, maxRangeSize, arg));
     }
 
     /** {@inheritDoc} */

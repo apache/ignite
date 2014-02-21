@@ -82,7 +82,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
 
     /** Put filters. */
     @GridToStringInclude
-    private GridPredicate<? super GridCacheEntry<K, V>>[] filters;
+    private GridPredicate<GridCacheEntry<K, V>>[] filters;
 
     /** Flag indicating whether filters passed. Used for fast-commit transactions. */
     private boolean filtersPassed;
@@ -176,7 +176,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
      */
     public GridCacheTxEntry(GridCacheContext<K, V> ctx, GridCacheTxEx<K, V> tx, GridCacheOperation op,
         V val, GridClosure<V, V> transformClos, long ttl, GridCacheEntryEx<K,V> entry,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filters, GridCacheVersion drVer) {
+        GridPredicate<GridCacheEntry<K, V>>[] filters, GridCacheVersion drVer) {
         assert ctx != null;
         assert tx != null;
         assert op != null;
@@ -627,14 +627,14 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
     /**
      * @return Put filters.
      */
-    public GridPredicate<? super GridCacheEntry<K, V>>[] filters() {
+    public GridPredicate<GridCacheEntry<K, V>>[] filters() {
         return filters;
     }
 
     /**
      * @param filters Put filters.
      */
-    public void filters(GridPredicate<? super GridCacheEntry<K, V>>[] filters) {
+    public void filters(GridPredicate<GridCacheEntry<K, V>>[] filters) {
         filterBytes = null;
 
         this.filters = filters;
@@ -758,7 +758,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
         else {
             key = (K)in.readObject();
             transformClosCol = U.readCollection(in);
-            filters = U.readArray(in, CU.filterArrayFactory());
+            filters = U.readEntryFilterArray(in);
         }
 
         val.readFrom(in);

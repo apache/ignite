@@ -306,7 +306,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override protected V readThrough(GridCacheTxEx<K, V> tx, K key, boolean reload,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         return cctx.near().loadAsync(tx, F.asList(key), reload, /*force primary*/false, filter).get().get(key);
     }
 

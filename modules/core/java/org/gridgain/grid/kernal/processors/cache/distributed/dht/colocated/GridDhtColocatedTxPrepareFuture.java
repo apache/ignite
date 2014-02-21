@@ -86,7 +86,7 @@ public class GridDhtColocatedTxPrepareFuture<K, V> extends GridCompoundIdentityF
                 return true;
             }
 
-            @Override public GridCacheTxEx<K, V> apply() {
+            @Override public GridCacheTxEx<K, V> reduce() {
                 // Nothing to aggregate.
                 return tx;
             }

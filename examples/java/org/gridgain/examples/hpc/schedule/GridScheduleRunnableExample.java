@@ -13,8 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import static org.gridgain.grid.GridClosureCallMode.*;
-
 /**
  * Demonstrates a cron-based {@link Runnable} execution scheduling.
  * Test runnable object broadcasts a phrase to all grid nodes every minute
@@ -42,7 +40,7 @@ public class GridScheduleRunnableExample {
                 new GridRunnable() {
                     @Override public void run() {
                         try {
-                            g.compute().run(BROADCAST, new Runnable() {
+                            g.compute().run(new Runnable() {
                                 @Override public void run() {
                                     System.out.println("Howdy! :)");
                                 }

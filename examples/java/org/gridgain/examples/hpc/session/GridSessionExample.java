@@ -11,7 +11,7 @@ import java.util.*;
  * of task session.
  * <p>
  * String "Hello World" is passed as an argument to
- * {@link GridCompute#execute(GridComputeTask, Object, long)} along with a
+ * {@link GridCompute#execute(GridComputeTask, Object)} along with a
  * {@link org.gridgain.grid.compute.GridComputeTask} instance, that is distributed amongst the nodes. Task
  * on each of the participating nodes will do the following:
  * <ol>
@@ -78,7 +78,7 @@ public class GridSessionExample {
         GridComputeTask<String, Integer> task = new GridSessionExampleTask();
 
         try (Grid g = args.length == 0 ? GridGain.start("examples/config/example-default.xml") : GridGain.start(args[0])) {
-            GridComputeTaskFuture<Integer> f = g.compute().execute(task, "Hello World", 0);
+            GridComputeTaskFuture<Integer> f = g.compute().execute(task, "Hello World");
 
             int phraseLen = f.get();
 

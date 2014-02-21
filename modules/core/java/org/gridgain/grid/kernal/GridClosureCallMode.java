@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid;
+package org.gridgain.grid.kernal;
 
 import org.jetbrains.annotations.*;
 
@@ -32,31 +32,8 @@ public enum GridClosureCallMode {
     BROADCAST,
 
     /**
-     * In this mode all closures will be executed only on one node.
-     * The selection of this node is governed by default load balancer.
-     * This mode essentially allows to <tt>unicast</tt> the executions to only one node.
-     * <p>
-     * Note that if there are more than one job to be executed, the implementation
-     * will randomly pick one job out of this set and use it with the load
-     * balancer to determine the node where all the jobs will be sent. In other
-     * words - all jobs (if there's more than one) should be "equal" form the
-     * load balancer point of view.
-     */
-    UNICAST,
-
-    /**
-     * In this mode all jobs (closures) spread across the nodes. In this
-     * mode each job will be executed on a dedicated node and a node may take
-     * more than one job if number of jobs is greater than number of nodes.
-     * Jobs will be randomly distributed between nodes. Note that this mode does not
-     * use the load balancer.
-     */
-    SPREAD,
-
-    /**
      * In this mode closures will be executed on the nodes provided by the default
-     * load balancer. Note that in general this mode may provide different distribution
-     * than the {@link #SPREAD} mode as {@link #SPREAD} does not rely on load balancer.
+     * load balancer.
      * <p>
      * NOTE: this mode <b>must</b> be used for all cache affinity routing. Load balance
      * manager has specific logic to handle co-location between compute grid jobs and

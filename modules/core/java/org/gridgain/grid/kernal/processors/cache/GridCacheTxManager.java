@@ -454,7 +454,7 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         return true;
                     }
 
-                    @Override public Boolean apply() {
+                    @Override public Boolean reduce() {
                         return true;
                     }
                 });

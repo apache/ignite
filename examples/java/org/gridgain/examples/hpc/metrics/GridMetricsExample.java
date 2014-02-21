@@ -34,7 +34,7 @@ public final class GridMetricsExample {
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-default.xml")) {
             // Execute task.
-            g.compute().execute(GridMetricsTask.class, null, 0).get();
+            g.compute().execute(GridMetricsTask.class, null).get();
 
             System.out.println(">>>");
             System.out.println(">>> Finished execution of GridMetricsExample.");

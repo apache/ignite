@@ -109,9 +109,7 @@ public class GridCacheDataLoaderHdfsExample {
 
             // Ack default cache key set size on all nodes
             // to make sure loading succeeded.
-            g.compute().run(
-                GridClosureCallMode.BROADCAST,
-                new Runnable() {
+            g.compute().run(new Runnable() {
                     @GridInstanceResource
                     private Grid g;
 

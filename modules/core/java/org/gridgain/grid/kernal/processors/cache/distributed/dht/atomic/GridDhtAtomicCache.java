@@ -256,7 +256,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean forcePrimary,
         boolean skipTx,
         @Nullable final GridCacheEntryEx<K, V> entry,
-        @Nullable final GridPredicate<? super GridCacheEntry<K, V>>[] filter
+        @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         return asyncOp(new CO<GridFuture<Map<K, V>>>() {
             @Override public GridFuture<Map<K, V>> apply() {
@@ -267,33 +267,33 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public V put(K key, V val, @Nullable GridCacheEntryEx<K, V> cached, long ttl,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         return putAsync(key, val, cached, ttl, filter).get();
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx(K key, V val, @Nullable GridCacheEntryEx<K, V> cached,
-        long ttl, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) throws GridException {
+        long ttl, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         return putxAsync(key, val, cached, ttl, filter).get();
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx(K key, V val,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         return putxAsync(key, val, filter).get();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry,
-        long ttl, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) {
+        long ttl, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         return updateAllAsync0(F0.asMap(key, val), null, null, null, true, false, entry, ttl, filter);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         return updateAllAsync0(F0.asMap(key, val), null, null, null, false, false, entry, ttl, filter);
     }
 
@@ -372,13 +372,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void putAll(Map<? extends K, ? extends V> m,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         putAllAsync(m, filter).get();
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> putAllAsync(Map<? extends K, ? extends V> m,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return updateAllAsync0(m, null, null, null, false, false, null, 0, filter);
     }
 
@@ -421,39 +421,39 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public V remove(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) throws GridException {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         return removeAsync(key, entry, filter).get();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         return removeAllAsync0(Collections.singletonList(key), null, entry, true, false, filter);
     }
 
     /** {@inheritDoc} */
     @Override public void removeAll(Collection<? extends K> keys,
-        GridPredicate<? super GridCacheEntry<K, V>>... filter) throws GridException {
+        GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         removeAllAsync(keys, filter).get();
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> removeAllAsync(Collection<? extends K> keys,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return removeAllAsync0(keys, null, null, false, false, filter);
     }
 
     /** {@inheritDoc} */
     @Override public boolean removex(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) throws GridException {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         return removexAsync(key, entry, filter).get();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         return removeAllAsync0(Collections.singletonList(key), null, entry, false, false, filter);
     }
 
@@ -468,12 +468,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException {
+    @Override public void removeAll(GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         removeAllAsync(filter).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> removeAllAsync(GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+    @Override public GridFuture<?> removeAllAsync(GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return removeAllAsync(keySet(filter), filter);
     }
 
@@ -568,7 +568,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean rawRetval,
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl,
-        @Nullable final GridPredicate<? super GridCacheEntry<K, V>>[] filter
+        @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         final GridNearAtomicUpdateFuture<K, V> updateFut = new GridNearAtomicUpdateFuture<>(
             ctx,
@@ -612,7 +612,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable GridCacheEntryEx<K, V> cached,
         final boolean retval,
         boolean rawRetval,
-        @Nullable final GridPredicate<? super GridCacheEntry<K, V>>[] filter
+        @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         assert keys != null || drMap != null;
 
@@ -650,7 +650,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @return Get future.
      */
     private GridFuture<Map<K, V>> getAllAsync0(@Nullable Collection<? extends K> keys, boolean reload,
-        boolean forcePrimary, @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        boolean forcePrimary, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 

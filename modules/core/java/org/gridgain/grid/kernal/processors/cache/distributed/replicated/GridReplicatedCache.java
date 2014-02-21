@@ -815,7 +815,7 @@ public class GridReplicatedCache<K, V> extends GridDistributedCacheAdapter<K, V>
     @SuppressWarnings({"unchecked", "ThrowableInstanceNeverThrown"})
     @Override protected GridFuture<Boolean> lockAllAsync(final Collection<? extends K> keys, final long timeout,
         final GridCacheTxLocalEx<K, V> tx, final boolean isInvalidate, final boolean isRead, final boolean retval,
-        final GridCacheTxIsolation isolation, final GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        final GridCacheTxIsolation isolation, final GridPredicate<GridCacheEntry<K, V>>[] filter) {
         if (keys.isEmpty())
             return new GridFinishedFuture<>(ctx.kernalContext(), true);
 
@@ -868,7 +868,7 @@ public class GridReplicatedCache<K, V> extends GridDistributedCacheAdapter<K, V>
         boolean isRead,
         boolean retval,
         GridCacheTxIsolation isolation,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter
+        GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         Collection<GridNode> nodes = ctx.affinity().remoteNodes(keys);
 
@@ -1006,7 +1006,7 @@ public class GridReplicatedCache<K, V> extends GridDistributedCacheAdapter<K, V>
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public void unlockAll(Collection<? extends K> keys,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) {
         if (keys == null || keys.isEmpty())
             return;
 

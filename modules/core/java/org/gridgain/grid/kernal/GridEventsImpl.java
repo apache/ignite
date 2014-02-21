@@ -48,7 +48,7 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<List<GridEvent>> queryRemote(GridPredicate<? super GridEvent> pe, long timeout) {
+    @Override public GridFuture<List<GridEvent>> queryRemote(GridPredicate<GridEvent> pe, long timeout) {
         A.notNull(pe, "pe");
 
         guard();
@@ -63,13 +63,13 @@ public class GridEventsImpl implements GridEvents {
 
     /** {@inheritDoc} */
     @Override public <T extends GridEvent> GridFuture<UUID> consumeRemote(@Nullable GridBiPredicate<UUID, T> cb,
-        @Nullable GridPredicate<? super T> filter, @Nullable int... types) {
+        @Nullable GridPredicate<T> filter, @Nullable int... types) {
         return consumeRemote(1, 0, true, cb, filter, types);
     }
 
     /** {@inheritDoc} */
     @Override public <T extends GridEvent> GridFuture<UUID> consumeRemote(int bufSize, long interval,
-        boolean autoUnsubscribe, @Nullable GridBiPredicate<UUID, T> cb, @Nullable GridPredicate<? super T> filter,
+        boolean autoUnsubscribe, @Nullable GridBiPredicate<UUID, T> cb, @Nullable GridPredicate<T> filter,
         @Nullable int... types) {
         A.ensure(bufSize > 0, "bufSize > 0");
         A.ensure(interval >= 0, "interval >= 0");
@@ -102,7 +102,7 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridEvent> waitForLocal(@Nullable GridPredicate<? super GridEvent> p,
+    @Override public GridFuture<GridEvent> waitForLocal(@Nullable GridPredicate<GridEvent> p,
         @Nullable int... types) {
         guard();
 
@@ -115,7 +115,7 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridEvent> queryLocal(@Nullable GridPredicate<? super GridEvent>... p) {
+    @Override public Collection<GridEvent> queryLocal(@Nullable GridPredicate<GridEvent>... p) {
         if (F.isEmpty(p))
             return Collections.emptyList();
 

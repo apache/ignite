@@ -284,7 +284,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable @Override public GridTuple<V> peek(boolean failFast, K key,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter)
+        GridPredicate<GridCacheEntry<K, V>>[] filter)
         throws GridCacheFilterFailedException {
         GridCacheTxEntry<K, V> e = txMap == null ? null : txMap.get(key);
 
@@ -942,7 +942,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         Map<K, V> map,
         Map<K, GridCacheVersion> missed,
         int keysCnt,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         assert !F.isEmpty(keys);
         assert keysCnt == keys.size();
         assert cached == null || F.first(keys).equals(cached.key());
@@ -1124,7 +1124,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @return Loaded key-value pairs.
      */
     private GridFuture<Map<K, V>> checkMissed(final Map<K, V> map, final Map<K, GridCacheVersion> missedMap,
-        @Nullable final Collection<K> redos, final GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        @Nullable final Collection<K> redos, final GridPredicate<GridCacheEntry<K, V>>[] filter) {
         assert redos != null || pessimistic();
 
         if (log.isDebugEnabled())
@@ -1300,7 +1300,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
     /** {@inheritDoc} */
     @Override public GridFuture<Map<K, V>> getAllAsync(Collection<? extends K> keys,
-        @Nullable GridCacheEntryEx<K, V> cached,  final GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        @Nullable GridCacheEntryEx<K, V> cached,  final GridPredicate<GridCacheEntry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(cctx.kernalContext(), Collections.<K, V>emptyMap());
 
@@ -1507,63 +1507,63 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
     /** {@inheritDoc} */
     @Override public V put(K key, V val, @Nullable GridCacheEntryEx<K, V> cached, long ttl,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         return putAllAsync0(F.t(key, val), null, null, true, cached, ttl, filter).get().value();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx(K key, V val, GridPredicate<? super GridCacheEntry<K, V>>[] filter)
+    @Override public boolean putx(K key, V val, GridPredicate<GridCacheEntry<K, V>>[] filter)
         throws GridException {
         return putAllAsync0(F.t(key, val), null, null, false, null, -1, filter).get().success();
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx(K key, V val, @Nullable GridCacheEntryEx<K, V> cached, long ttl,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         return putAllAsync0(F.t(key, val), null, null, false, cached, ttl, filter).get().success();
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheReturn<V> putAll(Map<? extends K, ? extends V> map,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         return putAllAsync0(map, null, null, false, null, -1, filter).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<V> putAsync(K key, V val, GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+    @Override public GridFuture<V> putAsync(K key, V val, GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return putAllAsync0(F.t(key, val), null, null, true, null, -1, filter).
             chain((GridClosure<GridFuture<GridCacheReturn<V>>, V>) RET2VAL);
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> cached, long ttl,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return putAllAsync(F.t(key, val), true, cached, ttl, filter).
             chain((GridClosure<GridFuture<GridCacheReturn<V>>, V>) RET2VAL);
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<GridCacheReturn<V>> putAllAsync(Map<? extends K, ? extends V> map, boolean retval,
-        @Nullable GridCacheEntryEx<K, V> cached, long ttl, GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        @Nullable GridCacheEntryEx<K, V> cached, long ttl, GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return putAllAsync0(map, null, null, retval, cached, ttl, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> putxAsync(K key, V val, GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+    @Override public GridFuture<Boolean> putxAsync(K key, V val, GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return putAllAsync0(F.t(key, val), null, null, false, null, -1, filter)
             .chain((GridClosure<GridFuture<GridCacheReturn<V>>, Boolean>) RET2FLAG);
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> cached,
-        long ttl, GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        long ttl, GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return putAllAsync(F.t(key, val), false, cached, ttl, filter)
             .chain((GridClosure<GridFuture<GridCacheReturn<V>>, Boolean>)RET2FLAG);
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<GridCacheReturn<V>> putxAsync0(K key, V val, @Nullable GridCacheEntryEx<K, V> cached,
-        long ttl, GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        long ttl, GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return putAllAsync(F.t(key, val), true, cached, ttl, filter);
     }
 
@@ -1603,39 +1603,39 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
     /** {@inheritDoc} */
     @Override public V remove(K key, @Nullable GridCacheEntryEx<K, V> cached,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         return removeAllAsync(Collections.singletonList(key), cached, implicit, true, filter).get().value();
     }
 
     /** {@inheritDoc} */
     @Override public boolean removex(K key, @Nullable GridCacheEntryEx<K, V> cached,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         return removeAllAsync(Collections.singletonList(key), cached, implicit, false, filter).get().success();
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheReturn<V> removeAll(Collection<? extends K> keys,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         return removeAllAsync(keys, null, implicit, false, filter).get();
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> cached,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return removeAllAsync(Collections.singletonList(key), cached, implicit, true, filter)
             .chain((GridClosure<GridFuture<GridCacheReturn<V>>, V>) RET2VAL);
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> cached,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return removeAllAsync(Collections.singletonList(key), cached, implicit, false, filter)
             .chain((GridClosure<GridFuture<GridCacheReturn<V>>, Boolean>) RET2FLAG);
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<GridCacheReturn<V>> removexAsync0(K key, @Nullable GridCacheEntryEx<K, V> cached,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return removeAllAsync(Collections.singletonList(key), cached, implicit, true, filter);
     }
 
@@ -1659,7 +1659,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @throws GridException If failed.
      */
     private boolean filter(GridCacheEntryEx<K, V> cached,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         return pessimistic() || cctx.isAll(cached, filter);
     }
 
@@ -1690,7 +1690,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         @Nullable Map<? extends K, ? extends GridClosure<V, V>> transformMap,
         boolean retval,
         boolean lockOnly,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter,
+        GridPredicate<GridCacheEntry<K, V>>[] filter,
         final GridCacheReturn<V> ret,
         Collection<K> enlisted,
         @Nullable Map<? extends K, GridCacheDrInfo<V>> drPutMap,
@@ -1937,7 +1937,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         GridCacheReturn<V> ret,
         boolean rmv,
         boolean retval,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter
+        GridPredicate<GridCacheEntry<K, V>>[] filter
     ) throws GridException {
         for (K k : keys) {
             GridCacheTxEntry<K, V> txEntry = entry(k);
@@ -2065,7 +2065,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         final boolean retval,
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl,
-        @Nullable final GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter) {
         // Cached entry may be passed only from entry wrapper.
         final Map<? extends K, ? extends V> map0;
         if (drMap != null) {
@@ -2304,7 +2304,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     /** {@inheritDoc} */
     @Override public GridFuture<GridCacheReturn<V>> removeAllAsync(Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached, boolean implicit, boolean retval,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return removeAllAsync0(keys, null, cached, implicit, retval, filter);
     }
 
@@ -2323,7 +2323,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         @Nullable GridCacheEntryEx<K, V> cached,
         boolean implicit,
         final boolean retval,
-        @Nullable final GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter) {
         final Collection<? extends K> keys0;
 
         if (drMap != null) {
@@ -2593,7 +2593,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param filter Optional array of filters to check for optimistic transactions.
      * @throws GridException If transaction failed.
      */
-    protected void checkValid(GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException {
+    protected void checkValid(GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         if (optimistic() && !cctx.config().isBatchUpdateOnCommit() && !F.isEmpty(filter))
             throw new GridException("Operations that receive non-empty predicate filters cannot be used for " +
                 "optimistic mode if 'batchUpdateOnCommit' configuration flag is set to 'false': " + this);
@@ -2640,7 +2640,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      */
     protected final GridCacheTxEntry<K, V> addEntry(GridCacheOperation op, @Nullable V val,
         @Nullable GridClosure<V, V> transformClos, GridCacheEntryEx<K, V> entry, long ttl,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter, boolean filtersSet, long drTtl,
+        GridPredicate<GridCacheEntry<K, V>>[] filter, boolean filtersSet, long drTtl,
         long drExpireTime, @Nullable GridCacheVersion drVer) {
         K key = entry.key();
 

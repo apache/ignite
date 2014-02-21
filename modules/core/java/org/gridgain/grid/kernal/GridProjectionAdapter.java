@@ -15,6 +15,7 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.messaging.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
@@ -217,7 +218,7 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forPredicate(GridPredicate<? super GridNode> p) {
+    @Override public GridProjection forPredicate(GridPredicate<GridNode> p) {
         A.notNull(p, "p");
 
         guard();
@@ -239,30 +240,43 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forNode(GridNode node) {
+    @Override public GridProjection forNode(GridNode node, GridNode... nodes) {
         A.notNull(node, "node");
 
-        return forNodes(Collections.singleton(node));
+        Set<UUID> nodeIds;
+
+        GridPredicate<GridNode> p = predicate();
+
+        if (F.isEmpty(nodes))
+            nodeIds = p.apply(node) ? Collections.singleton(node.id()) : Collections.<UUID>emptySet();
+        else {
+            nodeIds = new HashSet<>(nodes.length + 1);
+
+            for (GridNode n : nodes)
+                if (p.apply(n))
+                    nodeIds.add(n.id());
+
+            if (p.apply(node))
+                nodeIds.add(node.id());
+        }
+
+        return newProjection(nodeIds, false);
     }
 
     /** {@inheritDoc} */
     @Override public GridProjection forNodes(Collection<? extends GridNode> nodes) {
         A.ensure(!F.isEmpty(nodes), "nodes must not be empty.");
 
-        guard();
+        Set<UUID> nodeIds = new HashSet<>(nodes.size());
 
-        try {
-            // Check for daemons in the projection.
-            if (F.exist(nodes, new DaemonFilter()))
-                U.warn(log, "Creating projection with daemon node. Likely a misuse.");
+        GridPredicate<GridNode> p = predicate();
 
-            // Maintain dynamic/static static of the projection.
-            return !dynamic() ? newProjection(F.retain(nodes(), true, nodes)) :
-                new GridProjectionImpl(this, ctx, F.and(predicate(), new GridNodePredicate<>(F.nodeIds(nodes))));
-        }
-        finally {
-            unguard();
-        }
+        for (GridNode n : nodes)
+            if (p.apply(n))
+                nodeIds.add(n.id());
+
+        // Static projection.
+        return newProjection(nodeIds, false);
     }
 
     /** {@inheritDoc} */
@@ -273,13 +287,12 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forCaches(@Nullable String cacheName, @Nullable String[] cacheNames) {
+    @Override public GridProjection forCache(@Nullable String cacheName, @Nullable String... cacheNames) {
         return forPredicate(new CachesFilter(cacheName, cacheNames));
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forStreamers(@Nullable String streamerName,
-        @Nullable String... streamerNames) {
+    @Override public GridProjection forStreamer(@Nullable String streamerName, @Nullable String... streamerNames) {
         return forPredicate(new StreamersFilter(streamerName, streamerNames));
     }
 
@@ -287,16 +300,47 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
     @Override public GridProjection forNodeIds(Collection<UUID> ids) {
         A.ensure(!F.isEmpty(ids), "ids must not be empty.");
 
+        // Static projection.
+        return newProjection(new HashSet<>(ids), true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forNodeId(UUID nodeId, UUID... nodeIds) {
+        A.notNull(nodeId, "nodeId");
+
+        Set<UUID> ids;
+
+        if (F.isEmpty(nodeIds))
+            ids = new GridLeanSet<>(1);
+        else {
+            ids = new HashSet<>(nodeIds.length + 1);
+
+            Collections.addAll(ids, nodeIds);
+        }
+
+        ids.add(nodeId);
+
+        return newProjection(ids, true);
+    }
+
+    /**
+     * Utility method that creates new grid projection with necessary short-circuit logic.
+     *
+     * @param nodeIds Node IDs to create projection with.
+     * @param filterIds If given set must be filtered with this projection predicate.
+     * @return Newly created projection.
+     */
+    @SuppressWarnings({"ConstantConditions"})
+    protected GridProjection newProjection(Set<UUID> nodeIds, boolean filterIds) {
+        assert nodeIds != null;
+
         guard();
 
         try {
-            // Check for daemons in the projection.
-            if (F.exist(nodes(), F.and(F.nodeForNodeIds(), new DaemonFilter())))
-                U.warn(log, "Creating projection with daemon node (likely a misuse)");
+            if (filterIds)
+                filterNodeIds(nodeIds);
 
-            // Maintain dynamic/static static of the projection.
-            return !dynamic() ? newProjection(F.retain(nodes(), true, F.<GridNode>nodeForNodeIds(ids))) :
-                new GridProjectionImpl(this, ctx, F.and(predicate(), new GridNodePredicate<>(ids)));
+            return new GridProjectionImpl(this, ctx, nodeIds);
         }
         finally {
             unguard();
@@ -304,18 +348,26 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
     }
 
     /**
-     * Utility method that creates new grid projection with necessary short-circuit logic.
-     *
-     * @param nodes Nodes to create projection with.
-     * @return Newly created projection.
+     * @param nodeIds Node IDs.
      */
-    @SuppressWarnings({"ConstantConditions"})
-    protected GridProjection newProjection(Collection<GridNode> nodes) {
-        assert nodes != null;
+    protected void filterNodeIds(Set<UUID> nodeIds) {
+        GridPredicate<GridNode> p = predicate();
 
-        switch (nodes.size()) {
-            case 0: return new GridProjectionImpl(this, ctx, Collections.<GridNode>emptyList());
-            default: return new GridProjectionImpl(this, ctx, nodes);
+        if (F.isAlwaysTrue(p))
+            return;
+
+        Iterator<UUID> iter = nodeIds.iterator();
+
+        while (iter.hasNext()) {
+            UUID nodeId = iter.next();
+
+            if (nodeId == null)
+                throw new NullPointerException("nodeId is null");
+
+            GridNode n = ctx.discovery().node(nodeId);
+
+            if (n == null || !p.apply(n))
+                iter.remove();
         }
     }
 
@@ -363,6 +415,11 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forRandom() {
+        return forNode(F.rand(nodes()));
     }
 
     /**

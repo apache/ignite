@@ -249,10 +249,17 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forNode(GridNode node) {
+    @Override public GridProjection forNodeId(UUID nodeId, UUID... nodeIds) {
         assert g != null;
 
-        return g.forNode(node);
+        return g.forNodeId(nodeId, nodeIds);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forNode(GridNode node, GridNode... nodes) {
+        assert g != null;
+
+        return g.forNode(node, nodes);
     }
 
     /** {@inheritDoc} */
@@ -263,7 +270,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forPredicate(GridPredicate<? super GridNode> p) {
+    @Override public GridProjection forPredicate(GridPredicate<GridNode> p) {
         assert g != null;
 
         return g.forPredicate(p);
@@ -277,18 +284,18 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forCaches(@Nullable String cacheName, @Nullable String... cacheNames) {
+    @Override public GridProjection forCache(String cacheName, @Nullable String... cacheNames) {
         assert g != null;
 
-        return g.forCaches(cacheName, cacheNames);
+        return g.forCache(cacheName, cacheNames);
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forStreamers(@Nullable String streamerName,
+    @Override public GridProjection forStreamer(String streamerName,
         @Nullable String... streamerNames) {
         assert g != null;
 
-        return g.forStreamers(streamerName, streamerNames);
+        return g.forStreamer(streamerName, streamerNames);
     }
 
     /** {@inheritDoc} */
@@ -310,6 +317,13 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
         assert g != null;
 
         return g.forDaemons();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forRandom() {
+        assert g != null;
+
+        return g.forRandom();
     }
 
     /** {@inheritDoc} */

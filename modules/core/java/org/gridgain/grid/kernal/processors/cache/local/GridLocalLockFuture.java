@@ -73,7 +73,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     private GridLogger log;
 
     /** Filter. */
-    private GridPredicate<? super GridCacheEntry<K, V>>[] filter;
+    private GridPredicate<GridCacheEntry<K, V>>[] filter;
 
     /** Transaction. */
     private GridCacheTxLocalEx<K, V> tx;
@@ -102,7 +102,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         GridCacheTxLocalEx<K, V> tx,
         GridLocalCache<K, V> cache,
         long timeout,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) {
         super(cctx.kernalContext());
 
         assert keys != null;

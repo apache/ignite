@@ -58,7 +58,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         boolean retval,
         GridCacheTxIsolation isolation,
         boolean isInvalidate,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter
+        GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         assert tx != null;
 
@@ -67,7 +67,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /** {@inheritDoc} */
     @Override public GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        GridPredicate<? super GridCacheEntry<K, V>>... filter) {
+        GridPredicate<GridCacheEntry<K, V>>... filter) {
         GridCacheTxLocalEx<K, V> tx = ctx.tm().userTxx();
 
         // Return value flag is true because we choose to bring values for explicit locks.
@@ -87,7 +87,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      */
     protected abstract GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         @Nullable GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
-        @Nullable GridCacheTxIsolation isolation, GridPredicate<? super GridCacheEntry<K, V>>[] filter);
+        @Nullable GridCacheTxIsolation isolation, GridPredicate<GridCacheEntry<K, V>>[] filter);
 
     /** {@inheritDoc} */
     @Override public String toString() {

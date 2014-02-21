@@ -237,7 +237,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *      will be {@code 'anded'}.
      * @return Projection based on given filter.
      */
-    public GridCacheProjection<K, V> projection(@Nullable GridPredicate<? super GridCacheEntry<K, V>> filter);
+    public GridCacheProjection<K, V> projection(@Nullable GridPredicate<GridCacheEntry<K, V>> filter);
 
     /**
      * Gets cache projection base on this one, but with the specified flags turned on.
@@ -302,7 +302,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *
      * @param vis Closure which will be invoked for each cache entry.
      */
-    public void forEach(GridInClosure<? super GridCacheEntry<K, V>> vis);
+    public void forEach(GridInClosure<GridCacheEntry<K, V>> vis);
 
     /**
      * Tests whether the predicate holds for all entries. If cache is empty,
@@ -315,7 +315,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param vis Predicate to test for each cache entry.
      * @return {@code True} if the given predicate holds for all visited entries, {@code false} otherwise.
      */
-    public boolean forAll(GridPredicate<? super GridCacheEntry<K, V>> vis);
+    public boolean forAll(GridPredicate<GridCacheEntry<K, V>> vis);
 
     /**
      * Reloads a single key from persistent storage. This method
@@ -556,7 +556,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridException If put operation failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    @Nullable public V put(K key, V val, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter)
+    @Nullable public V put(K key, V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridException;
 
     /**
@@ -592,7 +592,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<V> putAsync(K key, V val, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter);
+    public GridFuture<V> putAsync(K key, V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Stores given key-value pair in cache. If filters are provided, then entries will
@@ -624,7 +624,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridException If put operation failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public boolean putx(K key, V val, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter)
+    public boolean putx(K key, V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridException;
 
     /**
@@ -656,7 +656,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<Boolean> putxAsync(K key, V val, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter);
+    public GridFuture<Boolean> putxAsync(K key, V val, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Stores result of applying {@code valTransform} closure to the previous value associated with
@@ -1013,7 +1013,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If projection flags validation failed.
      */
     public void putAll(@Nullable Map<? extends K, ? extends V> m,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) throws GridException;
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
      * Stores result of applying transform closures from the given map to previous values associated
@@ -1084,7 +1084,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If projection flags validation failed.
      */
     public GridFuture<?> putAllAsync(@Nullable Map<? extends K, ? extends V> m,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter);
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Stores result of applying transform closures from the given map to previous values associated
@@ -1514,7 +1514,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridException If remove operation failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    @Nullable public V remove(K key, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter)
+    @Nullable public V remove(K key, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridException;
 
     /**
@@ -1547,7 +1547,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws NullPointerException if the key is {@code null}.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public GridFuture<V> removeAsync(K key, GridPredicate<? super GridCacheEntry<K, V>>... filter);
+    public GridFuture<V> removeAsync(K key, GridPredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Removes given key mapping from cache.
@@ -1573,7 +1573,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridException If remove failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public boolean removex(K key, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter)
+    public boolean removex(K key, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridException;
 
     /**
@@ -1601,7 +1601,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If projection flags validation failed.
      */
     public GridFuture<Boolean> removexAsync(K key,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter);
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Removes given key mapping from cache if one exists and value is equal to the passed in value.
@@ -1669,7 +1669,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If flags validation failed.
      */
     public void removeAll(@Nullable Collection<? extends K> keys,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) throws GridException;
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
      * Asynchronously removes given key mappings from cache for entries for which the optionally
@@ -1692,7 +1692,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If flags validation failed.
      */
     public GridFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter);
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Removes mappings from cache for entries for which the optionally passed in filters do
@@ -1718,7 +1718,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridException If remove failed.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public void removeAll(@Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter)
+    public void removeAll(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridException;
 
     /**
@@ -1744,7 +1744,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *      remove operation completes.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public GridFuture<?> removeAllAsync(@Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter);
+    public GridFuture<?> removeAllAsync(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Synchronously acquires lock on a cached object with given
@@ -1769,7 +1769,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridException If lock acquisition resulted in error.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public boolean lock(K key, long timeout, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter)
+    public boolean lock(K key, long timeout, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridException;
 
     /**
@@ -1796,7 +1796,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If flags validation failed.
      */
     public GridFuture<Boolean> lockAsync(K key, long timeout,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter);
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * All or nothing synchronous lock for passed in keys. This method
@@ -1822,7 +1822,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If flags validation failed.
      */
     public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) throws GridException;
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
      * All or nothing synchronous lock for passed in keys. This method
@@ -1848,7 +1848,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If flags validation failed.
      */
     public GridFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter);
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter);
 
     /**
      * Unlocks given key only if current thread owns the lock. If optional filter
@@ -1868,7 +1868,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridException If unlock execution resulted in error.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public void unlock(K key, GridPredicate<? super GridCacheEntry<K, V>>... filter) throws GridException;
+    public void unlock(K key, GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
      * Unlocks given keys only if current thread owns the locks. Only the keys
@@ -1891,7 +1891,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws GridCacheFlagException If flags validation failed.
      */
     public void unlockAll(@Nullable Collection<? extends K> keys,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter) throws GridException;
+        @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException;
 
     /**
      * Checks if any node owns a lock for this key.

@@ -16,7 +16,6 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.resources.*;
 
-import static org.gridgain.grid.GridClosureCallMode.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
@@ -85,7 +84,7 @@ public class GridCachePutGetExample {
 
             if (!rmts.nodes().isEmpty()) {
                 // Peek and get on remote nodes (comment it out if output gets too crowded).
-                rmts.compute().run(BROADCAST, new GridRunnable() {
+                rmts.compute().run(new GridRunnable() {
                     @GridInstanceResource
                     private transient Grid g;
 

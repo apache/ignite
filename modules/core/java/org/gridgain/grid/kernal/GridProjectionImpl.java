@@ -23,9 +23,6 @@ import java.util.*;
  * @version @java.version
  */
 public class GridProjectionImpl extends GridProjectionAdapter implements Externalizable {
-    /** */
-    private static final UUID[] EMPTY = new UUID[0];
-
     /** Type alias. */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     private static class Stash extends GridTuple3<String, GridPredicate<GridNode>, Boolean> { /*No-op.*/ }
@@ -47,7 +44,7 @@ public class GridProjectionImpl extends GridProjectionAdapter implements Externa
     private boolean dynamic;
 
     /** */
-    private UUID[] ids;
+    private Set<UUID> ids;
 
     /**
      * No-arg constructor is required by externalization.
@@ -61,25 +58,14 @@ public class GridProjectionImpl extends GridProjectionAdapter implements Externa
      *
      * @param parent Parent projection.
      * @param ctx Kernal context.
-     * @param nodes Collection of nodes for this subgrid.
-     */
-    public GridProjectionImpl(GridProjection parent, GridKernalContext ctx, Collection<GridNode> nodes) {
-        this(parent, ctx, F.isEmpty(nodes) ? EMPTY : U.toArray(F.nodeIds(nodes), new UUID[nodes.size()]));
-    }
-
-    /**
-     * Creates static projection.
-     *
-     * @param parent Parent projection.
-     * @param ctx Kernal context.
      * @param nodeIds Node ids.
      */
-    public GridProjectionImpl(GridProjection parent, GridKernalContext ctx, UUID[] nodeIds) {
+    public GridProjectionImpl(GridProjection parent, GridKernalContext ctx, Set<UUID> nodeIds) {
         super(parent, ctx);
 
         assert nodeIds != null;
 
-        ids = F.isEmpty(nodeIds) ? EMPTY : Arrays.copyOf(nodeIds, nodeIds.length);
+        ids = nodeIds;
 
         p = new GridNodePredicate<>(ids);
 
@@ -106,20 +92,13 @@ public class GridProjectionImpl extends GridProjectionAdapter implements Externa
 
     /** {@inheritDoc} */
     @Override public GridPredicate<GridNode> predicate() {
-        guard();
-
-        try {
-            return p;
-        }
-        finally {
-            unguard();
-        }
+        return p;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         // Dynamic subgrids use their predicates' hash code.
-        return dynamic ? p.hashCode() : hash == -1 ? hash = Arrays.hashCode(ids) : hash;
+        return dynamic ? p.hashCode() : hash == -1 ? hash = ids.hashCode() : hash;
     }
 
     /** {@inheritDoc} */
@@ -139,7 +118,7 @@ public class GridProjectionImpl extends GridProjectionAdapter implements Externa
         // is that if the node leaves - it leaves all subgrids, and new node can't join existing
         // non-dynamic subgrid. Therefore, it is safe and effective to compare two non-dynamic
         // subgrids by their initial set of node IDs.
-        return dynamic ? obj.dynamic && p.equals(obj.p) : !obj.dynamic && Arrays.equals(ids, obj.ids);
+        return dynamic ? obj.dynamic && p.equals(obj.p) : !obj.dynamic && ids.equals(obj.ids);
     }
 
     /** {@inheritDoc} */
@@ -147,7 +126,32 @@ public class GridProjectionImpl extends GridProjectionAdapter implements Externa
         guard();
 
         try {
-            return dynamic ? F.view(ctx.discovery().allNodes(), p) : F.view(ctx.discovery().nodes(F.asList(ids)), p);
+            return dynamic ? F.view(ctx.discovery().allNodes(), p) : ctx.discovery().nodes(ids);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void filterNodeIds(Set<UUID> nodeIds) {
+        if (dynamic)
+            super.filterNodeIds(nodeIds);
+        else
+            nodeIds.retainAll(ids);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridNode node(UUID nodeId) {
+        if (dynamic)
+            return super.node(nodeId);
+
+        A.notNull(nodeId, "nodeId");
+
+        guard();
+
+        try {
+            return ids.contains(nodeId) ? ctx.discovery().node(nodeId) : null;
         }
         finally {
             unguard();

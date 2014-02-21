@@ -92,7 +92,7 @@ import java.util.concurrent.*;
  * Here is how this annotation can be used to route a job to a node where Person object
  * is cached with ID "1234":
  * <pre name="code" class="java">
- * G.grid().run(GridClosureCallMode.BALANCE, new Runnable() {
+ * G.grid().run(new Runnable() {
  *     // This annotation is optional. If omitted, then default
  *     // no-name cache will be used.
  *     &#64;GridCacheName
@@ -111,7 +111,7 @@ import java.util.concurrent.*;
  * </pre>
  * The same can be achieved by annotating method instead of field as follows:
  * <pre name="code" class="java">
- * G.grid().run(GridClosureCallMode.BALANCE, new Runnable() {
+ * G.grid().run(new Runnable() {
  *     &#64;Override public void run() {
  *         // Some computation logic here.
  *         ...

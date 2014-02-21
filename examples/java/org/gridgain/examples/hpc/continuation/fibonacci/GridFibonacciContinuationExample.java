@@ -18,8 +18,6 @@ import org.jetbrains.annotations.*;
 import java.math.*;
 import java.util.*;
 
-import static org.gridgain.grid.GridClosureCallMode.*;
-
 /**
  * This example demonstrates how to use continuation feature of GridGain by
  * performing the distributed recursive calculation of {@code 'Fibonacci'}
@@ -80,8 +78,7 @@ public final class GridFibonacciContinuationExample {
 
             long start = System.currentTimeMillis();
 
-            BigInteger fib = g.forPredicate(nodeFilter).compute().call(
-                UNICAST, new FibonacciClosure(nodeFilter), N).get();
+            BigInteger fib = g.forPredicate(nodeFilter).compute().apply(new FibonacciClosure(nodeFilter), N).get();
 
             long duration = System.currentTimeMillis() - start;
 
@@ -147,11 +144,11 @@ public final class GridFibonacciContinuationExample {
                 // If future is not cached in node-local store, cache it.
                 // Recursive grid execution.
                 if (fut1 == null)
-                    fut1 = store.addIfAbsent(n - 1, p.compute().call(UNICAST, new FibonacciClosure(nodeFilter), n - 1));
+                    fut1 = store.addIfAbsent(n - 1, p.compute().apply(new FibonacciClosure(nodeFilter), n - 1));
 
                 // If future is not cached in node-local store, cache it.
                 if (fut2 == null)
-                    fut2 = store.addIfAbsent(n - 2, p.compute().call(UNICAST, new FibonacciClosure(nodeFilter), n - 2));
+                    fut2 = store.addIfAbsent(n - 2, p.compute().apply(new FibonacciClosure(nodeFilter), n - 2));
 
                 // If futures are not done, then wait asynchronously for the result
                 if (!fut1.isDone() || !fut2.isDone()) {

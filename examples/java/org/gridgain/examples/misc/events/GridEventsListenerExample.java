@@ -48,7 +48,7 @@ public final class GridEventsListenerExample {
             g.events().addLocalListener(lsnr, EVTS_TASK_EXECUTION);
 
             // Executes example task to generate events.
-            g.compute().execute(GridEventsExampleTask.class, null, 0).get();
+            g.compute().execute(GridEventsExampleTask.class, null).get();
 
             // Remove local event listener.
             g.events().removeLocalListener(lsnr);

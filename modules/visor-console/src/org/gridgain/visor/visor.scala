@@ -22,7 +22,8 @@ import scala.collection.immutable
 import collection.JavaConversions._
 import org.gridgain.grid._
 import org.gridgain.grid.{GridGain => G, GridException => GE}
-import org.gridgain.grid.GridClosureCallMode._
+import org.gridgain.grid.kernal.{GridClosureCallMode, GridEx}
+import GridClosureCallMode._
 import org.gridgain.grid.util.lang.{GridFunc => F}
 import org.gridgain.grid.events._
 import org.gridgain.grid.events.GridEventType._
@@ -2347,7 +2348,7 @@ object visor extends VisorTag {
                                 .compute()
                                 .withName("visor-log-collector")
                                 .withResultClosure(X.NO_FAILOVER)
-                                .call(BROADCAST, () => Collector.collect(LOG_EVTS, g, key))
+                                .call(() => Collector.collect(LOG_EVTS, g, key))
                                 .get
                         }
                         catch {
@@ -2514,7 +2515,7 @@ object visor extends VisorTag {
 
     /**
      * Transform node ID to ID8 string.
-     * 
+     *
      * @param node Node to take ID from.
      * @return Node ID in ID8 format.
      */
@@ -2524,7 +2525,7 @@ object visor extends VisorTag {
 
     /**
      * Get node by ID8 string.
-     * 
+     *
      * @param id8 Node ID in ID8 format.
      * @return Collection of nodes that has specified ID8.
      */

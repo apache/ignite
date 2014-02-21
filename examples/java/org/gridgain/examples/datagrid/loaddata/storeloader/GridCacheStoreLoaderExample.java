@@ -90,7 +90,7 @@ public class GridCacheStoreLoaderExample {
         long start = System.currentTimeMillis();
 
         // Start loading cache on all nodes.
-        g.compute().call(GridClosureCallMode.BROADCAST, new Callable<Object>() {
+        g.compute().call(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 cache.loadCache(null, 0, cnt);
 

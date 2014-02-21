@@ -97,7 +97,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     private long topVer;
 
     /** Optional filter. */
-    private final GridPredicate<? super GridCacheEntry<K, V>>[] filter;
+    private final GridPredicate<GridCacheEntry<K, V>>[] filter;
 
     /** Write synchronization mode. */
     private final GridCacheWriteSynchronizationMode syncMode;
@@ -160,7 +160,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         final boolean rawRetval,
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl,
-        final GridPredicate<? super GridCacheEntry<K, V>>[] filter
+        final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         super(cctx.kernalContext());
         this.rawRetval = rawRetval;

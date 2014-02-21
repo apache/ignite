@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.*;
 
 /**
  * Convenient reducer subclass that allows for thrown grid exception. This class
- * implements {@link #apply()} method that calls {@link #applyx()} method and
+ * implements {@link #reduce()} method that calls {@link #applyx()} method and
  * properly wraps {@link GridException} into {@link GridClosureException} instance.
  *
  * @author @java.author
@@ -24,7 +24,7 @@ import org.gridgain.grid.util.typedef.*;
  */
 public abstract class GridReducerX<E1, R> extends GridReducer<E1, R> {
     /** {@inheritDoc} */
-    @Override public R apply() {
+    @Override public R reduce() {
         try {
             return applyx();
         }

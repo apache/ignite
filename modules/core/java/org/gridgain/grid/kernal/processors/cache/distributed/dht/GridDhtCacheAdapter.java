@@ -507,13 +507,13 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean forcePrimary,
         boolean skipTx,
         @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         return getAllAsync(keys, null, /*don't check local tx. */false, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public V reload(K key, @Nullable GridPredicate<? super GridCacheEntry<K, V>>... filter)
+    @Override public V reload(K key, @Nullable GridPredicate<GridCacheEntry<K, V>>... filter)
         throws GridException {
         try {
             return super.reload(key, filter);
@@ -529,7 +529,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return {@inheritDoc}
      */
     GridFuture<Map<K, V>> getDhtAllAsync(@Nullable Collection<? extends K> keys,
-        @Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return getAllAsync(keys, null, /*don't check local tx. */false, filter);
     }
 
@@ -544,7 +544,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     public GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> getDhtAsync(UUID reader, long msgId,
         LinkedHashMap<? extends K, Boolean> keys, boolean reload, long topVer,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx, msgId, reader, keys, reload, /*tx*/null,
             topVer, filter);
 
@@ -1868,7 +1868,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /** {@inheritDoc} */
     @Override public GridFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys,
         long timeout, GridCacheTxLocalEx<K, V> txx, boolean isInvalidate, boolean isRead, boolean retval,
-        GridCacheTxIsolation isolation, GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        GridCacheTxIsolation isolation, GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return lockAllAsyncInternal(keys, timeout, txx, isInvalidate, isRead, retval, isolation, filter);
     }
 
@@ -1887,7 +1887,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     public GridDhtFuture<Boolean> lockAllAsyncInternal(@Nullable Collection<? extends K> keys,
         long timeout, GridCacheTxLocalEx<K, V> txx, boolean isInvalidate, boolean isRead, boolean retval,
-        GridCacheTxIsolation isolation, GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        GridCacheTxIsolation isolation, GridPredicate<GridCacheEntry<K, V>>[] filter) {
         if (keys == null || keys.isEmpty())
             return new GridDhtFinishedFuture<>(ctx.kernalContext(), true);
 
@@ -1959,7 +1959,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return Future.
      */
     public GridFuture<GridNearLockResponse<K, V>> lockAllAsync(final GridNode nearNode,
-        final GridNearLockRequest<K, V> req, @Nullable final GridPredicate<? super GridCacheEntry<K, V>>[] filter0) {
+        final GridNearLockRequest<K, V> req, @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter0) {
         final List<K> keys = req.keys();
 
         GridFuture<Object> keyFut = ctx.dht().dhtPreloader().request(keys, req.topologyVersion());
@@ -1979,7 +1979,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     if (exx != null)
                         return new GridDhtFinishedFuture<>(ctx.kernalContext(), exx);
 
-                    GridPredicate<? super GridCacheEntry<K, V>>[] filter = filter0;
+                    GridPredicate<GridCacheEntry<K, V>>[] filter = filter0;
 
                     // Set message into thread context.
                     GridDhtTxLocal<K, V> tx = null;
@@ -2734,7 +2734,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public void unlockAll(Collection<? extends K> keys,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) {
         assert false;
     }
 

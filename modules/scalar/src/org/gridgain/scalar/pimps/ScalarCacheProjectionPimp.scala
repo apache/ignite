@@ -76,7 +76,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
     protected var impl: GridCacheProjection[K, V] = _
 
     /** Type alias. */
-    protected type EntryPred = (_ >: GridCacheEntry[K, V]) => Boolean
+    protected type EntryPred = (GridCacheEntry[K, V]) => Boolean
 
     /** Type alias */
     protected type KeyPred = K => Boolean
@@ -96,7 +96,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
     /**
      * Unwraps sequence of functions to sequence of GridGain predicates.
      */
-    private def unwrap(@Nullable p: Seq[EntryPred]): Seq[GridPredicate[_ >: GridCacheEntry[K, V]]] =
+    private def unwrap(@Nullable p: Seq[EntryPred]): Seq[GridPredicate[GridCacheEntry[K, V]]] =
         if (p == null)
             null
         else
@@ -118,7 +118,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
                 true
             }
 
-            def apply(): R = {
+            def reduce(): R = {
                 rdc(seq)
             }
         }

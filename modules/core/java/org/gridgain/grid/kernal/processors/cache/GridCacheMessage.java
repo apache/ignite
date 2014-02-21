@@ -16,9 +16,8 @@ import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.spi.communication.tcp.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -131,7 +130,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param ctx Context.
      * @throws GridException If failed.
      */
-    protected final void prepareFilter(@Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filters,
+    protected final void prepareFilter(@Nullable GridPredicate<GridCacheEntry<K, V>>[] filters,
         GridCacheContext<K, V> ctx) throws GridException {
         if (filters != null)
             for (GridPredicate filter : filters)
@@ -333,7 +332,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @return Marshalled collection.
      * @throws GridException If failed.
      */
-    @Nullable protected final <T> byte[][] marshalFilter(@Nullable GridPredicate<? super GridCacheEntry<K, V>>[] filter,
+    @Nullable protected final <T> byte[][] marshalFilter(@Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
         GridCacheContext<K, V> ctx) throws GridException {
         assert ctx != null;
 
@@ -343,7 +342,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
         byte[][] filterBytes = new byte[filter.length][];
 
         for (int i = 0; i < filter.length; i++) {
-            GridPredicate<? super GridCacheEntry<K, V>> p = filter[i];
+            GridPredicate<GridCacheEntry<K, V>> p = filter[i];
 
             if (ctx.deploymentEnabled())
                 prepareObject(p, ctx);
@@ -362,7 +361,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @throws GridException If failed.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable protected final <T> GridPredicate<? super GridCacheEntry<K, V>>[] unmarshalFilter(
+    @Nullable protected final <T> GridPredicate<GridCacheEntry<K, V>>[] unmarshalFilter(
         @Nullable byte[][] byteCol, GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
         assert ldr != null;
         assert ctx != null;
@@ -370,13 +369,13 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
         if (byteCol == null)
             return null;
 
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter = new GridPredicate[byteCol.length];
+        GridPredicate<GridCacheEntry<K, V>>[] filter = new GridPredicate[byteCol.length];
 
         GridMarshaller marsh = ctx.marshaller();
 
         for (int i = 0; i < byteCol.length; i++)
             filter[i] = byteCol[i] == null ? null :
-                marsh.<GridPredicate<? super GridCacheEntry<K, V>>>unmarshal(byteCol[i], ldr);
+                marsh.<GridPredicate<GridCacheEntry<K, V>>>unmarshal(byteCol[i], ldr);
 
         return filter;
     }

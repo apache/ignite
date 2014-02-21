@@ -15,6 +15,7 @@ import org.gridgain.grid.kernal.processors.streamer.task.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
@@ -109,11 +110,14 @@ public class GridStreamerContextImpl implements GridStreamerContext {
         ctx.gateway().readLock();
 
         try {
-            GridProjection prj = projection0().forNodes(nodes);
+            GridProjection prj = projection0();
+
+            if (!F.isEmpty(nodes))
+                prj = prj.forNodes(nodes);
 
             long startTime = U.currentTimeMillis();
 
-            Collection<R> res =  prj.compute().execute(new GridStreamerQueryTask<>(clo, streamer.name()), null, 0).get();
+            Collection<R> res =  prj.compute().execute(new GridStreamerQueryTask<>(clo, streamer.name()), null).get();
 
             streamer.onQueryCompleted(U.currentTimeMillis() - startTime, prj.nodes().size());
 
@@ -137,7 +141,7 @@ public class GridStreamerContextImpl implements GridStreamerContext {
         try {
             GridProjection prj = projection0().forNodes(nodes);
 
-            prj.compute().execute(new GridStreamerBroadcastTask(clo, streamer.name()), null, 0).get();
+            prj.compute().execute(new GridStreamerBroadcastTask(clo, streamer.name()), null).get();
         }
         finally {
             ctx.gateway().readUnlock();
@@ -158,7 +162,7 @@ public class GridStreamerContextImpl implements GridStreamerContext {
         try {
             GridProjection prj = projection0().forNodes(nodes);
 
-            return prj.compute().execute(new GridStreamerReduceTask<>(clo, rdc, streamer.name()), null, 0).get();
+            return prj.compute().execute(new GridStreamerReduceTask<>(clo, rdc, streamer.name()), null).get();
         }
         finally {
             ctx.gateway().readUnlock();
@@ -172,7 +176,7 @@ public class GridStreamerContextImpl implements GridStreamerContext {
         GridProjection prj = streamPrj.get();
 
         if (prj == null) {
-            prj = ctx.grid().forStreamers(streamer.name());
+            prj = ctx.grid().forStreamer(streamer.name());
 
             streamPrj.compareAndSet(null, prj);
 

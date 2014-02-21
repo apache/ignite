@@ -30,7 +30,7 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
     private final GridCacheContext<K, V> ctx;
 
     /** Filter. */
-    private final GridPredicate<? super GridCacheEntry<K, V>>[] filter;
+    private final GridPredicate<GridCacheEntry<K, V>>[] filter;
 
     /** Base map. */
     private final Map<K, GridCacheEntry<K, V>> map;
@@ -41,7 +41,7 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
      * @param filter Filter.
      */
     public GridCacheKeySet(GridCacheContext<K, V> ctx, Collection<? extends GridCacheEntry<K, V>> c,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) {
+        GridPredicate<GridCacheEntry<K, V>>[] filter) {
         map = new HashMap<>(c.size(), 1.0f);
 
         assert ctx != null;
@@ -57,7 +57,7 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
 
     /** {@inheritDoc} */
     @Override public Iterator<K> iterator() {
-        return new GridCacheIterator<>(map.values(), F.<K>mapEntry2Key(), filter);
+        return new GridCacheIterator<>(map.values(), F.<K, V>cacheEntry2Key(), filter);
     }
 
     /** {@inheritDoc} */

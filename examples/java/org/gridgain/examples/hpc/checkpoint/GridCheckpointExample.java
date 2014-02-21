@@ -116,7 +116,7 @@ public class GridCheckpointExample {
         try (Grid g = GridGain.start(CONFIG)) {
             GridComputeTask<String, Integer> task = new CheckPointExampleTask();
 
-            GridComputeTaskFuture<Integer> f = g.compute().execute(task, "Hello World", 0);
+            GridComputeTaskFuture<Integer> f = g.compute().execute(task, "Hello World");
 
             int phraseLen = f.get();
 

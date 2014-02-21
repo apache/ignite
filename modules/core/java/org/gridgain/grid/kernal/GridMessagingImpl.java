@@ -111,7 +111,7 @@ public class GridMessagingImpl implements GridMessaging {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <T> void localListen(@Nullable Object topic, @Nullable GridBiPredicate<UUID, ? super T> p) {
+    @Override public <T> void localListen(@Nullable Object topic, @Nullable GridBiPredicate<UUID, T> p) {
         if (p != null) {
             guard();
 
@@ -125,8 +125,7 @@ public class GridMessagingImpl implements GridMessaging {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridFuture<?> remoteListen(@Nullable Object topic,
-        @Nullable GridBiPredicate<UUID, ? super T> p) {
+    @Override public <T> GridFuture<?> remoteListen(@Nullable Object topic, @Nullable GridBiPredicate<UUID, T> p) {
         if (p != null) {
             guard();
 

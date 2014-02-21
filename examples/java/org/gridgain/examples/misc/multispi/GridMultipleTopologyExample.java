@@ -70,10 +70,10 @@ public final class GridMultipleTopologyExample {
         try (Grid g = GridGain.start(cfg)){
             if (g.nodes().size() == 3) {
                 // Execute task on segment "A".
-                GridComputeTaskFuture<Integer> futA = g.compute().execute(GridSegmentATask.class, null, 0);
+                GridComputeTaskFuture<Integer> futA = g.compute().execute(GridSegmentATask.class, null);
 
                 // Execute task on segment "B".
-                GridComputeTaskFuture<Integer> futB = g.compute().execute(GridSegmentBTask.class, null, 0);
+                GridComputeTaskFuture<Integer> futB = g.compute().execute(GridSegmentBTask.class, null);
 
                 // Wait for task completion.
                 futA.get();

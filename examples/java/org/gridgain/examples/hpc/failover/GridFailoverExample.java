@@ -120,7 +120,7 @@ public class GridFailoverExample {
 
             GridComputeTask<String, Integer> task = new GridFailoverExampleTask();
 
-            GridComputeTaskFuture<Integer> f = g.compute().execute(task, JOB_ARG, 0);
+            GridComputeTaskFuture<Integer> f = g.compute().execute(task, JOB_ARG);
 
             int phraseLen = f.get();
 

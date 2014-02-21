@@ -67,7 +67,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @return Future for this get.
      */
     public GridFuture<Map<K, V>> getAllAsync(Collection<? extends K> keys, @Nullable GridCacheEntryEx<K, V> cached,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter);
+        GridPredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * @param key Key.
@@ -79,7 +79,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @throws GridException If put failed.
      */
     public V put(K key, V val, @Nullable GridCacheEntryEx<K, V> cached, long ttl,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException;
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException;
 
     /**
      * @param key Key.
@@ -88,7 +88,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @return {@code True} if put succeeded.
      * @throws GridException If put failed.
      */
-    public boolean putx(K key, V val, GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException;
+    public boolean putx(K key, V val, GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException;
 
     /**
      * @param key Key.
@@ -108,7 +108,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @throws GridException If put failed.
      */
     public boolean putx(K key, V val, @Nullable GridCacheEntryEx<K, V> cached, long ttl,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException;
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException;
 
     /**
      * @param map Map to put.
@@ -117,7 +117,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @throws GridException If put failed.
      */
     public GridCacheReturn<V> putAll(Map<? extends K, ? extends V> map,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException;
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException;
 
     /**
      * @param drMap DR map to put.
@@ -145,7 +145,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @param filter Filter.
      * @return Value future.
      */
-    public GridFuture<V> putAsync(K key, V val, GridPredicate<? super GridCacheEntry<K, V>>[] filter);
+    public GridFuture<V> putAsync(K key, V val, GridPredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * @param key Key.
@@ -156,7 +156,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @return Value future.
      */
     public GridFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> cached, long ttl,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter);
+        GridPredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * @param key Key.
@@ -164,7 +164,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @param filter Filter.
      * @return Value future.
      */
-    public GridFuture<Boolean> putxAsync(K key, V val, GridPredicate<? super GridCacheEntry<K, V>>[] filter);
+    public GridFuture<Boolean> putxAsync(K key, V val, GridPredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * @param key Key.
@@ -175,7 +175,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @return Value future.
      */
     public GridFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> cached, long ttl,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter);
+        GridPredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * @param key Key.
@@ -186,7 +186,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @return Value future.
      */
     public GridFuture<GridCacheReturn<V>> putxAsync0(K key, V val, @Nullable GridCacheEntryEx<K, V> cached,
-        long ttl, GridPredicate<? super GridCacheEntry<K, V>>[] filter);
+        long ttl, GridPredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * @param key Key.
@@ -206,7 +206,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @throws GridException If remove failed.
      */
     public V remove(K key, @Nullable GridCacheEntryEx<K, V> cached,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException;
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException;
 
     /**
      * @param key Key.
@@ -216,7 +216,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @throws GridException If remove failed.
      */
     public boolean removex(K key, @Nullable GridCacheEntryEx<K, V> cached,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException;
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException;
 
     /**
      * @param keys Keys to remove.
@@ -225,7 +225,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @throws GridException If remove failed.
      */
     public GridCacheReturn<V> removeAll(Collection<? extends K> keys,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter) throws GridException;
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException;
 
     /**
      * Asynchronous remove.
@@ -236,7 +236,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @return Removed value.
      */
     public GridFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> cached,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter);
+        GridPredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * Asynchronous remove.
@@ -247,7 +247,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @return Removed value.
      */
     public GridFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> cached,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter);
+        GridPredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * Asynchronous remove.
@@ -258,7 +258,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      * @return Removed value.
      */
     public GridFuture<GridCacheReturn<V>> removexAsync0(K key, @Nullable GridCacheEntryEx<K, V> cached,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter);
+        GridPredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * @param drMap DR map.
@@ -284,7 +284,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      */
     public GridFuture<GridCacheReturn<V>> putAllAsync(Map<? extends K, ? extends V> map,
         boolean retval, @Nullable GridCacheEntryEx<K, V> cached, long ttl,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter);
+        GridPredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * @param map Map to put.
@@ -302,7 +302,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      */
     public GridFuture<GridCacheReturn<V>> removeAllAsync(Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached, boolean implicit, boolean retval,
-        GridPredicate<? super GridCacheEntry<K, V>>[] filter);
+        GridPredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * Performs keys locking for affinity-based group lock transactions.

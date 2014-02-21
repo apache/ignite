@@ -64,7 +64,7 @@ public class GridStreamerReduceTask<R1, R2> extends GridComputeTaskAdapter<Void,
 
     /** {@inheritDoc} */
     @Override public R2 reduce(List<GridComputeJobResult> results) throws GridException {
-        return rdc.apply();
+        return rdc.reduce();
     }
 
     /** {@inheritDoc} */

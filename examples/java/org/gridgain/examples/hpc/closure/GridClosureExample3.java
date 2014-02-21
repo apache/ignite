@@ -11,8 +11,6 @@ package org.gridgain.examples.hpc.closure;
 
 import org.gridgain.grid.*;
 
-import static org.gridgain.grid.GridClosureCallMode.*;
-
 /**
  * Demonstrates new functional APIs.
  * <p>
@@ -35,8 +33,7 @@ public class GridClosureExample3 {
     public static void main(String[] args) throws Exception {
         try (Grid g = GridGain.start(args.length == 0 ? "examples/config/example-default.xml" : args[0])) {
             // Broadcasts message to all nodes.
-            g.compute().run(BROADCAST,
-                new Runnable() {
+            g.compute().run(new Runnable() {
                     @Override public void run() {
                         System.out.println(">>>>>");
                         System.out.println(">>>>> Hello Node! :)");
