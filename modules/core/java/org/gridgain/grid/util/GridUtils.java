@@ -2420,19 +2420,8 @@ public abstract class GridUtils {
     @Nullable public static URL resolveGridGainUrl(String path, boolean metaInf) {
         File f = resolveGridGainPath(path);
 
-        if (f != null) {
-            try {
-                // Note: we use that method's chain instead of File.getURL() with due
-                // Sun bug http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6179468
-                return f.toURI().toURL();
-            }
-            catch (MalformedURLException e) {
-                // No-op.
-            }
-        }
-
-        // TODO: 7461.
-        f = resolveGridGainPath("os/" + path);
+        if (f == null)
+            f = resolveGridGainPath("os/" + path);
 
         if (f != null) {
             try {
