@@ -23,7 +23,6 @@ import java.io.*;
  * <ul>
  * <li>{@link org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller} - default</li>
  * <li>{@link org.gridgain.grid.marshaller.jdk.GridJdkMarshaller}</li>
- * <li>{@link org.gridgain.grid.marshaller.xstream.GridXstreamMarshaller}</li>
  * </ul>
  * <p>
  * Below are examples of marshaller configuration, usage, and injection into tasks, jobs,
@@ -31,7 +30,7 @@ import java.io.*;
  * <h2 class="header">Java Example</h2>
  * {@code GridMarshaller} can be explicitely configured in code.
  * <pre name="code" class="java">
- * GridXstreamMarshaller marshaller = new GridXstreamMarshaller();
+ * GridJdkMarshaller marshaller = new GridJdkMarshaller();
  *
  * GridConfiguration cfg = new GridConfiguration();
  *
@@ -47,7 +46,7 @@ import java.io.*;
  * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="marshaller"&gt;
- *         &lt;bean class="org.gridgain.grid.marshaller.xstream.GridXstreamMarshaller"/&gt;
+ *         &lt;bean class="org.gridgain.grid.marshaller.jdk.GridJdkMarshaller"/&gt;
  *     &lt;/property&gt;
  *     ...
  * &lt;/bean&gt;

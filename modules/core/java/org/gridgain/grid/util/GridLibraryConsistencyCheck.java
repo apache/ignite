@@ -84,8 +84,7 @@ public class GridLibraryConsistencyCheck {
         "org.springframework.context.ApplicationContext",                 // spring-context-XXX.jar
         "org.springframework.core.io.UrlResource",                        // spring-core-XXX.jar
         "org.apache.tika.io.TikaInputStream",                             // tika-core-XXX.jar
-        "org.apache.tika.parser.txt.UniversalEncodingDetector",           // tika-parsers-1.3.jar
-        "com.thoughtworks.xstream.converters.UnmarshallingContext"        // xstream-XXX.jar
+        "org.apache.tika.parser.txt.UniversalEncodingDetector"            // tika-parsers-1.3.jar
     };
 
     /** */
