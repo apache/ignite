@@ -31,10 +31,6 @@ import static org.gridgain.grid.events.GridEventType.*;
  *          asynchronously querying events occurred on the nodes specified, including remote nodes.
  *      </li>
  *      <li>
- *          {@link GridEvents#queryLocal(org.gridgain.grid.lang.GridPredicate[])} -
- *          querying only local events stored on this local node.
- *      </li>
- *      <li>
  *          {@link GridEvents#addLocalListener(GridLocalEventListener, int...)} -
  *          listening to local grid events (events from remote nodes not included).
  *      </li>
