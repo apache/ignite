@@ -2364,8 +2364,11 @@ public abstract class GridUtils {
             File file = new File(home, path);
 
             if (file.exists())
-                // Note: we use that method's chain instead of File.getURL() with due
-                // Sun bug http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6179468
+                return file;
+
+            file = new File(home, "os/" + path);
+
+            if (file.exists())
                 return file;
         }
 

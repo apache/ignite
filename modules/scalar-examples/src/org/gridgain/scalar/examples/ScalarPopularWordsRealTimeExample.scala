@@ -20,6 +20,7 @@ import org.gridgain.grid.cache.GridCache
 import java.util
 import org.gridgain.grid.dataload.{GridDataLoadCacheUpdater, GridDataLoadEntry}
 import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
+import org.gridgain.grid.util.GridUtils
 
 /**
  * Real time popular words counter. In order to run this example, you must start
@@ -40,10 +41,10 @@ object ScalarPopularWordsRealTimeExample extends App {
     if (ggHome == null)
         throw new RuntimeException("GRIDGAIN_HOME must be set to GridGain installation root.")
 
-    val dir = new File(ggHome, BOOK_PATH)
+    val dir = GridUtils.resolveGridGainPath(BOOK_PATH)
 
-    if (!dir.exists)
-        sys.error("Input directory does not exist: " + dir.getAbsolutePath)
+    if (dir == null)
+        sys.error("Input directory does not exist: " + BOOK_PATH)
     else
         scalar("examples/config/example-cache-popularcounts.xml") {
             // Data cache instance (default cache).

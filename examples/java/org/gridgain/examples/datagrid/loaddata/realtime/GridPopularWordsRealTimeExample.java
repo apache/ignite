@@ -16,6 +16,7 @@ import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -43,6 +44,9 @@ public class GridPopularWordsRealTimeExample {
     /** Number of most popular words to retrieve from grid. */
     private static final int POPULAR_WORDS_CNT = 10;
 
+    /** Path to books. */
+    private static final String BOOKS_PATH = "examples/java/org/gridgain/examples/datagrid/loaddata/realtime/books";
+
     /**
      * Starts counting words.
      *
@@ -55,10 +59,10 @@ public class GridPopularWordsRealTimeExample {
         if (ggHome == null)
             throw new RuntimeException("GRIDGAIN_HOME must be set to GridGain installation root.");
 
-        final File inputDir = new File(ggHome, "examples/java/org/gridgain/examples/datagrid/loaddata/realtime/books");
+        final File inputDir = U.resolveGridGainPath(BOOKS_PATH);
 
-        if (!inputDir.exists()) {
-            System.err.println("Input directory does not exist: " + inputDir.getAbsolutePath());
+        if (inputDir == null) {
+            System.err.println("Input directory does not exist: " + BOOKS_PATH);
 
             return;
         }
