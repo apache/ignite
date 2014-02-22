@@ -162,8 +162,7 @@ public class GridPopularNumbersRealTimeExample {
         };
 
         /** {@inheritDoc} */
-        @Override public void update(GridCache<Integer, Long> cache,
-            Collection<GridDataLoadEntry<Integer, Long>> entries) throws GridException {
+        @Override public void update(GridCache<Integer, Long> cache, Collection<GridDataLoadEntry<Integer, Long>> entries) throws GridException {
             for (GridDataLoadEntry<Integer, Long> entry : entries)
                 cache.transform(entry.key(), INC);
         }

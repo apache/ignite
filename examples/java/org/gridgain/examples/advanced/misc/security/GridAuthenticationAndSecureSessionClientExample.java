@@ -74,7 +74,7 @@ public class GridAuthenticationAndSecureSessionClientExample {
             //...
         }
         catch (GridClientException e) {
-            if (GridExamplesUtils.hasCause(e, GridClientAuthenticationException.class))
+            if (e.hasCause(GridClientAuthenticationException.class))
                 System.out.println(">>> Client authentication failed (was the passcode correct?).");
             else
                 System.out.println(">>> Failed to create client (did you start grid nodes?): " + e.getMessage());

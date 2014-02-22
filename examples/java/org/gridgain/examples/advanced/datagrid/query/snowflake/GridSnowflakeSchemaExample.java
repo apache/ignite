@@ -9,12 +9,13 @@
 
 package org.gridgain.examples.advanced.datagrid.query.snowflake;
 
-import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
 
@@ -104,8 +105,8 @@ public class GridSnowflakeSchemaExample {
         for (int i = 0; i < 100; i++) {
             int id = idGen++;
 
-            DimStore store = GridExamplesUtils.rand(stores.values());
-            DimProduct prod = GridExamplesUtils.rand(prods.values());
+            DimStore store = rand(stores.values());
+            DimProduct prod = rand(prods.values());
 
             factCache.put(id, new FactPurchase(id, prod.getId(), store.getId(), (i + 1)));
         }
@@ -152,9 +153,9 @@ public class GridSnowflakeSchemaExample {
         // All purchases for certain product made at store2.
         // =================================================
 
-        DimProduct p1 = GridExamplesUtils.rand(prods.values());
-        DimProduct p2 = GridExamplesUtils.rand(prods.values());
-        DimProduct p3 = GridExamplesUtils.rand(prods.values());
+        DimProduct p1 = rand(prods.values());
+        DimProduct p2 = rand(prods.values());
+        DimProduct p3 = rand(prods.values());
 
         System.out.println("IDs of products [p1=" + p1.getId() + ", p2=" + p2.getId() + ", p3=" + p3.getId() + ']');
 
@@ -182,5 +183,28 @@ public class GridSnowflakeSchemaExample {
 
         for (Map.Entry<?, ?> e : res)
             System.out.println("    " + e.getValue().toString());
+    }
+
+    /**
+     * Gets random value from given collection.
+     *
+     * @param c Input collection (no {@code null} and not emtpy).
+     * @return Random value from the input collection.
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    private static <T> T rand(Collection<? extends T> c) {
+        A.notNull(c, "c");
+
+        int n = ThreadLocalRandom.current().nextInt(c.size());
+
+        int i = 0;
+
+        for (T t : c) {
+            if (i++ == n) {
+                return t;
+            }
+        }
+
+        throw new ConcurrentModificationException();
     }
 }
