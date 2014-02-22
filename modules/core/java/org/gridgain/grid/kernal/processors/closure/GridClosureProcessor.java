@@ -87,20 +87,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param r Either runnable or callable.
-     * @return {@code True} if entered.
-     */
-    private boolean enterBusy(Object r) {
-        if (!busyLock.tryReadLock()) {
-            U.warn(log, "Ignoring closure execution (grid is stopping): " + r);
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
      * @throws IllegalStateException If grid is stopped.
      */
     private void enterBusy() throws IllegalStateException {
@@ -165,10 +151,27 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * No-reduce task adapter.
+     */
+    private static abstract class TaskNoReduceAdapter<T> extends GridComputeTaskAdapter<T, Void> {
+        /**
+         * @param pda Peer deploy aware instance.
+         */
+        protected TaskNoReduceAdapter(@Nullable GridPeerDeployAware pda) {
+            super(pda);
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
+            return null;
+        }
+    }
+
+    /**
      * Task that is free of dragged in enclosing context for the method
      * {@link GridClosureProcessor#runAsync(GridClosureCallMode, Collection, Collection)}.
      */
-    private class T1 extends GridComputeTaskNoReduceAdapter<Void> {
+    private class T1 extends TaskNoReduceAdapter<Void> {
         /** */
         @GridLoadBalancerResource
         private GridComputeLoadBalancer lb;
@@ -269,7 +272,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * Task that is free of dragged in enclosing context for the method
      * {@link GridClosureProcessor#runAsync(GridClosureCallMode, Runnable, Collection)}.
      */
-    private class T2 extends GridComputeTaskNoReduceAdapter<Void> {
+    private class T2 extends TaskNoReduceAdapter<Void> {
         /** */
         @GridLoadBalancerResource
         private GridComputeLoadBalancer lb;

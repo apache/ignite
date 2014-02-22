@@ -15,6 +15,7 @@ import org.gridgain.scalar.scalar
 import scalar._
 import collection.JavaConversions._
 import org.gridgain.grid.compute._
+import java.util
 
 /**
  * Demonstrates use of full grid task API using Scalar. Note that using task-based
@@ -36,9 +37,11 @@ object ScalarTaskExample extends App {
     /**
      * This task encapsulates the logic of MapReduce.
      */
-    class GridHelloWorld extends GridComputeTaskNoReduceSplitAdapter[String] {
+    class GridHelloWorld extends GridComputeTaskSplitAdapter[String, Void] {
         def split(gridSize: Int, arg: String): java.util.Collection[_ <: GridComputeJob] = {
             (for (w <- arg.split(" ")) yield toJob(() => println(w))).toSeq
         }
+
+        def reduce(results: util.List[GridComputeJobResult]) = null
     }
 }

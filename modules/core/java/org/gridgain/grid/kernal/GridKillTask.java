@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.util.typedef.*;
 
@@ -25,7 +25,7 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
  * @version @java.version
  */
 @GridInternal
-class GridKillTask extends GridComputeTaskNoReduceAdapter<Boolean> {
+class GridKillTask extends GridComputeTaskAdapter<Boolean, Void> {
     /** Restart flag. */
     private boolean restart;
 
@@ -58,6 +58,11 @@ class GridKillTask extends GridComputeTaskNoReduceAdapter<Boolean> {
     /** {@inheritDoc} */
     @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) {
         return GridComputeJobResultPolicy.WAIT;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
+        return null;
     }
 
     /**

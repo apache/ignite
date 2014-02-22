@@ -270,6 +270,13 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
     }
 
     /** {@inheritDoc} */
+    @Override public GridProjection forOthers(GridProjection prj) {
+        assert g != null;
+
+        return g.forOthers(prj);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridProjection forPredicate(GridPredicate<GridNode> p) {
         assert g != null;
 
@@ -331,6 +338,13 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
         assert g != null;
 
         return g.nodes();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridNode node() {
+        assert g != null;
+
+        return g.node();
     }
 
     /** {@inheritDoc} */

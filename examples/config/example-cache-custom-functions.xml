@@ -87,7 +87,7 @@
                         Class containing definition of custom SQL functions.
                     -->
                     <property name="indexCustomFunctionClasses"
-                        value="org.gridgain.examples.datagrid.query.GridCacheQueryCustomFunctionExample"/>
+                        value="org.gridgain.examples.advanced.datagrid.query.GridCacheQueryCustomFunctionExample"/>
                 </bean>
             </list>
         </property>

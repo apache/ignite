@@ -209,12 +209,18 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
         guard();
 
         try {
-            return F.find(F.concat(false, nodes(), ctx.discovery().daemonNodes()), null,
-                F.<GridNode>nodeForNodeId(nodeId));
+            GridNode n = ctx.discovery().node(nodeId);
+
+            return n == null || predicate().apply(n) ? n : null;
         }
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridNode node() {
+        return F.first(nodes());
     }
 
     /** {@inheritDoc} */
@@ -224,8 +230,16 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
         guard();
 
         try {
+            // Check for Grid projection.
+            if (p == F.<GridNode>alwaysTrue())
+                return this;
+
+            // Check for Grid projection.
+            if (predicate() != F.<GridNode>alwaysTrue())
+                p = F.and(p, predicate());
+
             // New projection will be dynamic.
-            return new GridProjectionImpl(this, ctx, F.and(p, predicate()));
+            return new GridProjectionImpl(this, ctx,  p);
         }
         finally {
             unguard();
@@ -284,6 +298,13 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
         A.notNull(node, "node");
 
         return forPredicate(new OthersFilter(node.id()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forOthers(GridProjection prj) {
+        A.notNull(prj, "prj");
+
+        return forPredicate(new NotFilter(prj.predicate()));
     }
 
     /** {@inheritDoc} */
@@ -512,51 +533,29 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
 
     /**
      */
-    private static class KeysFilter extends GridPredicate<GridNode> {
-        /** Context. */
-        private final GridKernalContext ctx;
-
-        /** Logger. */
-        private final GridLogger log;
-
-        /** Cache name. */
-        private final String cacheName;
-
-        /** Keys. */
-        private final Collection<?> keys;
-
-        /**
-         * @param ctx Context.
-         * @param log Logger.
-         * @param cacheName Cache name.
-         * @param keys Keys.
-         */
-        private KeysFilter(GridKernalContext ctx, GridLogger log, String cacheName, Collection<?> keys) {
-            this.ctx = ctx;
-            this.log = log;
-            this.cacheName = cacheName;
-            this.keys = keys;
-        }
-
+    private static class DaemonFilter extends GridPredicate<GridNode> {
         /** {@inheritDoc} */
         @Override public boolean apply(GridNode n) {
-            try {
-                return ctx.affinity().mapKeysToNodes(cacheName, keys).keySet().contains(n);
-            }
-            catch (GridException e) {
-                LT.warn(log, e, "Failed to map keys to nodes [cacheName=" + cacheName + ", keys=" + keys + ']');
-
-                return false;
-            }
+            return n.isDaemon();
         }
     }
 
     /**
      */
-    private static class DaemonFilter extends GridPredicate<GridNode> {
+    private static class NotFilter extends GridPredicate<GridNode> {
+        /** */
+        private final GridPredicate<GridNode> p;
+
+        /**
+         * @param p Predicate.
+         */
+        private NotFilter(GridPredicate<GridNode> p) {
+            this.p = p;
+        }
+
         /** {@inheritDoc} */
         @Override public boolean apply(GridNode n) {
-            return n.isDaemon();
+            return !p.apply(n);
         }
     }
 

@@ -67,7 +67,7 @@ public class GridProjectionImpl extends GridProjectionAdapter implements Externa
 
         ids = nodeIds;
 
-        p = new GridNodePredicate<>(ids);
+        p = new GridNodePredicate(ids);
 
         dynamic = false;
     }
@@ -79,13 +79,12 @@ public class GridProjectionImpl extends GridProjectionAdapter implements Externa
      * @param ctx Kernal context.
      * @param p Predicate.
      */
-    public GridProjectionImpl(GridProjection parent, GridKernalContext ctx, GridPredicate<? super GridNode> p) {
+    public GridProjectionImpl(GridProjection parent, GridKernalContext ctx, GridPredicate<GridNode> p) {
         super(parent, ctx);
 
         assert p != null;
 
-        this.p = ctx.config().isPeerClassLoadingEnabled() ?
-            new ProjectionPredicate(p) : (GridPredicate<GridNode>)p;
+        this.p = ctx.config().isPeerClassLoadingEnabled() ? new ProjectionPredicate(p) : p;
 
         dynamic = true;
     }
@@ -173,6 +172,7 @@ public class GridProjectionImpl extends GridProjectionAdapter implements Externa
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         GridTuple3<String, GridPredicate<GridNode>, Boolean> t = stash.get();
 

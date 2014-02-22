@@ -85,7 +85,7 @@
             Set the example interceptor.
         -->
         <property name="clientMessageInterceptor">
-            <bean class="org.gridgain.examples.client.interceptor.GridClientBigIntegerMessageInterceptor" />
+            <bean class="org.gridgain.examples.advanced.misc.client.interceptor.GridClientBigIntegerMessageInterceptor" />
         </property>
 
         <property name="cacheConfiguration">

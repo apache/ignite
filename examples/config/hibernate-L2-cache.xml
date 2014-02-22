@@ -48,12 +48,12 @@
         <property name="org.gridgain.hibernate.default_access_type">READ_ONLY</property>
 
         <!-- Specify the entity classes for mapping. -->
-        <mapping class="org.gridgain.examples.datagrid.hibernate.User"/>
-        <mapping class="org.gridgain.examples.datagrid.hibernate.Post"/>
+        <mapping class="org.gridgain.examples.advanced.datagrid.hibernate.User"/>
+        <mapping class="org.gridgain.examples.advanced.datagrid.hibernate.Post"/>
 
         <!-- Per-class L2 cache settings. -->
-        <class-cache class="org.gridgain.examples.datagrid.hibernate.User" usage="read-only"/>
-        <class-cache class="org.gridgain.examples.datagrid.hibernate.Post" usage="read-only"/>
-        <collection-cache collection="org.gridgain.examples.datagrid.hibernate.User.posts" usage="read-only"/>
+        <class-cache class="org.gridgain.examples.advanced.datagrid.hibernate.User" usage="read-only"/>
+        <class-cache class="org.gridgain.examples.advanced.datagrid.hibernate.Post" usage="read-only"/>
+        <collection-cache collection="org.gridgain.examples.advanced.datagrid.hibernate.User.posts" usage="read-only"/>
     </session-factory>
 </hibernate-configuration>

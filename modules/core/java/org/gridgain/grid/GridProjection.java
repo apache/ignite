@@ -71,6 +71,13 @@ public interface GridProjection {
     public GridProjection forOthers(GridNode node);
 
     /**
+     * // TODO
+     * @param prj
+     * @return
+     */
+    public GridProjection forOthers(GridProjection prj);
+
+    /**
      * Creates monadic projection with a given set of node IDs out of this projection.
      * Note that nodes not in this projection at the moment of call will excluded.
      *
@@ -186,6 +193,11 @@ public interface GridProjection {
      *      projection.
      */
     @Nullable public GridNode node(UUID nid);
+
+    /**
+     * @return // TODO
+     */
+    @Nullable public GridNode node();
 
     /**
      * Tells whether or not this projection is dynamic.

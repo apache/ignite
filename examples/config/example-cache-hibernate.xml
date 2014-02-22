@@ -77,13 +77,13 @@
                     <property name="name" value="org.hibernate.cache.internal.StandardQueryCache"/>
                 </bean>
                 <bean parent="transactional-cache">
-                    <property name="name" value="org.gridgain.examples.datagrid.hibernate.User"/>
+                    <property name="name" value="org.gridgain.examples.advanced.datagrid.hibernate.User"/>
                 </bean>
                 <bean parent="transactional-cache">
-                    <property name="name" value="org.gridgain.examples.datagrid.hibernate.User.posts"/>
+                    <property name="name" value="org.gridgain.examples.advanced.datagrid.hibernate.User.posts"/>
                 </bean>
                 <bean parent="transactional-cache">
-                    <property name="name" value="org.gridgain.examples.datagrid.hibernate.Post"/>
+                    <property name="name" value="org.gridgain.examples.advanced.datagrid.hibernate.Post"/>
                 </bean>
             </list>
         </property>

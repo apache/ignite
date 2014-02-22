@@ -29,7 +29,7 @@
         Optional description.
     -->
     <description>
-        Grid configuration for org.gridgain.examples.hpc.masterfailure.GridMasterLeaveExample.
+        Grid configuration for org.gridgain.examples.advanced.compute.masterfailure.GridMasterLeaveExample.
     </description>
 
     <!--

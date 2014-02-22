@@ -101,7 +101,7 @@
                 </property>
 
                 <property name="store">
-                    <bean class="org.gridgain.examples.datagrid.store.hibernate.GridCacheHibernatePersonStore"
+                    <bean class="org.gridgain.examples.advanced.datagrid.store.hibernate.GridCacheHibernatePersonStore"
                           scope="singleton"/>
                 </property>
             </bean>
