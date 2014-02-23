@@ -15,7 +15,7 @@ import org.gridgain.grid.product.*;
 
 import javax.swing.*;
 
-import static org.gridgain.examples.advanced.datagrid.loaddata.storeloader.GridCacheStoreLoaderExample.*;
+import static org.gridgain.examples.basic.datagrid.CacheStoreLoaderExample.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**

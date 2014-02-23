@@ -7,9 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.advanced.datagrid.loaddata.storeloader;
+package org.gridgain.examples.basic.datagrid;
 
 import org.gridgain.examples.*;
+import org.gridgain.examples.advanced.datagrid.loaddata.storeloader.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dataload.*;
@@ -44,7 +45,12 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
-public class GridCacheStoreLoaderExample {
+public class CacheStoreLoaderExample {
+    /** Cache name. */
+    private static final String CACHE_NAME = "partitioned";
+    //private static final String CACHE_NAME = "replicated";
+    //private static final String CACHE_NAME = "local";
+
     /** Heap size required to run this example. */
     public static final int MIN_MEMORY = 1024 * 1024 * 1024;
 
@@ -61,45 +67,23 @@ public class GridCacheStoreLoaderExample {
     public static void main(String[] args) throws Exception {
         GridExamplesUtils.checkMinMemory(MIN_MEMORY);
 
-        Grid g = GridGain.start("examples/config/example-cache-storeloader.xml");
+        try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
+            final GridCache<String, Integer> cache = g.cache("partitioned");
 
-        try {
-            // Warm up.
-            load(g, 100000);
+            long start = System.currentTimeMillis();
 
-            System.out.println(">>> JVM is warmed up.");
+            // Start loading cache on all caching nodes.
+            g.forCache(CACHE_NAME).compute().call(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    cache.loadCache(null, 0, ENTRY_COUNT);
 
-            // Load.
-            load(g, ENTRY_COUNT);
+                    return null;
+                }
+            }).get();
+
+            long end = System.currentTimeMillis();
+
+            System.out.println(">>> Loaded " + ENTRY_COUNT + " keys with backups in " + (end - start) + "ms.");
         }
-        finally {
-            GridGain.stop(false);
-        }
-    }
-
-    /**
-     * Loads specified number of keys into cache using provided {@link GridDataLoader} instance.
-     *
-     * @param g Grid instance.
-     * @param cnt Number of keys to load.
-     * @throws GridException If failed.
-     */
-    private static void load(Grid g, final int cnt) throws GridException {
-        final GridCache<String, Integer> cache = g.cache("partitioned");
-
-        long start = System.currentTimeMillis();
-
-        // Start loading cache on all nodes.
-        g.compute().call(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                cache.loadCache(null, 0, cnt);
-
-                return null;
-            }
-        }).get();
-
-        long end = System.currentTimeMillis();
-
-        System.out.println(">>> Loaded " + cnt + " keys with backups in " + (end - start) + "ms.");
     }
 }

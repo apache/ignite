@@ -7,33 +7,25 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.advanced.datagrid.loaddata.storeloader;
+package org.gridgain.examples.basic.datagrid;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 
-import static org.gridgain.grid.product.GridProductEdition.*;
+import java.util.*;
 
 /**
- * Store loader responsible for loading bulk of data from persistent store.
- * The only implemented method is {@link #loadCache(GridBiInClosure, Object...)}
- * method which randomly generates values to load and passes them to cache.
- * <p>
- * Other {@link GridCacheStore} methods are not implemented simply because they are not used in
- * this example. Take a look at examples defined in {@link org.gridgain.examples.advanced.datagrid.store}
- * package for various cache store implementations.
+ * Dummy cache store implementation.
  *
  * @author @java.author
  * @version @java.version
  */
-@GridOnlyAvailableIn(DATA_GRID)
-public class GridCacheLoaderStore extends GridCacheStoreAdapter<String, Integer> {
+public class CacheDummyStore extends GridCacheStoreAdapter<Object, Object> {
     /** Auto-injected grid instance. */
     @GridInstanceResource
     private Grid grid;
@@ -42,19 +34,23 @@ public class GridCacheLoaderStore extends GridCacheStoreAdapter<String, Integer>
     @GridLoggerResource
     private GridLogger log;
 
+    /** Cache name. */
+    @GridCacheNameResource
+    private String cacheName;
+
+    /** Dummy database. */
+    private Map<Object, Object> dummyDB = new HashMap<>();
+
     /** {@inheritDoc} */
-    @Override public void loadCache(final GridBiInClosure<String, Integer> clo,
-        Object... args) throws GridException {
+    @Override public void loadCache(final GridBiInClosure<Object, Object> clo, Object... args) throws GridException {
         // Number of entries is passed by caller.
         int entryCnt = (Integer)args[0];
 
-        GridCache<String, Integer> cache = grid.cache("partitioned");
+        GridCache<Object, Object> cache = grid.cache(cacheName);
 
         log.info("Number of cache entries to load: " + entryCnt);
 
         for (int i = 0; i < entryCnt; i++) {
-            String key = Integer.toString(i);
-
             // Only add to cache if key is mapped to local node.
             // We check for local mapping just to demonstrate that
             // you can do it from your logic - GridGain will always
@@ -64,8 +60,14 @@ public class GridCacheLoaderStore extends GridCacheStoreAdapter<String, Integer>
             // in your persistent store and only load the partition IDs
             // mapped to the local node here. You would use similar check
             // as below to find out if partition ID is mapped to local node.
-            if (cache.affinity().isPrimaryOrBackup(grid.localNode(), key))
-                clo.apply(key, i);
+            if (cache.affinity().isPrimaryOrBackup(grid.localNode(), i)) {
+                // Load key-value pair into cache.
+                clo.apply(i, Integer.toString(i));
+
+                // Add loaded value to database as well, since we generated it here.
+                // In real life, the values would most likely be loaded from underlying database.
+                dummyDB.put(i, Integer.toString(i));
+            }
 
             if (i % 100000 == 0)
                 log.info("Loaded " + i + " keys.");
@@ -73,22 +75,17 @@ public class GridCacheLoaderStore extends GridCacheStoreAdapter<String, Integer>
     }
 
     /** {@inheritDoc} */
-    @Override public Integer load(@Nullable GridCacheTx tx, String key)
-        throws GridException {
-        assert false : "This method is never called in our example.";
-
-        return null;
+    @Override public Object load(@Nullable GridCacheTx tx, Object key) throws GridException {
+        return dummyDB.get(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable GridCacheTx tx, String key,
-        @Nullable Integer val) throws GridException {
-        assert false : "This method is never called in our example.";
+    @Override public void put(@Nullable GridCacheTx tx, Object key, Object val) throws GridException {
+        dummyDB.put(key, val);
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable GridCacheTx tx, String key)
-        throws GridException {
-        assert false : "This method is never called in our example.";
+    @Override public void remove(@Nullable GridCacheTx tx, Object key) throws GridException {
+        dummyDB.remove(key);
     }
 }

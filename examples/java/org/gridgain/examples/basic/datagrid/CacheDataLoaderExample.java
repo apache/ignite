@@ -57,37 +57,20 @@ public class CacheDataLoaderExample {
                 // Configure loader.
                 ldr.perNodeBufferSize(1024);
 
-                // Warm up.
-                load(ldr, 100000);
+                long start = System.currentTimeMillis();
 
-                System.out.println(">>> JVM is warmed up.");
+                for (int i = 0; i < ENTRY_COUNT; i++) {
+                    ldr.addData(i, Integer.toString(i));
 
-                // Load.
-                load(ldr, ENTRY_COUNT);
+                    // Print out progress while loading cache.
+                    if (i > 0 && i % 10000 == 0)
+                        System.out.println("Loaded " + i + " keys.");
+                }
+
+                long end = System.currentTimeMillis();
+
+                System.out.println(">>> Loaded " + ENTRY_COUNT + " keys in " + (end - start) + "ms.");
             }
         }
-    }
-
-    /**
-     * Loads specified number of keys into cache using provided {@link GridDataLoader} instance.
-     *
-     * @param ldr Data loader.
-     * @param cnt Number of keys to load.
-     * @throws GridException If failed.
-     */
-    private static void load(GridDataLoader<Integer, String> ldr, int cnt) throws GridException {
-        long start = System.currentTimeMillis();
-
-        for (int i = 0; i < cnt; i++) {
-            ldr.addData(i, Integer.toString(i));
-
-            // Print out progress while loading cache.
-            if (i > 0 && i % 10000 == 0)
-                System.out.println("Loaded " + i + " keys.");
-        }
-
-        long end = System.currentTimeMillis();
-
-        System.out.println(">>> Loaded " + cnt + " keys in " + (end - start) + "ms.");
     }
 }

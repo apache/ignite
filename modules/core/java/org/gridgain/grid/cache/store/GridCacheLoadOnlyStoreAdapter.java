@@ -114,7 +114,7 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
     @Nullable protected abstract GridBiTuple<K, V> parse(I rec, @Nullable Object... args);
 
     /** {@inheritDoc} */
-    @Override public void loadAll(GridBiInClosure<K, V> c, @Nullable Object... args)
+    @Override public void loadCache(GridBiInClosure<K, V> c, @Nullable Object... args)
         throws GridException {
         ExecutorService exec = new ThreadPoolExecutor(
             threadsCnt,

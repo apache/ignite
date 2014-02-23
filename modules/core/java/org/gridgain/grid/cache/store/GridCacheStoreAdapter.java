@@ -26,7 +26,7 @@ import java.util.*;
  * it maybe more preferable to take advantage of database batch update functionality, and therefore
  * default adapter implementation may not be the best option.
  * <p>
- * Note that method {@link #loadAll(GridBiInClosure, Object...)} has empty
+ * Note that method {@link #loadCache(GridBiInClosure, Object...)} has empty
  * implementation because it is essentially up to the user to invoke it with
  * specific arguments.
  *
@@ -43,7 +43,7 @@ public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V
      * @param args {@inheritDoc}
      * @throws GridException {@inheritDoc}
      */
-    @Override public void loadAll(GridBiInClosure<K, V> clo, Object... args)
+    @Override public void loadCache(GridBiInClosure<K, V> clo, Object... args)
         throws GridException {
         /* No-op. */
     }
