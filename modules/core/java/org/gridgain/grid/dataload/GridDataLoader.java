@@ -66,9 +66,12 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  *      changing), but it won't be lost anyway. Disabled by default (default value is {@code 0}).
  *  </li>
  *  <li>
+ *      {@link #isolated(boolean)} - defines if data loader will assume that there are no other concurrent
+ *      updates and choose appropriate data loader.
+ *  </li>
+ *  <li>
  *      {@link #updater(GridDataLoadCacheUpdater)} - defines how cache will be updated with loaded entries. It allows to implement
- *      custom logic to update cache in the most effective and flexible way. Default is
- *      {@link GridDataLoadCacheUpdaters#single()}.
+ *      custom logic to update cache in the most effective and flexible way.
  *  </li>
  *  <li>
  *      {@link #deployClass(Class)} - optional deploy class for peer deployment. All classes
@@ -97,6 +100,24 @@ public interface GridDataLoader<K, V> extends AutoCloseable {
      * @return Cache name or {@code null} for default cache.
      */
     @Nullable public String cacheName();
+
+    /**
+     * Gets flag value indicating that this data loader assumes that there are no other concurrent updates to the cache.
+     * Default is {@code false}.
+     *
+     * @return Flag value.
+     */
+    public boolean isolated();
+
+    /**
+     * Sets flag indicating that this data loader should assume that there are no other concurrent updates to the cache.
+     * Should not be used when custom cache updater set using {@link #updater(GridDataLoadCacheUpdater)} method.
+     * Default is {@code false}.
+     *
+     * @param isolated Flag value.
+     * @throws GridException If failed.
+     */
+    public void isolated(boolean isolated) throws GridException;
 
     /**
      * Gets size of per node key-value pairs buffer.
@@ -188,7 +209,6 @@ public interface GridDataLoader<K, V> extends AutoCloseable {
 
     /**
      * Sets custom cache updater to this data loader.
-     * The default is {@link GridDataLoadCacheUpdaters#single()}.
      *
      * @param updater Cache updater.
      */
@@ -240,7 +260,7 @@ public interface GridDataLoader<K, V> extends AutoCloseable {
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on loader.
      */
-    public GridFuture<?> addData(GridDataLoadEntry<K, V> entry) throws GridException, GridInterruptedException,
+    public GridFuture<?> addData(Map.Entry<K, V> entry) throws GridException, GridInterruptedException,
         IllegalStateException;
 
     /**
@@ -256,7 +276,22 @@ public interface GridDataLoader<K, V> extends AutoCloseable {
      *      {@link #close(boolean)} has already been called on loader.
      * @return Future for this load operation.
      */
-    public GridFuture<?> addData(Collection<? extends GridDataLoadEntry<K, V>> entries) throws IllegalStateException;
+    public GridFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) throws IllegalStateException;
+
+    /**
+     * Adds data for loading on remote node. This method can be called from multiple
+     * threads in parallel to speed up loading if needed.
+     * <p>
+     * Note that loader will load data concurrently by multiple internal threads, so the
+     * data may get to remote nodes in different order from which it was added to
+     * the loader.
+     *
+     * @param entries Map to be loaded.
+     * @throws IllegalStateException If grid has been concurrently stopped or
+     *      {@link #close(boolean)} has already been called on loader.
+     * @return Future for this load operation.
+     */
+    public GridFuture<?> addData(Map<K, V> entries) throws IllegalStateException;
 
     /**
      * Loads any remaining data, but doesn't close the loader. Data can be still added after

@@ -19,6 +19,7 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;

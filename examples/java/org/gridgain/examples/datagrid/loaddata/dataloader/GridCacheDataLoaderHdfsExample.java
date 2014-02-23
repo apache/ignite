@@ -16,6 +16,7 @@ import org.gridgain.examples.*;
 import org.gridgain.examples.datagrid.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.resources.*;

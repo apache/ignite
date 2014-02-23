@@ -18,8 +18,9 @@ import scala.io.{Codec, Source}
 import java.util.Timer
 import org.gridgain.grid.cache.GridCache
 import java.util
-import org.gridgain.grid.dataload.{GridDataLoadCacheUpdater, GridDataLoadEntry}
+import org.gridgain.grid.dataload.GridDataLoadCacheUpdater
 import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
+import java.util.Map.Entry
 import org.gridgain.grid.util.GridUtils
 
 /**
@@ -82,11 +83,11 @@ object ScalarPopularWordsRealTimeExample extends App {
                 // Set custom updater to increment value for each key.
                 ldr.updater(new GridDataLoadCacheUpdater[String, Int] {
                     def update(cache: GridCache[String, Int],
-                        entries: util.Collection[GridDataLoadEntry[String, Int]]) = {
+                        entries: util.Collection[Entry[String, Int]]) = {
                         import scala.collection.JavaConversions._
 
                         for (e <- entries)
-                            cache.transform(e.key, f)
+                            cache.transform(e.getKey, f)
                     }
                 })
 

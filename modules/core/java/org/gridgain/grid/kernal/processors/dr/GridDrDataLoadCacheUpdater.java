@@ -58,7 +58,7 @@ public class GridDrDataLoadCacheUpdater<K, V> implements GridDataLoadCacheUpdate
     }
 
     /** {@inheritDoc} */
-    @Override public void update(GridCache<K, V> cache0, Collection<GridDataLoadEntry<K, V>> col)
+    @Override public void update(GridCache<K, V> cache0, Collection<Map.Entry<K, V>> col)
         throws GridException {
         String cacheName = cache0.name();
 
@@ -79,7 +79,7 @@ public class GridDrDataLoadCacheUpdater<K, V> implements GridDataLoadCacheUpdate
         Map<K, GridCacheDrInfo<V>> putMap = null;
         Map<K, GridCacheVersion> rmvMap = null;
 
-        for (GridDataLoadEntry<K, V> entry0 : col) {
+        for (Map.Entry<K, V> entry0 : col) {
             GridDrRawEntry<K, V> entry = (GridDrRawEntry<K, V>)entry0;
 
             entry.unmarshal(ctx.config().getMarshaller());

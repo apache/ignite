@@ -11,6 +11,7 @@ package org.gridgain.examples.datagrid.loaddata.dataloader;
 
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.dataload.*;
 
