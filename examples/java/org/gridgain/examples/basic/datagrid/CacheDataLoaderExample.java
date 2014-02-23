@@ -7,12 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.advanced.datagrid.loaddata.dataloader;
+package org.gridgain.examples.basic.datagrid;
 
 import org.gridgain.examples.*;
+import org.gridgain.examples.advanced.datagrid.loaddata.dataloader.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.dataload.*;
+import org.gridgain.grid.product.*;
 
 import static org.gridgain.grid.product.GridProductEdition.*;
 
@@ -34,7 +35,12 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
-public class GridCacheDataLoaderExample {
+public class CacheDataLoaderExample {
+    /** Cache name. */
+    private static final String CACHE_NAME = "partitioned";
+    //private static final String CACHE_NAME = "replicated";
+    //private static final String CACHE_NAME = "local";
+
     /** Number of entries to load. */
     private static final int ENTRY_COUNT = 1000000;
 
@@ -51,28 +57,19 @@ public class GridCacheDataLoaderExample {
     public static void main(String[] args) throws Exception {
         GridExamplesUtils.checkMinMemory(MIN_MEMORY);
 
-        Grid g = GridGain.start("examples/config/example-cache-tuned.xml");
+        try (Grid g = GridGain.start("examples/config/example-cache-tuned.xml")) {
+            try (GridDataLoader<Integer, String> ldr = g.dataLoader(CACHE_NAME)) {
+                // Configure loader.
+                ldr.perNodeBufferSize(1024);
 
-        GridDataLoader<String, Integer> ldr = g.dataLoader("partitioned");
-        // GridDataLoader<String, Integer> ldr = g.dataLoader("replicated");
+                // Warm up.
+                load(ldr, 100000);
 
-        try {
-            // Configure loader.
-            ldr.perNodeBufferSize(1024);
-            ldr.updater(GridDataLoadCacheUpdaters.<String, Integer>batchedSorted());
+                System.out.println(">>> JVM is warmed up.");
 
-            // Warm up.
-            load(ldr, 100000);
-
-            System.out.println(">>> JVM is warmed up.");
-
-            // Load.
-            load(ldr, ENTRY_COUNT);
-        }
-        finally {
-            ldr.close(false);
-
-            GridGain.stop(false);
+                // Load.
+                load(ldr, ENTRY_COUNT);
+            }
         }
     }
 
@@ -83,11 +80,11 @@ public class GridCacheDataLoaderExample {
      * @param cnt Number of keys to load.
      * @throws GridException If failed.
      */
-    private static void load(GridDataLoader<String, Integer> ldr, int cnt) throws GridException {
+    private static void load(GridDataLoader<Integer, String> ldr, int cnt) throws GridException {
         long start = System.currentTimeMillis();
 
         for (int i = 0; i < cnt; i++) {
-            ldr.addData(Integer.toString(i), i);
+            ldr.addData(i, Integer.toString(i));
 
             // Print out progress while loading cache.
             if (i > 0 && i % 10000 == 0)

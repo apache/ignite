@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.advanced.datagrid.loaddata.realtime;
+package org.gridgain.examples.basic.datagrid;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -33,7 +33,12 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
-public class GridPopularNumbersRealTimeExample {
+public class CachePopularNumbersExample {
+    /** Cache name. */
+    private static final String CACHE_NAME = "partitioned";
+    //private static final String CACHE_NAME = "replicated";
+    //private static final String CACHE_NAME = "local";
+
     /** Count of most popular numbers to retrieve from grid. */
     private static final int POPULAR_NUMBERS_CNT = 10;
 
@@ -55,7 +60,15 @@ public class GridPopularNumbersRealTimeExample {
     public static void main(String[] args) throws Exception {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
 
-        try (Grid g = GridGain.start("examples/config/example-cache-popularcounts.xml")) {
+        try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
+            GridProjection prj = g.forCache(CACHE_NAME);
+
+            if (prj.nodes().isEmpty()) {
+                System.out.println("Grid does not have cache configured: " + CACHE_NAME);
+
+                return;
+            }
+
             TimerTask task = scheduleQuery(g, popularNumbersQryTimer, POPULAR_NUMBERS_CNT);
 
             streamData(g);
@@ -66,16 +79,11 @@ public class GridPopularNumbersRealTimeExample {
             popularNumbersQryTimer.cancel();
 
             // Clean up caches on all nodes after run.
-            g.compute().run(new Runnable() {
+            prj.compute().run(new Runnable() {
                 @Override public void run() {
-                    if (g.cache(null) == null)
-                        System.err.println("Default cache not found (is example-cache-popularcounts.xml " +
-                            "configuration used on all nodes?)");
-                    else {
-                        System.out.println("Clearing keys from cache: " + g.cache(null).size());
+                    System.out.println("Clearing keys from cache: " + g.cache(CACHE_NAME).size());
 
-                        g.cache(null).clearAll();
-                    }
+                    g.cache(CACHE_NAME).clearAll();
                 }
             }).get();
         }
@@ -88,7 +96,7 @@ public class GridPopularNumbersRealTimeExample {
      * @throws GridException If failed.
      */
     private static void streamData(final Grid g) throws GridException {
-        try (GridDataLoader<Integer, Long> ldr = g.dataLoader(null)) {
+        try (GridDataLoader<Integer, Long> ldr = g.dataLoader(CACHE_NAME)) {
             // Set larger per-node buffer size since our state is relatively small.
             ldr.perNodeBufferSize(2048);
 
@@ -113,7 +121,7 @@ public class GridPopularNumbersRealTimeExample {
 
             @Override public void run() {
                 // Get reference to cache.
-                GridCache<Integer, Long> cache = g.cache(null);
+                GridCache<Integer, Long> cache = g.cache(CACHE_NAME);
 
                 if (qry == null)
                     qry = cache.queries().

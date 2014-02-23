@@ -812,8 +812,7 @@ public class GridGain {
      * @return Started grid.
      * @throws GridException If grid could not be started.
      */
-    private static GridNamedInstance start0(GridStartContext startCtx)
-        throws GridException {
+    private static GridNamedInstance start0(GridStartContext startCtx) throws GridException {
         assert startCtx != null;
 
         String name = startCtx.config().getGridName();

@@ -15,21 +15,18 @@
     GridGain Spring configuration file to startup grid cache.
 
     When starting a standalone GridGain node, you need to execute the following command:
-    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-cache.xml
+    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-cache-dataloader.xml
 
     When starting GridGain from Java IDE, pass path to this file into GridFactory:
-    GridFactory.start("examples/config/example-cache.xml");
+    GridFactory.start("examples/config/example-cache-dataloader.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="
-        http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
     <import resource="example-cache-template.xml"/>
 
-    <!--
-        Configuration below demonstrates how to setup caches within grid nodes.
-    -->
-    <bean id="grid.cfg" parent="grid-cache-template" scope="singleton">
+    <bean id="grid.cfg" parent="grid-cache-template-tuned" scope="singleton">
     </bean>
 </beans>

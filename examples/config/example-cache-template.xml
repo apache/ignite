@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<!--
+    GridGain Spring configuration file to startup grid cache.
+
+    When starting a standalone GridGain node, you need to execute the following command:
+    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-cache.xml
+
+    When starting GridGain from Java IDE, pass path to this file into GridFactory:
+    GridFactory.start("examples/config/example-cache.xml");
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+    <import resource="example-template.xml"/>
+
+    <!--
+        Tuned template for all performance-sensitive example cache configurations.
+    -->
+    <bean id="cache-template-tuned" abstract="true" class="org.gridgain.grid.cache.GridCacheConfiguration">
+        <!-- Initial cache size. -->
+        <property name="startSize" value="3000000"/>
+
+        <!-- Set synchronous preloading (default is asynchronous). -->
+        <property name="preloadMode" value="SYNC"/>
+
+        <!--
+            For best performance set number of backups to 0.
+        -->
+        <property name="affinity">
+            <bean class="org.gridgain.grid.cache.affinity.partitioned.GridCachePartitionedAffinity">
+                <property name="keyBackups" value="0"/>
+            </bean>
+        </property>
+    </bean>
+
+    <!--
+        Template for all cache configurations.
+    -->
+    <bean id="cache-template" abstract="true" parent="cache-template-tuned">
+        <!--
+            Setting this value will cause local node to wait for remote commits.
+            However, it's important to set it this way in the examples as we assert on
+            conditions that usually assume full completion of transactions on all nodes.
+        -->
+        <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+
+        <!--
+            For better performance set this property to false in case
+            cache queries are not used. Default value is false.
+        -->
+        <property name="queryIndexEnabled" value="true"/>
+
+        <!--
+            The below configuration sets the number of backups to 1 (which is default).
+        -->
+        <property name="affinity">
+            <bean class="org.gridgain.grid.cache.affinity.partitioned.GridCachePartitionedAffinity">
+                <property name="keyBackups" value="1"/>
+            </bean>
+        </property>
+    </bean>
+
+    <!--
+        Template for all cache configurations.
+    -->
+    <bean id="cache-replicated-template" abstract="true" class="org.gridgain.grid.cache.GridCacheConfiguration">
+        <property name="cacheMode" value="REPLICATED"/>
+        <property name="startSize" value="3000000"/>
+        <property name="preloadMode" value="SYNC"/>
+        <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+        <property name="queryIndexEnabled" value="true"/>
+    </bean>
+
+    <!--
+        Configuration below demonstrates how to setup grid within grid nodes.
+    -->
+    <bean id="grid-cache-template-tuned" abstract="true" parent="grid-template-tuned">
+        <property name="cacheConfiguration">
+            <!--
+                Specify list of cache configurations here. Any property from
+                GridCacheConfiguration interface can be configured here.
+                All properties are optional.
+            -->
+            <list>
+                <!--
+                    Partitioned cache example configuration (Atomic mode).
+                -->
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="ATOMIC"/>
+                    <property name="partitionedDistributionMode" value="PARTITIONED_ONLY"/>
+                </bean>
+
+                <!--
+                    Partitioned cache example configuration (Transactional mode).
+                -->
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned_tx"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="partitionedDistributionMode" value="NEAR_PARTITIONED"/>
+                </bean>
+
+                <!--
+                    Replicated cache example configuration.
+                -->
+                <bean parent="cache-replicated-template">
+                    <property name="name" value="replicated"/>
+                </bean>
+
+                <!--
+                    Local cache example configuration.
+                -->
+                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                    <property name="name" value="local"/>
+                    <property name="cacheMode" value="LOCAL"/>
+                </bean>
+            </list>
+        </property>
+    </bean>
+
+    <!--
+        Configuration below demonstrates how to setup grid.
+    -->
+    <bean id="grid-cache-template" abstract="true" parent="grid-template">
+        <property name="cacheConfiguration">
+            <!--
+                Specify list of cache configurations here. Any property from
+                GridCacheConfiguration interface can be configured here.
+                All properties are optional.
+            -->
+            <list>
+                <!--
+                    Partitioned cache example configuration (Atomic mode).
+                -->
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="ATOMIC"/>
+                    <property name="partitionedDistributionMode" value="PARTITIONED_ONLY"/>
+                </bean>
+
+                <!--
+                    Partitioned cache example configuration (Transactional mode).
+                -->
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned_tx"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="partitionedDistributionMode" value="NEAR_PARTITIONED"/>
+                </bean>
+
+                <!--
+                    Replicated cache example configuration.
+                -->
+                <bean parent="cache-replicated-template">
+                    <property name="name" value="replicated"/>
+                </bean>
+
+                <!--
+                    Local cache example configuration.
+                -->
+                <bean parent="cache-template">
+                    <property name="name" value="local"/>
+                    <property name="cacheMode" value="LOCAL"/>
+                </bean>
+            </list>
+        </property>
+    </bean>
+</beans>
