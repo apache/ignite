@@ -91,7 +91,7 @@ public class GridEventsConsumeExample {
                             Integer key = evt.key();
 
                             return key >= 10 && g.cache(CACHE_NAME).affinity().
-                                primary(g.localNode(), key); // FIXME cast to rich node
+                                isPrimary(g.localNode(), key); // FIXME cast to rich node
                         }
                     },
                     // Types of events for which listeners are registered.

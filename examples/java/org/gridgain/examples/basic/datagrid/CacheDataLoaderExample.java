@@ -10,12 +10,8 @@
 package org.gridgain.examples.basic.datagrid;
 
 import org.gridgain.examples.*;
-import org.gridgain.examples.advanced.datagrid.loaddata.dataloader.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.dataload.*;
-import org.gridgain.grid.product.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Loads data from one node onto the rest of the in-memory data grid by utilizing {@link GridDataLoader}
@@ -23,7 +19,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * {@code GridCacheProjection.put(...)} operation as it properly buffers cache requests
  * together and properly manages load on remote nodes.
  * <p>
- * You can startup remote nodes either by starting {@link GridCacheDataLoaderNodeStartup}
+ * You can startup remote nodes either by starting {@link CacheNodeStartup}
  * class or stand alone. In case of stand alone node startup, remote nodes should always
  * be started with configuration which includes cache using following command:
  * {@code 'ggstart.sh examples/config/example-cache-dataloader.xml'}.
@@ -34,7 +30,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @author @java.author
  * @version @java.version
  */
-@GridOnlyAvailableIn(DATA_GRID)
 public class CacheDataLoaderExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";

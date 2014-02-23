@@ -52,7 +52,7 @@ public interface GridCacheAffinity0<K> {
      * @param key Key to check.
      * @return {@code True} if local node is the primary node for given key.
      */
-    public boolean primary(GridNode n, K key);
+    public boolean isPrimary(GridNode n, K key);
 
     /**
      * Returns {@code true} if local node is one of the backup nodes for given key.
@@ -63,7 +63,7 @@ public interface GridCacheAffinity0<K> {
      * @param key Key to check.
      * @return {@code True} if local node is one of the backup nodes for given key.
      */
-    public boolean backup(GridNode n, K key);
+    public boolean isBackup(GridNode n, K key);
 
     /**
      * Returns {@code true} if local node is primary or one of the backup nodes
@@ -71,14 +71,14 @@ public interface GridCacheAffinity0<K> {
      * {@link Grid#localNode()} as first parameter.
      * <p>
      * This method is essentially equivalent to calling
-     * <i>"{@link #primary(GridNode, Object)} || {@link #backup(GridNode, Object)})"</i>,
+     * <i>"{@link #isPrimary(GridNode, Object)} || {@link #isBackup(GridNode, Object)})"</i>,
      * however it is more efficient as it makes both checks at once.
      *
      * @param n Node to check.
      * @param key Key to check.
      * @return {@code True} if local node is primary or backup for given key.
      */
-    public boolean primaryOrBackup(GridNode n, K key);
+    public boolean isPrimaryOrBackup(GridNode n, K key);
 
     /**
      * Gets partition ids for which nodes of the given projection has primary

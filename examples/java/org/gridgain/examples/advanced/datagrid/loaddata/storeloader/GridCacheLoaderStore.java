@@ -64,7 +64,7 @@ public class GridCacheLoaderStore extends GridCacheStoreAdapter<String, Integer>
             // in your persistent store and only load the partition IDs
             // mapped to the local node here. You would use similar check
             // as below to find out if partition ID is mapped to local node.
-            if (cache.affinity().primaryOrBackup(grid.localNode(), key))
+            if (cache.affinity().isPrimaryOrBackup(grid.localNode(), key))
                 clo.apply(key, i);
 
             if (i % 100000 == 0)
