@@ -12,11 +12,8 @@ package org.gridgain.examples.basic.datagrid;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.product.*;
 
 import java.util.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * This example demonstrates very basic operations on cache, such as 'put' and 'get'.
@@ -33,7 +30,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @author @java.author
  * @version @java.version
  */
-@GridOnlyAvailableIn(DATA_GRID)
 public class CachePutGetExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";

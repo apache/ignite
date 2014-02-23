@@ -731,6 +731,11 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public void close() throws GridException {
+        end();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean needsCompletedVersions() {
         return false;
     }
@@ -1389,6 +1394,11 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         /** {@inheritDoc} */
         @Override public boolean isRollbackOnly() {
             return rollbackOnly;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws GridException {
+            end();
         }
 
         /** {@inheritDoc} */
