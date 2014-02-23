@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.advanced.datagrid.jdbc;
+package org.gridgain.examples.advanced.datagrid.jdbcdriver;
 
 import org.gridgain.client.*;
 import org.gridgain.grid.*;
@@ -73,7 +73,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
-public class GridCacheJdbcExample {
+public class GridCacheJdbcDriverExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
     //private static final String CACHE_NAME = "replicated";
