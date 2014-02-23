@@ -202,7 +202,7 @@ class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuousQuery<
 
             assert node != null;
 
-            if ((prj.dynamic() || nodes.size() > 1) && !ctx.cache().isDrSystemCache()) {
+            if (nodes.size() > 1 && !ctx.cache().isDrSystemCache()) {
                 if (node.id().equals(ctx.localNodeId()))
                     U.warn(log, "Continuous query for " + mode + " cache can be run only on local node. " +
                         "Will execute query locally: " + this);

@@ -22,8 +22,6 @@ import scala.collection.immutable
 import collection.JavaConversions._
 import org.gridgain.grid._
 import org.gridgain.grid.{GridGain => G, GridException => GE}
-import org.gridgain.grid.kernal.{GridClosureCallMode, GridEx}
-import GridClosureCallMode._
 import org.gridgain.grid.util.lang.{GridFunc => F}
 import org.gridgain.grid.events._
 import org.gridgain.grid.events.GridEventType._
@@ -2347,7 +2345,7 @@ object visor extends VisorTag {
                             evts = evts ++ g.forRemotes()
                                 .compute()
                                 .withName("visor-log-collector")
-                                .withResultClosure(X.NO_FAILOVER)
+                                .withNoFailover()
                                 .call(() => Collector.collect(LOG_EVTS, g, key))
                                 .get
                         }

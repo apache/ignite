@@ -82,11 +82,11 @@ public interface GridProjection {
     /**
      * TODO: javadoc
      *
-     * @param nodeId Node ID to get projection for.
-     * @param nodeIds Optional additional node IDs to include into projection.
+     * @param id Node ID to get projection for.
+     * @param ids Optional additional node IDs to include into projection.
      * @return Projection over node with specified node ID.
      */
-    public GridProjection forNodeId(UUID nodeId, UUID... nodeIds);
+    public GridProjection forNodeId(UUID id, UUID... ids);
 
     /**
      * Creates monadic projection with the nodes from this projection that also satisfy given
@@ -181,23 +181,11 @@ public interface GridProjection {
     /**
      * Gets a node for given ID from this optionally filtered projection.
      *
-     * @param nid Node ID.
+     * @param id Node ID.
      * @return Node with given ID from this projection or {@code null} if such node does not exist in this
      *      projection.
      */
-    @Nullable public GridNode node(UUID nid);
-
-    /**
-     * Tells whether or not this projection is dynamic.
-     * <p>
-     * Dynamic projection is based on predicate and in any particular moment of time
-     * can consist of a different set of nodes. Static project does not change and always
-     * consist of the same set of nodes (excluding the node that have left the topology
-     * since the creation of the static projection).
-     *
-     * @return Whether or not projection is dynamic.
-     */
-    public boolean dynamic();
+    @Nullable public GridNode node(UUID id);
 
     /**
      * Gets predicate that defines a subset of nodes for this projection at the time of the call.

@@ -9,38 +9,37 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.messaging.*;
-import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
-import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.kernal.GridNodeAttributes.ATTR_MACS;
+import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
  * @author @java.author
  * @version @java.version
  */
-abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements GridProjection {
-    /** Log reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+public class GridProjectionAdapter extends GridMetadataAwareAdapter implements GridProjection, Externalizable {
+    /** */
+    private static final ThreadLocal<String> stash = new ThreadLocal<>();
 
     /** */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     protected transient GridKernalContext ctx;
 
     /** */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private transient GridLogger log;
+    private GridPredicate<GridNode> p;
+
+    /** */
+    private Set<UUID> ids;
 
     /** */
     private GridProjection parent;
@@ -55,33 +54,39 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
     private GridEvents evts;
 
     /**
-     *
      * @param parent Parent of this projection.
      * @param ctx Grid kernal context.
+     * @param p Predicate.
      */
-    protected GridProjectionAdapter(@Nullable GridProjection parent, GridKernalContext ctx) {
-        this(parent);
-
-        assert ctx != null;
-
-        setKernalContext(ctx);
-    }
-
-    /**
-     *
-     * @param parent Parent of this projection.
-     */
-    protected GridProjectionAdapter(@Nullable GridProjection parent) {
+    protected GridProjectionAdapter(@Nullable GridProjection parent, @Nullable GridKernalContext ctx,
+        @Nullable GridPredicate<GridNode> p) {
         this.parent = parent;
+
+        if (ctx != null)
+            setKernalContext(ctx);
+
+        this.p = p;
+
+        ids = null;
     }
 
     /**
-     * Gets logger.
-     *
-     * @return Logger.
+     * @param parent Parent of this projection.
+     * @param ctx Grid kernal context.
+     * @param ids Node IDs.
      */
-    protected GridLogger log() {
-        return log;
+    protected GridProjectionAdapter(@Nullable GridProjection parent, @Nullable GridKernalContext ctx,
+        Set<UUID> ids) {
+        this.parent = parent;
+
+        if (ctx != null)
+            setKernalContext(ctx);
+
+        assert ids != null;
+
+        this.ids = ids;
+
+        p = F.nodeForNodeIds(ids);
     }
 
     /**
@@ -124,8 +129,6 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
 
         if (parent == null)
             parent = ctx.grid();
-
-        log = U.logger(ctx, logRef, GridProjectionAdapter.class);
     }
 
     /** {@inheritDoc} */
@@ -195,7 +198,23 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
         guard();
 
         try {
-            return F.view(ctx.discovery().nodes(), predicate());
+            if (ids != null) {
+                Collection<GridNode> nodes = new ArrayList<>(ids.size());
+
+                for (UUID id : ids) {
+                    GridNode node = ctx.discovery().node(id);
+
+                    if (node != null)
+                        nodes.add(node);
+                }
+
+                return nodes;
+            }
+            else {
+                Collection<GridNode> all = ctx.discovery().nodes();
+
+                return p != null ? F.view(all, p) : all;
+            }
         }
         finally {
             unguard();
@@ -203,18 +222,28 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public GridNode node(UUID nodeId) {
-        A.notNull(nodeId, "nodeId");
+    @Override public GridNode node(UUID id) {
+        A.notNull(id, "id");
 
         guard();
 
         try {
-            return F.find(F.concat(false, nodes(), ctx.discovery().daemonNodes()), null,
-                F.<GridNode>nodeForNodeId(nodeId));
+            if (ids != null)
+                return ids.contains(id) ? ctx.discovery().node(id) : null;
+            else {
+                GridNode node = ctx.discovery().node(id);
+
+                return node != null && (p == null || p.apply(node)) ? node : null;
+            }
         }
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridPredicate<GridNode> predicate() {
+        return p != null ? p : F.<GridNode>alwaysTrue();
     }
 
     /** {@inheritDoc} */
@@ -224,8 +253,7 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
         guard();
 
         try {
-            // New projection will be dynamic.
-            return new GridProjectionImpl(this, ctx, F.and(p, predicate()));
+            return new GridProjectionAdapter(this, ctx, this.p != null ? F.and(p, this.p) : p);
         }
         finally {
             unguard();
@@ -243,47 +271,140 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
     @Override public GridProjection forNode(GridNode node, GridNode... nodes) {
         A.notNull(node, "node");
 
-        Set<UUID> nodeIds;
+        guard();
 
-        GridPredicate<GridNode> p = predicate();
+        try {
+            Set<UUID> nodeIds;
 
-        if (F.isEmpty(nodes))
-            nodeIds = p.apply(node) ? Collections.singleton(node.id()) : Collections.<UUID>emptySet();
-        else {
-            nodeIds = new HashSet<>(nodes.length + 1);
+            if (F.isEmpty(nodes))
+                nodeIds = contains(node) ? Collections.singleton(node.id()) : Collections.<UUID>emptySet();
+            else {
+                nodeIds = new HashSet<>(nodes.length + 1);
 
-            for (GridNode n : nodes)
-                if (p.apply(n))
-                    nodeIds.add(n.id());
+                for (GridNode n : nodes)
+                    if (contains(n))
+                        nodeIds.add(n.id());
 
-            if (p.apply(node))
-                nodeIds.add(node.id());
+                if (contains(node))
+                    nodeIds.add(node.id());
+            }
+
+            return new GridProjectionAdapter(this, ctx, nodeIds);
         }
-
-        return newProjection(nodeIds, false);
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public GridProjection forNodes(Collection<? extends GridNode> nodes) {
         A.notEmpty(nodes, "nodes");
 
-        Set<UUID> nodeIds = new HashSet<>(nodes.size());
+        guard();
 
-        GridPredicate<GridNode> p = predicate();
+        try {
+            Set<UUID> nodeIds = new HashSet<>(nodes.size());
 
-        for (GridNode n : nodes)
-            if (p.apply(n))
-                nodeIds.add(n.id());
+            for (GridNode n : nodes)
+                if (contains(n))
+                    nodeIds.add(n.id());
 
-        // Static projection.
-        return newProjection(nodeIds, false);
+            return new GridProjectionAdapter(this, ctx, nodeIds);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forNodeId(UUID id, UUID... ids) {
+        A.notNull(id, "id");
+
+        guard();
+
+        try {
+            Set<UUID> nodeIds;
+
+            if (F.isEmpty(ids))
+                nodeIds = contains(id) ? Collections.singleton(id) : Collections.<UUID>emptySet();
+            else {
+                nodeIds = new HashSet<>(ids.length + 1);
+
+                for (UUID id0 : ids) {
+                    if (contains(id))
+                        nodeIds.add(id0);
+                }
+
+                if (contains(id))
+                    nodeIds.add(id);
+            }
+
+            return new GridProjectionAdapter(this, ctx, nodeIds);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forNodeIds(Collection<UUID> ids) {
+        A.notEmpty(ids, "ids");
+
+        guard();
+
+        try {
+            Set<UUID> nodeIds = new HashSet<>(ids.size());
+
+            for (UUID id : ids) {
+                if (contains(id))
+                    nodeIds.add(id);
+            }
+
+            return new GridProjectionAdapter(this, ctx, nodeIds);
+        }
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public GridProjection forOthers(GridNode node) {
         A.notNull(node, "node");
 
-        return forPredicate(new OthersFilter(node.id()));
+        return forOthers(node.id());
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forRemotes() {
+        return forOthers(ctx.localNodeId());
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @return New projection.
+     */
+    private GridProjection forOthers(UUID nodeId) {
+        assert nodeId != null;
+
+        if (ids != null) {
+            guard();
+
+            try {
+                Set<UUID> nodeIds = new HashSet<>(ids.size());
+
+                for (UUID id : ids) {
+                    if (!nodeId.equals(id))
+                        nodeIds.add(id);
+                }
+
+                return new GridProjectionAdapter(this, ctx, nodeIds);
+            }
+            finally {
+                unguard();
+            }
+        }
+        else
+            return forPredicate(new OthersFilter(nodeId));
     }
 
     /** {@inheritDoc} */
@@ -297,104 +418,6 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forNodeIds(Collection<UUID> ids) {
-        A.notEmpty(ids, "ids");
-
-        // Static projection.
-        return newProjection(new HashSet<>(ids), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridProjection forNodeId(UUID nodeId, UUID... nodeIds) {
-        A.notNull(nodeId, "nodeId");
-
-        Set<UUID> ids;
-
-        if (F.isEmpty(nodeIds))
-            ids = new GridLeanSet<>(1);
-        else {
-            ids = new HashSet<>(nodeIds.length + 1);
-
-            Collections.addAll(ids, nodeIds);
-        }
-
-        ids.add(nodeId);
-
-        return newProjection(ids, true);
-    }
-
-    /**
-     * Utility method that creates new grid projection with necessary short-circuit logic.
-     *
-     * @param nodeIds Node IDs to create projection with.
-     * @param filterIds If given set must be filtered with this projection predicate.
-     * @return Newly created projection.
-     */
-    @SuppressWarnings({"ConstantConditions"})
-    protected GridProjection newProjection(Set<UUID> nodeIds, boolean filterIds) {
-        assert nodeIds != null;
-
-        guard();
-
-        try {
-            if (filterIds)
-                filterNodeIds(nodeIds);
-
-            return new GridProjectionImpl(this, ctx, nodeIds);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /**
-     * @param nodeIds Node IDs.
-     */
-    protected void filterNodeIds(Set<UUID> nodeIds) {
-        GridPredicate<GridNode> p = predicate();
-
-        if (F.isAlwaysTrue(p))
-            return;
-
-        Iterator<UUID> iter = nodeIds.iterator();
-
-        while (iter.hasNext()) {
-            UUID nodeId = iter.next();
-
-            if (nodeId == null)
-                throw new NullPointerException("nodeId is null");
-
-            GridNode n = ctx.discovery().node(nodeId);
-
-            if (n == null || !p.apply(n))
-                iter.remove();
-        }
-    }
-
-    /**
-     * Utility method.
-     *
-     * @param p Predicate for the array.
-     * @return One-element array.
-     */
-    @SuppressWarnings("unchecked")
-    protected <T> GridPredicate<T>[] asArray(GridPredicate<T> p) {
-        return (GridPredicate<T>[])new GridPredicate[] { p };
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridProjection forRemotes() {
-        guard();
-
-        try {
-            return new GridProjectionImpl(this, ctx, F.and(predicate(), F.not(F.nodeForNodeId(ctx.localNodeId()))));
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public GridProjection forHost(GridNode node) {
         A.notNull(node, "node");
 
@@ -402,24 +425,88 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
 
         assert macs != null;
 
-        return forPredicate(new AttributeFilter(ATTR_MACS, macs));
+        return forAttribute(ATTR_MACS, macs);
     }
 
     /** {@inheritDoc} */
     @Override public GridProjection forDaemons() {
-        guard();
-
-        try {
-            return new GridProjectionImpl(this, ctx, F.and(predicate(), new DaemonFilter()));
-        }
-        finally {
-            unguard();
-        }
+        return forPredicate(new DaemonFilter());
     }
 
     /** {@inheritDoc} */
     @Override public GridProjection forRandom() {
-        return forNode(F.rand(nodes()));
+        return ids != null ? forNodeId(F.rand(ids)) : forNode(F.rand(nodes()));
+    }
+
+    /**
+     * @param n Node.
+     * @return Whether node belongs to this projection.
+     */
+    private boolean contains(GridNode n) {
+        assert n != null;
+
+        return ids != null ? ids.contains(n.id()) : p == null || p.apply(n);
+    }
+
+    /**
+     * @param id Node ID.
+     * @return Whether node belongs to this projection.
+     */
+    private boolean contains(UUID id) {
+        assert id != null;
+
+        if (ids != null)
+            return ids.contains(id);
+        else {
+            GridNode n = ctx.discovery().node(id);
+
+            return n != null && (p == null || p.apply(n));
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeString(out, ctx.gridName());
+
+        out.writeBoolean(ids != null);
+
+        if (ids != null)
+            out.writeObject(ids);
+        else
+            out.writeObject(p);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        stash.set(U.readString(in));
+
+        if (in.readBoolean())
+            ids = (Set<UUID>)in.readObject();
+        else
+            p = (GridPredicate<GridNode>)in.readObject();
+    }
+
+    /**
+     * Reconstructs object on demarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     */
+    protected Object readResolve() throws ObjectStreamException {
+        try {
+            String gridName = stash.get();
+
+            GridKernal g = GridFactoryEx.gridx(gridName);
+
+            return ids != null ? new GridProjectionAdapter(g, g.context(), ids) :
+                p != null ? new GridProjectionAdapter(g, g.context(), p) : g;
+        }
+        catch (IllegalStateException e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
+        finally {
+            stash.remove();
+        }
     }
 
     /**
@@ -507,47 +594,6 @@ abstract class GridProjectionAdapter extends GridMetadataAwareAdapter implements
         /** {@inheritDoc} */
         @Override public boolean apply(GridNode n) {
             return val == null ? n.attributes().containsKey(name) : val.equals(n.attribute(name));
-        }
-    }
-
-    /**
-     */
-    private static class KeysFilter extends GridPredicate<GridNode> {
-        /** Context. */
-        private final GridKernalContext ctx;
-
-        /** Logger. */
-        private final GridLogger log;
-
-        /** Cache name. */
-        private final String cacheName;
-
-        /** Keys. */
-        private final Collection<?> keys;
-
-        /**
-         * @param ctx Context.
-         * @param log Logger.
-         * @param cacheName Cache name.
-         * @param keys Keys.
-         */
-        private KeysFilter(GridKernalContext ctx, GridLogger log, String cacheName, Collection<?> keys) {
-            this.ctx = ctx;
-            this.log = log;
-            this.cacheName = cacheName;
-            this.keys = keys;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(GridNode n) {
-            try {
-                return ctx.affinity().mapKeysToNodes(cacheName, keys).keySet().contains(n);
-            }
-            catch (GridException e) {
-                LT.warn(log, e, "Failed to map keys to nodes [cacheName=" + cacheName + ", keys=" + keys + ']');
-
-                return false;
-            }
         }
     }
 

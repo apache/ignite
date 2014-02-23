@@ -9,11 +9,9 @@
 
 package org.gridgain.grid.util.typedef;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -24,7 +22,7 @@ import java.util.*;
  * Defines global scope.
  * <p>
  * Contains often used utility functions allowing to cut down on code bloat. This
- * is somewhat analogous to <code>Predef</code> in Scala. Note that this should only be used
+ * is somewhat analogous to {@code Predef} in Scala. Note that this should only be used
  * when this typedef <b>does not sacrifice</b> the code readability.
  *
  * @author @java.author
@@ -33,27 +31,6 @@ import java.util.*;
 public final class X {
     /** Time span dividers. */
     private static final long[] SPAN_DIVS = new long[] {1000L, 60L, 60L, 60L};
-
-    /**
-     * Closure for no-failover policy. It is a convenient shortcut for method
-     * {@link GridProjection#withResultClosure(GridClosure2X)} to disable any failover.
-     *
-     * @see GridProjection#withResultClosure(GridClosure2X)
-     */
-    public static final GridClosure2X<GridComputeJobResult, List<GridComputeJobResult>, GridComputeJobResultPolicy> NO_FAILOVER =
-        new GridClosure2X<GridComputeJobResult, List<GridComputeJobResult>, GridComputeJobResultPolicy>() {
-            @Override public GridComputeJobResultPolicy applyx(GridComputeJobResult gridJobRes, List<GridComputeJobResult> gridJobResults)
-                throws GridException {
-                for (GridComputeJobResult r : gridJobResults) {
-                    GridException err = r.getException();
-
-                    if (err != null)
-                        throw err;
-                }
-
-                return GridComputeJobResultPolicy.WAIT;
-            }
-        };
 
     /**
      * Ensures singleton.

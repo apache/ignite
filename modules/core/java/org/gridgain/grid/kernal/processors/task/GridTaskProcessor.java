@@ -467,8 +467,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Task deployment: " + dep);
 
-        boolean fullSup = map.containsKey(TC_SES_FULL_SUPPORT) ||
-            (dep != null && taskCls!= null && dep.annotation(taskCls, GridComputeTaskSessionFullSupport.class) != null);
+        boolean fullSup = dep != null && taskCls!= null &&
+            dep.annotation(taskCls, GridComputeTaskSessionFullSupport.class) != null;
 
         Collection<? extends GridNode> nodes = (Collection<? extends GridNode>)map.get(TC_SUBGRID);
 

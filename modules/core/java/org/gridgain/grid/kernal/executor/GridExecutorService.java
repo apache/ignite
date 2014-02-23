@@ -126,7 +126,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            return stash.get().compute().executor();
+            return stash.get().compute().executorService();
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

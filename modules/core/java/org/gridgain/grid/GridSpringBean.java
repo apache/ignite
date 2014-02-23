@@ -348,13 +348,6 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
     }
 
     /** {@inheritDoc} */
-    @Override public boolean dynamic() {
-        assert g != null;
-
-        return g.dynamic();
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<GridNode> topology(long topVer) {
         return g.topology(topVer);
     }
