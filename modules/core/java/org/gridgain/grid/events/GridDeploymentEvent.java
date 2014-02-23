@@ -10,6 +10,7 @@
 package org.gridgain.grid.events;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
@@ -22,8 +23,12 @@ import java.util.*;
  * APIs for performing a distributed queries across multiple nodes:
  * <ul>
  *      <li>
- *          {@link GridEvents#queryRemote(org.gridgain.grid.lang.GridPredicate, long)} -
+ *          {@link GridEvents#queryRemote(GridPredicate, long)} -
  *          asynchronously querying events occurred on the nodes specified, including remote nodes.
+ *      </li>
+ *      <li>
+ *          {@link GridEvents#queryLocal(GridPredicate)} -
+ *          querying only local events stored on this local node.
  *      </li>
  *      <li>
  *          {@link GridEvents#addLocalListener(GridLocalEventListener, int...)} -
