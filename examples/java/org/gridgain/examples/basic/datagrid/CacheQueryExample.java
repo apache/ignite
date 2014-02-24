@@ -7,21 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.advanced.datagrid.query;
+package org.gridgain.examples.basic.datagrid;
 
-import org.gridgain.examples.advanced.datagrid.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.product.*;
 
+import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Grid cache queries example. This example demonstrates SQL, TEXT, and FULL SCAN
@@ -63,11 +60,12 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @author @java.author
  * @version @java.version
  */
-@GridOnlyAvailableIn(DATA_GRID)
-public class GridCacheQueryExample {
+public class CacheQueryExample {
     /** Cache name. */
-    private static final String CACHE_NAME = "partitioned_tx";
+    private static final String CACHE_NAME = "partitioned";
+    // private static final String CACHE_NAME = "partitioned_tx";
     // private static final String CACHE_NAME = "replicated";
+    // private static final String CACHE_NAME = "local";
 
     /**
      * Put data to cache and then queries them.
@@ -76,38 +74,32 @@ public class GridCacheQueryExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Grid g = args.length == 0 ? GridGain.start("examples/config/example-cache.xml") : GridGain.start(args[0])) {
+        try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
             print("Query example started.");
 
             // Populate cache.
-            initialize(g);
-
-            // Using distributed queries for partitioned cache and local queries for replicated cache.
-            // Since in replicated caches data is available on all nodes, including local one,
-            // it is enough to just query the local node.
-            GridProjection p = cache(g).configuration().getCacheMode() == PARTITIONED ? g :
-                g.forLocal();
+            initialize();
 
             // Example for SQL-based querying employees based on salary ranges.
-            querySalaries(g, p);
+            sqlQuery();
 
             // Example for SQL-based querying employees for a given organization (includes SQL join).
-            queryEmployees(g, p);
+            sqlQueryWithJoin();
 
             // Example for TEXT-based querying for a given string in peoples resumes.
-            queryDegree(g, p);
+            textQuery();
 
             // Example for SQL-based querying with custom remote and local reducers
             // to calculate average salary among all employees within a company.
-            queryAverageSalary(g, p);
+            sqlQueryWithReducers();
 
             // Example for SQL-based querying with custom remote transformer to make sure
             // that only required data without any overhead is returned to caller.
-            queryEmployeeNames(g, p);
+            sqlQueryWithTransformer();
 
             // Example for SQL-based fields queries that return only required
             // fields instead of whole key-value pairs.
-            queryFields(g, p);
+            sqlFieldsQuery();
 
             print("Query example finished.");
         }
@@ -125,16 +117,13 @@ public class GridCacheQueryExample {
 
     /**
      * Example for SQL queries based on salary ranges.
-     *
-     * @param g Grid.
-     * @param p Grid projection to run query on.
      */
-    private static void querySalaries(Grid g, GridProjection p) {
-        GridCacheProjection<GridCacheAffinityKey<UUID>, AffinityPerson> cache = cache(g);
+    private static void sqlQuery() {
+        GridCache<GridCacheAffinityKey<UUID>, Person> cache = GridGain.grid().cache(CACHE_NAME);
 
         // Create query which selects salaries based on range.
-        GridCacheQuery<GridCacheAffinityKey<UUID>, AffinityPerson> qry =
-            cache.queries().createQuery(SQL, AffinityPerson.class, "salary > ? and salary <= ?").projection(p);
+        GridCacheQuery<GridCacheAffinityKey<UUID>, Person> qry =
+            cache.queries().createQuery(SQL, Person.class, "salary > ? and salary <= ?");
 
         // Execute queries for salary ranges.
         print("People with salaries between 0 and 1000: ",
@@ -149,19 +138,15 @@ public class GridCacheQueryExample {
 
     /**
      * Example for SQL queries based on all employees working for a specific organization.
-     *
-     * @param g Grid.
-     * @param p Grid projection to run query on.
      */
-    private static void queryEmployees(Grid g, GridProjection p) {
-        GridCacheProjection<GridCacheAffinityKey<UUID>, AffinityPerson> cache = cache(g);
+    private static void sqlQueryWithJoin() {
+        GridCache<GridCacheAffinityKey<UUID>, Person> cache = GridGain.grid().cache(CACHE_NAME);
 
         // Create query which joins on 2 types to select people for a specific organization.
-        GridCacheQuery<GridCacheAffinityKey<UUID>, AffinityPerson> qry =
-            cache.queries().createQuery(SQL, AffinityPerson.class,
-                "from AffinityPerson, Organization " +
-                    "where AffinityPerson.orgId = Organization.id and lower(Organization.name) = lower(?)")
-            .projection(p);
+        GridCacheQuery<GridCacheAffinityKey<UUID>, Person> qry =
+            cache.queries().createQuery(SQL, Person.class,
+                "from Person, Organization " +
+                    "where Person.orgId = Organization.id and lower(Organization.name) = lower(?)");
 
         // Execute queries for find employees for different organizations.
         print("Following people are 'GridGain' employees: ",
@@ -173,20 +158,18 @@ public class GridCacheQueryExample {
 
     /**
      * Example for TEXT queries using LUCENE-based indexing of people's resumes.
-     *
-     * @param g Grid.
-     * @param p Grid projection to run query on.
      */
-    private static void queryDegree(Grid g, GridProjection p) {
-        GridCacheProjection<GridCacheAffinityKey<UUID>, AffinityPerson> cache = cache(g);
+    private static void textQuery() {
+        GridCache<GridCacheAffinityKey<UUID>, Person> cache = GridGain.grid().cache(CACHE_NAME);
+
 
         //  Query for all people with "Master Degree" in their resumes.
-        GridCacheQuery<GridCacheAffinityKey<UUID>, AffinityPerson> masters =
-            cache.queries().createQuery(TEXT, AffinityPerson.class, "Master").projection(p);
+        GridCacheQuery<GridCacheAffinityKey<UUID>, Person> masters =
+            cache.queries().createQuery(TEXT, Person.class, "Master");
 
         // Query for all people with "Bachelor Degree"in their resumes.
-        GridCacheQuery<GridCacheAffinityKey<UUID>, AffinityPerson> bachelors =
-            cache.queries().createQuery(TEXT, AffinityPerson.class, "Bachelor").projection(p);
+        GridCacheQuery<GridCacheAffinityKey<UUID>, Person> bachelors =
+            cache.queries().createQuery(TEXT, Person.class, "Bachelor");
 
         print("Following people have 'Master Degree' in their resumes: ", masters.execute());
 
@@ -197,28 +180,26 @@ public class GridCacheQueryExample {
      * Example for SQL queries with custom remote and local reducers to calculate
      * average salary for a specific organization.
      *
-     * @param g Grid.
-     * @param p Grid projection to run query on.
      * @throws GridException In case of error.
      */
-    private static void queryAverageSalary(Grid g, GridProjection p) throws GridException {
-        GridCacheProjection<GridCacheAffinityKey<UUID>, AffinityPerson> cache = cache(g);
+    private static void sqlQueryWithReducers() throws GridException {
+        GridCacheProjection<GridCacheAffinityKey<UUID>, Person> cache = GridGain.grid().cache(CACHE_NAME);
 
         // Calculate average of salary of all persons in GridGain.
-        GridCacheReduceQuery<GridCacheAffinityKey<UUID>, AffinityPerson, GridBiTuple<Double, Integer>, Double> qry =
-            cache.queries().createReduceQuery(SQL, AffinityPerson.class,
-                "from AffinityPerson, Organization " +
-                    "where AffinityPerson.orgId = Organization.id and lower(Organization.name) = lower(?)");
+        GridCacheReduceQuery<GridCacheAffinityKey<UUID>, Person, GridBiTuple<Double, Integer>, Double> qry =
+            cache.queries().createReduceQuery(SQL, Person.class,
+                "from Person, Organization " +
+                    "where Person.orgId = Organization.id and lower(Organization.name) = lower(?)");
 
         // Calculate sum of salaries and employee count on remote nodes.
-        qry = qry.projection(p).remoteReducer(
-            new GridReducer<Map.Entry<GridCacheAffinityKey<UUID>, AffinityPerson>, GridBiTuple<Double, Integer>>() {
+        qry = qry.remoteReducer(
+            new GridReducer<Map.Entry<GridCacheAffinityKey<UUID>, Person>, GridBiTuple<Double, Integer>>() {
                 private double sum;
 
                 private int cnt;
 
-                @Override public boolean collect(Map.Entry<GridCacheAffinityKey<UUID>, AffinityPerson> e) {
-                    sum += e.getValue().getSalary();
+                @Override public boolean collect(Map.Entry<GridCacheAffinityKey<UUID>, Person> e) {
+                    sum += e.getValue().salary;
 
                     cnt++;
 
@@ -268,26 +249,24 @@ public class GridCacheQueryExample {
      * Example for SQL queries with custom transformer to allow passing
      * only the required set of fields back to caller.
      *
-     * @param g Grid.
-     * @param p Grid projection to run query on.
      * @throws GridException In case of error.
      */
-    private static void queryEmployeeNames(Grid g, GridProjection p) throws GridException {
-        GridCacheProjection<GridCacheAffinityKey<UUID>, AffinityPerson> cache = cache(g);
+    private static void sqlQueryWithTransformer() throws GridException {
+        GridCache<GridCacheAffinityKey<UUID>, Person> cache = GridGain.grid().cache(CACHE_NAME);
 
         // Create query to get names of all employees working for some company.
-        GridCacheTransformQuery<GridCacheAffinityKey<UUID>, AffinityPerson, String> qry =
-            cache.queries().createTransformQuery(SQL, AffinityPerson.class,
-                "from AffinityPerson, Organization " +
-                    "where AffinityPerson.orgId = Organization.id and lower(Organization.name) = lower(?)");
+        GridCacheTransformQuery<GridCacheAffinityKey<UUID>, Person, String> qry =
+            cache.queries().createTransformQuery(SQL, Person.class,
+                "from Person, Organization " +
+                    "where Person.orgId = Organization.id and lower(Organization.name) = lower(?)");
 
         // Transformer to convert Person objects to String.
         // Since caller only needs employee names, we only
         // send names back.
-        qry = qry.projection(p).remoteTransformer(
-            new GridClosure<AffinityPerson, String>() {
-                @Override public String apply(AffinityPerson p) {
-                    return p.getLastName();
+        qry = qry.remoteTransformer(
+            new GridClosure<Person, String>() {
+                @Override public String apply(Person p) {
+                    return p.lastName;
                 }
             });
 
@@ -300,16 +279,14 @@ public class GridCacheQueryExample {
      * Example for SQL-based fields queries that return only required
      * fields instead of whole key-value pairs.
      *
-     * @param g Grid.
-     * @param p Grid projection to run query on.
      * @throws GridException In case of error.
      */
-    private static void queryFields(Grid g, GridProjection p) throws GridException {
-        GridCache<?, ?> cache = g.cache(CACHE_NAME);
+    private static void sqlFieldsQuery() throws GridException {
+        GridCache<?, ?> cache = GridGain.grid().cache(CACHE_NAME);
 
         // Create query to get names of all employees.
         GridCacheFieldsQuery qry1 = cache.queries().createFieldsQuery(
-            "select concat(firstName, ' ', lastName) from AffinityPerson").projection(p);
+            "select concat(firstName, ' ', lastName) from Person");
 
         // Execute query to get collection of rows. In this particular
         // case each row will have one element with full name of an employees.
@@ -320,7 +297,7 @@ public class GridCacheQueryExample {
 
         // Create query that gets employee by name and returns his salary.
         GridCacheFieldsQuery qry2 = cache.queries().createFieldsQuery(
-            "select salary from AffinityPerson where concat(firstName, ' ', lastName) = ?");
+            "select salary from Person where concat(firstName, ' ', lastName) = ?");
 
         // Only one row with one field is expected in result of this query,
         // so you can use convenient 'executeSingleField' method here.
@@ -331,32 +308,31 @@ public class GridCacheQueryExample {
     /**
      * Populate cache with test data.
      *
-     * @param g Grid.
      * @throws GridException In case of error.
      * @throws InterruptedException In case of error.
      */
-    private static void initialize(Grid g) throws GridException, InterruptedException {
-        GridCacheProjection<GridCacheAffinityKey<UUID>, AffinityPerson> cache = cache(g);
+    private static void initialize() throws GridException, InterruptedException {
+        GridCache<?, ?> cache = GridGain.grid().cache(CACHE_NAME);
 
         // Organization projection.
         GridCacheProjection<UUID, Organization> orgCache = cache.projection(UUID.class, Organization.class);
 
         // Person projection.
-        GridCacheProjection<GridCacheAffinityKey<UUID>, AffinityPerson> personCache =
-            cache.projection(GridCacheAffinityKey.class, AffinityPerson.class);
+        GridCacheProjection<GridCacheAffinityKey<UUID>, Person> personCache =
+            cache.projection(GridCacheAffinityKey.class, Person.class);
 
         // Organizations.
         Organization org1 = new Organization("GridGain");
         Organization org2 = new Organization("Other");
 
         // People.
-        AffinityPerson p1 = new AffinityPerson(org1, "John", "Doe", 2000, "John Doe has Master Degree.");
-        AffinityPerson p2 = new AffinityPerson(org1, "Jane", "Doe", 1000, "Jane Doe has Bachelor Degree.");
-        AffinityPerson p3 = new AffinityPerson(org2, "John", "Smith", 1000, "John Smith has Bachelor Degree.");
-        AffinityPerson p4 = new AffinityPerson(org2, "Jane", "Smith", 2000, "Jane Smith has Master Degree.");
+        Person p1 = new Person(org1, "John", "Doe", 2000, "John Doe has Master Degree.");
+        Person p2 = new Person(org1, "Jane", "Doe", 1000, "Jane Doe has Bachelor Degree.");
+        Person p3 = new Person(org2, "John", "Smith", 1000, "John Smith has Bachelor Degree.");
+        Person p4 = new Person(org2, "Jane", "Smith", 2000, "Jane Smith has Master Degree.");
 
-        orgCache.put(org1.getId(), org1);
-        orgCache.put(org2.getId(), org2);
+        orgCache.put(org1.id, org1);
+        orgCache.put(org2.id, org2);
 
         // Note that in this example we use custom affinity key for Person objects
         // to ensure that all persons are collocated with their organizations.
@@ -405,5 +381,123 @@ public class GridCacheQueryExample {
      */
     private static void print(Object o) {
         System.out.println(">>> " + o);
+    }
+
+    /**
+     * Person class.
+     */
+    private static class Person implements Serializable {
+        /** Person ID (create unique SQL index for this field). */
+        @GridCacheQuerySqlField(unique = true)
+        private UUID id;
+
+        /** Organization ID (create non-unique SQL index for this field). */
+        @GridCacheQuerySqlField
+        private UUID orgId;
+
+        /** First name (not-indexed). */
+        @GridCacheQuerySqlField(index = false)
+        private String firstName;
+
+        /** Last name (not indexed). */
+        @GridCacheQuerySqlField(index = false)
+        private String lastName;
+
+        /** Resume text (create LUCENE-based TEXT index for this field). */
+        @GridCacheQueryTextField
+        private String resume;
+
+        /** Salary (create non-unique SQL index for this field). */
+        @GridCacheQuerySqlField
+        private double salary;
+
+        /** Custom cache key to guarantee that person is always collocated with its organization. */
+        private transient GridCacheAffinityKey<UUID> key;
+
+        /**
+         * Constructs person record.
+         *
+         * @param org Organization.
+         * @param firstName First name.
+         * @param lastName Last name.
+         * @param salary Salary.
+         * @param resume Resume text.
+         */
+        Person(Organization org, String firstName, String lastName, double salary, String resume) {
+            // Generate unique ID for this person.
+            id = UUID.randomUUID();
+
+            orgId = org.id;
+
+            this.firstName = firstName;
+            this.lastName = lastName;
+            this.resume = resume;
+            this.salary = salary;
+        }
+
+        /**
+         * Gets cache affinity key. Since in some examples person needs to be collocated with organization, we create
+         * custom affinity key to guarantee this collocation.
+         *
+         * @return Custom affinity key to guarantee that person is always collocated with organization.
+         */
+        public GridCacheAffinityKey<UUID> key() {
+            if (key == null)
+                key = new GridCacheAffinityKey<>(id, orgId);
+
+            return key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("Person ");
+            sb.append("[firstName=").append(firstName);
+            sb.append(", id=").append(id);
+            sb.append(", orgId=").append(orgId);
+            sb.append(", lastName=").append(lastName);
+            sb.append(", resume=").append(resume);
+            sb.append(", salary=").append(salary);
+            sb.append(']');
+
+            return sb.toString();
+        }
+    }
+
+    /**
+     * Organization class.
+     */
+    private static class Organization implements Serializable {
+        /** Organization ID (create unique SQL-based index for this field). */
+        @GridCacheQuerySqlField(unique = true)
+        private UUID id;
+
+        /** Organization name (create non-unique SQL-based index for this field. */
+        @GridCacheQuerySqlField
+        private String name;
+
+        /**
+         * Create organization.
+         *
+         * @param name Organization name.
+         */
+        Organization(String name) {
+            id = UUID.randomUUID();
+
+            this.name = name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("Organization ");
+            sb.append("[id=").append(id);
+            sb.append(", name=").append(name);
+            sb.append(']');
+
+            return sb.toString();
+        }
     }
 }

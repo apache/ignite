@@ -3499,7 +3499,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     void endTx(GridCacheTx tx) throws GridException {
         awaitLastFut();
 
-        tx.end();
+        tx.close();
     }
 
     /**

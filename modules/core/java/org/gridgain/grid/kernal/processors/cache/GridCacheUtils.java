@@ -1486,7 +1486,7 @@ public class GridCacheUtils {
             tx.commit();
         }
         finally {
-            tx.end();
+            tx.close();
         }
 
     }

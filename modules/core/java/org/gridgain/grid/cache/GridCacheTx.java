@@ -245,7 +245,7 @@ public interface GridCacheTx extends GridMetadataAware, AutoCloseable {
      *
      * @throws GridException If transaction could not be gracefully ended.
      */
-    public void end() throws GridException;
+    @Override public void close() throws GridException;
 
     /**
      * Asynchronously commits this transaction by initiating {@code two-phase-commit} process.
@@ -260,11 +260,4 @@ public interface GridCacheTx extends GridMetadataAware, AutoCloseable {
      * @throws GridException If rollback failed.
      */
     public void rollback() throws GridException;
-
-    /**
-     * Implementation of {@link AutoCloseable}. Behaves same as {@link #end()} method.
-     *
-     * @throws GridException If transaction could not be gracefully ended.
-     */
-    @Override public void close() throws GridException;
 }

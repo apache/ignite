@@ -9,7 +9,7 @@
 
 package org.gridgain.examples.advanced.datagrid;
 
-import org.gridgain.examples.advanced.datagrid.query.*;
+import org.gridgain.examples.basic.datagrid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.product.*;
 
@@ -18,7 +18,7 @@ import java.util.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
- * Person record used for affinity query examples, e.g. {@link GridCacheQueryExample}.
+ * Person record used for affinity query examples, e.g. {@link CacheQueryExample}.
  *
  * @author @java.author
  * @version @java.version

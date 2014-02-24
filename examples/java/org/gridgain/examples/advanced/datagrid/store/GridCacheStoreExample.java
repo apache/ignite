@@ -84,7 +84,7 @@ public class GridCacheStoreExample {
             tx.commit();
         }
         finally {
-            tx.end();
+            tx.close();
         }
 
         System.out.println("Read value after commit: " + cache.get(PERSON_ID));
@@ -119,7 +119,7 @@ public class GridCacheStoreExample {
             System.out.println("Read value: " + val);
         }
         finally {
-            tx.end();
+            tx.close();
         }
 
         System.out.println("Key value after rollback: " + cache.get(PERSON_ID));

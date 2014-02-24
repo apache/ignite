@@ -487,7 +487,7 @@ public final class GridCacheAtomicSequenceImpl extends GridMetadataAwareAdapter 
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };

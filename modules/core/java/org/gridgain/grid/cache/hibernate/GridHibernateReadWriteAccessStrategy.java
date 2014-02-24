@@ -205,7 +205,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
                 tx.commit();
             }
             finally {
-                tx.end();
+                tx.close();
             }
 
             assert cache.tx() == null;

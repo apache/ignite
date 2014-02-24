@@ -304,7 +304,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
                             throw e;
                         } finally {
-                            tx.end();
+                            tx.close();
                         }
                     }
                 }, cctx);
@@ -387,7 +387,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
                             throw e;
                         } finally {
-                            tx.end();
+                            tx.close();
                         }
                     }
                 }, cctx);
@@ -472,7 +472,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
                             throw e;
                         } finally {
-                            tx.end();
+                            tx.close();
                         }
                     }
                 }, cctx);
@@ -557,7 +557,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
                             throw e;
                         } finally {
-                            tx.end();
+                            tx.close();
                         }
                     }
                 }, cctx);
@@ -650,7 +650,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
                                     throw e;
                                 } finally {
-                                    tx.end();
+                                    tx.close();
                                 }
                             }
                             finally {
@@ -745,7 +745,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
                             throw e;
                         } finally {
-                            tx.end();
+                            tx.close();
                         }
                     }
                 }, cctx);
@@ -794,7 +794,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
                             throw e;
                         } finally {
-                            tx.end();
+                            tx.close();
                         }
                     }
                 },
@@ -839,7 +839,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
                         throw e;
                     } finally {
-                        tx.end();
+                        tx.close();
                     }
                 }
             },
@@ -1004,7 +1004,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
                             tx.commit();
                         }
                         finally {
-                            tx.end();
+                            tx.close();
                         }
                     }
                     catch (Exception e) {

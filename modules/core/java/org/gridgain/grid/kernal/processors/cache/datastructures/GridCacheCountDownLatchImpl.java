@@ -285,7 +285,7 @@ public final class GridCacheCountDownLatchImpl extends GridMetadataAwareAdapter 
                                 return new CountDownLatch(val.get());
                             }
                             finally {
-                                tx.end();
+                                tx.close();
                             }
                         }
                     },
@@ -399,7 +399,7 @@ public final class GridCacheCountDownLatchImpl extends GridMetadataAwareAdapter 
                 return retVal;
             }
             finally {
-                tx.end();
+                tx.close();
             }
         }
     }

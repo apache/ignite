@@ -277,7 +277,7 @@ public final class GridCacheAtomicReferenceImpl<T> extends GridMetadataAwareAdap
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };
@@ -324,7 +324,7 @@ public final class GridCacheAtomicReferenceImpl<T> extends GridMetadataAwareAdap
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };

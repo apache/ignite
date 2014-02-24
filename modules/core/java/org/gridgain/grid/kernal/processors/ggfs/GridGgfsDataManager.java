@@ -680,7 +680,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                                 }
                             }
                             finally {
-                                tx.end();
+                                tx.close();
                             }
                         }
                         else
@@ -1134,7 +1134,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             tx.commit();
         }
         finally {
-            tx.end();
+            tx.close();
         }
     }
 

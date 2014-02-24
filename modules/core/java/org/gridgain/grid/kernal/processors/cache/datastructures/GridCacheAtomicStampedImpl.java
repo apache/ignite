@@ -327,7 +327,7 @@ public final class GridCacheAtomicStampedImpl<T, S> extends GridMetadataAwareAda
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };
@@ -378,7 +378,7 @@ public final class GridCacheAtomicStampedImpl<T, S> extends GridMetadataAwareAda
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };

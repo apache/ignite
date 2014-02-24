@@ -98,7 +98,7 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
 
                 throw e;
             } finally {
-                tx.end();
+                tx.close();
             }
         }
     };
@@ -129,7 +129,7 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
 
                 throw e;
             } finally {
-                tx.end();
+                tx.close();
             }
         }
     };
@@ -160,7 +160,7 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
 
                 throw e;
             } finally {
-                tx.end();
+                tx.close();
             }
         }
     };
@@ -191,7 +191,7 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
 
                 throw e;
             } finally {
-                tx.end();
+                tx.close();
             }
         }
     };
@@ -423,7 +423,7 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };
@@ -461,7 +461,7 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };
@@ -499,7 +499,7 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };
@@ -547,7 +547,7 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };

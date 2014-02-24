@@ -169,11 +169,6 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public void close() throws GridException {
-        end();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void end() throws GridException {
         enter();
 
         try {
