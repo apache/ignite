@@ -30,10 +30,22 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
  */
 public class GridProjectionAdapter extends GridMetadataAwareAdapter implements GridProjection, Externalizable {
     /** */
-    private static final ThreadLocal<String> stash = new ThreadLocal<>();
+    protected transient GridKernalContext ctx;
 
     /** */
-    protected transient GridKernalContext ctx;
+    private transient GridProjection parent;
+
+    /** */
+    private transient GridComputeImpl compute;
+
+    /** */
+    private transient GridMessagingImpl messaging;
+
+    /** */
+    private transient GridEvents evts;
+
+    /** */
+    private String gridName;
 
     /** */
     private GridPredicate<GridNode> p;
@@ -41,17 +53,12 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     /** */
     private Set<UUID> ids;
 
-    /** */
-    private GridProjection parent;
-
-    /** */
-    private GridComputeImpl compute;
-
-    /** */
-    private GridMessagingImpl messaging;
-
-    /** */
-    private GridEvents evts;
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridProjectionAdapter() {
+        // No-op.
+    }
 
     /**
      * @param parent Parent of this projection.
@@ -129,6 +136,8 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
 
         if (parent == null)
             parent = ctx.grid();
+
+        gridName = ctx.gridName();
     }
 
     /** {@inheritDoc} */
@@ -466,7 +475,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, ctx.gridName());
+        U.writeString(out, gridName);
 
         out.writeBoolean(ids != null);
 
@@ -478,7 +487,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        stash.set(U.readString(in));
+        gridName = U.readString(in);
 
         if (in.readBoolean())
             ids = (Set<UUID>)in.readObject();
@@ -494,8 +503,6 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            String gridName = stash.get();
-
             GridKernal g = GridFactoryEx.gridx(gridName);
 
             return ids != null ? new GridProjectionAdapter(g, g.context(), ids) :
@@ -503,9 +510,6 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
-        }
-        finally {
-            stash.remove();
         }
     }
 
