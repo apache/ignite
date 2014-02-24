@@ -69,7 +69,7 @@ public class CacheTransactionExample {
             System.out.println(">>> " + cache.get(2L));
             System.out.println();
 
-            System.out.println(">>> Cache transaction example finished");
+            System.out.println(">>> Cache transaction example finished.");
         }
     }
 

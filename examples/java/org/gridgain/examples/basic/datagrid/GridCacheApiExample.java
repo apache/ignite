@@ -7,19 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.advanced.datagrid.advanced;
+package org.gridgain.examples.basic.datagrid;
 
 import org.gridgain.examples.advanced.datagrid.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
+import org.gridgain.grid.util.lang.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
@@ -33,7 +32,12 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
-public class GridCacheAdvancedExample {
+public class GridCacheApiExample {
+    /** Cache name. */
+    private static final String CACHE_NAME = "partitioned";
+    //private static final String CACHE_NAME = "replicated";
+    //private static final String CACHE_NAME = "local";
+
     /**
      * Put data to cache and then query it.
      *
@@ -42,19 +46,12 @@ public class GridCacheAdvancedExample {
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
-            print("Cache advanced API example started.");
+            print("Cache  API example started.");
 
-            // Register remote event handlers.
-            startConsumeEvents();
-
-            // Uncomment any configured cache instance to observe
-            // different cache behavior for different cache modes.
-            GridCache<UUID, Object> cache = g.cache("partitioned");
-            // GridCache<UUID, Object> cache = g.cache("replicated");
-            // GridCache<UUID, Object> cache = g.cache("local");
+            GridCache<UUID, Object> cache = g.cache(CACHE_NAME);
 
             // Demonstrates concurrent-map-like operations on cache.
-            concurrentMap(cache);
+            concurrentMapApi();
 
             // Demonstrates visitor-like operations on cache.
             visitors(cache);
@@ -67,134 +64,63 @@ public class GridCacheAdvancedExample {
     }
 
     /**
-     * This method will register listener for cache events on all nodes,
-     * so we can actually see what happens underneath locally and remotely.
-     *
-     * @throws GridException If failed.
-     */
-    private static void startConsumeEvents() throws  GridException {
-        GridGain.grid().events().consumeRemote(
-            null,
-            new GridPredicate<GridCacheEvent>() {
-                @Override public boolean apply(GridCacheEvent e) {
-                    // Make sure not to use any other classes that should be p2p-loaded.
-                    System.out.println(e.shortDisplay());
-
-                    return true;
-                }
-            },
-            EVT_CACHE_OBJECT_PUT,
-            EVT_CACHE_OBJECT_READ,
-            EVT_CACHE_OBJECT_REMOVED).get();
-    }
-
-    /**
-     * This method will unregister listener for cache events on all nodes. We must do this
-     * because in SHARED deployment mode classes will be undeployed when all master nodes
-     * leave grid, and listener notification may cause undefined behaviour.
-     *
-     * @param consumeId Consume ID returned from
-     *      {@link GridEvents#consumeRemote(GridBiPredicate, GridPredicate, int...)} method.
-     * @throws GridException If failed.
-     */
-    private static void stopConsumeEvents(UUID consumeId) throws  GridException {
-        GridGain.grid().events().stopConsume(consumeId).get();
-    }
-
-    /**
      * Demonstrates cache operations similar to {@link ConcurrentMap} API. Note that
-     * cache API is a lot richer than the JDK {@link ConcurrentMap} as it supports
-     * functional programming and asynchronous mode.
+     * cache API is a lot richer than the JDK {@link ConcurrentMap}.
      *
-     * @param cache Cache to use.
      * @throws GridException If failed.
      */
-    private static void concurrentMap(GridCacheProjection<UUID,Object> cache) throws GridException {
-        System.out.println(">>>");
-        System.out.println(">>> ConcurrentMap Example.");
-        System.out.println(">>>");
+    private static void concurrentMapApi() throws GridException {
+        GridCache<Integer, String> cache = GridGain.grid().cache(CACHE_NAME);
 
-        // Organizations.
-        Organization org1 = new Organization("GridGain");
-        Organization org2 = new Organization("Other");
+        // Put and return previous value.
+        cache.put(1, "1");
 
-        // People.
-        final Person p1 = new Person(org1, "Jon", "Doe", 1000, "I have a 'Master Degree'");
-        Person p2 = new Person(org2, "Jane", "Doe", 2000, "I have a 'Master Degree'");
-        Person p3 = new Person(org1, "Jon", "Smith", 3000, "I have a 'Bachelor Degree'");
-        Person p4 = new Person(org1, "Tom", "White", 4000, "I have a 'Bachelor Degree'");
+        // Put and do not return previous value. All methods ending with 'x' behave this way.
+        // Performs better when previous value is not needed.
+        cache.putx(2, "2");
 
-        /*
-         * Convenience projections for type-safe cache views.
-         */
-        GridCacheProjection<UUID, Organization> orgCache = cache.projection(UUID.class, Organization.class);
-        GridCacheProjection<UUID, Person> peopleCache = cache.projection(UUID.class, Person.class);
+        // Put asynchronously.
+        // Every cache operation has async counterpart.
+        GridFuture<String> fut = cache.putAsync(3, "3");
 
-        /*
-         * Basic put.
-         */
-        orgCache.put(org1.getId(), org1);
-        orgCache.put(org2.getId(), org2);
-
-        /*
-         * PutIfAbsent.
-         */
-        Person prev = peopleCache.putIfAbsent(p1.getId(), p1);
-
-        assert prev == null;
-
-        boolean ok = peopleCache.putxIfAbsent(p1.getId(), p1);
-
-        assert !ok; // Second putIfAbsent for p1 must not go through.
-
-        /*
-         * Asynchronous putIfAbsent
-         */
-        GridFuture<Boolean> fut2 = peopleCache.putxIfAbsentAsync(p2.getId(), p2);
-        GridFuture<Boolean> fut3 = peopleCache.putxIfAbsentAsync(p3.getId(), p3);
-
-        // Both asynchronous putIfAbsent should be successful.
-        assert fut2.get();
-        assert fut3.get();
-
-        /*
-         * Replace operations.
-         */
-
-        // Replace p1 with p2 only if p4 is present in cache.
-        Person p = peopleCache.replace(p1.getId(), p4);
-
-        assert p!= null && p.equals(p1);
-
-        // Put p1 back.
-        ok = peopleCache.replace(p1.getId(), p4, p1);
-
-        assert ok;
-
-        /**
-         * Remove operation that matches both, key and value.
-         * This method is not available on projection, so we
-         * call cache directly.
-         */
-        ok = peopleCache.cache().remove(p3.getId(), p3);
-
-        assert ok;
-
-        // Make sure that remove succeeded.
-        assert peopleCache.peek(p3.getId()) == null;
-
-        /*
-         * Put operation with a filter.
-         */
-        ok = peopleCache.putx(p3.getId(), p3, new GridPredicate<GridCacheEntry<UUID, Person>>() {
-            @Override public boolean apply(GridCacheEntry<UUID, Person> e) {
-                return e.peek() == null; // Only put if currently no value (this should succeed).
+        fut.listenAsync(new GridInClosure<GridFuture<String>>() {
+            @Override public void apply(GridFuture<String> fut) {
+                try {
+                    System.out.println("Put operation completed [previous-value=" + fut.get() + ']');
+                }
+                catch (GridException e) {
+                    throw new GridClosureException(e);
+                }
             }
         });
 
-        assert ok;
+        // Put-if-absent.
+        boolean b1 = cache.putxIfAbsent(4, "4");
+        boolean b2 = cache.putxIfAbsent(4, "44");
+        assert b1 && !b2;
 
-        print("Finished concurrentMap operations example on cache.");
+
+        // Put-with-predicate, will succeed if predicate evaluates to true.
+        cache.putx(5, "5");
+        cache.putx(5, "55", new GridPredicate<GridCacheEntry<Integer, String>>() {
+            @Override public boolean apply(GridCacheEntry<Integer, String> e) {
+                return "5".equals(e.peek()); // Update only if previous value is "5".
+            }
+        });
+
+        // Transform - assign new value based on previous value.
+        cache.putx(6, "6");
+        cache.transform(6, new GridClosure<String, String>() {
+            @Override public String apply(String v) {
+                return v + "6"; // Set new value based on previous value.
+            }
+        });
+
+        // Replace.
+        cache.putx(7, "7");
+        b1 = cache.replace(7, "7", "77");
+        b2 = cache.replace(7, "7", "777");
+        assert b1 & !b2;
     }
 
     /**

@@ -136,7 +136,12 @@ public class CachePutGetExample {
         Collection<Map<Integer, String>> retMaps = rmts.compute().broadcast(
             new GridCallable<Map<Integer, String>>() {
                 @Override public Map<Integer, String> call() throws GridException {
-                    return cache.getAll(keys);
+                    Map<Integer, String> vals = cache.getAll(keys);
+
+                    for (Map.Entry<Integer, String> e : vals.entrySet())
+                        System.out.println("Got entry [key=" + e.getKey() + ", val=" + e.getValue() + ']');
+
+                    return vals;
                 }
             }).get();
 

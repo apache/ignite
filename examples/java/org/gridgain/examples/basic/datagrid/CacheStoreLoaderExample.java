@@ -67,6 +67,7 @@ public class CacheStoreLoaderExample {
             // Start loading cache on all caching nodes.
             g.forCache(CACHE_NAME).compute().call(new Callable<Object>() {
                 @Override public Object call() throws Exception {
+                    // Load cache from persistent store.
                     cache.loadCache(null, 0, ENTRY_COUNT);
 
                     return null;
