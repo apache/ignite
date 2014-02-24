@@ -9,14 +9,12 @@
 
 package org.gridgain.examples.basic.datagrid;
 
-import org.gridgain.examples.advanced.datagrid.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.lang.*;
 
-import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.product.GridProductEdition.*;
@@ -46,20 +44,11 @@ public class GridCacheApiExample {
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
-            print("Cache  API example started.");
+            // Demonstrate atomic map operations.
+            atomicMapOperations();
 
-            GridCache<UUID, Object> cache = g.cache(CACHE_NAME);
-
-            // Demonstrates concurrent-map-like operations on cache.
-            concurrentMapApi();
-
-            // Demonstrates visitor-like operations on cache.
-            visitors(cache);
-
-            // Demonstrates iterations over cached collections.
-            collections(cache);
-
-            print("Cache advanced API example finished.");
+            // Demonstrate various ways to iterate over locally cached values.
+            localIterators();
         }
     }
 
@@ -69,20 +58,24 @@ public class GridCacheApiExample {
      *
      * @throws GridException If failed.
      */
-    private static void concurrentMapApi() throws GridException {
+    private static void atomicMapOperations() throws GridException {
+        System.out.println();
+        System.out.println(">>> Cache atomic map operation examples.");
+
         GridCache<Integer, String> cache = GridGain.grid().cache(CACHE_NAME);
 
         // Put and return previous value.
-        cache.put(1, "1");
+        String v = cache.put(1, "1");
+        assert v == null;
 
         // Put and do not return previous value. All methods ending with 'x' behave this way.
         // Performs better when previous value is not needed.
         cache.putx(2, "2");
 
-        // Put asynchronously.
-        // Every cache operation has async counterpart.
+        // Put asynchronously (every cache operation has async counterpart).
         GridFuture<String> fut = cache.putAsync(3, "3");
 
+        // Asynchronously wait for result.
         fut.listenAsync(new GridInClosure<GridFuture<String>>() {
             @Override public void apply(GridFuture<String> fut) {
                 try {
@@ -124,107 +117,47 @@ public class GridCacheApiExample {
     }
 
     /**
-     * Demonstrates visitor operations on cache, in particular {@code forEach(..)},
-     * {@code forAll(..)} and {@code reduce(..)} methods.
-     *
-     * @param cache Cache to use.
+     * Demonstrates various iteration methods over locally cached values.
      */
-    private static void visitors(GridCacheProjection<UUID, Object> cache) {
-        System.out.println(">>>");
-        System.out.println(">>> Visitors Example.");
-        System.out.println(">>>");
+    private static void localIterators() {
+        System.out.println();
+        System.out.println(">>> Local iterator examples.");
 
-        // We only care about Person objects, therefore,
-        // let's get projection to filter only Person instances.
-        GridCacheProjection<UUID, Person> people = cache.projection(UUID.class, Person.class);
+        GridCache<Integer, String> cache = GridGain.grid().cache(CACHE_NAME);
 
-        // Visit by IDs.
-        people.forEach(new GridInClosure<GridCacheEntry<UUID,Person>>() {
-            @Override public void apply(GridCacheEntry<UUID, Person> e) {
-                print("Visited forEach person: " + e);
+        // Iterate over whole cache.
+        for (GridCacheEntry<Integer, String> e : cache)
+            System.out.println("Basic cache iteration [key=" + e.getKey() + ", val=" + e.getValue() + ']');
+
+        // Iterate over cache projection for all keys below 5.
+        for (GridCacheEntry<Integer, String> e : cache.projection(new GridPredicate<GridCacheEntry<Integer, String>>() {
+            @Override public boolean apply(GridCacheEntry<Integer, String> e) {
+                return e.getKey() < 5;
+            }
+        })) {
+            System.out.println("Cache projection iteration [key=" + e.getKey() + ", val=" + e.getValue() + ']');
+        }
+
+        // Iterate over each element using 'forEach' construct.
+        cache.forEach(new GridInClosure<GridCacheEntry<Integer, String>>() {
+            @Override public void apply(GridCacheEntry<Integer, String> e) {
+                System.out.println("forEach iteration [key=" + e.getKey() + ", val=" + e.getValue() + ']');
             }
         });
 
-        print("Finished cache visitor operations.");
-    }
+        // Search cache for element with value "1" using 'forAll' construct.
+        cache.forAll(new GridPredicate<GridCacheEntry<Integer, String>>() {
+            @Override public boolean apply(GridCacheEntry<Integer, String> e) {
+                String v = e.peek();
 
-    /**
-     * Demonstrates collection operations on cache.
-     *
-     * @param cache Cache to use.
-     */
-    private static void collections(GridCacheProjection<UUID, Object> cache) {
-        System.out.println(">>>");
-        System.out.println(">>> Collections Example.");
-        System.out.println(">>>");
+                if ("1".equals(v)) {
+                    System.out.println("Found cache value '1' using forEach iteration.");
 
-        // We only care about Person objects, therefore,
-        // let's get projection to filter only Person instances.
-        GridCacheProjection<UUID, Person> people = cache.projection(UUID.class, Person.class);
+                    return false; // Stop iteration.
+                }
 
-        // Iterate only over keys of people with name "Jon".
-        // Iteration includes only local keys.
-        for (UUID id : people.projection(new GridPredicate<GridCacheEntry<UUID, Person>>() {
-            @Override public boolean apply(GridCacheEntry<UUID, Person> e) {
-                Person p = e.peek();
-
-                return p != null && "Jon".equals(p.getFirstName());
+                return true; // Continue iteration.
             }
-        }).keySet()) {
-            // Print out keys.
-            print("Cached ID for person named 'Jon' from keySet: " + id);
-        }
-
-        // Delete all people with name "Jane".
-        Collection<Person> janes = people.projection(new GridPredicate<GridCacheEntry<UUID, Person>>() {
-            @Override public boolean apply(GridCacheEntry<UUID, Person> e) {
-                Person p = e.peek();
-
-                return p != null && "Jane".equals(p.getFirstName());
-            }
-        }).values();
-
-        if (!janes.isEmpty()) {
-            assert janes.size() == 1 : "Incorrect 'Janes' size: " + janes.size();
-
-            int cnt = 0;
-
-            for (Iterator<Person> it = janes.iterator(); it.hasNext(); ) {
-                Person p = it.next();
-
-                // Make sure that we are deleting "Jane".
-                assert "Jane".equals(p.getFirstName()) : "First name is not 'Jane': " + p.getFirstName();
-
-                // Remove all Janes.
-                it.remove();
-
-                cnt++;
-
-                print("Removed Jane from cache: " + p);
-            }
-
-            assert cnt == 1;
-
-            // Make sure that no Jane is present in cache.
-            for (Person p : people.values()) {
-                // Person cannot be "Jane".
-                assert !"Jane".equals(p.getFirstName());
-
-                print("Person still present in cache: " + p);
-            }
-        }
-        else
-            print("Jane's entry does not belong to local node.");
-
-        print("Finished collection operations on cache.");
-    }
-
-    /**
-     * Prints out given object to standard out.
-     *
-     * @param o Object to print.
-     */
-    private static void print(Object o) {
-        System.out.println(">>> " + o);
+        });
     }
 }
