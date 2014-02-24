@@ -37,14 +37,14 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
      * @param left {@code True} if exchange has been caused by node leave.
      * @throws GridException If failed.
      */
-    public void onBeforeExchange(long topVer, boolean left) throws GridException;
+    public void beforeExchange(long topVer, boolean left) throws GridException;
 
     /**
      * In case some partition is evicted, we remove entries of this partition from backup queue.
      *
      * @param part Partition.
      */
-    public void onPartitionEvicted(int part);
+    public void partitionEvicted(int part);
 
     /**
      * @param dataCenterIds Target data center IDs.
