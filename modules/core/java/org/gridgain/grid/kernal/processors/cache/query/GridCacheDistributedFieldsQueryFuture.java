@@ -50,11 +50,12 @@ public class GridCacheDistributedFieldsQueryFuture
      * @param vis Visitor predicate.
      */
     public GridCacheDistributedFieldsQueryFuture(GridCacheContext<?, ?> ctx, long reqId,
-        GridCacheFieldsQuery qry, Iterable<GridNode> nodes, boolean single, boolean rmtRdcOnly,
+        GridCacheFieldsQueryBase qry, Iterable<GridNode> nodes, boolean single, boolean rmtRdcOnly,
         @Nullable GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr,
         @Nullable GridPredicate<?> vis) {
-        super((GridCacheContext<Object, Object>)ctx, reqId, (GridCacheQueryBaseAdapter<Object, Object>)qry,
-            nodes, single, rmtRdcOnly, pageLsnr, vis);
+        super((GridCacheContext<Object, Object>)ctx, reqId,
+            (GridCacheQueryBaseAdapter<Object, Object, GridCacheQueryBase>)qry, nodes, single, rmtRdcOnly,
+            pageLsnr, vis);
 
         metaFut = new GridFutureAdapter<>(ctx.kernalContext());
 

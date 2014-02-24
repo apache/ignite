@@ -70,7 +70,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public interface GridCacheFieldsQuery<K, V> extends GridCacheQueryBase<K, V> {
+public interface GridCacheFieldsQuery<K, V> extends GridCacheQueryBase<K, V, GridCacheFieldsQuery<K, V>> {
     /**
      * Gets {@code includeMetadata} flag.
      *
@@ -112,32 +112,10 @@ public interface GridCacheFieldsQuery<K, V> extends GridCacheQueryBase<K, V> {
      * Also note that query state cannot be changed (clause, timeout etc.), except
      * arguments, if this method was called at least once.
      *
-     * @param grid Optional subgrid projection to execute this query on
-     *      (if not provided, then the whole grid is used).
      * @return Future for the query result.
      * @see GridCacheFieldsQueryFuture
      */
-    public GridCacheFieldsQueryFuture execute(GridProjection... grid);
-
-    /**
-     * Synchronously executes the query and returns query result. If
-     * {@link #keepAll(boolean)} flag is set to {@code false}, then the
-     * method will only return the last page received, otherwise all pages will be
-     * accumulated and returned to user.
-     * <p>
-     * Note that if the passed in grid projection is a local node, then query
-     * will be executed locally without distribution to other nodes.
-     * <p>
-     * Also note that query state cannot be changed (clause, timeout etc.), except
-     * arguments, if this method was called at least once.
-     *
-     * @param grid Optional subgrid projection to execute this query on
-     *      (if not provided, then the whole grid is used).
-     * @return Query result.
-     * @see GridCacheFieldsQueryFuture
-     * @throws GridException In case of error.
-     */
-    public Collection<List<Object>> executeSync(GridProjection... grid) throws GridException;
+    public GridCacheFieldsQueryFuture execute();
 
     /**
      * Executes the query and returns the first result in the result set.
@@ -148,27 +126,9 @@ public interface GridCacheFieldsQuery<K, V> extends GridCacheQueryBase<K, V> {
      * Also note that query state cannot be changed (clause, timeout etc.) if this
      * method was called at least once.
      *
-     * @param grid Optional subgrid projection to execute this query on
-     *      (if not provided, then the whole grid is used).
      * @return Future for the single query result.
      */
-    public GridFuture<List<Object>> executeSingle(GridProjection... grid);
-
-    /**
-     * Synchronously executes the query and returns the first result in the result set.
-     * <p>
-     * Note that if the passed in grid projection is a local node, then query
-     * will be executed locally without distribution to other nodes.
-     * <p>
-     * Also note that query state cannot be changed (clause, timeout etc.) if this
-     * method was called at least once.
-     *
-     * @param grid Optional subgrid projection to execute this query on
-     *      (if not provided, then the whole grid is used).
-     * @return Single query result.
-     * @throws GridException In case of error.
-     */
-    @Nullable public List<Object> executeSingleSync(GridProjection... grid) throws GridException;
+    public GridFuture<List<Object>> executeSingle();
 
     /**
      * Executes the query and returns first field value from the first result in
@@ -180,28 +140,9 @@ public interface GridCacheFieldsQuery<K, V> extends GridCacheQueryBase<K, V> {
      * Also note that query state cannot be changed (clause, timeout etc.) if this
      * method was called at least once.
      *
-     * @param grid Optional subgrid projection to execute this query on
-     *      (if not provided, then the whole grid is used).
      * @return Future for the single query result.
      */
-    public <T> GridFuture<T> executeSingleField(GridProjection... grid);
-
-    /**
-     * Synchronously executes the query and returns first field value from the first result in
-     * the result set.
-     * <p>
-     * Note that if the passed in grid projection is a local node, then query
-     * will be executed locally without distribution to other nodes.
-     * <p>
-     * Also note that query state cannot be changed (clause, timeout etc.) if this
-     * method was called at least once.
-     *
-     * @param grid Optional subgrid projection to execute this query on
-     *      (if not provided, then the whole grid is used).
-     * @return Single query result.
-     * @throws GridException In case of error.
-     */
-    public <T> T executeSingleFieldSync(GridProjection... grid) throws GridException;
+    public <T> GridFuture<T> executeSingleField();
 
     /**
      * Visits every row in fields query result set on every queried node for as long as
@@ -215,27 +156,7 @@ public interface GridCacheFieldsQuery<K, V> extends GridCacheQueryBase<K, V> {
      * arguments, if this method was called at least once.
      *
      * @param vis Visitor predicate.
-     * @param grid Optional subgrid projection to execute this query on
-     *      (if not provided, then the whole grid is used).
      * @return Future which will complete whenever visiting on all remote nodes completes or fails.
      */
-    public GridFuture<?> visit(GridPredicate<List<Object>> vis, GridProjection... grid);
-
-    /**
-     * Synchronously visits every row in fields query result set on every queried node for as long as
-     * the visitor predicate returns {@code true}. Once the predicate returns false
-     * or all rows in result set have been visited, the visiting process stops.
-     * <p>
-     * Note that if the passed in grid projection is a local node, then query
-     * will be executed locally without distribution to other nodes.
-     * <p>
-     * Also note that query state cannot be changed (clause, timeout etc.), except
-     * arguments, if this method was called at least once.
-     *
-     * @param vis Visitor predicate.
-     * @param grid Optional subgrid projection to execute this query on
-     *      (if not provided, then the whole grid is used).
-     * @throws GridException In case of error.
-     */
-    public void visitSync(GridPredicate<List<Object>> vis, GridProjection... grid) throws GridException;
+    public GridFuture<?> visit(GridPredicate<List<Object>> vis);
 }

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
@@ -46,9 +47,9 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
      * @param pageLsnr Page listener.
      * @param vis Visitor predicate.
      */
-    protected GridCacheLocalQueryFuture(GridCacheContext<K, V> ctx, GridCacheQueryBaseAdapter<K, V> qry,
-        boolean single, boolean rmtRdcOnly, @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr,
-        @Nullable GridPredicate<?> vis) {
+    protected GridCacheLocalQueryFuture(GridCacheContext<K, V> ctx,
+        GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry, boolean single, boolean rmtRdcOnly,
+        @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr, @Nullable GridPredicate<?> vis) {
         super(ctx, qry, true, single, rmtRdcOnly, pageLsnr);
 
         run = new LocalQueryRunnable<>(ctx.queries(), this, single, vis);

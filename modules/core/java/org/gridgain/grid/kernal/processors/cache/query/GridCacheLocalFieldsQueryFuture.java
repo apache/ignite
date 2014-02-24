@@ -48,10 +48,10 @@ public class GridCacheLocalFieldsQueryFuture
      * @param vis Visitor predicate.
      */
     public GridCacheLocalFieldsQueryFuture(GridCacheContext<?, ?> ctx,
-        GridCacheFieldsQuery qry, boolean single, boolean rmtRdcOnly,
+        GridCacheFieldsQueryBase qry, boolean single, boolean rmtRdcOnly,
         @Nullable GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr,
         @Nullable GridPredicate<?> vis) {
-        super((GridCacheContext<Object, Object>)ctx, (GridCacheQueryBaseAdapter<Object, Object>)qry,
+        super((GridCacheContext<Object, Object>)ctx, (GridCacheQueryBaseAdapter<Object, Object, GridCacheQueryBase>)qry,
             single, rmtRdcOnly, pageLsnr, vis);
 
         metaFut = new GridFutureAdapter<>(ctx.kernalContext());

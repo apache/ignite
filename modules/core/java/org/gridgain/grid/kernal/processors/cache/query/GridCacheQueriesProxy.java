@@ -99,7 +99,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueries<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheFieldsQuery createFieldsQuery(String clause) {
+    @Override public GridCacheFieldsQuery<K, V> createFieldsQuery(String clause) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -111,7 +111,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueries<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2> GridCacheReduceFieldsQuery<R1, R2, K, V> createReduceFieldsQuery(String clause) {
+    @Override public <R1, R2> GridCacheReduceFieldsQuery<K, V, R1, R2> createReduceFieldsQuery(String clause) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

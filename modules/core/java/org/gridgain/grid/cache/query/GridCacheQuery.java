@@ -28,7 +28,7 @@ import java.util.*;
  *  against index tables to retrieve the keys of the values in the result set. In {@code SCAN} mode this
  *  step is redundant.
  * <li>
- *  If there is a key filter provided via {@link #remoteKeyFilter(GridClosure)}
+ *  If there is a key filter provided via {@link #remoteKeyFilter(GridPredicate)}
  *  method, then each returned key will be evaluated against the provided key filter.
  * </li>
  * <li>
@@ -39,11 +39,11 @@ import java.util.*;
  *  be returned.
  * </li>
  * <li>
- *  If there is a value filter provided via {@link #remoteValueFilter(GridClosure)} method,
+ *  If there is a value filter provided via {@link #remoteValueFilter(GridPredicate)} method,
  *  all retrieved values will be evaluated against the provided value filter.
  * </li>
  * <li>
- *  If query was executed via {@link #visit(GridPredicate,GridProjection...)} method, then
+ *  If query was executed via {@link #visit(GridPredicate)} method, then
  *  a small acknowledgement message is sent back, otherwise the resulting key-value pairs
  *  will be sent back to requesting node one page at a time.
  * </li>
@@ -118,18 +118,18 @@ import java.util.*;
  * or whenever data set is relatively small, the {@link GridCacheQueryType#SCAN}
  * query type may be used. With this query type GridGain will iterate over all cache
  * entries, skipping over the entries that don't pass the optionally provided key or value filters
- * (see {@link #remoteKeyFilter(GridClosure)} or {@link #remoteValueFilter(GridClosure)} methods).
+ * (see {@link #remoteKeyFilter(GridPredicate)} or {@link #remoteValueFilter(GridPredicate)} methods).
  * In this mode the query clause should not be provided.
  * <h1 class="header">Execute vs. Visit</h1>
  * If there is no need to return result to the caller node, you can save on a potentially significant
  * network overhead by visiting all query results directly on remote nodes by calling
- * {@link #visit(GridPredicate,GridProjection...)} method. With this method, all the logic is performed
+ * {@link #visit(GridPredicate)} method. With this method, all the logic is performed
  * inside of query predicate directly on the queried nodes. If the predicate will return {@code false}
  * while visiting, then visiting will finish immediately.
  * <h1 class="header">Optional Key and Value filters</h1>
  * Note that all query results may be additionally filtered by specifying
- * predicates for key and value filtering via {@link #remoteKeyFilter(GridClosure)}
- * and {@link #remoteValueFilter(GridClosure)} methods. These additional filters
+ * predicates for key and value filtering via {@link #remoteKeyFilter(GridPredicate)}
+ * and {@link #remoteValueFilter(GridPredicate)} methods. These additional filters
  * are useful whenever filtering is based on logic or methods not available in {@code SQL}
  * or {@code TEXT} queries. For {@code 'SCAN'} queries this filters should be usually provided
  * as they are used directly to filter the query results during full scan.
@@ -235,7 +235,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public interface GridCacheQuery<K, V> extends GridCacheQueryBase<K, V> {
+public interface GridCacheQuery<K, V> extends GridCacheQueryBase<K, V, GridCacheQuery<K, V>> {
     /**
      * Optional query arguments that get passed into query SQL.
      *
@@ -243,15 +243,6 @@ public interface GridCacheQuery<K, V> extends GridCacheQueryBase<K, V> {
      * @return This query with the passed in arguments preset.
      */
     public GridCacheQuery<K, V> queryArguments(@Nullable Object... args);
-
-    /**
-     * Optional arguments for closures to be used by {@link #remoteKeyFilter(GridClosure)},
-     * and {@link #remoteValueFilter(GridClosure)}.
-     *
-     * @param args Optional query arguments.
-     * @return This query with the passed in arguments preset.
-     */
-    public GridCacheQuery<K, V> closureArguments(@Nullable Object... args);
 
     /**
      * Executes the query and returns the first result in the result set. If more
@@ -263,28 +254,9 @@ public interface GridCacheQuery<K, V> extends GridCacheQueryBase<K, V> {
      * Also note that query state cannot be changed (clause, timeout etc.) if this
      * method was called at least once.
      *
-     * @param grid Optional subgrid projection to execute this query on
-     *      (if not provided, then the whole grid is used).
      * @return Future for the single query result.
      */
-    public GridFuture<Map.Entry<K, V>> executeSingle(GridProjection... grid);
-
-    /**
-     * Synchronously executes the query and returns the first result in the result set. If more
-     * than one key-value pair are returned they will be ignored.
-     * <p>
-     * Note that if the passed in grid projection is a local node, then query
-     * will be executed locally without distribution to other nodes.
-     * <p>
-     * Also note that query state cannot be changed (clause, timeout etc.) if this
-     * method was called at least once.
-     *
-     * @param grid Optional subgrid projection to execute this query on
-     *      (if not provided, then the whole grid is used).
-     * @return Single query result.
-     * @throws GridException In case of error.
-     */
-    @Nullable public Map.Entry<K, V> executeSingleSync(GridProjection... grid) throws GridException;
+    public GridFuture<Map.Entry<K, V>> executeSingle();
 
     /**
      * Executes the query and returns the query future. Caller may decide to iterate
@@ -301,30 +273,9 @@ public interface GridCacheQuery<K, V> extends GridCacheQueryBase<K, V> {
      * Also note that query state cannot be changed (clause, timeout etc.), except
      * arguments, if this method was called at least once.
      *
-     * @param grid Optional subgrid projection to execute this query on
-     *      (if not provided, then the whole grid is used).
      * @return Future for the query result.
      */
-    public GridCacheQueryFuture<Map.Entry<K, V>> execute(GridProjection... grid);
-
-    /**
-     * Synchronously executes the query and returns query result. If
-     * {@link #keepAll(boolean)} flag is set to {@code false}, then the
-     * method will only return the last page received, otherwise all pages will be
-     * accumulated and returned to user as a collection.
-     * <p>
-     * Note that if the passed in grid projection is a local node, then query
-     * will be executed locally without distribution to other nodes.
-     * <p>
-     * Also note that query state cannot be changed (clause, timeout etc.), except
-     * arguments, if this method was called at least once.
-     *
-     * @param grid Optional subgrid projection to execute this query on
-     *      (if not provided, then the whole grid is used).
-     * @return Query result.
-     * @throws GridException In case of error.
-     */
-    public Collection<Map.Entry<K, V>> executeSync(GridProjection... grid) throws GridException;
+    public GridCacheQueryFuture<Map.Entry<K, V>> execute();
 
     /**
      * Visits every entry from query result on every queried node for as long as
@@ -338,27 +289,7 @@ public interface GridCacheQuery<K, V> extends GridCacheQueryBase<K, V> {
      * arguments, if this method was called at least once.
      *
      * @param vis Visitor predicate.
-     * @param grid Optional subgrid projection to execute this query on
-     *      (if not provided, then the whole grid is used).
      * @return Future which will complete whenever visiting on all remote nodes completes or fails.
      */
-    public GridFuture<?> visit(GridPredicate<Map.Entry<K, V>> vis, GridProjection... grid);
-
-    /**
-     * Synchronously visits every entry from query result on every queried node for as long as
-     * the visitor predicate returns {@code true}. Once the predicate returns false
-     * or all entries in query result have been visited, the visiting process stops.
-     * <p>
-     * Note that if the passed in grid projection is a local node, then query
-     * will be executed locally without distribution to other nodes.
-     * <p>
-     * Also note that query state cannot be changed (clause, timeout etc.), except
-     * arguments, if this method was called at least once.
-     *
-     * @param vis Visitor predicate.
-     * @param grid Optional subgrid projection to execute this query on
-     *      (if not provided, then the whole grid is used).
-     * @throws GridException In case of error.
-     */
-    public void visitSync(GridPredicate<Map.Entry<K, V>> vis, GridProjection... grid) throws GridException;
+    public GridFuture<?> visit(GridPredicate<Map.Entry<K, V>> vis);
 }

@@ -65,12 +65,12 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueries<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheFieldsQuery createFieldsQuery(String clause) {
+    @Override public GridCacheFieldsQuery<K, V> createFieldsQuery(String clause) {
         return cctx.queries().createFieldsQuery(clause, filter(), flags());
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2> GridCacheReduceFieldsQuery<R1, R2, K, V> createReduceFieldsQuery(String clause) {
+    @Override public <R1, R2> GridCacheReduceFieldsQuery<K, V, R1, R2> createReduceFieldsQuery(String clause) {
         return cctx.queries().createReduceFieldsQuery(clause, filter(), flags());
     }
 

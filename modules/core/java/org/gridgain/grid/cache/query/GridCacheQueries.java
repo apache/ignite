@@ -151,7 +151,7 @@ public interface GridCacheQueries<K, V> {
      * @param clause Query clause.
      * @return Created query.
      */
-    public GridCacheFieldsQuery createFieldsQuery(String clause);
+    public GridCacheFieldsQuery<K, V> createFieldsQuery(String clause);
 
     /**
      * Creates user's reduce fields query for given clause. For more information refer to
@@ -160,7 +160,7 @@ public interface GridCacheQueries<K, V> {
      * @param clause Query clause.
      * @return Created query.
      */
-    public <R1, R2> GridCacheReduceFieldsQuery<R1, R2, K, V> createReduceFieldsQuery(String clause);
+    public <R1, R2> GridCacheReduceFieldsQuery<K, V, R1, R2> createReduceFieldsQuery(String clause);
 
     /**
      * Creates new continuous query.

@@ -19,7 +19,6 @@ import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 
 import java.io.*;
 import java.nio.*;
@@ -57,28 +56,28 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
     /** */
     @GridDirectTransient
-    private GridClosure<Object[], GridPredicate<? super K>> keyFilter;
+    private GridPredicate<? super K> keyFilter;
 
     /** */
     private byte[] keyFilterBytes;
 
     /** */
     @GridDirectTransient
-    private GridClosure<Object[], GridPredicate<? super V>> valFilter;
+    private GridPredicate<? super V> valFilter;
 
     /** */
     private byte[] valFilterBytes;
 
     /** */
     @GridDirectTransient
-    private GridClosure<Object[], GridAbsClosure> beforeCb;
+    private Runnable beforeCb;
 
     /** */
     private byte[] beforeCbBytes;
 
     /** */
     @GridDirectTransient
-    private GridClosure<Object[], GridAbsClosure> afterCb;
+    private Runnable afterCb;
 
     /** */
     private byte[] afterCbBytes;
@@ -92,21 +91,21 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
     /** */
     @GridDirectTransient
-    private GridClosure<Object[], GridReducer<Map.Entry<K, Object>, Object>> rdc;
+    private GridReducer<Map.Entry<K, Object>, Object> rdc;
 
     /** */
     private byte[] rdcBytes;
 
     /** */
     @GridDirectTransient
-    private GridClosure<Object[], GridReducer<List<Object>, Object>> fieldsRdc;
+    private GridReducer<List<Object>, Object> fieldsRdc;
 
     /** */
     private byte[] fieldsRdcBytes;
 
     /** */
     @GridDirectTransient
-    private GridClosure<Object[], GridClosure<V, Object>> trans;
+    private GridClosure<V, Object> trans;
 
     /** */
     private byte[] transBytes;
@@ -124,10 +123,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
     /** */
     private byte[] argsBytes;
-
-    /** */
-    @GridDirectTransient
-    private Object[] cArgs;
 
     /** */
     private byte[] cArgsBytes;
@@ -220,7 +215,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
      * @param clone {@code true} if values should be cloned.
      * @param incBackups {@code true} if need to include backups.
      * @param args Query arguments.
-     * @param cArgs Query closure's arguments.
      * @param single {@code true} if single result requested, {@code false} if multiple.
      * @param incMeta Include meta data or not.
      */
@@ -232,20 +226,19 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         boolean fields,
         String clause,
         String clsName,
-        GridClosure<Object[], GridPredicate<? super K>> keyFilter,
-        GridClosure<Object[], GridPredicate<? super V>> valFilter,
-        GridClosure<Object[], GridAbsClosure> beforeCb,
-        GridClosure<Object[], GridAbsClosure> afterCb,
+        GridPredicate<? super K> keyFilter,
+        GridPredicate<? super V> valFilter,
+        Runnable beforeCb,
+        Runnable afterCb,
         GridPredicate<GridCacheEntry<K, V>> prjFilter,
-        GridClosure<Object[], GridReducer<Map.Entry<K, Object>, Object>> rdc,
-        GridClosure<Object[], GridReducer<List<Object>, Object>> fieldsRdc,
-        GridClosure<Object[], GridClosure<V, Object>> trans,
+        GridReducer<Map.Entry<K, Object>, Object> rdc,
+        GridReducer<List<Object>, Object> fieldsRdc,
+        GridClosure<V, Object> trans,
         GridPredicate<?> vis,
         int pageSize,
         boolean clone,
         boolean incBackups,
         Object[] args,
-        Object[] cArgs,
         boolean single,
         boolean incMeta) {
         assert type != null || fields;
@@ -272,7 +265,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         this.clone = clone;
         this.incBackups = incBackups;
         this.args = args;
-        this.cArgs = cArgs;
         this.single = single;
         this.incMeta = incMeta;
     }
@@ -352,15 +344,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
             argsBytes = CU.marshal(ctx, args);
         }
-
-        if (!F.isEmpty(cArgs)) {
-            if (ctx.deploymentEnabled()) {
-                for (Object arg : cArgs)
-                    prepareObject(arg, ctx);
-            }
-
-            cArgsBytes = CU.marshal(ctx, cArgs);
-        }
     }
 
     /** {@inheritDoc} */
@@ -398,9 +381,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
         if (argsBytes != null)
             args = mrsh.unmarshal(argsBytes, ldr);
-
-        if (cArgsBytes != null)
-            cArgs = mrsh.unmarshal(cArgsBytes, ldr);
     }
 
     /**
@@ -476,28 +456,28 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     /**
      * @return Key filter.
      */
-    public GridClosure<Object[], GridPredicate<? super K>> keyFilter() {
+    public GridPredicate<? super K> keyFilter() {
         return keyFilter;
     }
 
     /**
      * @return Value filter.
      */
-    public GridClosure<Object[], GridPredicate<? super V>> valueFilter() {
+    public GridPredicate<? super V> valueFilter() {
         return valFilter;
     }
 
     /**
      * @return Before execution callback.
      */
-    public GridClosure<Object[], GridAbsClosure> beforeCallback() {
+    public Runnable beforeCallback() {
         return beforeCb;
     }
 
     /**
      * @return After execution callback.
      */
-    public GridClosure<Object[], GridAbsClosure> afterCallback() {
+    public Runnable afterCallback() {
         return afterCb;
     }
 
@@ -509,21 +489,21 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     /**
      * @return Reducer.
      */
-    public GridClosure<Object[], GridReducer<Map.Entry<K, Object>, Object>> reducer() {
+    public GridReducer<Map.Entry<K, Object>, Object> reducer() {
         return rdc;
     }
 
     /**
      * @return Reducer for fields queries.
      */
-    public GridClosure<Object[], GridReducer<List<Object>, Object>> fieldsReducer() {
+    public GridReducer<List<Object>, Object> fieldsReducer() {
         return fieldsRdc;
     }
 
     /**
      * @return Transformer.
      */
-    public GridClosure<Object[], GridClosure<V, Object>> transformer() {
+    public GridClosure<V, Object> transformer() {
         return trans;
     }
 
@@ -546,13 +526,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
      */
     public Object[] arguments() {
         return args;
-    }
-
-    /**
-     * @return Closures' arguments.
-     */
-    public Object[] closureArguments() {
-        return cArgs;
     }
 
     /**
@@ -619,7 +592,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         _clone.visBytes = visBytes;
         _clone.args = args;
         _clone.argsBytes = argsBytes;
-        _clone.cArgs = cArgs;
         _clone.cArgsBytes = cArgsBytes;
         _clone.pageSize = pageSize;
         _clone.clone = clone;

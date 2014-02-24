@@ -16,7 +16,6 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.future.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -28,11 +27,8 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridCacheFieldsQueryAdapter<K, V> extends GridCacheQueryBaseAdapter<K, V>
-    implements GridCacheFieldsQuery<K, V> {
-    /** Include meta data or not. */
-    private boolean incMeta;
-
+public class GridCacheFieldsQueryAdapter<K, V>
+    extends GridCacheFieldsQueryBase<K, V, GridCacheFieldsQuery<K, V>> implements GridCacheFieldsQuery<K, V> {
     /**
      * @param cctx Cache context.
      * @param clause Clause.
@@ -47,18 +43,8 @@ public class GridCacheFieldsQueryAdapter<K, V> extends GridCacheQueryBaseAdapter
     /**
      * @param qry Query.
      */
-    protected GridCacheFieldsQueryAdapter(GridCacheQueryBaseAdapter<K, V> qry) {
+    protected GridCacheFieldsQueryAdapter(GridCacheFieldsQueryAdapter<K, V> qry) {
         super(qry);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean includeMetadata() {
-        return incMeta;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void includeMetadata(boolean incMeta) {
-        this.incMeta = incMeta;
     }
 
     /** {@inheritDoc} */
@@ -69,10 +55,10 @@ public class GridCacheFieldsQueryAdapter<K, V> extends GridCacheQueryBaseAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheFieldsQueryFuture execute(GridProjection[] grid) {
+    @Override public GridCacheFieldsQueryFuture execute() {
         seal();
 
-        Collection<GridNode> nodes = nodes(grid);
+        Collection<GridNode> nodes = nodes();
 
         if (log.isDebugEnabled())
             log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
@@ -83,22 +69,10 @@ public class GridCacheFieldsQueryAdapter<K, V> extends GridCacheQueryBaseAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<List<Object>> executeSync(GridProjection... grid) throws GridException {
+    @Override public GridFuture<List<Object>> executeSingle() {
         seal();
 
-        Collection<GridNode> nodes = nodes(grid);
-
-        if (log.isDebugEnabled())
-            log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
-
-        return executeSync(nodes, false, false, null, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<List<Object>> executeSingle(GridProjection... grid) {
-        seal();
-
-        Collection<GridNode> nodes = nodes(grid);
+        Collection<GridNode> nodes = nodes();
 
         if (qryLog.isDebugEnabled())
             qryLog.debug(U.compact("Executing fields query for single result on nodes: " + toShortString(nodes)));
@@ -107,49 +81,19 @@ public class GridCacheFieldsQueryAdapter<K, V> extends GridCacheQueryBaseAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public List<Object> executeSingleSync(GridProjection... grid) throws GridException {
-        seal();
+    @Override public <T> GridFuture<T> executeSingleField() {
+        return executeSingle().chain(new CX1<GridFuture<List<Object>>, T>() {
+            @Override public T applyx(GridFuture<List<Object>> res) throws GridException {
+                Collection<Object> row = res.get();
 
-        Collection<GridNode> nodes = nodes(grid);
-
-        if (qryLog.isDebugEnabled())
-            qryLog.debug(U.compact("Executing fields query for single result on nodes: " + toShortString(nodes)));
-
-        Collection<List<Object>> res = executeSync(nodes, false, false, null, null);
-
-        return F.first(res);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> GridFuture<T> executeSingleField(GridProjection... grid) {
-        final GridFutureAdapter<T> fut = new GridFutureAdapter<>(cctx.kernalContext());
-
-        executeSingle(grid).listenAsync(new CI1<GridFuture<List<Object>>>() {
-            @Override public void apply(GridFuture<List<Object>> f) {
-                try {
-                    Collection<Object> row = f.get();
-
-                    fut.onDone((T)F.first(row));
-                }
-                catch (GridException e) {
-                    fut.onDone(e);
-                }
+                return (T)F.first(row);
             }
         });
-
-        return fut;
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T executeSingleFieldSync(GridProjection... grid) throws GridException {
-        List<Object> row = executeSingleSync(grid);
-
-        return row != null ? (T)row.get(0) : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<?> visit(GridPredicate<List<Object>> vis, GridProjection[] grid) {
-        Collection<GridNode> nodes = nodes(grid);
+    @Override public GridFuture<?> visit(GridPredicate<List<Object>> vis) {
+        Collection<GridNode> nodes = nodes();
 
         if (qryLog.isDebugEnabled())
             qryLog.debug(U.compact("Executing fields query with visitor on nodes: " + toShortString(nodes)));
@@ -158,18 +102,13 @@ public class GridCacheFieldsQueryAdapter<K, V> extends GridCacheQueryBaseAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void visitSync(GridPredicate<List<Object>> vis, GridProjection... grid) throws GridException {
-        Collection<GridNode> nodes = nodes(grid);
-
-        if (qryLog.isDebugEnabled())
-            qryLog.debug(U.compact("Executing fields query with visitor on nodes: " + toShortString(nodes)));
-
-        executeSync(nodes, false, false, null, vis);
+    @Override protected void registerClasses() throws GridException {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override protected void registerClasses() throws GridException {
-        // No-op.
+    @Override protected GridCacheFieldsQueryAdapter<K, V> copy() {
+        return new GridCacheFieldsQueryAdapter<>(this);
     }
 
     /** {@inheritDoc} */
@@ -209,31 +148,6 @@ public class GridCacheFieldsQueryAdapter<K, V> extends GridCacheQueryBaseAdapter
             nodes.size() == 1 && nodes.iterator().next().equals(cctx.discovery().localNode()) ?
             qryMgr.queryFieldsLocal(this, false, rmtRdcOnly, pageLsnr0, vis) :
             qryMgr.queryFieldsDistributed(this, nodes, false, rmtRdcOnly, pageLsnr0, vis));
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected <R> Collection<R> executeSync(Collection<GridNode> nodes, boolean single,
-        boolean rmtRdcOnly, @Nullable final GridBiInClosure<UUID, Collection<R>> pageLsnr,
-        @Nullable GridPredicate<?> vis) throws GridException {
-        cctx.deploy().registerClasses(arguments());
-
-        GridCacheQueryManager qryMgr = cctx.queries();
-
-        GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr0 =
-            new CI2<UUID, Collection<List<Object>>>() {
-            @Override public void apply(UUID uuid, Collection<List<Object>> cols) {
-                if (pageLsnr != null) {
-                    Collection<R> col = (Collection<R>)cols;
-
-                    pageLsnr.apply(uuid, col);
-                }
-            }
-        };
-
-        return nodes.size() == 1 && nodes.iterator().next().equals(cctx.discovery().localNode()) ?
-            qryMgr.queryFieldsLocalSync(this, false, rmtRdcOnly, pageLsnr0, vis) :
-            qryMgr.queryFieldsDistributed(this, nodes, false, rmtRdcOnly, pageLsnr0, vis).get();
     }
 
     /** {@inheritDoc} */

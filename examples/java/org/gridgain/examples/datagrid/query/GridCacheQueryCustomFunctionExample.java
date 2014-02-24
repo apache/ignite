@@ -54,7 +54,7 @@ public class GridCacheQueryCustomFunctionExample {
             GridCacheQuery<Integer, String> qry = cache.queries().createQuery(GridCacheQueryType.SQL, String.class,
                 "to_hex(_key) <> _val");
 
-            GridCacheQueryFuture<Map.Entry<Integer, String>> res = qry.execute(g);
+            GridCacheQueryFuture<Map.Entry<Integer, String>> res = qry.execute();
 
             for (Map.Entry<Integer, String> entry : res.get())
                 print("Hex value  '" + entry.getValue() + "' is not equal to key " + entry.getKey());
@@ -62,7 +62,7 @@ public class GridCacheQueryCustomFunctionExample {
 
             GridFuture<List<Object>> res1 = cache.queries()
                 .createFieldsQuery("select to_hex(sum(from_hex(_val))) from String").
-                executeSingle(g);
+                executeSingle();
 
             print("Hex sum of all hex values is '" + res1.get().get(0) + "'");
         }

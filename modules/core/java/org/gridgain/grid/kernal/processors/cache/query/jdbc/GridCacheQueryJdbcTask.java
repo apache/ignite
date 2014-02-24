@@ -180,16 +180,17 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
 
                 GridCache<?, ?> cache = ((GridEx)grid).cachex(cacheName);
 
-                GridCacheFieldsQuery qry = cache.queries().createFieldsQuery(sql).queryArguments(args.toArray());
+                GridCacheFieldsQuery<?, ?> qry = cache.queries().createFieldsQuery(sql).queryArguments(args.toArray());
 
                 qry.includeMetadata(true);
                 qry.pageSize(pageSize);
                 qry.timeout(timeout);
 
                 // Query local and replicated caches only locally.
-                GridCacheFieldsQueryFuture fut = qry.execute(
-                    cache.configuration().getCacheMode() == PARTITIONED ? grid :
-                        grid.forLocal());
+                if (cache.configuration().getCacheMode() != PARTITIONED)
+                    qry = qry.projection(grid.forLocal());
+
+                GridCacheFieldsQueryFuture fut = qry.execute();
 
                 Collection<GridCacheQueryFieldDescriptor> meta = fut.metadata().get();
 

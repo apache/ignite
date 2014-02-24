@@ -61,7 +61,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public interface GridCacheTransformQuery<K, V, T> extends GridCacheQueryBase<K, V> {
+public interface GridCacheTransformQuery<K, V, T> extends GridCacheQueryBase<K, V, GridCacheTransformQuery<K, V, T>> {
     /**
      * Optional arguments that get passed into query SQL.
      *
@@ -71,30 +71,14 @@ public interface GridCacheTransformQuery<K, V, T> extends GridCacheQueryBase<K, 
     public GridCacheTransformQuery<K, V, T> queryArguments(@Nullable Object... args);
 
     /**
-     * Optional arguments for closures to be used by {@link #remoteKeyFilter(GridClosure)},
-     * {@link #remoteValueFilter(GridClosure)}, and {@link #remoteTransformer(GridClosure)}.
-     *
-     * @param args Optional query arguments.
-     * @return This query with the passed in arguments preset.
-     */
-    public GridCacheTransformQuery<K, V, T> closureArguments(@Nullable Object... args);
-
-    /**
-     * Sets optional transformer factory to transform values returned from queried nodes.
-     * Transformer factory is a closure which accepts array of objects provided
-     * by {@link #closureArguments(Object...)} method as a parameter and returns a closure
-     * that transforms one value into another. Transformers are especially useful whenever
-     * only a subset of queried values needs to be returned to caller and can help save on
-     * network overhead. Transformer will usually take the queried values and return
-     * smaller, more light weight values to the caller.
+     * Sets optional transformer to transform values returned from queried nodes.
      * <p>
-     * If factory is set, then it will be invoked for every query execution. If state of
-     * the transformer closure changes every time a query is executed, then factory should
-     * return a new transformer closure for every execution.
+     * If transformer is set, then it will be invoked for every query execution.
      *
-     * @param factory Optional transformer factory to transform values on queried nodes.
+     * @param transformer Optional transformer to transform values on queried nodes.
+     * @return New transform query with transformer closure set.
      */
-    public void remoteTransformer(@Nullable GridClosure<Object[], GridClosure<V, T>> factory);
+    public GridCacheTransformQuery<K, V, T> remoteTransformer(GridClosure<V, T> transformer);
 
     /**
      * Executes the query and returns the first result in the result set. If more
@@ -106,26 +90,9 @@ public interface GridCacheTransformQuery<K, V, T> extends GridCacheQueryBase<K, 
      * Also note that query state cannot be changed (clause, timeout etc.), except
      * arguments, if this method was called at least once.
      *
-     * @param grid Optional subgrid projection to execute this query on (if not provided, then the whole grid is used).
      * @return Future for the single query result.
      */
-    public GridFuture<Map.Entry<K, T>> executeSingle(GridProjection... grid);
-
-    /**
-     * Synchronously executes the query and returns the first result in the result set. If more
-     * than one key-value pair are returned, then will be ignored.
-     * <p>
-     * Note that if the passed in grid projection is a local node, then query
-     * will be executed locally without distribution to other nodes.
-     * <p>
-     * Also note that query state cannot be changed (clause, timeout etc.), except
-     * arguments, if this method was called at least once.
-     *
-     * @param grid Optional subgrid projection to execute this query on (if not provided, then the whole grid is used).
-     * @return Single query result.
-     * @throws GridException In case of error.
-     */
-    public Map.Entry<K, T> executeSingleSync(GridProjection... grid) throws GridException;
+    public GridFuture<Map.Entry<K, T>> executeSingle();
 
     /**
      * Executes the query and returns the query future. Caller may decide to iterate
@@ -142,26 +109,7 @@ public interface GridCacheTransformQuery<K, V, T> extends GridCacheQueryBase<K, 
      * Also note that query state cannot be changed (clause, timeout etc.), except
      * arguments, if this method was called at least once.
      *
-     * @param grid Optional subgrid projection to execute this query on (if not provided, then the whole grid is used).
      * @return Future for the query result.
      */
-    public GridCacheQueryFuture<Map.Entry<K, T>> execute(GridProjection... grid);
-
-    /**
-     * Synchronously executes the query and returns query result. If
-     * {@link #keepAll(boolean)} flag is set to {@code false}, then the
-     * method will only return the last page received, otherwise all pages will be
-     * accumulated and returned to user as a collection.
-     * <p>
-     * Note that if the passed in grid projection is a local node, then query
-     * will be executed locally without distribution to other nodes.
-     * <p>
-     * Also note that query state cannot be changed (clause, timeout etc.), except
-     * arguments, if this method was called at least once.
-     *
-     * @param grid Optional subgrid projection to execute this query on (if not provided, then the whole grid is used).
-     * @return Query result.
-     * @throws GridException In case of error.
-     */
-    public Collection<Map.Entry<K, T>> executeSync(GridProjection... grid) throws GridException;
+    public GridCacheQueryFuture<Map.Entry<K, T>> execute();
 }

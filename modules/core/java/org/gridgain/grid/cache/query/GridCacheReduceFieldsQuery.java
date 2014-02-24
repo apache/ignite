@@ -103,32 +103,28 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public interface GridCacheReduceFieldsQuery<R1, R2, K, V> extends GridCacheQueryBase<K, V> {
+public interface GridCacheReduceFieldsQuery<K, V, R1, R2>
+    extends GridCacheQueryBase<K, V, GridCacheReduceFieldsQuery<K, V, R1, R2>> {
     /**
-     * Optional remote reducer factory to provide reducers for reduction of multiple
-     * queried values on queried nodes into one. The factory is a closure which
-     * accepts array of objects provided by {@link #closureArguments(Object...)}
-     * method and returns reducer to reduce queried values.
+     * Optional remote reducer for reduction of multiple queried values on queried nodes into one.
      * <p>
-     * If factory is set, then it should provide a new instance of reducer for every
-     * query execution.
+     * If reducer is set, then it will be used for every query execution.
      *
-     * @param factory Optional remote reducer factory to create reducers for use on queried nodes.
+     * @param factory Optional remote reducer to use on queried nodes.
+     * @return New reduce fields query with remote reducer set.
      */
-    public void remoteReducer(@Nullable GridClosure<Object[], GridReducer<List<Object>, R1>> factory);
+    public GridCacheReduceFieldsQuery<K, V, R1, R2> remoteReducer(GridReducer<List<Object>, R1> factory);
 
     /**
-     * Optional local reducer factory to provide reducers for reduction of multiple queried values
-     * returned from remote nodes into one. The factory is a closure which accepts array of objects provided
-     * by {@link #closureArguments(Object...)} method ar parameter and returns reducer to locally reduce
-     * multiple query results returned from remote nodes into one.
+     * Optional local reducer for reduction of multiple queried values returned from remote nodes into one.
      * <p>
-     * If factory is set, then it should provide a new instance of reducer for every query execution.
+     * If reducer is set, then it will be used for every query execution.
      *
      * @param factory Optional reducer factory to create local reducers to reduce query results returned
      *      from queried nodes.
+     * @return New reduce fields query with local reducer set.
      */
-    public void localReducer(@Nullable GridClosure<Object[], GridReducer<R1, R2>> factory);
+    public GridCacheReduceFieldsQuery<K, V, R1, R2> localReducer(GridReducer<R1, R2> factory);
 
     /**
      * Optional query arguments that get passed to query SQL.
@@ -136,17 +132,7 @@ public interface GridCacheReduceFieldsQuery<R1, R2, K, V> extends GridCacheQuery
      * @param args Optional query arguments.
      * @return This query with the passed in arguments preset.
      */
-    public GridCacheReduceFieldsQuery<R1, R2, K, V> queryArguments(@Nullable Object... args);
-
-    /**
-     * Optional arguments for closures to be used by {@link #remoteKeyFilter(GridClosure)},
-     * {@link #remoteValueFilter(GridClosure)}, {@link #remoteReducer(GridClosure)}, and
-     * {@link #localReducer(GridClosure)}.
-     *
-     * @param args Optional query arguments.
-     * @return This query with the passed in arguments preset.
-     */
-    public GridCacheReduceFieldsQuery<R1, R2, K, V> closureArguments(@Nullable Object... args);
+    public GridCacheReduceFieldsQuery<K, V, R1, R2> queryArguments(@Nullable Object... args);
 
     /**
      * Executes query on the given grid projection using remote and local reducers and
@@ -158,26 +144,9 @@ public interface GridCacheReduceFieldsQuery<R1, R2, K, V> extends GridCacheQuery
      * Also note that query state cannot be changed (clause, timeout etc.), except
      * arguments, if this method was called at least once.
      *
-     * @param grid Grid projection to execute query on, if not provided, all grid nodes will be used.
      * @return Future for the reduced query result.
      */
-    public GridFuture<R2> reduce(@Nullable GridProjection... grid);
-
-    /**
-     * Synchronously executes query on the given grid projection using remote and local reducers and
-     * returns queried result.
-     * <p>
-     * Note that if the passed in grid projection is a local node, then query
-     * will be executed locally without distribution to other nodes.
-     * <p>
-     * Also note that query state cannot be changed (clause, timeout etc.), except
-     * arguments, if this method was called at least once.
-     *
-     * @param grid Grid projection to execute query on, if not provided, all grid nodes will be used.
-     * @return Reduced query result.
-     * @throws GridException In case of error.
-     */
-    public R2 reduceSync(@Nullable GridProjection... grid) throws GridException;
+    public GridFuture<R2> reduce();
 
     /**
      * Executes query on the given grid projection using remote reducer and
@@ -190,25 +159,7 @@ public interface GridCacheReduceFieldsQuery<R1, R2, K, V> extends GridCacheQuery
      * Also note that query state cannot be changed (clause, timeout etc.), except
      * arguments, if this method was called at least once.
      *
-     * @param grid Grid projection to execute query on, if not provided, all grid nodes will be used.
      * @return Future for the reduced query result.
      */
-    public GridFuture<Collection<R1>> reduceRemote(@Nullable GridProjection... grid);
-
-    /**
-     * Synchronously executes query on the given grid projection using remote reducer and
-     * returns queried result. The result is a collection of
-     * reduced values returned from queried nodes.
-     * <p>
-     * Note that if the passed in grid projection is a local node, then query
-     * will be executed locally without distribution to other nodes.
-     * <p>
-     * Also note that query state cannot be changed (clause, timeout etc.), except
-     * arguments, if this method was called at least once.
-     *
-     * @param grid Grid projection to execute query on, if not provided, all grid nodes will be used.
-     * @return Reduced query result.
-     * @throws GridException In case of error.
-     */
-    public Collection<R1> reduceRemoteSync(@Nullable GridProjection... grid) throws GridException;
+    public GridFuture<Collection<R1>> reduceRemote();
 }
