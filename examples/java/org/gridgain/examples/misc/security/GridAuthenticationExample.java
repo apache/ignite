@@ -54,12 +54,11 @@ public final class GridAuthenticationExample {
             // Ask user to send broadcast message.
             while (confirm(title, msg)) {
                 // Send notification message to all nodes in topology.
-                g.compute().run(new Runnable() {
-                        @Override public void run() {
-                            System.out.println(">>> Broadcast message sent from node=" + g.localNode().id());
-                        }
+                g.compute().broadcast(new Runnable() {
+                    @Override public void run() {
+                        System.out.println(">>> Broadcast message sent from node=" + g.localNode().id());
                     }
-                ).get();
+                }).get();
             }
         }
     }
