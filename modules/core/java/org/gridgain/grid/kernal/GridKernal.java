@@ -84,6 +84,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.kernal.GridKernalState.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridProductImpl.*;
+import static org.gridgain.grid.kernal.processors.dr.GridDrUtils.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
 
@@ -987,7 +988,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         A.ensure(cfg.getNetworkSendRetryDelay() > 0, "cfg.getNetworkSendRetryDelay() > 0");
         A.ensure(cfg.getNetworkSendRetryCount() > 0, "cfg.getNetworkSendRetryCount() > 0");
         A.ensure(cfg.getDataCenterId() >= 0, "cfg.getDataCenterId() >= 0");
-        A.ensure(cfg.getDataCenterId() <= 31, "cfg.getDataCenterId() <= 31");
+        A.ensure(cfg.getDataCenterId() < MAX_DATA_CENTERS, "cfg.getDataCenterId() <= 31");
 
         boolean hasHubCfg = cfg.getDrSenderHubConfiguration() != null ||
             cfg.getDrReceiverHubConfiguration() != null;
