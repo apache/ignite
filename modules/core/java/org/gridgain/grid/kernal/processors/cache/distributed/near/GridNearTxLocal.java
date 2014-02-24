@@ -243,6 +243,36 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
     }
 
     /**
+     * Removes mapping in case of optimistic tx failure on primary node.
+     *
+     * @param failedNodeId Failed node ID.
+     * @param mapQueue Mappings queue.
+     */
+    void removeKeysMapping(UUID failedNodeId, Iterable<GridDistributedTxMapping<K, V>> mapQueue) {
+        assert optimistic();
+        assert failedNodeId != null;
+        assert mapQueue != null;
+
+        mappings.remove(failedNodeId);
+
+        if (!F.isEmpty(mapQueue)) {
+            for (GridDistributedTxMapping<K, V> m : mapQueue) {
+                UUID nodeId = m.node().id();
+
+                GridDistributedTxMapping<K, V> mapping = mappings.get(nodeId);
+
+                if (mapping != null) {
+                    for (GridCacheTxEntry<K, V> entry : m.entries())
+                        mapping.removeEntry(entry);
+
+                    if (mapping.entries().isEmpty())
+                        mappings.remove(nodeId);
+                }
+            }
+        }
+    }
+
+    /**
      * @param nodeId Node ID to mark with explicit lock.
      * @return {@code True} if mapping was found.
      */
@@ -447,15 +477,15 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
             if (!state(PREPARING)) {
                 if (setRollbackOnly()) {
                     if (timedOut())
-                        fut.onError(new GridCacheTxTimeoutException("Transaction timed out and was rolled back: " +
-                            this));
+                        fut.onError(null, null, new GridCacheTxTimeoutException("Transaction timed out and was " +
+                            "rolled back: " + this));
                     else
-                        fut.onError(new GridException("Invalid transaction state for prepare [state=" + state() +
-                            ", tx=" + this + ']'));
+                        fut.onError(null, null, new GridException("Invalid transaction state for prepare [state=" +
+                            state() + ", tx=" + this + ']'));
                 }
                 else
-                    fut.onError(new GridCacheTxRollbackException("Invalid transaction state for prepare [state=" +
-                        state() + ", tx=" + this + ']'));
+                    fut.onError(null, null, new GridCacheTxRollbackException("Invalid transaction state for prepare " +
+                        "[state=" + state() + ", tx=" + this + ']'));
 
                 return fut;
             }
@@ -466,8 +496,8 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
                 if (!state(PREPARED)) {
                     setRollbackOnly();
 
-                    fut.onError(new GridException("Invalid transaction state for commit [state=" + state() +
-                        ", tx=" + this + ']'));
+                    fut.onError(null, null, new GridException("Invalid transaction state for commit [state=" +
+                        state() + ", tx=" + this + ']'));
 
                     return fut;
                 }
@@ -475,7 +505,7 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
                 fut.complete();
             }
             catch (GridException e) {
-                fut.onError(e);
+                fut.onError(null, null, e);
             }
         }
         else
@@ -503,15 +533,15 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
                     if (!state(PREPARING)) {
                         if (setRollbackOnly()) {
                             if (timedOut())
-                                fut.onError(new GridCacheTxTimeoutException("Transaction timed out and was " +
-                                    "rolled back: " + this));
+                                fut.onError(null, null, new GridCacheTxTimeoutException("Transaction timed out and " +
+                                    "was rolled back: " + this));
                             else
-                                fut.onError(new GridException("Invalid transaction state for prepare [state=" +
-                                    state() + ", tx=" + this + ']'));
+                                fut.onError(null, null, new GridException("Invalid transaction state for prepare " +
+                                    "[state=" + state() + ", tx=" + this + ']'));
                         }
                         else
-                            fut.onError(new GridCacheTxRollbackException("Invalid transaction state for prepare " +
-                                "[state=" + state() + ", tx=" + this + ']'));
+                            fut.onError(null, null, new GridCacheTxRollbackException("Invalid transaction state for " +
+                                "prepare [state=" + state() + ", tx=" + this + ']'));
 
                         return;
                     }
@@ -529,7 +559,7 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
                     fut.prepare();
                 }
                 catch (GridCacheTxTimeoutException | GridCacheTxOptimisticException e) {
-                    fut.onError(e);
+                    fut.onError(cctx.localNodeId(), null, e);
                 }
                 catch (GridException e) {
                     setRollbackOnly();
@@ -545,7 +575,7 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
                         U.error(log, "Failed to rollback transaction: " + this, e1);
                     }
 
-                    fut.onError(new GridCacheTxRollbackException(msg, e));
+                    fut.onError(null, null, new GridCacheTxRollbackException(msg, e));
                 }
             }
             else {

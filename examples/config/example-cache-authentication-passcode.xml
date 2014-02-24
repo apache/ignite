@@ -99,7 +99,7 @@
                     <property name="atomicityMode" value="ATOMIC"/>
 
                     <!-- Disable near cache in atomic mode. -->
-                    <property name="partitionedDistributionMode" value="PARTITIONED_ONLY"/>
+                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
 
                     <!-- Enable primary sync write mode. -->
                     <property name="writeSynchronizationMode" value="PRIMARY_SYNC"/>
@@ -119,7 +119,7 @@
                         sets the number of backups to 1 (which is default).
                     -->
                     <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.partitioned.GridCachePartitionedAffinity">
+                        <bean class="org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinity">
                             <property name="keyBackups" value="1"/>
                         </bean>
                     </property>
@@ -140,7 +140,7 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
                     <!-- Enable near cache to cache recently accessed data. -->
-                    <property name="partitionedDistributionMode" value="NEAR_PARTITIONED"/>
+                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
 
                     <!-- Initial cache size. -->
                     <property name="startSize" value="1500000"/>
@@ -164,7 +164,7 @@
                         sets the number of backups to 1 (which is default).
                     -->
                     <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.partitioned.GridCachePartitionedAffinity">
+                        <bean class="org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinity">
                             <property name="keyBackups" value="1"/>
                         </bean>
                     </property>

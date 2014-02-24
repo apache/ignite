@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.partitioned.*;
+import org.gridgain.grid.cache.affinity.partition.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
@@ -250,8 +250,8 @@ public class GridGgfsProcessor extends GridProcessorAdapter {
             if (dataCache.configuration().getCacheMode() == PARTITIONED) {
                 GridCacheAffinity aff = dataCache.configuration().getAffinity();
 
-                if (aff instanceof GridCachePartitionedAffinity) {
-                    int backups = ((GridCachePartitionedAffinity)aff).getKeyBackups();
+                if (aff instanceof GridCachePartitionAffinity) {
+                    int backups = ((GridCachePartitionAffinity)aff).getKeyBackups();
 
                     if (backups != 0)
                         throw new GridException("GGFS data cache cannot be used with backups (set backup count " +

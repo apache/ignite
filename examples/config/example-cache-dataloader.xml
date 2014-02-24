@@ -80,7 +80,7 @@
 
                     <property name="cacheMode" value="PARTITIONED"/>
 
-                    <property name="partitionedDistributionMode" value="PARTITIONED_ONLY"/>
+                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
 
                     <!-- Initial cache size. -->
                     <property name="startSize" value="3000000"/>
@@ -90,7 +90,7 @@
                         sets the number of backups to 1 (which is default).
                     -->
                     <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.partitioned.GridCachePartitionedAffinity">
+                        <bean class="org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinity">
                             <property name="keyBackups" value="0"/> <!-- No redundancy. -->
                         </bean>
                     </property>

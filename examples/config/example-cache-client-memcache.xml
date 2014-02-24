@@ -70,6 +70,12 @@
         <property name="cacheConfiguration">
             <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
                 <!--
+                    Use transactional cache because data structures can't be
+                    used with atomic cache.
+                -->
+                <property name="atomicityMode" value="TRANSACTIONAL"/>
+
+                <!--
                     Setting this value will cause local node to wait for remote commits.
                     However, it's important to set it this way in the examples as we assert on
                     conditions that usually assume full completion of transactions on all nodes.

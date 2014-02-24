@@ -1487,7 +1487,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (metrics)
                 cctx.cache().metrics0().onWrite();
 
-            if (primary)
+            if (primary || cctx.isReplicated())
                 cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), false);
         }
 

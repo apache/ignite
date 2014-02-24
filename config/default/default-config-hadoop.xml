@@ -80,7 +80,7 @@
                     <!--
                         Disable near cache as it's not needed for GGFS.
                     -->
-                    <property name="partitionedDistributionMode" value="PARTITIONED_ONLY"/>
+                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
 
                     <!--
                         Initial cache size. Should be about 150% of the number
@@ -101,7 +101,7 @@
                         is achieved with 0 backup copies.
                     -->
                     <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.partitioned.GridCachePartitionedAffinity">
+                        <bean class="org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinity">
                             <constructor-arg value="0"/>
                         </bean>
                     </property>

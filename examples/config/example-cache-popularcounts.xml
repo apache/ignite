@@ -92,7 +92,7 @@
                 -->
                 <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
                     <property name="cacheMode" value="PARTITIONED"/>
-                    <property name="partitionedDistributionMode" value="PARTITIONED_ONLY"/>
+                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <!-- Initial cache size (just to avoid internal resizing). -->
@@ -106,7 +106,7 @@
                         sets the number of backups to 1.
                     -->
                     <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.partitioned.GridCachePartitionedAffinity">
+                        <bean class="org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinity">
                             <!--
                                 You can change this value to 0 as
                                 we don't really need backups for this example.

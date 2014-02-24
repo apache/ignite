@@ -11,7 +11,6 @@ package org.gridgain.grid.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.partitioned.*;
 import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.eviction.*;
@@ -266,8 +265,8 @@ public class GridCacheConfiguration {
     /** Default near cache start size. */
     private int nearStartSize = DFLT_NEAR_START_SIZE;
 
-    /** Partitioned cache mode. */
-    private GridCachePartitionedDistributionMode partDistro;
+    /** Cache distribution mode. */
+    private GridCacheDistributionMode distro;
 
     /** Write synchronization mode. */
     private GridCacheWriteSynchronizationMode writeSync;
@@ -443,7 +442,7 @@ public class GridCacheConfiguration {
         name = cc.getName();
         nearStartSize = cc.getNearStartSize();
         nearEvictPlc = cc.getNearEvictionPolicy();
-        partDistro = cc.getPartitionedDistributionMode();
+        distro = cc.getDistributionMode();
         pessimisticTxLogLinger = cc.getPessimisticTxLogLinger();
         pessimisticTxLogSize = cc.getPessimisticTxLogSize();
         preloadMode = cc.getPreloadMode();
@@ -536,23 +535,23 @@ public class GridCacheConfiguration {
     }
 
     /**
-     * Gets partitioned cache distribution mode. This parameter is taken into account only if
-     * {@link #getCacheMode()} is set to {@link GridCacheMode#PARTITIONED} mode.
+     * Gets cache distribution mode. This parameter is taken into account only if
+     * {@link #getCacheMode()} is set to {@link GridCacheMode#PARTITIONED} or {@link GridCacheMode#REPLICATED} mode.
      * <p>
      *
-     * @return Partitioned cache distribution mode.
+     * @return Cache distribution mode.
      */
-    public GridCachePartitionedDistributionMode getPartitionedDistributionMode() {
-        return partDistro;
+    public GridCacheDistributionMode getDistributionMode() {
+        return distro;
     }
 
     /**
-     * Sets partitioned distribution mode.
+     * Sets cache distribution mode.
      *
-     * @param partDistro Partitioned distribution mode.
+     * @param distro Distribution mode.
      */
-    public void setPartitionedDistributionMode(GridCachePartitionedDistributionMode partDistro) {
-        this.partDistro = partDistro;
+    public void setDistributionMode(GridCacheDistributionMode distro) {
+        this.distro = distro;
     }
 
     /**
@@ -1684,7 +1683,7 @@ public class GridCacheConfiguration {
      * For better efficiency user should usually make sure that new nodes get placed on
      * the same place of consistent hash ring as the left nodes, and that nodes are
      * restarted before this delay expires. To place nodes on the same place in consistent hash ring,
-     * use {@link GridCachePartitionedAffinity#setHashIdResolver(GridCachePartitionedHashResolver)}
+     * use {@link org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinity#setHashIdResolver(org.gridgain.grid.cache.affinity.partition.GridCachePartitionHashResolver)}
      * to make sure that a node maps to the same hash ID event if restared. As an example,
      * node IP address and port combination may be used in this case.
      * <p>

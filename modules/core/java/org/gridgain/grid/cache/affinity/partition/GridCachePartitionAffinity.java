@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.cache.affinity.partitioned;
+package org.gridgain.grid.cache.affinity.partition;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridCachePartitionedAffinity implements GridCacheAffinity {
+public class GridCachePartitionAffinity implements GridCacheAffinity {
     /** Flag to enable/disable consistency check (for internal use only). */
     private static final boolean AFFINITY_CONSISTENCY_CHECK = Boolean.getBoolean("GRIDGAIN_AFFINITY_CONSISTENCY_CHECK");
 
@@ -92,7 +92,7 @@ public class GridCachePartitionedAffinity implements GridCacheAffinity {
     private GridBiPredicate<GridNode, GridNode> backupFilter;
 
     /** */
-    private GridCachePartitionedHashResolver hashIdRslvr = new GridCachePartitionedConsistentIdHashResolver();
+    private GridCachePartitionHashResolver hashIdRslvr = new GridCachePartitionConsistentIdHashResolver();
 
     /** Injected grid. */
     @GridInstanceResource
@@ -127,7 +127,7 @@ public class GridCachePartitionedAffinity implements GridCacheAffinity {
     /**
      * Empty constructor with all defaults.
      */
-    public GridCachePartitionedAffinity() {
+    public GridCachePartitionAffinity() {
         // No-op.
     }
 
@@ -136,7 +136,7 @@ public class GridCachePartitionedAffinity implements GridCacheAffinity {
      *
      * @param backups Number of back up servers per key.
      */
-    public GridCachePartitionedAffinity(int backups) {
+    public GridCachePartitionAffinity(int backups) {
         this.backups = backups;
     }
 
@@ -150,7 +150,7 @@ public class GridCachePartitionedAffinity implements GridCacheAffinity {
      *      of each other.
      * @param backups Number of back up servers per key.
      */
-    public GridCachePartitionedAffinity(boolean exclNeighbors, int backups) {
+    public GridCachePartitionAffinity(boolean exclNeighbors, int backups) {
         this.exclNeighbors = exclNeighbors;
         this.backups = backups;
     }
@@ -166,7 +166,7 @@ public class GridCachePartitionedAffinity implements GridCacheAffinity {
      * @param backups Number of back up servers per key.
      * @param parts Total number of partitions.
      */
-    public GridCachePartitionedAffinity(boolean exclNeighbors, int backups, int parts) {
+    public GridCachePartitionAffinity(boolean exclNeighbors, int backups, int parts) {
         this.exclNeighbors = exclNeighbors;
         this.backups = backups;
         this.parts = parts;
@@ -185,7 +185,7 @@ public class GridCachePartitionedAffinity implements GridCacheAffinity {
      * <p>
      * Note that {@code excludeNeighbors} parameter is ignored if {@code backupFilter} is set.
      */
-    public GridCachePartitionedAffinity(int backups, int parts,
+    public GridCachePartitionAffinity(int backups, int parts,
         @Nullable GridBiPredicate<GridNode,GridNode> backupFilter) {
         this.backups = backups;
         this.parts = parts;
@@ -271,7 +271,7 @@ public class GridCachePartitionedAffinity implements GridCacheAffinity {
      *
      * @return Hash ID resolver.
      */
-    public GridCachePartitionedHashResolver getHashIdResolver() {
+    public GridCachePartitionHashResolver getHashIdResolver() {
         return hashIdRslvr;
     }
 
@@ -287,7 +287,7 @@ public class GridCachePartitionedAffinity implements GridCacheAffinity {
      *
      * @param hashIdRslvr Hash ID resolver.
      */
-    public void setHashIdResolver(GridCachePartitionedHashResolver hashIdRslvr) {
+    public void setHashIdResolver(GridCachePartitionHashResolver hashIdRslvr) {
         this.hashIdRslvr = hashIdRslvr;
     }
 
@@ -588,7 +588,7 @@ public class GridCachePartitionedAffinity implements GridCacheAffinity {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCachePartitionedAffinity.class, this);
+        return S.toString(GridCachePartitionAffinity.class, this);
     }
 
     /**

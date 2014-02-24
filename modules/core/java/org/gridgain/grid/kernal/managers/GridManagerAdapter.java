@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.managers;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.partitioned.*;
+import org.gridgain.grid.cache.affinity.partition.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -454,10 +454,10 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                             GridCacheConfiguration cfg = cache.configuration();
 
                             if (cfg.getAffinity() != null &&
-                                cfg.getAffinity() instanceof GridCachePartitionedAffinity) {
-                                GridCachePartitionedAffinity aff = (GridCachePartitionedAffinity)cfg.getAffinity();
+                                cfg.getAffinity() instanceof GridCachePartitionAffinity) {
+                                GridCachePartitionAffinity aff = (GridCachePartitionAffinity)cfg.getAffinity();
 
-                                GridCachePartitionedHashResolver hashIdRslvr = aff.getHashIdResolver();
+                                GridCachePartitionHashResolver hashIdRslvr = aff.getHashIdResolver();
 
                                 assert hashIdRslvr != null;
 
