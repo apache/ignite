@@ -11,7 +11,6 @@ package org.gridgain.examples.basic.compute;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Demonstrates a cron-based {@link Runnable} execution scheduling.
@@ -33,7 +32,7 @@ public class GridScheduleExample {
      *      {@code "examples/config/"} for configuration file examples.
      * @throws GridException If example execution failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws GridException, InterruptedException {
         try (Grid g = args.length == 0 ? GridGain.start("examples/config/example-default.xml") : GridGain.start(args[0])) {
             // Schedule output message every minute.
             g.scheduler().scheduleLocal(
@@ -55,7 +54,7 @@ public class GridScheduleExample {
             );
 
             // Sleep.
-            U.sleep(1000 * 60 * 3);
+            Thread.sleep(1000 * 60 * 3);
 
             // Prints.
             System.out.println(">>> Check all nodes for hello message output.");

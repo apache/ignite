@@ -80,18 +80,12 @@ public class GridBroadcastExample {
                 public String call() {
                     System.out.println("Executing task on node: " + grid.localNode().id());
 
-                    StringBuilder buf = new StringBuilder();
-
-                    buf
-                        .append("Node ID: ").append(grid.localNode().id())
-                        .append("\nOS: ").append(System.getProperty("os.name"))
-                        .append(" ").append(System.getProperty("os.version"))
-                        .append(" ").append(System.getProperty("os.arch"))
-                        .append("\nUser: ").append(System.getProperty("user.name"))
-                        .append("\nJRE: ").append(System.getProperty("java.runtime.name"))
-                        .append(" ").append(System.getProperty("java.runtime.version"));
-
-                    return buf.toString();
+                    return "Node ID: " + grid.localNode().id() + "\n" +
+                        "OS: " + System.getProperty("os.name") + " " + System.getProperty("os.version") + " " +
+                        System.getProperty("os.arch") + "\n" +
+                        "User: " + System.getProperty("user.name") + "\n" +
+                        "JRE: " + System.getProperty("java.runtime.name") + " " +
+                        System.getProperty("java.runtime.version");
                 }
         }).get();
 

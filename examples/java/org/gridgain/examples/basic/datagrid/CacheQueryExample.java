@@ -162,7 +162,6 @@ public class CacheQueryExample {
     private static void textQuery() {
         GridCache<GridCacheAffinityKey<UUID>, Person> cache = GridGain.grid().cache(CACHE_NAME);
 
-
         //  Query for all people with "Master Degree" in their resumes.
         GridCacheQuery<GridCacheAffinityKey<UUID>, Person> masters =
             cache.queries().createQuery(TEXT, Person.class, "Master");
