@@ -76,49 +76,6 @@ public interface GridCompute {
     public GridFuture<?> affinityRun(@Nullable String cacheName, Object affKey, Runnable job);
 
     /**
-     * Executes given closure on the nodes where data for provided affinity keys
-     * is located. This is known as affinity co-location between compute grid (a closure) and in-memory data grid
-     * (value with affinity key). Note that implementation of multiple executions of the same closure will
-     * be wrapped as a single task that splits into multiple {@code job}s that will be mapped to nodes
-     * with provided affinity keys.
-     * <p>
-     * This method does not block and returns immediately with future. All default SPI implementations
-     * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution, etc.).
-     * Note that if you need greater control on any aspects of Java code execution on the grid
-     * you should implement {@link GridComputeTask} which will provide you with full control over the execution.
-     * <p>
-     * Note that class {@link GridAbsClosure} implements {@link Runnable} and class {@link GridOutClosure}
-     * implements {@link Callable} interface. Note also that class {@link GridFunc} and typedefs provide rich
-     * APIs and functionality for closures and predicates based processing in GridGain. While Java interfaces
-     * {@link Runnable} and {@link Callable} allow for lowest common denominator for APIs - it is advisable
-     * to use richer Functional Programming support provided by GridGain available in {@link org.gridgain.grid.lang}
-     * package.
-     * <p>
-     * Notice that {@link Runnable} and {@link Callable} implementations must support serialization as required
-     * by the configured marshaller. For example, JDK marshaller will require that implementations would
-     * be serializable. Other marshallers, e.g. JBoss marshaller, may not have this limitation. Please consult
-     * with specific marshaller implementation for the details. Note that all closures and predicates in
-     * {@link org.gridgain.grid.lang} package are serializable and can be freely used in the distributed
-     * context with all marshallers currently shipped with GridGain.
-     *
-     * @param cacheName Name of the cache to use for affinity co-location.
-     * @param affKeys Collection of affinity keys. All dups will be ignored.
-     * @param job Closure to execute on the node with given affinity key.
-     *      Note that in case of dynamic projection this method will take a snapshot of all the
-     *      nodes at the time of this call, apply all filtering predicates, if any, and if the
-     *      resulting collection of nodes is empty - the exception will be thrown.
-     * @return Future of this execution.
-     * @see #affinityRun(String, Object, Runnable)
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
-     * @see #withName(String)
-     * @see #withResultClosure(GridBiClosure)
-     * @see GridComputeJobContext#cacheName()
-     * @see GridComputeJobContext#affinityKey()
-     */
-    public GridFuture<?> affinityRun(@Nullable String cacheName, Collection<?> affKeys, Runnable job);
-
-    /**
      * Executes given closure on the node where data for provided affinity key is located. This
      * is known as affinity co-location between compute grid (a closure) and in-memory data grid
      * (value with affinity key).
@@ -151,45 +108,6 @@ public interface GridCompute {
      * @see GridComputeJobContext#affinityKey()
      */
     public <R> GridFuture<R> affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job);
-
-    /**
-     * Executes given closure on the nodes where data for provided affinity keys
-     * is located. This is known as affinity co-location between compute grid (a closure) and in-memory data grid
-     * (value with affinity key). Note that implementation of multiple executions of the same closure will
-     * be wrapped as a single task that splits into multiple {@code job}s that will be mapped to nodes
-     * with provided affinity keys.
-     * <p>
-     * Unlike its sibling method {@link #affinityCall(String, Object, Callable)} this method does
-     * not block and returns immediately with future. All default SPI implementations
-     * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution, etc.).
-     * Note that if you need greater control on any aspects of Java code execution on the grid
-     * you should implement {@link GridComputeTask} which will provide you with full control over the execution.
-     * <p>
-     * Notice that {@link Runnable} and {@link Callable} implementations must support serialization as required
-     * by the configured marshaller. For example, JDK marshaller will require that implementations would
-     * be serializable. Other marshallers, e.g. JBoss marshaller, may not have this limitation. Please consult
-     * with specific marshaller implementation for the details. Note that all closures and predicates in
-     * {@link org.gridgain.grid.lang} package are serializable and can be freely used in the distributed
-     * context with all marshallers currently shipped with GridGain.
-     *
-     * @param cacheName Name of the cache to use for affinity co-location.
-     * @param affKeys Collection of affinity keys. All dups will be ignored.
-     * @param job Closure to execute on the node with given affinity key.
-     * @return Future of closure results. Upon successful execution number of results
-     *      will be equal to number of affinity keys provided.
-     *      Note that in case of dynamic projection this method will take a snapshot of all the
-     *      nodes at the time of this call, apply all filtering predicates, if any, and if the
-     *      resulting collection of nodes is empty - the exception will be thrown.
-     * @see #affinityRun(String, Object, Runnable)
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
-     * @see #withName(String)
-     * @see #withResultClosure(GridBiClosure)
-     * @see GridComputeJobContext#cacheName()
-     * @see GridComputeJobContext#affinityKey()
-     */
-    public <R> GridFuture<Collection<R>> affinityCall(@Nullable String cacheName, Collection<?> affKeys,
-        Callable<R> job);
 
     /**
      * Executes a task on the grid. For information on how task gets split into remote

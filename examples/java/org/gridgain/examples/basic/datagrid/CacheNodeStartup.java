@@ -9,22 +9,14 @@
 
 package org.gridgain.examples.basic.datagrid;
 
-import org.gridgain.examples.advanced.datagrid.loaddata.storeloader.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.product.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
- * Starts up an empty node with cache configuration that {@link GridCacheLoaderStore} configured.
- * <p>
- * Please note that this example loads large amount of data into memory and therefore
- * requires larger heap size. Please add {@code -Xmx1g} to JVM startup options.
+ * Starts up an empty node with example cache configuration.
  *
  * @author @java.author
  * @version @java.version
  */
-@GridOnlyAvailableIn(DATA_GRID)
 public class CacheNodeStartup {
     /**
      * Start up an empty node with specified cache configuration.

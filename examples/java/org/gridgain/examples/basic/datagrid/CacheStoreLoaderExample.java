@@ -10,24 +10,17 @@
 package org.gridgain.examples.basic.datagrid;
 
 import org.gridgain.examples.*;
-import org.gridgain.examples.advanced.datagrid.loaddata.storeloader.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.product.*;
 
 import java.util.concurrent.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Loads data from persistent store at cache startup by calling
  * {@link GridCache#loadCache(GridBiPredicate, long, Object...)} method on
  * all nodes.
- * <p>
- * For this example you should startup remote nodes only by calling
- * {@link GridCacheStoreLoaderNodeStartup} class.
  * <p>
  * You should not be using stand-alone nodes (started with {@code 'ggstart.sh})
  * because GridGain nodes do not know about the {@link GridCacheLoaderStore}
@@ -44,7 +37,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @author @java.author
  * @version @java.version
  */
-@GridOnlyAvailableIn(DATA_GRID)
 public class CacheStoreLoaderExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
