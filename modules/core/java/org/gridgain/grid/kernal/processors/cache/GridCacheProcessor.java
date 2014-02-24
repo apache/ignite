@@ -93,7 +93,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public GridCacheProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        caches = new HashMap<>();
+        caches = new LinkedHashMap<>();
         proxies = new HashMap<>();
         publicProxies = new HashMap<>();
         preloadFuts = new TreeMap<>();

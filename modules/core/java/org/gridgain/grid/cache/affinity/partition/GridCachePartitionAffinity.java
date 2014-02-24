@@ -430,7 +430,7 @@ public class GridCachePartitionAffinity implements GridCacheAffinity {
         }
         else {
             if (!exclNeighbors) {
-                selected = nodeHash.nodes(part, backups + 1, new P1<NodeInfo>() {
+                selected = nodeHash.nodes(part, backups == Integer.MAX_VALUE ? backups : backups + 1, new P1<NodeInfo>() {
                     @Override public boolean apply(NodeInfo id) {
                         return lookup.containsKey(id);
                     }
@@ -477,7 +477,7 @@ public class GridCachePartitionAffinity implements GridCacheAffinity {
             }
         }
 
-        Collection<GridNode> ret = new ArrayList<>(1 + backups);
+        Collection<GridNode> ret = new ArrayList<>(selected.size());
 
         for (NodeInfo id : selected) {
             GridNode n = lookup.get(id);

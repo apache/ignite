@@ -11,6 +11,7 @@ package org.gridgain.grid.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
+import org.gridgain.grid.cache.affinity.partition.*;
 import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.eviction.*;
@@ -537,7 +538,6 @@ public class GridCacheConfiguration {
     /**
      * Gets cache distribution mode. This parameter is taken into account only if
      * {@link #getCacheMode()} is set to {@link GridCacheMode#PARTITIONED} or {@link GridCacheMode#REPLICATED} mode.
-     * <p>
      *
      * @return Cache distribution mode.
      */
@@ -1683,8 +1683,8 @@ public class GridCacheConfiguration {
      * For better efficiency user should usually make sure that new nodes get placed on
      * the same place of consistent hash ring as the left nodes, and that nodes are
      * restarted before this delay expires. To place nodes on the same place in consistent hash ring,
-     * use {@link org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinity#setHashIdResolver(org.gridgain.grid.cache.affinity.partition.GridCachePartitionHashResolver)}
-     * to make sure that a node maps to the same hash ID event if restared. As an example,
+     * use {@link GridCachePartitionAffinity#setHashIdResolver(GridCachePartitionHashResolver)}
+     * to make sure that a node maps to the same hash ID event if restarted. As an example,
      * node IP address and port combination may be used in this case.
      * <p>
      * Default value is {@code 0} which means that repartitioning and preloading will start
