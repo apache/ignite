@@ -15,7 +15,6 @@ import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import visor._
 import org.gridgain.grid._
-import org.gridgain.grid.util.typedef.X
 import util.{GridUtils => U}
 import resources.GridInstanceResource
 import org.jetbrains.annotations.Nullable
@@ -29,8 +28,6 @@ import java.util.{Locale, Date}
 import java.text._
 import scala.reflect.ClassTag
 import org.gridgain.grid.lang.GridCallable
-import org.gridgain.grid.kernal.{GridClosureCallMode, GridEx}
-import GridClosureCallMode._
 import org.gridgain.grid.kernal.GridEx
 
 
@@ -193,7 +190,7 @@ class VisorConfigurationCommand {
             try
                 cfg = grid.forNode(node)
                     .compute()
-                    .withResultClosure(X.NO_FAILOVER)
+                    .withNoFailover()
                     .call(new GridConfigurationCallable)
                     .get
             catch {

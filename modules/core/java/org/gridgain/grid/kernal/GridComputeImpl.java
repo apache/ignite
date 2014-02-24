@@ -255,7 +255,7 @@ public class GridComputeImpl implements GridCompute {
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService executor() {
+    @Override public ExecutorService executorService() {
         guard();
 
         try {
@@ -425,76 +425,11 @@ public class GridComputeImpl implements GridCompute {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCompute withResultClosure(GridBiClosure<GridComputeJobResult, List<GridComputeJobResult>,
-        GridComputeJobResultPolicy> res) {
-        A.notNull(res, "res");
-
+    @Override public GridCompute withNoFailover() {
         guard();
 
         try {
-            ctx.task().setThreadContext(TC_RESULT, res);
-        }
-        finally {
-            unguard();
-        }
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCompute withFailoverSpi(String spiName) {
-        A.notNull(spiName, "spiName");
-
-        guard();
-
-        try {
-            ctx.task().setThreadContext(TC_FAILOVER_SPI, spiName);
-        }
-        finally {
-            unguard();
-        }
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCompute withCheckpointSpi(String spiName) {
-        A.notNull(spiName, "spiName");
-
-        guard();
-
-        try {
-            ctx.task().setThreadContext(TC_CHECKPOINT_SPI, spiName);
-        }
-        finally {
-            unguard();
-        }
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCompute withLoadBalancingSpi(String spiName) {
-        A.notNull(spiName, "spiName");
-
-        guard();
-
-        try {
-            ctx.task().setThreadContext(TC_LOAD_BALANCING_SPI, spiName);
-        }
-        finally {
-            unguard();
-        }
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCompute withSessionFullSupport() {
-        guard();
-
-        try {
-            ctx.task().setThreadContext(TC_SES_FULL_SUPPORT, true);
+            ctx.task().setThreadContext(TC_NO_FAILOVER, true);
         }
         finally {
             unguard();

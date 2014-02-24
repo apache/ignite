@@ -12,10 +12,8 @@
 package org.gridgain.visor.commands.gc
 
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.{GridClosureCallMode, GridEx}
-import GridClosureCallMode._
+import org.gridgain.grid.kernal.GridEx
 import resources.GridInstanceResource
-import org.gridgain.grid.util.typedef._
 import org.gridgain.scalar._
 import scalar._
 import org.gridgain.visor._
@@ -165,11 +163,11 @@ class VisorGcCommand {
                 if (node != null)
                     grid.forNode(node)
                         .compute()
-                        .withResultClosure(X.NO_FAILOVER)
+                        .withNoFailover()
                         .run(f)
                 else
                     grid.compute()
-                        .withResultClosure(X.NO_FAILOVER)
+                        .withNoFailover()
                         .run(f)
             }
         }
