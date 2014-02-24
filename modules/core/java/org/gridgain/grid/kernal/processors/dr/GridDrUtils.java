@@ -12,8 +12,6 @@ package org.gridgain.grid.kernal.processors.dr;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import org.gridgain.grid.kernal.processors.cache.dr.ent.*;
-
 import java.io.*;
 
 /**
@@ -23,7 +21,7 @@ import java.io.*;
  * @version @java.version
  */
 public class GridDrUtils {
-    /** Key used to store {@link GridDrPauseInfo} in system cache. */
+    /** Key used to store {@code GridDrPauseInfo} in system cache. */
     public static final Integer DR_COMMON_KEY = 0;
 
     /** Maximum amount of data centers. */
