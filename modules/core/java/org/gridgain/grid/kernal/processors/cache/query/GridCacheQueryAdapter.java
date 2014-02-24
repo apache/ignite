@@ -14,7 +14,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -27,7 +26,8 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridCacheQueryAdapter<K, V> extends GridCacheQueryBaseAdapter<K, V> implements GridCacheQuery<K, V> {
+public class GridCacheQueryAdapter<K, V> extends GridCacheQueryBaseAdapter<K, V, GridCacheQuery<K, V>>
+    implements GridCacheQuery<K, V> {
     /**
      * @param ctx Cache registry.
      * @param type Query type.
@@ -76,22 +76,13 @@ public class GridCacheQueryAdapter<K, V> extends GridCacheQueryBaseAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<K, V> closureArguments(@Nullable Object[] args) {
-        GridCacheQueryAdapter<K, V> cp = new GridCacheQueryAdapter<>(this);
-
-        cp.setClosureArguments(args);
-
-        return cp;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void registerClasses() throws GridException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Map.Entry<K, V>> executeSingle(GridProjection[] grid) {
-        Collection<GridNode> nodes = nodes(grid);
+    @Override public GridFuture<Map.Entry<K, V>> executeSingle() {
+        Collection<GridNode> nodes = nodes();
 
         if (qryLog.isDebugEnabled())
             qryLog.debug(U.compact("Executing query for single result on nodes: " + toShortString(nodes)));
@@ -100,20 +91,8 @@ public class GridCacheQueryAdapter<K, V> extends GridCacheQueryBaseAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public Map.Entry<K, V> executeSingleSync(GridProjection... grid) throws GridException {
-        Collection<GridNode> nodes = nodes(grid);
-
-        if (qryLog.isDebugEnabled())
-            qryLog.debug(U.compact("Executing query for single result on nodes: " + toShortString(nodes)));
-
-        Collection<Map.Entry<K, V>> res = executeSync(nodes, false, false, null, null);
-
-        return F.first(res);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheQueryFuture<Map.Entry<K, V>> execute(GridProjection[] grid) {
-        Collection<GridNode> nodes = nodes(grid);
+    @Override public GridCacheQueryFuture<Map.Entry<K, V>> execute() {
+        Collection<GridNode> nodes = nodes();
 
         if (qryLog.isDebugEnabled())
             qryLog.debug(U.compact("Executing query on nodes: " + toShortString(nodes)));
@@ -122,18 +101,8 @@ public class GridCacheQueryAdapter<K, V> extends GridCacheQueryBaseAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Map.Entry<K, V>> executeSync(GridProjection... grid) throws GridException {
-        Collection<GridNode> nodes = nodes(grid);
-
-        if (qryLog.isDebugEnabled())
-            qryLog.debug(U.compact("Executing query on nodes: " + toShortString(nodes)));
-
-        return executeSync(nodes, false, false, null, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<?> visit(GridPredicate<Map.Entry<K, V>> vis, GridProjection[] grid) {
-        Collection<GridNode> nodes = nodes(grid);
+    @Override public GridFuture<?> visit(GridPredicate<Map.Entry<K, V>> vis) {
+        Collection<GridNode> nodes = nodes();
 
         if (qryLog.isDebugEnabled())
             qryLog.debug(U.compact("Executing query with visitor on nodes: " + toShortString(nodes)));
@@ -142,13 +111,8 @@ public class GridCacheQueryAdapter<K, V> extends GridCacheQueryBaseAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void visitSync(GridPredicate<Map.Entry<K, V>> vis, GridProjection... grid) throws GridException {
-        Collection<GridNode> nodes = nodes(grid);
-
-        if (qryLog.isDebugEnabled())
-            qryLog.debug(U.compact("Executing query with visitor on nodes: " + toShortString(nodes)));
-
-        executeSync(nodes, false, false, null, vis);
+    @Override protected GridCacheQueryAdapter<K, V> copy() {
+        return new GridCacheQueryAdapter<>(this);
     }
 
     /** {@inheritDoc} */

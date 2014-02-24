@@ -23,7 +23,7 @@ import java.io.*;
  * @author @java.author
  * @version @java.version
  */
-public interface GridCacheQueryFieldDescriptor extends Externalizable {
+public interface GridCacheSqlFieldMetadata extends Externalizable {
     /**
      * Gets schema name.
      *

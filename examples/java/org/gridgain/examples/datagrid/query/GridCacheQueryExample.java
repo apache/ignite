@@ -134,17 +134,17 @@ public class GridCacheQueryExample {
 
         // Create query which selects salaries based on range.
         GridCacheQuery<GridCacheAffinityKey<UUID>, AffinityPerson> qry =
-            cache.queries().createQuery(SQL, AffinityPerson.class, "salary > ? and salary <= ?");
+            cache.queries().createQuery(SQL, AffinityPerson.class, "salary > ? and salary <= ?").projection(p);
 
         // Execute queries for salary ranges.
         print("People with salaries between 0 and 1000: ",
-            qry.queryArguments(0, 1000).execute(p));
+            qry.queryArguments(0, 1000).execute());
 
         print("People with salaries between 1000 and 2000: ",
-            qry.queryArguments(1000, 2000).execute(p));
+            qry.queryArguments(1000, 2000).execute());
 
         print("People with salaries greater than 2000: ",
-            qry.queryArguments(2000, Integer.MAX_VALUE).execute(p));
+            qry.queryArguments(2000, Integer.MAX_VALUE).execute());
     }
 
     /**
@@ -160,14 +160,15 @@ public class GridCacheQueryExample {
         GridCacheQuery<GridCacheAffinityKey<UUID>, AffinityPerson> qry =
             cache.queries().createQuery(SQL, AffinityPerson.class,
                 "from AffinityPerson, Organization " +
-                    "where AffinityPerson.orgId = Organization.id and lower(Organization.name) = lower(?)");
+                    "where AffinityPerson.orgId = Organization.id and lower(Organization.name) = lower(?)")
+            .projection(p);
 
         // Execute queries for find employees for different organizations.
         print("Following people are 'GridGain' employees: ",
-            qry.queryArguments("GridGain").execute(p));
+            qry.queryArguments("GridGain").execute());
 
         print("Following people are 'Other' employees: ",
-            qry.queryArguments("Other").execute(p));
+            qry.queryArguments("Other").execute());
     }
 
     /**
@@ -181,15 +182,15 @@ public class GridCacheQueryExample {
 
         //  Query for all people with "Master Degree" in their resumes.
         GridCacheQuery<GridCacheAffinityKey<UUID>, AffinityPerson> masters =
-            cache.queries().createQuery(TEXT, AffinityPerson.class, "Master");
+            cache.queries().createQuery(TEXT, AffinityPerson.class, "Master").projection(p);
 
         // Query for all people with "Bachelor Degree"in their resumes.
         GridCacheQuery<GridCacheAffinityKey<UUID>, AffinityPerson> bachelors =
-            cache.queries().createQuery(TEXT, AffinityPerson.class, "Bachelor");
+            cache.queries().createQuery(TEXT, AffinityPerson.class, "Bachelor").projection(p);
 
-        print("Following people have 'Master Degree' in their resumes: ", masters.execute(p));
+        print("Following people have 'Master Degree' in their resumes: ", masters.execute());
 
-        print("Following people have 'Bachelor Degree' in their resumes: ", bachelors.execute(p));
+        print("Following people have 'Bachelor Degree' in their resumes: ", bachelors.execute());
     }
 
     /**
@@ -210,72 +211,57 @@ public class GridCacheQueryExample {
                     "where AffinityPerson.orgId = Organization.id and lower(Organization.name) = lower(?)");
 
         // Calculate sum of salaries and employee count on remote nodes.
-        qry.remoteReducer(new GridClosure<Object[], GridReducer<Map.Entry<GridCacheAffinityKey<UUID>, AffinityPerson>,
-            GridBiTuple<Double, Integer>>>() {
-                private final GridReducer<Map.Entry<GridCacheAffinityKey<UUID>, AffinityPerson>, GridBiTuple<Double, Integer>> rdc =
-                    new GridReducer<Map.Entry<GridCacheAffinityKey<UUID>, AffinityPerson>, GridBiTuple<Double, Integer>>() {
-                        private double sum;
+        qry = qry.projection(p).remoteReducer(
+            new GridReducer<Map.Entry<GridCacheAffinityKey<UUID>, AffinityPerson>, GridBiTuple<Double, Integer>>() {
+                private double sum;
 
-                        private int cnt;
+                private int cnt;
 
-                        @Override public boolean collect(Map.Entry<GridCacheAffinityKey<UUID>, AffinityPerson> e) {
-                            sum += e.getValue().getSalary();
+                @Override public boolean collect(Map.Entry<GridCacheAffinityKey<UUID>, AffinityPerson> e) {
+                    sum += e.getValue().getSalary();
 
-                            cnt++;
+                    cnt++;
 
-                            // Continue collecting.
-                            return true;
-                        }
-
-                        @Override public GridBiTuple<Double, Integer> reduce() {
-                            return new GridBiTuple<>(sum, cnt);
-                        }
-                    };
-
-                @Override public GridReducer<Map.Entry<GridCacheAffinityKey<UUID>, AffinityPerson>,
-                    GridBiTuple<Double, Integer>> apply(Object[] args) {
-                    return rdc;
+                    // Continue collecting.
+                    return true;
                 }
-            });
 
-        // Reduce totals from remote nodes into overall average.
-        qry.localReducer(new GridClosure<Object[], GridReducer<GridBiTuple<Double, Integer>, Double>>() {
-            private final GridReducer<GridBiTuple<Double, Integer>, Double> rdc =
-                new GridReducer<GridBiTuple<Double, Integer>, Double>() {
-                    private double sum;
-
-                    private int cnt;
-
-                    @Override public boolean collect(GridBiTuple<Double, Integer> t) {
-                        sum += t.get1();
-                        cnt += t.get2();
-
-                        // Continue collecting.
-                        return true;
-                    }
-
-                    @Override public Double reduce() {
-                        double avg = cnt == 0 ? 0 : sum / cnt;
-
-                        // Reset reducer state to correctly execute query several times.
-                        sum = 0;
-                        cnt = 0;
-
-                        return avg;
-                    }
-                };
-
-            @Override public GridReducer<GridBiTuple<Double, Integer>, Double> apply(Object[] args) {
-                return rdc;
+                @Override public GridBiTuple<Double, Integer> reduce() {
+                    return new GridBiTuple<>(sum, cnt);
+                }
             }
-        });
+        ).localReducer(
+            new GridReducer<GridBiTuple<Double, Integer>, Double>() {
+                private double sum;
+
+                private int cnt;
+
+                @Override public boolean collect(GridBiTuple<Double, Integer> t) {
+                    sum += t.get1();
+                    cnt += t.get2();
+
+                    // Continue collecting.
+                    return true;
+                }
+
+                @Override public Double reduce() {
+                    double avg = cnt == 0 ? 0 : sum / cnt;
+
+                    // Reset reducer state to correctly execute query several times.
+                    sum = 0;
+                    cnt = 0;
+
+                    return avg;
+                }
+            }
+        );
 
         // Calculate average salary for a specific organization.
         print("Average salary for 'GridGain' employees: " +
-            qry.queryArguments("GridGain").reduce(p).get());
+            qry.queryArguments("GridGain").reduce().get());
 
         print("Average salary for 'Other' employees: " +
-            qry.queryArguments("Other").reduce(p).get());
+            qry.queryArguments("Other").reduce().get());
     }
 
     /**
@@ -298,19 +284,16 @@ public class GridCacheQueryExample {
         // Transformer to convert Person objects to String.
         // Since caller only needs employee names, we only
         // send names back.
-        qry.remoteTransformer(new GridClosure<Object[], GridClosure<AffinityPerson, String>>() {
-            @Override public GridClosure<AffinityPerson, String> apply(Object[] args) {
-                return new GridClosure<AffinityPerson, String>() {
-                    @Override public String apply(AffinityPerson p) {
-                        return p.getLastName();
-                    }
-                };
-            }
-        });
+        qry = qry.projection(p).remoteTransformer(
+            new GridClosure<AffinityPerson, String>() {
+                @Override public String apply(AffinityPerson p) {
+                    return p.getLastName();
+                }
+            });
 
         // Query all nodes for names of all GridGain employees.
         print("Names of all 'GridGain' employees: " +
-            qry.queryArguments("GridGain").execute(p).get());
+            qry.queryArguments("GridGain").execute().get());
     }
 
     /**
@@ -326,11 +309,11 @@ public class GridCacheQueryExample {
 
         // Create query to get names of all employees.
         GridCacheFieldsQuery qry1 = cache.queries().createFieldsQuery(
-            "select concat(firstName, ' ', lastName) from AffinityPerson");
+            "select concat(firstName, ' ', lastName) from AffinityPerson").projection(p);
 
         // Execute query to get collection of rows. In this particular
         // case each row will have one element with full name of an employees.
-        Collection<List<Object>> res = qry1.execute(p).get();
+        Collection<List<Object>> res = qry1.execute().get();
 
         // Print names.
         print("Names of all employees:", res.iterator());
@@ -341,8 +324,8 @@ public class GridCacheQueryExample {
 
         // Only one row with one field is expected in result of this query,
         // so you can use convenient 'executeSingleField' method here.
-        print("Salary of John Doe: " + qry2.queryArguments("John Doe").executeSingleField(p).get());
-        print("Salary of John Smith: " + qry2.queryArguments("John Smith").executeSingleField(p).get());
+        print("Salary of John Doe: " + qry2.queryArguments("John Doe").executeSingleField().get());
+        print("Salary of John Smith: " + qry2.queryArguments("John Smith").executeSingleField().get());
     }
 
     /**

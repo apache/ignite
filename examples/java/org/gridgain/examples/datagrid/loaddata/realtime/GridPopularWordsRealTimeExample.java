@@ -158,7 +158,7 @@ public class GridPopularWordsRealTimeExample {
                             createQuery(SQL, Integer.class, "length(_key) > 3 order by _val desc limit " + cnt);
 
                     List<Map.Entry<String, Integer>> results =
-                        new ArrayList<>(qry.execute(g).get());
+                        new ArrayList<>(qry.execute().get());
 
                     Collections.sort(results, new Comparator<Map.Entry<String, Integer>>() {
                         @Override public int compare(Map.Entry<String, Integer> e1, Map.Entry<String, Integer> e2) {

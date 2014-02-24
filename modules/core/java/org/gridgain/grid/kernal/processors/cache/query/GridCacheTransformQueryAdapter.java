@@ -14,7 +14,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.jetbrains.annotations.*;
@@ -28,10 +27,11 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridCacheTransformQueryAdapter<K, V, T> extends GridCacheQueryBaseAdapter<K, V>
+public class GridCacheTransformQueryAdapter<K, V, T>
+    extends GridCacheQueryBaseAdapter<K, V, GridCacheTransformQuery<K, V, T>>
     implements GridCacheTransformQuery<K, V, T> {
     /** Transformation closure. */
-    private volatile GridClosure<Object[], GridClosure<V, T>> trans;
+    private volatile GridClosure<V, T> trans;
 
     /**
      * @param ctx Cache registry.
@@ -68,16 +68,7 @@ public class GridCacheTransformQueryAdapter<K, V, T> extends GridCacheQueryBaseA
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTransformQuery<K, V, T> closureArguments(@Nullable Object[] args) {
-        GridCacheTransformQueryAdapter<K, V, T> cp = new GridCacheTransformQueryAdapter<>(this);
-
-        cp.setClosureArguments(args);
-
-        return cp;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Map.Entry<K, T>> executeSingle(GridProjection[] grid) {
+    @Override public GridFuture<Map.Entry<K, T>> executeSingle() {
         if (trans == null) {
             GridFutureAdapter<Map.Entry<K, T>> err = new GridFutureAdapter<>(cctx.kernalContext());
 
@@ -86,7 +77,7 @@ public class GridCacheTransformQueryAdapter<K, V, T> extends GridCacheQueryBaseA
             return err;
         }
 
-        Collection<GridNode> nodes = nodes(grid);
+        Collection<GridNode> nodes = nodes();
 
         if (qryLog.isDebugEnabled())
             qryLog.debug("Executing transform query for single result " + toShortString(nodes));
@@ -95,45 +86,17 @@ public class GridCacheTransformQueryAdapter<K, V, T> extends GridCacheQueryBaseA
     }
 
     /** {@inheritDoc} */
-    @Override public Map.Entry<K, T> executeSingleSync(GridProjection... grid) throws GridException {
-        if (trans == null)
-            throw new GridException("Transformer must be set for transform query.");
-
-        Collection<GridNode> nodes = nodes(grid);
-
-        if (qryLog.isDebugEnabled())
-            qryLog.debug(U.compact("Executing transform query " + toShortString(nodes)));
-
-        Collection<Map.Entry<K, T>> res = executeSync(nodes, false, false, null, null);
-
-        return F.first(res);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheQueryFuture<Map.Entry<K, T>> execute(GridProjection[] grid) {
+    @Override public GridCacheQueryFuture<Map.Entry<K, T>> execute() {
         if (trans == null)
             return new GridCacheErrorQueryFuture<>
                 (cctx.kernalContext(), new GridException("Transformer must be set for transform query."));
 
-        Collection<GridNode> nodes = nodes(grid);
+        Collection<GridNode> nodes = nodes();
 
         if (qryLog.isDebugEnabled())
             qryLog.debug(U.compact("Executing transform query " + toShortString(nodes)));
 
         return execute(nodes, false, false, null, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<Map.Entry<K, T>> executeSync(GridProjection... grid) throws GridException {
-        if (trans == null)
-            throw new GridException("Transformer must be set for transform query.");
-
-        Collection<GridNode> nodes = nodes(grid);
-
-        if (qryLog.isDebugEnabled())
-            qryLog.debug(U.compact("Executing transform query " + toShortString(nodes)));
-
-        return executeSync(nodes, false, false, null, null);
     }
 
     /** {@inheritDoc} */
@@ -144,19 +107,24 @@ public class GridCacheTransformQueryAdapter<K, V, T> extends GridCacheQueryBaseA
     }
 
     /** {@inheritDoc} */
-    @Override public void remoteTransformer(GridClosure<Object[], GridClosure<V, T>> trans) {
-        synchronized (mux) {
-            checkSealed();
+    @Override public GridCacheTransformQuery<K, V, T> remoteTransformer(GridClosure<V, T> trans) {
+        GridCacheTransformQueryAdapter<K, V, T> cp = copy();
 
-            this.trans = trans;
-        }
+        cp.trans = trans;
+
+        return cp;
     }
 
     /**
      * @return Transformer.
      */
-    public GridClosure<Object[], GridClosure<V, T>> remoteTransformer() {
+    public GridClosure<V, T> remoteTransformer() {
         return trans;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridCacheTransformQueryAdapter<K, V, T> copy() {
+        return new GridCacheTransformQueryAdapter<>(this);
     }
 
     /** {@inheritDoc} */

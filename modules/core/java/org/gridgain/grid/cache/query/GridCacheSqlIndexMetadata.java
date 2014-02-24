@@ -7,7 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.cache;
+package org.gridgain.grid.cache.query;
+
+import org.gridgain.grid.cache.query.*;
 
 import java.io.*;
 import java.util.*;
@@ -19,13 +21,13 @@ import java.util.*;
  * {@link org.gridgain.grid.spi.indexing.GridIndexingSpi}.
  * <p>
  * All index descriptors can be obtained from
- * {@link GridCacheMetadata#indexes(String)} method.
+ * {@link GridCacheSqlMetadata#indexes(String)} method.
  *
  * @author @java.author
  * @version @java.version
- * @see GridCacheMetadata
+ * @see GridCacheSqlMetadata
  */
-public interface GridCacheMetadataIndex extends Externalizable {
+public interface GridCacheSqlIndexMetadata extends Externalizable {
     /**
      * Gets name of the index.
      *

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.cache.query;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -24,7 +24,7 @@ import java.io.*;
  * @author @java.author
  * @version @java.version
  */
-public interface GridCacheQueryBase<K, V> extends Closeable {
+public interface GridCacheQueryBase<K, V, T extends GridCacheQueryBase> extends Closeable {
     /** Default query page size. */
     public static final int DFLT_PAGE_SIZE = 1024;
 
@@ -149,64 +149,63 @@ public interface GridCacheQueryBase<K, V> extends Closeable {
     public boolean enableDedup();
 
     /**
-     * Optional filter factory to be used on queried nodes to create key filters prior
-     * to visiting or returning key-value pairs to user. The factory is a closure that accepts
-     * array of objects provided by {@link GridCacheQuery#closureArguments(Object...)} or
-     * {@link GridCacheReduceQuery#closureArguments(Object...)} or
-     * {@link GridCacheTransformQuery#closureArguments(Object...)} methods as a parameter
-     * and returns predicate filter for keys.
-     * <p>
-     * If factory is set, then it will be invoked for every query execution. Only keys that
-     * pass the filter will be included in query result. If state of the filter changes after
-     * each query execution, then factory should return a new filter for every execution.
+     * Sets optional grid projection to execute this query on.
      *
-     * @param factory Optional factory closure to create key filters.
+     * @param prj Projection.
+     * @return New query object.
      */
-    public void remoteKeyFilter(@Nullable GridClosure<Object[], GridPredicate<? super K>> factory);
+    public T projection(GridProjection prj);
 
     /**
-     * Optional filter factory to be used on queried nodes to create value filters prior
-     * to visiting or returning key-value pairs to user. The factory is a closure that accepts
-     * array of objects provided by {@link GridCacheQuery#closureArguments(Object...)} or
-     * {@link GridCacheReduceQuery#closureArguments(Object...)} or
-     * {@link GridCacheTransformQuery#closureArguments(Object...)} methods as a parameter
-     * and returns predicate filter for values.
-     * <p>
-     * If factory is set, then it will be invoked for every query execution. Only values that
-     * pass the filter will be included in query result. If state of the filter changes after
-     * each query execution, then factory should return a new filter for every execution.
+     * Gets grid projection on which this query will be executed.
      *
-     * @param factory Optional factory closure to create value filters.
+     * @return Grid projection.
      */
-    public void remoteValueFilter(@Nullable GridClosure<Object[], GridPredicate<? super V>> factory);
+    @Nullable public GridProjection projection();
 
     /**
-     * Optional callback factory to be used on queried nodes to create callbacks that will be
-     * called before query execution. The factory is a closure that accepts
-     * array of objects provided by {@link GridCacheQuery#closureArguments(Object...)} or
-     * {@link GridCacheReduceQuery#closureArguments(Object...)} or
-     * {@link GridCacheTransformQuery#closureArguments(Object...)} methods as a parameter
-     * and returns callback closure.
+     * Key filter to be used on queried nodes prior to visiting or returning key-value pairs
+     * to user.
      * <p>
-     * If factory is set, then it will be invoked for every query execution.
+     * If filter is set, then it will be used for every query execution. Only keys that
+     * pass the filter will be included in query result.
      *
-     * @param factory Optional factory closure to create callbacks.
+     * @param keyFilter Key filter.
+     * @return New query with remote key filter set.
      */
-    public void beforeCallback(@Nullable GridClosure<Object[], GridAbsClosure> factory);
+    public T remoteKeyFilter(GridPredicate<K> keyFilter);
 
     /**
-     * Optional callback factory to be used on queried nodes to create callbacks that will be
-     * called after query execution. The factory is a closure that accepts
-     * array of objects provided by {@link GridCacheQuery#closureArguments(Object...)} or
-     * {@link GridCacheReduceQuery#closureArguments(Object...)} or
-     * {@link GridCacheTransformQuery#closureArguments(Object...)} methods as a parameter
-     * and returns callback closure.
+     * Value filter to be used on queried nodes prior to visiting or returning key-value pairs
+     * to user.
      * <p>
-     * If factory is set, then it will be invoked for every query execution.
+     * If filter is set, then it will be used for every query execution. Only values that
+     * pass the filter will be included in query result.
      *
-     * @param factory Optional factory closure to create callbacks.
+     * @param valFilter Value filter.
+     * @return New query with remote value filter set.
      */
-    public void afterCallback(@Nullable GridClosure<Object[], GridAbsClosure> factory);
+    public T remoteValueFilter(GridPredicate<V> valFilter);
+
+    /**
+     * Optional callback to be used on queried nodes that will be called before query execution.
+     * <p>
+     * If callback is set, then it will be used for every query execution.
+     *
+     * @param beforeCb Callback closure.
+     * @return New query with before callback set.
+     */
+    public T beforeExecution(Runnable beforeCb);
+
+    /**
+     * Optional callback to be used on queried nodes that will be called after query execution.
+     * <p>
+     * If callback is set, then it will be used for every query execution.
+     *
+     * @param afterCb Callback closure.
+     * @return New query with after callback set.
+     */
+    public T afterExecution(Runnable afterCb);
 
     /**
      * Gets query metrics.

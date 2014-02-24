@@ -77,7 +77,7 @@ class VisorCacheCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndA
         c.queries().createQuery(SQL, classOf[Foo], "_key = ?")
 
         // Execute only one query
-        q1.queryArguments(100.asInstanceOf[java.lang.Integer]).execute(g).get
+        q1.queryArguments(100.asInstanceOf[java.lang.Integer]).execute().get
 
         visor cache "-a"
     }
