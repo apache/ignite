@@ -11,13 +11,13 @@ package org.gridgain.grid.kernal.processors.dr;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.dr.*;
-import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.util.*;
 
 /**
  * Data center entry implementation containing plain and raw keys and values.
@@ -25,7 +25,7 @@ import java.io.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridDrRawEntry<K, V> implements GridDrEntry<K, V>, GridDataLoadEntry<K, V>, Externalizable {
+public class GridDrRawEntry<K, V> implements GridDrEntry<K, V>, Map.Entry<K, V>, Externalizable {
     /** Key. */
     private K key;
 
@@ -224,5 +224,20 @@ public class GridDrRawEntry<K, V> implements GridDrEntry<K, V>, GridDataLoadEntr
     @Override public String toString() {
         return S.toString(GridDrRawEntry.class, this, "keyBytesLen", keyBytes != null ? keyBytes.length : "n/a",
             "valBytesLen", valBytes != null ? valBytes.length : "n/a");
+    }
+
+    /** {@inheritDoc} */
+    @Override public K getKey() {
+        return key();
+    }
+
+    /** {@inheritDoc} */
+    @Override public V getValue() {
+        return value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public V setValue(V val) {
+        throw new UnsupportedOperationException();
     }
 }

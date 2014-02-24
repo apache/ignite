@@ -198,10 +198,9 @@ public class GridPopularWordsRealTimeExample {
 
         /** {@inheritDoc} */
         @Override public void update(GridCache<String, Integer> cache,
-            Collection<GridDataLoadEntry<String, Integer>> entries) throws GridException {
-
-            for (GridDataLoadEntry<String, Integer> entry : entries)
-                cache.transform(entry.key(), INC);
+            Collection<Map.Entry<String, Integer>> entries) throws GridException {
+            for (Map.Entry<String, Integer> entry : entries)
+                cache.transform(entry.getKey(), INC);
         }
     }
 }

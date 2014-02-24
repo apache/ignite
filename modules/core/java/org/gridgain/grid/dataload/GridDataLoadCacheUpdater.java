@@ -16,10 +16,11 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Updates cache with batch of {@link GridDataLoadEntry}.
+ * Updates cache with batch of entries. Usually it is enough to configure {@link GridDataLoader#isolated(boolean)}
+ * property and appropriate cache updater for data loader will be chosen automatically but in some cases for the best
+ * performance custom implementation may help.
  * Data loader can be configured to use custom implementation of updater instead of default one using
- * {@link GridDataLoader#updater(GridDataLoadCacheUpdater)} method. Bundled implementations can be found in
- * {@link GridDataLoadCacheUpdaters} factory class.
+ * {@link GridDataLoader#updater(GridDataLoadCacheUpdater)} method.
  *
  * @author @java.author
  * @version @java.version
@@ -32,5 +33,5 @@ public interface GridDataLoadCacheUpdater<K, V> extends Serializable {
      * @param entries Collection of entries.
      * @throws GridException If failed.
      */
-    public void update(GridCache<K, V> cache, Collection<GridDataLoadEntry<K, V>> entries) throws GridException;
+    public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws GridException;
 }

@@ -7,10 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.dataload;
+package org.gridgain.grid.kernal.processors.dataload;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
@@ -29,7 +30,7 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
  */
 public class GridDataLoadCacheUpdaters {
     /** */
-    private static final GridDataLoadCacheUpdater SINGLE = new Single();
+    private static final GridDataLoadCacheUpdater INDIVIDUAL = new Individual();
 
     /** */
     private static final GridDataLoadCacheUpdater BATCHED = new Batched();
@@ -47,14 +48,14 @@ public class GridDataLoadCacheUpdaters {
      *
      * @return Single updater.
      */
-    public static <K, V> GridDataLoadCacheUpdater<K, V> single() {
-        return SINGLE;
+    public static <K, V> GridDataLoadCacheUpdater<K, V> individual() {
+        return INDIVIDUAL;
     }
 
     /**
      * Updates cache using batched methods {@link GridCache#putAll(Map, GridPredicate[])} and
      * {@link GridCache#removeAll(Collection, GridPredicate[])}. Can cause deadlocks if the same keys are getting
-     * updated concurrently. Performance is generally better than in {@link #single()}.
+     * updated concurrently. Performance is generally better than in {@link #individual()}.
      *
      * @return Batched updater.
      */
@@ -65,7 +66,7 @@ public class GridDataLoadCacheUpdaters {
     /**
      * Updates cache using batched methods {@link GridCache#putAll(Map, GridPredicate[])} and
      * {@link GridCache#removeAll(Collection, GridPredicate[])}. Keys are sorted in natural order and if all updates
-     * use the same rule deadlock can not happen. Performance is generally better than in {@link #single()}.
+     * use the same rule deadlock can not happen. Performance is generally better than in {@link #individual()}.
      *
      * @return Batched sorted updater.
      */
@@ -93,7 +94,7 @@ public class GridDataLoadCacheUpdaters {
      * @throws GridException If failed.
      */
     protected static <K, V> void updateAll(GridCacheProjection<K,V> cache, @Nullable Collection<K> rmvCol,
-                                           Map<K, V> putMap) throws GridException {
+        Map<K, V> putMap) throws GridException {
         assert rmvCol != null || putMap != null;
 
         // Here we assume that there are no key duplicates, so the following calls are valid.
@@ -107,19 +108,19 @@ public class GridDataLoadCacheUpdaters {
     /**
      * Simple cache updater implementation. Updates keys one by one thus is not dead lock prone.
      */
-    private static class Single<K, V> implements GridDataLoadCacheUpdater<K, V> {
+    private static class Individual<K, V> implements GridDataLoadCacheUpdater<K, V> {
         /** {@inheritDoc} */
-        @Override public void update(GridCache<K, V> cache, Collection<GridDataLoadEntry<K, V>> entries)
+        @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
             throws GridException {
             assert cache != null;
             assert !F.isEmpty(entries);
 
-            for (GridDataLoadEntry<K, V> entry : entries) {
-                K key = entry.key();
+            for (Map.Entry<K, V> entry : entries) {
+                K key = entry.getKey();
 
                 assert key != null;
 
-                V val = entry.value();
+                V val = entry.getValue();
 
                 if (val == null)
                     cache.remove(key);
@@ -134,7 +135,7 @@ public class GridDataLoadCacheUpdaters {
      */
     private static class Batched<K, V> implements GridDataLoadCacheUpdater<K, V> {
         /** {@inheritDoc} */
-        @Override public void update(GridCache<K, V> cache, Collection<GridDataLoadEntry<K, V>> entries)
+        @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
             throws GridException {
             assert cache != null;
             assert !F.isEmpty(entries);
@@ -142,12 +143,12 @@ public class GridDataLoadCacheUpdaters {
             Map<K, V> putAll = null;
             Collection<K> rmvAll = null;
 
-            for (GridDataLoadEntry<K, V> entry : entries) {
-                K key = entry.key();
+            for (Map.Entry<K, V> entry : entries) {
+                K key = entry.getKey();
 
                 assert key != null;
 
-                V val = entry.value();
+                V val = entry.getValue();
 
                 if (val == null) {
                     if (rmvAll == null)
@@ -172,7 +173,7 @@ public class GridDataLoadCacheUpdaters {
      */
     private static class BatchedSorted<K, V> implements GridDataLoadCacheUpdater<K, V> {
         /** {@inheritDoc} */
-        @Override public void update(GridCache<K, V> cache, Collection<GridDataLoadEntry<K, V>> entries)
+        @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
             throws GridException {
             assert cache != null;
             assert !F.isEmpty(entries);
@@ -180,12 +181,12 @@ public class GridDataLoadCacheUpdaters {
             Map<K, V> putAll = null;
             Collection<K> rmvAll = null;
 
-            for (GridDataLoadEntry<K, V> entry : entries) {
-                K key = entry.key();
+            for (Map.Entry<K, V> entry : entries) {
+                K key = entry.getKey();
 
                 assert key instanceof Comparable;
 
-                V val = entry.value();
+                V val = entry.getValue();
 
                 if (val == null) {
                     if (rmvAll == null)
@@ -210,7 +211,7 @@ public class GridDataLoadCacheUpdaters {
      */
     private static class GroupLocked<K, V> implements GridDataLoadCacheUpdater<K, V> {
         /** {@inheritDoc} */
-        @Override public void update(GridCache<K, V> cache, Collection<GridDataLoadEntry<K, V>> entries)
+        @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
             throws GridException {
             assert cache != null;
             assert !F.isEmpty(entries);
@@ -223,12 +224,12 @@ public class GridDataLoadCacheUpdaters {
             Map<Integer, Collection<K>> rmvPartMap = null;
             Map<Integer, Map<K, V>> putPartMap = null;
 
-            for (GridDataLoadEntry<K, V> entry : entries) {
-                K key = entry.key();
+            for (Map.Entry<K, V> entry : entries) {
+                K key = entry.getKey();
 
                 assert key != null;
 
-                V val = entry.value();
+                V val = entry.getValue();
 
                 int part = cache.affinity().partition(key);
 

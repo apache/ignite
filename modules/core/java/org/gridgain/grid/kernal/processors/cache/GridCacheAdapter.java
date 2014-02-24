@@ -3212,7 +3212,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             try (final GridDataLoader<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex())) {
                 ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());
 
-                final Collection<GridDataLoadEntry<K, V>> col = new ArrayList<>(ldr.perNodeBufferSize());
+                final Collection<Map.Entry<K, V>> col = new ArrayList<>(ldr.perNodeBufferSize());
 
                 ctx.store().loadCache(new CIX3<K, V, GridCacheVersion>() {
                     @Override public void applyx(K key, V val, GridCacheVersion ver) throws GridException {
