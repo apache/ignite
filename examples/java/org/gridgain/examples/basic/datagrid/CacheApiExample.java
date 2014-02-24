@@ -30,7 +30,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
-public class GridCacheApiExample {
+public class CacheApiExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
     //private static final String CACHE_NAME = "replicated";

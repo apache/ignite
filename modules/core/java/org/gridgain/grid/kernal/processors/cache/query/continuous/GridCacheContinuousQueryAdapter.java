@@ -233,7 +233,7 @@ class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuousQuery<
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel() throws GridException {
+    @Override public void close() throws GridException {
         closeLock.lock();
 
         try {
