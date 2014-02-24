@@ -752,7 +752,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
             ResultSet rs = res.get2();
 
-            List<GridCacheQueryFieldDescriptor> meta;
+            List<GridCacheSqlFieldMetadata> meta;
 
             try {
                 ResultSetMetaData rsMeta = rs.getMetaData();
@@ -765,7 +765,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
                     String name = rsMeta.getColumnLabel(i);
                     String type = rsMeta.getColumnClassName(i);
 
-                    meta.add(new FieldDescriptor(schemaName, typeName, name, type));
+                    meta.add(new SqlFieldMetadata(schemaName, typeName, name, type));
                 }
             }
             catch (SQLException e) {
@@ -2276,7 +2276,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     /**
      * Field descriptor.
      */
-    private static class FieldDescriptor implements GridCacheQueryFieldDescriptor {
+    private static class SqlFieldMetadata implements GridCacheSqlFieldMetadata {
         /** Schema name. */
         private String schemaName;
 
@@ -2292,7 +2292,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         /**
          * Required by {@link Externalizable}.
          */
-        public FieldDescriptor() {
+        public SqlFieldMetadata() {
             // No-op
         }
 
@@ -2302,7 +2302,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
          * @param name Name.
          * @param type Type.
          */
-        FieldDescriptor(@Nullable String schemaName, @Nullable String typeName, String name, String type) {
+        SqlFieldMetadata(@Nullable String schemaName, @Nullable String typeName, String name, String type) {
             assert name != null;
             assert type != null;
 
@@ -2350,7 +2350,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(FieldDescriptor.class, this);
+            return S.toString(SqlFieldMetadata.class, this);
         }
     }
 

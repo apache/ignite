@@ -10,7 +10,6 @@
 package org.gridgain.grid.cache.query;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -201,13 +200,13 @@ public interface GridCacheQueries<K, V> {
      * First item in collection is metadata for current cache,
      * rest are for caches configured with the same indexing SPI.
      * <p>
-     * See {@link GridCacheMetadata} javadoc for more information.
+     * See {@link GridCacheSqlMetadata} javadoc for more information.
      *
      * @return Cache metadata.
      * @throws GridException If operation failed.
-     * @see GridCacheMetadata
+     * @see GridCacheSqlMetadata
      * @see GridCacheQuery
      * @see GridCacheFieldsQuery
      */
-    public Collection<GridCacheMetadata> sqlMetadata() throws GridException;
+    public Collection<GridCacheSqlMetadata> sqlMetadata() throws GridException;
 }

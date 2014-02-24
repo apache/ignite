@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
@@ -123,7 +122,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueries<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheMetadata> sqlMetadata() throws GridException {
+    @Override public Collection<GridCacheSqlMetadata> sqlMetadata() throws GridException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

@@ -75,7 +75,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueries<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheMetadata> sqlMetadata() throws GridException {
+    @Override public Collection<GridCacheSqlMetadata> sqlMetadata() throws GridException {
         return cctx.queries().sqlMetadata();
     }
 
@@ -142,7 +142,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueries<K, V> {
      * @return Optional projection filter.
      */
     @Nullable private GridPredicate<GridCacheEntry<K, V>> filter() {
-        return prj == null ? null : (GridPredicate<GridCacheEntry<K, V>>)prj.predicate();
+        return prj == null ? null : prj.predicate();
     }
 
     /**

@@ -14,7 +14,7 @@ import org.gridgain.grid.*;
 import java.util.*;
 
 /**
- * Cache query future returned by {@link GridCacheFieldsQuery#execute(GridProjection...)} method.
+ * Cache query future returned by {@link GridCacheFieldsQuery#execute()} method.
  * Note that this future is different from {@link GridCacheQueryFuture} only with
  * addition of {@link #metadata()} method which provides field descriptors for
  * all returned fields.
@@ -43,5 +43,5 @@ public interface GridCacheFieldsQueryFuture extends GridCacheQueryFuture<List<Ob
      *
      * @return Meta data.
      */
-    public GridFuture<List<GridCacheQueryFieldDescriptor>> metadata();
+    public GridFuture<List<GridCacheSqlFieldMetadata>> metadata();
 }

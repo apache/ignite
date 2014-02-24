@@ -192,7 +192,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
 
                 GridCacheFieldsQueryFuture fut = qry.execute();
 
-                Collection<GridCacheQueryFieldDescriptor> meta = fut.metadata().get();
+                Collection<GridCacheSqlFieldMetadata> meta = fut.metadata().get();
 
                 if (meta == null) {
                     // Try to extract initial SQL exception.
@@ -213,7 +213,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
                 cols = new ArrayList<>(meta.size());
                 types = new ArrayList<>(meta.size());
 
-                for (GridCacheQueryFieldDescriptor desc : meta) {
+                for (GridCacheSqlFieldMetadata desc : meta) {
                     tbls.add(desc.typeName());
                     cols.add(desc.fieldName().toUpperCase());
                     types.add(desc.fieldTypeName());

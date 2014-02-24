@@ -590,7 +590,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 fieldsQueryResult(qryInfo);
 
             // If metadata needs to be returned to user and cleaned from internal fields - copy it.
-            List<GridCacheQueryFieldDescriptor> meta = qryInfo.includeMetaData() ?
+            List<GridCacheSqlFieldMetadata> meta = qryInfo.includeMetaData() ?
                 (res.metaData() != null ? new ArrayList<>(res.metaData()) : null) :
                 res.metaData();
 
@@ -598,7 +598,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             // Filter internal fields.
             if (meta != null) {
-                Iterator<GridCacheQueryFieldDescriptor> metaIt = meta.iterator();
+                Iterator<GridCacheSqlFieldMetadata> metaIt = meta.iterator();
 
                 int i = 0;
 
@@ -1207,7 +1207,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return {@code true} if page was processed right.
      */
     protected abstract boolean onFieldsPageReady(boolean loc, GridCacheQueryInfo<K, V> qryInfo,
-        @Nullable List<GridCacheQueryFieldDescriptor> metaData,
+        @Nullable List<GridCacheSqlFieldMetadata> metaData,
         @Nullable Collection<List<GridIndexingEntity<?>>> entities,
         @Nullable Collection<?> data,
         boolean finished, @Nullable Throwable e);
@@ -1491,8 +1491,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return SQL metadata.
      * @throws GridException In case of error.
      */
-    public Collection<GridCacheMetadata> sqlMetadata() throws GridException {
-        Callable<Collection<CacheMetadata>> job = new MetadataJob(spi);
+    public Collection<GridCacheSqlMetadata> sqlMetadata() throws GridException {
+        Callable<Collection<CacheSqlMetadata>> job = new MetadataJob(spi);
 
         // Remote nodes that have current cache.
         Collection<GridNode> nodes = F.view(cctx.discovery().remoteNodes(), new P1<GridNode>() {
@@ -1501,29 +1501,29 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
         });
 
-        Collection<Collection<CacheMetadata>> res = new ArrayList<>(nodes.size() + 1);
+        Collection<Collection<CacheSqlMetadata>> res = new ArrayList<>(nodes.size() + 1);
 
-        GridFuture<Collection<Collection<CacheMetadata>>> rmtFut = null;
+        GridFuture<Collection<Collection<CacheSqlMetadata>>> rmtFut = null;
 
         // Get metadata from remote nodes.
         if (!nodes.isEmpty())
             rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, F.asSet(job), nodes, true);
 
         // Get local metadata.
-        GridFuture<Collection<CacheMetadata>> locFut = cctx.closures().callLocalSafe(job, true);
+        GridFuture<Collection<CacheSqlMetadata>> locFut = cctx.closures().callLocalSafe(job, true);
 
         if (rmtFut != null)
             res.addAll(rmtFut.get());
 
         res.add(locFut.get());
 
-        Map<String, Collection<CacheMetadata>> map = new HashMap<>();
+        Map<String, Collection<CacheSqlMetadata>> map = new HashMap<>();
 
-        for (Collection<CacheMetadata> col : res) {
-            for (CacheMetadata meta : col) {
+        for (Collection<CacheSqlMetadata> col : res) {
+            for (CacheSqlMetadata meta : col) {
                 String name = meta.cacheName();
 
-                Collection<CacheMetadata> cacheMetas = map.get(name);
+                Collection<CacheSqlMetadata> cacheMetas = map.get(name);
 
                 if (cacheMetas == null)
                     map.put(name, cacheMetas = new LinkedList<>());
@@ -1532,13 +1532,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
         }
 
-        Collection<GridCacheMetadata> col = new ArrayList<>(map.size());
+        Collection<GridCacheSqlMetadata> col = new ArrayList<>(map.size());
 
         // Metadata for current cache must be first in list.
-        col.add(new CacheMetadata(map.remove(space)));
+        col.add(new CacheSqlMetadata(map.remove(space)));
 
-        for (Collection<CacheMetadata> metas : map.values())
-            col.add(new CacheMetadata(metas));
+        for (Collection<CacheSqlMetadata> metas : map.values())
+            col.add(new CacheSqlMetadata(metas));
 
         return col;
     }
@@ -1689,7 +1689,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Metadata job.
      */
     @GridInternal
-    private static class MetadataJob extends CO<Collection<CacheMetadata>> {
+    private static class MetadataJob extends CO<Collection<CacheSqlMetadata>> {
         /** Grid */
         @GridInstanceResource
         private Grid grid;
@@ -1705,7 +1705,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<CacheMetadata> apply() {
+        @Override public Collection<CacheSqlMetadata> apply() {
             final GridKernalContext ctx = ((GridKernal)grid).context();
 
             Collection<String> cacheNames = F.viewReadOnly(ctx.cache().caches(),
@@ -1721,15 +1721,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             );
 
-            return F.transform(cacheNames, new C1<String, CacheMetadata>() {
-                @Override public CacheMetadata apply(String cacheName) {
+            return F.transform(cacheNames, new C1<String, CacheSqlMetadata>() {
+                @Override public CacheSqlMetadata apply(String cacheName) {
                     Collection<GridIndexingTypeDescriptor> types = ctx.indexing().types(cacheName);
 
                     Collection<String> names = new HashSet<>(types.size());
                     Map<String, String> keyClasses = new HashMap<>(types.size());
                     Map<String, String> valClasses = new HashMap<>(types.size());
                     Map<String, Map<String, String>> fields = new HashMap<>(types.size());
-                    Map<String, Collection<GridCacheMetadataIndex>> indexes =
+                    Map<String, Collection<GridCacheSqlIndexMetadata>> indexes =
                         new HashMap<>(types.size());
 
                     for (GridIndexingTypeDescriptor type : types) {
@@ -1758,7 +1758,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         fields.put(type.name(), fieldsMap);
 
-                        Collection<GridCacheMetadataIndex> indexesCol =
+                        Collection<GridCacheSqlIndexMetadata> indexesCol =
                             new ArrayList<>(type.indexes().size());
 
                         for (Map.Entry<String, GridIndexDescriptor> e : type.indexes().entrySet()) {
@@ -1773,7 +1773,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     if (desc.descending(idxField))
                                         descendings.add(idxField);
 
-                                indexesCol.add(new CacheMetadataIndex(e.getKey().toUpperCase(),
+                                indexesCol.add(new CacheSqlIndexMetadata(e.getKey().toUpperCase(),
                                     idxFields, descendings, desc.unique()));
                             }
                         }
@@ -1781,7 +1781,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         indexes.put(type.name(), indexesCol);
                     }
 
-                    return new CacheMetadata(cacheName, names, keyClasses, valClasses, fields, indexes);
+                    return new CacheSqlMetadata(cacheName, names, keyClasses, valClasses, fields, indexes);
                 }
             });
         }
@@ -1790,7 +1790,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * Cache metadata.
      */
-    private static class CacheMetadata implements GridCacheMetadata {
+    private static class CacheSqlMetadata implements GridCacheSqlMetadata {
         /** */
         private String cacheName;
 
@@ -1807,12 +1807,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private Map<String, Map<String, String>> fields;
 
         /** */
-        private Map<String, Collection<GridCacheMetadataIndex>> indexes;
+        private Map<String, Collection<GridCacheSqlIndexMetadata>> indexes;
 
         /**
          * Required by {@link Externalizable}.
          */
-        public CacheMetadata() {
+        public CacheSqlMetadata() {
             // No-op.
         }
 
@@ -1824,9 +1824,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @param fields Fields maps.
          * @param indexes Indexes.
          */
-        CacheMetadata(@Nullable String cacheName, Collection<String> types, Map<String, String> keyClasses,
+        CacheSqlMetadata(@Nullable String cacheName, Collection<String> types, Map<String, String> keyClasses,
             Map<String, String> valClasses, Map<String, Map<String, String>> fields,
-            Map<String, Collection<GridCacheMetadataIndex>> indexes) {
+            Map<String, Collection<GridCacheSqlIndexMetadata>> indexes) {
             assert types != null;
             assert keyClasses != null;
             assert valClasses != null;
@@ -1844,14 +1844,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /**
          * @param metas Meta data instances from different nodes.
          */
-        CacheMetadata(Iterable<CacheMetadata> metas) {
+        CacheSqlMetadata(Iterable<CacheSqlMetadata> metas) {
             types = new HashSet<>();
             keyClasses = new HashMap<>();
             valClasses = new HashMap<>();
             fields = new HashMap<>();
             indexes = new HashMap<>();
 
-            for (CacheMetadata meta : metas) {
+            for (CacheSqlMetadata meta : metas) {
                 if (cacheName == null)
                     cacheName = meta.cacheName;
                 else
@@ -1891,7 +1891,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridCacheMetadataIndex> indexes(String type) {
+        @Override public Collection<GridCacheSqlIndexMetadata> indexes(String type) {
             return indexes.get(type);
         }
 
@@ -1917,14 +1917,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(CacheMetadata.class, this);
+            return S.toString(CacheSqlMetadata.class, this);
         }
     }
 
     /**
      * Cache metadata index.
      */
-    private static class CacheMetadataIndex implements GridCacheMetadataIndex {
+    private static class CacheSqlIndexMetadata implements GridCacheSqlIndexMetadata {
         /** */
         private String name;
 
@@ -1940,7 +1940,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /**
          * Required by {@link Externalizable}.
          */
-        public CacheMetadataIndex() {
+        public CacheSqlIndexMetadata() {
             // No-op.
         }
 
@@ -1950,7 +1950,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @param descendings Descendings.
          * @param unique Unique flag.
          */
-        CacheMetadataIndex(String name, Collection<String> fields, Collection<String> descendings,
+        CacheSqlIndexMetadata(String name, Collection<String> fields, Collection<String> descendings,
             boolean unique) {
             assert name != null;
             assert fields != null;
@@ -2000,7 +2000,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(CacheMetadataIndex.class, this);
+            return S.toString(CacheSqlIndexMetadata.class, this);
         }
     }
 }

@@ -29,7 +29,7 @@ public class GridCacheLocalFieldsQueryFuture
     extends GridCacheLocalQueryFuture<Object, Object, List<Object>>
     implements GridCacheFieldsQueryFuture {
     /** Meta data future. */
-    private final GridFutureAdapter<List<GridCacheQueryFieldDescriptor>> metaFut;
+    private final GridFutureAdapter<List<GridCacheSqlFieldMetadata>> metaFut;
 
     /**
      * Required by {@link Externalizable}.
@@ -67,7 +67,7 @@ public class GridCacheLocalFieldsQueryFuture
      * @param err Error.
      * @param finished Finished or not.
      */
-    public void onPage(@Nullable UUID nodeId, @Nullable List<GridCacheQueryFieldDescriptor> metaData,
+    public void onPage(@Nullable UUID nodeId, @Nullable List<GridCacheSqlFieldMetadata> metaData,
         @Nullable Collection<?> data, @Nullable Throwable err, boolean finished) {
         onPage(nodeId, data, err, finished);
 
@@ -76,7 +76,7 @@ public class GridCacheLocalFieldsQueryFuture
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<List<GridCacheQueryFieldDescriptor>> metadata() {
+    @Override public GridFuture<List<GridCacheSqlFieldMetadata>> metadata() {
         return metaFut;
     }
 }
