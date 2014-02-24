@@ -133,7 +133,7 @@ public class GridSnowflakeSchemaExample {
                 "where DimStore.id=FactPurchase.storeId and DimStore.name=?");
 
         printQueryResults("All purchases made at store1:",
-            storePurchases.queryArguments("Store1").execute(GridGain.grid()).get());
+            storePurchases.queryArguments("Store1").execute().get());
     }
 
     /**
@@ -169,7 +169,7 @@ public class GridSnowflakeSchemaExample {
                 "and DimStore.name=? and DimProduct.id in(?, ?, ?)");
 
         printQueryResults("All purchases made at store2 for 3 specific products:",
-            prodPurchases.queryArguments("Store2", p1.getId(), p2.getId(), p3.getId()).execute(GridGain.grid()).get());
+            prodPurchases.queryArguments("Store2", p1.getId(), p2.getId(), p3.getId()).execute().get());
     }
 
     /**

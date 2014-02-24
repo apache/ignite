@@ -15,7 +15,6 @@ import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
@@ -27,9 +26,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
@@ -41,9 +38,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
  */
 public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter implements GridCacheProjectionEx<K, V>,
     Externalizable {
-    /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
-
     /** Key-value filter taking null values. */
     @GridToStringExclude
     private KeyValueFilter<K, V> withNullKvFilter;
@@ -68,9 +62,6 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
 
     /** Queries impl. */
     private GridCacheQueries<K, V> qry;
-
-    /** Logger. */
-    private GridLogger log;
 
     /** Flags. */
     @GridToStringInclude
@@ -105,25 +96,15 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
 
         this.cctx = cctx;
 
-        log = U.logger(cctx.kernalContext(), logRef, GridCacheProjectionImpl.class);
-
         this.flags = !F.isEmpty(flags) ? EnumSet.copyOf(flags) : EnumSet.noneOf(GridCacheFlag.class);
 
         Set<GridCacheFlag> f = this.flags;
 
-        if (kvFilter != null) {
-            f = EnumSet.copyOf(f);
-
-            f.add(STRICT);
-        }
-
         this.flags = Collections.unmodifiableSet(f);
 
-        boolean strictFlag = this.flags.contains(STRICT);
+        withNullKvFilter = new KeyValueFilter<>(kvFilter, false);
 
-        withNullKvFilter = new KeyValueFilter<>(kvFilter, false, strictFlag);
-
-        noNullKvFilter = new KeyValueFilter<>(kvFilter, true, strictFlag);
+        noNullKvFilter = new KeyValueFilter<>(kvFilter, true);
 
         withNullEntryFilter = new FullFilter<>(withNullKvFilter, entryFilter);
 
@@ -924,9 +905,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     @Nullable @Override public GridCacheEntry<K, V> entry(K key) {
         V val = peek(key);
 
-        if (!isAll(key, val, true)) {
+        if (!isAll(key, val, false))
             return null;
-        }
 
         return cache.entry(key);
     }
@@ -991,27 +971,6 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     /** {@inheritDoc} */
     @Override public GridFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
-        if (flags.contains(STRICT)) {
-            try {
-                V val = get(key, entry, filter);
-
-                if (!isAll(key, val, true))
-                    return new GridFinishedFuture<>(cctx.kernalContext());
-            }
-            catch (GridInterruptedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Unable to get value from cache to pass to key-value filter (got interrupted while " +
-                        "waiting for value): " + e.getMessage());
-
-                return new GridFinishedFuture<>(cctx.kernalContext(), e);
-            }
-            catch (GridException e) {
-                U.error(log, "Unable to get value from cache to pass to key-value filter", e);
-
-                return new GridFinishedFuture<>(cctx.kernalContext(), e);
-            }
-        }
-
         return cache.removeAsync(key, entry, and(filter, true));
     }
 
@@ -1046,27 +1005,6 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     /** {@inheritDoc} */
     @Override public GridFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
-        if (flags.contains(STRICT)) {
-            try {
-                V val = get(key, entry, filter);
-
-                if (!isAll(key, val, true))
-                    return new GridFinishedFuture<>(cctx.kernalContext(), false);
-            }
-            catch (GridInterruptedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Unable to get value from cache to pass to key-value filter (got interrupted while " +
-                        "waiting for value): " + e.getMessage());
-
-                return new GridFinishedFuture<>(cctx.kernalContext(), e);
-            }
-            catch (GridException e) {
-                U.error(log, "Unable to get value from cache to pass to key-value filter", e);
-
-                return new GridFinishedFuture<>(cctx.kernalContext(), e);
-            }
-        }
-
         return cache.removexAsync(key, entry, and(filter, true));
     }
 
@@ -1320,30 +1258,19 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         /** No nulls flag. */
         private boolean noNulls;
 
-        /** Whether projection is strict or not. */
-        private boolean strictFlag;
-
         /**
          * @param kvFilter Key-value filter.
          * @param noNulls Filter without null-values.
-         * @param strictFlag Whether {@link GridCacheFlag#STRICT} flag is set meaning
-         *      that projection is strict or not. If user key-value filter is set or this
-         *      parameter is {@code true} - filter works, otherwise - filter will always
-         *      pass through.
          */
-        private KeyValueFilter(GridBiPredicate<K, V> kvFilter, boolean noNulls, boolean strictFlag) {
+        private KeyValueFilter(GridBiPredicate<K, V> kvFilter, boolean noNulls) {
             this.kvFilter = kvFilter;
             this.noNulls = noNulls;
-            this.strictFlag = strictFlag;
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(K k, V v) {
             if (k == null)  // Should never happen, but just in case.
                 return false;
-
-            if (kvFilter == null && !strictFlag)
-                return true;
 
             if (v == null)
                 return !noNulls;

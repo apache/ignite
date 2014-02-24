@@ -392,22 +392,18 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
      * @throws GridException If operation failed.
      */
     private boolean internalContains(T[] items, Object[] hashes) throws GridException {
-        boolean retVal;
 
         GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>, boolean[],
-            Boolean> qry = qryFactory.containsQuery(type).queryArguments(qid, hashes).
-            closureArguments(cctx.cache().name(), items);
+            Boolean> qry = qryFactory.containsQuery(type, items).queryArguments(qid, hashes);
 
         if (collocated) {
             // For case if primary node was changed during request.
             GridNode node = CU.primaryNode(cctx, key);
 
-            retVal = qry.reduce(cctx.grid().forNode(node)).get();
+            qry.projection(cctx.grid().forNode(node));
         }
-        else
-            retVal = qry.reduce(cctx.grid()).get();
 
-        return retVal;
+        return qry.reduce().get();
     }
 
     /** {@inheritDoc} */
@@ -583,10 +579,11 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
             throw new GridException("Operation position(..) is supported only in collocated mode.");
 
         GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>, Integer, Integer> qry =
-            qryFactory.itemPositionQuery(type).queryArguments(qid).closureArguments(item);
+            qryFactory.itemPositionQuery(type, item).queryArguments(qid);
 
-        Collection<Integer> res = qry.reduceRemote(cctx.grid().forNodes(
-            Collections.singleton(CU.primaryNode(cctx, key)))).get();
+        qry.projection(cctx.grid().forNodes(Collections.singleton(CU.primaryNode(cctx, key))));
+
+        Collection<Integer> res = qry.reduceRemote().get();
 
         checkRemovedx();
 
@@ -610,9 +607,10 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
         GridCacheQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> qry = qryFactory.
             itemsAtPositionsQuery(type);
 
+        qry.projection(cctx.grid().forNodes(Collections.singleton(CU.primaryNode(cctx, key))));
+
         Collection<GridCacheQueueItemImpl<T>> queueItems = F.viewReadOnly(
-            qry.queryArguments(qid, positions).execute(cctx.grid().forNodes(
-                Collections.singleton(CU.primaryNode(cctx, key)))).get(), F.<GridCacheQueueItemImpl<T>>mapEntry2Value());
+            qry.queryArguments(qid, positions).execute().get(), F.<GridCacheQueueItemImpl<T>>mapEntry2Value());
 
         Collection<T> userItems = new LinkedList<>();
 
@@ -1117,8 +1115,9 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                         while (true) {
                             GridNode node = CU.primaryNode(cctx, key);
 
-                            entry = qry.queryArguments(qid).closureArguments(type).reduce(
-                                cctx.grid().forNode(node)).get();
+                            qry.projection(cctx.grid().forNode(node));
+
+                            entry = qry.queryArguments(qid).reduce().get();
 
                             if (log.isDebugEnabled())
                                 log.debug("Entry has been found [node=" + node + ", entry=" + entry + ", queue=" +
@@ -1143,7 +1142,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                     else {
                         // In non-collocated mode query can return already removed entry. We should check this issue.
                         while (true) {
-                            entry = qry.queryArguments(qid).closureArguments(type).reduce(cctx.grid()).get();
+                            entry = qry.queryArguments(qid).reduce().get();
 
                             // We don't have eny items in queue.
                             if (entry == null)
@@ -1240,15 +1239,16 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
                     GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>,
                         GridBiTuple<Integer, GridException>, GridBiTuple<Integer, GridException>> qry =
-                        qryFactory.removeAllKeysQuery(type).closureArguments(batchSize).queryArguments(qid);
+                        qryFactory.removeAllKeysQuery(type, batchSize).queryArguments(qid);
 
                     if (collocated) {
                         // For case if primary node was changed during request.
                         while (true) {
                             GridNode node = CU.primaryNode(cctx, key);
 
-                            GridBiTuple<Integer, GridException> tup = qry.closureArguments(batchSize).reduce(
-                                cctx.grid().forNode(node)).get();
+                            qry.projection(cctx.grid().forNode(node));
+
+                            GridBiTuple<Integer, GridException> tup = qry.reduce().get();
 
                             // Check topology changes.
                             GridNode node2 = CU.primaryNode(cctx, key);
@@ -1268,7 +1268,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                         }
                     }
                     else
-                        qryRes = qry.reduce(cctx.grid()).get();
+                        qryRes = qry.reduce().get();
 
                     assert qryRes != null;
 
@@ -1343,16 +1343,17 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
                     GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>,
                         GridBiTuple<Integer, GridException>, GridBiTuple<Integer, GridException>> qry =
-                        qryFactory.itemsKeysQuery(type).queryArguments(qid, hashes.toArray()).
-                            closureArguments(items, retain, items.size() == 1);
+                        qryFactory.itemsKeysQuery(type, items, retain, items.size() == 1).
+                            queryArguments(qid, hashes.toArray());
 
                     if (collocated) {
                         // For case if primary node was changed during request.
                         while (true) {
                             GridNode node = CU.primaryNode(cctx, key);
 
-                            GridBiTuple<Integer, GridException> tup = qry.reduce(
-                                cctx.grid().forNode(node)).get();
+                            qry.projection(cctx.grid().forNode(node));
+
+                            GridBiTuple<Integer, GridException> tup = qry.reduce().get();
 
                             // Check topology changes.
                             GridNode node2 = CU.primaryNode(cctx, key);
@@ -1372,7 +1373,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                         }
                     }
                     else
-                        qryRes = qry.reduce(cctx.grid()).get();
+                        qryRes = qry.reduce().get();
 
                     assert qryRes != null;
 
@@ -1679,15 +1680,16 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
                     GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>,
                         GridBiTuple<Integer, GridException>, GridBiTuple<Integer, GridException>> qry =
-                        qryFactory.removeAllKeysQuery(type).closureArguments(batchSize).queryArguments(qid);
+                        qryFactory.removeAllKeysQuery(type, batchSize).queryArguments(qid);
 
                     if (collocated) {
                         // For case if primary node was changed during request.
                         while (true) {
                             GridNode node = CU.primaryNode(cctx, key);
 
-                            GridBiTuple<Integer, GridException> tup = qry.closureArguments(batchSize).reduce(
-                                cctx.grid().forNode(node)).get();
+                            qry = qry.projection(cctx.grid().forNode(node));
+
+                            GridBiTuple<Integer, GridException> tup = qry.reduce().get();
 
                             // Check topology changes.
                             GridNode node2 = CU.primaryNode(cctx, key);
@@ -1707,7 +1709,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                         }
                     }
                     else
-                        qryRes = qry.reduce(cctx.grid()).get();
+                        qryRes = qry.reduce().get();
 
                     assert qryRes != null;
 
@@ -1810,7 +1812,10 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
             GridProjection prj = cctx.grid().forNode(CU.primaryNode(cctx, key));
 
-            iter = collocated ? qry.execute(prj) : qry.execute(cctx.grid());
+            if (collocated)
+                qry.projection(prj);
+
+            iter = qry.execute();
 
             assert iter != null;
         }

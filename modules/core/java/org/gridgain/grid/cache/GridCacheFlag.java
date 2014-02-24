@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.cache;
 
-import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -19,26 +18,13 @@ import org.jetbrains.annotations.*;
  * <li>{@link GridCacheProjection#flagsOn(GridCacheFlag...)}</li>
  * <li>{@link GridCacheProjection#flagsOff(GridCacheFlag...)}</li>
  * </ul>
- * Also, some flags, like {@link #STRICT}, {@link #LOCAL}, or {@link #READ} may be implicitly set whenever
+ * Also, some flags, like {@link #LOCAL}, or {@link #READ} may be implicitly set whenever
  * creating new projections and passing entries to predicate filters.
  *
  * @author @java.author
  * @version @java.version
  */
 public enum GridCacheFlag {
-    /**
-     * No null values will be allowed into projection. Essentially this means that
-     * unless entry has a {@code non-null} value, it won't show up in any of the
-     * projection operations.
-     * <p>
-     * This flag is implicitly set for projections returned for the following cache operations:
-     * <ul>
-     * <li>{@link GridCacheProjection#projection(Class, Class)}</li>
-     * <li>{@link GridCacheProjection#projection(GridBiPredicate)}</li>
-     * </ul>
-     */
-    STRICT,
-
     /**
      * Only operations that don't require any communication with
      * other cache nodes are allowed. This flag is automatically set

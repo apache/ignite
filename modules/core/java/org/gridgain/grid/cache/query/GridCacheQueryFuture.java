@@ -16,7 +16,7 @@ import java.util.*;
 
 /**
  * Cache query future returned by query execution. Specifically returned by
- * {@link GridCacheQuery#execute(GridProjection...)} or by
+ * {@link GridCacheQuery#execute()} or by
  * analogous methods on {@link GridCacheReduceQuery} and {@link GridCacheTransformQuery}.
  * Refer to corresponding query documentation for more information.
  *

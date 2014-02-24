@@ -128,7 +128,7 @@ public class CachePopularNumbersExample {
                         createFieldsQuery("select _key, _val from Long order by _val desc limit " + cnt);
 
                 try {
-                    List<List<Object>> results = new ArrayList<>(qry.execute(g).get());
+                    List<List<Object>> results = new ArrayList<>(qry.execute().get());
 
                     Collections.sort(results, new Comparator<List<Object>>() {
                         @Override public int compare(List<Object> r1, List<Object> r2) {

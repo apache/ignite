@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.query.jdbc;
 
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -99,13 +100,13 @@ public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<Strin
 
                 assert cache != null;
 
-                Collection<GridCacheMetadata> metas = cache.queries().sqlMetadata();
+                Collection<GridCacheSqlMetadata> metas = cache.queries().sqlMetadata();
 
                 Map<String, Map<String, Map<String, String>>> schemasMap =
                     new HashMap<>(metas.size());
                 Collection<List<Object>> indexesInfo = new LinkedList<>();
 
-                for (GridCacheMetadata meta : metas) {
+                for (GridCacheSqlMetadata meta : metas) {
                     String name = meta.cacheName();
 
                     if (name == null)
@@ -119,7 +120,7 @@ public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<Strin
                     for (String type : types) {
                         typesMap.put(type.toUpperCase(), meta.fields(type));
 
-                        for (GridCacheMetadataIndex idx : meta.indexes(type)) {
+                        for (GridCacheSqlIndexMetadata idx : meta.indexes(type)) {
                             int cnt = 0;
 
                             for (String field : idx.fields()) {

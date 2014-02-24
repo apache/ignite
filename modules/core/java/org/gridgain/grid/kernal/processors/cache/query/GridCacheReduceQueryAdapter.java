@@ -14,7 +14,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.jetbrains.annotations.*;
@@ -28,13 +27,16 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridCacheReduceQueryAdapter<K, V, R1, R2> extends GridCacheQueryBaseAdapter<K, V>
+public class GridCacheReduceQueryAdapter<K, V, R1, R2> extends GridCacheQueryBaseAdapter<K, V, GridCacheReduceQuery<K, V, R1, R2>>
     implements GridCacheReduceQuery<K, V, R1, R2> {
     /** Remote reducer. */
-    private volatile GridClosure<Object[], GridReducer<Map.Entry<K, V>, R1>> rmtRdc;
+    private volatile GridReducer<Map.Entry<K, V>, R1> rmtRdc;
 
-    /** Local reducer. */
-    private volatile GridClosure<Object[], GridReducer<R1, R2>> locRdc;
+    /** Remote reducer bytes. */
+    private volatile byte[] rmtRdcBytes;
+
+    /** Local reducer bytes. */
+    private volatile byte[] locRdcBytes;
 
     /**
      * @param ctx Cache registry.
@@ -59,7 +61,9 @@ public class GridCacheReduceQueryAdapter<K, V, R1, R2> extends GridCacheQueryBas
         super(qry);
 
         rmtRdc = qry.rmtRdc;
-        locRdc = qry.locRdc;
+        rmtRdcBytes = qry.rmtRdcBytes;
+
+        locRdcBytes = qry.locRdcBytes;
     }
 
     /** {@inheritDoc} */
@@ -70,35 +74,59 @@ public class GridCacheReduceQueryAdapter<K, V, R1, R2> extends GridCacheQueryBas
     }
 
     /** {@inheritDoc} */
-    @Override public void remoteReducer(GridClosure<Object[], GridReducer<Map.Entry<K, V>, R1>> rmtRdc) {
-        synchronized (mux) {
-            checkSealed();
+    @Override public GridCacheReduceQueryAdapter<K, V, R1, R2> remoteReducer(GridReducer<Map.Entry<K, V>, R1> rmtRdc) {
+        GridCacheReduceQueryAdapter<K, V, R1, R2> cp = copy();
 
-            this.rmtRdc = rmtRdc;
+        try {
+            cp.rmtRdc = rmtRdc;
+            cp.rmtRdcBytes = cctx.marshaller().marshal(rmtRdc);
+
+            return cp;
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException("Failed to save remote reducer state for future executions: " + rmtRdc, e);
         }
     }
 
     /**
      * @return Remote reducer.
      */
-    public GridClosure<Object[], GridReducer<Map.Entry<K, V>, R1>> remoteReducer() {
-        return rmtRdc;
+    public GridReducer<Map.Entry<K, V>, R1> remoteReducer() {
+        try {
+            if (rmtRdcBytes == null)
+                return null;
+
+            return cctx.marshaller().unmarshal(rmtRdcBytes, cctx.deploy().globalLoader());
+        }
+        catch (Exception e) {
+            throw new GridRuntimeException("Failed to restore remote reducer state.", e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void localReducer(GridClosure<Object[], GridReducer<R1, R2>> locRdc) {
-        synchronized (mux) {
-            checkSealed();
+    @Override public GridCacheReduceQueryAdapter<K, V, R1, R2> localReducer(GridReducer<R1, R2> locRdc) {
+        GridCacheReduceQueryAdapter<K, V, R1, R2> cp = copy();
 
-            this.locRdc = locRdc;
+        try {
+            cp.locRdcBytes = cctx.marshaller().marshal(locRdc);
+
+            return cp;
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException("Failed to save local reducer state for future executions: " + locRdc, e);
         }
     }
 
     /**
      * @return Local reducer.
      */
-    public GridClosure<Object[], GridReducer<R1, R2>> localReducer() {
-        return locRdc;
+    public GridReducer<R1, R2> localReducer() {
+        try {
+            return cctx.marshaller().unmarshal(locRdcBytes, cctx.deploy().globalLoader());
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException("Failed to restore local reducer state.", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -111,22 +139,13 @@ public class GridCacheReduceQueryAdapter<K, V, R1, R2> extends GridCacheQueryBas
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheReduceQuery<K, V, R1, R2> closureArguments(@Nullable Object... args) {
-        GridCacheReduceQueryAdapter<K, V, R1, R2> cp = new GridCacheReduceQueryAdapter<>(this);
-
-        cp.setClosureArguments(args);
-
-        return cp;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<R2> reduce(GridProjection[] grid) {
-        Collection<GridNode> nodes = nodes(grid);
+    @Override public GridFuture<R2> reduce() {
+        Collection<GridNode> nodes = nodes();
 
         if (qryLog.isDebugEnabled())
             qryLog.debug(U.compact("Executing reduce query " + toShortString(nodes)));
 
-        if (locRdc == null) {
+        if (locRdcBytes == null) {
             GridFutureAdapter<R2> errFut = new GridFutureAdapter<>(cctx.kernalContext());
 
             errFut.onDone(new GridException("Local reducer must be set."));
@@ -155,20 +174,7 @@ public class GridCacheReduceQueryAdapter<K, V, R1, R2> extends GridCacheQueryBas
     }
 
     /** {@inheritDoc} */
-    @Override public R2 reduceSync(@Nullable GridProjection... grid) throws GridException {
-        Collection<GridNode> nodes = nodes(grid);
-
-        if (qryLog.isDebugEnabled())
-            qryLog.debug(U.compact("Executing reduce query " + toShortString(nodes)));
-
-        if (locRdc == null)
-            throw new GridException("Local reducer must be set.");
-
-        return (R2)F.first(executeSync(nodes, false, false, null, null));
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Collection<R1>> reduceRemote(GridProjection[] grid) {
+    @Override public GridFuture<Collection<R1>> reduceRemote() {
         if (rmtRdc == null) {
             GridFutureAdapter<Collection<R1>> errFut = new GridFutureAdapter<>(cctx.kernalContext());
 
@@ -177,7 +183,7 @@ public class GridCacheReduceQueryAdapter<K, V, R1, R2> extends GridCacheQueryBas
             return errFut;
         }
 
-        Collection<GridNode> nodes = nodes(grid);
+        Collection<GridNode> nodes = nodes();
 
         if (qryLog.isDebugEnabled())
             qryLog.debug(U.compact("Executing reduce remote query " + toShortString(nodes)));
@@ -186,16 +192,8 @@ public class GridCacheReduceQueryAdapter<K, V, R1, R2> extends GridCacheQueryBas
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<R1> reduceRemoteSync(GridProjection... grid) throws GridException {
-        if (rmtRdc == null)
-            throw new GridException("Remote reducer must be set.");
-
-        Collection<GridNode> nodes = nodes(grid);
-
-        if (qryLog.isDebugEnabled())
-            qryLog.debug(U.compact("Executing reduce remote query " + toShortString(nodes)));
-
-        return executeSync(nodes, false, true, null, null);
+    @Override protected GridCacheReduceQueryAdapter<K, V, R1, R2> copy() {
+        return new GridCacheReduceQueryAdapter<>(this);
     }
 
     /** {@inheritDoc} */

@@ -198,8 +198,6 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
     /**
      * Gets cache projection only for given key and value type. Only {@code non-null} key-value
      * pairs that have matching key and value pairs will be used in this projection.
-     * <h1 class="header">Cache Flags</h1>
-     * The resulting projection will have flag {@link GridCacheFlag#STRICT} set on it.
      *
      * @param keyType Key type.
      * @param valType Value type.
@@ -218,8 +216,6 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * For example, for {@link #putAll(Map, GridPredicate[])} method only
      * elements that pass the filter will be given to {@code GridCache.putAll(m, filter)}
      * where it will be checked once again prior to put.
-     * <h1 class="header">Cache Flags</h1>
-     * The resulting projection will have flag {@link GridCacheFlag#STRICT} set on it.
      *
      * @param p Key-value predicate for this projection. If {@code null}, then the
      *      same projection is returned.
