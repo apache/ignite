@@ -28,7 +28,7 @@ import java.util.*;
  * @version @java.version
  */
 public class GridDrDataLoadCacheUpdater<K, V> implements GridDataLoadCacheUpdater<K, V>, Externalizable {
-    /**  */
+    /** */
     private int keysCnt = 100;
 
     /**
