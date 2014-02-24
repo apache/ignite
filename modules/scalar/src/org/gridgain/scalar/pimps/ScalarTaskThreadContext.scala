@@ -14,7 +14,6 @@ package org.gridgain.scalar.pimps
 import org.gridgain.grid._
 import org.gridgain.scalar._
 import org.jetbrains.annotations._
-import org.gridgain.grid.compute.{GridComputeJobResultPolicy, GridComputeJobResult}
 
 /**
  * This trait provide mixin for properly typed version of `GridProjection#with...()` methods.
@@ -28,7 +27,7 @@ import org.gridgain.grid.compute.{GridComputeJobResultPolicy, GridComputeJobResu
  */
 trait ScalarTaskThreadContext[T <: GridProjection] extends ScalarConversions { this: PimpedType[T] =>
     /**
-     * Properly typed version of `GridProjection#withName(...)` method.
+     * Properly typed version of `GridCompute#withName(...)` method.
      *
      * @param taskName Name of the task.
      */
@@ -36,35 +35,8 @@ trait ScalarTaskThreadContext[T <: GridProjection] extends ScalarConversions { t
         value.compute().withName(taskName).asInstanceOf[T]
 
     /**
-     * Properly typed version of `GridProjection#withFailoverSpi(...)` method.
-     *
-     * @param spiName Name of the SPI.
+     * Properly typed version of `GridCompute#withNoFailover()` method.
      */
-    def withFailoverSpi$(@Nullable spiName: String): T =
-        value.compute().withFailoverSpi(spiName).asInstanceOf[T]
-
-    /**
-     * Properly typed version of `GridProjection#withCheckpointSpi(...)` method.
-     *
-     * @param spiName Name of the SPI.
-     */
-    def withCheckpointSpi$(@Nullable spiName: String): T =
-        value.compute().withCheckpointSpi(spiName).asInstanceOf[T]
-
-    /**
-     * Properly typed version of `GridProjection#withLoadBalancingSpi(...)` method.
-     *
-     * @param spiName Name of the SPI.
-     */
-    def withLoadBalancingSpi$(@Nullable spiName: String): T =
-        value.compute().withLoadBalancingSpi(spiName).asInstanceOf[T]
-
-    /**
-     * Properly typed version of `GridProjection#withResultClosure(...)` method.
-     *
-     * @param f Ad-hoc implementation of `GridComputeTask#result(...)` method.
-     */
-    def withResultClosure$(@Nullable f: (GridComputeJobResult, java.util.List[GridComputeJobResult]) => GridComputeJobResultPolicy): T =
-        value.compute().withResultClosure(toClosure2X(f)).asInstanceOf[T]
-
+    def withNoFailover$(): T =
+        value.compute().withNoFailover().asInstanceOf[T]
 }

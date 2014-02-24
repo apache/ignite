@@ -50,7 +50,7 @@ public final class GridExecutorExample {
     @SuppressWarnings({"TooBroadScope"})
     public static void main(String[] args) throws Exception {
         try (Grid g = GridGain.start("examples/config/example-default.xml")) {
-            ExecutorService exec = g.compute().executor();
+            ExecutorService exec = g.compute().executorService();
 
             boolean archive = true;
 

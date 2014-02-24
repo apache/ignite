@@ -11,12 +11,9 @@
 
 package org.gridgain.visor.commands.ack
 
-import org.gridgain.grid.kernal.GridClosureCallMode
-import GridClosureCallMode._
 import org.gridgain.grid._
 import org.gridgain.grid.lang._
 import org.gridgain.grid.resources.GridInstanceResource
-import org.gridgain.grid.util.typedef._
 import org.gridgain.scalar._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.VisorConsoleCommand
@@ -117,7 +114,7 @@ class VisorAckCommand {
             try
                 grid.forPredicate(f).
                     withName$("visor-ack").
-                    withResultClosure$(X.NO_FAILOVER).
+                    withNoFailover$().
                     compute().
                     run(new VisorAckTask(gg => gg.localNode.id.toString))
             catch {
@@ -163,7 +160,7 @@ class VisorAckCommand {
             try
                 grid.forPredicate(f).
                     withName$("visor-ack").
-                    withResultClosure$(X.NO_FAILOVER).
+                    withNoFailover$().
                     compute().
                     run(new VisorAckTask(_ => arg))
             catch {

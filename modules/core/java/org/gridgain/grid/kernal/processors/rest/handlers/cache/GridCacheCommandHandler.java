@@ -283,8 +283,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return op.apply(prj, ctx).chain(resultWrapper(prj, key));
         }
         else {
-            return ctx.grid().forPredicate(F.nodeForNodeId(destId)).compute().
-                withResultClosure(X.NO_FAILOVER).
+            return ctx.grid().forPredicate(F.nodeForNodeId(destId)).compute().withNoFailover().
                 call(new FlaggedCacheOperationCallable(cacheName, flags, op, key));
         }
     }
@@ -315,8 +314,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return op.apply(cache, ctx).chain(resultWrapper(cache, key));
         }
         else {
-            return ctx.grid().forPredicate(F.nodeForNodeId(destId)).compute().
-                withResultClosure(X.NO_FAILOVER).
+            return ctx.grid().forPredicate(F.nodeForNodeId(destId)).compute().withNoFailover().
                 call(new CacheOperationCallable(cacheName, op, key));
         }
     }
@@ -936,6 +934,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
     }
 
+    /** */
     private static class DecrementCommand extends CacheCommand {
         /** */
         private final Object key;
@@ -982,6 +981,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
     }
 
+    /** */
     private static class PrependCommand extends CacheProjectionCommand {
         /** */
         private final Object key;

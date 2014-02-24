@@ -16,9 +16,8 @@ import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import visor._
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.{GridClosureCallMode, GridEx}
+import org.gridgain.grid.kernal.GridEx
 import resources._
-import GridClosureCallMode._
 import java.util.UUID
 import scala.util.control.Breaks._
 import org.jetbrains.annotations.Nullable
@@ -118,7 +117,7 @@ class VisorCacheClearCommand {
             val res = prj
                 .compute()
                 .withName("visor-cclear-task")
-                .withResultClosure(X.NO_FAILOVER)
+                .withNoFailover()
                 .call(new ClearClosure(caches))
                 .get
 
