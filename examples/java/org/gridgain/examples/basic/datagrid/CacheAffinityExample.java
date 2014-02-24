@@ -53,17 +53,14 @@ public final class CacheAffinityExample {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
             GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
-            if (cache == null) {
-                System.err.println("Cache with name 'partitioned' not found (is configuration correct?)");
-
-                return;
-            }
-
             for (int i = 0; i < KEY_CNT; i++)
                 cache.putx(i, Integer.toString(i));
 
-            // Co-locates closures with data in in-memory data grid using GridCompute.affinityRun(...) method.
+            // Co-locates jobs with data using GridCompute.affinityRun(...) method.
             visitUsingAffinityRun();
+
+            // Co-locates jobs with data using Grid.mapKeysToNodes(...) method.
+            visitUsingMapKeysToNodes();
         }
     }
 
