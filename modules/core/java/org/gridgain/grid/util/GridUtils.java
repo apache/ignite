@@ -6890,7 +6890,7 @@ public abstract class GridUtils {
      * @param cacheName Cache name.
      * @return Attributes.
      */
-    public static GridCacheAttributes cacheAttributes(GridNode n, @Nullable String cacheName) {
+    public static @Nullable GridCacheAttributes cacheAttributes(GridNode n, @Nullable String cacheName) {
         for (GridCacheAttributes a : cacheAttributes(n)) {
             if (F.eq(a.cacheName(), cacheName))
                 return a;

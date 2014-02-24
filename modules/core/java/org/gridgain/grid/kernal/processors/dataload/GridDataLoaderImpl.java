@@ -16,6 +16,7 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
@@ -42,7 +43,7 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
  */
 public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     /** Cache updater. */
-    private GridDataLoadCacheUpdater<K, V> updater = GridDataLoadCacheUpdaters.single();
+    private GridDataLoadCacheUpdater<K, V> updater = GridDataLoadCacheUpdaters.individual();
 
     /** */
     private byte[] updaterBytes;
@@ -230,7 +231,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
     /** {@inheritDoc} */
     @Override public boolean isolated() {
-        return updater != GridDataLoadCacheUpdaters.single();
+        return updater != GridDataLoadCacheUpdaters.individual();
     }
 
     /** {@inheritDoc} */
@@ -241,9 +242,13 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         GridNode node = F.first(ctx.grid().forCache(cacheName).nodes());
 
         if (node == null)
-            throw new GridException("Failed to get node with cache: " + cacheName);
+            throw new GridException("Failed to get node for cache: " + cacheName);
 
-        updater = U.cacheAttributes(node, cacheName).atomicityMode() == GridCacheAtomicityMode.ATOMIC ?
+        GridCacheAttributes a = U.cacheAttributes(node, cacheName);
+
+        assert a != null;
+
+        updater = a.atomicityMode() == GridCacheAtomicityMode.ATOMIC ?
             GridDataLoadCacheUpdaters.<K, V>batched() :
             GridDataLoadCacheUpdaters.<K, V>groupLocked();
     }
