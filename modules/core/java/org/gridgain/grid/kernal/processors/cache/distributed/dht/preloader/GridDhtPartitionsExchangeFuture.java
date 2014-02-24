@@ -380,7 +380,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @throws GridInterruptedException If interrupted.
      */
     void init() throws GridInterruptedException {
-        assert oldestNode != null;
+        assert oldestNode.get() != null;
 
         if (init.compareAndSet(false, true)) {
             if (isDone())
@@ -393,7 +393,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                 assert discoEvt != null;
 
-                assert discoEvt.shadow().id().equals(exchId.nodeId());
+                assert exchId.nodeId().equals(discoEvt.shadow().id());
 
                 // Must initialize topology after we get discovery event.
                 initTopology();
@@ -920,7 +920,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @return Remaining node IDs.
      */
     Collection<UUID> remaining() {
-        if (rmtIds == null || rcvdIds == null)
+        if (rmtIds == null)
             return Collections.emptyList();
 
         return F.lose(rmtIds, true, rcvdIds);
@@ -948,7 +948,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        GridNode oldestNode = this.oldestNode != null ? this.oldestNode.get() : null;
+        GridNode oldestNode = this.oldestNode.get();
 
         return S.toString(GridDhtPartitionsExchangeFuture.class, this,
             "oldest", oldestNode == null ? "null" : oldestNode.id(),
