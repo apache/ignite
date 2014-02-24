@@ -460,8 +460,9 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      *
      * @param ver Version to set as obsolete.
      * @return {@code True} if entry was marked obsolete.
+     * @throws GridException If failed.
      */
-    public boolean markObsoleteIfEmpty(@Nullable GridCacheVersion ver);
+    public boolean markObsoleteIfEmpty(@Nullable GridCacheVersion ver) throws GridException;
 
     /**
      * Sets obsolete flag if entry version equals to {@code ver}.
