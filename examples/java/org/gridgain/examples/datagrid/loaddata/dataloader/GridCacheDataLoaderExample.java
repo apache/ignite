@@ -11,7 +11,6 @@ package org.gridgain.examples.datagrid.loaddata.dataloader;
 
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.dataload.*;
 
@@ -60,7 +59,7 @@ public class GridCacheDataLoaderExample {
         try {
             // Configure loader.
             ldr.perNodeBufferSize(1024);
-            ldr.updater(GridDataLoadCacheUpdaters.<String, Integer>batchedSorted());
+            ldr.isolated(true);
 
             // Warm up.
             load(ldr, 100000);

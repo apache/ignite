@@ -291,7 +291,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
             if (autoFlushFreq != 0 && old == 0)
                 flushQ.add(this);
-            else if (autoFlushFreq == 0 && old != 0)
+            else if (autoFlushFreq == 0)
                 flushQ.remove(this);
         }
     }
@@ -331,24 +331,21 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> addData(Map.Entry<K, V> entry) throws GridException, GridInterruptedException,
-        IllegalStateException {
+    @Override public GridFuture<?> addData(Map.Entry<K, V> entry) throws GridException, IllegalStateException {
         A.notNull(entry, "entry");
 
         return addData(F.asList(entry));
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> addData(K key, V val) throws GridException, GridInterruptedException,
-        IllegalStateException {
+    @Override public GridFuture<?> addData(K key, V val) throws GridException, IllegalStateException {
         A.notNull(key, "key");
 
         return addData(new Entry0<>(key, val));
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> removeData(K key) throws GridException, GridInterruptedException,
-        IllegalStateException {
+    @Override public GridFuture<?> removeData(K key) throws GridException, IllegalStateException {
         return addData(key, null);
     }
 
@@ -1137,18 +1134,19 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         /**
          * For {@link Externalizable}.
          */
+        @SuppressWarnings("UnusedDeclaration")
         public Entry0() {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public K getKey() {
-            return null;
+            return key;
         }
 
         /** {@inheritDoc} */
         @Override public V getValue() {
-            return null;
+            return val;
         }
 
         /** {@inheritDoc} */

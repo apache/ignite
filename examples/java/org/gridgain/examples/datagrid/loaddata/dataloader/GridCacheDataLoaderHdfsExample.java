@@ -16,7 +16,6 @@ import org.gridgain.examples.*;
 import org.gridgain.examples.datagrid.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.resources.*;
@@ -153,7 +152,7 @@ public class GridCacheDataLoaderHdfsExample {
 
         // Configure loader.
         ldr.perNodeBufferSize(2);
-        ldr.updater(GridDataLoadCacheUpdaters.<UUID, Person>batchedSorted());
+        ldr.isolated(true);
 
         System.out.println(">>>");
         System.out.println(">>> Using data loader for cache: " + ldr.cacheName());
