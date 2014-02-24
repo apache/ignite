@@ -7,9 +7,8 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.cache;
+package org.gridgain.grid.cache.query;
 
-import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
@@ -34,7 +33,7 @@ import java.util.*;
  * @see GridCacheQuery
  * @see GridCacheFieldsQuery
  */
-public interface GridCacheMetadata extends Externalizable {
+public interface GridCacheSqlMetadata extends Externalizable {
     /**
      * Cache name.
      *
@@ -88,11 +87,11 @@ public interface GridCacheMetadata extends Externalizable {
 
     /**
      * Gets descriptors of indexes created for provided type.
-     * See {@link GridCacheMetadataIndex} javadoc for more information.
+     * See {@link GridCacheSqlIndexMetadata} javadoc for more information.
      *
      * @param type Type name.
      * @return Index descriptors.
-     * @see GridCacheMetadataIndex
+     * @see GridCacheSqlIndexMetadata
      */
-    public Collection<GridCacheMetadataIndex> indexes(String type);
+    public Collection<GridCacheSqlIndexMetadata> indexes(String type);
 }

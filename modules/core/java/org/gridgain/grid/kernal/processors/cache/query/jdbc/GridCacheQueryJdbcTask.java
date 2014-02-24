@@ -180,18 +180,19 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
 
                 GridCache<?, ?> cache = ((GridEx)grid).cachex(cacheName);
 
-                GridCacheFieldsQuery qry = cache.queries().createFieldsQuery(sql).queryArguments(args.toArray());
+                GridCacheFieldsQuery<?, ?> qry = cache.queries().createFieldsQuery(sql).queryArguments(args.toArray());
 
                 qry.includeMetadata(true);
                 qry.pageSize(pageSize);
                 qry.timeout(timeout);
 
                 // Query local and replicated caches only locally.
-                GridCacheFieldsQueryFuture fut = qry.execute(
-                    cache.configuration().getCacheMode() == PARTITIONED ? grid :
-                        grid.forLocal());
+                if (cache.configuration().getCacheMode() != PARTITIONED)
+                    qry = qry.projection(grid.forLocal());
 
-                Collection<GridCacheQueryFieldDescriptor> meta = fut.metadata().get();
+                GridCacheFieldsQueryFuture fut = qry.execute();
+
+                Collection<GridCacheSqlFieldMetadata> meta = fut.metadata().get();
 
                 if (meta == null) {
                     // Try to extract initial SQL exception.
@@ -212,7 +213,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
                 cols = new ArrayList<>(meta.size());
                 types = new ArrayList<>(meta.size());
 
-                for (GridCacheQueryFieldDescriptor desc : meta) {
+                for (GridCacheSqlFieldMetadata desc : meta) {
                     tbls.add(desc.typeName());
                     cols.add(desc.fieldName().toUpperCase());
                     types.add(desc.fieldTypeName());

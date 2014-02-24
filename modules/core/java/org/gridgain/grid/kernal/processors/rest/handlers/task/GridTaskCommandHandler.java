@@ -196,7 +196,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                         // Using predicate instead of node intentionally
                         // in order to provide user well-structured EmptyProjectionException.
                         ctx.grid().forPredicate(F.nodeForNodeId(req.getDestId())).
-                            compute().withResultClosure(X.NO_FAILOVER).call(new ExeCallable(name, params, timeout0));
+                            compute().withNoFailover().call(new ExeCallable(name, params, timeout0));
 
                 if (async) {
                     if (locExec) {

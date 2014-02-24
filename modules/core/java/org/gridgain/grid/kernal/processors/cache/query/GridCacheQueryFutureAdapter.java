@@ -49,7 +49,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     protected GridLogger log;
 
     /** */
-    protected final GridCacheQueryBaseAdapter<K, V> qry;
+    protected final GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry;
 
     /** Set of received keys used to deduplicate query result set. */
     private final Collection<K> keys = new HashSet<>();
@@ -108,8 +108,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param pageLsnr Page listener which is executed each time on page arrival.
      */
     @SuppressWarnings("unchecked")
-    protected GridCacheQueryFutureAdapter(GridCacheContext<K, V> cctx, GridCacheQueryBaseAdapter<K, V> qry,
-        boolean loc, boolean single, boolean rmtRdcOnly, @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr) {
+    protected GridCacheQueryFutureAdapter(GridCacheContext<K, V> cctx,
+        GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry, boolean loc, boolean single, boolean rmtRdcOnly,
+        @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr) {
         super(cctx.kernalContext());
 
         this.cctx = cctx;
@@ -139,23 +140,21 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
             locRdc = rmtRdcOnly ?
                 null :
-                rdcQry.localReducer() == null ?
-                    null : (GridReducer<Object, Object>)rdcQry.localReducer().apply(qry.getClosureArguments());
+                rdcQry.localReducer();
         }
         else if (qry instanceof GridCacheReduceFieldsQueryAdapter) {
             GridCacheReduceFieldsQueryAdapter rdcQry = (GridCacheReduceFieldsQueryAdapter)qry;
 
             locRdc = rmtRdcOnly ?
                 null :
-                rdcQry.localReducer() == null ?
-                    null : (GridReducer<Object, Object>)rdcQry.localReducer().apply(qry.getClosureArguments());
+                rdcQry.localReducer();
         }
     }
 
     /**
      * @return Query.
      */
-    public GridCacheQueryBaseAdapter<K, V> query() {
+    public GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> query() {
         return qry;
     }
 
@@ -577,7 +576,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             try {
                 mgr.validateQuery(fut.query());
 
-                if (fut.query() instanceof GridCacheFieldsQuery)
+                if (fut.query() instanceof GridCacheFieldsQueryBase)
                     mgr.runFieldsQuery(localQueryInfo(fut, single, vis));
                 else
                     mgr.runQuery(localQueryInfo(fut, single, vis));
@@ -598,7 +597,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             @Nullable GridPredicate<?> vis) {
             this.fut = fut;
 
-            GridCacheQueryBaseAdapter<K, V> qry = fut.query();
+            GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry = fut.query();
 
             GridPredicate<GridCacheEntry<K, V>> prjPred =
                 qry.projectionFilter() == null ? F.<GridCacheEntry<K, V>>alwaysTrue() : qry.projectionFilter();
@@ -608,8 +607,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             if (qry instanceof GridCacheTransformQueryAdapter) {
                 GridCacheTransformQueryAdapter tmp = (GridCacheTransformQueryAdapter)qry;
 
-                trans = tmp.remoteTransformer() == null ? null :
-                    (GridClosure<V, Object>)tmp.remoteTransformer().apply(qry.getClosureArguments());
+                trans = tmp.remoteTransformer();
             }
 
             GridReducer<Map.Entry<K, V>, Object> rdc = null;
@@ -617,8 +615,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             if (qry instanceof GridCacheReduceQueryAdapter) {
                 GridCacheReduceQueryAdapter tmp = (GridCacheReduceQueryAdapter)qry;
 
-                rdc = tmp.remoteReducer() == null ? null :
-                    (GridReducer<Map.Entry<K, V>, Object>)tmp.remoteReducer().apply(qry.getClosureArguments());
+                rdc = tmp.remoteReducer();
             }
 
             GridReducer<List<Object>, Object> fieldsRdc = null;
@@ -626,14 +623,13 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             if (qry instanceof GridCacheReduceFieldsQueryAdapter) {
                 GridCacheReduceFieldsQueryAdapter tmp = (GridCacheReduceFieldsQueryAdapter)qry;
 
-                fieldsRdc = tmp.remoteReducer() == null ? null :
-                    (GridReducer<List<Object>, Object>)tmp.remoteReducer().apply(qry.getClosureArguments());
+                fieldsRdc = tmp.remoteReducer();
             }
 
             boolean incMeta = false;
 
-            if (qry instanceof GridCacheFieldsQuery)
-                incMeta = ((GridCacheFieldsQuery)qry).includeMetadata();
+            if (qry instanceof GridCacheFieldsQueryBase)
+                incMeta = ((GridCacheFieldsQueryBase)qry).includeMetadata();
 
             return new GridCacheQueryInfo<>(
                 true,

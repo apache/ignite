@@ -63,8 +63,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
      */
     @SuppressWarnings("unchecked")
     protected GridCacheDistributedQueryFuture(GridCacheContext<K, V> ctx, long reqId,
-        GridCacheQueryBaseAdapter<K, V> qry, Iterable<GridNode> nodes, boolean single, boolean rmtRdcOnly,
-        @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr, @Nullable GridPredicate<?> vis) {
+        GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry, Iterable<GridNode> nodes, boolean single,
+        boolean rmtRdcOnly, @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr, @Nullable GridPredicate<?> vis) {
         super(ctx, qry, false, single, rmtRdcOnly, pageLsnr);
 
         assert reqId > 0;
@@ -106,7 +106,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
             }
 
             final GridCacheQueryRequest<K, V> req = new GridCacheQueryRequest<>(reqId,
-                qry instanceof GridCacheFieldsQuery);
+                qry instanceof GridCacheFieldsQueryBase);
 
             // Process cancel query directly (without sending) for local node,
             cctx.closures().callLocalSafe(new Callable<Object>() {

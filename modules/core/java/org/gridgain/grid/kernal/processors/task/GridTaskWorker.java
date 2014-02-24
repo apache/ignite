@@ -123,6 +123,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /** */
     private final boolean resCache;
 
+    /** */
+    private final boolean noFailover;
+
     /** Continuous mapper. */
     private final GridComputeTaskContinuousMapper mapper = new GridComputeTaskContinuousMapper() {
         /** {@inheritDoc} */
@@ -208,6 +211,10 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         marsh = ctx.config().getMarshaller();
 
         resCache = dep.annotation(taskCls, GridComputeTaskNoResultCache.class) == null;
+
+        Boolean noFailover = getThreadContext(TC_NO_FAILOVER);
+
+        this.noFailover = noFailover != null ? noFailover : false;
     }
 
     /**
@@ -324,26 +331,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             ses.setFailoverSpi(spis.failoverSpi());
             ses.setCheckpointSpi(spis.checkpointSpi());
         }
-
-        // Thread-local overrides annotation based setting.
-
-        if (thCtx == null)
-            return;
-
-        String spi = getThreadContext(TC_FAILOVER_SPI);
-
-        if (spi != null)
-            ses.setFailoverSpi(spi);
-
-        spi = getThreadContext(TC_CHECKPOINT_SPI);
-
-        if (spi != null)
-            ses.setCheckpointSpi(spi);
-
-        spi = getThreadContext(TC_LOAD_BALANCING_SPI);
-
-        if (spi != null)
-            ses.setLoadBalancingSpi(spi);
     }
 
     /**
@@ -811,6 +798,15 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
                     try {
                         plc = task.result(jobRes, results);
+
+                        if (plc == FAILOVER && noFailover) {
+                            GridException e = jobRes.getException();
+
+                            if (e != null)
+                                throw e;
+
+                            plc = WAIT;
+                        }
                     }
                     finally {
                         recordJobEvent(EVT_JOB_RESULTED, jobRes.getJobContext().getJobId(),

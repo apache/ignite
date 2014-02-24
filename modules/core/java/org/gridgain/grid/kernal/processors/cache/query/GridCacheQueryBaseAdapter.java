@@ -18,7 +18,6 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -34,7 +33,8 @@ import static org.gridgain.grid.cache.GridCacheFlag.*;
  * @author @java.author
  * @version @java.version
  */
-public abstract class GridCacheQueryBaseAdapter<K, V> implements GridCacheQueryBase<K, V> {
+public abstract class GridCacheQueryBaseAdapter<K, V, T extends GridCacheQueryBase> implements
+    GridCacheQueryBase<K, V, T> {
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
@@ -66,16 +66,19 @@ public abstract class GridCacheQueryBaseAdapter<K, V> implements GridCacheQueryB
     private volatile Class<?> cls;
 
     /** */
-    private volatile GridClosure<Object[], GridPredicate<? super K>> rmtKeyFilter;
+    private volatile GridPredicate<K> rmtKeyFilter;
 
     /** */
-    private volatile GridClosure<Object[], GridPredicate<? super V>> rmtValFilter;
+    private volatile GridPredicate<V> rmtValFilter;
 
     /** */
-    private volatile GridClosure<Object[], GridAbsClosure> beforeCb;
+    private volatile Runnable beforeCb;
 
     /** */
-    private volatile GridClosure<Object[], GridAbsClosure> afterCb;
+    private volatile Runnable afterCb;
+
+    /** */
+    protected volatile GridProjection gridPrj;
 
     /** */
     private volatile GridPredicate<GridCacheEntry<K, V>> prjFilter;
@@ -88,9 +91,6 @@ public abstract class GridCacheQueryBaseAdapter<K, V> implements GridCacheQueryB
 
     /** */
     private volatile Object[] args;
-
-    /** */
-    private volatile Object[] cArgs;
 
     /** */
     private volatile boolean keepAll = true;
@@ -174,7 +174,7 @@ public abstract class GridCacheQueryBaseAdapter<K, V> implements GridCacheQueryB
     /**
      * @param qry Query to copy from.
      */
-    protected GridCacheQueryBaseAdapter(GridCacheQueryBaseAdapter<K, V> qry) {
+    protected GridCacheQueryBaseAdapter(GridCacheQueryBaseAdapter<K, V, T> qry) {
         cctx = qry.cctx;
         type = qry.type;
         clause = qry.clause;
@@ -186,7 +186,6 @@ public abstract class GridCacheQueryBaseAdapter<K, V> implements GridCacheQueryB
         beforeCb = qry.beforeCb;
         afterCb = qry.afterCb;
         args = qry.args;
-        cArgs = qry.cArgs;
         pageSize = qry.pageSize;
         timeout = qry.timeout;
         keepAll = qry.keepAll;
@@ -194,6 +193,7 @@ public abstract class GridCacheQueryBaseAdapter<K, V> implements GridCacheQueryB
         dedup = qry.dedup;
         readThrough = qry.readThrough;
         clone = qry.clone;
+        gridPrj = qry.gridPrj;
 
         log = U.logger(cctx.kernalContext(), logRef, GridCacheQueryBaseAdapter.class);
 
@@ -374,7 +374,7 @@ public abstract class GridCacheQueryBaseAdapter<K, V> implements GridCacheQueryB
     /**
      * @return Remote key filter.
      */
-    public GridClosure<Object[], GridPredicate<? super K>> remoteKeyFilter() {
+    public GridPredicate<K> remoteKeyFilter() {
         return rmtKeyFilter;
     }
 
@@ -382,66 +382,84 @@ public abstract class GridCacheQueryBaseAdapter<K, V> implements GridCacheQueryB
      *
      * @param rmtKeyFilter Remote key filter
      */
-    @Override public void remoteKeyFilter(GridClosure<Object[], GridPredicate<? super K>> rmtKeyFilter) {
-        synchronized (mux) {
-            checkSealed();
+    @Override public T remoteKeyFilter(GridPredicate<K> rmtKeyFilter) {
+        GridCacheQueryBaseAdapter<K, V, T> cp = copy();
 
-            this.rmtKeyFilter = rmtKeyFilter;
-        }
+        cp.rmtKeyFilter = rmtKeyFilter;
+
+        return (T)cp;
     }
 
     /**
      * @return Remote value filter.
      */
-    public GridClosure<Object[], GridPredicate<? super V>> remoteValueFilter() {
+    public GridPredicate<V> remoteValueFilter() {
         return rmtValFilter;
     }
 
     /**
      * @param rmtValFilter Remote value filter.
      */
-    @Override public void remoteValueFilter(GridClosure<Object[], GridPredicate<? super V>> rmtValFilter) {
-        synchronized (mux) {
-            checkSealed();
+    @Override public T remoteValueFilter(GridPredicate<V> rmtValFilter) {
+        GridCacheQueryBaseAdapter<K, V, T> cp = copy();
 
-            this.rmtValFilter = rmtValFilter;
-        }
+        cp.rmtValFilter = rmtValFilter;
+
+        return (T)cp;
     }
 
     /**
      * @return Before execution callback.
      */
-    public GridClosure<Object[], GridAbsClosure> beforeCallback() {
+    public Runnable beforeCallback() {
         return beforeCb;
     }
 
     /**
      * @param beforeCb Before execution callback.
      */
-    @Override public void beforeCallback(GridClosure<Object[], GridAbsClosure> beforeCb) {
-        synchronized (mux) {
-            checkSealed();
+    @Override public T beforeExecution(Runnable beforeCb) {
+        GridCacheQueryBaseAdapter<K, V, T> cp = copy();
 
-            this.beforeCb = beforeCb;
-        }
+        cp.beforeCb = beforeCb;
+
+        return (T)cp;
     }
 
     /**
      * @return After execution callback.
      */
-    public GridClosure<Object[], GridAbsClosure> afterCallback() {
+    public Runnable afterCallback() {
         return afterCb;
     }
 
     /**
      * @param afterCb After execution callback.
      */
-    @Override public void afterCallback(GridClosure<Object[], GridAbsClosure> afterCb) {
-        synchronized (mux) {
-            checkSealed();
+    @Override public T afterExecution(Runnable afterCb) {
+        GridCacheQueryBaseAdapter<K, V, T> cp = copy();
 
-            this.afterCb = afterCb;
-        }
+        cp.afterCb = afterCb;
+
+        return (T)cp;
+    }
+
+    /**
+     * @param rmtKeyFilter Key filter.
+     * @param rmtValFilter Value filter.
+     * @param beforeCb Before callback.
+     * @param afterCb After callback.
+     * @param args Arguments.
+     * @param incBackups Include backups flag.
+     */
+    void init(GridPredicate<K> rmtKeyFilter, GridPredicate<V> rmtValFilter, Runnable beforeCb, Runnable afterCb,
+        Object[] args, boolean incBackups) {
+        this.rmtKeyFilter = rmtKeyFilter;
+        this.rmtValFilter = rmtValFilter;
+        this.beforeCb = beforeCb;
+        this.afterCb = afterCb;
+        this.args = args;
+        this.incBackups = incBackups;
     }
 
     /**
@@ -462,6 +480,20 @@ public abstract class GridCacheQueryBaseAdapter<K, V> implements GridCacheQueryB
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public T projection(GridProjection prj) {
+        GridCacheQueryBaseAdapter<K, V, T> cp = copy();
+
+        cp.gridPrj = prj;
+
+        return (T)cp;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridProjection projection() {
+        return gridPrj;
+    }
+
     /**
      * @param args Arguments.
      */
@@ -474,30 +506,6 @@ public abstract class GridCacheQueryBaseAdapter<K, V> implements GridCacheQueryB
      */
     public Object[] arguments() {
         return args;
-    }
-
-    /**
-     * Sets closure arguments.
-     * <p>
-     * Note that the name of the method has "set" in it not to conflict with
-     * {@link GridCacheQuery#closureArguments(Object...)} method.
-     *
-     * @param cArgs Arguments.
-     */
-    public void setClosureArguments(Object[] cArgs) {
-        this.cArgs = cArgs;
-    }
-
-    /**
-     * Gets closure arguments.
-     * <p>
-     * Note that the name of the method has "set" in it not to conflict with
-     * {@link GridCacheQuery#closureArguments(Object...)} method.
-     *
-     * @return Closure's arguments.
-     */
-    public Object[] getClosureArguments() {
-        return cArgs;
     }
 
     /** {@inheritDoc} */
@@ -535,7 +543,6 @@ public abstract class GridCacheQueryBaseAdapter<K, V> implements GridCacheQueryB
                 registerClasses();
 
                 cctx.deploy().registerClasses(args);
-                cctx.deploy().registerClasses(cArgs);
             }
             catch (GridException e) {
                 return new GridCacheErrorQueryFuture<>(cctx.kernalContext(), e);
@@ -547,45 +554,10 @@ public abstract class GridCacheQueryBaseAdapter<K, V> implements GridCacheQueryB
         assert qryMgr != null;
 
         return nodes.size() == 1 && nodes.iterator().next().equals(cctx.discovery().localNode()) ?
-            qryMgr.queryLocal(this, single, rmtRdcOnly, pageLsnr, vis) :
-            qryMgr.queryDistributed(this, nodes, single, rmtRdcOnly, pageLsnr, vis);
-    }
-
-    /**
-     * @param nodes Nodes.
-     * @param single {@code true} if single result requested, {@code false} if multiple.
-     * @param rmtRdcOnly {@code true} for reduce query when using remote reducer only,
-     *      otherwise it is always {@code false}.
-     * @param pageLsnr Page listener.
-     * @param vis Visitor predicate.
-     * @param <R> Result type.
-     * @return Results.
-     * @throws GridException In case of error.
-     */
-    protected <R> Collection<R> executeSync(Collection<GridNode> nodes, boolean single, boolean rmtRdcOnly,
-        @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr, @Nullable GridPredicate<?> vis) throws GridException {
-        // Seal the query.
-        seal();
-
-        if (log.isDebugEnabled())
-            log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
-
-        if (cctx.deploymentEnabled()) {
-            cctx.deploy().registerClasses(cls, rmtKeyFilter, rmtValFilter, beforeCb, afterCb, prjFilter);
-
-            registerClasses();
-
-            cctx.deploy().registerClasses(args);
-            cctx.deploy().registerClasses(cArgs);
-        }
-
-        GridCacheQueryManager<K, V> qryMgr = cctx.queries();
-
-        assert qryMgr != null;
-
-        return nodes.size() == 1 && nodes.iterator().next().equals(cctx.discovery().localNode()) ?
-            qryMgr.queryLocalSync(this, single, rmtRdcOnly, pageLsnr, vis) :
-            qryMgr.queryDistributed(this, nodes, single, rmtRdcOnly, pageLsnr, vis).get();
+            qryMgr.queryLocal((GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase>)this, single, rmtRdcOnly, pageLsnr,
+                vis) :
+            qryMgr.queryDistributed((GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase>)this, nodes, single,
+                rmtRdcOnly, pageLsnr, vis);
     }
 
     /**
@@ -628,26 +600,24 @@ public abstract class GridCacheQueryBaseAdapter<K, V> implements GridCacheQueryB
     }
 
     /**
-     * @param grid Projections.
      * @return Predicates for nodes.
      */
-    protected Collection<GridNode> nodes(final GridProjection[] grid) {
+    protected Collection<GridNode> nodes() {
         Collection<GridNode> nodes = CU.allNodes(cctx);
 
-        if (F.isEmpty(grid))
+        if (gridPrj == null) {
+            if (cctx.isReplicated())
+                return Collections.singletonList(cctx.localNode());
+
             return nodes;
+        }
 
         return F.view(
             nodes,
             new P1<GridNode>() {
                 @Override
                 public boolean apply(GridNode e) {
-                    for (GridProjection prj : grid) {
-                        if (prj.node(e.id()) != null)
-                            return true;
-                    }
-
-                    return false;
+                    return gridPrj.node(e.id()) != null;
                 }
             });
     }
@@ -665,6 +635,11 @@ public abstract class GridCacheQueryBaseAdapter<K, V> implements GridCacheQueryB
     @Override public String toString() {
         return S.toString(GridCacheQueryBaseAdapter.class, this);
     }
+
+    /**
+     * @return Copy of this query.
+     */
+    protected abstract GridCacheQueryBaseAdapter<K, V, T> copy();
 
     /**
      * Future for single query result.

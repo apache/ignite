@@ -29,7 +29,7 @@ public class GridCacheDistributedFieldsQueryFuture
     extends GridCacheDistributedQueryFuture<Object, Object, List<Object>>
     implements GridCacheFieldsQueryFuture {
     /** Meta data future. */
-    private final GridFutureAdapter<List<GridCacheQueryFieldDescriptor>> metaFut;
+    private final GridFutureAdapter<List<GridCacheSqlFieldMetadata>> metaFut;
 
     /**
      * Required by {@link Externalizable}.
@@ -50,11 +50,12 @@ public class GridCacheDistributedFieldsQueryFuture
      * @param vis Visitor predicate.
      */
     public GridCacheDistributedFieldsQueryFuture(GridCacheContext<?, ?> ctx, long reqId,
-        GridCacheFieldsQuery qry, Iterable<GridNode> nodes, boolean single, boolean rmtRdcOnly,
+        GridCacheFieldsQueryBase qry, Iterable<GridNode> nodes, boolean single, boolean rmtRdcOnly,
         @Nullable GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr,
         @Nullable GridPredicate<?> vis) {
-        super((GridCacheContext<Object, Object>)ctx, reqId, (GridCacheQueryBaseAdapter<Object, Object>)qry,
-            nodes, single, rmtRdcOnly, pageLsnr, vis);
+        super((GridCacheContext<Object, Object>)ctx, reqId,
+            (GridCacheQueryBaseAdapter<Object, Object, GridCacheQueryBase>)qry, nodes, single, rmtRdcOnly,
+            pageLsnr, vis);
 
         metaFut = new GridFutureAdapter<>(ctx.kernalContext());
 
@@ -69,7 +70,7 @@ public class GridCacheDistributedFieldsQueryFuture
      * @param err Error.
      * @param finished Finished or not.
      */
-    public void onPage(@Nullable UUID nodeId, @Nullable List<GridCacheQueryFieldDescriptor> metaData,
+    public void onPage(@Nullable UUID nodeId, @Nullable List<GridCacheSqlFieldMetadata> metaData,
         @Nullable Collection<Map<String, Object>> data, @Nullable Throwable err, boolean finished) {
         if (!metaFut.isDone() && metaData != null)
             metaFut.onDone(metaData);
@@ -94,7 +95,7 @@ public class GridCacheDistributedFieldsQueryFuture
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<List<GridCacheQueryFieldDescriptor>> metadata() {
+    @Override public GridFuture<List<GridCacheSqlFieldMetadata>> metadata() {
         return metaFut;
     }
 }

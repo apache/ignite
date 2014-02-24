@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -42,7 +43,7 @@ class GridCacheQueryInfo<K, V> {
     private GridReducer<List<Object>, Object> fieldsRdc;
 
     /** */
-    private GridCacheQueryBaseAdapter<?, ?> qry;
+    private GridCacheQueryBaseAdapter<?, ?, GridCacheQueryBase> qry;
 
     /** */
     private int pageSize;
@@ -96,7 +97,7 @@ class GridCacheQueryInfo<K, V> {
         GridClosure<V, Object> trans,
         GridReducer<Map.Entry<K, V>, Object> rdc,
         GridReducer<List<Object>, Object> fieldsRdc,
-        GridCacheQueryBaseAdapter<?, ?> qry,
+        GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry,
         int pageSize,
         boolean clone,
         boolean incBackups,
@@ -149,7 +150,7 @@ class GridCacheQueryInfo<K, V> {
     /**
      * @return Query.
      */
-    GridCacheQueryBaseAdapter<?, ?> query() {
+    GridCacheQueryBaseAdapter<?, ?, GridCacheQueryBase> query() {
         return qry;
     }
 

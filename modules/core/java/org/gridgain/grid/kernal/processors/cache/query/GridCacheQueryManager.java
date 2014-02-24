@@ -54,9 +54,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private static final int DFLT_CLS_CACHE_SIZE = 1000;
 
     /** */
-    private static final List<GridCachePeekMode> DB_SWAP_GLOBAL = F.asList(DB, SWAP, GLOBAL);
-
-    /** */
     private static final List<GridCachePeekMode> SWAP_GLOBAL = F.asList(SWAP, GLOBAL);
 
     /** */
@@ -308,24 +305,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param vis Visitor Predicate.
      * @return Iterator over query results. Note that results become available as they come.
      */
-    public abstract <R> GridCacheQueryFuture<R> queryLocal(GridCacheQueryBaseAdapter<K, V> qry, boolean single,
-        boolean rmtRdcOnly, @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr, @Nullable GridPredicate<?> vis);
-
-    /**
-     * Executes distributed query.
-     *
-     * @param qry Query.
-     * @param single {@code true} if single result requested, {@code false} if multiple.
-     * @param rmtRdcOnly {@code true} for reduce query when using remote reducer only,
-     *      otherwise it is always {@code false}.
-     * @param pageLsnr Page listener.
-     * @param vis Visitor Predicate.
-     * @return Query results.
-     * @throws GridException In case of error.
-     */
-    public abstract <R> Collection<R> queryLocalSync(GridCacheQueryBaseAdapter<K, V> qry, boolean single,
-        boolean rmtRdcOnly, @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr, @Nullable GridPredicate<?> vis)
-        throws GridException;
+    public abstract <R> GridCacheQueryFuture<R> queryLocal(GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry,
+        boolean single, boolean rmtRdcOnly, @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr,
+        @Nullable GridPredicate<?> vis);
 
     /**
      * Executes distributed query.
@@ -339,7 +321,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param vis Visitor predicate.
      * @return Iterator over query results. Note that results become available as they come.
      */
-    public abstract <R> GridCacheQueryFuture<R> queryDistributed(GridCacheQueryBaseAdapter<K, V> qry,
+    public abstract <R> GridCacheQueryFuture<R> queryDistributed(GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry,
         Collection<GridNode> nodes, boolean single, boolean rmtOnly,
         @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr, @Nullable GridPredicate<?> vis);
 
@@ -351,7 +333,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param nodes Nodes.
      * @param all Whether to load all pages.
      */
-    public abstract void loadPage(long id, GridCacheQueryBaseAdapter<K, V> qry,
+    public abstract void loadPage(long id, GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry,
         Collection<GridNode> nodes, boolean all);
 
     /**
@@ -365,25 +347,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param vis Visitor predicate.
      * @return Iterator over query results. Note that results become available as they come.
      */
-    public abstract GridCacheFieldsQueryFuture queryFieldsLocal(GridCacheFieldsQueryAdapter qry, boolean single,
+    public abstract GridCacheFieldsQueryFuture queryFieldsLocal(GridCacheFieldsQueryBase qry, boolean single,
         boolean rmtOnly, @Nullable GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr,
         @Nullable GridPredicate<?> vis);
-
-    /**
-     * Executes distributed fields query.
-     *
-     * @param qry Query.
-     * @param single {@code true} if single result requested, {@code false} if multiple.
-     * @param rmtOnly {@code true} for reduce query when using remote reducer only,
-     *      otherwise it is always {@code false}.
-     * @param pageLsnr Page listener.
-     * @param vis Visitor predicate.
-     * @return Query results.
-     * @throws GridException In case of error.
-     */
-    public abstract Collection<List<Object>> queryFieldsLocalSync(GridCacheFieldsQueryAdapter qry, boolean single,
-        boolean rmtOnly, @Nullable GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr,
-        @Nullable GridPredicate<?> vis) throws GridException;
 
     /**
      * Executes distributed fields query.
@@ -397,7 +363,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param vis Visitor predicate.
      * @return Iterator over query results. Note that results become available as they come.
      */
-    public abstract GridCacheFieldsQueryFuture queryFieldsDistributed(GridCacheFieldsQueryAdapter qry,
+    public abstract GridCacheFieldsQueryFuture queryFieldsDistributed(GridCacheFieldsQueryBase qry,
         Collection<GridNode> nodes, boolean single, boolean rmtOnly,
         @Nullable GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr, @Nullable GridPredicate<?> vis);
 
@@ -453,7 +419,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Fields query result.
      * @throws GridException In case of error.
      */
-    private GridIndexingFieldsResult executeFieldsQuery(GridCacheFieldsQueryAdapter qry, boolean loc)
+    private GridIndexingFieldsResult executeFieldsQuery(GridCacheFieldsQueryBase qry, boolean loc)
         throws GridException {
         assert qry != null;
 
@@ -620,11 +586,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 entities = new ArrayList<>(pageSize);
 
             GridIndexingFieldsResult res = qryInfo.local() ?
-                executeFieldsQuery((GridCacheFieldsQueryAdapter)qryInfo.query(), qryInfo.local()) :
+                executeFieldsQuery((GridCacheFieldsQueryBase)qryInfo.query(), qryInfo.local()) :
                 fieldsQueryResult(qryInfo);
 
             // If metadata needs to be returned to user and cleaned from internal fields - copy it.
-            List<GridCacheQueryFieldDescriptor> meta = qryInfo.includeMetaData() ?
+            List<GridCacheSqlFieldMetadata> meta = qryInfo.includeMetaData() ?
                 (res.metaData() != null ? new ArrayList<>(res.metaData()) : null) :
                 res.metaData();
 
@@ -632,7 +598,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             // Filter internal fields.
             if (meta != null) {
-                Iterator<GridCacheQueryFieldDescriptor> metaIt = meta.iterator();
+                Iterator<GridCacheSqlFieldMetadata> metaIt = meta.iterator();
 
                 int i = 0;
 
@@ -802,7 +768,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             injectResources(rdc);
             injectResources(vis);
 
-            GridCacheQueryBaseAdapter<?, ?> qry = qryInfo.query();
+            GridCacheQueryBaseAdapter<?, ?, GridCacheQueryBase> qry = qryInfo.query();
 
             boolean single = qryInfo.single();
 
@@ -1178,7 +1144,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         if (exec) {
             try {
-                fut.onDone(executeFieldsQuery((GridCacheFieldsQueryAdapter)qryInfo.query(), false));
+                fut.onDone(executeFieldsQuery((GridCacheFieldsQueryBase)qryInfo.query(), false));
             }
             catch (GridException e) {
                 fut.onDone(e);
@@ -1241,7 +1207,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return {@code true} if page was processed right.
      */
     protected abstract boolean onFieldsPageReady(boolean loc, GridCacheQueryInfo<K, V> qryInfo,
-        @Nullable List<GridCacheQueryFieldDescriptor> metaData,
+        @Nullable List<GridCacheSqlFieldMetadata> metaData,
         @Nullable Collection<List<GridIndexingEntity<?>>> entities,
         @Nullable Collection<?> data,
         boolean finished, @Nullable Throwable e);
@@ -1251,18 +1217,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query to validate.
      * @throws GridException In case of validation error.
      */
-    public void validateQuery(GridCacheQueryBase<?, ?> qry) throws GridException {
+    public void validateQuery(GridCacheQueryBase<?, ?, GridCacheQueryBase> qry) throws GridException {
         if (log.isDebugEnabled())
             log.debug("Validating query: " + qry);
 
-        if (!(qry instanceof GridCacheFieldsQuery) && qry.type() == null)
+        if (!(qry instanceof GridCacheFieldsQueryBase) && qry.type() == null)
             throw new GridException("Type must be set for query.");
 
         if (qry.type() == SQL || qry.type() == TEXT)
             if (F.isEmpty(qry.className()))
                 throw new GridException("Class must be set for " + qry.type().name() + " query.");
 
-        if (qry.type() == SQL || qry.type() == TEXT || qry instanceof GridCacheFieldsQuery) {
+        if (qry.type() == SQL || qry.type() == TEXT || qry instanceof GridCacheFieldsQueryBase) {
             if (F.isEmpty(qry.clause()))
                 throw new GridException("Clause must be set for " + qry.type().name() + " query.");
 
@@ -1332,7 +1298,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param flags Cache flags.
      * @return Query.
      */
-    public <R1, R2> GridCacheReduceFieldsQuery<R1, R2, K, V> createReduceFieldsQuery(String clause,
+    public <R1, R2> GridCacheReduceFieldsQuery<K, V, R1, R2> createReduceFieldsQuery(String clause,
         @Nullable GridPredicate<GridCacheEntry<K, V>> filter, Set<GridCacheFlag> flags) {
         return new GridCacheReduceFieldsQueryAdapter<>(cctx, clause, filter, flags);
     }
@@ -1525,8 +1491,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return SQL metadata.
      * @throws GridException In case of error.
      */
-    public Collection<GridCacheMetadata> sqlMetadata() throws GridException {
-        Callable<Collection<CacheMetadata>> job = new MetadataJob(spi);
+    public Collection<GridCacheSqlMetadata> sqlMetadata() throws GridException {
+        Callable<Collection<CacheSqlMetadata>> job = new MetadataJob(spi);
 
         // Remote nodes that have current cache.
         Collection<GridNode> nodes = F.view(cctx.discovery().remoteNodes(), new P1<GridNode>() {
@@ -1535,29 +1501,29 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
         });
 
-        Collection<Collection<CacheMetadata>> res = new ArrayList<>(nodes.size() + 1);
+        Collection<Collection<CacheSqlMetadata>> res = new ArrayList<>(nodes.size() + 1);
 
-        GridFuture<Collection<Collection<CacheMetadata>>> rmtFut = null;
+        GridFuture<Collection<Collection<CacheSqlMetadata>>> rmtFut = null;
 
         // Get metadata from remote nodes.
         if (!nodes.isEmpty())
             rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, F.asSet(job), nodes, true);
 
         // Get local metadata.
-        GridFuture<Collection<CacheMetadata>> locFut = cctx.closures().callLocalSafe(job, true);
+        GridFuture<Collection<CacheSqlMetadata>> locFut = cctx.closures().callLocalSafe(job, true);
 
         if (rmtFut != null)
             res.addAll(rmtFut.get());
 
         res.add(locFut.get());
 
-        Map<String, Collection<CacheMetadata>> map = new HashMap<>();
+        Map<String, Collection<CacheSqlMetadata>> map = new HashMap<>();
 
-        for (Collection<CacheMetadata> col : res) {
-            for (CacheMetadata meta : col) {
+        for (Collection<CacheSqlMetadata> col : res) {
+            for (CacheSqlMetadata meta : col) {
                 String name = meta.cacheName();
 
-                Collection<CacheMetadata> cacheMetas = map.get(name);
+                Collection<CacheSqlMetadata> cacheMetas = map.get(name);
 
                 if (cacheMetas == null)
                     map.put(name, cacheMetas = new LinkedList<>());
@@ -1566,13 +1532,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
         }
 
-        Collection<GridCacheMetadata> col = new ArrayList<>(map.size());
+        Collection<GridCacheSqlMetadata> col = new ArrayList<>(map.size());
 
         // Metadata for current cache must be first in list.
-        col.add(new CacheMetadata(map.remove(space)));
+        col.add(new CacheSqlMetadata(map.remove(space)));
 
-        for (Collection<CacheMetadata> metas : map.values())
-            col.add(new CacheMetadata(metas));
+        for (Collection<CacheSqlMetadata> metas : map.values())
+            col.add(new CacheSqlMetadata(metas));
 
         return col;
     }
@@ -1638,8 +1604,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private GridPredicate<K> keyFilter(GridCacheQueryBaseAdapter qry) throws GridException {
         assert qry != null;
 
-        GridPredicate<K> filter = qry.remoteKeyFilter() == null ? null :
-            (GridPredicate<K>)qry.remoteKeyFilter().apply(qry.getClosureArguments());
+        GridPredicate<K> filter = qry.remoteKeyFilter();
 
         injectResources(filter);
 
@@ -1657,8 +1622,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private GridPredicate<V> valueFilter(GridCacheQueryBaseAdapter qry) throws GridException {
         assert qry != null;
 
-        GridPredicate<V> filter = qry.remoteValueFilter() == null ? null :
-            (GridPredicate<V>)qry.remoteValueFilter().apply(qry.getClosureArguments());
+        GridPredicate<V> filter = qry.remoteValueFilter();
 
         injectResources(filter);
 
@@ -1675,14 +1639,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private void executeBeforeCallback(GridCacheQueryBaseAdapter qry) throws GridException {
         assert qry != null;
 
-        GridClosure<Object[], GridAbsClosure> factory = qry.beforeCallback();
-
-        GridAbsClosure cb = factory != null ? factory.apply(qry.getClosureArguments()) : null;
+        Runnable cb = qry.beforeCallback();
 
         if (cb != null) {
             injectResources(cb);
 
-            cb.apply();
+            cb.run();
         }
     }
 
@@ -1696,14 +1658,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private void executeAfterCallback(GridCacheQueryBaseAdapter qry) throws GridException {
         assert qry != null;
 
-        GridClosure<Object[], GridAbsClosure> factory = qry.afterCallback();
-
-        GridAbsClosure cb = factory != null ? factory.apply(qry.getClosureArguments()) : null;
+        Runnable cb = qry.afterCallback();
 
         if (cb != null) {
             injectResources(cb);
 
-            cb.apply();
+            cb.run();
         }
     }
 
@@ -1729,7 +1689,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Metadata job.
      */
     @GridInternal
-    private static class MetadataJob extends CO<Collection<CacheMetadata>> {
+    private static class MetadataJob extends CO<Collection<CacheSqlMetadata>> {
         /** Grid */
         @GridInstanceResource
         private Grid grid;
@@ -1745,7 +1705,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<CacheMetadata> apply() {
+        @Override public Collection<CacheSqlMetadata> apply() {
             final GridKernalContext ctx = ((GridKernal)grid).context();
 
             Collection<String> cacheNames = F.viewReadOnly(ctx.cache().caches(),
@@ -1761,15 +1721,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             );
 
-            return F.transform(cacheNames, new C1<String, CacheMetadata>() {
-                @Override public CacheMetadata apply(String cacheName) {
+            return F.transform(cacheNames, new C1<String, CacheSqlMetadata>() {
+                @Override public CacheSqlMetadata apply(String cacheName) {
                     Collection<GridIndexingTypeDescriptor> types = ctx.indexing().types(cacheName);
 
                     Collection<String> names = new HashSet<>(types.size());
                     Map<String, String> keyClasses = new HashMap<>(types.size());
                     Map<String, String> valClasses = new HashMap<>(types.size());
                     Map<String, Map<String, String>> fields = new HashMap<>(types.size());
-                    Map<String, Collection<GridCacheMetadataIndex>> indexes =
+                    Map<String, Collection<GridCacheSqlIndexMetadata>> indexes =
                         new HashMap<>(types.size());
 
                     for (GridIndexingTypeDescriptor type : types) {
@@ -1798,7 +1758,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         fields.put(type.name(), fieldsMap);
 
-                        Collection<GridCacheMetadataIndex> indexesCol =
+                        Collection<GridCacheSqlIndexMetadata> indexesCol =
                             new ArrayList<>(type.indexes().size());
 
                         for (Map.Entry<String, GridIndexDescriptor> e : type.indexes().entrySet()) {
@@ -1813,7 +1773,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     if (desc.descending(idxField))
                                         descendings.add(idxField);
 
-                                indexesCol.add(new CacheMetadataIndex(e.getKey().toUpperCase(),
+                                indexesCol.add(new CacheSqlIndexMetadata(e.getKey().toUpperCase(),
                                     idxFields, descendings, desc.unique()));
                             }
                         }
@@ -1821,7 +1781,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         indexes.put(type.name(), indexesCol);
                     }
 
-                    return new CacheMetadata(cacheName, names, keyClasses, valClasses, fields, indexes);
+                    return new CacheSqlMetadata(cacheName, names, keyClasses, valClasses, fields, indexes);
                 }
             });
         }
@@ -1830,7 +1790,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * Cache metadata.
      */
-    private static class CacheMetadata implements GridCacheMetadata {
+    private static class CacheSqlMetadata implements GridCacheSqlMetadata {
         /** */
         private String cacheName;
 
@@ -1847,12 +1807,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private Map<String, Map<String, String>> fields;
 
         /** */
-        private Map<String, Collection<GridCacheMetadataIndex>> indexes;
+        private Map<String, Collection<GridCacheSqlIndexMetadata>> indexes;
 
         /**
          * Required by {@link Externalizable}.
          */
-        public CacheMetadata() {
+        public CacheSqlMetadata() {
             // No-op.
         }
 
@@ -1864,9 +1824,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @param fields Fields maps.
          * @param indexes Indexes.
          */
-        CacheMetadata(@Nullable String cacheName, Collection<String> types, Map<String, String> keyClasses,
+        CacheSqlMetadata(@Nullable String cacheName, Collection<String> types, Map<String, String> keyClasses,
             Map<String, String> valClasses, Map<String, Map<String, String>> fields,
-            Map<String, Collection<GridCacheMetadataIndex>> indexes) {
+            Map<String, Collection<GridCacheSqlIndexMetadata>> indexes) {
             assert types != null;
             assert keyClasses != null;
             assert valClasses != null;
@@ -1884,14 +1844,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /**
          * @param metas Meta data instances from different nodes.
          */
-        CacheMetadata(Iterable<CacheMetadata> metas) {
+        CacheSqlMetadata(Iterable<CacheSqlMetadata> metas) {
             types = new HashSet<>();
             keyClasses = new HashMap<>();
             valClasses = new HashMap<>();
             fields = new HashMap<>();
             indexes = new HashMap<>();
 
-            for (CacheMetadata meta : metas) {
+            for (CacheSqlMetadata meta : metas) {
                 if (cacheName == null)
                     cacheName = meta.cacheName;
                 else
@@ -1931,7 +1891,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridCacheMetadataIndex> indexes(String type) {
+        @Override public Collection<GridCacheSqlIndexMetadata> indexes(String type) {
             return indexes.get(type);
         }
 
@@ -1957,14 +1917,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(CacheMetadata.class, this);
+            return S.toString(CacheSqlMetadata.class, this);
         }
     }
 
     /**
      * Cache metadata index.
      */
-    private static class CacheMetadataIndex implements GridCacheMetadataIndex {
+    private static class CacheSqlIndexMetadata implements GridCacheSqlIndexMetadata {
         /** */
         private String name;
 
@@ -1980,7 +1940,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /**
          * Required by {@link Externalizable}.
          */
-        public CacheMetadataIndex() {
+        public CacheSqlIndexMetadata() {
             // No-op.
         }
 
@@ -1990,7 +1950,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @param descendings Descendings.
          * @param unique Unique flag.
          */
-        CacheMetadataIndex(String name, Collection<String> fields, Collection<String> descendings,
+        CacheSqlIndexMetadata(String name, Collection<String> fields, Collection<String> descendings,
             boolean unique) {
             assert name != null;
             assert fields != null;
@@ -2040,7 +2000,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(CacheMetadataIndex.class, this);
+            return S.toString(CacheSqlIndexMetadata.class, this);
         }
     }
 }

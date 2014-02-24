@@ -626,13 +626,32 @@ public class GridCacheUtils {
      */
     public static boolean cacheNode(GridCacheContext ctx, GridNodeShadow s) {
         assert ctx != null;
-        assert s != null;
 
-        GridCacheAttributes[] caches = s.attribute(ATTR_CACHE);
+        return cacheNode(ctx.namex(), (GridCacheAttributes[])s.attribute(ATTR_CACHE));
+    }
 
+    /**
+     * Checks if given node has specified cache started.
+     *
+     * @param cacheName Cache name.
+     * @param s Node shadow to check.
+     * @return {@code True} if given node has specified cache started.
+     */
+    public static boolean cacheNode(String cacheName, GridNodeShadow s) {
+        return cacheNode(cacheName, (GridCacheAttributes[])s.attribute(ATTR_CACHE));
+    }
+
+    /**
+     * Checks if given attributes relate the the node which has (or had) specified cache started.
+     *
+     * @param cacheName Cache name.
+     * @param caches Node cache attributes.
+     * @return {@code True} if given node has specified cache started.
+     */
+    public static boolean cacheNode(String cacheName, GridCacheAttributes[] caches) {
         if (caches != null)
             for (GridCacheAttributes attrs : caches)
-                if (F.eq(ctx.namex(), attrs.cacheName()))
+                if (F.eq(cacheName, attrs.cacheName()))
                     return true;
 
         return false;

@@ -28,7 +28,7 @@ public interface GridIndexingFieldsResult {
      *
      * @return Meta data for queried fields.
      */
-    List<GridCacheQueryFieldDescriptor> metaData();
+    List<GridCacheSqlFieldMetadata> metaData();
 
     /**
      * Gets iterator over queried fields.

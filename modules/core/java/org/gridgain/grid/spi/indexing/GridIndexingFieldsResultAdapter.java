@@ -23,7 +23,7 @@ import java.util.*;
  */
 public class GridIndexingFieldsResultAdapter implements GridIndexingFieldsResult {
     /** Meta data. */
-    private final List<GridCacheQueryFieldDescriptor> metaData;
+    private final List<GridCacheSqlFieldMetadata> metaData;
 
     /** Result iterator. */
     private final GridCloseableIterator<List<GridIndexingEntity<?>>> it;
@@ -35,14 +35,14 @@ public class GridIndexingFieldsResultAdapter implements GridIndexingFieldsResult
      * @param metaData Meta data.
      * @param it Result iterator.
      */
-    public GridIndexingFieldsResultAdapter(@Nullable List<GridCacheQueryFieldDescriptor> metaData,
+    public GridIndexingFieldsResultAdapter(@Nullable List<GridCacheSqlFieldMetadata> metaData,
         GridCloseableIterator<List<GridIndexingEntity<?>>> it) {
         this.metaData = metaData != null ? Collections.unmodifiableList(metaData) : null;
         this.it = it;
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridCacheQueryFieldDescriptor> metaData() {
+    @Override public List<GridCacheSqlFieldMetadata> metaData() {
         return metaData;
     }
 

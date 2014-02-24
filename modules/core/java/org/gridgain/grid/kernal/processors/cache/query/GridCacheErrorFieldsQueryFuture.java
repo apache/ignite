@@ -48,8 +48,8 @@ public class GridCacheErrorFieldsQueryFuture
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<List<GridCacheQueryFieldDescriptor>> metadata() {
+    @Override public GridFuture<List<GridCacheSqlFieldMetadata>> metadata() {
         return new GridFinishedFuture<>(ctx,
-            incMeta ? Collections.<GridCacheQueryFieldDescriptor>emptyList() : null);
+            incMeta ? Collections.<GridCacheSqlFieldMetadata>emptyList() : null);
     }
 }

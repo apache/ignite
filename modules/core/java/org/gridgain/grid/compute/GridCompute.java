@@ -66,10 +66,7 @@ public interface GridCompute {
      * @param affKey Affinity key.
      * @param job Closure to affinity co-located on the node with given affinity key and execute.
      * @return Future of this execution.
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
      * @see #withName(String)
-     * @see #withResultClosure(GridBiClosure)
      * @see GridComputeJobContext#cacheName()
      * @see GridComputeJobContext#affinityKey()
      */
@@ -109,10 +106,7 @@ public interface GridCompute {
      *      resulting collection of nodes is empty - the exception will be thrown.
      * @return Future of this execution.
      * @see #affinityRun(String, Object, Runnable)
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
      * @see #withName(String)
-     * @see #withResultClosure(GridBiClosure)
      * @see GridComputeJobContext#cacheName()
      * @see GridComputeJobContext#affinityKey()
      */
@@ -143,10 +137,7 @@ public interface GridCompute {
      *      nodes at the time of this call, apply all filtering predicates, if any, and if the
      *      resulting collection of nodes is empty - the exception will be thrown.
      * @see #affinityRun(String, Object, Runnable)
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
      * @see #withName(String)
-     * @see #withResultClosure(GridBiClosure)
      * @see GridComputeJobContext#cacheName()
      * @see GridComputeJobContext#affinityKey()
      */
@@ -181,10 +172,7 @@ public interface GridCompute {
      *      nodes at the time of this call, apply all filtering predicates, if any, and if the
      *      resulting collection of nodes is empty - the exception will be thrown.
      * @see #affinityRun(String, Object, Runnable)
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
      * @see #withName(String)
-     * @see #withResultClosure(GridBiClosure)
      * @see GridComputeJobContext#cacheName()
      * @see GridComputeJobContext#affinityKey()
      */
@@ -215,8 +203,6 @@ public interface GridCompute {
      * @param arg Optional argument of task execution, can be {@code null}.
      * @return Task future.
      * @see GridComputeTask for information about task execution.
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
      * @see #withName(String)
      */
     public <T, R> GridComputeTaskFuture<R> execute(Class<? extends GridComputeTask<T, R>> taskCls, @Nullable T arg);
@@ -245,8 +231,6 @@ public interface GridCompute {
      * @param arg Optional argument of task execution, can be {@code null}.
      * @return Task future.
      * @see GridComputeTask for information about task execution.
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
      * @see #withName(String)
      */
     public <T, R> GridComputeTaskFuture<R> execute(GridComputeTask<T, R> task, @Nullable T arg);
@@ -277,10 +261,7 @@ public interface GridCompute {
      * @return Future of this execution.
      * @see #broadcast(Callable)
      * @see #broadcast(GridClosure, Object)
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
      * @see #withName(String)
-     * @see #withResultClosure(GridBiClosure)
      */
     public GridFuture<?> broadcast(Runnable job);
 
@@ -304,8 +285,6 @@ public interface GridCompute {
      * @param arg Optional argument of task execution, can be {@code null}.
      * @return Task future.
      * @see GridComputeTask for information about task execution.
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
      * @see #withName(String)
      */
     public <T, R> GridComputeTaskFuture<R> execute(String taskName, @Nullable T arg);
@@ -336,10 +315,7 @@ public interface GridCompute {
      * @return Future of this execution.
      * @see #broadcast(Runnable)
      * @see #broadcast(GridClosure, Object)
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
      * @see #withName(String)
-     * @see #withResultClosure(GridBiClosure)
      */
     public <R> GridFuture<Collection<R>> broadcast(Callable<R> job);
 
@@ -370,10 +346,7 @@ public interface GridCompute {
      * @return Future of this execution.
      * @see #broadcast(Runnable)
      * @see #broadcast(Callable)
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
      * @see #withName(String)
-     * @see #withResultClosure(GridBiClosure)
      */
     public <R, T> GridFuture<Collection<R>> broadcast(GridClosure<T, R> job, @Nullable T arg);
 
@@ -403,10 +376,7 @@ public interface GridCompute {
      * @return Future of this execution.
      * @see PN
      * @see #call(Callable)
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
      * @see #withName(String)
-     * @see #withResultClosure(GridBiClosure)
      */
     public GridFuture<?> run(Runnable job);
 
@@ -463,8 +433,6 @@ public interface GridCompute {
      * @param job Closure to invoke.
      * @return Closure result future.
      * @see PN
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
      * @see #withName(String)
      */
     public <R> GridFuture<R> call(Callable<R> job);
@@ -495,8 +463,6 @@ public interface GridCompute {
      * @return Future collection of closure results. Order is undefined.
      * @see PN
      * @see #call(Callable)
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
      * @see #withName(String)
      */
     public <R> GridFuture<Collection<R>> call(Collection<? extends Callable<R>> jobs);
@@ -537,10 +503,7 @@ public interface GridCompute {
      * @param jobs Closures to executes.
      * @param rdc Result reducing closure.
      * @return Value produced by reducing closure.
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
      * @see #withName(String)
-     * @see #withResultClosure(GridBiClosure)
      */
     public <R1, R2> GridFuture<R2> call(Collection<? extends Callable<R1>> jobs, GridReducer<R1, R2> rdc);
 
@@ -553,10 +516,7 @@ public interface GridCompute {
      * @param arg Job argument.
      * @return Closure result future.
      * @see #call(Callable)
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
      * @see #withName(String)
-     * @see #withResultClosure(GridBiClosure)
      */
     public <R, T> GridFuture<R> apply(GridClosure<T, R> job, @Nullable T arg);
 
@@ -572,8 +532,6 @@ public interface GridCompute {
      * @param args Job arguments (closure free variables).
      * @return Future of job results collection.
      * @see #call(Callable)
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
      * @see #withName(String)
      */
     public <T, R> GridFuture<Collection<R>> apply(GridClosure<T, R> job, @Nullable Collection<? extends T> args);
@@ -589,10 +547,7 @@ public interface GridCompute {
      * @param args Job arguments.
      * @param rdc Job result reducer.
      * @return Result reduced from job results with given reducer.
-     * @see #withCheckpointSpi(String)
-     * @see #withFailoverSpi(String)
      * @see #withName(String)
-     * @see #withResultClosure(GridBiClosure)
      */
     public <R1, R2, T> GridFuture<R2> apply(GridClosure<T, R1> job, @Nullable Collection<? extends T> args,
         GridReducer<R1, R2> rdc);
@@ -610,7 +565,7 @@ public interface GridCompute {
      * The typical Java example could be:
      * <pre name="code" class="java">
      * ...
-     * ExecutorService exec = grid.executor();
+     * ExecutorService exec = grid.compute().executorService();
      *
      * Future&lt;String&gt; fut = exec.submit(new MyCallable());
      * ...
@@ -620,7 +575,7 @@ public interface GridCompute {
      *
      * @return {@code ExecutorService} which delegates all calls to grid.
      */
-    public ExecutorService executor();
+    public ExecutorService executorService();
 
     /**
      * Gets task future based on session ID. If task execution was started on local node and this
@@ -695,20 +650,14 @@ public interface GridCompute {
     public GridCompute withTimeout(long timeout);
 
     /**
-     * Sets custom ad-hoc implementation for {@link GridComputeTask#result(GridComputeJobResult, List)} method for the
-     * next executed closure on this projection in the <b>current thread</b>.
-     * When closure starts execution the ad-hoc implementation set here is reset - so it is valid only
-     * for one execution from the current thread.
+     * Sets no failover flag for the next executed task on this projection in the <b>current thread</b>.
+     * If flag is set, job will be never failed over even if it fails with exception.
+     * When task starts flag is reset, so all other task will use default failover policy
+     * (implemented in {@link GridComputeTask#result(GridComputeJobResult, List)} method).
      * <p>
-     * Note that this method makes sense <b>only for closure executions</b>, i.e. the case where GridGain
-     * automatically converts closure to a grid task. If a user provided task is executed this ad-hoc
-     * closure is ignored.
-     * <p>
-     * This particular useful when you need to disable, for example, failover on specific closure
-     * execution like in the following example (note that {@code X.NO_FAILOVER} provides
-     * built-in closure that effectively disables failover logic):
+     * Here is an example.
      * <pre name="code" class="java">
-     * GridGain.grid().withResultClosure(X.NO_FAILOVER).call(
+     * GridGain.grid().compute().withNoFailover().call(
      *     BROADCAST,
      *     new CAX() {
      *         &#64;Override public void applyx() throws GridException {
@@ -718,118 +667,9 @@ public interface GridCompute {
      * );
      * </pre>
      *
-     * @param res Ad-hoc implementation for {@link GridComputeTask#result(GridComputeJobResult, List)} method.
      * @return Grid projection ({@code this}).
-     * @see X#NO_FAILOVER
      */
-    public GridCompute withResultClosure(GridBiClosure<GridComputeJobResult, List<GridComputeJobResult>,
-        GridComputeJobResultPolicy> res);
-
-    /**
-     * Sets failover SPI for the next executed task on this projection in the <b>current thread</b>.
-     * When task starts execution the failover SPI set here is reset - so it is valid only
-     * for one execution from the current thread.
-     * <p>
-     * You may use this method to set specific failover SPI when you cannot use
-     * {@link GridComputeTaskSpis} annotation.
-     * <p>
-     * Here is an example.
-     * <pre name="code" class="java">
-     * GridGain.grid().withFailoverSpi("MyFailoverSpi").call(
-     *     BROADCAST,
-     *     new CAX() {
-     *         &#64;Override public void applyx() throws GridException {
-     *             System.out.println("Hello!");
-     *         }
-     *     }
-     * );
-     * </pre>
-     *
-     * @param spiName Failover SPI name to use.
-     * @return Grid projection ({@code this}).
-     * @see GridComputeTaskSpis
-     */
-    public GridCompute withFailoverSpi(String spiName);
-
-    /**
-     * Sets checkpoint SPI for the next executed task on this projection in the <b>current thread</b>.
-     * When task starts execution the checkpoint SPI set here is reset - so it is valid only
-     * for one execution from the current thread.
-     * <p>
-     * You may use this method to set specific checkpoint SPI when you cannot use
-     * {@link GridComputeTaskSpis} annotation.
-     * <p>
-     * Here is an example.
-     * <pre name="code" class="java">
-     * GridGain.grid().withCheckpointSpi("MyCheckpointSpi").call(
-     *     BROADCAST,
-     *     new CAX() {
-     *         &#64;Override public void applyx() throws GridException {
-     *             System.out.println("Hello!");
-     *         }
-     *     }
-     * );
-     * </pre>
-     *
-     * @param spiName Checkpoint SPI name to use.
-     * @return Grid projection ({@code this}).
-     * @see GridComputeTaskSpis
-     */
-    public GridCompute withCheckpointSpi(String spiName);
-
-    /**
-     * Sets load balancing SPI for the next executed task on this projection in the <b>current thread</b>.
-     * When task starts execution the load balancing SPI set here is reset - so it is valid only
-     * for one execution from the current thread.
-     * <p>
-     * You may use this method to set specific load balancing SPI when you cannot use
-     * {@link GridComputeTaskSpis} annotation.
-     * <p>
-     * Here is an example.
-     * <pre name="code" class="java">
-     * GridGain.grid().withLoadBalancingSpi("MyLoadBalancingSpi").call(
-     *     BROADCAST,
-     *     new CAX() {
-     *         &#64;Override public void applyx() throws GridException {
-     *             System.out.println("Hello!");
-     *         }
-     *     }
-     * );
-     * </pre>
-     *
-     * @param spiName Load balancing SPI name to use.
-     * @return Grid projection ({@code this}).
-     * @see GridComputeTaskSpis
-     */
-    public GridCompute withLoadBalancingSpi(String spiName);
-
-    /**
-     * Enables task session attributes and checkpoints for the next executed task on this projection in the
-     * <b>current thread</b>. When task starts execution the flag here is reset - so it is valid only
-     * for one execution from the current thread.
-     * <p>
-     * You may use this method to enable session attributes when you cannot use
-     * {@link GridComputeTaskSessionFullSupport} annotation.
-     * <p>
-     * Here is an example.
-     * <pre name="code" class="java">
-     * GridGain.grid().withSessionAttributesEnabled().call(
-     *     BROADCAST,
-     *     new CAX() {
-     *         &#64;GridTaskSessionResource
-     *         private GridComputeTaskSession ses;
-     *
-     *         &#64;Override public void applyx() throws GridException {
-     *             ses.setAttribute("test", "val");
-     *         }
-     *     }
-     * );
-     * </pre>
-     *
-     * @return Grid projection ({@code this}).
-     * @see GridComputeTaskSessionFullSupport
-     */
-    public GridCompute withSessionFullSupport();
+    public GridCompute withNoFailover();
 
     /**
      * Explicitly deploys given grid task on the local node. Upon completion of this method,

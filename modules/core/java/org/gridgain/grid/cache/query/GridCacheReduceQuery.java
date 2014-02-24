@@ -105,32 +105,27 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public interface GridCacheReduceQuery<K, V, R1, R2> extends GridCacheQueryBase<K, V> {
+public interface GridCacheReduceQuery<K, V, R1, R2>
+    extends GridCacheQueryBase<K, V, GridCacheReduceQuery<K, V, R1, R2>> {
     /**
-     * Optional remote reducer factory to provide reducers for reduction of multiple
-     * queried values on queried nodes into one. The factory is a closure which
-     * accepts array of objects provided by {@link #closureArguments(Object...)}
-     * method ar parameter and returns reducer to reduce queried values.
+     * Remote reducer for reduction of multiple queried values on queried nodes into one.
      * <p>
-     * If factory is set, then it should provide a new instance of reducer for every
-     * query execution.
+     * If reducer is set, then it is used for every query execution.
      *
-     * @param factory Optional remote reducer factory to create reducers for use on queried nodes.
+     * @param reducer Remote reducer to use on queried nodes.
+     * @return New query instance with remote reducer set.
      */
-    public void remoteReducer(@Nullable GridClosure<Object[], GridReducer<Map.Entry<K, V>, R1>> factory);
+    public GridCacheReduceQuery<K, V, R1, R2> remoteReducer(GridReducer<Map.Entry<K, V>, R1> reducer);
 
     /**
-     * Optional local reducer factory to provide reducers for reduction of multiple queried values
-     * returned from remote nodes into one. The factory is a closure which accepts array of objects provided
-     * by {@link #closureArguments(Object...)} method ar parameter and returns reducer to locally reduce
-     * multiple query results returned from remote nodes into one.
+     * Local reducer for reduction of multiple queried values returned from remote nodes into one.
      * <p>
-     * If factory is set, then it should provide a new instance of reducer for every query execution.
+     * If reducer is set, then it is used for every query execution.
      *
-     * @param factory Optional reducer factory to create local reducers to reduce query results returned
-     *      from queried nodes.
+     * @param reducer Reducer to reduce query results returned from queried nodes.
+     * @return New query instance with local reducer set.
      */
-    public void localReducer(@Nullable GridClosure<Object[], GridReducer<R1, R2>> factory);
+    public GridCacheReduceQuery<K, V, R1, R2> localReducer(GridReducer<R1, R2> reducer);
 
     /**
      * Optional query arguments that get passed to query SQL.
@@ -139,16 +134,6 @@ public interface GridCacheReduceQuery<K, V, R1, R2> extends GridCacheQueryBase<K
      * @return This query with the passed in arguments preset.
      */
     public GridCacheReduceQuery<K, V, R1, R2> queryArguments(@Nullable Object... args);
-
-    /**
-     * Optional arguments for closures to be used by {@link #remoteKeyFilter(GridClosure)},
-     * {@link #remoteValueFilter(GridClosure)}, {@link #remoteReducer(GridClosure)}, and
-     * {@link #localReducer(GridClosure)}.
-     *
-     * @param args Optional query arguments.
-     * @return This query with the passed in arguments preset.
-     */
-    public GridCacheReduceQuery<K, V, R1, R2> closureArguments(@Nullable Object... args);
 
     /**
      * Executes query on the given grid projection using remote and local reducers and
@@ -160,26 +145,9 @@ public interface GridCacheReduceQuery<K, V, R1, R2> extends GridCacheQueryBase<K
      * Also note that query state cannot be changed (clause, timeout etc.), except
      * arguments, if this method was called at least once.
      *
-     * @param grid Grid projection to execute query on, if not provided, all grid nodes will be used.
      * @return Future for the reduced query result.
      */
-    public GridFuture<R2> reduce(@Nullable GridProjection... grid);
-
-    /**
-     * Synchronously executes query on the given grid projection using remote and local reducers and
-     * returns queried result.
-     * <p>
-     * Note that if the passed in grid projection is a local node, then query
-     * will be executed locally without distribution to other nodes.
-     * <p>
-     * Also note that query state cannot be changed (clause, timeout etc.), except
-     * arguments, if this method was called at least once.
-     *
-     * @param grid Grid projection to execute query on, if not provided, all grid nodes will be used.
-     * @return Reduced query result.
-     * @throws GridException In case of error.
-     */
-    public R2 reduceSync(@Nullable GridProjection... grid) throws GridException;
+    public GridFuture<R2> reduce();
 
     /**
      * Executes query on the given grid projection using remote reducer and
@@ -192,25 +160,7 @@ public interface GridCacheReduceQuery<K, V, R1, R2> extends GridCacheQueryBase<K
      * Also note that query state cannot be changed (clause, timeout etc.), except
      * arguments, if this method was called at least once.
      *
-     * @param grid Grid projection to execute query on, if not provided, all grid nodes will be used.
      * @return Future for the reduced query result.
      */
-    public GridFuture<Collection<R1>> reduceRemote(GridProjection... grid);
-
-    /**
-     * Synchronously executes query on the given grid projection using remote reducer and
-     * returns queried result. The result is a collection of
-     * reduced values returned from queried nodes.
-     * <p>
-     * Note that if the passed in grid projection is a local node, then query
-     * will be executed locally without distribution to other nodes.
-     * <p>
-     * Also note that query state cannot be changed (clause, timeout etc.), except
-     * arguments, if this method was called at least once.
-     *
-     * @param grid Grid projection to execute query on, if not provided, all grid nodes will be used.
-     * @return Reduced query result.
-     * @throws GridException In case of error.
-     */
-    public Collection<R1> reduceRemoteSync(GridProjection... grid) throws GridException;
+    public GridFuture<Collection<R1>> reduceRemote();
 }

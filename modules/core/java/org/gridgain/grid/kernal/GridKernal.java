@@ -96,7 +96,7 @@ import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridKernal extends GridProjectionAdapter implements GridEx, GridKernalMBean, Externalizable {
+public class GridKernal extends GridProjectionAdapter implements GridEx, GridKernalMBean {
     /** Ant-augmented compatible versions. */
     private static final String COMPATIBLE_VERS = /*@java.compatible.vers*/"";
 
@@ -114,9 +114,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** Periodic starvation check interval. */
     private static final long PERIODIC_STARVATION_CHECK_FREQ = 1000 * 30;
-
-    /** */
-    private static final ThreadLocal<String> stash = new ThreadLocal<>();
 
     /** Shutdown delay in msec. when license violation detected. */
     private static final int SHUTDOWN_DELAY = 60 * 1000;
@@ -199,7 +196,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @param springCtx Optional Spring application context.
      */
     public GridKernal(@Nullable ApplicationContext springCtx) {
-        super(null);
+        super(null, null, (GridPredicate<GridNode>)null);
 
         this.springCtx = springCtx;
 
@@ -1068,7 +1065,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @return Map of all node attributes.
      * @throws GridException thrown if was unable to set up attribute.
      */
-    @SuppressWarnings({"SuspiciousMethodCalls", "unchecked"})
+    @SuppressWarnings({"SuspiciousMethodCalls", "unchecked", "TypeMayBeWeakened"})
     private Map<String, Object> createNodeAttributes(GridConfiguration cfg, String build) throws GridException {
         Map<String, Object> attrs = new HashMap<>();
 
@@ -2315,12 +2312,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public GridPredicate<GridNode> predicate() {
-        return F.alwaysTrue();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean pingNode(String nodeId) {
         A.notNull(nodeId, "nodeId");
 
@@ -2786,11 +2777,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @Override public boolean dynamic() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public <K, V> GridDataLoader<K, V> dataLoader(@Nullable String cacheName) {
         guard();
 
@@ -2907,7 +2893,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         ctx.gateway().readLock();
 
         try {
-            return new GridProjectionImpl(this, ctx, Collections.singleton(cfg.getNodeId()));
+            return new GridProjectionAdapter(this, ctx, Collections.singleton(cfg.getNodeId()));
         }
         finally {
             ctx.gateway().readUnlock();
@@ -2942,34 +2928,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /** {@inheritDoc} */
     @Override public void close() throws GridException {
         GridGain.stop(gridName, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, ctx.gridName());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        stash.set(U.readString(in));
-    }
-
-    /**
-     * Reconstructs object on demarshalling.
-     *
-     * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of demarshalling error.
-     */
-    protected Object readResolve() throws ObjectStreamException {
-        try {
-            return GridFactoryEx.gridx(stash.get());
-        }
-        catch (IllegalStateException e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
-        }
-        finally {
-            stash.remove();
-        }
     }
 
     /**
