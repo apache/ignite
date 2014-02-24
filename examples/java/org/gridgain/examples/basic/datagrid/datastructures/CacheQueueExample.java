@@ -7,36 +7,33 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.advanced.datagrid.datastructures;
+package org.gridgain.examples.basic.datagrid.datastructures;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.product.*;
 
 import java.util.*;
 
 import static org.gridgain.grid.cache.datastructures.GridCacheQueueType.*;
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
- * Grid cache distributed queue example. This example demonstrates {@code LIFO} unbounded cache queue.
+ * Grid cache distributed queue example. This example demonstrates {@code FIFO} unbounded
+ * cache queue.
  * <p>
  * Remote nodes should always be started with configuration file which includes
  * cache: {@code 'ggstart.sh examples/config/example-cache.xml'}.
- * <p>
  *
  * @author @java.author
  * @version @java.version
  */
-@GridOnlyAvailableIn(DATA_GRID)
-public class GridCacheQueueLifoExample {
+public class CacheQueueExample {
     /** Cache name. */
     // private static final String CACHE_NAME = "replicated";
     private static final String CACHE_NAME = "partitioned_tx";
 
     /** Number of retries */
-    private static final int RETRIES = 5;
+    private static final int RETRIES = 20;
 
     /** Queue instance. */
     private static GridCacheQueue<String> queue;
@@ -49,21 +46,21 @@ public class GridCacheQueueLifoExample {
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
-            print("LIFO queue example started on nodes: " + g.nodes().size());
+            print("FIFO queue example started on nodes: " + g.nodes().size());
 
             // Make queue name.
             String queueName = UUID.randomUUID().toString();
 
             queue = initializeQueue(g, queueName);
 
-            pollQueue(g);
+            readFromQueue(g);
 
-            putToQueue(g);
+            writeToQueue(g);
 
             clearAndRemoveQueue(g);
         }
 
-        print("LIFO queue example finished.");
+        print("FIFO queue example finished.");
     }
 
     /**
@@ -75,8 +72,8 @@ public class GridCacheQueueLifoExample {
      * @throws GridException If execution failed.
      */
     private static GridCacheQueue<String> initializeQueue(Grid g, String queueName) throws GridException {
-        // Initialize new LIFO queue.
-        GridCacheQueue<String> queue = g.cache(CACHE_NAME).dataStructures().queue(queueName, LIFO, 0, false, true);
+        // Initialize new FIFO queue.
+        GridCacheQueue<String> queue = g.cache(CACHE_NAME).dataStructures().queue(queueName, FIFO, 0, false, true);
 
         // Initialize queue items.
         // We will be use blocking operation and queue size must be appropriated.
@@ -92,12 +89,12 @@ public class GridCacheQueueLifoExample {
      * Read items from head and tail of queue.
      *
      * @param g Grid.
-     * @throws GridException If execution failed.
+     * @throws GridException If failed.
      */
-    private static void pollQueue(GridProjection g) throws GridException {
+    private static void readFromQueue(GridProjection g) throws GridException {
         final String queueName = queue.name();
 
-        // Poll queue items on each node.
+        // Read queue items on each node.
         g.compute().run(new QueueClosure(CACHE_NAME, queueName, false)).get();
 
         print("Queue size after reading [expected=0, actual=" + queue.size() + ']');
@@ -107,12 +104,12 @@ public class GridCacheQueueLifoExample {
      * Write items into queue.
      *
      * @param g Grid.
-     * @throws GridException If execution failed.
+     * @throws GridException If failed.
      */
-    private static void putToQueue(GridProjection g) throws GridException {
+    private static void writeToQueue(GridProjection g) throws GridException {
         final String queueName = queue.name();
 
-        // Put queue items on each node.
+        // Write queue items on each node.
         g.compute().run(new QueueClosure(CACHE_NAME, queueName, true)).get();
 
         print("Queue size after writing [expected=" + g.nodes().size() * RETRIES +

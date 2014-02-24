@@ -44,8 +44,6 @@ public class CachePutGetExample {
      */
     public static void main(String[] args) throws Exception {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
-            CacheExampleUtils.printGlobalCacheEvents(CACHE_NAME);
-
             // Individual puts and gets.
             putGet();
 

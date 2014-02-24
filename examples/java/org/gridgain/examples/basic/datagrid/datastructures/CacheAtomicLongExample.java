@@ -7,16 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.advanced.datagrid.datastructures;
+package org.gridgain.examples.basic.datagrid.datastructures;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.product.*;
 
 import java.util.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Demonstrates a simple usage of distributed atomic long.
@@ -27,8 +24,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @author @java.author
  * @version @java.version
  */
-@GridOnlyAvailableIn(DATA_GRID)
-public final class GridCacheAtomicLongExample {
+public final class CacheAtomicLongExample {
     /** Cache name. */
     //private static final String CACHE_NAME = "replicated";
     private static final String CACHE_NAME = "partitioned_tx";
