@@ -37,7 +37,7 @@ public final class GridExecutorExample {
     public static void main(String[] args) throws Exception {
         try (Grid g = GridGain.start("examples/config/example-default.xml")) {
             // Get grid-enabled executor service.
-            ExecutorService exec = g.compute().executor();
+            ExecutorService exec = g.compute().executorService();
 
             // Iterate through all words in the sentence and create callable jobs.
             for (final String word : "Print words using runnable".split(" ")) {

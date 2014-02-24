@@ -188,7 +188,7 @@ public interface GridProjection {
     /**
      * Gets a node for given ID from this optionally filtered projection.
      *
-     * @param id Node ID.
+     * @param nid Node ID.
      * @return Node with given ID from this projection or {@code null} if such node does not exist in this
      *      projection.
      */

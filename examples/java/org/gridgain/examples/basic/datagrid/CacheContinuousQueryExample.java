@@ -53,7 +53,6 @@ public class CacheContinuousQueryExample {
             // Create new continuous query.
             try (GridCacheContinuousQuery<Integer, String> qry = cache.queries().createContinuousQuery()) {
                 // Callback that is called locally when update notifications are received.
-                // It simply prints out information about all created persons.
                 qry.callback(new GridBiPredicate<UUID, Collection<Map.Entry<Integer, String>>>() {
                     @Override public boolean apply(UUID nodeId, Collection<Map.Entry<Integer, String>> entries) {
                         for (Map.Entry<Integer, String> e : entries)
@@ -63,7 +62,8 @@ public class CacheContinuousQueryExample {
                     }
                 });
 
-                // This query will return persons with salary above 1000.
+                // This filter will be evaluated remotely on all nodes
+                // Entry that pass this filter will be sent to the caller.
                 qry.filter(new GridBiPredicate<Integer, String>() {
                     @Override public boolean apply(Integer key, String val) {
                         return key > 15;

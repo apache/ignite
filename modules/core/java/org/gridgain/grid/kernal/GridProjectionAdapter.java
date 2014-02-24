@@ -260,6 +260,11 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
+    @Override public GridNode node() {
+        return F.first(nodes());
+    }
+
+    /** {@inheritDoc} */
     @Override public final GridPredicate<GridNode> predicate() {
         return p != null ? p : F.<GridNode>alwaysTrue();
     }
@@ -390,6 +395,33 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
         A.notNull(node, "node");
 
         return forOthers(node.id());
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forOthers(GridProjection prj) {
+        A.notNull(prj, "prj");
+
+        if (ids != null) {
+            guard();
+
+            try {
+                Set<UUID> nodeIds = new HashSet<>(ids.size());
+
+                for (UUID id : ids) {
+                    GridNode n = node(id);
+
+                    if (n != null && !prj.predicate().apply(n))
+                        nodeIds.add(id);
+                }
+
+                return new GridProjectionAdapter(this, ctx, nodeIds);
+            }
+            finally {
+                unguard();
+            }
+        }
+        else
+            return forPredicate(F.not(prj.predicate()));
     }
 
     /** {@inheritDoc} */
