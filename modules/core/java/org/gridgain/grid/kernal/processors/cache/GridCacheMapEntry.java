@@ -1671,6 +1671,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         try {
             synchronized (this) {
+                if (obsoleteVersionExtras() != null)
+                    return false;
+
                 if (!hasValueUnlocked() || checkExpired()) {
                     if (ver == null)
                         ver = nextVersion();
