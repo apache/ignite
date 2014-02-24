@@ -7,14 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.advanced.datagrid.affinity;
+package org.gridgain.examples.basic.datagrid;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.product.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * This example demonstrates the simplest code that populates the distributed cache
@@ -33,8 +30,10 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @author @java.author
  * @version @java.version
  */
-@GridOnlyAvailableIn(DATA_GRID)
-public final class GridCacheAffinitySimpleExample {
+public final class CacheAffinityExample {
+    /** Cache name. */
+    private static final String CACHE_NAME = "partitioned";
+
     /** Number of keys. */
     private static final int KEY_CNT = 20;
 
@@ -49,7 +48,7 @@ public final class GridCacheAffinitySimpleExample {
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
-            GridCache<String, String> cache = g.cache("partitioned");
+            GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
             if (cache == null) {
                 System.err.println("Cache with name 'partitioned' not found (is configuration correct?)");
@@ -57,12 +56,11 @@ public final class GridCacheAffinitySimpleExample {
                 return;
             }
 
-            // If you run this example multiple times - make sure
-            // to comment this call in order not to re-populate twice.
-            populate(cache);
+            for (int i = 0; i < KEY_CNT; i++)
+                cache.putx(i, Integer.toString(i));
 
             // Co-locates closures with data in in-memory data grid.
-            visit(g, cache);
+            visit();
         }
     }
 
@@ -70,36 +68,26 @@ public final class GridCacheAffinitySimpleExample {
      * Visits every in-memory data grid entry on the remote node it resides by co-locating visiting
      * closure with the cache key.
      *
-     * @param g Grid.
-     * @param c Cache to use.
      * @throws GridException If failed.
      */
-    private static void visit(GridProjection g, final GridCache<String, String> c) throws GridException {
-        for (int i = 0; i < KEY_CNT; i++) {
-            // Affinity key is cache key for this example.
-            final String key = Integer.toString(i);
+    private static void visit() throws GridException {
+        Grid g = GridGain.grid();
 
-            g.compute().affinityRun("partitioned", key, new GridRunnable() {
-                // This closure will execute on the remote node where
-                // data with the 'key' is located. Since it will be co-located
-                // we can use local 'peek' operation safely.
+        final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+
+        for (int i = 0; i < KEY_CNT; i++) {
+            final int key = i;
+
+            // This runnable will execute on the remote node where
+            // data with the 'key' is located. Since it will be co-located
+            // we can use local 'peek' operation safely.
+            g.compute().affinityRun(CACHE_NAME, key, new GridRunnable() {
                 @Override public void run() {
                     // Value should never be 'null' as we are co-located and using local 'peek'
                     // access method.
-                    System.out.println("Co-located [key= " + key + ", value=" + c.peek(key) + ']');
+                    System.out.println("Co-located [key= " + key + ", value=" + cache.peek(key) + ']');
                 }
             }).get();
         }
-    }
-
-    /**
-     * Populates given cache.
-     *
-     * @param c Cache to populate.
-     * @throws GridException Thrown in case of any cache error.
-     */
-    private static void populate(GridCache<String, String> c) throws GridException {
-        for (int i = 0; i < KEY_CNT; i++)
-            c.put(Integer.toString(i), Integer.toString(i));
     }
 }
