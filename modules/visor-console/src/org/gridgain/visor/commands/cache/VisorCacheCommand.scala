@@ -23,7 +23,8 @@ import org.gridgain.grid.kernal.processors.task.GridInternal
 import org.gridgain.grid.util.scala.impl
 import org.gridgain.grid.util.typedef._
 import org.gridgain.grid.cache._
-import org.gridgain.grid.cache.query.GridCacheQueryType._
+import org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
+import GridCacheQueryType._
 import org.gridgain.grid.kernal.GridEx
 import org.gridgain.grid.resources.GridInstanceResource
 import org.gridgain.grid.util.{GridUtils => U}

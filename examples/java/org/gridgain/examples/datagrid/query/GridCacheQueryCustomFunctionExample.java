@@ -12,6 +12,7 @@ package org.gridgain.examples.datagrid.query;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.product.*;
 
 import java.util.*;

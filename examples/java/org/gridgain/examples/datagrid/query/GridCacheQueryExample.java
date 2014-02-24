@@ -20,7 +20,7 @@ import org.gridgain.grid.product.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
+import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**

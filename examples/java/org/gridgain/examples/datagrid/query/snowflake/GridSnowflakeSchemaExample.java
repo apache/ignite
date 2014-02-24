@@ -16,7 +16,7 @@ import org.gridgain.grid.cache.query.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
+import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 
 /**
  * <a href="http://en.wikipedia.org/wiki/Snowflake_schema">Snowflake Schema</a> is a logical

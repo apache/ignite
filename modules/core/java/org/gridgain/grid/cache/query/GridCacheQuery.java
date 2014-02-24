@@ -11,11 +11,10 @@ package org.gridgain.grid.cache.query;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.indexing.h2.*;
 import org.jetbrains.annotations.*;
-
-import java.util.*;
 
 /**
  * Main API for configuring and executing cache queries.
@@ -235,28 +234,78 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public interface GridCacheQuery<K, V> extends GridCacheQueryBase<K, V, GridCacheQuery<K, V>> {
+public interface GridCacheQuery<R> {
+    /** Default query page size. */
+    public static final int DFLT_PAGE_SIZE = 1024;
+
+    /**
+     * Sets result page size. If not provided, {@link #DFLT_PAGE_SIZE} will be used.
+     * Results are returned from queried nodes one page at a tme.
+     *
+     * @param  pageSize Page size.
+     */
+    public GridCacheQuery<R> pageSize(int pageSize);
+
+    /**
+     * Sets query timeout. {@code 0} means there is no timeout. Default value
+     * is {@code 30} seconds.
+     *
+     * @param timeout Query timeout.
+     */
+    public GridCacheQuery<R> timeout(long timeout);
+
+    /**
+     * Sets whether or not to keep all query results local. If not - only the current page
+     * is kept locally. Default value is {@code true}.
+     *
+     * @param keepAll Keep results or not.
+     */
+    public GridCacheQuery<R> keepAll(boolean keepAll);
+
+    /**
+     * Sets whether or not to include backup entries into query result. This flag
+     * is {@code false} by default.
+     *
+     * @param incBackups Query {@code includeBackups} flag.
+     */
+    public GridCacheQuery<R> includeBackups(boolean incBackups);
+
+    /**
+     * Sets whether or not to deduplicate query result set. If this flag is {@code true}
+     * then query result will not contain some key more than once even if several nodes
+     * returned entries with the same keys. Default value is {@code false}.
+     *
+     * @param dedup Query {@code enableDedup} flag.
+     */
+    public GridCacheQuery<R> enableDedup(boolean dedup);
+
+    /**
+     * Sets optional grid projection to execute this query on.
+     *
+     * @param prj Projection.
+     * @return New query object.
+     */
+    public GridCacheQuery<R> projection(GridProjection prj);
+
+    /**
+     * Filter to be used on queried nodes prior to returning key-value pairs
+     * to user.
+     * <p>
+     * If filter is set, then it will be used for every query execution. Only values that
+     * pass the filter will be included in query result.
+     *
+     * @param filter Filter.
+     * @return New query with remote value filter set.
+     */
+    public GridCacheQuery<R> remoteFilter(GridBiPredicate<?, ?> filter);
+
     /**
      * Optional query arguments that get passed into query SQL.
      *
      * @param args Optional query arguments.
      * @return This query with the passed in arguments preset.
      */
-    public GridCacheQuery<K, V> queryArguments(@Nullable Object... args);
-
-    /**
-     * Executes the query and returns the first result in the result set. If more
-     * than one key-value pair are returned they will be ignored.
-     * <p>
-     * Note that if the passed in grid projection is a local node, then query
-     * will be executed locally without distribution to other nodes.
-     * <p>
-     * Also note that query state cannot be changed (clause, timeout etc.) if this
-     * method was called at least once.
-     *
-     * @return Future for the single query result.
-     */
-    public GridFuture<Map.Entry<K, V>> executeSingle();
+    public GridCacheQuery<R> queryArguments(@Nullable Object... args);
 
     /**
      * Executes the query and returns the query future. Caller may decide to iterate
@@ -275,21 +324,19 @@ public interface GridCacheQuery<K, V> extends GridCacheQueryBase<K, V, GridCache
      *
      * @return Future for the query result.
      */
-    public GridCacheQueryFuture<Map.Entry<K, V>> execute();
+    public GridCacheQueryFuture<R> execute();
 
     /**
-     * Visits every entry from query result on every queried node for as long as
-     * the visitor predicate returns {@code true}. Once the predicate returns false
-     * or all entries in query result have been visited, the visiting process stops.
-     * <p>
-     * Note that if the passed in grid projection is a local node, then query
-     * will be executed locally without distribution to other nodes.
-     * <p>
-     * Also note that query state cannot be changed (clause, timeout etc.), except
-     * arguments, if this method was called at least once.
+     * Executes the query the same way as {@link #execute()} method but reduces result remotely.
      *
-     * @param vis Visitor predicate.
-     * @return Future which will complete whenever visiting on all remote nodes completes or fails.
+     * @param remoteReducer Remote reducer.
+     * @return Future for the query result.
      */
-    public GridFuture<?> visit(GridPredicate<Map.Entry<K, V>> vis);
+    public <O> GridCacheQueryFuture<O> execute(GridReducer<R, O> remoteReducer);
+
+    /**
+     * @param remoteTransform Remote transformer.
+     * @return
+     */
+    public <O> GridCacheQueryFuture<O> execute(GridClosure<R, O> remoteTransform);
 }

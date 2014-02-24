@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;

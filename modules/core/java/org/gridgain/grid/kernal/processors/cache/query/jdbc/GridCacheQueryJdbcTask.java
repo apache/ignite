@@ -14,6 +14,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
@@ -190,7 +191,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
                 if (cache.configuration().getCacheMode() != PARTITIONED)
                     qry = qry.projection(grid.forLocal());
 
-                GridCacheFieldsQueryFuture fut = qry.execute();
+                GridCacheQueryFuture fut = qry.execute();
 
                 Collection<GridCacheSqlFieldMetadata> meta = fut.metadata().get();
 

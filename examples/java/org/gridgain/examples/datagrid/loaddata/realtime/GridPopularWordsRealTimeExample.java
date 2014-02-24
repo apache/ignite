@@ -21,7 +21,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
+import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**

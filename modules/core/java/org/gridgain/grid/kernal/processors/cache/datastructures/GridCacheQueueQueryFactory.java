@@ -30,7 +30,7 @@ import java.util.concurrent.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
-import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
+import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 
 /**
  * Query factory responsible for providing all queries utilized by queue service. Note

@@ -12,6 +12,7 @@ package org.gridgain.grid.spi.indexing.h2;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;

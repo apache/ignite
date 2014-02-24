@@ -18,7 +18,8 @@ import org.gridgain.grid.cache._
 import org.gridgain.grid.lang._
 import org.gridgain.scalar._
 import org.jetbrains.annotations.Nullable
-import query.GridCacheQueryType._
+import org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
+import GridCacheQueryType._
 import scalar._
 
 /**

@@ -39,7 +39,7 @@ import java.util.concurrent.*;
 import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
-import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
+import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 import static org.gridgain.grid.events.GridEventType.*;
 
 /**

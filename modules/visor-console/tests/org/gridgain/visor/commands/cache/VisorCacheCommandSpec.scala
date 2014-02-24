@@ -16,7 +16,8 @@ import matchers._
 import org.gridgain.visor._
 import VisorCacheCommand._
 import org.gridgain.grid.{GridGain => G}
-import org.gridgain.grid.cache.query.GridCacheQueryType._
+import org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
+import GridCacheQueryType._
 import org.gridgain.grid.cache.query.GridCacheQuerySqlField
 
 /**

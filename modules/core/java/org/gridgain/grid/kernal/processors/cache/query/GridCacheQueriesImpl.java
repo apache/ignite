@@ -42,8 +42,20 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueries<K, V> {
         this.prj = prj;
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<GridCacheQueryMetrics> queryMetrics() {
+    /**
+     * Gets metrics (statistics) for all queries executed in this cache. Metrics
+     * are grouped by query clause (e.g. SQL clause), query type, and return value.
+     * <p>
+     * Note that only the last {@code 1000} query metrics are kept. This should be
+     * enough for majority of the applications, as generally applications have
+     * significantly less than {@code 1000} different queries that are executed.
+     * <p>
+     * Note that in addition to query metrics, you can also enable query tracing by setting
+     * {@code "org.gridgain.cache.queries"} logging category to {@code DEBUG} level.
+     *
+     * @return Queries metrics or {@code null} if a query manager is not provided.
+     */
+    public Collection<GridCacheQueryMetrics> queryMetrics() {
         return cctx.queries().metrics();
     }
 

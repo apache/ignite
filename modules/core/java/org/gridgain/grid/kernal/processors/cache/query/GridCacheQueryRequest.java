@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
@@ -24,7 +23,7 @@ import java.io.*;
 import java.nio.*;
 import java.util.*;
 
-import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
+import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 
 /**
  * Query request.

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.indexing;
 
-import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
