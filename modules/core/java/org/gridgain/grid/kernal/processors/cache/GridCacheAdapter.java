@@ -16,6 +16,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.dataload.*;
+import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
@@ -2904,7 +2905,23 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public GridCacheMetrics metrics() {
-        return GridCacheMetricsAdapter.copyOf(metrics);
+        GridCacheMetricsAdapter copy = GridCacheMetricsAdapter.copyOf(metrics);
+
+        if (copy != null) {
+            GridDrSenderCacheMetricsAdapter drSndMetrics = copy.drSendMetrics0();
+
+            if (drSndMetrics != null)
+                drSndMetrics.backupQueueSize(drBackupQueueSize());
+        }
+
+        return copy;
+    }
+
+    /**
+     * @return DR backup queue size.
+     */
+    protected int drBackupQueueSize() {
+        return ctx.dr().backupQueueSize();
     }
 
     /**

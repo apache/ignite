@@ -22,7 +22,7 @@ import java.io.*;
  * @author @java.author
  * @version @java.version
  */
-class GridCacheDrReceiverMetricsAdapter implements GridDrReceiverCacheMetrics, Externalizable {
+class GridDrReceiverCacheMetricsAdapter implements GridDrReceiverCacheMetrics, Externalizable {
     /** Total amount of received cache entries. */
     private LongAdder entriesReceived = new LongAdder();
 
@@ -38,14 +38,14 @@ class GridCacheDrReceiverMetricsAdapter implements GridDrReceiverCacheMetrics, E
     /**
      * No-args constructor.
      */
-    public GridCacheDrReceiverMetricsAdapter() {
+    public GridDrReceiverCacheMetricsAdapter() {
         // No-op.
     }
 
     /**
      * @param m Metrics to copy from.
      */
-    GridCacheDrReceiverMetricsAdapter(GridDrReceiverCacheMetrics m) {
+    GridDrReceiverCacheMetricsAdapter(GridDrReceiverCacheMetrics m) {
         entriesReceived.add(m.entriesReceived());
         conflictNew.add(m.conflictNew());
         conflictOld.add(m.conflictOld());
@@ -103,11 +103,11 @@ class GridCacheDrReceiverMetricsAdapter implements GridDrReceiverCacheMetrics, E
      * @param m Metrics to copy from.
      * @return Copy of given metrics.
      */
-    @Nullable public static GridCacheDrReceiverMetricsAdapter copyOf(@Nullable GridDrReceiverCacheMetrics m) {
+    @Nullable public static GridDrReceiverCacheMetricsAdapter copyOf(@Nullable GridDrReceiverCacheMetrics m) {
         if (m == null)
             return null;
 
-        return new GridCacheDrReceiverMetricsAdapter(m);
+        return new GridDrReceiverCacheMetricsAdapter(m);
     }
 
     /** {@inheritDoc} */
@@ -128,6 +128,6 @@ class GridCacheDrReceiverMetricsAdapter implements GridDrReceiverCacheMetrics, E
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheDrReceiverMetricsAdapter.class, this);
+        return S.toString(GridDrReceiverCacheMetricsAdapter.class, this);
     }
 }
