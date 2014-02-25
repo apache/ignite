@@ -551,6 +551,7 @@ public class GridConfiguration {
         lifeCycleEmailNtf = cfg.isLifeCycleEmailNotification();
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
+        lsnrs = cfg.getLocalEventListeners();
         marsh = cfg.getMarshaller();
         marshLocJobs = cfg.isMarshalLocalJobs();
         mbeanSrv = cfg.getMBeanServer();
@@ -2700,6 +2701,28 @@ public class GridConfiguration {
      */
     public void setMetricsLogFrequency(long metricsLogFreq) {
         this.metricsLogFreq = metricsLogFreq;
+    }
+
+    /**
+     * Gets map of pre-configured local event listeners.
+     * Each listener is mapped to array of event types.
+     *
+     * @return Pre-configured event listeners map.
+     * @see GridEvents#addLocalListener(GridLocalEventListener, int...)
+     * @see GridEventType
+     */
+    @Nullable public Map<GridLocalEventListener, int[]> getLocalEventListeners() {
+        return lsnrs;
+    }
+
+    /**
+     * Sets map of pre-configured local event listeners.
+     * Each listener is mapped to array of event types.
+     *
+     * @param lsnrs Pre-configured event listeners map.
+     */
+    public void setLocalEventListeners(Map<GridLocalEventListener, int[]> lsnrs) {
+        this.lsnrs = lsnrs;
     }
 
     /**
