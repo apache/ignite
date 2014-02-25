@@ -49,7 +49,7 @@ public interface GridCacheQueries<K, V> {
      * @param search Search clause.
      * @return Created query.
      */
-    public GridCacheQuery<Map.Entry<K, V>> createFulltextQuery(Class<?> cls, String search);
+    public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<?> cls, String search);
 
     /**
      * Creates user's predicate based scan query.

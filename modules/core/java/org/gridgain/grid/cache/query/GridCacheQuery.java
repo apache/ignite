@@ -297,15 +297,7 @@ public interface GridCacheQuery<R> {
      * @param filter Filter.
      * @return New query with remote value filter set.
      */
-    public GridCacheQuery<R> remoteFilter(GridBiPredicate<?, ?> filter);
-
-    /**
-     * Optional query arguments that get passed into query SQL.
-     *
-     * @param args Optional query arguments.
-     * @return This query with the passed in arguments preset.
-     */
-    public GridCacheQuery<R> queryArguments(@Nullable Object... args);
+    public <K, V> GridCacheQuery<R> remoteFilter(GridBiPredicate<K, V> filter);
 
     /**
      * Executes the query and returns the query future. Caller may decide to iterate
@@ -324,19 +316,19 @@ public interface GridCacheQuery<R> {
      *
      * @return Future for the query result.
      */
-    public GridCacheQueryFuture<R> execute();
+    public GridCacheQueryFuture<R> execute(@Nullable Object... args);
 
     /**
-     * Executes the query the same way as {@link #execute()} method but reduces result remotely.
+     * Executes the query the same way as {@link #execute(Object...)} method but reduces result remotely.
      *
      * @param remoteReducer Remote reducer.
      * @return Future for the query result.
      */
-    public <O> GridCacheQueryFuture<O> execute(GridReducer<R, O> remoteReducer);
+    public <O> GridCacheQueryFuture<O> execute(GridReducer<R, O> remoteReducer, @Nullable Object... args);
 
     /**
      * @param remoteTransform Remote transformer.
      * @return
      */
-    public <O> GridCacheQueryFuture<O> execute(GridClosure<R, O> remoteTransform);
+    public <O> GridCacheQueryFuture<O> execute(GridClosure<R, O> remoteTransform, @Nullable Object... args);
 }
