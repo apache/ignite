@@ -36,7 +36,7 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
     private final String cacheName;
 
     /** Entries to put. */
-    private final Collection<GridDataLoadEntry<K, V>> col;
+    private final Collection<Map.Entry<K, V>> col;
 
     /** {@code True} to ignore deployment ownership. */
     private final boolean ignoreDepOwnership;
@@ -54,7 +54,7 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
      */
     GridDataLoadUpdateJob(
         GridKernalContext ctx, GridLogger log, @Nullable String cacheName,
-        Collection<GridDataLoadEntry<K, V>> col,
+        Collection<Map.Entry<K, V>> col,
         boolean ignoreDepOwnership,
         GridDataLoadCacheUpdater<K, V> updater) {
         this.ctx = ctx;

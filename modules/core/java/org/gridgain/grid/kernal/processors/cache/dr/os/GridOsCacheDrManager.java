@@ -54,12 +54,12 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void onBeforeExchange(long topVer, boolean left) throws GridException {
+    @Override public void beforeExchange(long topVer, boolean left) throws GridException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onPartitionEvicted(int part) {
+    @Override public void partitionEvicted(int part) {
         // No-op.
     }
 

@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.datagrid;
+package org.gridgain.examples.datagrid.loaddata.realtime;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -170,9 +170,9 @@ public class CachePopularNumbersExample {
         };
 
         /** {@inheritDoc} */
-        @Override public void update(GridCache<Integer, Long> cache, Collection<GridDataLoadEntry<Integer, Long>> entries) throws GridException {
-            for (GridDataLoadEntry<Integer, Long> entry : entries)
-                cache.transform(entry.key(), INC);
+        @Override public void update(GridCache<Integer, Long> cache, Collection<Map.Entry<Integer, Long>> entries) throws GridException {
+            for (Map.Entry<Integer, Long> entry : entries)
+                cache.transform(entry.getKey(), INC);
         }
     }
 }

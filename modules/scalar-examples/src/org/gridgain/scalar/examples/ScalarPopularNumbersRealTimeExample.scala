@@ -17,7 +17,8 @@ import java.util.{Random, Timer}
 import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
 import org.gridgain.grid.cache.GridCache
 import java.util
-import org.gridgain.grid.dataload.{GridDataLoadCacheUpdater, GridDataLoadEntry}
+import org.gridgain.grid.dataload.GridDataLoadCacheUpdater
+import java.util.Map.Entry
 
 /**
  * Real time popular number counter. In order to run this example, you must start
@@ -69,11 +70,11 @@ object ScalarPopularNumbersRealTimeExample extends App {
         // Set custom updater to increment value for each key.
         ldr.updater(new GridDataLoadCacheUpdater[Int, Long] {
             def update(cache: GridCache[Int, Long],
-                entries: util.Collection[GridDataLoadEntry[Int, Long]]) = {
+                entries: util.Collection[Entry[Int, Long]]) = {
                 import scala.collection.JavaConversions._
 
                 for (e <- entries)
-                    cache.transform(e.key, f)
+                    cache.transform(e.getKey, f)
             }
         })
 

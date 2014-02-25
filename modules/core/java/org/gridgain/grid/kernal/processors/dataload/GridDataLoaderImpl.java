@@ -10,11 +10,13 @@
 package org.gridgain.grid.kernal.processors.dataload;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
@@ -24,6 +26,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -40,7 +43,7 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
  */
 public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     /** Cache updater. */
-    private GridDataLoadCacheUpdater<K, V> updater = GridDataLoadCacheUpdaters.single();
+    private GridDataLoadCacheUpdater<K, V> updater = GridDataLoadCacheUpdaters.individual();
 
     /** */
     private byte[] updaterBytes;
@@ -52,7 +55,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Cache name ({@code null} for default cache). */
-    private String cacheName;
+    private final String cacheName;
 
     /** Per-node buffer size. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -227,6 +230,30 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isolated() {
+        return updater != GridDataLoadCacheUpdaters.individual();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void isolated(boolean isolated) throws GridException {
+        if (isolated())
+            return;
+
+        GridNode node = F.first(ctx.grid().forCache(cacheName).nodes());
+
+        if (node == null)
+            throw new GridException("Failed to get node for cache: " + cacheName);
+
+        GridCacheAttributes a = U.cacheAttributes(node, cacheName);
+
+        assert a != null;
+
+        updater = a.atomicityMode() == GridCacheAtomicityMode.ATOMIC ?
+            GridDataLoadCacheUpdaters.<K, V>batched() :
+            GridDataLoadCacheUpdaters.<K, V>groupLocked();
+    }
+
+    /** {@inheritDoc} */
     @Override @Nullable public String cacheName() {
         return cacheName;
     }
@@ -269,14 +296,21 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
             if (autoFlushFreq != 0 && old == 0)
                 flushQ.add(this);
-            else if (autoFlushFreq == 0 && old != 0)
+            else if (autoFlushFreq == 0)
                 flushQ.remove(this);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> addData(Collection<? extends GridDataLoadEntry<K, V>> entries) {
-        A.ensure(!F.isEmpty(entries), "entries can not be empty");
+    @Override public GridFuture<?> addData(Map<K, V> entries) throws IllegalStateException {
+        A.notNull(entries, "entries");
+
+        return addData(entries.entrySet());
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) {
+        A.notEmpty(entries, "entries");
 
         enterBusy();
 
@@ -289,15 +323,8 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
             Collection<K> keys = new GridConcurrentHashSet<>(entries.size(), 1.0f, 16);
 
-            try {
-                for (GridDataLoadEntry<K, V> entry : entries)
-                    keys.add(entry.key());
-            }
-            catch (GridException e) {
-                resFut.onDone(e);
-
-                return resFut;
-            }
+            for (Map.Entry<K, V> entry : entries)
+                keys.add(entry.getKey());
 
             load0(entries, resFut, keys, 0);
 
@@ -309,24 +336,21 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> addData(GridDataLoadEntry<K, V> entry) throws GridException, GridInterruptedException,
-        IllegalStateException {
+    @Override public GridFuture<?> addData(Map.Entry<K, V> entry) throws GridException, IllegalStateException {
         A.notNull(entry, "entry");
 
         return addData(F.asList(entry));
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> addData(K key, V val) throws GridException, GridInterruptedException,
-        IllegalStateException {
+    @Override public GridFuture<?> addData(K key, V val) throws GridException, IllegalStateException {
         A.notNull(key, "key");
 
-        return addData(new GridDataLoadEntryAdapter<>(key, val));
+        return addData(new Entry0<>(key, val));
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> removeData(K key) throws GridException, GridInterruptedException,
-        IllegalStateException {
+    @Override public GridFuture<?> removeData(K key) throws GridException, IllegalStateException {
         return addData(key, null);
     }
 
@@ -337,7 +361,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
      * @param remaps Remaps count.
      */
     private void load0(
-        Collection<? extends GridDataLoadEntry<K, V>> entries,
+        Collection<? extends Map.Entry<K, V>> entries,
         final GridFutureAdapter<Object> resFut,
         final Collection<K> activeKeys,
         final int remaps
@@ -350,20 +374,20 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
             return;
         }
 
-        Map<GridNode, Collection<GridDataLoadEntry<K, V>>> mappings = new HashMap<>();
+        Map<GridNode, Collection<Map.Entry<K, V>>> mappings = new HashMap<>();
 
         boolean initPda = ctx.deploy().enabled() && jobPda == null;
 
-        for (GridDataLoadEntry<K, V> entry : entries) {
+        for (Map.Entry<K, V> entry : entries) {
             GridNode node;
 
             try {
-                K key = entry.key();
+                K key = entry.getKey();
 
                 assert key != null;
 
                 if (initPda) {
-                    jobPda = new DataLoaderPda(key, entry.value(), updater);
+                    jobPda = new DataLoaderPda(key, entry.getValue(), updater);
 
                     initPda = false;
                 }
@@ -384,7 +408,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
                 return;
             }
 
-            Collection<GridDataLoadEntry<K, V>> col = mappings.get(node);
+            Collection<Map.Entry<K, V>> col = mappings.get(node);
 
             if (col == null)
                 mappings.put(node, col = new ArrayList<>());
@@ -392,7 +416,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
             col.add(entry);
         }
 
-        for (final Map.Entry<GridNode, Collection<GridDataLoadEntry<K, V>>> e : mappings.entrySet()) {
+        for (final Map.Entry<GridNode, Collection<Map.Entry<K, V>>> e : mappings.entrySet()) {
             final UUID nodeId = e.getKey().id();
 
             Buffer buf = bufMappings.get(nodeId);
@@ -404,15 +428,15 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
                     buf = old;
             }
 
-            final Collection<GridDataLoadEntry<K, V>> entriesForNode = e.getValue();
+            final Collection<Map.Entry<K, V>> entriesForNode = e.getValue();
 
             GridInClosure<GridFuture<?>> lsnr = new GridInClosure<GridFuture<?>>() {
                 @Override public void apply(GridFuture<?> t) {
                     try {
                         t.get();
 
-                        for (GridDataLoadEntry<K, V> e : entriesForNode)
-                            activeKeys.remove(e.key());
+                        for (Map.Entry<K, V> e : entriesForNode)
+                            activeKeys.remove(e.getKey());
 
                         if (activeKeys.isEmpty())
                             resFut.onDone();
@@ -661,7 +685,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         private final Collection<GridFuture<Object>> locFuts;
 
         /** Buffered entries. */
-        private List<GridDataLoadEntry<K, V>> entries;
+        private List<Map.Entry<K, V>> entries;
 
         /** */
         @GridToStringExclude
@@ -714,9 +738,9 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
          * @throws GridInterruptedException If failed.
          * @return Future for operation.
          */
-        @Nullable GridFutureAdapter<?> update(Iterable<GridDataLoadEntry<K, V>> newEntries,
+        @Nullable GridFutureAdapter<?> update(Iterable<Map.Entry<K, V>> newEntries,
             GridInClosure<GridFuture<?>> lsnr) throws GridInterruptedException {
-            List<GridDataLoadEntry<K, V>> entries0 = null;
+            List<Map.Entry<K, V>> entries0 = null;
             GridFutureAdapter<Object> curFut0;
 
             synchronized (this) {
@@ -724,7 +748,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
                 curFut0.listenAsync(lsnr);
 
-                for (GridDataLoadEntry<K, V> entry : newEntries)
+                for (Map.Entry<K, V> entry : newEntries)
                     entries.add(entry);
 
                 if (entries.size() >= bufSize) {
@@ -749,7 +773,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
         /**
          * @return Fresh collection with some space for outgrowth.
          */
-        private List<GridDataLoadEntry<K, V>> newEntries() {
+        private List<Map.Entry<K, V>> newEntries() {
             return new ArrayList<>((int)(bufSize * 1.2));
         }
 
@@ -759,7 +783,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
          * @throws GridInterruptedException If thread has been interrupted.
          */
         @Nullable GridFuture<?> flush() throws GridInterruptedException {
-            List<GridDataLoadEntry<K, V>> entries0 = null;
+            List<Map.Entry<K, V>> entries0 = null;
             GridFutureAdapter<Object> curFut0 = null;
 
             synchronized (this) {
@@ -822,7 +846,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
          * @param curFut Current future.
          * @throws GridInterruptedException If interrupted.
          */
-        private void submit(final List<GridDataLoadEntry<K, V>> entries, final GridFutureAdapter<Object> curFut)
+        private void submit(final List<Map.Entry<K, V>> entries, final GridFutureAdapter<Object> curFut)
             throws GridInterruptedException {
             assert entries != null;
             assert !entries.isEmpty();
@@ -1088,6 +1112,63 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
             }
 
             return ldr;
+        }
+    }
+
+    /**
+     * Entry.
+     */
+    private static class Entry0<K, V> implements Map.Entry<K, V>, Externalizable {
+        /** */
+        private K key;
+
+        /** */
+        private V val;
+
+        /**
+         * @param key Key.
+         * @param val Value.
+         */
+        private Entry0(K key, @Nullable V val) {
+            assert key != null;
+
+            this.key = key;
+            this.val = val;
+        }
+
+        /**
+         * For {@link Externalizable}.
+         */
+        @SuppressWarnings("UnusedDeclaration")
+        public Entry0() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public K getKey() {
+            return key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public V getValue() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public V setValue(V val) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(key);
+            out.writeObject(val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            key = (K)in.readObject();
+            val = (V)in.readObject();
         }
     }
 }
