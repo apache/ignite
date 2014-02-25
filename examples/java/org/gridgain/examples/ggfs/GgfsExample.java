@@ -25,17 +25,17 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * operations (create, write, append, read and delete files,
  * create, list and delete directories).
  * <p>
- * To start remote node, you can run {@link GridGgfsNoEndpointNodeStartup} class.
+ * To start remote node, you can run {@link GgfsNodeStartup} class.
  * <p>
  * You can also start a stand-alone GridGain instance by passing the path
  * to configuration file to {@code 'ggstart.{sh|bat}'} script, like so:
- * {@code './ggstart.sh examples/config/example-ggfs-no-endpoint.xml'}.
+ * {@code './ggstart.sh examples/config/example-ggfs.xml'}.
  *
  * @author @java.author
  * @version @java.version
  */
 @GridOnlyAvailableIn(HADOOP)
-public final class GridGgfsExample {
+public final class GgfsExample {
     /**
      * Runs example. No arguments required.
      *
@@ -43,7 +43,7 @@ public final class GridGgfsExample {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        Grid g = GridGain.start("examples/config/example-ggfs-no-endpoint.xml");
+        Grid g = GridGain.start("examples/config/example-ggfs.xml");
 
         try {
             // Get an instance of GridGain File System.

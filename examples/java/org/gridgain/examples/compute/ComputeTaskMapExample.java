@@ -37,7 +37,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridTaskMapExample {
+public class ComputeTaskMapExample {
     /**
      * Execute {@code HelloWorld} example with {@link org.gridgain.grid.compute.GridComputeTaskSplitAdapter}.
      *

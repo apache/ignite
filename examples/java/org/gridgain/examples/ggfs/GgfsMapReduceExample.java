@@ -26,17 +26,17 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * Example that shows how to use {@link GridGgfsTask} to find lines matching particular pattern in the file in pretty
  * the same way as {@code grep} command does.
  * <p>
- * To start remote node, you can run {@link GridGgfsNoEndpointNodeStartup} class.
+ * To start remote node, you can run {@link GgfsNodeStartup} class.
  * <p>
  * You can also start a stand-alone GridGain instance by passing the path
  * to configuration file to {@code 'ggstart.{sh|bat}'} script, like so:
- * {@code './ggstart.sh examples/config/example-ggfs-no-endpoint.xml'}.
+ * {@code './ggstart.sh examples/config/example-ggfs.xml'}.
  *
  * @author @java.author
  * @version @java.version
  */
 @GridOnlyAvailableIn(HADOOP)
-public class GridGgfsMapReduceExample {
+public class GgfsMapReduceExample {
     /**
      * Runs example.
      *
@@ -49,7 +49,7 @@ public class GridGgfsMapReduceExample {
         else if (args.length == 1)
             print("Please provide regular expression.");
         else {
-            Grid g = GridGain.start("examples/config/example-ggfs-no-endpoint.xml");
+            Grid g = GridGain.start("examples/config/example-ggfs.xml");
 
             try {
                 // Prepare arguments.

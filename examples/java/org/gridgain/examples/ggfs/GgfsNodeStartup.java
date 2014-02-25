@@ -29,7 +29,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @version @java.version
  */
 @GridOnlyAvailableIn(HADOOP)
-public class GridGgfsNodeStartup {
+public class GgfsNodeStartup {
     /**
      * Start up an empty node with specified cache configuration.
      *
@@ -37,7 +37,7 @@ public class GridGgfsNodeStartup {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = GridGain.start("config/ggfs/default-ggfs-data.xml")) {
+        try (Grid g = GridGain.start("examples/config/example-ggfs.xml")) {
             // Wait until Ok is pressed.
             JOptionPane.showMessageDialog(
                 null,

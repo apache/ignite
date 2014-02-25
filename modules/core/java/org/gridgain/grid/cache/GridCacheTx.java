@@ -103,7 +103,7 @@ import java.util.*;
  *     tx.commit();
  * }
  * finally {
- *     tx.end(); // Rollback, if was not committed.
+ *     tx.close(); // Rollback, if was not committed.
  * }
  * </pre>
  * Or, the same logic as above can be executed by passing one or more closures to any of

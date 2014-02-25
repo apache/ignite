@@ -35,7 +35,7 @@ import java.util.*;
  *   The job will check the value of checkpoint with key '{@code fail}'. If it
  *   is {@code true}, then it will set it to {@code false} and throw
  *   exception to simulate a failure. If it is {@code false}, then
- *   it will run the {@link GridFailoverCheckpointExample#sayIt(CharSequence)} method.
+ *   it will run the {@link ComputeFailoverCheckpointExample#sayIt(CharSequence)} method.
  * </li>
  * </ol>
  * Note that when job throws an exception it will be treated as a failure, and the task
@@ -86,7 +86,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridFailoverCheckpointExample {
+public class ComputeFailoverCheckpointExample {
     /** Path to configuration file. */
     private static final String CONFIG = "examples/config/example-checkpoint.xml";
 

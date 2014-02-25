@@ -14,12 +14,13 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
 
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Demonstrates a simple use of GridGain grid with reduce closure.
  * <p>
  * String "Hello Grid Enabled World!" is split into words and is passed as an argument to
- * {@link GridCompute#call(Collection)} method.
+ * {@link GridCompute#apply(GridClosure, Collection, GridReducer)} method.
  * This method also takes as an argument a job factory instance, which is responsible for creating
  * jobs. Those jobs are then distributed among the running nodes. The {@code GridReducer} instance
  * then receives all job results and sums them up. The result of the execution is the number of
@@ -42,7 +43,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridRunnableExample {
+public class ComputeReducerExample {
     /**
      * Execute {@code HelloWorld} example with job factory and reducer.
      *
@@ -53,25 +54,41 @@ public class GridRunnableExample {
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-default.xml")) {
-            Collection<GridFuture> futs = new ArrayList<>();
-
-            // Iterate through all words in the sentence and create callable jobs.
-            for (final String word : "Print words using runnable".split(" ")) {
-                // Execute runnable on some node.
-                futs.add(g.compute().run(new GridRunnable() {
-                    @Override public void run() {
+            Integer sum = g.compute().apply(
+                new GridClosure<String, Integer>() {
+                    @Override public Integer apply(String word) {
                         System.out.println();
                         System.out.println(">>> Printing '" + word + "' on this node from grid job.");
-                    }
-                }));
-            }
 
-            // Wait for all futures to complete.
-            for (GridFuture<?> f : futs)
-                f.get();
+                        // Return number of letters in the word.
+                        return word.length();
+                    }
+                },
+
+                // Job parameters. GridGain will create as many jobs as there are parameters.
+                Arrays.asList("Count characters using reducer".split(" ")),
+
+                // Reducer to process results as they come.
+                new GridReducer<Integer, Integer>() {
+                    private AtomicInteger sum = new AtomicInteger();
+
+                    // Callback for every job result.
+                    @Override public boolean collect(Integer len) {
+                        sum.addAndGet(len);
+
+                        // Return true to continue waiting until all results are received.
+                        return true;
+                    }
+
+                    // Reduce all results into one.
+                    @Override public Integer reduce() {
+                        return sum.get();
+                    }
+                }
+            ).get();
 
             System.out.println();
-            System.out.println(">>> Finished printing words using runnable execution.");
+            System.out.println(">>> Total number of characters in the phrase is '" + sum + "'.");
             System.out.println(">>> Check all nodes for output (this node is also part of the grid).");
         }
     }

@@ -21,7 +21,7 @@ import java.io.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridCredit implements Serializable {
+public class Credit implements Serializable {
     /** Remaining crediting amount. */
     private final double remAmnt;
 
@@ -42,7 +42,7 @@ public class GridCredit implements Serializable {
      * @param apr Annual percentage rate (APR).
      * @param edf Expected annual probability of default (EaDF).
      */
-    public GridCredit(double remAmnt, int remTerm, double apr, double edf) {
+    public Credit(double remAmnt, int remTerm, double apr, double edf) {
         this.remAmnt = remAmnt;
         this.remTerm = remTerm;
         this.apr = apr;

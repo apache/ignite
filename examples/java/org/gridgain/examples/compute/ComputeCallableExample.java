@@ -19,7 +19,7 @@ import java.util.*;
  * Demonstrates a simple use of GridGain grid with reduce closure.
  * <p>
  * String "Hello Grid Enabled World!" is split into words and is passed as an argument to
- * {@link GridCompute#apply(GridClosure, Collection, GridReducer)} method.
+ * {@link GridCompute#call(Collection)} method.
  * This method also takes as an argument a job factory instance, which is responsible for creating
  * jobs. Those jobs are then distributed among the running nodes. The {@code GridReducer} instance
  * then receives all job results and sums them up. The result of the execution is the number of
@@ -42,7 +42,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridClosureExample {
+public class ComputeCallableExample {
     /**
      * Execute {@code HelloWorld} example with job factory and reducer.
      *
@@ -53,25 +53,26 @@ public class GridClosureExample {
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-default.xml")) {
-            // Execute closure on all grid nodes.
-            Collection<Integer> res = g.compute().apply(
-                new GridClosure<String, Integer>() {
-                    @Override public Integer apply(String word) {
-                        System.out.println();
+            Collection<GridCallable<Integer>> calls = new ArrayList<>();
+
+            // Iterate through all words in the sentence and create callable jobs.
+            for (final String word : "Count characters using callable".split(" ")) {
+                calls.add(new GridCallable<Integer>() {
+                    @Override public Integer call() throws Exception {
+                        System.out.println(">>>");
                         System.out.println(">>> Printing '" + word + "' on this node from grid job.");
 
-                        // Return number of letters in the word.
                         return word.length();
                     }
-                },
+                });
+            }
 
-                // Job parameters. GridGain will create as many jobs as there are parameters.
-                Arrays.asList("Count characters using closure".split(" "))
-            ).get();
+            // Execute collection of callables on the grid.
+            Collection<Integer> res = g.compute().call(calls).get();
 
             int sum = 0;
 
-            // Add up individual word lengths received from remote nodes
+            // Add up individual word lengths received from remote nodes.
             for (Integer len : res)
                 sum += len;
 

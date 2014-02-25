@@ -24,7 +24,7 @@ import org.gridgain.grid.lang.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridProjectionExample {
+public class ComputeProjectionExample {
     /**
      * Executes broadcasting message example with closures.
      *

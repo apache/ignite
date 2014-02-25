@@ -27,7 +27,7 @@ import java.util.concurrent.*;
  * @author @java.author
  * @version @java.version
  */
-public final class GridExecutorServiceExample {
+public final class ComputeExecutorServiceExample {
     /**
      * Execute {@code Executor} example on the grid.
      *

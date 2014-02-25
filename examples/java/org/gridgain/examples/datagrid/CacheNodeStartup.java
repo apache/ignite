@@ -11,6 +11,8 @@ package org.gridgain.examples.datagrid;
 
 import org.gridgain.grid.*;
 
+import javax.swing.*;
+
 /**
  * Starts up an empty node with example cache configuration.
  *
@@ -25,6 +27,17 @@ public class CacheNodeStartup {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        GridGain.start("examples/config/example-cache.xml");
+        try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
+            // Wait until Ok is pressed.
+            JOptionPane.showMessageDialog(
+                null,
+                new JComponent[]{
+                    new JLabel("GridGain started."),
+                    new JLabel("Press OK to stop GridGain.")
+                },
+                "GridGain",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+        }
     }
 }

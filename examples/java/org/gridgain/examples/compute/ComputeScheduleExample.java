@@ -26,7 +26,7 @@ import org.gridgain.grid.lang.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridScheduleExample {
+public class ComputeScheduleExample {
     /**
      * Executes scheduling example.
      *

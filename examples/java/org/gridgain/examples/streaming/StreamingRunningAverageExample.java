@@ -28,13 +28,13 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * <p>
  * Remote nodes should always be started with configuration which includes streamer.
  * <p>
- * You should startup remote nodes by starting {@link GridStreamingNodeStartup} from your IDE.
+ * You should startup remote nodes by starting {@link StreamingNodeStartup} from your IDE.
  *
  * @author @java.author
  * @version @java.version
  */
 @GridOnlyAvailableIn(STREAMING)
-public class GridStreamingRunningAverageExample {
+public class StreamingRunningAverageExample {
     /**
      * Main method.
      *

@@ -7,32 +7,23 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.ggfs;
+package org.gridgain.examples.streaming;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.product.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 import javax.swing.*;
 
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
- * Starts up an empty node with GGFS configuration.
- * You can also start a stand-alone GridGain instance by passing the path
- * to configuration file to {@code 'ggstart.{sh|bat}'} script, like so:
- * {@code 'ggstart.sh examples/config/example-ggfs-shmem.xml'}. Note that
- * shared memory IPC is not supported on Windows, so you should use
- * {@code examples/config/example-ggfs-loopback.xml} configuration instead.
- * <p>
- * The difference is that running this class from IDE adds all example classes to classpath
- * but running from command line doesn't.
+ * Starts up node with example streamer configuration.
  *
  * @author @java.author
  * @version @java.version
  */
-@GridOnlyAvailableIn(HADOOP)
-public class GridGgfsHadoopFileSystemNodeStartup {
+@GridOnlyAvailableIn(STREAMING)
+public class StreamingNodeStartup {
     /**
      * Start up an empty node with specified cache configuration.
      *
@@ -40,15 +31,11 @@ public class GridGgfsHadoopFileSystemNodeStartup {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        // Shared memory IPC is not supported on Windows.
-        String cfgPath = U.isWindows() ? "examples/config/example-ggfs-loopback.xml" :
-            "examples/config/example-ggfs-shmem.xml";
-
-        try (Grid g = GridGain.start(cfgPath)) {
+        try (Grid g = GridGain.start("examples/config/example-streamer.xml")) {
             // Wait until Ok is pressed.
             JOptionPane.showMessageDialog(
                 null,
-                new JComponent[] {
+                new JComponent[]{
                     new JLabel("GridGain started."),
                     new JLabel("Press OK to stop GridGain.")
                 },

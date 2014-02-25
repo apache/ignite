@@ -85,7 +85,7 @@
 
                     <property name="stages">
                         <list>
-                            <bean class="org.gridgain.examples.streaming.GridStreamingRunningAverageExample$StreamerStage"/>
+                            <bean class="org.gridgain.examples.streaming.StreamingRunningAverageExample$StreamerStage"/>
                         </list>
                     </property>
 
@@ -128,7 +128,7 @@
                                 <list>
                                     <bean class="org.gridgain.grid.streamer.index.tree.GridStreamerTreeIndexProvider">
                                         <property name="updater">
-                                            <bean class="org.gridgain.examples.streaming.GridStreamingPopularNumbersExample$IndexUpdater"/>
+                                            <bean class="org.gridgain.examples.streaming.StreamingPopularNumbersExample$IndexUpdater"/>
                                         </property>
                                     </bean>
                                 </list>
@@ -138,7 +138,7 @@
 
                     <property name="stages">
                         <list>
-                            <bean class="org.gridgain.examples.streaming.GridStreamingPopularNumbersExample$StreamerStage"/>
+                            <bean class="org.gridgain.examples.streaming.StreamingPopularNumbersExample$StreamerStage"/>
                         </list>
                     </property>
 
@@ -199,8 +199,8 @@
 
                     <property name="stages">
                         <list>
-                            <bean class="org.gridgain.examples.streaming.GridStreamingPriceBarsExample$FirstStage"/>
-                            <bean class="org.gridgain.examples.streaming.GridStreamingPriceBarsExample$SecondStage"/>
+                            <bean class="org.gridgain.examples.streaming.StreamingPriceBarsExample$FirstStage"/>
+                            <bean class="org.gridgain.examples.streaming.StreamingPriceBarsExample$SecondStage"/>
                         </list>
                     </property>
 
@@ -240,7 +240,7 @@
                                             <property name="unique" value="true"/>
 
                                             <property name="updater">
-                                                <bean class="org.gridgain.examples.streaming.GridStreamingCheckInExample$CheckInEventIndexUpdater"/>
+                                                <bean class="org.gridgain.examples.streaming.StreamingCheckInExample$CheckInEventIndexUpdater"/>
                                             </property>
                                         </bean>
                                     </list>
@@ -256,7 +256,7 @@
                                             <property name="unique" value="true"/>
 
                                             <property name="updater">
-                                                <bean class="org.gridgain.examples.streaming.GridStreamingCheckInExample$PlacesIndexUpdater"/>
+                                                <bean class="org.gridgain.examples.streaming.StreamingCheckInExample$PlacesIndexUpdater"/>
                                             </property>
                                         </bean>
                                     </list>
@@ -267,8 +267,8 @@
 
                     <property name="stages">
                         <list>
-                            <bean class="org.gridgain.examples.streaming.GridStreamingCheckInExample$AddToWindowStage"/>
-                            <bean class="org.gridgain.examples.streaming.GridStreamingCheckInExample$DetectPlacesStage"/>
+                            <bean class="org.gridgain.examples.streaming.StreamingCheckInExample$AddToWindowStage"/>
+                            <bean class="org.gridgain.examples.streaming.StreamingCheckInExample$DetectPlacesStage"/>
                         </list>
                     </property>
                 </bean>

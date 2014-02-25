@@ -27,7 +27,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridBroadcastExample {
+public class ComputeBroadcastExample {
     /**
      * Executes broadcasting message example with closures.
      *

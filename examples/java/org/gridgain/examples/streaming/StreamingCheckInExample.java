@@ -44,12 +44,12 @@ import java.util.concurrent.*;
  * <p>
  * You can run this example with one or several nodes. Remote nodes should always
  * be started with configuration which includes streamer. This can be done by
- * starting {@link GridStreamingNodeStartup} from your IDE.
+ * starting {@link StreamingNodeStartup} from your IDE.
  *
  * @author @java.author
  * @version @java.version
  */
-public class GridStreamingCheckInExample {
+public class StreamingCheckInExample {
     /** Streamer name. */
     private static final String STREAMER_NAME = "check-in";
 

@@ -42,7 +42,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridCallableExample {
+public class ComputeRunnableExample {
     /**
      * Execute {@code HelloWorld} example with job factory and reducer.
      *
@@ -53,31 +53,25 @@ public class GridCallableExample {
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-default.xml")) {
-            Collection<GridCallable<Integer>> calls = new ArrayList<>();
+            Collection<GridFuture> futs = new ArrayList<>();
 
             // Iterate through all words in the sentence and create callable jobs.
-            for (final String word : "Count characters using callable".split(" ")) {
-                calls.add(new GridCallable<Integer>() {
-                    @Override public Integer call() throws Exception {
-                        System.out.println(">>>");
+            for (final String word : "Print words using runnable".split(" ")) {
+                // Execute runnable on some node.
+                futs.add(g.compute().run(new GridRunnable() {
+                    @Override public void run() {
+                        System.out.println();
                         System.out.println(">>> Printing '" + word + "' on this node from grid job.");
-
-                        return word.length();
                     }
-                });
+                }));
             }
 
-            // Execute collection of callables on the grid.
-            Collection<Integer> res = g.compute().call(calls).get();
-
-            int sum = 0;
-
-            // Add up individual word lengths received from remote nodes.
-            for (Integer len : res)
-                sum += len;
+            // Wait for all futures to complete.
+            for (GridFuture<?> f : futs)
+                f.get();
 
             System.out.println();
-            System.out.println(">>> Total number of characters in the phrase is '" + sum + "'.");
+            System.out.println(">>> Finished printing words using runnable execution.");
             System.out.println(">>> Check all nodes for output (this node is also part of the grid).");
         }
     }

@@ -18,7 +18,7 @@ import java.util.*;
  * @version @java.version
  */
 @SuppressWarnings({"FloatingPointEquality"})
-public class GridCreditRiskManager {
+public class CreditRiskManager {
     /**
      * Default randomizer with normal distribution.
      * Note that since every JVM on the grid will have its own random
@@ -52,7 +52,7 @@ public class GridCreditRiskManager {
      * @return Credit risk value, i.e. the minimal amount that creditor has to
      *      have available to cover possible defaults.
      */
-    public double calculateCreditRiskMonteCarlo(GridCredit[] portfolio, int horizon, int num, double percentile) {
+    public double calculateCreditRiskMonteCarlo(Credit[] portfolio, int horizon, int num, double percentile) {
         System.out.println(">>> Calculating credit risk for portfolio [size=" + portfolio.length + ", horizon=" +
             horizon + ", percentile=" + percentile + ", iterations=" + num + "] <<<");
 
@@ -102,13 +102,13 @@ public class GridCreditRiskManager {
      * @param num Number of Monte-Carlo iterations.
      * @return Losses array simulated by Monte Carlo method.
      */
-    private double[] calculateLosses(GridCredit[] portfolio, int horizon, int num) {
+    private double[] calculateLosses(Credit[] portfolio, int horizon, int num) {
         double[] losses = new double[num];
 
         // Count losses using Monte-Carlo method. We generate random probability of default,
         // if it exceeds certain credit default value we count losses - otherwise count income.
         for (int i = 0; i < num; i++)
-            for (GridCredit crd : portfolio) {
+            for (Credit crd : portfolio) {
                 int remDays = Math.min(crd.getRemainingTerm(), horizon);
 
                 if (rndGen.nextDouble() >= 1 - crd.getDefaultProbability(remDays))

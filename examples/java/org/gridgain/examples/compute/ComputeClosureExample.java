@@ -14,7 +14,6 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
 
 import java.util.*;
-import java.util.concurrent.atomic.*;
 
 /**
  * Demonstrates a simple use of GridGain grid with reduce closure.
@@ -43,7 +42,7 @@ import java.util.concurrent.atomic.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridReducerExample {
+public class ComputeClosureExample {
     /**
      * Execute {@code HelloWorld} example with job factory and reducer.
      *
@@ -54,7 +53,8 @@ public class GridReducerExample {
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-default.xml")) {
-            Integer sum = g.compute().apply(
+            // Execute closure on all grid nodes.
+            Collection<Integer> res = g.compute().apply(
                 new GridClosure<String, Integer>() {
                     @Override public Integer apply(String word) {
                         System.out.println();
@@ -66,26 +66,14 @@ public class GridReducerExample {
                 },
 
                 // Job parameters. GridGain will create as many jobs as there are parameters.
-                Arrays.asList("Count characters using reducer".split(" ")),
-
-                // Reducer to process results as they come.
-                new GridReducer<Integer, Integer>() {
-                    private AtomicInteger sum = new AtomicInteger();
-
-                    // Callback for every job result.
-                    @Override public boolean collect(Integer len) {
-                        sum.addAndGet(len);
-
-                        // Return true to continue waiting until all results are received.
-                        return true;
-                    }
-
-                    // Reduce all results into one.
-                    @Override public Integer reduce() {
-                        return sum.get();
-                    }
-                }
+                Arrays.asList("Count characters using closure".split(" "))
             ).get();
+
+            int sum = 0;
+
+            // Add up individual word lengths received from remote nodes
+            for (Integer len : res)
+                sum += len;
 
             System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + sum + "'.");

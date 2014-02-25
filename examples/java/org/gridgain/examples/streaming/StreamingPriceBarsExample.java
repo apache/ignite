@@ -39,13 +39,13 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * Note, the bars in the example are not real charting bars, but rather a simplification
  * with purpose to demonstrate multi-stage streaming processing.
  * <p>
- * You should startup remote nodes only by starting {@link GridStreamingNodeStartup} from your IDE.
+ * You should startup remote nodes only by starting {@link StreamingNodeStartup} from your IDE.
  *
  * @author @java.author
  * @version @java.version
  */
 @GridOnlyAvailableIn(STREAMING)
-public class GridStreamingPriceBarsExample {
+public class StreamingPriceBarsExample {
     /** Random number generator. */
     private static final Random RAND = new Random();
 

@@ -12,6 +12,7 @@ package org.gridgain.examples.messaging;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.examples.compute.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -28,6 +29,9 @@ import java.util.concurrent.*;
  * button. You will see that all nodes discover each other and
  * some of the nodes will participate in task execution (check node
  * output).
+ * <p>
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * with {@code examples/config/example-default.xml} configuration.
  *
  * @author @java.author
  * @version @java.version

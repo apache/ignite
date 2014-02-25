@@ -15,10 +15,10 @@
     GridGain Spring configuration file to startup grid cache.
 
     When starting a standalone GridGain node, you need to execute the following command:
-    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} path-to-this-file/example-ggfs-shmem.xml
+    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-ggfs-no-endpoint.xml
 
     When starting GridGain from Java IDE, pass path to this file into GridFactory:
-    GridFactory.start("path-to-this-file/example-ggfs-shmem.xml");
+    GridFactory.start("examples/config/example-ggfs-no-endpoint.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
@@ -47,13 +47,6 @@
         Configuration below demonstrates how to setup a GGFS node with file data.
     -->
     <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
-        <!--
-            For better performance set this property to false in case
-            peer deployment is not used.
-            Default value is false.
-        -->
-        <property name="peerClassLoadingEnabled" value="true"/>
-
         <!--
             Configure optimized marshaller.
         -->
@@ -84,11 +77,25 @@
                     <property name="perNodeBatchSize" value="512"/>
                     <property name="perNodeParallelBatchCount" value="16"/>
 
-                    <!-- Disabled by default until GG-4112 will be fixed. -->
+                    <!-- Set number of prefetch blocks. -->
                     <property name="prefetchBlocks" value="32"/>
 
-                    <!-- Shared memory endpoint. -->
-                    <property name="ipcEndpointConfiguration" value="{type:'shmem', port:'10500'}"/>
+                    <!--
+                        This will disable IPC endpoint binding thus preventing Hadoop clients from connecting to GGFS.
+                        With this option set to false the only possible way to interact with GGFS is through
+                        GridGain API.
+                    -->
+                    <property name="ipcEndpointEnabled" value="false"/>
+
+                    <!--
+                        Example of configured IPC loopback endpoint.
+                    -->
+                    <!-- <property name="ipcEndpointConfiguration" value="{type:'tcp'}"/> -->
+
+                    <!--
+                        Example of configured shared memory endpoint.
+                    -->
+                    <!-- <property name="ipcEndpointConfiguration" value="{type:'shmem', port:'10500'}"/> -->
                 </bean>
             </list>
         </property>
@@ -170,6 +177,7 @@
                             </list>
                         </property>
                     </bean>
+
                     <!--
                     Uncomment this to provide IP finder using multicast for nodes discovery.
                     In addition to addresses received via multicast this finder can work with pre-configured

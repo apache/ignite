@@ -62,7 +62,7 @@ import java.util.concurrent.atomic.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridContinuousMapperExample {
+public class ContinuousMapperExample {
     /**
      * @param args Command line arguments (none required).
      * @throws GridException If failed.

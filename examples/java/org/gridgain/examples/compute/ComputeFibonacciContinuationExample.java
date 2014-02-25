@@ -50,7 +50,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public final class GridFibonacciContinuationExample {
+public final class ComputeFibonacciContinuationExample {
     /**
      * This example recursively calculates {@code 'Fibonacci'} numbers on the grid. This is
      * a powerful design pattern which allows for creation of distributively recursive
