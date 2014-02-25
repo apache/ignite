@@ -7,30 +7,24 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.streaming;
+package org.gridgain.examples.compute;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.product.*;
-
-import javax.swing.*;
-
-import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
- * Starts up node with example streamer configuration.
+ * Starts up an empty node with example default configuration.
  *
  * @author @java.author
  * @version @java.version
  */
-@GridOnlyAvailableIn(STREAMING)
-public class GridStreamingNodeStartup {
+public class ComputeNodeStartup {
     /**
      * Start up an empty node with specified cache configuration.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws org.gridgain.grid.GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        GridGain.start("examples/config/example-streamer.xml");
+        GridGain.start("examples/config/example-default.xml");
     }
 }

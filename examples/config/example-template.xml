@@ -29,11 +29,46 @@
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util-2.0.xsd">
     <!--
-        Configuration below demonstrates how to setup grid within grid nodes.
+        Configuration below demonstrates how to setup grid.
     -->
-    <bean id="grid-template-tuned" abstract="true" class="org.gridgain.grid.GridConfiguration">
+    <bean id="grid-template" abstract="true" class="org.gridgain.grid.GridConfiguration">
         <!-- Set to local host address just for examples. -->
         <property name="localHost" value="127.0.0.1"/>
+
+        <!-- Set deployment mode to be able to deploy jobs and tasks on that node. -->
+        <property name="deploymentMode" value="SHARED"/>
+
+        <!--
+            For better performance set this property to false in case
+            peer deployment is not used.
+            Default value is false.
+        -->
+        <property name="peerClassLoadingEnabled" value="true"/>
+
+        <!--
+            Configure optimized marshaller.
+        -->
+        <property name="marshaller">
+            <bean class="org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller">
+                <!--
+                    For better performance set this property to true in case
+                    all marshalled classes implement java.io.Serializable.
+                    Default value is true.
+
+                    Note, that it is recommended to implement java.io.Externalizable
+                    instead of java.io.Serializable for smaller network footprint
+                    and even better performance.
+                -->
+                <property name="requireSerializable" value="false"/>
+            </bean>
+        </property>
+
+        <!--
+            Enable cache events.
+        -->
+        <property name="includeEventTypes">
+            <util:constant static-field="org.gridgain.grid.events.GridEventType.EVTS_CACHE"/>
+        </property>
 
         <!--
             TCP discovery SPI configuration with predefined addresses.
@@ -88,45 +123,6 @@
                 </property>
             </bean>
         </property>
-    </bean>
-
-    <!--
-        Configuration below demonstrates how to setup grid.
-    -->
-    <bean id="grid-template" abstract="true" parent="grid-template-tuned">
-        <property name="deploymentMode" value="SHARED"/>
-
-        <!--
-            For better performance set this property to false in case
-            peer deployment is not used.
-            Default value is false.
-        -->
-        <property name="peerClassLoadingEnabled" value="true"/>
-
-        <!--
-            Configure optimized marshaller.
-        -->
-        <property name="marshaller">
-            <bean class="org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller">
-                <!--
-                    For better performance set this property to true in case
-                    all marshalled classes implement java.io.Serializable.
-                    Default value is true.
-
-                    Note, that it is recommended to implement java.io.Externalizable
-                    instead of java.io.Serializable for smaller network footprint
-                    and even better performance.
-                -->
-                <property name="requireSerializable" value="false"/>
-            </bean>
-        </property>
-
-        <!--
-            Enable cache events.
-        -->
-        <property name="includeEventTypes">
-            <util:constant static-field="org.gridgain.grid.events.GridEventType.EVTS_CACHE"/>
-        </property>
 
         <!--
             Allow indexing SPI to index primitive values.
@@ -147,53 +143,6 @@
                     <!--property name="defaultIndexFixedTyping" value="false"/-->
                 </bean>
             </list>
-        </property>
-    </bean>
-
-    <!--
-        Tuned template for all performance-sensitive example cache configurations.
-    -->
-    <bean id="cache-template-tuned" class="org.gridgain.grid.cache.GridCacheConfiguration">
-        <!-- Initial cache size. -->
-        <property name="startSize" value="1500000"/>
-
-        <!-- Set synchronous preloading (default is asynchronous). -->
-        <property name="preloadMode" value="SYNC"/>
-
-        <!--
-            For best performance set number of backups to 0.
-        -->
-        <property name="affinity">
-            <bean class="org.gridgain.grid.cache.affinity.partitioned.GridCachePartitionedAffinity">
-                <property name="keyBackups" value="1"/>
-            </bean>
-        </property>
-    </bean>
-
-    <!--
-        Template for all cache configurations.
-    -->
-    <bean id="cache-template" parent="cache-template-tuned">
-        <!--
-            Setting this value will cause local node to wait for remote commits.
-            However, it's important to set it this way in the examples as we assert on
-            conditions that usually assume full completion of transactions on all nodes.
-        -->
-        <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-
-        <!--
-            For better performance set this property to false in case
-            cache queries are not used. Default value is false.
-        -->
-        <property name="queryIndexEnabled" value="true"/>
-
-        <!--
-            The below configuration sets the number of backups to 1 (which is default).
-        -->
-        <property name="affinity">
-            <bean class="org.gridgain.grid.cache.affinity.partitioned.GridCachePartitionedAffinity">
-                <property name="keyBackups" value="1"/>
-            </bean>
         </property>
     </bean>
 </beans>

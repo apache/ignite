@@ -435,7 +435,7 @@ class VisorAlertCommand {
                 }
             }
 
-            grid.events().localListen(lsnr, EVT_NODE_METRICS_UPDATED)
+            grid.events().addLocalListener(lsnr, EVT_NODE_METRICS_UPDATED)
         }
     }
 

@@ -11,6 +11,7 @@ package org.gridgain.examples.compute.montecarlo;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.examples.compute.*;
 
 import java.util.*;
 
@@ -21,6 +22,9 @@ import java.util.*;
  * To try this example you should (but don't have to) start remote grid instances.
  * You can start as many as you like by executing the following script:
  * <pre class="snippet">{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-default.xml</pre>
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * with {@code examples/config/example-default.xml} configuration.
+ * <p>
  * Once remote instances are started, you can execute this example from
  * Eclipse, IntelliJ IDEA, or NetBeans (and any other Java IDE) by simply hitting run
  * button. You will see that all nodes discover each other and
