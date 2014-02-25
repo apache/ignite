@@ -112,11 +112,11 @@ class VisorAckCommand {
             adviseToConnect()
         else
             try
-                grid.forPredicate(f).
-                    withName$("visor-ack").
-                    withNoFailover$().
-                    compute().
-                    run(new VisorAckTask(gg => gg.localNode.id.toString))
+                grid.forPredicate(f)
+                    .compute()
+                    .withName("visor-ack")
+                    .withNoFailover()
+                    .run(new VisorAckTask(gg => gg.localNode.id.toString))
             catch {
                 case _: GridEmptyProjectionException => scold("Topology is empty.")
                 case e: Exception => scold("System error: " + e.getMessage)
@@ -158,11 +158,11 @@ class VisorAckCommand {
             adviseToConnect()
         else
             try
-                grid.forPredicate(f).
-                    withName$("visor-ack").
-                    withNoFailover$().
-                    compute().
-                    run(new VisorAckTask(_ => arg))
+                grid.forPredicate(f)
+                    .compute()
+                    .withName("visor-ack")
+                    .withNoFailover()
+                    .run(new VisorAckTask(_ => arg))
             catch {
                 case _: GridEmptyProjectionException => scold("Topology is empty.")
                 case e: Exception => scold("System error: " + e.getMessage)
