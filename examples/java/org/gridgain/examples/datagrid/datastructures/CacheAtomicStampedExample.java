@@ -56,12 +56,6 @@ public final class CacheAtomicStampedExample {
 
             print("Atomic stamped initial [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');
 
-            // Make closure for checking atomic stamped on grid.
-            Runnable c = new StampedUpdateClosure(CACHE_NAME, stampedName);
-
-            // Check atomic stamped on all grid nodes.
-            g.compute().run(c).get();
-
             // Make new value of atomic stamped.
             String newVal = UUID.randomUUID().toString();
 
@@ -72,17 +66,13 @@ public final class CacheAtomicStampedExample {
 
             stamped.compareAndSet("WRONG EXPECTED VALUE", newVal, "WRONG EXPECTED STAMP", newStamp);
 
-            // Check atomic stamped on all grid nodes.
-            // Atomic stamped value and stamp shouldn't be changed.
-            g.compute().run(c).get();
+            print("Atomic stamped [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');
 
             print("Try to change value and stamp of atomic stamped with correct value and stamp.");
 
             stamped.compareAndSet(val, newVal, stamp, newStamp);
 
-            // Check atomic stamped on all grid nodes.
-            // Atomic stamped value and stamp should be changed.
-            g.compute().run(c).get();
+            print("Atomic stamped [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');
         }
 
         print("");
@@ -98,38 +88,5 @@ public final class CacheAtomicStampedExample {
      */
     private static void print(Object o) {
         System.out.println(">>> " + o);
-    }
-
-    /**
-     * Performs update of on an atomic stamped variable in cache.
-     */
-    private static class StampedUpdateClosure extends GridRunnable {
-        /** Cache name. */
-        private final String cacheName;
-
-        /** Atomic stamped variable name. */
-        private final String stampedName;
-
-        /**
-         * @param cacheName Cache name.
-         * @param stampedName Atomic stamped variable name.
-         */
-        StampedUpdateClosure(String cacheName, String stampedName) {
-            this.cacheName = cacheName;
-            this.stampedName = stampedName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            try {
-                GridCacheAtomicStamped<String, String> stamped = GridGain.grid().cache(cacheName).dataStructures().
-                    atomicStamped(stampedName, null, null, true);
-
-                print("Atomic stamped [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');
-            }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
-            }
-        }
     }
 }

@@ -43,16 +43,16 @@ import org.gridgain.grid.spi.deployment.uri.*;
  * <ol>
  * <li>
  *      Create GAR file ({@code helloworld.gar}) with Ant script.
- *      Go in folder {@code ${GRIDGAIN_HOME}/os/examples/gar/build} and run {@code ant}
+ *      Go in folder {@code ${GRIDGAIN_HOME}/examples/gar/build} and run {@code ant}
  *      in command line.
  * </li>
  * <li>
- *      Copy {@code ${GRIDGAIN_HOME}/os/examples/gar/deploy/helloworld.gar} in folder
+ *      Copy {@code ${GRIDGAIN_HOME}/examples/gar/deploy/helloworld.gar} in folder
  *      {@code ${GRIDGAIN_HOME}/work/deployment/file/}
  * </li>
  * <li>
  *      You should run the following sample with Spring XML configuration file shipped
- *      with GridGain and located {@code ${GRIDGAIN_HOME}/os/examples/config/example-gar.xml}.
+ *      with GridGain and located {@code ${GRIDGAIN_HOME}/examples/config/example-gar.xml}.
  *      You should pass a path to Spring XML configuration file as 1st command line
  *      argument into this example.
  *      Note, that {@code example-gar.xml} starts GridGain with {@link GridUriDeploymentSpi}

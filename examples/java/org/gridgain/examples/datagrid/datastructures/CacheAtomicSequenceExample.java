@@ -53,14 +53,11 @@ public final class CacheAtomicSequenceExample {
             GridCacheAtomicSequence seq = g.cache(CACHE_NAME).dataStructures().atomicSequence(seqName, 0, true);
 
             // First value of atomic sequence on this node.
-            long firstVal = seq.get();
+            print("Sequence initial value: " + seq.get());
 
-            print("Sequence initial value: " + firstVal);
+            seq.incrementAndGet();
 
-            // Try increment atomic sequence on all grid nodes. Note that this node is also part of the grid.
-            g.compute().run(new SequenceClosure(CACHE_NAME, seqName)).get();
-
-            print("Sequence after incrementing [expected=" + (firstVal + RETRIES) + ", actual=" + seq.get() + ']');
+            print("Sequence value after increment: " + seq.get());
         }
 
         print("");
@@ -76,40 +73,5 @@ public final class CacheAtomicSequenceExample {
      */
     private static void print(Object o) {
         System.out.println(">>> " + o);
-    }
-
-    /**
-     * Obtains atomic sequence.
-     */
-    private static class SequenceClosure extends GridRunnable {
-        /** Cache name. */
-        private final String cacheName;
-
-        /** Sequence name. */
-        private final String seqName;
-
-        /**
-         * @param cacheName Cache name.
-         * @param seqName Sequence name.
-         */
-        SequenceClosure(String cacheName, String seqName) {
-            this.cacheName = cacheName;
-            this.seqName = seqName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            try {
-                GridCacheAtomicSequence seq = GridGain.grid().cache(cacheName).dataStructures().
-                    atomicSequence(seqName, 0, true);
-
-                for (int i = 0; i < RETRIES; i++)
-                    print("Sequence [currentValue=" + seq.get() + ", afterIncrement=" + seq.incrementAndGet() + ']');
-
-            }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
-            }
-        }
     }
 }

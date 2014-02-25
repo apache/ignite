@@ -53,12 +53,6 @@ public final class CacheAtomicReferenceExample {
 
             print("Atomic reference initial value : " + ref.get() + '.');
 
-            // Make closure for checking atomic reference value on grid.
-            Runnable c = new ReferenceClosure(CACHE_NAME, refName);
-
-            // Check atomic reference on all grid nodes.
-            g.compute().run(c).get();
-
             // Make new value of atomic reference.
             String newVal = UUID.randomUUID().toString();
 
@@ -66,17 +60,13 @@ public final class CacheAtomicReferenceExample {
 
             ref.compareAndSet("WRONG EXPECTED VALUE", newVal); // Won't change.
 
-            // Check atomic reference on all grid nodes.
-            // Atomic reference value shouldn't be changed.
-            g.compute().run(c).get();
+            print("Atomic reference value : " + ref.get() + '.');
 
             print("Try to change value of atomic reference with correct expected value.");
 
             ref.compareAndSet(val, newVal);
 
-            // Check atomic reference on all grid nodes.
-            // Atomic reference value should be changed.
-            g.compute().run(c).get();
+            print("Atomic reference value : " + ref.get() + '.');
         }
 
         print("");
@@ -92,38 +82,5 @@ public final class CacheAtomicReferenceExample {
      */
     private static void print(Object o) {
         System.out.println(">>> " + o);
-    }
-
-    /**
-     * Obtains atomic reference.
-     */
-    private static class ReferenceClosure extends GridRunnable {
-        /** Cache name. */
-        private final String cacheName;
-
-        /** Reference name. */
-        private final String refName;
-
-        /**
-         * @param cacheName Cache name.
-         * @param refName Reference name.
-         */
-        ReferenceClosure(String cacheName, String refName) {
-            this.cacheName = cacheName;
-            this.refName = refName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            try {
-                GridCacheAtomicReference<String> ref = GridGain.grid().cache(cacheName).dataStructures().
-                    atomicReference(refName, null, true);
-
-                print("Atomic reference value is " + ref.get() + '.');
-            }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
-            }
-        }
     }
 }

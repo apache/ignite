@@ -53,14 +53,28 @@ public final class CacheAtomicLongExample {
             // Initialize atomic long in grid.
             GridCacheAtomicLong atomicLong = g.cache(CACHE_NAME).dataStructures().atomicLong(atomicName, 0, true);
 
-            print("Atomic long initial size : " + atomicLong.get() + '.');
+            print("Atomic long initial value : " + atomicLong.get() + '.');
 
-            // Try increment atomic long from all grid nodes.
-            // Note that this node is also part of the grid.
-            g.compute().call(new IncrementClosure(CACHE_NAME, atomicName)).get();
+            atomicLong.incrementAndGet();
 
+            print("Atomic long value after increment: " + atomicLong.get());
+
+            atomicLong.compareAndSet(2, new GridPredicate<Long>() {
+                @Override public boolean apply(Long val) {
+                    return val == 0;
+                }
+            });
+
+            print("Atomic long value after failed CAS: " + atomicLong.get());
+
+            atomicLong.compareAndSet(2, new GridPredicate<Long>() {
+                @Override public boolean apply(Long val) {
+                    return val == 1;
+                }
+            });
+
+            print("Atomic long value after successful CAS: " + atomicLong.get());
             print("");
-            print("AtomicLong after incrementing [expected=" + (nodes * RETRIES) + ", actual=" + atomicLong.get() + ']');
             print("Finished atomic long example...");
             print("Check all nodes for output (this node is also part of the grid).");
             print("");
@@ -74,36 +88,5 @@ public final class CacheAtomicLongExample {
      */
     private static void print(Object o) {
         System.out.println(">>> " + o);
-    }
-
-    /**
-     * Performs increments on an atomic variable in cache.
-     */
-    private static class IncrementClosure extends GridCallable<Object> {
-        /** Cache name. */
-        private final String cacheName;
-
-        /** Atomic variable name. */
-        private final String atomicName;
-
-        /**
-         * @param cacheName Cache name.
-         * @param atomicName Atomic variable name.
-         */
-        IncrementClosure(String cacheName, String atomicName) {
-            this.cacheName = cacheName;
-            this.atomicName = atomicName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object call() throws Exception {
-            GridCacheAtomicLong atomicLong = GridGain.grid().cache(cacheName).dataStructures().
-                atomicLong(atomicName, 0, true);
-
-            for (int i = 0; i < RETRIES; i++)
-                print("AtomicLong value has been incremented " + atomicLong.incrementAndGet() + '.');
-
-            return null;
-        }
     }
 }
