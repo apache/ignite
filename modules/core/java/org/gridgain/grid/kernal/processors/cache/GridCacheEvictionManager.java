@@ -145,8 +145,13 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 if (e.detached() || e.isInternal())
                     continue;
 
-                if (e.markObsoleteIfEmpty(null) || e.obsolete())
-                    e.context().cache().removeEntry(e);
+                try {
+                    if (e.markObsoleteIfEmpty(null) || e.obsolete())
+                        e.context().cache().removeEntry(e);
+                }
+                catch (GridException ex) {
+                    U.error(log, "Failed to evict entry from cache: " + e, ex);
+                }
 
                 if (memoryMode == OFFHEAP_TIERED) {
                     try {
@@ -767,8 +772,13 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         if (e.detached() || e.isInternal())
             return;
 
-        if (e.markObsoleteIfEmpty(null) || e.obsolete())
-            e.context().cache().removeEntry(e);
+        try {
+            if (e.markObsoleteIfEmpty(null) || e.obsolete())
+                e.context().cache().removeEntry(e);
+        }
+        catch (GridException ex) {
+            U.error(log, "Failed to evict entry from cache: " + e, ex);
+        }
 
         if (memoryMode == OFFHEAP_TIERED) {
             try {
