@@ -16,7 +16,7 @@
 # Import common functions.
 #
 if [ "${GRIDGAIN_HOME}" = "" ];
-    then GRIDGAIN_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
+    then GRIDGAIN_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";GRIDGAIN_HOME_TMP="$(dirname "${GRIDGAIN_HOME_TMP}")"
     else GRIDGAIN_HOME_TMP=${GRIDGAIN_HOME};
 fi
 
@@ -43,7 +43,7 @@ setGridGainHome
 . "${GRIDGAIN_HOME}"/os/bin/include/setenv.sh
 
 CP="${GRIDGAIN_LIBS}"
-
+CP="${CP}":"${GRIDGAIN_HOME}"/os/modules/visor-console/libs/*
 #
 # JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.
 #
