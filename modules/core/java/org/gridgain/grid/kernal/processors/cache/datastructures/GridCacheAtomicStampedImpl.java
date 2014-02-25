@@ -18,7 +18,6 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
@@ -34,8 +33,7 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
  * @author @java.author
  * @version @java.version
  */
-public final class GridCacheAtomicStampedImpl<T, S> extends GridMetadataAwareAdapter implements
-    GridCacheAtomicStampedEx<T, S>, Externalizable {
+public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicStampedEx<T, S>, Externalizable {
     /** Deserialization stash. */
     private static final ThreadLocal<GridBiTuple<GridCacheContext, String>> stash =
         new ThreadLocal<GridBiTuple<GridCacheContext, String>>() {
@@ -141,24 +139,10 @@ public final class GridCacheAtomicStampedImpl<T, S> extends GridMetadataAwareAda
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridBiTuple<T, S>> getAsync() throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(getCall, true);
-    }
-
-    /** {@inheritDoc} */
     @Override public void set(T val, S stamp) throws GridException {
         checkRemoved();
 
         CU.outTx(internalSet(val, stamp), ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> setAsync(T val, S stamp) throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(internalSet(val, stamp), true);
     }
 
     /** {@inheritDoc} */
@@ -197,43 +181,6 @@ public final class GridCacheAtomicStampedImpl<T, S> extends GridMetadataAwareAda
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> compareAndSetAsync(T expVal, T newVal, S expStamp, S newStamp)
-        throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(internalCompareAndSet(F0.equalTo(expVal), wrapperClosure(newVal),
-            F0.equalTo(expStamp), wrapperClosure(newStamp)), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> compareAndSetAsync(T expVal, GridClosure<T, T> newValClos,
-        S expStamp, GridClosure<S, S> newStampClos) throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(internalCompareAndSet(F0.equalTo(expVal), newValClos,
-            F0.equalTo(expStamp), newStampClos), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> compareAndSetAsync(GridPredicate<T> expValPred,
-        GridClosure<T, T> newValClos, GridPredicate<S> expStampPred, GridClosure<S, S> newStampClos)
-        throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(internalCompareAndSet(expValPred, newValClos,
-            expStampPred, newStampClos), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> compareAndSetAsync(GridPredicate<T> expValPred, T newVal,
-        GridPredicate<S> expStampPred, S newStamp) throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(internalCompareAndSet(expValPred, wrapperClosure(newVal),
-            expStampPred, wrapperClosure(newStamp)), true);
-    }
-
-    /** {@inheritDoc} */
     @Override public S stamp() throws GridException {
         checkRemoved();
 
@@ -241,24 +188,10 @@ public final class GridCacheAtomicStampedImpl<T, S> extends GridMetadataAwareAda
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<S> stampAsync() throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(stampCall, true);
-    }
-
-    /** {@inheritDoc} */
     @Override public T value() throws GridException {
         checkRemoved();
 
         return CU.outTx(valCall, ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<T> valueAsync() throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(valCall, true);
     }
 
     /** {@inheritDoc} */

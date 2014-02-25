@@ -112,15 +112,14 @@ public abstract class GridCacheDataStructuresManager<K, V> extends GridCacheMana
      * Gets a queue from cache or creates one if it's not cached.
      *
      * @param name Name of queue.
-     * @param type Type of queue.
-     * @param capacity Max size of queue.
+     * @param cap Max size of queue.
      * @param collocated Collocation flag.
      * @param create If {@code true} queue will be created in case it is not in cache.
      * @return Instance of queue.
      * @throws GridException If failed.
      */
-    public abstract <T> GridCacheQueue<T> queue(String name, GridCacheQueueType type, int capacity,
-        boolean collocated, boolean create) throws GridException;
+    public abstract <T> GridCacheQueue<T> queue(String name, int cap, boolean collocated, boolean create)
+        throws GridException;
 
     /**
      * Removes queue from cache.
@@ -165,13 +164,6 @@ public abstract class GridCacheDataStructuresManager<K, V> extends GridCacheMana
      * @param tx Committed transaction.
      */
     public abstract void onTxCommitted(GridCacheTxEx<K, V> tx);
-
-    /**
-     * Gets cache of methods and fields annotated by {@link GridCacheQueuePriority}.
-     *
-     * @return Cache of methods and fields annotated by {@link GridCacheQueuePriority}.
-     */
-    public abstract GridCacheAnnotationHelper<GridCacheQueuePriority> priorityAnnotations();
 
     /**
      * Callback for partition map changes.

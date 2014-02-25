@@ -330,7 +330,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @throws GridException In case of error.
      */
     private static GridFuture<?> incrementOrDecrement(GridCache<Object, Object> cache, String key,
-        GridRestRequest req, boolean decr) throws GridException {
+        GridRestRequest req, final boolean decr) throws GridException {
         assert cache != null;
         assert key != null;
         assert req != null;
@@ -369,9 +369,15 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         else if (deltaObj instanceof Long)
             delta = (Long)deltaObj;
 
-        GridCacheAtomicLong l = cache.dataStructures().atomicLong(key, init != null ? init : 0, true);
+        final GridCacheAtomicLong l = cache.dataStructures().atomicLong(key, init != null ? init : 0, true);
 
-        return l.addAndGetAsync(decr ? -delta : delta);
+        final Long d = delta;
+
+        return ((GridKernal)cache.gridProjection().grid()).context().closure().callLocalSafe(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                return l.addAndGet(decr ? -d : d);
+            }
+        }, false);
     }
 
     /**

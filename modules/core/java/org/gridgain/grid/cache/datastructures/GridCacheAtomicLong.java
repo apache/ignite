@@ -58,7 +58,7 @@ import org.gridgain.grid.lang.*;
  * @see GridCacheDataStructures#atomicLong(String, long, boolean)
  * @see GridCacheDataStructures#removeAtomicLong(String)
  */
-public interface GridCacheAtomicLong extends GridMetadataAware{
+public interface GridCacheAtomicLong {
     /**
      * Name of atomic long.
      *
@@ -75,14 +75,6 @@ public interface GridCacheAtomicLong extends GridMetadataAware{
     public long get() throws GridException;
 
     /**
-     * Gets current value of atomic long asynchronously.
-     *
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Long> getAsync() throws GridException;
-
-    /**
      * Increments and gets current value of atomic long.
      *
      * @return Value.
@@ -91,28 +83,12 @@ public interface GridCacheAtomicLong extends GridMetadataAware{
     public long incrementAndGet() throws GridException;
 
     /**
-     * Increments and gets current value of atomic long asynchronously.
-     *
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Long> incrementAndGetAsync() throws GridException;
-
-    /**
      * Gets and increments current value of atomic long.
      *
      * @return Value.
      * @throws GridException If operation failed.
      */
     public long getAndIncrement() throws GridException;
-
-    /**
-     * Gets and increments current value of atomic long asynchronously.
-     *
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Long> getAndIncrementAsync() throws GridException;
 
     /**
      * Adds {@code l} and gets current value of atomic long.
@@ -124,15 +100,6 @@ public interface GridCacheAtomicLong extends GridMetadataAware{
     public long addAndGet(long l) throws GridException;
 
     /**
-     * Adds {@code l} and gets current value of atomic long asynchronously.
-     *
-     * @param l Number which will be added.
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Long> addAndGetAsync(long l) throws GridException;
-
-    /**
      * Gets current value of atomic long and adds {@code l}.
      *
      * @param l Number which will be added.
@@ -140,15 +107,6 @@ public interface GridCacheAtomicLong extends GridMetadataAware{
      * @throws GridException If operation failed.
      */
     public long getAndAdd(long l) throws GridException;
-
-    /**
-     * Gets current value of atomic long and adds {@code l} asynchronously.
-     *
-     * @param l Number which will be added.
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Long> getAndAddAsync(long l) throws GridException;
 
     /**
      * Decrements and gets current value of atomic long.
@@ -159,28 +117,12 @@ public interface GridCacheAtomicLong extends GridMetadataAware{
     public long decrementAndGet() throws GridException;
 
     /**
-     * Decrements and gets current value of atomic long asynchronously.
-     *
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Long> decrementAndGetAsync() throws GridException;
-
-    /**
      * Gets and decrements current value of atomic long.
      *
      * @return Value.
      * @throws GridException If operation failed.
      */
     public long getAndDecrement() throws GridException;
-
-    /**
-     * Gets and decrements current value of atomic long asynchronously.
-     *
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Long> getAndDecrementAsync() throws GridException;
 
     /**
      * Gets current value of atomic long and sets new value {@code l} of atomic long.
@@ -192,15 +134,6 @@ public interface GridCacheAtomicLong extends GridMetadataAware{
     public long getAndSet(long l) throws GridException;
 
     /**
-     * Gets current value of atomic long and sets new value {@code l} of atomic long asynchronously.
-     *
-     * @param l New value of atomic long.
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Long> getAndSetAsync(long l) throws GridException;
-
-    /**
      * Atomically sets the new value {@code l} of atomic long if set of predicates is true asynchronously.
      *
      * @param l New value of atomic long.
@@ -210,18 +143,6 @@ public interface GridCacheAtomicLong extends GridMetadataAware{
      * @throws GridException If operation failed.
      */
     public boolean compareAndSet(long l, GridPredicate<Long> p, GridPredicate<Long>... pa) throws GridException;
-
-    /**
-     * Atomically sets the new value {@code l} of atomic long if set of predicates is true.
-     *
-     * @param l New value of atomic long.
-     * @param p Predicate which should evaluate to {@code true} for value to be set.
-     * @param ps Additional predicates can be used optional.
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Boolean> compareAndSetAsync(long l, GridPredicate<Long> p, GridPredicate<Long>... ps)
-        throws GridException;
 
     /**
      * Gets status of atomic.

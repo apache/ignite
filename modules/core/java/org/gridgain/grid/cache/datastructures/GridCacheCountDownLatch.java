@@ -29,7 +29,7 @@ import java.util.concurrent.*;
  * @see GridCacheDataStructures#countDownLatch(String, int, boolean, boolean)
  * @see GridCacheDataStructures#removeCountDownLatch(String)
  */
-public interface GridCacheCountDownLatch extends GridMetadataAware {
+public interface GridCacheCountDownLatch {
     /**
      * Gets name of the latch.
      *
@@ -173,33 +173,6 @@ public interface GridCacheCountDownLatch extends GridMetadataAware {
     public boolean await(long timeout, TimeUnit unit) throws GridException;
 
     /**
-     * Asynchronously waits until the latch has counted down to zero.
-     *
-     * @return Future for the operation.
-     */
-    public GridFuture<?> awaitAsync();
-
-    /**
-     * Asynchronously waits until the latch has counted down to zero
-     * or the specified waiting time elapses.
-     *
-     * @param timeout The maximum time to wait in milliseconds.
-     * @return Future for the operation.
-     */
-    public GridFuture<Boolean> awaitAsync(long timeout);
-
-    /**
-     * Asynchronously waits until the latch has counted down to zero,
-     * or the specified waiting time elapses.
-     *
-     *
-     * @param timeout The maximum time to wait.
-     * @param unit The time unit of the {@code timeout} argument.
-     * @return Future for the operation.
-     */
-    public GridFuture<Boolean> awaitAsync(long timeout, TimeUnit unit);
-
-    /**
      * Decrements the count of the latch, releasing all waiting threads
      * on all nodes if the count reaches zero.
      * <p>
@@ -238,45 +211,6 @@ public interface GridCacheCountDownLatch extends GridMetadataAware {
      * @throws GridException If operation failed.
      */
     public void countDownAll() throws GridException;
-
-    /**
-     * Asynchronously decrements the count of the latch, releasing all waiting threads if
-     * the count reaches zero.
-     * <p>
-     * If the current count is greater than zero then it is decremented.
-     * If the new count is zero then all waiting threads on all nodes
-     * are re-enabled for thread scheduling purposes.
-     * <p>
-     * If the current count equals zero then nothing happens.
-     *
-     * @return Count after decrement.
-     */
-    public GridFuture<Integer> countDownAsync();
-
-    /**
-     * Asynchronously decreases the count of the latch using passed in value,
-     * releasing all waiting threads on all nodes if the count reaches zero.
-     * <p>
-     * If the current count is greater than zero then it is decreased.
-     * If the new count is zero then all waiting threads on all nodes
-     * are re-enabled for thread scheduling purposes.
-     * <p>
-     * If the current count equals zero then nothing happens.
-     *
-     * @param val Value to decrease counter on.
-     * @return Count after decrement.
-     */
-    public GridFuture<Integer> countDownAsync(int val);
-
-    /**
-     * Asynchronously counts down this latch to zero, releasing all waiting
-     * threads on all nodes.
-     * <p>
-     * If the current count equals zero then nothing happens.
-     *
-     * @return Count after decrement.
-     */
-    public GridFuture<?> countDownAllAsync();
 
     /**
      * Gets {@code removed} status of the latch.

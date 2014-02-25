@@ -17,7 +17,6 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.GridLogger;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -32,8 +31,7 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
  * @author @java.author
  * @version @java.version
  */
-public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter implements GridCacheAtomicLongEx,
-    Externalizable {
+public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Externalizable {
     /** Deserialization stash. */
     private static final ThreadLocal<GridBiTuple<GridCacheContext, String>> stash =
         new ThreadLocal<GridBiTuple<GridCacheContext, String>>() {
@@ -239,24 +237,10 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Long> getAsync() throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(getCall, true);
-    }
-
-    /** {@inheritDoc} */
     @Override public long incrementAndGet() throws GridException {
         checkRemoved();
 
         return CU.outTx(incAndGetCall, ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Long> incrementAndGetAsync() throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(incAndGetCall, true);
     }
 
     /** {@inheritDoc} */
@@ -267,24 +251,10 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Long> getAndIncrementAsync() throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(getAndIncCall, true);
-    }
-
-    /** {@inheritDoc} */
     @Override public long addAndGet(long l) throws GridException {
         checkRemoved();
 
         return CU.outTx(internalAddAndGet(l), ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Long> addAndGetAsync(long l) throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(internalAddAndGet(l), true);
     }
 
     /** {@inheritDoc} */
@@ -295,24 +265,10 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Long> getAndAddAsync(long l) throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(internalGetAndAdd(l), true);
-    }
-
-    /** {@inheritDoc} */
     @Override public long decrementAndGet() throws GridException {
         checkRemoved();
 
         return CU.outTx(decAndGetCall, ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Long> decrementAndGetAsync() throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(decAndGetCall, true);
     }
 
     /** {@inheritDoc} */
@@ -323,24 +279,10 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Long> getAndDecrementAsync() throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(getAndDecCall, true);
-    }
-
-    /** {@inheritDoc} */
     @Override public long getAndSet(long l) throws GridException {
         checkRemoved();
 
         return CU.outTx(internalGetAndSet(l), ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Long> getAndSetAsync(long l) throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(internalGetAndSet(l), true);
     }
 
     /** {@inheritDoc} */
@@ -350,15 +292,6 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
         A.notNull(p, "p");
 
         return CU.outTx(internalCompareAndSet(l, p, ps), ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> compareAndSetAsync(long l, GridPredicate<Long> p, GridPredicate<Long>... ps)
-        throws GridException {
-        checkRemoved();
-        A.notNull(p, "p");
-
-        return ctx.closures().callLocalSafe(internalCompareAndSet(l, p, ps), true);
     }
 
     /**

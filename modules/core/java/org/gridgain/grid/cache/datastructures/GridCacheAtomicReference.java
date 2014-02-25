@@ -45,7 +45,7 @@ import org.gridgain.grid.lang.*;
  * @see GridCacheDataStructures#atomicReference(String, Object, boolean)
  * @see GridCacheDataStructures#removeAtomicReference(String)
  */
-public interface GridCacheAtomicReference<T> extends GridMetadataAware{
+public interface GridCacheAtomicReference<T> {
     /**
      * Name of atomic reference.
      *
@@ -62,30 +62,12 @@ public interface GridCacheAtomicReference<T> extends GridMetadataAware{
     public T get() throws GridException;
 
     /**
-     * Gets both current value of an atomic reference asynchronously.
-     *
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<T> getAsync() throws GridException;
-
-    /**
      * Unconditionally sets the value.
      *
      * @param val Value.
      * @throws GridException If operation failed.
      */
     public void set(T val) throws GridException;
-
-    /**
-     * Unconditionally sets the value asynchronously.
-     *
-     * @param val Value.
-     * @return Future that completes once calculation has finished. If {@code true} than
-     *      value have been updated.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Boolean> setAsync(T val) throws GridException;
 
     /**
      * Conditionally sets the new value. That will be set if {@code expVal} is equal
@@ -130,53 +112,6 @@ public interface GridCacheAtomicReference<T> extends GridMetadataAware{
      * @throws GridException If operation failed.
      */
     public boolean compareAndSet(GridPredicate<T> expValPred, T newVal) throws GridException;
-
-    /**
-     * Conditionally asynchronously sets the new value. It will be set if {@code expVal}
-     * is equal to current value respectively.
-     *
-     * @param expVal Expected value.
-     * @param newVal New value.
-     * @return Future that completes once calculation has finished. If {@code true} than value
-     *      have been updated.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Boolean> compareAndSetAsync(T expVal, T newVal)
-        throws GridException;
-
-    /**
-     * Conditionally asynchronously sets the new value. It will be set if {@code expVal}
-     * is equal to current value respectively.
-     *
-     * @param expVal Expected value.
-     * @param newValClos Closure generates new value.
-     * @return Future that completes once calculation has finished. If {@code true} than value have been updated.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Boolean> compareAndSetAsync(T expVal, GridClosure<T, T> newValClos) throws GridException;
-
-    /**
-     * Conditionally asynchronously sets the new value. It will be set if {@code expValPred}
-     * is evaluate to {@code true}.
-     *
-     * @param expValPred Predicate which should evaluate to {@code true} for value to be set.
-     * @param newValClos Closure generates new value.
-     * @return Future that completes once calculation has finished. If {@code true} than value have been updated.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Boolean> compareAndSetAsync(GridPredicate<T> expValPred, GridClosure<T, T> newValClos)
-        throws GridException;
-
-    /**
-     * Conditionally asynchronously sets the new value. It will be set if {@code expValPred}
-     * is evaluate to {@code true}.
-     *
-     * @param expValPred Predicate which should evaluate to {@code true} for value to be set.
-     * @param newVal New value.
-     * @return Future that completes once calculation has finished. If {@code true} than value have been updated.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Boolean> compareAndSetAsync(GridPredicate<T> expValPred, T newVal) throws GridException;
 
     /**
      * Gets status of atomic.
