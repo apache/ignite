@@ -57,7 +57,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
+        <!-- ENTERPRISE DEPENDENCIES START -->
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-core-ent</artifactId>
@@ -71,6 +71,7 @@
             <version>${gridgain.version}</version>
             <scope>runtime</scope>
         </dependency>
+        <!-- ENTERPRISE DEPENDENCIES END -->
     </dependencies>
 
     <build>
