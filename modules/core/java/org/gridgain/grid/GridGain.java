@@ -1400,7 +1400,6 @@ public class GridGain {
             myCfg.setIncludeProperties(cfg.getIncludeProperties());
             myCfg.setLifeCycleEmailNotification(cfg.isLifeCycleEmailNotification());
             myCfg.setMetricsLogFrequency(cfg.getMetricsLogFrequency());
-            myCfg.setLocalEventListeners(cfg.getLocalEventListeners());
             myCfg.setNetworkSendRetryDelay(cfg.getNetworkSendRetryDelay());
             myCfg.setNetworkSendRetryCount(cfg.getNetworkSendRetryCount());
             myCfg.setDataCenterId(cfg.getDataCenterId());

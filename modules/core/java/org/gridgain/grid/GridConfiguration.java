@@ -551,7 +551,6 @@ public class GridConfiguration {
         lifeCycleEmailNtf = cfg.isLifeCycleEmailNotification();
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
-        lsnrs = cfg.getLocalEventListeners();
         marsh = cfg.getMarshaller();
         marshLocJobs = cfg.isMarshalLocalJobs();
         mbeanSrv = cfg.getMBeanServer();
