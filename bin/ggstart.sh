@@ -22,7 +22,7 @@ if [ "${GRIDGAIN_HOME}" = "" ];
     else GRIDGAIN_HOME_TMP=${GRIDGAIN_HOME};
 fi
 
-source "${GRIDGAIN_HOME_TMP}"/bin/include/functions.sh
+source "${GRIDGAIN_HOME_TMP}"/os/bin/include/functions.sh
 
 #
 # Discover path to Java executable and check it's version.
@@ -35,18 +35,18 @@ checkJava
 setGridGainHome
 
 if [ "${DEFAULT_CONFIG}" == "" ]; then
-    DEFAULT_CONFIG="${GRIDGAIN_HOME}/config/default-config.xml"
+    DEFAULT_CONFIG="${GRIDGAIN_HOME}/os/config/default-config.xml"
 fi
 
 #
 # Parse command line parameters.
 #
-. "${GRIDGAIN_HOME}"/bin/include/parseargs.sh
+. "${GRIDGAIN_HOME}"/os/bin/include/parseargs.sh
 
 #
 # Set GRIDGAIN_LIBS.
 #
-. "${GRIDGAIN_HOME}"/bin/include/setenv.sh
+. "${GRIDGAIN_HOME}"/os/bin/include/setenv.sh
 
 CP="${GRIDGAIN_LIBS}"
 
