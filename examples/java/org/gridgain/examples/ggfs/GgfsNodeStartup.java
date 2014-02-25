@@ -12,8 +12,6 @@ package org.gridgain.examples.ggfs;
 import org.gridgain.grid.*;
 import org.gridgain.grid.product.*;
 
-import javax.swing.*;
-
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
@@ -37,17 +35,6 @@ public class GgfsNodeStartup {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = GridGain.start("examples/config/example-ggfs.xml")) {
-            // Wait until Ok is pressed.
-            JOptionPane.showMessageDialog(
-                null,
-                new JComponent[] {
-                    new JLabel("GridGain started."),
-                    new JLabel("Press OK to stop GridGain.")
-                },
-                "GridGain",
-                JOptionPane.INFORMATION_MESSAGE
-            );
-        }
+        GridGain.start("examples/config/example-ggfs.xml");
     }
 }

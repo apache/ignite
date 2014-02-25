@@ -27,7 +27,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
-public class GridClientBigIntegerMessageInterceptor implements GridClientMessageInterceptor {
+public class ClientBigIntegerMessageInterceptor implements GridClientMessageInterceptor {
     /** {@inheritDoc} */
     @Override public Object onReceive(@Nullable Object obj) {
         if (obj instanceof byte[]) {

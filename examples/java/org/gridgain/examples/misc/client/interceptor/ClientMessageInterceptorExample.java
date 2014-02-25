@@ -21,14 +21,14 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 /**
  * This example creates a client and performs few cache operations using
  * custom object representation, which is transformed by
- * {@link GridClientBigIntegerMessageInterceptor}. Check remote node output
+ * {@link ClientBigIntegerMessageInterceptor}. Check remote node output
  * for transformation reports.
  * <p>
  * For this example you should startup remote nodes only by calling
- * {@link GridClientMessageInterceptorExampleNodeStartup} class.
+ * {@link ClientMessageInterceptorExampleNodeStartup} class.
  * <p>
  * You should not be using stand-alone nodes because GridGain nodes do not
- * know about the {@link GridClientBigIntegerMessageInterceptor} we define in this example.
+ * know about the {@link ClientBigIntegerMessageInterceptor} we define in this example.
  * <p>
  * Note that different nodes cannot share the same port for rest services. If you want
  * to start more than one node on the same physical machine you must provide different
@@ -38,7 +38,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
-public class GridClientMessageInterceptorExample {
+public class ClientMessageInterceptorExample {
     /** Grid node address to connect to. */
     private static final String SERVER_ADDRESS = "127.0.0.1";
 

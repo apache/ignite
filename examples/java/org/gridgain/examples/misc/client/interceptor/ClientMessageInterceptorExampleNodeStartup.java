@@ -28,7 +28,7 @@ import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
- * Starts up grid node (server) for use with {@link GridClientMessageInterceptorExample}.
+ * Starts up grid node (server) for use with {@link ClientMessageInterceptorExample}.
  * <p>
  * Note that different nodes cannot share the same port for rest services. If you want
  * to start more than one node on the same physical machine you must provide different
@@ -37,7 +37,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridClientMessageInterceptorExampleNodeStartup {
+public class ClientMessageInterceptorExampleNodeStartup {
     /**
      * Starts up a node with specified cache configuration.
      *
@@ -84,7 +84,7 @@ public class GridClientMessageInterceptorExampleNodeStartup {
 
         cfg.setIndexingSpi(indexSpi);
 
-        cfg.setClientMessageInterceptor(new GridClientBigIntegerMessageInterceptor());
+        cfg.setClientMessageInterceptor(new ClientBigIntegerMessageInterceptor());
 
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
 

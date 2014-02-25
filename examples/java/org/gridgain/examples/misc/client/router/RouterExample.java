@@ -21,8 +21,8 @@ import java.util.*;
 /**
  * This example demonstrates use of Java client, connected to Grid through router.
  * To execute this example you should start an instance of
- * {@link GridClientExampleNodeStartup} class which will start up a GridGain node.
- * And an instance of {@link GridExampleRouterStartup} which will start up
+ * {@link org.gridgain.examples.misc.client.api.ClientExampleNodeStartup} class which will start up a GridGain node.
+ * And an instance of {@link RouterStartup} which will start up
  * a GridGain router.
  * <p>
  * Alternatively you can run node and router instances from command line.
@@ -50,7 +50,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridRouterExample {
+public class RouterExample {
     static {
         // Disable host verification for testing with example certificates.
         HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
@@ -114,7 +114,7 @@ public class GridRouterExample {
     private static void runExample(GridClient client) throws GridClientException {
         System.out.println(">>> Executing task...");
         System.out.println(">>> Task result: " + client.compute().
-            execute(GridClientExampleTask.class.getName(), "Router example."));
+            execute(ClientExampleTask.class.getName(), "Router example."));
     }
 
     /**
@@ -128,7 +128,7 @@ public class GridRouterExample {
         GridClientConfiguration cfg = new GridClientConfiguration();
 
         if (SSL_ENABLED) {
-            String home = GridExamplesUtils.resolveGridGainHome();
+            String home = ExamplesUtils.resolveGridGainHome();
 
             GridSslBasicContextFactory sslFactory = new GridSslBasicContextFactory();
 
@@ -162,7 +162,7 @@ public class GridRouterExample {
         cfg.setProtocol(GridClientProtocol.HTTP);
 
         if (SSL_ENABLED) {
-            String home = GridExamplesUtils.resolveGridGainHome();
+            String home = ExamplesUtils.resolveGridGainHome();
 
             GridSslBasicContextFactory sslFactory = new GridSslBasicContextFactory();
 

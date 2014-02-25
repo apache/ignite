@@ -30,7 +30,7 @@ import javax.swing.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridExampleRouterStartup {
+public class RouterStartup {
     static {
         // Disable host verification for testing with example certificates.
         HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
@@ -91,7 +91,7 @@ public class GridExampleRouterStartup {
         cfg.setNoDelay(TCP_NODELAY);
 
         if (SSL_ENABLED) {
-            String home = GridExamplesUtils.resolveGridGainHome();
+            String home = ExamplesUtils.resolveGridGainHome();
 
             GridSslBasicContextFactory sslFactory = new GridSslBasicContextFactory();
 
@@ -121,7 +121,7 @@ public class GridExampleRouterStartup {
         //cfg.setJettyConfigurationPath("config/my-router-jetty.xml");
 
         if (SSL_ENABLED) {
-            String home = GridExamplesUtils.resolveGridGainHome();
+            String home = ExamplesUtils.resolveGridGainHome();
 
             GridSslBasicContextFactory sslFactory = new GridSslBasicContextFactory();
 

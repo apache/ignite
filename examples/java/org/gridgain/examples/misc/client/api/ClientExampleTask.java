@@ -19,7 +19,7 @@ import java.util.*;
  * This task will produce as many grid jobs as there are nodes in the grid.
  * Each produced job will yield an output with the given message.
  */
-public class GridClientExampleTask extends GridComputeTaskSplitAdapter<String, Integer> {
+public class ClientExampleTask extends GridComputeTaskSplitAdapter<String, Integer> {
     /** {@inheritDoc} */
     @Override protected Collection<? extends GridComputeJob> split(int gridSize, final String arg) throws GridException {
         Collection<GridComputeJob> res = new ArrayList<>(gridSize);

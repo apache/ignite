@@ -19,8 +19,6 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.*;
 
-import javax.swing.*;
-
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -47,18 +45,7 @@ public class GgfsEndpointNodeStartup {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = GridGain.start(configuration())) {
-            // Wait until Ok is pressed.
-            JOptionPane.showMessageDialog(
-                null,
-                new JComponent[]{
-                    new JLabel("GridGain started."),
-                    new JLabel("Press OK to stop GridGain.")
-                },
-                "GridGain",
-                JOptionPane.INFORMATION_MESSAGE
-            );
-        }
+        GridGain.start(configuration());
     }
 
     /**

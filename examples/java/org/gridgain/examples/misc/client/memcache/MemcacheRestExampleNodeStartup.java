@@ -12,24 +12,17 @@ package org.gridgain.examples.misc.client.memcache;
 import org.gridgain.examples.misc.client.interceptor.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.partitioned.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.spi.indexing.h2.*;
 
-import javax.swing.*;
-
 import java.util.*;
 
-import static org.gridgain.grid.GridDeploymentMode.SHARED;
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.ATOMIC;
-import static org.gridgain.grid.cache.GridCacheMode.PARTITIONED;
-import static org.gridgain.grid.cache.GridCachePartitionedDistributionMode.PARTITIONED_ONLY;
-import static org.gridgain.grid.cache.GridCachePreloadMode.SYNC;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.FULL_SYNC;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.gridgain.grid.GridDeploymentMode.*;
+import static org.gridgain.grid.cache.GridCachePreloadMode.*;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
@@ -42,7 +35,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
-public class GridMemcacheRestExampleNodeStartup {
+public class MemcacheRestExampleNodeStartup {
     /**
      * Start up an empty node with specified cache configuration.
      *
@@ -50,18 +43,7 @@ public class GridMemcacheRestExampleNodeStartup {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = GridGain.start(configuration())) {
-            // Wait until Ok is pressed.
-            JOptionPane.showMessageDialog(
-                null,
-                new JComponent[] {
-                    new JLabel("GridGain started."),
-                    new JLabel("Press OK to stop GridGain.")
-                },
-                "GridGain",
-                JOptionPane.INFORMATION_MESSAGE
-            );
-        }
+        GridGain.start(configuration());
     }
 
     /**
@@ -89,7 +71,7 @@ public class GridMemcacheRestExampleNodeStartup {
 
         cfg.setIndexingSpi(indexSpi);
 
-        cfg.setClientMessageInterceptor(new GridClientBigIntegerMessageInterceptor());
+        cfg.setClientMessageInterceptor(new ClientBigIntegerMessageInterceptor());
 
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
 

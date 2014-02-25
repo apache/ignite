@@ -11,10 +11,8 @@ package org.gridgain.examples.misc.client.api;
 
 import org.gridgain.grid.*;
 
-import javax.swing.*;
-
 /**
- * Starts up grid node (server) for use with {@link GridClientApiExample} or for use
+ * Starts up grid node (server) for use with {@link ClientApiExample} or for use
  * with .NET C# client API example as well.
  * <p>
  * Note that different nodes cannot share the same port for rest services. If you want
@@ -24,7 +22,7 @@ import javax.swing.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridClientExampleNodeStartup {
+public class ClientExampleNodeStartup {
     /**
      * Change to {@code true} to enable SSL.
      * Note that you need to appropriately update router and client configurations.
@@ -44,17 +42,6 @@ public class GridClientExampleNodeStartup {
         String springCfgPath = SSL_ENABLED ? "examples/config/example-client-ssl.xml" :
             "examples/config/example-client.xml";
 
-        try (Grid g = GridGain.start(springCfgPath)) {
-            // Wait until Ok is pressed.
-            JOptionPane.showMessageDialog(
-                null,
-                new JComponent[]{
-                    new JLabel("GridGain started."),
-                    new JLabel("Press OK to stop GridGain.")
-                },
-                "GridGain",
-                JOptionPane.INFORMATION_MESSAGE
-            );
-        }
+        GridGain.start(springCfgPath);
     }
 }

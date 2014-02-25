@@ -25,14 +25,14 @@ import java.util.*;
  * REST is enabled on the node.
  * <p>
  * If you want to test this example with remote node, please don't start remote
- * node from command line but start {@link GridMemcacheRestExampleNodeStartup} from IDE
+ * node from command line but start {@link MemcacheRestExampleNodeStartup} from IDE
  * instead because this example requires that some classes are present in classpath
  * on all nodes.
  *
  * @author @java.author
  * @version @java.version
  */
-public class GridMemcacheRestExample {
+public class MemcacheRestExample {
     /** Hostname for client connection. */
     private static final String host = "localhost";
 
@@ -46,7 +46,7 @@ public class GridMemcacheRestExample {
     public static void main(String[] args) throws Exception {
         MemcachedClient client = null;
 
-        try (Grid g = GridGain.start(GridMemcacheRestExampleNodeStartup.configuration())) {
+        try (Grid g = GridGain.start(MemcacheRestExampleNodeStartup.configuration())) {
             GridCache<String, Object> cache = g.cache(null);
 
             client = startMemcachedClient(host, port);

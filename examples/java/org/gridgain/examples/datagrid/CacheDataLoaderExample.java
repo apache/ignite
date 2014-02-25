@@ -50,7 +50,7 @@ public class CacheDataLoaderExample {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        GridExamplesUtils.checkMinMemory(MIN_MEMORY);
+        ExamplesUtils.checkMinMemory(MIN_MEMORY);
 
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
             try (GridDataLoader<Integer, String> ldr = g.dataLoader(CACHE_NAME)) {

@@ -57,7 +57,7 @@ public class CacheStoreLoadDataExample {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        GridExamplesUtils.checkMinMemory(MIN_MEMORY);
+        ExamplesUtils.checkMinMemory(MIN_MEMORY);
 
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
             final GridCache<String, Integer> cache = g.cache(CACHE_NAME);

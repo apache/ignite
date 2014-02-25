@@ -21,7 +21,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * This example demonstrates use of Java remote client API. To execute
- * this example you should start an instance of {@link GridClientCacheExampleNodeStartup}
+ * this example you should start an instance of {@link ClientCacheExampleNodeStartup}
  * class which will start up a GridGain node with proper configuration.
  * <p>
  * After node has been started this example creates a client and performs several cache
@@ -38,12 +38,12 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
-public class GridClientCacheExample {
+public class ClientCacheExample {
     /** Grid node address to connect to. */
     private static final String SERVER_ADDRESS = "127.0.0.1";
 
-    /** Change {@link GridClientCacheExampleNodeStartup#SSL_ENABLED} to {@code true} to enable SSL. */
-    private static final Boolean SSL_ENABLED = GridClientCacheExampleNodeStartup.SSL_ENABLED;
+    /** Change {@link ClientCacheExampleNodeStartup#SSL_ENABLED} to {@code true} to enable SSL. */
+    private static final Boolean SSL_ENABLED = ClientCacheExampleNodeStartup.SSL_ENABLED;
 
     /** Count of keys to be stored in this example. */
     public static final int KEYS_CNT = 10;
@@ -230,7 +230,7 @@ public class GridClientCacheExample {
         GridClientConfiguration cfg = new GridClientConfiguration();
 
         if (SSL_ENABLED) {
-            String home = GridExamplesUtils.resolveGridGainHome();
+            String home = ExamplesUtils.resolveGridGainHome();
 
             GridSslBasicContextFactory sslFactory = new GridSslBasicContextFactory();
 

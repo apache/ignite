@@ -20,7 +20,7 @@ import java.util.*;
 
 /**
  * This example demonstrates use of Java remote client API. To execute
- * this example you should start an instance of {@link GridClientExampleNodeStartup}
+ * this example you should start an instance of {@link ClientExampleNodeStartup}
  * class which will start up a GridGain node with proper configuration.
  * <p>
  * After node has been started this example creates a client
@@ -36,12 +36,12 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridClientApiExample {
+public class ClientApiExample {
     /** Grid node address to connect to. */
     private static final String SERVER_ADDRESS = "127.0.0.1";
 
-    /** Change {@link GridClientExampleNodeStartup#SSL_ENABLED} to {@code true} to enable SSL. */
-    private static final Boolean SSL_ENABLED = GridClientExampleNodeStartup.SSL_ENABLED;
+    /** Change {@link ClientExampleNodeStartup#SSL_ENABLED} to {@code true} to enable SSL. */
+    private static final Boolean SSL_ENABLED = ClientExampleNodeStartup.SSL_ENABLED;
 
     /**
      * Runs client compute example.
@@ -66,7 +66,7 @@ public class GridClientApiExample {
             });
 
             // Execute test task that count number of nodes it is running on.
-            Integer entryCnt = prj.execute(GridClientExampleTask.class.getName(), "Client example.");
+            Integer entryCnt = prj.execute(ClientExampleTask.class.getName(), "Client example.");
 
             System.out.println(">>> Predicate projection : " + entryCnt + " nodes participated in task.");
 
@@ -75,14 +75,14 @@ public class GridClientApiExample {
 
             prj = prj.projection(clntNode);
 
-            entryCnt = prj.execute(GridClientExampleTask.class.getName(), "Client example - single node.");
+            entryCnt = prj.execute(ClientExampleTask.class.getName(), "Client example - single node.");
 
             System.out.println(">>> GridClientNode projection : " + entryCnt + " nodes participated in task.");
 
             // Use of collections is also possible.
             prj = prj.projection(Collections.singleton(clntNode));
 
-            entryCnt = prj.execute(GridClientExampleTask.class.getName(), "Client example - collection of nodes.");
+            entryCnt = prj.execute(ClientExampleTask.class.getName(), "Client example - collection of nodes.");
 
             System.out.println(">>> Collection projection : " + entryCnt + " nodes participated in task.");
 
@@ -97,7 +97,7 @@ public class GridClientApiExample {
                 }
             }, balancer);
 
-            entryCnt = prj.execute(GridClientExampleTask.class.getName(), "Client example - explicit random balancer.");
+            entryCnt = prj.execute(ClientExampleTask.class.getName(), "Client example - explicit random balancer.");
 
             System.out.println(">>> Predicate projection with balancer : " + entryCnt + " nodes participated in task.");
 
@@ -106,13 +106,13 @@ public class GridClientApiExample {
 
             prj = prj.projection(Collections.singleton(clntNode), balancer);
 
-            entryCnt = prj.execute(GridClientExampleTask.class.getName(),
+            entryCnt = prj.execute(ClientExampleTask.class.getName(),
                 "Client example - explicit roundrobin balancer.");
 
             System.out.println(">>> GridClientNode projection : " + entryCnt + " nodes participated in task.");
 
             // Execution may be asynchronous.
-            GridClientFuture<Integer> fut = prj.executeAsync(GridClientExampleTask.class.getName(),
+            GridClientFuture<Integer> fut = prj.executeAsync(ClientExampleTask.class.getName(),
                 "Client example - asynchronous execution.");
 
             System.out.println(">>> Execute async : " + fut.get() + " nodes participated in task.");
@@ -232,7 +232,7 @@ public class GridClientApiExample {
         GridClientConfiguration cfg = new GridClientConfiguration();
 
         if (SSL_ENABLED) {
-            String home = GridExamplesUtils.resolveGridGainHome();
+            String home = ExamplesUtils.resolveGridGainHome();
 
             GridSslBasicContextFactory sslFactory = new GridSslBasicContextFactory();
 

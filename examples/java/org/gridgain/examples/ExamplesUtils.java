@@ -13,7 +13,7 @@ package org.gridgain.examples;
  * @author @java.author
  * @version @java.version
  */
-public class GridExamplesUtils {
+public class ExamplesUtils {
     /**
      * Exits with code {@code -1} if maximum memory is below 90% of minimally allowed threshold.
      *

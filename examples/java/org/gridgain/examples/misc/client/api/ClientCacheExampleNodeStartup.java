@@ -12,12 +12,10 @@ package org.gridgain.examples.misc.client.api;
 import org.gridgain.grid.*;
 import org.gridgain.grid.product.*;
 
-import javax.swing.*;
-
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
- * Starts up grid node (server) for use with {@link GridClientCacheExample}.
+ * Starts up grid node (server) for use with {@link ClientCacheExample}.
  * <p>
  * Note that different nodes cannot share the same port for rest services. If you want
  * to start more than one node on the same physical machine you must provide different
@@ -27,7 +25,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
-public class GridClientCacheExampleNodeStartup {
+public class ClientCacheExampleNodeStartup {
     /**
      * Change to {@code true} to enable SSL.
      * Note that you need to appropriately update router and client configurations.
@@ -44,17 +42,6 @@ public class GridClientCacheExampleNodeStartup {
         String springCfgPath = SSL_ENABLED ? "examples/config/example-cache-client-ssl.xml" :
             "examples/config/example-cache-client.xml";
 
-        try (Grid g = GridGain.start(springCfgPath)) {
-            // Wait until Ok is pressed.
-            JOptionPane.showMessageDialog(
-                null,
-                new JComponent[]{
-                    new JLabel("GridGain started."),
-                    new JLabel("Press OK to stop GridGain.")
-                },
-                "GridGain",
-                JOptionPane.INFORMATION_MESSAGE
-            );
-        }
+        GridGain.start(springCfgPath);
     }
 }
