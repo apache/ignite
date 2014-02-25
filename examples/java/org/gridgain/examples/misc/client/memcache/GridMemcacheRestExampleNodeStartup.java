@@ -9,18 +9,31 @@
 
 package org.gridgain.examples.misc.client.memcache;
 
+import org.gridgain.examples.misc.client.interceptor.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.partitioned.*;
+import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.product.*;
+import org.gridgain.grid.spi.discovery.tcp.*;
+import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.spi.indexing.h2.*;
 
 import javax.swing.*;
 
+import java.util.*;
+
+import static org.gridgain.grid.GridDeploymentMode.SHARED;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.ATOMIC;
+import static org.gridgain.grid.cache.GridCacheMode.PARTITIONED;
+import static org.gridgain.grid.cache.GridCachePartitionedDistributionMode.PARTITIONED_ONLY;
+import static org.gridgain.grid.cache.GridCachePreloadMode.SYNC;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.FULL_SYNC;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Starts up an empty node with cache configuration that contains default cache.
- * You can also start a stand-alone GridGain instance by passing the path
- * to configuration file to {@code 'ggstart.{sh|bat}'} script, like so:
- * {@code 'ggstart.sh examples/config/example-cache-default.xml'}.
  * <p>
  * The difference is that running this class from IDE adds all example classes to classpath
  * but running from command line doesn't.
@@ -37,7 +50,7 @@ public class GridMemcacheRestExampleNodeStartup {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = GridGain.start("examples/config/example-cache-client-memcache.xml")) {
+        try (Grid g = GridGain.start(configuration())) {
             // Wait until Ok is pressed.
             JOptionPane.showMessageDialog(
                 null,
@@ -49,5 +62,57 @@ public class GridMemcacheRestExampleNodeStartup {
                 JOptionPane.INFORMATION_MESSAGE
             );
         }
+    }
+
+    /**
+     * Create Grid configuration with GGFS and enabled IPC.
+     *
+     * @return Grid configuration.
+     * @throws GridException If configuration creation failed.
+     */
+    public static GridConfiguration configuration() throws GridException {
+        GridConfiguration cfg = new GridConfiguration();
+
+        cfg.setLocalHost("127.0.0.1");
+        cfg.setDeploymentMode(SHARED);
+        cfg.setPeerClassLoadingEnabled(true);
+
+        GridOptimizedMarshaller marsh = new GridOptimizedMarshaller();
+
+        marsh.setRequireSerializable(false);
+
+
+        GridH2IndexingSpi indexSpi = new GridH2IndexingSpi();
+
+        indexSpi.setDefaultIndexPrimitiveKey(true);
+        indexSpi.setDefaultIndexFixedTyping(false);
+
+        cfg.setIndexingSpi(indexSpi);
+
+        cfg.setClientMessageInterceptor(new GridClientBigIntegerMessageInterceptor());
+
+        GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
+
+        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+        cacheCfg.setPreloadMode(SYNC);
+
+        cfg.setCacheConfiguration(cacheCfg);
+
+        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+
+        GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
+
+        Collection<String> addrs = new ArrayList<>();
+
+        for (int i = 0; i < 10; i++)
+            addrs.add("127.0.0.1:" + (47500 + i));
+
+        ipFinder.setAddresses(addrs);
+
+        discoSpi.setIpFinder(ipFinder);
+
+        cfg.setDiscoverySpi(discoSpi);
+
+        return cfg;
     }
 }

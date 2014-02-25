@@ -46,7 +46,7 @@ public class GridMemcacheRestExample {
     public static void main(String[] args) throws Exception {
         MemcachedClient client = null;
 
-        try (Grid g = GridGain.start("examples/config/example-cache-client-memcache.xml")) {
+        try (Grid g = GridGain.start(GridMemcacheRestExampleNodeStartup.configuration())) {
             GridCache<String, Object> cache = g.cache(null);
 
             client = startMemcachedClient(host, port);

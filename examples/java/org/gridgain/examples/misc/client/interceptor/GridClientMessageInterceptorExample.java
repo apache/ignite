@@ -29,10 +29,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * <p>
  * You should not be using stand-alone nodes because GridGain nodes do not
  * know about the {@link GridClientBigIntegerMessageInterceptor} we define in this example.
- * Users can always add their classes to {@code GRIDGAIN_HOME/libs/ext} folder
- * to make them available to GridGain. If this was done here, we could
- * easily startup remote nodes with
- * {@code 'ggstart.sh examples/config/example-cache-client-interceptor.xml'} command.
  * <p>
  * Note that different nodes cannot share the same port for rest services. If you want
  * to start more than one node on the same physical machine you must provide different

@@ -80,9 +80,12 @@ public class GgfsEndpointNodeStartup {
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
 
-        ipFinder.setAddresses(Arrays.asList("127.0.0.1:47500", "127.0.0.1:47501", "127.0.0.1:47502", "127.0.0.1:47503",
-            "127.0.0.1:47504", "127.0.0.1:47505", "127.0.0.1:47506", "127.0.0.1:47507", "127.0.0.1:47508",
-            "127.0.0.1:47509"));
+        Collection<String> addrs = new ArrayList<>();
+
+        for (int i = 0; i < 10; i++)
+            addrs.add("127.0.0.1:" + (47500 + i));
+
+        ipFinder.setAddresses(addrs);
 
         discoSpi.setIpFinder(ipFinder);
 
