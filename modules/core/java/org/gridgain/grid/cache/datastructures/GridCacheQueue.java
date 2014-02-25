@@ -79,10 +79,10 @@ public interface GridCacheQueue<T> extends  BlockingQueue<T> {
     @Override public boolean add(T item) throws GridRuntimeException;
 
     /** {@inheritDoc} */
-    @Override public boolean offer(T item);
+    @Override public boolean offer(T item) throws GridRuntimeException;
 
     /** {@inheritDoc} */
-    @Override public boolean offer(T item, long timeout, TimeUnit unit);
+    @Override public boolean offer(T item, long timeout, TimeUnit unit) throws GridRuntimeException;
 
     /** {@inheritDoc} */
     @Override public boolean addAll(Collection<? extends T> items) throws GridRuntimeException;
@@ -121,19 +121,19 @@ public interface GridCacheQueue<T> extends  BlockingQueue<T> {
     @Override public int size() throws GridRuntimeException;
 
     /** {@inheritDoc} */
-    @Override @Nullable public T poll();
+    @Override @Nullable public T poll() throws GridRuntimeException;
 
     /** {@inheritDoc} */
-    @Override @Nullable public T peek();
+    @Override @Nullable public T peek() throws GridRuntimeException;
 
     /** {@inheritDoc} */
-    @Override public void put(T item);
+    @Override public void put(T item) throws GridRuntimeException;
 
     /** {@inheritDoc} */
-    @Override @Nullable public T take();
+    @Override @Nullable public T take() throws GridRuntimeException;
 
     /** {@inheritDoc} */
-    @Override @Nullable public T poll(long timeout, TimeUnit unit);
+    @Override @Nullable public T poll(long timeout, TimeUnit unit) throws GridRuntimeException;
 
     /**
      * Removes all of the elements from this queue. Method is used in massive queues with huge numbers of elements.

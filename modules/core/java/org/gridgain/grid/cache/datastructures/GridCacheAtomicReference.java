@@ -81,39 +81,6 @@ public interface GridCacheAtomicReference<T> {
     public boolean compareAndSet(T expVal, T newVal) throws GridException;
 
     /**
-     * Conditionally sets the new value. It will be set if {@code expVal} is equal
-     * to current value respectively.
-     *
-     * @param expVal Expected value.
-     * @param newValClos Closure which generates new value.
-     * @return Result of operation execution. If {@code true} than value have been updated.
-     * @throws GridException If operation failed.
-     */
-    public boolean compareAndSet(T expVal, GridClosure<T, T> newValClos) throws GridException;
-
-    /**
-     * Conditionally sets the new value. It will be set if {@code expValPred} is
-     * evaluate to {@code true}.
-     *
-     * @param expValPred Predicate which should evaluate to {@code true} for value to be set.
-     * @param newValClos Closure which generates new value.
-     * @return Result of operation execution. If {@code true} than value have been updated.
-     * @throws GridException If operation failed.
-     */
-    public boolean compareAndSet(GridPredicate<T> expValPred, GridClosure<T, T> newValClos) throws GridException;
-
-    /**
-     * Conditionally sets the new value. It will be set if {@code expValPred} is
-     * evaluate to {@code true}.
-     *
-     * @param expValPred Predicate which should evaluate to {@code true} for value to be set
-     * @param newVal New value.
-     * @return Result of operation execution. If {@code true} than value have been updated.
-     * @throws GridException If operation failed.
-     */
-    public boolean compareAndSet(GridPredicate<T> expValPred, T newVal) throws GridException;
-
-    /**
      * Gets status of atomic.
      *
      * @return {@code true} if an atomic reference was removed from cache, {@code false} otherwise.

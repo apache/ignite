@@ -286,12 +286,10 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public boolean compareAndSet(long l, GridPredicate<Long> p, GridPredicate<Long>... ps)
+    @Override public boolean compareAndSet(long expVal, long newVal)
         throws GridException {
         checkRemoved();
-        A.notNull(p, "p");
-
-        return CU.outTx(internalCompareAndSet(l, p, ps), ctx);
+        return CU.outTx(internalCompareAndSet(expVal, newVal), ctx);
     }
 
     /**
@@ -439,17 +437,14 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     }
 
     /**
-     * Method returns callable for execution {@link #compareAndSet(long,GridPredicate,GridPredicate[])}
+     * Method returns callable for execution {@link #compareAndSet(long, long)}
      * operation in async and sync mode.
      *
-     * @param l Value will be added to atomic long.
-     * @param p  Predicate contains conditions which will be checked.
-     *      Argument of predicate is current atomic long value.
-     * @param ps Additional predicates can be used optional .
+     * @param expVal Expected atomic long value.
+     * @param newVal New atomic long value.
      * @return Callable for execution in async and sync mode.
      */
-    private Callable<Boolean> internalCompareAndSet(final long l, final GridPredicate<Long> p,
-        final GridPredicate<Long>... ps) {
+    private Callable<Boolean> internalCompareAndSet(final long expVal, final long newVal) {
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 GridCacheTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
@@ -460,13 +455,10 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
                     if (val == null)
                         throw new GridException("Failed to find atomic long with given name: " + name);
 
-                    boolean retVal = p.apply(val.get());
-
-                    for (GridPredicate<Long> p : ps)
-                        retVal &= p.apply(val.get());
+                    boolean retVal = val.get() == expVal;
 
                     if (retVal) {
-                        val.set(l);
+                        val.set(newVal);
 
                         atomicView.put(key, val);
 

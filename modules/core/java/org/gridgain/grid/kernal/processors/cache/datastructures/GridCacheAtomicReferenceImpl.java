@@ -129,28 +129,6 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     }
 
     /** {@inheritDoc} */
-    @Override public boolean compareAndSet(T expVal, GridClosure<T, T> newValClos) throws GridException {
-        checkRemoved();
-
-        return CU.outTx(internalCompareAndSet(wrapperPredicate(expVal), newValClos), ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean compareAndSet(GridPredicate<T> expValPred, GridClosure<T, T> newValClos)
-        throws GridException {
-        checkRemoved();
-
-        return CU.outTx(internalCompareAndSet(expValPred, newValClos), ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean compareAndSet(GridPredicate<T> expValPred, T newVal) throws GridException {
-        checkRemoved();
-
-        return CU.outTx(internalCompareAndSet(expValPred, wrapperClosure(newVal)), ctx);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean onRemoved() {
         return rmvd = true;
     }

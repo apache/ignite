@@ -154,33 +154,6 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean compareAndSet(T expVal, GridClosure<T, T> newValClos, S expStamp,
-        GridClosure<S, S> newStampClos) throws GridException {
-        checkRemoved();
-
-        return CU.outTx(internalCompareAndSet(F.equalTo(expVal), newValClos,
-            F0.equalTo(expStamp), newStampClos), ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean compareAndSet(GridPredicate<T> expValPred, GridClosure<T, T> newValClos,
-        GridPredicate<S> expStampPred, GridClosure<S, S> newStampClos) throws GridException {
-        checkRemoved();
-
-        return CU.outTx(internalCompareAndSet(expValPred, newValClos, expStampPred,
-            newStampClos), ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean compareAndSet(GridPredicate<T> expValPred, T newVal,
-        GridPredicate<S> expStampPred, S newStamp) throws GridException {
-        checkRemoved();
-
-        return CU.outTx(internalCompareAndSet(expValPred, wrapperClosure(newVal), expStampPred,
-            wrapperClosure(newStamp)), ctx);
-    }
-
-    /** {@inheritDoc} */
     @Override public S stamp() throws GridException {
         checkRemoved();
 

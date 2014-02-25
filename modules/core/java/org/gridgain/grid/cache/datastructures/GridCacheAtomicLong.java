@@ -134,15 +134,15 @@ public interface GridCacheAtomicLong {
     public long getAndSet(long l) throws GridException;
 
     /**
-     * Atomically sets the new value {@code l} of atomic long if set of predicates is true asynchronously.
+     * Atomically compares current value to the expected value, and if they are equal, sets current value
+     * to new value.
      *
-     * @param l New value of atomic long.
-     * @param p Predicate which should evaluate to {@code true} for value to be set.
-     * @param pa Additional predicates can be used optional.
-     * @return Result of predicates execution. If {@code true} value of atomic long will be updated.
-     * @throws GridException If operation failed.
+     * @param expVal Expected atomic long's value.
+     * @param newVal New atomic long's value to set if current value equal to expected value.
+     * @return {@code True} if comparison succeeded, {@code false} otherwise.
+     * @throws GridException If failed.
      */
-    public boolean compareAndSet(long l, GridPredicate<Long> p, GridPredicate<Long>... pa) throws GridException;
+    public boolean compareAndSet(long expVal, long newVal) throws GridException;
 
     /**
      * Gets status of atomic.

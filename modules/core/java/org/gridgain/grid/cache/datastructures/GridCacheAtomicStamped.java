@@ -92,48 +92,6 @@ public interface GridCacheAtomicStamped<T, S> {
     public boolean compareAndSet(T expVal, T newVal, S expStamp, S newStamp) throws GridException;
 
     /**
-     * Conditionally sets the new value and new stamp. They will be set if {@code expVal}
-     * and {@code expStamp} are equal to current value and current stamp respectively.
-     *
-     * @param expVal Expected value.
-     * @param newValClos Closure which generates new value.
-     * @param expStamp Expected stamp.
-     * @param newStampClos Closure which generates new stamp value.
-     * @return Result of operation execution. If {@code true} than  value and stamp will be updated.
-     * @throws GridException If operation failed.
-     */
-    public boolean compareAndSet(T expVal, GridClosure<T, T> newValClos, S expStamp,
-        GridClosure<S, S> newStampClos) throws GridException;
-
-    /**
-     * Conditionally sets the new value and new stamp. They will be set if
-     * {@code expValPred} and {@code expStampPred} both evaluate to {@code true}.
-     *
-     * @param expValPred Predicate which should evaluate to {@code true} for value to be set.
-     * @param newValClos Closure which generates new value.
-     * @param expStampPred Predicate which should evaluate to {@code true} for value to be set
-     * @param newStampClos Closure which generates new stamp value.
-     * @return Result of operation execution. If {@code true} than  value and stamp will be updated.
-     * @throws GridException If operation failed.
-     */
-    public boolean compareAndSet(GridPredicate<T> expValPred, GridClosure<T, T> newValClos,
-        GridPredicate<S> expStampPred, GridClosure<S, S> newStampClos) throws GridException;
-
-    /**
-     * Conditionally sets the new value and new stamp. They will be set if {@code expValPred}
-     * and {@code expStampPred} both evaluate to {@code true}.
-     *
-     * @param expValPred Predicate which should evaluate to {@code true} for value to be set
-     * @param newVal New value.
-     * @param expStampPred Predicate which should evaluate to {@code true} for value to be set
-     * @param newStamp New stamp.
-     * @return Result of operation execution. If {@code true} than  value and stamp will be updated.
-     * @throws GridException If operation failed.
-     */
-    public boolean compareAndSet(GridPredicate<T> expValPred, T newVal,
-        GridPredicate<S> expStampPred, S newStamp) throws GridException;
-
-    /**
      * Gets current stamp.
      *
      * @return Current stamp.
