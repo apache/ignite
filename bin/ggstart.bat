@@ -47,7 +47,7 @@ goto error_finish
 :checkGridGainHome1
 if defined GRIDGAIN_HOME goto checkGridGainHome2
     echo %0, WARN: GRIDGAIN_HOME environment variable is not found.
-    pushd "%~dp0"/..
+    pushd "%~dp0"/../..
     set GRIDGAIN_HOME=%CD%
     popd
 
