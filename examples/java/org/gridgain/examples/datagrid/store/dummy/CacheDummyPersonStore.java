@@ -25,7 +25,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class CacheDummyStore extends GridCacheStoreAdapter<Object, Object> {
+public class CacheDummyPersonStore extends GridCacheStoreAdapter<Object, Object> {
     /** Auto-injected grid instance. */
     @GridInstanceResource
     private Grid grid;

@@ -23,7 +23,7 @@ import java.util.concurrent.*;
  * all nodes.
  * <p>
  * You should not be using stand-alone nodes (started with {@code 'ggstart.sh})
- * because GridGain nodes do not know about the {@link GridCacheLoaderStore}
+ * because GridGain nodes do not know about the cache stores
  * we define in this example. However, users can always add JAR-files with their classes to
  * {@code GRIDGAIN_HOME/libs/ext} folder to make them available to GridGain.
  * If this was done here (i.e. we had JAR-file containing custom cache store built
@@ -37,7 +37,7 @@ import java.util.concurrent.*;
  * @author @java.author
  * @version @java.version
  */
-public class CacheStoreLoaderExample {
+public class CacheStoreLoadDataExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
     //private static final String CACHE_NAME = "replicated";
