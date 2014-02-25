@@ -75,9 +75,9 @@ public class GridCacheDataStructuresImpl<K, V> implements GridCacheDataStructure
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridCacheQueue<T> queue(String name, GridCacheQueueType type, int cap,
-        boolean collocated, boolean create) throws GridException {
-        return dsMgr.queue(name, type, cap <= 0 ? Integer.MAX_VALUE : cap, collocated, create);
+    @Override public <T> GridCacheQueue<T> queue(String name, int cap, boolean collocated, boolean create)
+        throws GridException {
+        return dsMgr.queue(name, cap <= 0 ? Integer.MAX_VALUE : cap, collocated, create);
     }
 
     /** {@inheritDoc} */

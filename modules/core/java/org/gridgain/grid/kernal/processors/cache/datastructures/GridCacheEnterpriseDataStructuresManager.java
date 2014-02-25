@@ -69,9 +69,6 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     /** Query factory. */
     private GridCacheQueueQueryFactory queueQryFactory;
 
-    /** Local cache of annotated methods and fields by classes. */
-    private final GridCacheAnnotationHelper<GridCacheQueuePriority> annHelper;
-
     /** Init latch. */
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
@@ -92,8 +89,6 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
      */
     public GridCacheEnterpriseDataStructuresManager() {
         dsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
-
-        annHelper = new GridCacheAnnotationHelper<>(GridCacheQueuePriority.class);
     }
 
     /** {@inheritDoc} */
@@ -585,8 +580,8 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public final <T> GridCacheQueue<T> queue(final String name, final GridCacheQueueType type,
-        final int cap, boolean colloc, final boolean create) throws GridException {
+    @Override public final <T> GridCacheQueue<T> queue(final String name, final int cap, boolean colloc,
+        final boolean create) throws GridException {
         A.ensure(cap > 0, "cap > 0");
 
         waitInitialization();
@@ -627,7 +622,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
                                         if (!create)
                                             return null;
 
-                                        hdr = new GridCacheQueueHeader(name, type, cap, collocMode);
+                                        hdr = new GridCacheQueueHeader(name, cap, collocMode);
 
                                         dsView.putx(key, hdr);
                                     }
@@ -932,11 +927,6 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
                 }
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheAnnotationHelper<GridCacheQueuePriority> priorityAnnotations() {
-        return annHelper;
     }
 
     /**

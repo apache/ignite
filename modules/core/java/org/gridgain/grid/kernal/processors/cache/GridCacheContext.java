@@ -1243,9 +1243,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         if (flags.contains(SYNC_COMMIT) && !tx.syncCommit())
             throw new GridCacheFlagException(SYNC_COMMIT);
-
-        if (flags.contains(SYNC_ROLLBACK) && !tx.syncRollback())
-            throw new GridCacheFlagException(SYNC_ROLLBACK);
     }
 
     /**
@@ -1400,7 +1397,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if synchronous rollback is enabled.
      */
     public boolean syncRollback() {
-        return cacheCfg.getWriteSynchronizationMode() == FULL_SYNC || hasFlag(SYNC_ROLLBACK);
+        return cacheCfg.getWriteSynchronizationMode() == FULL_SYNC;
     }
 
     /**
