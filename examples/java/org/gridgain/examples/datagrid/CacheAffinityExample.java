@@ -36,6 +36,8 @@ import java.util.*;
 public final class CacheAffinityExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
+    //private static final String CACHE_NAME = "replicated";
+    //private static final String CACHE_NAME = "local";
 
     /** Number of keys. */
     private static final int KEY_CNT = 20;

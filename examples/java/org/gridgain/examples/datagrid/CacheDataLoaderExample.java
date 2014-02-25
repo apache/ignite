@@ -52,7 +52,7 @@ public class CacheDataLoaderExample {
     public static void main(String[] args) throws Exception {
         GridExamplesUtils.checkMinMemory(MIN_MEMORY);
 
-        try (Grid g = GridGain.start("examples/config/example-cache-tuned.xml")) {
+        try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
             try (GridDataLoader<Integer, String> ldr = g.dataLoader(CACHE_NAME)) {
                 // Configure loader.
                 ldr.perNodeBufferSize(1024);

@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.datagrid.store.dummy;
 
+import org.gridgain.examples.datagrid.store.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
@@ -25,7 +26,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class CacheDummyPersonStore extends GridCacheStoreAdapter<Object, Object> {
+public class CacheDummyPersonStore extends GridCacheStoreAdapter<Long, Person> {
     /** Auto-injected grid instance. */
     @GridInstanceResource
     private Grid grid;
@@ -39,10 +40,10 @@ public class CacheDummyPersonStore extends GridCacheStoreAdapter<Object, Object>
     private String cacheName;
 
     /** Dummy database. */
-    private Map<Object, Object> dummyDB = new HashMap<>();
+    private Map<Long, Person> dummyDB = new HashMap<>();
 
     /** {@inheritDoc} */
-    @Override public void loadCache(final GridBiInClosure<Object, Object> clo, Object... args) throws GridException {
+    @Override public void loadCache(final GridBiInClosure<Long, Person> clo, Object... args) throws GridException {
         // Number of entries is passed by caller.
         int entryCnt = (Integer)args[0];
 
@@ -62,11 +63,11 @@ public class CacheDummyPersonStore extends GridCacheStoreAdapter<Object, Object>
             // as below to find out if partition ID is mapped to local node.
             if (cache.affinity().isPrimaryOrBackup(grid.localNode(), i)) {
                 // Load key-value pair into cache.
-                clo.apply(i, Integer.toString(i));
+                clo.apply((long)i, new Person(i, Integer.toString(i), Integer.toString(i)));
 
                 // Add loaded value to database as well, since we generated it here.
                 // In real life, the values would most likely be loaded from underlying database.
-                dummyDB.put(i, Integer.toString(i));
+                dummyDB.put((long)i, new Person(i, Integer.toString(i), Integer.toString(i)));
             }
 
             if (i % 100000 == 0)
@@ -75,17 +76,17 @@ public class CacheDummyPersonStore extends GridCacheStoreAdapter<Object, Object>
     }
 
     /** {@inheritDoc} */
-    @Override public Object load(@Nullable GridCacheTx tx, Object key) throws GridException {
+    @Override public Person load(@Nullable GridCacheTx tx, Long key) throws GridException {
         return dummyDB.get(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable GridCacheTx tx, Object key, Object val) throws GridException {
+    @Override public void put(@Nullable GridCacheTx tx, Long key, Person val) throws GridException {
         dummyDB.put(key, val);
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable GridCacheTx tx, Object key) throws GridException {
+    @Override public void remove(@Nullable GridCacheTx tx, Long key) throws GridException {
         dummyDB.remove(key);
     }
 }

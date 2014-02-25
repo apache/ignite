@@ -10,6 +10,8 @@
 package org.gridgain.examples.datagrid.store;
 
 import org.gridgain.examples.datagrid.store.dummy.*;
+import org.gridgain.examples.datagrid.store.hibernate.*;
+import org.gridgain.examples.datagrid.store.jdbc.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -62,8 +64,8 @@ public class CacheNodeWithStoreStartup {
 
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
 
-        cacheCfg.setStore(new CacheDummyPersonStore());
-        // cacheCfg.setStore(new CacheJdbcPersonStore());
+        // cacheCfg.setStore(new CacheDummyPersonStore());
+         cacheCfg.setStore(new CacheJdbcPersonStore());
         // cacheCfg.setStore(new CacheHibernatePersonStore());
 
         cfg.setDiscoverySpi(discoSpi);
