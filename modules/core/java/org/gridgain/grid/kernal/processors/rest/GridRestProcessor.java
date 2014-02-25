@@ -121,11 +121,13 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                     assert res != null;
 
-                    try {
-                        res.sessionTokenBytes(updateSessionToken(req));
-                    }
-                    catch (GridException e) {
-                        U.warn(log, "Cannot update response session token: " + e.getMessage());
+                    if (ctx.isEnterprise()) {
+                        try {
+                            res.sessionTokenBytes(updateSessionToken(req));
+                        }
+                        catch (GridException e) {
+                            U.warn(log, "Cannot update response session token: " + e.getMessage());
+                        }
                     }
 
                     interceptResponse(res, req);
@@ -319,7 +321,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @return Whether or not REST is enabled.
      */
     private boolean isRestEnabled() {
-        return ctx != null && !ctx.config().isDaemon() && ctx.config().isRestEnabled();
+        return !ctx.config().isDaemon() && ctx.config().isRestEnabled();
     }
 
     /** {@inheritDoc} */
