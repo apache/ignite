@@ -10,7 +10,8 @@
 package org.gridgain.examples.advanced.misc.messaging;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.messaging.*;
+import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.lang.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -42,17 +43,14 @@ public class GridMessagingPingPongExample {
     public static void main(String[] args) throws GridException {
         // Game is played over the default grid.
         try (Grid g = GridGain.start("examples/config/example-default.xml")) {
-            // Gets collection of remote nodes.
-            Collection<GridNode> rmtNodes = g.forRemotes().nodes();
-
-            if (rmtNodes.size() < 1) {
+            if (g.forRemotes().nodes().size() < 1) {
                 System.err.println("I need a partner to play a ping pong!");
 
                 return;
             }
 
-            // Pick first remote node as a partner.
-            GridProjection nodeB = g.forNode(rmtNodes.iterator().next());
+            // Pick random remote node as a partner.
+            GridProjection nodeB = g.forRemotes().forRandom();
 
             // Note that both nodeA and nodeB will always point to
             // same nodes regardless of whether they were implicitly
@@ -60,14 +58,22 @@ public class GridMessagingPingPongExample {
             // anonymous closure's state during its remote execution.
 
             // Set up remote player.
-            nodeB.message().remoteListen(null, new GridMessagingListenActor<String>() {
-                @Override public void receive(UUID nodeId, String rcvMsg) throws GridException {
+            nodeB.message().remoteListen(null, new GridBiPredicate<UUID, String>() {
+                @Override public boolean apply(UUID nodeId, String rcvMsg) {
                     System.out.println(rcvMsg);
 
-                    if ("PING".equals(rcvMsg))
-                        respond("PONG");
-                    else if ("STOP".equals(rcvMsg))
-                        stop();
+                    try {
+                        if ("PING".equals(rcvMsg)) {
+                            g.forNodeId(nodeId).message().send(null, "PONG");
+
+                            return true; // Continue listening.
+                        }
+
+                        return false; // Unsubscribe.
+                    }
+                    catch (GridException e) {
+                        throw new GridClosureException(e);
+                    }
                 }
             }).get();
 
@@ -76,16 +82,26 @@ public class GridMessagingPingPongExample {
             final CountDownLatch cnt = new CountDownLatch(MAX_PLAYS);
 
             // Set up local player.
-            g.message().localListen(null, new GridMessagingListenActor<String>() {
-                @Override protected void receive(UUID nodeId, String rcvMsg) throws GridException {
+            g.message().localListen(null, new GridBiPredicate<UUID, String>() {
+                @Override public boolean apply(UUID nodeId, String rcvMsg) {
                     System.out.println(rcvMsg);
 
-                    if (cnt.getCount() == 1)
-                        stop("STOP");
-                    else if ("PONG".equals(rcvMsg))
-                        respond("PING");
+                    try {
+                        if (cnt.getCount() == 1) {
+                            g.forNodeId(nodeId).message().send(null, "STOP");
 
-                    cnt.countDown();
+                            return false; // Stop listening.
+                        }
+                        else if ("PONG".equals(rcvMsg))
+                            g.forNodeId(nodeId).message().send(null, "PING");
+
+                        cnt.countDown();
+
+                        return true; // Continue listening.
+                    }
+                    catch (GridException e) {
+                        throw new GridClosureException(e);
+                    }
                 }
             });
 

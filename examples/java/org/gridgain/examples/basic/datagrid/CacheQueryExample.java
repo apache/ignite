@@ -106,16 +106,6 @@ public class CacheQueryExample {
     }
 
     /**
-     * Gets instance of cache to use.
-     *
-     * @param g Grid.
-     * @return Cache to use.
-     */
-    private static <K, V> GridCache<K, V> cache(Grid g) {
-        return g.cache(CACHE_NAME);
-    }
-
-    /**
      * Example for SQL queries based on salary ranges.
      */
     private static void sqlQuery() {

@@ -20,8 +20,8 @@ import java.util.*;
  * Example task used to demonstrate direct task deployment through API.
  * For this example this task as available on the classpath, however
  * in real life that may not always be the case. In those cases
- * you should use explicit {@link Grid#deployTask(Class)} apply and
- * then use {@link Grid#execute(String, Object, org.gridgain.grid.lang.GridPredicate[])}
+ * you should use explicit {@link GridCompute#localDeployTask(Class, ClassLoader)} apply and
+ * then use {@link GridCompute#execute(String, Object)}
  * method passing your task name as first parameter.
  * <p>
  * Note that this task specifies explicit task name. Task name is optional

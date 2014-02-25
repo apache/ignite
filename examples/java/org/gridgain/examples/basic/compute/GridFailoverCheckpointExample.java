@@ -7,14 +7,15 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.advanced.compute.checkpoint;
+package org.gridgain.examples.basic.compute;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.util.lang.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -34,7 +35,7 @@ import java.util.*;
  *   The job will check the value of checkpoint with key '{@code fail}'. If it
  *   is {@code true}, then it will set it to {@code false} and throw
  *   exception to simulate a failure. If it is {@code false}, then
- *   it will run the {@link GridCheckpointExample#sayIt(CharSequence)} method.
+ *   it will run the {@link GridFailoverCheckpointExample#sayIt(CharSequence)} method.
  * </li>
  * </ol>
  * Note that when job throws an exception it will be treated as a failure, and the task
@@ -85,24 +86,9 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridCheckpointExample {
+public class GridFailoverCheckpointExample {
     /** Path to configuration file. */
     private static final String CONFIG = "examples/config/example-checkpoint.xml";
-
-    /**
-     * Method, that simply prints out the argument passed in and returns it's length.
-     *
-     * @param phrase Phrase string to print.
-     * @return Number of characters in the phrase.
-     */
-    public static int sayIt(CharSequence phrase) {
-        // Simply print out the argument.
-        System.out.println(">>>");
-        System.out.println(">>> Printing '" + phrase + "' on this node.");
-        System.out.println(">>>");
-
-        return phrase.length();
-    }
 
     /**
      * Executes example with checkpoint.
@@ -114,23 +100,22 @@ public class GridCheckpointExample {
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start(CONFIG)) {
-            GridComputeTask<String, Integer> task = new CheckPointExampleTask();
+            GridFuture<Integer> f = g.compute().apply(new CheckPointJob(), "Stage1 Stage2 Stage3");
 
-            GridComputeTaskFuture<Integer> f = g.compute().execute(task, "Hello World");
-
-            int phraseLen = f.get();
+            // Number of letters.
+            int charCnt = f.get();
 
             System.out.println(">>>");
 
-            if (phraseLen < 0) {
+            if (charCnt < 0) {
                 System.out.println(">>> \"Hello World\" checkpoint example finished with wrong result.");
                 System.out.println(">>> Checkpoint was not found. Make sure that Checkpoint SPI on all nodes ");
                 System.out.println(">>> has the same configuration (the 'directoryPath' configuration parameter for");
                 System.out.println(">>> GridSharedFsCheckpointSpi on all nodes should point to the same location).");
             }
             else {
-                System.out.println(">>> Finished executing \"Hello World\" example with checkpoints.");
-                System.out.println(">>> Total number of characters in the phrase is '" + phraseLen + "'.");
+                System.out.println(">>> Finished executing fail-over example with checkpoints.");
+                System.out.println(">>> Total number of characters in the phrase is '" + charCnt + "'.");
                 System.out.println(">>> You should see exception stack trace from failed job on one node.");
                 System.out.println(">>> Failed job will be failed over to another node.");
                 System.out.println(">>> You should see print out of 'Hello World' on another node.");
@@ -141,92 +126,87 @@ public class GridCheckpointExample {
         }
     }
 
-    /**
-     * Example task.
-     */
-    @GridComputeTaskSessionFullSupport
-    private static class CheckPointExampleTask extends GridComputeTaskSplitAdapter<String, Integer> {
-        /** Injected task session. */
+    private static final class CheckPointJob extends GridClosure<String, Integer>
+        implements GridComputeJobMasterLeaveAware {
+        /** Injected distributed task session. */
         @GridTaskSessionResource
-        private GridComputeTaskSession taskSes;
+        private GridComputeTaskSession jobSes;
+
+        /** Injected grid logger. */
+        @GridLoggerResource
+        private GridLogger log;
+
+        /** */
+        private GridBiTuple<Integer, Integer> state;
+
+        /** */
+        private String phrase;
 
         /**
-         * Creates job which throws an exception and it will be treated as a failure.
-         * This will cause the job to automatically failover to another node for execution.
-         * The new job will simply print out the argument passed in.
-         *
-         * @param gridSize Number of nodes in the grid.
-         * @param phrase Task execution argument.
-         * @return Created grid jobs for remote execution.
-         * @throws GridException If split failed.
+         * The job will check the checkpoint with key '{@code fail}' and if
+         * it's {@code true} it will throw exception to simulate a failure.
+         * Otherwise, it will execute the grid-enabled method.
          */
-        @Override protected Collection<? extends GridComputeJob> split(int gridSize, String phrase)
-            throws GridException {
-            // Make reasonably unique checkpoint key.
-            final String cpKey = getClass().getName() + phrase;
+        @Override public Integer apply(String phrase) {
+            this.phrase = phrase;
 
-            taskSes.saveCheckpoint(cpKey, true);
+            List<String> words = Arrays.asList(phrase.split(" "));
 
-            return Collections.singletonList(new GridComputeJobAdapter(phrase) {
-                /** Injected distributed task session. */
-                @GridTaskSessionResource
-                private GridComputeTaskSession jobSes;
+            final String cpKey = checkpointKey();
 
-                /** Injected grid logger. */
-                @GridLoggerResource
-                private GridLogger log;
+            try {
+                GridBiTuple<Integer, Integer> state = jobSes.loadCheckpoint(cpKey);
 
-                /**
-                 * The job will check the checkpoint with key '{@code fail}' and if
-                 * it's {@code true} it will throw exception to simulate a failure.
-                 * Otherwise, it will execute the grid-enabled method.
-                 */
-                @Override public Serializable execute() throws GridException {
-                    Serializable cp = jobSes.loadCheckpoint(cpKey);
+                int idx = 0;
+                int sum = 0;
 
-                    if (cp == null) {
-                        log.warning("Checkpoint was not found. Make sure that Checkpoint SPI on all nodes " +
-                            "has the same configuration. The 'directoryPath' configuration parameter for " +
-                            "GridSharedFsCheckpointSpi on all nodes should point to the same location.");
+                if (state != null) {
+                    this.state = state;
 
-                        return -1;
-                    }
-
-                    boolean fail = (Boolean)cp;
-
-                    if (fail) {
-                        jobSes.saveCheckpoint(cpKey, false);
-
-                        throw new GridException("Expected Example job exception.");
-                    }
-
-                    return sayIt(this.<String>argument(0));
+                    // Last processed word index and total length.
+                    idx = state.get1();
+                    sum = state.get2();
                 }
-            });
+
+                for (int i = idx + 1; i < words.size(); i++) {
+                    sum += words.get(i).length();
+
+                    this.state = new GridBiTuple<>(i, sum);
+
+                    // Save checkpoint with scope of task execution.
+                    // It will be automatically removed when task completes.
+                    jobSes.saveCheckpoint(cpKey, state);
+
+                    // For example purposes, we fail on purpose after every stage.
+                    throw new GridRuntimeException("Expected example job exception.");
+                }
+
+                return sum;
+            }
+            catch (GridException e) {
+                throw new GridClosureException(e);
+            }
         }
 
         /**
-         * To facilitate example's logic, returns {@link GridComputeJobResultPolicy#FAILOVER}
-         * policy in case of any exception.
+         * Callback for when master node fails or leaves.
          *
-         * @param res Job result.
-         * @param rcvd All previously received results.
-         * @return {@inheritDoc}
+         * @param ses Task session, can be used for checkpoint saving.
+         * @throws GridException If failed.
          */
-        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd) {
-            return res.getException() != null ? GridComputeJobResultPolicy.FAILOVER : GridComputeJobResultPolicy.WAIT;
+        @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
+            if (state != null)
+                // Save checkpoint with global scope, so another task execution can pick it up.
+                ses.saveCheckpoint(checkpointKey(), state, GridComputeTaskSessionScope.GLOBAL_SCOPE, 0);
         }
 
         /**
-         * Sums up all characters from all jobs and returns a
-         * total number of characters in the initial phrase.
+         * Make reasonably unique checkpoint key.
          *
-         * @param results Job results.
-         * @return Number of letters for the phrase.
+         * @return Checkpoint key.
          */
-        @Override public Integer reduce(List<GridComputeJobResult> results) {
-            // We only had one job in the split. Therefore, we only have one result.
-            return  results.get(0).getData();
+        private String checkpointKey() {
+            return getClass().getName() + '-' + phrase;
         }
     }
 }

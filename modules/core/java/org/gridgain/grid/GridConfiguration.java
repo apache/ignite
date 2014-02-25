@@ -2704,28 +2704,6 @@ public class GridConfiguration {
     }
 
     /**
-     * Gets map of pre-configured local event listeners.
-     * Each listener is mapped to array of event types.
-     *
-     * @return Pre-configured event listeners map.
-     * @see GridEvents#addLocalListener(GridLocalEventListener, int...)
-     * @see GridEventType
-     */
-    @Nullable public Map<GridLocalEventListener, int[]> getLocalEventListeners() {
-        return lsnrs;
-    }
-
-    /**
-     * Sets map of pre-configured local event listeners.
-     * Each listener is mapped to array of event types.
-     *
-     * @param lsnrs Pre-configured event listeners map.
-     */
-    public void setLocalEventListeners(Map<GridLocalEventListener, int[]> lsnrs) {
-        this.lsnrs = lsnrs;
-    }
-
-    /**
      * Gets interceptor for objects, moving to and from remote clients.
      * If this method returns {@code null} then no interception will be applied.
      * <p>

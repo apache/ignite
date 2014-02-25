@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.advanced.compute.montecarlo;
+package org.gridgain.examples.basic.compute.montecarlo;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
@@ -71,27 +71,27 @@ public final class GridCreditRiskExample {
             // Credit risk crdRisk is the minimal amount that creditor has to have
             // available to cover possible defaults.
 
-            double crdRisk = g.compute().call(closures(g.nodes().size(), portfolio, horizon, iter, percentile),
+            double crdRisk = g.compute().call(jobs(g.nodes().size(), portfolio, horizon, iter, percentile),
                 new GridReducer<Double, Double>() {
-                /** Collected values sum. */
-                private double sum;
+                    /** Collected values sum. */
+                    private double sum;
 
-                /** Collected values count. */
-                private int cnt;
+                    /** Collected values count. */
+                    private int cnt;
 
-                /** {@inheritDoc} */
-                @Override public synchronized boolean collect(Double e) {
-                    sum += e;
-                    cnt++;
+                    /** {@inheritDoc} */
+                    @Override public synchronized boolean collect(Double e) {
+                        sum += e;
+                        cnt++;
 
-                    return true;
-                }
+                        return true;
+                    }
 
-                /** {@inheritDoc} */
-                @Override public synchronized Double reduce() {
-                    return sum / cnt;
-                }
-            }).get();
+                    /** {@inheritDoc} */
+                    @Override public synchronized Double reduce() {
+                        return sum / cnt;
+                    }
+                }).get();
 
             System.out.println("Credit risk [crdRisk=" + crdRisk + ", duration=" +
                 (System.currentTimeMillis() - start) + "ms]");
@@ -111,7 +111,7 @@ public final class GridCreditRiskExample {
      * @param percentile Percentile.
      * @return Collection of closures.
      */
-    private static Collection<GridCallable<Double>> closures(int gridSize, final GridCredit[] portfolio,
+    private static Collection<GridCallable<Double>> jobs(int gridSize, final GridCredit[] portfolio,
         final int horizon, int iter, final double percentile) {
         // Number of iterations should be done by each node.
         int iterPerNode = Math.round(iter / (float)gridSize);

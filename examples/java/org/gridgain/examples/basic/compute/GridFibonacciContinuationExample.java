@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.advanced.compute.continuation.fibonacci;
+package org.gridgain.examples.basic.compute;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
@@ -107,7 +107,7 @@ public final class GridFibonacciContinuationExample {
         @GridJobContextResource
         private GridComputeJobContext jobCtx;
 
-        /** Grid. */
+        /** Auto-inject grid instance. */
         @GridInstanceResource
         private Grid g;
 
@@ -133,22 +133,21 @@ public final class GridFibonacciContinuationExample {
                     return n == 0 ? BigInteger.ZERO : BigInteger.ONE;
 
                 // Node-local storage.
-                GridNodeLocalMap<Long, GridFuture<BigInteger>> store = g.nodeLocalMap();
+                GridNodeLocalMap<Long, GridFuture<BigInteger>> locMap = g.nodeLocalMap();
 
-                // Check if value is cached in node-local store first.
-                fut1 = store.get(n - 1);
-                fut2 = store.get(n - 2);
+                // Check if value is cached in node-local-map first.
+                fut1 = locMap.get(n - 1);
+                fut2 = locMap.get(n - 2);
 
                 GridProjection p = g.forPredicate(nodeFilter);
 
-                // If future is not cached in node-local store, cache it.
-                // Recursive grid execution.
+                // If future is not cached in node-local-map, cache it.
                 if (fut1 == null)
-                    fut1 = store.addIfAbsent(n - 1, p.compute().apply(new FibonacciClosure(nodeFilter), n - 1));
+                    fut1 = locMap.addIfAbsent(n - 1, p.compute().apply(new FibonacciClosure(nodeFilter), n - 1));
 
-                // If future is not cached in node-local store, cache it.
+                // If future is not cached in node-local-map, cache it.
                 if (fut2 == null)
-                    fut2 = store.addIfAbsent(n - 2, p.compute().apply(new FibonacciClosure(nodeFilter), n - 2));
+                    fut2 = locMap.addIfAbsent(n - 2, p.compute().apply(new FibonacciClosure(nodeFilter), n - 2));
 
                 // If futures are not done, then wait asynchronously for the result
                 if (!fut1.isDone() || !fut2.isDone()) {

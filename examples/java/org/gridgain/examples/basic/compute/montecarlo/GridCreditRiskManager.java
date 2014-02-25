@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.advanced.compute.montecarlo;
+package org.gridgain.examples.basic.compute.montecarlo;
 
 import java.util.*;
 
