@@ -30,7 +30,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
-public class GridCacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Person> {
+public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Person> {
     /** Default hibernate configuration resource path. */
     private static final String DFLT_HIBERNATE_CFG = "/org/gridgain/examples/datagrid/store/hibernate/hibernate.cfg.xml";
 
@@ -43,7 +43,7 @@ public class GridCacheHibernatePersonStore extends GridCacheStoreAdapter<Long, P
     /**
      * Default constructor.
      */
-    public GridCacheHibernatePersonStore() {
+    public CacheHibernatePersonStore() {
         sesFactory = new Configuration().configure(DFLT_HIBERNATE_CFG).buildSessionFactory();
     }
 

@@ -101,7 +101,7 @@
                 </property>
 
                 <property name="store">
-                    <bean class="org.gridgain.examples.datagrid.store.jdbc.GridCacheJdbcPersonStore" scope="singleton"/>
+                    <bean class="org.gridgain.examples.datagrid.store.jdbc.CacheJdbcPersonStore" scope="singleton"/>
                 </property>
             </bean>
         </property>

@@ -31,7 +31,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
-public class GridCacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
+public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
     /** Transaction metadata attribute name. */
     private static final String ATTR_NAME = "SIMPLE_STORE_CONNECTION";
 
@@ -40,7 +40,7 @@ public class GridCacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person
      *
      * @throws GridException If failed.
      */
-    public GridCacheJdbcPersonStore() throws GridException {
+    public CacheJdbcPersonStore() throws GridException {
         prepareDb();
     }
 
