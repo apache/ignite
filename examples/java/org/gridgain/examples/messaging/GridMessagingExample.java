@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.misc.messaging;
+package org.gridgain.examples.messaging;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
