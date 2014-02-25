@@ -10,10 +10,13 @@
 package org.gridgain.examples.misc.lifecycle;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.resources.*;
+
+import static org.gridgain.grid.GridLifecycleEventType.*;
 
 /**
  * This example shows how to provide your own {@link GridLifecycleBean} implementation
- * to be able to hook into GridGain lifecycle. {@link LifecycleExampleBean} bean
+ * to be able to hook into GridGain lifecycle. The {@link LifecycleExampleBean} bean
  * will output occurred lifecycle events to the console.
  *
  * @author @java.author
@@ -42,5 +45,41 @@ public final class LifecycleExample {
 
         // Make sure that lifecycle bean was notified about grid stop.
         assert !bean.isStarted();
+    }
+
+    /**
+     * Simple {@link GridLifecycleBean} implementation that outputs event type when it is occurred.
+     */
+    public static class LifecycleExampleBean implements GridLifecycleBean {
+        /** Auto-inject grid instance. */
+        @GridInstanceResource
+        private Grid grid;
+
+        /** Started flag. */
+        private boolean isStarted;
+
+        /** {@inheritDoc} */
+        @Override public void onLifecycleEvent(GridLifecycleEventType evt) {
+            System.out.println("");
+            System.out.println(">>>");
+            System.out.println(">>> Grid lifecycle event occurred: " + evt);
+            System.out.println(">>> Grid name: " + grid.name());
+            System.out.println(">>>");
+            System.out.println("");
+
+            if (evt == AFTER_GRID_START) {
+                isStarted = true;
+            }
+            else if (evt == AFTER_GRID_STOP) {
+                isStarted = false;
+            }
+        }
+
+        /**
+         * @return {@code True} if grid has been started.
+         */
+        public boolean isStarted() {
+            return isStarted;
+        }
     }
 }
