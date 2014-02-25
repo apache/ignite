@@ -6885,6 +6885,21 @@ public abstract class GridUtils {
     }
 
     /**
+     * Gets cache attributes from the given node for the given cache name.
+     * @param n Node.
+     * @param cacheName Cache name.
+     * @return Attributes.
+     */
+    public static @Nullable GridCacheAttributes cacheAttributes(GridNode n, @Nullable String cacheName) {
+        for (GridCacheAttributes a : cacheAttributes(n)) {
+            if (F.eq(a.cacheName(), cacheName))
+                return a;
+        }
+
+        return null;
+    }
+
+    /**
      * Gets view on all cache names started on the node.
      *
      * @param n Node to get cache names for.

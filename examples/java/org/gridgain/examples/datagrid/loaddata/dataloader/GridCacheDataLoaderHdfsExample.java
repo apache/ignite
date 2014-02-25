@@ -152,7 +152,7 @@ public class GridCacheDataLoaderHdfsExample {
 
         // Configure loader.
         ldr.perNodeBufferSize(2);
-        ldr.updater(GridDataLoadCacheUpdaters.<UUID, Person>batchedSorted());
+        ldr.isolated(true);
 
         System.out.println(">>>");
         System.out.println(">>> Using data loader for cache: " + ldr.cacheName());

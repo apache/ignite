@@ -59,7 +59,7 @@ public class GridCacheDataLoaderExample {
         try {
             // Configure loader.
             ldr.perNodeBufferSize(1024);
-            ldr.updater(GridDataLoadCacheUpdaters.<String, Integer>batchedSorted());
+            ldr.isolated(true);
 
             // Warm up.
             load(ldr, 100000);

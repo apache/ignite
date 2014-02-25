@@ -218,7 +218,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
                 clsLdr = dep.classLoader();
             }
 
-            Collection<GridDataLoadEntry<K, V>> col;
+            Collection<Map.Entry<K, V>> col;
             GridDataLoadCacheUpdater<K, V> updater;
 
             try {
