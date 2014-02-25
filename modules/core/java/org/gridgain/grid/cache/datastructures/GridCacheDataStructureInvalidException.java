@@ -21,9 +21,7 @@ import org.jetbrains.annotations.*;
  * getting the underlying data structure from cache again.
  * <p>
  * Note that data structures throw runtime exceptions out of methods that don't have
- * checked exceptions in the signature. If you prefer to handle checked exceptions,
- * then use methods that end with {@code 'x'}, e.g. {@link GridCacheQueue#addx(Object)}
- * vs. {@link GridCacheQueue#add(Object)}.
+ * checked exceptions in the signature.
  *
  * @author @java.author
  * @version @java.version

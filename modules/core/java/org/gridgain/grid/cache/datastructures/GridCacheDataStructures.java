@@ -75,7 +75,6 @@ public interface GridCacheDataStructures {
      * to get a single element off the queue all nodes may have to be queried.
      *
      * @param name Name of queue.
-     * @param type Type of queue.
      * @param cap Capacity of queue, {@code 0} for unbounded queue.
      * @param collocated If {@code true} then all items within the same queue will be collocated on the same node.
      *      Otherwise elements of the same queue maybe be cached on different nodes. If you have lots of relatively
@@ -85,7 +84,7 @@ public interface GridCacheDataStructures {
      * @return Queue with given properties.
      * @throws GridException If remove failed.
      */
-    @Nullable public <T> GridCacheQueue<T> queue(String name, GridCacheQueueType type, int cap, boolean collocated,
+    @Nullable public <T> GridCacheQueue<T> queue(String name, int cap, boolean collocated,
         boolean create) throws GridException;
 
     /**
