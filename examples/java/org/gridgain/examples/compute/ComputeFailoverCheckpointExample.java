@@ -126,6 +126,7 @@ public class ComputeFailoverCheckpointExample {
         }
     }
 
+    @GridComputeTaskSessionFullSupport
     private static final class CheckPointJob extends GridClosure<String, Integer>
         implements GridComputeJobMasterLeaveAware {
         /** Injected distributed task session. */
