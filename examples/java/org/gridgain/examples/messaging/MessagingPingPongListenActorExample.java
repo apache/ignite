@@ -10,14 +10,13 @@
 package org.gridgain.examples.messaging;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.messaging.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Demonstrates various messaging APIs.
+ * Demonstrates messaging with {@link GridMessagingListenActor} convenience adapter.
  * <p>
  * <h1 class="header">Starting Remote Nodes</h1>
  * To try this example you need to start at least one remote grid instance.
@@ -32,7 +31,7 @@ import java.util.concurrent.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridMessagingPingPongExample {
+public class MessagingPingPongListenActorExample {
     /**
      * This example demonstrates simple protocol-based exchange in playing a ping-pong between
      * two nodes.
@@ -43,14 +42,17 @@ public class GridMessagingPingPongExample {
     public static void main(String[] args) throws GridException {
         // Game is played over the default grid.
         try (Grid g = GridGain.start("examples/config/example-default.xml")) {
-            if (g.forRemotes().nodes().size() < 1) {
+            // Gets collection of remote nodes.
+            Collection<GridNode> rmtNodes = g.forRemotes().nodes();
+
+            if (rmtNodes.size() < 1) {
                 System.err.println("I need a partner to play a ping pong!");
 
                 return;
             }
 
-            // Pick random remote node as a partner.
-            GridProjection nodeB = g.forRemotes().forRandom();
+            // Pick first remote node as a partner.
+            GridProjection nodeB = g.forNode(rmtNodes.iterator().next());
 
             // Note that both nodeA and nodeB will always point to
             // same nodes regardless of whether they were implicitly
@@ -58,22 +60,14 @@ public class GridMessagingPingPongExample {
             // anonymous closure's state during its remote execution.
 
             // Set up remote player.
-            nodeB.message().remoteListen(null, new GridBiPredicate<UUID, String>() {
-                @Override public boolean apply(UUID nodeId, String rcvMsg) {
+            nodeB.message().remoteListen(null, new GridMessagingListenActor<String>() {
+                @Override public void receive(UUID nodeId, String rcvMsg) throws GridException {
                     System.out.println(rcvMsg);
 
-                    try {
-                        if ("PING".equals(rcvMsg)) {
-                            g.forNodeId(nodeId).message().send(null, "PONG");
-
-                            return true; // Continue listening.
-                        }
-
-                        return false; // Unsubscribe.
-                    }
-                    catch (GridException e) {
-                        throw new GridClosureException(e);
-                    }
+                    if ("PING".equals(rcvMsg))
+                        respond("PONG");
+                    else if ("STOP".equals(rcvMsg))
+                        stop();
                 }
             }).get();
 
@@ -82,26 +76,16 @@ public class GridMessagingPingPongExample {
             final CountDownLatch cnt = new CountDownLatch(MAX_PLAYS);
 
             // Set up local player.
-            g.message().localListen(null, new GridBiPredicate<UUID, String>() {
-                @Override public boolean apply(UUID nodeId, String rcvMsg) {
+            g.message().localListen(null, new GridMessagingListenActor<String>() {
+                @Override protected void receive(UUID nodeId, String rcvMsg) throws GridException {
                     System.out.println(rcvMsg);
 
-                    try {
-                        if (cnt.getCount() == 1) {
-                            g.forNodeId(nodeId).message().send(null, "STOP");
+                    if (cnt.getCount() == 1)
+                        stop("STOP");
+                    else if ("PONG".equals(rcvMsg))
+                        respond("PING");
 
-                            return false; // Stop listening.
-                        }
-                        else if ("PONG".equals(rcvMsg))
-                            g.forNodeId(nodeId).message().send(null, "PING");
-
-                        cnt.countDown();
-
-                        return true; // Continue listening.
-                    }
-                    catch (GridException e) {
-                        throw new GridClosureException(e);
-                    }
+                    cnt.countDown();
                 }
             });
 

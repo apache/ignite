@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.datagrid;
+package org.gridgain.examples.datagrid.store;
 
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;

@@ -29,7 +29,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridEventsExample {
+public class EventsApiExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
 
