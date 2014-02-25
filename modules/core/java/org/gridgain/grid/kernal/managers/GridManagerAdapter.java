@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.managers;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.partition.*;
