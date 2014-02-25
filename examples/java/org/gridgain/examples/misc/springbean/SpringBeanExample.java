@@ -42,7 +42,7 @@ import java.util.concurrent.*;
  * @author @java.author
  * @version @java.version
  */
-public final class GridSpringBeanExample {
+public final class SpringBeanExample {
     /**
      * Executes simple {@code HelloWorld} example on the grid (without splitting).
      *

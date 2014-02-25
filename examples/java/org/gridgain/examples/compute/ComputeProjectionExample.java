@@ -48,14 +48,8 @@ public class ComputeProjectionExample {
             // Say hello to a random node.
             sayHello(randomNode);
 
-            // Say hello to all remote nodes, except for previously picked random node.
-            sayHello(grid.forRemotes().forOthers(randomNode));
-
             // Say hello to all nodes residing on the same host with random node.
             sayHello(grid.forHost(randomNode.node()));
-
-            // Say hello to all nodes running cache with name "partitioned".
-            sayHello(grid.forCache("partitioned"));
         }
     }
 

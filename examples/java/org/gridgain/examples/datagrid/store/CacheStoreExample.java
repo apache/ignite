@@ -23,7 +23,7 @@ import java.util.*;
  * {@code GRIDGAIN_HOME/libs/ext} folder to make them available to GridGain.
  * If this was done here (i.e. we had JAR-file containing custom cache store built
  * and put to {@code GRIDGAIN_HOME/libs/ext} folder), we could easily startup
- * remote nodes with {@code 'ggstart.sh examples/config/example-cache-storeloader.xml'}
+ * remote nodes with {@code 'ggstart.sh examples/config/example-cache.xml'}
  * command.
  *
  * @author @java.author
@@ -31,7 +31,7 @@ import java.util.*;
  */
 public class CacheStoreExample {
     /** Global person ID to use across entire example. */
-    private static final UUID id = UUID.randomUUID();
+    private static final Long id = UUID.randomUUID().getLeastSignificantBits();
 
     /**
      * Executes example.
@@ -47,7 +47,7 @@ public class CacheStoreExample {
             System.out.println();
             System.out.println(">>> Started store example.");
 
-            GridCache<UUID, Person> cache = GridGain.grid().cache(null);
+            GridCache<Long, Person> cache = GridGain.grid().cache(null);
 
             try (GridCacheTx tx = cache.txStart()) {
                 Person val = cache.get(id);

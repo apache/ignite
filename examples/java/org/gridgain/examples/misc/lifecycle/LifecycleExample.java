@@ -13,13 +13,13 @@ import org.gridgain.grid.*;
 
 /**
  * This example shows how to provide your own {@link GridLifecycleBean} implementation
- * to be able to hook into GridGain lifecycle. {@link GridLifecycleExampleBean} bean
+ * to be able to hook into GridGain lifecycle. {@link LifecycleExampleBean} bean
  * will output occurred lifecycle events to the console.
  *
  * @author @java.author
  * @version @java.version
  */
-public final class GridLifecycleExample {
+public final class LifecycleExample {
     /**
      * Starts grid with configured lifecycle bean and then stop grid.
      *
@@ -30,7 +30,7 @@ public final class GridLifecycleExample {
         // Create new configuration.
         GridConfiguration cfg = new GridConfiguration();
 
-        GridLifecycleExampleBean bean = new GridLifecycleExampleBean();
+        LifecycleExampleBean bean = new LifecycleExampleBean();
 
         // Provide lifecycle bean to configuration.
         cfg.setLifecycleBeans(bean);

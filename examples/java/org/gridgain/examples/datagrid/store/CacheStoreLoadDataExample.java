@@ -28,7 +28,7 @@ import java.util.concurrent.*;
  * {@code GRIDGAIN_HOME/libs/ext} folder to make them available to GridGain.
  * If this was done here (i.e. we had JAR-file containing custom cache store built
  * and put to {@code GRIDGAIN_HOME/libs/ext} folder), we could easily startup
- * remote nodes with {@code 'ggstart.sh examples/config/example-cache-storeloader.xml'}
+ * remote nodes with {@code 'ggstart.sh examples/config/example-cache.xml'}
  * command.
  * <p>
  * Please note that this example loads large amount of data into memory and therefore

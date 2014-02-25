@@ -31,8 +31,8 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-@GridComputeTaskName(GridDeploymentExample.TASK_NAME)
-public class GridDeploymentExampleTask extends GridComputeTaskSplitAdapter<String, Object> {
+@GridComputeTaskName(DeploymentExample.TASK_NAME)
+public class DeploymentExampleTask extends GridComputeTaskSplitAdapter<String, Object> {
     /** {@inheritDoc} */
     @Override protected Collection<? extends GridComputeJob> split(int gridSize, String arg) throws GridException {
         Collection<GridComputeJob> jobs = new ArrayList<>(gridSize);

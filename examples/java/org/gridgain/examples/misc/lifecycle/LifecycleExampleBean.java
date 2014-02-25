@@ -21,7 +21,7 @@ import static org.gridgain.grid.GridLifecycleEventType.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridLifecycleExampleBean implements GridLifecycleBean {
+public class LifecycleExampleBean implements GridLifecycleBean {
     /**
      * Grid instance will be automatically injected. For additional resources
      * that can be injected into lifecycle beans see {@link GridLifecycleBean}

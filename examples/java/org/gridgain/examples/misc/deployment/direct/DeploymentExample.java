@@ -34,7 +34,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public final class GridDeploymentExample {
+public final class DeploymentExample {
     /** Name of the deployed task. */
     static final String TASK_NAME = "GridDeploymentExampleTask";
 
@@ -54,8 +54,8 @@ public final class GridDeploymentExample {
             // always be the case. In those cases you should use explicit
             // 'Grid.deployTask(Class)}' apply and then use 'Grid.execute(String, Object)'
             // method passing your task name as first parameter.
-            g.compute().localDeployTask(GridDeploymentExampleTask.class,
-                GridDeploymentExampleTask.class.getClassLoader());
+            g.compute().localDeployTask(DeploymentExampleTask.class,
+                DeploymentExampleTask.class.getClassLoader());
 
             for (Map.Entry<String, Class<? extends GridComputeTask<?, ?>>> e : g.compute().localTasks().entrySet())
                 System.out.println(">>> Found locally deployed task [alias=" + e.getKey() + ", taskCls=" + e.getValue());

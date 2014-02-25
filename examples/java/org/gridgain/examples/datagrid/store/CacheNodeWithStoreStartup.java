@@ -64,8 +64,8 @@ public class CacheNodeWithStoreStartup {
 
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
 
-        // cacheCfg.setStore(new CacheDummyPersonStore());
-         cacheCfg.setStore(new CacheJdbcPersonStore());
+        cacheCfg.setStore(new CacheDummyPersonStore());
+        // cacheCfg.setStore(new CacheJdbcPersonStore());
         // cacheCfg.setStore(new CacheHibernatePersonStore());
 
         cfg.setDiscoverySpi(discoSpi);
