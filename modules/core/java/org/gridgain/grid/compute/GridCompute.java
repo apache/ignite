@@ -14,9 +14,9 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.deployment.*;
+import org.gridgain.grid.spi.loadbalancing.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -39,6 +39,8 @@ import java.util.concurrent.*;
  * <li>{@code broadcast(...)} methods broadcast jobs to all nodes in the projection.</li>
  * <li>{@code affinity(...)} methods colocate jobs with nodes on which a specified key is cached.</li>
  * </ul>
+ * Note that if attempt is made to execute a computation over an empty projection (i.e. projection that does
+ * not have any alive nodes), then {@link GridEmptyProjectionException} will be thrown out of result future.
  * <h1 class="header">Serializable</h1>
  * Also note that {@link Runnable} and {@link Callable} implementations must support serialization as required
  * by the configured marshaller. For example, {@link GridOptimizedMarshaller} requires {@link Serializable}
@@ -90,336 +92,137 @@ public interface GridCompute {
     public GridProjection projection();
 
     /**
-     * Executes given closure on the node where data for provided affinity key is located. This
-     * is known as affinity co-location between compute grid and in-memory data grid
-     * (value with affinity key).
+     * Executes given job on the node where data for provided affinity key is located
+     * (a.k.a. affinity co-location).
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
-     * @param job Closure to affinity co-located on the node with given affinity key and execute.
-     * @return Future of this execution.
-     * @see #withName(String)
+     * @param job Job which will be co-located on the node with given affinity key.
+     * @return Future for this execution.
      * @see GridComputeJobContext#cacheName()
      * @see GridComputeJobContext#affinityKey()
      */
     public GridFuture<?> affinityRun(@Nullable String cacheName, Object affKey, Runnable job);
 
     /**
-     * Executes given closure on the node where data for provided affinity key is located. This
-     * is known as affinity co-location between compute grid (a closure) and in-memory data grid
-     * (value with affinity key).
-     * <p>
-     * This method does not block and returns immediately with future. All default SPI implementations
-     * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution, etc.).
-     * Note that if you need greater control on any aspects of Java code execution on the grid
-     * you should implement {@link GridComputeTask} which will provide you with full control over the execution.
-     * <p>
-     * Notice that {@link Runnable} and {@link Callable} implementations must support serialization as required
-     * by the configured marshaller. For example, JDK marshaller will require that implementations would
-     * be serializable. Other marshallers, e.g. JBoss marshaller, may not have this limitation. Please consult
-     * with specific marshaller implementation for the details. Note that all closures and predicates in
-     * {@link org.gridgain.grid.lang} package are serializable and can be freely used in the distributed
-     * context with all marshallers currently shipped with GridGain.
+     * Executes given job on the node where data for provided affinity key is located
+     * (a.k.a. affinity co-location).
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
-     * @param job Closure to affinity co-located on the node with given affinity key and execute.
-     * @return Closure result future.
-     *      Note that in case of dynamic projection this method will take a snapshot of all the
-     *      nodes at the time of this call, apply all filtering predicates, if any, and if the
-     *      resulting collection of nodes is empty - the exception will be thrown.
-     * @see #affinityRun(String, Object, Runnable)
-     * @see #withName(String)
+     * @param job Job which will be co-located on the node with given affinity key.
+     * @return Future with job result.
      * @see GridComputeJobContext#cacheName()
      * @see GridComputeJobContext#affinityKey()
      */
     public <R> GridFuture<R> affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job);
 
     /**
-     * Executes a task on the grid. For information on how task gets split into remote
-     * jobs and how results are reduced back into one see {@link GridComputeTask} documentation.
-     * <p>
-     * This method is extremely useful when task class is already loaded, for example,
-     * in J2EE application server environment. Since application servers already support
-     * deployment and hot-redeployment, it is convenient to deploy all task related classes
-     * via standard J2EE deployment and then use task classes directly.
-     * <p>
-     * When using this method task will be deployed automatically, so no explicit deployment
-     * step is required.
-     * <p>
-     * Note that if projection is empty after applying filtering predicates, the result
-     * future will finish with exception. In case of dynamic projection this method
-     * will take a snapshot of all nodes in the projection, apply all filtering predicates,
-     * if any, and if the resulting set of nodes is empty the returned future will
-     * finish with exception.
+     * Executes given task on the grid projection. For step-by-step explanation of task execution process
+     * refer to {@link GridComputeTask} documentation.
      *
      * @param taskCls Class of the task to execute. If class has {@link GridComputeTaskName} annotation,
      *      then task is deployed under a name specified within annotation. Otherwise, full
-     *      class name is used as task's name.
+     *      class name is used as task name.
      * @param arg Optional argument of task execution, can be {@code null}.
      * @return Task future.
-     * @see GridComputeTask for information about task execution.
-     * @see #withName(String)
      */
     public <T, R> GridComputeTaskFuture<R> execute(Class<? extends GridComputeTask<T, R>> taskCls, @Nullable T arg);
 
     /**
-     * Executes a task on the grid. For information on how task gets split into remote
-     * jobs and how results are reduced back into one see {@link GridComputeTask} documentation.
-     * <p>
-     * This method is extremely useful when task class is already loaded, for example,
-     * in J2EE application server environment. Since application servers already support
-     * deployment and hot-redeployment, it is convenient to deploy all task related classes
-     * via standard J2EE deployment and then use task classes directly.
-     * <p>
-     * When using this method task will be deployed automatically, so no explicit deployment
-     * step is required.
-     * <p>
-     * Note that if projection is empty after applying filtering predicates, the result
-     * future will finish with exception. In case of dynamic projection this method
-     * will take a snapshot of all nodes in the projection, apply all filtering predicates,
-     * if any, and if the resulting set of nodes is empty the returned future will
-     * finish with exception.
+     * Executes given task on the grid projection. For step-by-step explanation of task execution process
+     * refer to {@link GridComputeTask} documentation.
      *
      * @param task Instance of task to execute. If task class has {@link GridComputeTaskName} annotation,
      *      then task is deployed under a name specified within annotation. Otherwise, full
-     *      class name is used as task's name.
+     *      class name is used as task name.
      * @param arg Optional argument of task execution, can be {@code null}.
      * @return Task future.
-     * @see GridComputeTask for information about task execution.
-     * @see #withName(String)
      */
     public <T, R> GridComputeTaskFuture<R> execute(GridComputeTask<T, R> task, @Nullable T arg);
 
     /**
-     * Executes a task on the grid. For information on how task gets split into remote
-     * jobs and how results are reduced back into one see {@link GridComputeTask} documentation.
+     * Executes given task on the grid projection. For step-by-step explanation of task execution process
+     * refer to {@link GridComputeTask} documentation.
      * <p>
      * If task for given name has not been deployed yet, then {@code taskName} will be
-     * used as task class name to auto-deploy the task (see Grid#deployTask() method
-     * for deployment algorithm).
-     * <p>
-     * Note that if projection is empty after applying filtering predicates, the result
-     * future will finish with exception. In case of dynamic projection this method
-     * will take a snapshot of all nodes in the projection, apply all filtering predicates,
-     * if any, and if the resulting set of nodes is empty the returned future will
-     * finish with exception.
+     * used as task class name to auto-deploy the task (see {@link #localDeployTask(Class, ClassLoader)} method).
      *
-     * @param taskName Name of the task to execute. If task class has {@link GridComputeTaskName} annotation,
-     *      then task is deployed under a name specified within annotation. Otherwise, full
-     *      class name is used as task's name.
+     * @param taskName Name of the task to execute.
      * @param arg Optional argument of task execution, can be {@code null}.
      * @return Task future.
      * @see GridComputeTask for information about task execution.
-     * @see #withName(String)
      */
     public <T, R> GridComputeTaskFuture<R> execute(String taskName, @Nullable T arg);
 
     /**
-     * Asynchronously executes given closure on all nodes in this projection.
-     * <p>
-     * This method does not block and returns immediately with future. All default SPI implementations
-     * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution, etc.).
-     * Note that if you need greater control on any aspects of Java code execution on the grid
-     * you should implement {@link GridComputeTask} which will provide you with full control over the execution.
-     * <p>
-     * Note that class {@link GridAbsClosure} implements {@link Runnable} and class {@link GridOutClosure}
-     * implements {@link Callable} interface. Note also that class {@link GridFunc} and typedefs provide rich
-     * APIs and functionality for closures and predicates based processing in GridGain. While Java interfaces
-     * {@link Runnable} and {@link Callable} allow for lowest common denominator for APIs - it is advisable
-     * to use richer Functional Programming support provided by GridGain available in {@link org.gridgain.grid.lang}
-     * package.
-     * <p>
-     * Notice that {@link Runnable} and {@link Callable} implementations must support serialization as required
-     * by the configured marshaller. For example, JDK marshaller will require that implementations would
-     * be serializable. Other marshallers, e.g. JBoss marshaller, may not have this limitation. Please consult
-     * with specific marshaller implementation for the details. Note that all closures and predicates in
-     * {@link org.gridgain.grid.lang} package are serializable and can be freely used in the distributed
-     * context with all marshallers currently shipped with GridGain.
+     * Broadcasts given job to all nodes in grid projection.
      *
-     * @param job Job closure to execute.
-     * @return Future of this execution.
-     * @see #broadcast(Callable)
-     * @see #broadcast(GridClosure, Object)
-     * @see #withName(String)
+     * @param job Job to broadcast to all projection nodes.
+     * @return Future for this execution.
      */
     public GridFuture<?> broadcast(Runnable job);
 
     /**
-     * Asynchronously executes given closure on all nodes in this projection.
-     * <p>
-     * This method does not block and returns immediately with future. All default SPI implementations
-     * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution, etc.).
-     * Note that if you need greater control on any aspects of Java code execution on the grid
-     * you should implement {@link GridComputeTask} which will provide you with full control over the execution.
-     * <p>
-     * Note that class {@link GridAbsClosure} implements {@link Runnable} and class {@link GridOutClosure}
-     * implements {@link Callable} interface. Note also that class {@link GridFunc} and typedefs provide rich
-     * APIs and functionality for closures and predicates based processing in GridGain. While Java interfaces
-     * {@link Runnable} and {@link Callable} allow for lowest common denominator for APIs - it is advisable
-     * to use richer Functional Programming support provided by GridGain available in {@link org.gridgain.grid.lang}
-     * package.
-     * <p>
-     * Notice that {@link Runnable} and {@link Callable} implementations must support serialization as required
-     * by the configured marshaller. For example, JDK marshaller will require that implementations would
-     * be serializable. Other marshallers, e.g. JBoss marshaller, may not have this limitation. Please consult
-     * with specific marshaller implementation for the details. Note that all closures and predicates in
-     * {@link org.gridgain.grid.lang} package are serializable and can be freely used in the distributed
-     * context with all marshallers currently shipped with GridGain.
+     * Broadcasts given job to all nodes in grid projection. Every participating node will return
+     * job result. Collection of all returned job results is returned from the result future.
      *
-     * @param job Job closure to execute.
-     * @return Future of this execution.
-     * @see #broadcast(Runnable)
-     * @see #broadcast(GridClosure, Object)
-     * @see #withName(String)
+     * @param job Job to broadcast to all projection nodes.
+     * @return Future with collection of results for this execution.
      */
     public <R> GridFuture<Collection<R>> broadcast(Callable<R> job);
 
     /**
-     * Asynchronously executes given closure on all nodes in this projection.
-     * <p>
-     * This method does not block and returns immediately with future. All default SPI implementations
-     * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution, etc.).
-     * Note that if you need greater control on any aspects of Java code execution on the grid
-     * you should implement {@link GridComputeTask} which will provide you with full control over the execution.
-     * <p>
-     * Note that class {@link GridAbsClosure} implements {@link Runnable} and class {@link GridOutClosure}
-     * implements {@link Callable} interface. Note also that class {@link GridFunc} and typedefs provide rich
-     * APIs and functionality for closures and predicates based processing in GridGain. While Java interfaces
-     * {@link Runnable} and {@link Callable} allow for lowest common denominator for APIs - it is advisable
-     * to use richer Functional Programming support provided by GridGain available in {@link org.gridgain.grid.lang}
-     * package.
-     * <p>
-     * Notice that {@link Runnable} and {@link Callable} implementations must support serialization as required
-     * by the configured marshaller. For example, JDK marshaller will require that implementations would
-     * be serializable. Other marshallers, e.g. JBoss marshaller, may not have this limitation. Please consult
-     * with specific marshaller implementation for the details. Note that all closures and predicates in
-     * {@link org.gridgain.grid.lang} package are serializable and can be freely used in the distributed
-     * context with all marshallers currently shipped with GridGain.
+     * Broadcasts given closure job with passed in argument to all nodes in grid projection.
+     * Every participating node will return job result. Collection of all returned job results
+     * is returned from the result future.
      *
-     * @param job Job closure to execute.
-     * @param arg Closure argument.
-     * @return Future of this execution.
-     * @see #broadcast(Runnable)
-     * @see #broadcast(Callable)
-     * @see #withName(String)
+     * @param job Job to broadcast to all projection nodes.
+     * @param arg Job closure argument.
+     * @return Future with collection of results for this execution.
      */
     public <R, T> GridFuture<Collection<R>> broadcast(GridClosure<T, R> job, @Nullable T arg);
 
     /**
-     * Asynchronously executes given closure on this projection.
-     * <p>
-     * This method does not block and returns immediately with future. All default SPI implementations
-     * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution, etc.).
-     * Note that if you need greater control on any aspects of Java code execution on the grid
-     * you should implement {@link GridComputeTask} which will provide you with full control over the execution.
-     * <p>
-     * Note that class {@link GridAbsClosure} implements {@link Runnable} and class {@link GridOutClosure}
-     * implements {@link Callable} interface. Note also that class {@link GridFunc} and typedefs provide rich
-     * APIs and functionality for closures and predicates based processing in GridGain. While Java interfaces
-     * {@link Runnable} and {@link Callable} allow for lowest common denominator for APIs - it is advisable
-     * to use richer Functional Programming support provided by GridGain available in {@link org.gridgain.grid.lang}
-     * package.
-     * <p>
-     * Notice that {@link Runnable} and {@link Callable} implementations must support serialization as required
-     * by the configured marshaller. For example, JDK marshaller will require that implementations would
-     * be serializable. Other marshallers, e.g. JBoss marshaller, may not have this limitation. Please consult
-     * with specific marshaller implementation for the details. Note that all closures and predicates in
-     * {@link org.gridgain.grid.lang} package are serializable and can be freely used in the distributed
-     * context with all marshallers currently shipped with GridGain.
+     * Executes job on a node in the grid projection. Node for execution is selected
+     * using underlying load balancing SPI.
      *
      * @param job Job closure to execute.
      * @return Future of this execution.
-     * @see PN
-     * @see #call(Callable)
-     * @see #withName(String)
+     * @see GridLoadBalancingSpi
      */
     public GridFuture<?> run(Runnable job);
 
     /**
-     * Asynchronously executes given closures on this projection.
-     * <p>
-     * This method does not block and returns immediately with future. All default SPI implementations
-     * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution, etc.).
-     * Note that if you need greater control on any aspects of Java code execution on the grid
-     * you should implement {@link GridComputeTask} which will provide you with full control over the execution.
-     * <p>
-     * Note that class {@link GridAbsClosure} implements {@link Runnable} and class {@link GridOutClosure}
-     * implements {@link Callable} interface. Note also that class {@link GridFunc} and typedefs provide rich
-     * APIs and functionality for closures and predicates based processing in GridGain. While Java interfaces
-     * {@link Runnable} and {@link Callable} allow for lowest common denominator for APIs - it is advisable
-     * to use richer Functional Programming support provided by GridGain available in {@link org.gridgain.grid.lang}
-     * package.
-     * <p>
-     * Notice that {@link Runnable} and {@link Callable} implementations must support serialization as required
-     * by the configured marshaller. For example, JDK marshaller will require that implementations would
-     * be serializable. Other marshallers, e.g. JBoss marshaller, may not have this limitation. Please consult
-     * with specific marshaller implementation for the details. Note that all closures and predicates in
-     * {@link org.gridgain.grid.lang} package are serializable and can be freely used in the distributed
-     * context with all marshallers currently shipped with GridGain.
+     * Executes collection of jobs on nodes within grid projection. For each job a next
+     * load balanced node will be selected for execution. Nodes for execution are selected
+     * using underlying load balancing SPI.
      *
-     * @param jobs Job closures to execute.
-     * @return Future of this execution.
-     * @see PN
+     * @param jobs Collection of jobs to execute.
+     * @return Future for this execution.
+     * @see GridLoadBalancingSpi
      */
     public GridFuture<?> run(Collection<? extends Runnable> jobs);
 
     /**
-     * Asynchronously executes given closure on this projection.
-     * <p>
-     * This method does not block and returns immediately with future. All default SPI implementations
-     * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution, etc.).
-     * Note that if you need greater control on any aspects of Java code execution on the grid
-     * you should implement {@link GridComputeTask} which will provide you with full control over the execution.
-     * <p>
-     * Note that class {@link GridAbsClosure} implements {@link Runnable} and class {@link GridOutClosure}
-     * implements {@link Callable} interface. Note also that class {@link GridFunc} and typedefs provide rich
-     * APIs and functionality for closures and predicates based processing in GridGain. While Java interfaces
-     * {@link Runnable} and {@link Callable} allow for lowest common denominator for APIs - it is advisable
-     * to use richer Functional Programming support provided by GridGain available in {@link org.gridgain.grid.lang}
-     * package.
-     * <p>
-     * Notice that {@link Runnable} and {@link Callable} implementations must support serialization as required
-     * by the configured marshaller. For example, JDK marshaller will require that implementations would
-     * be serializable. Other marshallers, e.g. JBoss marshaller, may not have this limitation. Please consult
-     * with specific marshaller implementation for the details. Note that all closures and predicates in
-     * {@link org.gridgain.grid.lang} package are serializable and can be freely used in the distributed
-     * context with all marshallers currently shipped with GridGain.
+     * Executes job on a node in the grid projection. Node for execution is selected
+     * using underlying load balancing SPI.
      *
-     * @param job Closure to invoke.
-     * @return Closure result future.
-     * @see PN
-     * @see #withName(String)
+     * @param job Job closure to execute.
+     * @return Future of this execution.
+     * @see GridLoadBalancingSpi
      */
     public <R> GridFuture<R> call(Callable<R> job);
 
     /**
-     * Asynchronously executes given closures on this projection.
-     * <p>
-     * This method does not block and returns immediately with future. All default SPI implementations
-     * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution, etc.).
-     * Note that if you need greater control on any aspects of Java code execution on the grid
-     * you should implement {@link GridComputeTask} which will provide you with full control over the execution.
-     * <p>
-     * Note that class {@link GridAbsClosure} implements {@link Runnable} and class {@link GridOutClosure}
-     * implements {@link Callable} interface. Note also that class {@link GridFunc} and typedefs provide rich
-     * APIs and functionality for closures and predicates based processing in GridGain. While Java interfaces
-     * {@link Runnable} and {@link Callable} allow for lowest common denominator for APIs - it is advisable
-     * to use richer Functional Programming support provided by GridGain available in {@link org.gridgain.grid.lang}
-     * package.
-     * <p>
-     * Notice that {@link Runnable} and {@link Callable} implementations must support serialization as required
-     * by the configured marshaller. For example, JDK marshaller will require that implementations would
-     * be serializable. Other marshallers, e.g. JBoss marshaller, may not have this limitation. Please consult
-     * with specific marshaller implementation for the details. Note that all closures and predicates in
-     * {@link org.gridgain.grid.lang} package are serializable and can be freely used in the distributed
-     * context with all marshallers currently shipped with GridGain.
+     * Executes collection of jobs on nodes within grid projection. For each job a next
+     * load balanced node will be selected for execution. Nodes for execution are selected
+     * using underlying load balancing SPI. Collection of all returned job results is
+     * returned from the result future.
      *
-     * @param jobs Closures to invoke.
-     * @return Future collection of closure results. Order is undefined.
-     * @see PN
-     * @see #call(Callable)
-     * @see #withName(String)
+     * @param jobs Collection of jobs to execute.
+     * @return Future with collection of results for this execution.
+     * @see GridLoadBalancingSpi
      */
     public <R> GridFuture<Collection<R>> call(Collection<? extends Callable<R>> jobs);
 
@@ -477,7 +280,7 @@ public interface GridCompute {
     public <R, T> GridFuture<R> apply(GridClosure<T, R> job, @Nullable T arg);
 
     /**
-     * Runs job taking argument and producing result on this projection with given
+     * Runs job, taking argument and producing result on this projection with given
      * collection of arguments. The job is sequentially executed on every single
      * argument from the collection so that number of actual executions will be
      * equal to size of collection of arguments.
@@ -493,11 +296,10 @@ public interface GridCompute {
     public <T, R> GridFuture<Collection<R>> apply(GridClosure<T, R> job, @Nullable Collection<? extends T> args);
 
     /**
-     * Runs jobs taking argument and producing result on this projection with given
-     * collection of arguments. The job is sequentially executed on every single argument
-     * from the collection so that number of actual executions will be equal to size of
-     * collection of arguments. Then method reduces these job results to a single
-     * execution result using provided reducer. See {@link GridReducer} for reducer details.
+     * Runs closure job with given collection of arguments. The job is sequentially
+     * executed on every single argument from the collection so that number of actual
+     * executions will be equal to size of collection of arguments. Then method reduces
+     * these job results to a single execution result using provided reducer.
      *
      * @param job Job to run.
      * @param args Job arguments.
@@ -511,9 +313,8 @@ public interface GridCompute {
     /**
      * Creates new {@link ExecutorService} which will execute all submitted
      * {@link Callable} and {@link Runnable} tasks on this projection. This essentially
-     * creates a <b><i>Distributed Thread Pool</i</b> that can be used as a drop-in
-     * replacement for local thread pools to gain easy distributed processing
-     * capabilities.
+     * creates a <b><i>Distributed Thread Pool</i</b> that can be used as a
+     * replacement for local thread pools.
      * <p>
      * User may run {@link Callable} and {@link Runnable} tasks
      * just like normally with {@link ExecutorService java.util.ExecutorService}.
@@ -569,10 +370,10 @@ public interface GridCompute {
      * <p>
      * Here is an example.
      * <pre name="code" class="java">
-     * GridGain.grid().withName("MyTask").call(
+     * GridGain.grid().withName("MyTask").run(
      *     BROADCAST,
-     *     new CAX() {
-     *         &#64;Override public void applyx() throws GridException {
+     *     new GridRunnable() {
+     *         &#64;Override public void run() {
      *             System.out.println("Hello!");
      *         }
      *     }
@@ -590,10 +391,10 @@ public interface GridCompute {
      * <p>
      * Here is an example.
      * <pre name="code" class="java">
-     * GridGain.grid().withTimeout(10000).call(
+     * GridGain.grid().withTimeout(10000).run(
      *     BROADCAST,
-     *     new CAX() {
-     *         &#64;Override public void applyx() throws GridException {
+     *     new GridRunnable() {
+     *         &#64;Override public void run() {
      *             System.out.println("Hello!");
      *         }
      *     }
@@ -613,10 +414,10 @@ public interface GridCompute {
      * <p>
      * Here is an example.
      * <pre name="code" class="java">
-     * GridGain.grid().compute().withNoFailover().call(
+     * GridGain.grid().compute().withNoFailover().run(
      *     BROADCAST,
-     *     new CAX() {
-     *         &#64;Override public void applyx() throws GridException {
+     *     new GridRunnable() {
+     *         &#64;Override public void run() {
      *             System.out.println("Hello!");
      *         }
      *     }
@@ -637,38 +438,12 @@ public interface GridCompute {
      * <p>
      * Another way of class deployment which is supported is deployment from local class path.
      * Class from local class path has a priority over P2P deployed.
-     * Following describes task class deployment:
-     * <ul>
-     * <li> If peer class loading is enabled (see {@link GridConfiguration#isPeerClassLoadingEnabled()})
-     * <ul> Task class loaded from local class path if it is not defined as P2P loaded
-     *      (see {@link GridConfiguration#getPeerClassLoadingLocalClassPathExclude()}).</ul>
-     * <ul> If there is no task class in local class path or task class needs to be peer loaded
-     *      it is downloaded from task originating node using provided class loader.</ul>
-     * </li>
-     * <li> If peer class loading is disabled (see {@link GridConfiguration#isPeerClassLoadingEnabled()})
-     * <ul> Check that task class was deployed (either as GAR or explicitly) and use it.</ul>
-     * <ul> If task class was not deployed then we try to find it in local class path by task
-     *      name. Task name should correspond task class name.</ul>
-     * <ul> If task has custom name (that does not correspond task class name) and this
-     *      task was not deployed before then exception will be thrown.</ul>
-     * </li>
-     * </ul>
-     * <p>
-     * Note that this is an alternative deployment method additionally to deployment SPI that
-     * provides more formal method of deploying a task, e.g. deployment of GAR files and/or URI-based
-     * deployment. See {@link GridDeploymentSpi} for detailed information about grid task deployment.
      * <p>
      * Note that class can be deployed multiple times on remote nodes, i.e. re-deployed. GridGain
      * maintains internal version of deployment for each instance of deployment (analogous to
-     * class and class loader in Java). Execution happens always on the latest deployed instance
-     * (latest that is on the node where execution request is originated). This allows a very
-     * convenient development model when a developer can execute a task on the grid from IDE,
-     * then realize that he made a mistake, stop his node in IDE, fix mistake and re-execute the
-     * task. Grid will automatically detect that task got renewed and redeploy it on all remote
-     * nodes upon execution.
+     * class and class loader in Java). Execution happens always on the latest deployed instance.
      * <p>
-     * This method has no effect if the class passed in was already deployed. Implementation
-     * checks for this condition and returns immediately.
+     * This method has no effect if the class passed in was already deployed.
      *
      * @param taskCls Task class to deploy. If task class has {@link GridComputeTaskName} annotation,
      *      then task will be deployed under a name specified within annotation. Otherwise, full
@@ -690,19 +465,14 @@ public interface GridCompute {
     public Map<String, Class<? extends GridComputeTask<?, ?>>> localTasks();
 
     /**
-     * Makes the best attempt to undeploy a task from the projection. Note that this
+     * Makes the best attempt to undeploy a task with given name from the projection. Note that this
      * method returns immediately and does not wait until the task will actually be
      * undeployed on every node.
-     * <p>
-     * Note that GridGain maintains internal versions for grid tasks in case of redeployment.
-     * This method will attempt to undeploy all versions on the grid task with
-     * given name.
      *
      * @param taskName Name of the task to undeploy. If task class has {@link GridComputeTaskName} annotation,
      *      then task was deployed under a name specified within annotation. Otherwise, full
      *      class name should be used as task's name.
      * @throws GridException Thrown if undeploy failed.
-     * // TODO: change current behavior from the whole grid to current projection.
      */
     public void undeployTask(String taskName) throws GridException;
 }
