@@ -2346,8 +2346,9 @@ object visor extends VisorTag {
                                 .compute()
                                 .withName("visor-log-collector")
                                 .withNoFailover()
-                                .call(() => Collector.collect(LOG_EVTS, g, key))
+                                .broadcast(() => Collector.collect(LOG_EVTS, g, key))
                                 .get
+                                .flatten
                         }
                         catch {
                             case _: GridEmptyProjectionException => // Ignore.

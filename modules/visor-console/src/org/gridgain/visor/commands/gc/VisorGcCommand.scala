@@ -168,7 +168,7 @@ class VisorGcCommand {
                 else
                     grid.compute()
                         .withNoFailover()
-                        .run(f)
+                        .broadcast(f)
             }
         }
     }

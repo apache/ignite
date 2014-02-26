@@ -40,6 +40,7 @@ class VisorTasksCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndA
 
         try {
             val compute = visor.grid.compute()
+
             val fut1 = compute.withName("TestTask1").execute(new TestTask1(), null)
             val fut2 = compute.withName("TestTask1").execute(new TestTask1(), null)
             val fut3 = compute.withName("TestTask1").execute(new TestTask1(), null)
