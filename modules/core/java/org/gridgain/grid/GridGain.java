@@ -1826,11 +1826,11 @@ public class GridGain {
 
                 int cloneIdx = 0;
 
-                for (GridCacheConfiguration ccfg : cacheCfgs)
-                    clone[cloneIdx++] = new GridCacheConfiguration(ccfg);
-
                 for (String drSysCache : drSysCaches)
                     clone[cloneIdx++] = replicationSystemCache(drSysCache);
+
+                for (GridCacheConfiguration ccfg : cacheCfgs)
+                    clone[cloneIdx++] = new GridCacheConfiguration(ccfg);
 
                 myCfg.setCacheConfiguration(clone);
             }

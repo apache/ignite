@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.cache.affinity.partitioned;
+package org.gridgain.grid.cache.affinity.partition;
 
 import org.gridgain.grid.*;
 
@@ -23,7 +23,7 @@ import java.io.*;
  * @author @java.author
  * @version @java.version
  */
-public interface GridCachePartitionedHashResolver extends Serializable {
+public interface GridCachePartitionHashResolver extends Serializable {
     /**
      * Resolve alternate hash ID for the given Grid node.
      *

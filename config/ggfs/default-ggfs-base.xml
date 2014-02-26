@@ -63,7 +63,7 @@
         <property name="queryIndexEnabled" value="false"/>
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
         <property name="affinity">
-            <bean class="org.gridgain.grid.cache.affinity.partitioned.GridCachePartitionedAffinity">
+            <bean class="org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinity">
                 <!-- Setup number of backup servers per key. -->
                 <constructor-arg value="0"/>
             </bean>

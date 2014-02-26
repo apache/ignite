@@ -11,7 +11,7 @@ package org.gridgain.examples.misc.client.interceptor;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.partitioned.*;
+import org.gridgain.grid.cache.affinity.partition.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -23,7 +23,7 @@ import java.util.*;
 import static org.gridgain.grid.GridDeploymentMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCachePartitionedDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
@@ -92,8 +92,8 @@ public class ClientMessageInterceptorExampleNodeStartup {
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setAtomicityMode(ATOMIC);
         cacheCfg.setWriteSynchronizationMode(PRIMARY_SYNC);
-        cacheCfg.setPartitionedDistributionMode(PARTITIONED_ONLY);
-        cacheCfg.setAffinity(new GridCachePartitionedAffinity(1));
+        cacheCfg.setDistributionMode(PARTITIONED_ONLY);
+        cacheCfg.setAffinity(new GridCachePartitionAffinity(1));
         cacheCfg.setStartSize(1500000);
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setPreloadMode(SYNC);

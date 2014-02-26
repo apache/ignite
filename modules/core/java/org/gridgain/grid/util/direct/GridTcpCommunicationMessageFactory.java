@@ -20,7 +20,6 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.replicated.preloader.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
@@ -236,81 +235,69 @@ public class GridTcpCommunicationMessageFactory {
                 return new GridNearUnlockRequest();
 
             case 57:
-                return new GridReplicatedForceKeysRequest();
-
-            case 58:
-                return new GridReplicatedForceKeysResponse();
-
-            case 59:
-                return new GridReplicatedPreloadDemandMessage();
-
-            case 60:
-                return new GridReplicatedPreloadSupplyMessage();
-
-            case 61:
                 return new GridCacheQueryRequest();
 
-            case 62:
+            case 58:
                 return new GridCacheQueryResponse();
 
-            case 63:
+            case 59:
                 return new GridClockDeltaSnapshotMessage();
 
-            case 64:
+            case 60:
                 return new GridContinuousMessage();
 
-            case 65:
+            case 61:
                 return new GridDataLoadRequest();
 
-            case 66:
+            case 62:
                 return new GridDataLoadResponse();
 
-            case 67:
+            case 63:
                 return new GridDrInternalRequest();
 
-            case 68:
+            case 64:
                 return new GridDrInternalResponse();
 
-            case 69:
+            case 65:
                 return new GridGgfsAckMessage();
 
-            case 70:
+            case 66:
                 return new GridGgfsBlockKey();
 
-            case 71:
+            case 67:
                 return new GridGgfsBlocksMessage();
 
-            case 72:
+            case 68:
                 return new GridGgfsDeleteMessage();
 
-            case 73:
+            case 69:
                 return new GridGgfsFileAffinityRange();
 
-            case 74:
+            case 70:
                 return new GridGgfsFragmentizerRequest();
 
-            case 75:
+            case 71:
                 return new GridGgfsFragmentizerResponse();
 
-            case 76:
+            case 72:
                 return new GridGgfsSyncMessage();
 
-            case 77:
+            case 73:
                 return new GridTaskResultRequest();
 
-            case 78:
+            case 74:
                 return new GridTaskResultResponse();
 
-            case 79:
+            case 75:
                 return new GridStreamerCancelRequest();
 
-            case 80:
+            case 76:
                 return new GridStreamerExecutionRequest();
 
-            case 81:
+            case 77:
                 return new GridStreamerResponse();
 
-            case 82:
+            case 78:
                 return new GridJobStealingRequest();
 
             default:

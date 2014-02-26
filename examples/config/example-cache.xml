@@ -156,7 +156,7 @@
                     <property name="name" value="partitioned"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="ATOMIC"/>
-                    <property name="partitionedDistributionMode" value="PARTITIONED_ONLY"/>
+                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
                 </bean>
 
                 <!--
@@ -166,7 +166,7 @@
                     <property name="name" value="partitioned_tx"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="partitionedDistributionMode" value="NEAR_PARTITIONED"/>
+                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
                 </bean>
 
                 <!--
@@ -214,7 +214,7 @@
             The below configuration sets the number of backups to 1 (which is default).
         -->
         <property name="affinity">
-            <bean class="org.gridgain.grid.cache.affinity.partitioned.GridCachePartitionedAffinity">
+            <bean class="org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinity">
                 <property name="keyBackups" value="1"/>
             </bean>
         </property>

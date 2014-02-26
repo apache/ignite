@@ -199,6 +199,6 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 74;
+        return 70;
     }
 }

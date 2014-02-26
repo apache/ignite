@@ -580,7 +580,8 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
 
                     }
                     catch (GridException e) {
-                        U.error(log, "Failed to gracefully rollback transaction: " + this, e);
+                        U.error(log, "Failed to gracefully rollback transaction: " + CU.txString(GridDhtTxLocal.this),
+                            e);
 
                         fut.onError(e);
                     }
