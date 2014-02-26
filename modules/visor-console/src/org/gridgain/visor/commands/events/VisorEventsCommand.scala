@@ -23,6 +23,7 @@ import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.grid.util.scala.impl
 import org.gridgain.visor._
 import org.gridgain.visor.commands._
+import org.gridgain.visor.commands.{VisorConsoleUtils => CU}
 import org.gridgain.scalar.scalar._
 import visor._
 
@@ -509,9 +510,9 @@ private class VisorConsoleCollectEventsTask
                 case Right(msg) => Right(msg)
                 case Left(timeF) =>
                     val filter = (e: GridEvent) => typeF.apply(e) && timeF.apply(e) && (e match {
-                        case evt: GridTaskEvent => !evt.taskName().toLowerCase.contains("visor")
-                        case evt: GridJobEvent => !evt.taskName().toLowerCase.contains("visor")
-                        case evt: GridDeploymentEvent => !evt.alias().toLowerCase.contains("visor")
+                        case te: GridTaskEvent => !CU.containsInTaskName(te.taskName(), te.taskClassName(), "visor")
+                        case je: GridJobEvent => !CU.containsInTaskName(je.taskName(), je.taskName(), "visor")
+                        case de: GridDeploymentEvent => !de.alias().toLowerCase.contains("visor")
                         case _ => true
                     })
 
