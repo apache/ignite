@@ -1749,6 +1749,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @Override public void removeNode(UUID nodeId) {
             // No-op.
         }
+
+        /** {@inheritDoc} */
+        @Override public int keyBackups() {
+            return 0;
+        }
     }
 }
 

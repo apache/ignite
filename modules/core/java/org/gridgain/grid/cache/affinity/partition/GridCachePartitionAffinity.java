@@ -378,6 +378,11 @@ public class GridCachePartitionAffinity implements GridCacheAffinity {
     }
 
     /** {@inheritDoc} */
+    @Override public int keyBackups() {
+        return backups;
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<GridNode> nodes(int part, Collection<GridNode> nodes) {
         if (nodes == null)
             return Collections.emptyList();

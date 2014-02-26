@@ -139,10 +139,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public void start() throws GridException {
         GridCacheAffinity aff = ctx.config().getAffinity();
 
-        if (aff instanceof GridCachePartitionAffinity)
-            hasBackups = ((GridCachePartitionAffinity)aff).getKeyBackups() > 0;
-        else
-            hasBackups = true;
+        hasBackups = aff.keyBackups() > 0;
 
         preldr = new GridDhtPreloader<>(ctx);
 
