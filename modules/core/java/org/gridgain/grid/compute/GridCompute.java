@@ -46,8 +46,15 @@ import java.util.concurrent.*;
  * by the configured marshaller. For example, {@link GridOptimizedMarshaller} requires {@link Serializable}
  * objects by default, but can be configured not to. Generally speaking objects that implement {@link Serializable}
  * or {@link Externalizable} will perform better. For {@link Runnable} and {@link Callable} interfaces
- * GridGain has analogous {@link GridRunnable} and {@link GridCallable} classes which are
- * {@link Serializable}.
+ * GridGain provides analogous {@link GridRunnable} and {@link GridCallable} classes which are
+ * {@link Serializable} and should be used to run computations on the grid.
+ * <h1 class="header">Load Balancing</h1>
+ * In all cases other than {@code broadcast(...)}, GridGain must select a node for a computation
+ * to be executed. The node will be selected based on the underlying {@link GridLoadBalancingSpi},
+ * which by default sequentially picks next available node from grid projection. Other load balancing
+ * policies, such as {@code random} or {@code adaptive}, can be configured as well by selecting
+ * a different load balancing SPI in grid configuration. If your logic requires some custom
+ * load balancing behavior, consider implementing {@link GridComputeTask} directly.
  * <h1 class="header">Resource Injection</h1>
  * All compute jobs, including closures, runnables, callables, and tasks can be injected with
  * grid resources. Both, field and method based injections are supported. The following grid
