@@ -461,7 +461,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };

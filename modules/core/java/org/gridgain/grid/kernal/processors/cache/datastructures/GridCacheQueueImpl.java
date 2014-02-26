@@ -719,7 +719,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                     return true;
                 }
                 finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };
@@ -857,7 +857,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                     return val.userObject();
                 }
                 finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };
@@ -943,7 +943,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                             GridCacheQueueImpl.this + ']');
                 }
                 finally {
-                    tx.end();
+                    tx.close();
                 }
 
                 // Throw remote exception if it's happened.
@@ -1042,7 +1042,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                     }
                 }
                 finally {
-                    tx.end();
+                    tx.close();
                 }
 
                 // Throw remote exception if it's happened.
@@ -1393,7 +1393,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                             GridCacheQueueImpl.this + ']');
                 }
                 finally {
-                    tx.end();
+                    tx.close();
                 }
 
                 // Throw remote exception if it's happened.
@@ -1550,7 +1550,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                                 return true;
                             }
                             finally {
-                                tx.end();
+                                tx.close();
                             }
                         }
                     }, cctx);

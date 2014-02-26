@@ -20,6 +20,13 @@ import org.jetbrains.annotations.*;
  */
 public class GridEmptyProjectionException extends GridException {
     /**
+     * Creates new exception with default error message.
+     */
+    public GridEmptyProjectionException() {
+        super("Grid projection is empty.");
+    }
+
+    /**
      * Creates new exception with given error message.
      *
      * @param msg Error message.

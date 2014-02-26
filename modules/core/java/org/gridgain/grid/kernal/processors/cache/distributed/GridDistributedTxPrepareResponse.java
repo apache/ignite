@@ -236,6 +236,6 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDistributedTxPrepareResponse.class, this, "err",
-            err == null ? "" : err.toString(), "super", super.toString());
+            err == null ? "null" : err.toString(), "super", super.toString());
     }
 }

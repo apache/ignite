@@ -10,8 +10,8 @@
 package org.gridgain.grid;
 
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
+
 import java.util.concurrent.*;
 
 /**
@@ -77,15 +77,6 @@ public interface GridFuture<R> {
      * @return {@code True} if computation is done, {@code false} otherwise.
      */
     public boolean isDone();
-
-    /**
-     * Gets predicate that evaluates to {@code true} if this future is done
-     * at the moment of evaluation.
-     *
-     * @return Predicate that evaluates to {@code true} if this future is done
-     *      at the moment of  evaluation.
-     */
-    public GridAbsPredicate predicate();
 
     /**
      * Returns {@code true} if this computation was cancelled before it completed normally.
@@ -183,8 +174,8 @@ public interface GridFuture<R> {
     public void stopListenAsync(@Nullable GridInClosure<? super GridFuture<R>>... lsnr);
 
     /**
-     * Make a chained future to convert result of this future (when complete) into format acceptable for your needs.
-     * It is guaranteed that done callback (1) will be called and (2) only ONCE.
+     * Make a chained future to convert result of this future (when complete) into a new format.
+     * It is guaranteed that done callback will be called only ONCE.
      *
      * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
      * @return Chained future that finishes after this future completes and done callback is called.

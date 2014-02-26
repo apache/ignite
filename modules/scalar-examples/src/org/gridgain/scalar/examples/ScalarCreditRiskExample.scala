@@ -20,14 +20,14 @@ import scala.util.control.Breaks._
  * Scalar-based Monte-Carlo example.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-default.xml'`.
+ * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
  *
  * @author @java.author
  * @version @java.version
  */
 object ScalarCreditRiskExample {
     def main(args: Array[String]) {
-        scalar("examples/config/example-default.xml") {
+        scalar("examples/config/example-compute.xml") {
             // Create portfolio.
             var portfolio = Seq.empty[Credit]
 

@@ -48,21 +48,21 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity0<K> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean primary(GridNode n, K key) {
+    @Override public boolean isPrimary(GridNode n, K key) {
         A.notNull(n, "n", key, "key");
 
         return cctx.affinity().primary(n, key);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean backup(GridNode n, K key) {
+    @Override public boolean isBackup(GridNode n, K key) {
         A.notNull(n, "n", key, "key");
 
         return cctx.affinity().backups(key).contains(n);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean primaryOrBackup(GridNode n, K key) {
+    @Override public boolean isPrimaryOrBackup(GridNode n, K key) {
         A.notNull(n, "n", key, "key");
 
         return cctx.affinity().nodes(key).contains(n);

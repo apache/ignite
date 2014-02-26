@@ -95,7 +95,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     @SuppressWarnings("unchecked")
     @Override protected void onKernalStart0() {
         try {
-            if (!cctx.isColocated()) {
+            if (!cctx.isColocated() || cctx.isReplicated()) {
                 assert !cctx.isDht();
 
                 dsView = cctx.cache().<GridCacheInternal, GridCacheInternal>projection
@@ -299,7 +299,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
                             throw e;
                         } finally {
-                            tx.end();
+                            tx.close();
                         }
                     }
                 }, cctx);
@@ -382,7 +382,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
                             throw e;
                         } finally {
-                            tx.end();
+                            tx.close();
                         }
                     }
                 }, cctx);
@@ -467,7 +467,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
                             throw e;
                         } finally {
-                            tx.end();
+                            tx.close();
                         }
                     }
                 }, cctx);
@@ -552,7 +552,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
                             throw e;
                         } finally {
-                            tx.end();
+                            tx.close();
                         }
                     }
                 }, cctx);
@@ -645,7 +645,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
                                     throw e;
                                 } finally {
-                                    tx.end();
+                                    tx.close();
                                 }
                             }
                             finally {
@@ -740,7 +740,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
                             throw e;
                         } finally {
-                            tx.end();
+                            tx.close();
                         }
                     }
                 }, cctx);
@@ -789,7 +789,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
                             throw e;
                         } finally {
-                            tx.end();
+                            tx.close();
                         }
                     }
                 },
@@ -834,7 +834,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
                         throw e;
                     } finally {
-                        tx.end();
+                        tx.close();
                     }
                 }
             },
@@ -844,7 +844,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
     /** {@inheritDoc} */
     @Override public void onTxCommitted(GridCacheTxEx<K, V> tx) {
-        if (!cctx.isDht() && tx.internal() && !cctx.isColocated()) {
+        if (!cctx.isDht() && tx.internal() && (!cctx.isColocated() || cctx.isReplicated())) {
             try {
                 waitInitialization();
             }
@@ -994,7 +994,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
                             tx.commit();
                         }
                         finally {
-                            tx.end();
+                            tx.close();
                         }
                     }
                     catch (Exception e) {

@@ -102,7 +102,7 @@ import java.util.*;
  *     tx.commit();
  * }
  * finally {
- *     tx.end(); // Rollback, if was not committed.
+ *     tx.close(); // Rollback, if was not committed.
  * }
  * </pre>
  * Or, the same logic as above can be executed by passing one or more closures to any of
@@ -124,7 +124,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public interface GridCacheTx extends GridMetadataAware {
+public interface GridCacheTx extends GridMetadataAware, AutoCloseable {
     /**
      * Gets unique identifier for this transaction.
      *
@@ -240,11 +240,11 @@ public interface GridCacheTx extends GridMetadataAware {
     public void commit() throws GridException;
 
     /**
-     * Rolls back transaction if it has not been committed.
+     * Ends the transaction. Transaction will be rolled back if it has not been committed.
      *
      * @throws GridException If transaction could not be gracefully ended.
      */
-    public void end() throws GridException;
+    @Override public void close() throws GridException;
 
     /**
      * Asynchronously commits this transaction by initiating {@code two-phase-commit} process.

@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.partitioned.*;
+import org.gridgain.grid.cache.affinity.partition.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
@@ -139,10 +139,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public void start() throws GridException {
         GridCacheAffinity aff = ctx.config().getAffinity();
 
-        if (aff instanceof GridCachePartitionedAffinity)
-            hasBackups = ((GridCachePartitionedAffinity)aff).getKeyBackups() > 0;
-        else
-            hasBackups = true;
+        hasBackups = aff.keyBackups() > 0;
 
         preldr = new GridDhtPreloader<>(ctx);
 
@@ -215,7 +212,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws GridException {
         GridTuple<V> val = null;
 
-        if (!modes.contains(NEAR_ONLY)) {
+        if (ctx.isReplicated() || !modes.contains(NEAR_ONLY)) {
             try {
                 val = peek0(true, key, modes, ctx.tm().txx());
             }
