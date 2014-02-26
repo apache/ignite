@@ -68,7 +68,7 @@ public interface GridEvents {
      *      the implementation will continue consuming events. Otherwise, events
      *      consuming will be stopped and listeners will be unregistered on all nodes
      *      in the projection. If {@code null}, this events will be handled on remote nodes by
-     *      passed in {@code filter} until this node stops or until {@link #stopConsume(UUID)}
+     *      passed in {@code filter} until this node stops or until {@link #stopRemoteListen(UUID)}
      *      is called.
      * @param filter Filter callback that is called on remote node. Only events that pass the filter will
      *      be sent to local node. If {@code null}, all events of specified types will
@@ -78,10 +78,10 @@ public interface GridEvents {
      *      provided filter will be sent to local node.
      * @param <T> Type of the event.
      * @return Future that finishes when all listeners are registered. It returns {@code consumeId}
-     *      that can be passed to {@link #stopConsume(UUID)} method to stop consuming.
-     * @see #stopConsume(UUID)
+     *      that can be passed to {@link #stopRemoteListen(UUID)} method to stop consuming.
+     * @see #stopRemoteListen(UUID)
      */
-    public <T extends GridEvent> GridFuture<UUID> consumeRemote(@Nullable GridBiPredicate<UUID, T> cb,
+    public <T extends GridEvent> GridFuture<UUID> remoteListen(@Nullable GridBiPredicate<UUID, T> cb,
         @Nullable GridPredicate<T> filter, @Nullable int... types);
 
     /**
@@ -96,14 +96,14 @@ public interface GridEvents {
      * @param autoUnsubscribe Flag indicating that event listeners on remote nodes should be
      *      automatically unregistered if master node (node that initiated event consuming) leaves
      *      topology. If this flag is {@code false}, listeners will be unregistered only when
-     *      {@link #stopConsume(UUID)} method is called, or the {@code 'callback (cb)'}
+     *      {@link #stopRemoteListen(UUID)} method is called, or the {@code 'callback (cb)'}
      *      passed in returns {@code false}.
      * @param cb Callback that is called on local node. If this predicate returns {@code true},
      *      the implementation will continue consuming events. Otherwise, events
      *      consuming will be stopped and listeners will be unregistered on all nodes
      *      in the projection. If {@code null}, this events will be handled on remote nodes by
      *      passed in {@code filter} until this node stops (if {@code 'autoUnsubscribe'} is {@code true})
-     *      or until {@link #stopConsume(UUID)} is called.
+     *      or until {@link #stopRemoteListen(UUID)} is called.
      * @param filter Filter callback that is called on remote node. Only events that pass the filter will
      *      be sent to local node. If {@code null}, all events of specified types will
      *      be sent to local node. This filter can be used to pre-handle events remotely,
@@ -111,11 +111,11 @@ public interface GridEvents {
      * @param types Types of events to listen for. If not provided, all events that pass the
      *      provided filter will be sent to local node.
      * @param <T> Type of the event.
-     * @return Future that finishes when all listeners are registered. It returns {@code consumeId}
-     *      that can be passed to {@link #stopConsume(UUID)} method to stop consuming.
-     * @see #stopConsume(UUID)
+     * @return Future that finishes when all listeners are registered. It returns {@code consume ID}
+     *      that can be passed to {@link #stopRemoteListen(UUID)} method to stop consuming.
+     * @see #stopRemoteListen(UUID)
      */
-    public <T extends GridEvent> GridFuture<UUID> consumeRemote(int bufSize, long interval,
+    public <T extends GridEvent> GridFuture<UUID> remoteListen(int bufSize, long interval,
         boolean autoUnsubscribe, @Nullable GridBiPredicate<UUID, T> cb, @Nullable GridPredicate<T> filter,
         @Nullable int... types);
 
@@ -124,11 +124,11 @@ public interface GridEvents {
      * consume ID on <b>all nodes defined by this projection</b>.
      *
      * @param consumeId Consume ID that was returned from
-     *      {@link #consumeRemote(GridBiPredicate, GridPredicate, int...)} method.
+     *      {@link #remoteListen(GridBiPredicate, GridPredicate, int...)} method.
      * @return Future that finishes when all listeners are unregistered.
-     * @see #consumeRemote(GridBiPredicate, GridPredicate, int...)
+     * @see #remoteListen(GridBiPredicate, GridPredicate, int...)
      */
-    public GridFuture<?> stopConsume(UUID consumeId);
+    public GridFuture<?> stopRemoteListen(UUID consumeId);
 
     /**
      * Gets event future that allows for asynchronous waiting for the specified events.
@@ -206,7 +206,7 @@ public interface GridEvents {
      * @see GridEvent
      * @see GridEventType
      */
-    public void addLocalListener(GridLocalEventListener lsnr, int... types);
+    public void listenLocal(GridBiPredicate<UUID, ? extends GridEvent> lsnr, int... types);
 
     /**
      * Removes local event listener.
@@ -218,7 +218,7 @@ public interface GridEvents {
      * @see GridEventType
      * @see GridEvent
      */
-    public boolean removeLocalListener(GridLocalEventListener lsnr, @Nullable int... types);
+    public boolean stopListenLocal(GridBiPredicate<UUID, ? extends GridEvent> lsnr, @Nullable int... types);
 
     /**
      * Enables provided events. Allows to start recording events that

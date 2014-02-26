@@ -48,11 +48,12 @@ public class GridEventsConsumeExample {
             try {
                 // Register remote event listeners and get continuous ID
                 // (it will be used later to unregister listeners).
-                consumeId = grid.events().consumeRemote(
+                consumeId = grid.events().remoteListen(
                     // This callback is called locally on each event (event
                     // itself can occur locally or on one of remote nodes).
                     new GridBiPredicate<UUID, GridCacheEvent>() {
-                        @Override public boolean apply(UUID uuid, GridCacheEvent evt) {
+                        @Override
+                        public boolean apply(UUID uuid, GridCacheEvent evt) {
                             System.out.println(">>>");
 
                             // The callback simply prints out event information.
@@ -87,7 +88,8 @@ public class GridEventsConsumeExample {
                         @GridInstanceResource
                         private Grid g;
 
-                        @Override public boolean apply(GridCacheEvent evt) {
+                        @Override
+                        public boolean apply(GridCacheEvent evt) {
                             Integer key = evt.key();
 
                             return key >= 10 && g.cache(CACHE_NAME).affinity().
@@ -120,7 +122,7 @@ public class GridEventsConsumeExample {
             }
             finally {
                 // Unregister all listeners.
-                grid.events().stopConsume(consumeId).get();
+                grid.events().stopRemoteListen(consumeId).get();
             }
         }
     }

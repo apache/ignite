@@ -14,9 +14,9 @@ import java.util.*;
 
 /**
  * Listener for asynchronous local node grid events. You can subscribe for local node grid
- * event notifications via {@link GridEvents#addLocalListener(GridLocalEventListener, int...)}.
+ * event notifications via {@link GridEvents#listenLocal(GridLocalEventListener, int...)}.
  * <p>
- * Use {@link GridEvents#addLocalListener(GridLocalEventListener, int...)} to register
+ * Use {@link GridEvents#listenLocal(GridLocalEventListener, int...)} to register
  * this listener with grid.
  *
  * @author @java.author

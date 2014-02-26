@@ -110,11 +110,23 @@ public interface GridMessaging {
      * @param p Predicate that is called on each received message. If predicate returns {@code true},
      *      the implementation will continue listening for the new messages. Otherwise, the implementation
      *      will unregister the listener and stop receiving messages.
-     * @return Future for this distributed operation.
+     * @return Future that finishes when all listeners are registered. It returns {@code operation ID}
+     *      that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
+     * @see #stopRemoteListen(UUID)
      * @see GridMessagingListenActor
      * @see #localListen(Object, GridBiPredicate)
      * @see #send(Object, Object)
      * @see #send(Object, Collection)
      */
-    public GridFuture<?> remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p);
+    public GridFuture<UUID> remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p);
+
+    /**
+     * This will unregister all listeners identified with provided operation ID on
+     * all nodes defined by {@link #projection()}.
+     *
+     * @param opId Listen ID that was returned from {@link #remoteListen(Object, GridBiPredicate)} method.
+     * @return Future that finishes when all listeners are unregistered.
+     * @see #remoteListen(Object, GridBiPredicate)
+     */
+    public GridFuture<?> stopRemoteListen(UUID opId);
 }

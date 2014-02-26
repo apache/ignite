@@ -2708,7 +2708,7 @@ public class GridConfiguration {
      * Each listener is mapped to array of event types.
      *
      * @return Pre-configured event listeners map.
-     * @see GridEvents#addLocalListener(GridLocalEventListener, int...)
+     * @see GridEvents#listenLocal(GridLocalEventListener, int...)
      * @see GridEventType
      */
     @Nullable public Map<GridLocalEventListener, int[]> getLocalEventListeners() {

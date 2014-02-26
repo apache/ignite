@@ -127,7 +127,7 @@ object ScalarCacheExample extends App {
             }
 
             if (g.nodeLocalMap[String, AnyRef].putIfAbsent("lsnr", lsnr) == null) {
-                g.events().addLocalListener(lsnr,
+                g.events().listenLocal(lsnr,
                     EVT_CACHE_OBJECT_PUT,
                     EVT_CACHE_OBJECT_READ,
                     EVT_CACHE_OBJECT_REMOVED)

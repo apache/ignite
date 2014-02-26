@@ -51,10 +51,11 @@ public class GridCachePutGetExample {
         try (Grid g = args.length == 0 ? GridGain.start("examples/config/example-cache.xml") : GridGain.start(args[0])) {
             // Subscribe to events on every node, so we can visualize what's
             // happening in remote caches.
-            g.events().consumeRemote(
+            g.events().remoteListen(
                 null,
                 new GridPredicate<GridCacheEvent>() {
-                    @Override public boolean apply(GridCacheEvent evt) {
+                    @Override
+                    public boolean apply(GridCacheEvent evt) {
                         System.out.println("Cache event [name=" + evt.name() + ", key=" + evt.key() + ']');
 
                         return true;

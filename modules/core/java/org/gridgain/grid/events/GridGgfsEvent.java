@@ -36,7 +36,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  *          querying only local events stored on this local node.
  *      </li>
  *      <li>
- *          {@link GridEvents#addLocalListener(GridLocalEventListener, int...)} -
+ *          {@link GridEvents#listenLocal(GridLocalEventListener, int...)} -
  *          listening to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>

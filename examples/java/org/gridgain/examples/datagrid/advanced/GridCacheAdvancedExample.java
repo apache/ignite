@@ -73,10 +73,11 @@ public class GridCacheAdvancedExample {
      * @throws GridException If failed.
      */
     private static void startConsumeEvents() throws  GridException {
-        GridGain.grid().events().consumeRemote(
+        GridGain.grid().events().remoteListen(
             null,
             new GridPredicate<GridCacheEvent>() {
-                @Override public boolean apply(GridCacheEvent e) {
+                @Override
+                public boolean apply(GridCacheEvent e) {
                     // Make sure not to use any other classes that should be p2p-loaded.
                     System.out.println(e.shortDisplay());
 
@@ -94,11 +95,11 @@ public class GridCacheAdvancedExample {
      * leave grid, and listener notification may cause undefined behaviour.
      *
      * @param consumeId Consume ID returned from
-     *      {@link GridEvents#consumeRemote(GridBiPredicate, GridPredicate, int...)} method.
+     *      {@link GridEvents#remoteListen(GridBiPredicate, GridPredicate, int...)} method.
      * @throws GridException If failed.
      */
     private static void stopConsumeEvents(UUID consumeId) throws  GridException {
-        GridGain.grid().events().stopConsume(consumeId).get();
+        GridGain.grid().events().stopRemoteListen(consumeId).get();
     }
 
     /**

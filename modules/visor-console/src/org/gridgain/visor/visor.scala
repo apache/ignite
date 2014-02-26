@@ -1589,7 +1589,7 @@ object visor extends VisorTag {
                 }
             }
 
-            grid.events().addLocalListener(nodeJoinLsnr, EVT_NODE_JOINED)
+            grid.events().listenLocal(nodeJoinLsnr, EVT_NODE_JOINED)
 
             nodeLeftLsnr = new GridLocalEventListener() {
                 def onEvent(e: GridEvent) {
@@ -1618,7 +1618,7 @@ object visor extends VisorTag {
                 }
             }
 
-            grid.events().addLocalListener(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
+            grid.events().listenLocal(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
 
             nodeSegLsnr = new GridLocalEventListener {
                 def onEvent(e: GridEvent) {
@@ -1638,7 +1638,7 @@ object visor extends VisorTag {
                 }
             }
 
-            grid.events().addLocalListener(nodeSegLsnr, EVT_NODE_SEGMENTED)
+            grid.events().listenLocal(nodeSegLsnr, EVT_NODE_SEGMENTED)
 
             nodeStopLsnr = new GridGainListener {
                 def onStateChange(name: String, state: GridGainState) {
@@ -2096,13 +2096,13 @@ object visor extends VisorTag {
 
             if (grid != null && G.state(grid.name) == GridGainState.STARTED) {
                 if (nodeJoinLsnr != null)
-                    grid.events().removeLocalListener(nodeJoinLsnr)
+                    grid.events().stopListenLocal(nodeJoinLsnr)
 
                 if (nodeLeftLsnr != null)
-                    grid.events().removeLocalListener(nodeLeftLsnr)
+                    grid.events().stopListenLocal(nodeLeftLsnr)
 
                 if (nodeSegLsnr != null)
-                    grid.events().removeLocalListener(nodeSegLsnr)
+                    grid.events().stopListenLocal(nodeSegLsnr)
             }
 
             if (nodeStopLsnr != null)
