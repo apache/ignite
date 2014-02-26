@@ -7,8 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.misc.deployment.direct;
+package org.gridgain.examples.misc.deployment;
 
+import org.gridgain.examples.misc.deployment.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.jetbrains.annotations.*;
