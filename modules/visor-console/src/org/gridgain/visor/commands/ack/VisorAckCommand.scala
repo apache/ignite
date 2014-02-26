@@ -116,7 +116,7 @@ class VisorAckCommand {
                     .compute()
                     .withName("visor-ack")
                     .withNoFailover()
-                    .run(new VisorAckTask(gg => gg.localNode.id.toString))
+                    .broadcast(new VisorAckTask(gg => gg.localNode.id.toString))
             catch {
                 case _: GridEmptyProjectionException => scold("Topology is empty.")
                 case e: Exception => scold("System error: " + e.getMessage)
@@ -162,7 +162,7 @@ class VisorAckCommand {
                     .compute()
                     .withName("visor-ack")
                     .withNoFailover()
-                    .run(new VisorAckTask(_ => arg))
+                    .broadcast(new VisorAckTask(_ => arg))
             catch {
                 case _: GridEmptyProjectionException => scold("Topology is empty.")
                 case e: Exception => scold("System error: " + e.getMessage)
