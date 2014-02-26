@@ -1302,7 +1302,15 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         GridTcpDiscoveryNode node = ring.node(nodeId);
 
-        return node != null && node.visible() && pingNode(node);
+        if (node == null || !node.visible())
+            return false;
+
+        boolean res = pingNode(node);
+
+        if (!res)
+            msgWorker.addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, node.id(), node.internalOrder()));
+
+        return res;
     }
 
     /**
