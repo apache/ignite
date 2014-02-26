@@ -19,8 +19,8 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Actor-base adapter for {@link GridMessaging#localListen(Object, GridBiPredicate)}
- * method. Look at <tt>GridMessagingPingPongExample.java</tt> example class for usage sample.
+ * Convenience actor-base adapter for {@link GridMessaging#localListen(Object, GridBiPredicate)}
+ * method.
  *
  * @author @java.author
  * @version @java.version

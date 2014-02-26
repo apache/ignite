@@ -58,8 +58,7 @@ import java.util.*;
  *  message is sent without waiting for reply. If it is necessary to know whenever remote nodes have committed
  *  as well, synchronous commit or synchronous rollback should be enabled via
  *  {@link GridCacheConfiguration#setWriteSynchronizationMode}
- *  or by setting proper flags on cache projection, such as {@link GridCacheFlag#SYNC_COMMIT} /
- *  {@link GridCacheFlag#SYNC_ROLLBACK}.
+ *  or by setting proper flags on cache projection, such as {@link GridCacheFlag#SYNC_COMMIT}.
  *  <p>
  *  Note that in this mode, optimistic failures are only possible in conjunction with
  *  {@link GridCacheTxIsolation#SERIALIZABLE} isolation level. In all other cases, optimistic

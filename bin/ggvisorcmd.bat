@@ -43,7 +43,7 @@ goto error_finish
 :checkGridGainHome1
 if not "%GRIDGAIN_HOME%" == "" goto checkGridGainHome2
     echo %0, WARN: GRIDGAIN_HOME environment variable is not found.
-    pushd "%~dp0"/..
+    pushd "%~dp0"/../..
     set GRIDGAIN_HOME=%CD%
     popd
 
@@ -67,7 +67,7 @@ if exist "%GRIDGAIN_HOME%\config" goto checkGridGainHome4
     goto error_finish
 
 :checkGridGainHome4
-if /i "%GRIDGAIN_HOME%\bin\" == "%~dp0" goto run
+if /i "%GRIDGAIN_HOME%\os\bin\" == "%~dp0" goto run
     echo %0, WARN: GRIDGAIN_HOME environment variable may be pointing to wrong folder: %GRIDGAIN_HOME%
 
 :run
@@ -78,14 +78,14 @@ set ANT_AUGMENTED_GGJAR=gridgain.jar
 ::
 :: Set GRIDGAIN_LIBS
 ::
-call "%GRIDGAIN_HOME%\bin\include\setenv.bat"
+call "%GRIDGAIN_HOME%\os\bin\include\setenv.bat"
 
 set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\%ANT_AUGMENTED_GGJAR%
-
+set CP=%CP%;%GRIDGAIN_HOME%\os\modules\visor-console\libs\*
 ::
 :: Parse command line parameters.
 ::
-call "%GRIDGAIN_HOME%\bin\include\parseargs.bat" %*
+call "%GRIDGAIN_HOME%\os\bin\include\parseargs.bat" %*
 if %ERRORLEVEL% neq 0 (
     echo Arguments parsing failed
     exit /b %ERRORLEVEL%
