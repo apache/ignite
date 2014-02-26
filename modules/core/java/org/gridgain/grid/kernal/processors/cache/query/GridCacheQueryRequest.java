@@ -38,9 +38,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     /** */
     private String cacheName;
 
-    /** Query id. */
-    private int qryId;
-
     /** */
     private GridCacheQueryType type;
 
@@ -55,31 +52,10 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
     /** */
     @GridDirectTransient
-    private GridPredicate<? super K> keyFilter;
+    private GridBiPredicate<K, V> keyValFilter;
 
     /** */
-    private byte[] keyFilterBytes;
-
-    /** */
-    @GridDirectTransient
-    private GridPredicate<? super V> valFilter;
-
-    /** */
-    private byte[] valFilterBytes;
-
-    /** */
-    @GridDirectTransient
-    private Runnable beforeCb;
-
-    /** */
-    private byte[] beforeCbBytes;
-
-    /** */
-    @GridDirectTransient
-    private Runnable afterCb;
-
-    /** */
-    private byte[] afterCbBytes;
+    private byte[] keyValFilterBytes;
 
     /** */
     @GridDirectTransient
@@ -111,35 +87,19 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
     /** */
     @GridDirectTransient
-    private GridPredicate<?> vis;
-
-    /** */
-    private byte[] visBytes;
-
-    /** */
-    @GridDirectTransient
     private Object[] args;
 
     /** */
     private byte[] argsBytes;
 
     /** */
-    private byte[] cArgsBytes;
-
-    /** */
     private int pageSize;
-
-    /** */
-    private boolean clone;
 
     /** */
     private boolean incBackups;
 
     /** */
     private boolean cancel;
-
-    /** */
-    private boolean single;
 
     /** */
     private boolean incMeta;
@@ -171,7 +131,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
      * @param id Request ID.
      * @param cacheName Cache name.
      * @param pageSize Page size.
-     * @param clone {@code true} if values should be cloned.
      * @param incBackups {@code true} if need to include backups.
      * @param fields Fields query flag.
      * @param all Whether to load all pages.
@@ -180,14 +139,12 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         long id,
         String cacheName,
         int pageSize,
-        boolean clone,
         boolean incBackups,
         boolean fields,
         boolean all) {
         this.id = id;
         this.cacheName = cacheName;
         this.pageSize = pageSize;
-        this.clone = clone;
         this.incBackups = incBackups;
         this.fields = fields;
         this.all = all;
@@ -196,49 +153,35 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     /**
      * @param id Request id.
      * @param cacheName Cache name.
-     * @param qryId Query id.
      * @param type Query type.
      * @param fields {@code true} if query returns fields.
      * @param clause Query clause.
      * @param clsName Query class name.
-     * @param keyFilter Key filter.
-     * @param valFilter Value filter.
-     * @param beforeCb Before execution callback.
-     * @param afterCb After execution callback.
+     * @param keyValFilter Key-value filter.
      * @param prjFilter Projection filter.
      * @param rdc Reducer.
      * @param fieldsRdc Fields query reducer.
      * @param trans Transformer.
-     * @param vis Visitor predicate.
      * @param pageSize Page size.
-     * @param clone {@code true} if values should be cloned.
      * @param incBackups {@code true} if need to include backups.
      * @param args Query arguments.
-     * @param single {@code true} if single result requested, {@code false} if multiple.
      * @param incMeta Include meta data or not.
      */
     public GridCacheQueryRequest(
         long id,
         String cacheName,
-        int qryId,
         GridCacheQueryType type,
         boolean fields,
         String clause,
         String clsName,
-        GridPredicate<? super K> keyFilter,
-        GridPredicate<? super V> valFilter,
-        Runnable beforeCb,
-        Runnable afterCb,
+        GridBiPredicate<K, V> keyValFilter,
         GridPredicate<GridCacheEntry<K, V>> prjFilter,
         GridReducer<Map.Entry<K, Object>, Object> rdc,
         GridReducer<List<Object>, Object> fieldsRdc,
         GridClosure<V, Object> trans,
-        GridPredicate<?> vis,
         int pageSize,
-        boolean clone,
         boolean incBackups,
         Object[] args,
-        boolean single,
         boolean incMeta) {
         assert type != null || fields;
         assert clause != null || type == SCAN;
@@ -246,25 +189,17 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
         this.id = id;
         this.cacheName = cacheName;
-        this.qryId = qryId;
         this.type = type;
         this.fields = fields;
         this.clause = clause;
-        this.clsName = clsName;
-        this.keyFilter = keyFilter;
-        this.valFilter = valFilter;
-        this.beforeCb = beforeCb;
-        this.afterCb = afterCb;
+        this.keyValFilter = keyValFilter;
         this.prjFilter = prjFilter;
         this.rdc = rdc;
         this.fieldsRdc = fieldsRdc;
         this.trans = trans;
-        this.vis = vis;
         this.pageSize = pageSize;
-        this.clone = clone;
         this.incBackups = incBackups;
         this.args = args;
-        this.single = single;
         this.incMeta = incMeta;
     }
 
@@ -272,32 +207,11 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
 
-        if (keyFilter != null) {
+        if (keyValFilter != null) {
             if (ctx.deploymentEnabled())
-                prepareObject(keyFilter, ctx);
+                prepareObject(keyValFilter, ctx);
 
-            keyFilterBytes = CU.marshal(ctx, keyFilter);
-        }
-
-        if (valFilter != null) {
-            if (ctx.deploymentEnabled())
-                prepareObject(valFilter, ctx);
-
-            valFilterBytes = CU.marshal(ctx, valFilter);
-        }
-
-        if (beforeCb != null) {
-            if (ctx.deploymentEnabled())
-                prepareObject(beforeCb, ctx);
-
-            beforeCbBytes = CU.marshal(ctx, beforeCb);
-        }
-
-        if (afterCb != null) {
-            if (ctx.deploymentEnabled())
-                prepareObject(afterCb, ctx);
-
-            afterCbBytes = CU.marshal(ctx, afterCb);
+            keyValFilterBytes = CU.marshal(ctx, keyValFilter);
         }
 
         if (prjFilter != null) {
@@ -328,13 +242,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
             transBytes = CU.marshal(ctx, trans);
         }
 
-        if (vis != null) {
-            if (ctx.deploymentEnabled())
-                prepareObject(vis, ctx);
-
-            visBytes = CU.marshal(ctx, vis);
-        }
-
         if (!F.isEmpty(args)) {
             if (ctx.deploymentEnabled()) {
                 for (Object arg : args)
@@ -351,17 +258,8 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
         GridMarshaller mrsh = ctx.marshaller();
 
-        if (keyFilterBytes != null)
-            keyFilter = mrsh.unmarshal(keyFilterBytes, ldr);
-
-        if (valFilterBytes != null)
-            valFilter = mrsh.unmarshal(valFilterBytes, ldr);
-
-        if (beforeCbBytes != null)
-            beforeCb = mrsh.unmarshal(beforeCbBytes, ldr);
-
-        if (afterCbBytes != null)
-            afterCb = mrsh.unmarshal(afterCbBytes, ldr);
+        if (keyValFilterBytes != null)
+            keyValFilter = mrsh.unmarshal(keyValFilterBytes, ldr);
 
         if (prjFilterBytes != null)
             prjFilter = mrsh.unmarshal(prjFilterBytes, ldr);
@@ -374,9 +272,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
         if (transBytes != null)
             trans = mrsh.unmarshal(transBytes, ldr);
-
-        if (visBytes != null)
-            vis = mrsh.unmarshal(visBytes, ldr);
 
         if (argsBytes != null)
             args = mrsh.unmarshal(argsBytes, ldr);
@@ -394,13 +289,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
      */
     public String cacheName() {
         return cacheName;
-    }
-
-    /**
-     * @return Query id.
-     */
-    public int queryId() {
-        return qryId;
     }
 
     /**
@@ -432,13 +320,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     }
 
     /**
-     * @return Flag indicating whether to clone values.
-     */
-    public boolean cloneValues() {
-        return clone;
-    }
-
-    /**
      * @return Flag indicating whether to include backups.
      */
     public boolean includeBackups() {
@@ -453,31 +334,10 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     }
 
     /**
-     * @return Key filter.
+     * @return Key-value filter.
      */
-    public GridPredicate<? super K> keyFilter() {
-        return keyFilter;
-    }
-
-    /**
-     * @return Value filter.
-     */
-    public GridPredicate<? super V> valueFilter() {
-        return valFilter;
-    }
-
-    /**
-     * @return Before execution callback.
-     */
-    public Runnable beforeCallback() {
-        return beforeCb;
-    }
-
-    /**
-     * @return After execution callback.
-     */
-    public Runnable afterCallback() {
-        return afterCb;
+    public GridBiPredicate<K, V> keyValueFilter() {
+        return keyValFilter;
     }
 
     /** {@inheritDoc} */
@@ -507,13 +367,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     }
 
     /**
-     * @return Visitor predicate.
-     */
-    public GridPredicate<?> visitor() {
-        return vis;
-    }
-
-    /**
      * @return Page size.
      */
     public int pageSize() {
@@ -525,13 +378,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
      */
     public Object[] arguments() {
         return args;
-    }
-
-    /**
-     * @return {@code true} if single result requested, {@code false} otherwise.
-     */
-    public boolean single() {
-        return single;
     }
 
     /**
@@ -566,19 +412,12 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
         _clone.id = id;
         _clone.cacheName = cacheName;
-        _clone.qryId = qryId;
         _clone.type = type;
         _clone.fields = fields;
         _clone.clause = clause;
         _clone.clsName = clsName;
-        _clone.keyFilter = keyFilter;
-        _clone.keyFilterBytes = keyFilterBytes;
-        _clone.valFilter = valFilter;
-        _clone.valFilterBytes = valFilterBytes;
-        _clone.beforeCb = beforeCb;
-        _clone.beforeCbBytes = beforeCbBytes;
-        _clone.afterCb = afterCb;
-        _clone.afterCbBytes = afterCbBytes;
+        _clone.keyValFilter = keyValFilter;
+        _clone.keyValFilterBytes = keyValFilterBytes;
         _clone.prjFilter = prjFilter;
         _clone.prjFilterBytes = prjFilterBytes;
         _clone.rdc = rdc;
@@ -587,16 +426,11 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         _clone.fieldsRdcBytes = fieldsRdcBytes;
         _clone.trans = trans;
         _clone.transBytes = transBytes;
-        _clone.vis = vis;
-        _clone.visBytes = visBytes;
         _clone.args = args;
         _clone.argsBytes = argsBytes;
-        _clone.cArgsBytes = cArgsBytes;
         _clone.pageSize = pageSize;
-        _clone.clone = clone;
         _clone.incBackups = incBackups;
         _clone.cancel = cancel;
-        _clone.single = single;
         _clone.incMeta = incMeta;
         _clone.all = all;
     }
@@ -618,9 +452,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
         switch (commState.idx) {
             case 2:
-                if (!commState.putByteArray(afterCbBytes))
-                    return false;
-
                 commState.idx++;
 
             case 3:
@@ -636,15 +467,9 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 5:
-                if (!commState.putByteArray(beforeCbBytes))
-                    return false;
-
                 commState.idx++;
 
             case 6:
-                if (!commState.putByteArray(cArgsBytes))
-                    return false;
-
                 commState.idx++;
 
             case 7:
@@ -666,9 +491,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 10:
-                if (!commState.putBoolean(clone))
-                    return false;
-
                 commState.idx++;
 
             case 11:
@@ -708,7 +530,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 17:
-                if (!commState.putByteArray(keyFilterBytes))
+                if (!commState.putByteArray(keyValFilterBytes))
                     return false;
 
                 commState.idx++;
@@ -726,9 +548,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 20:
-                if (!commState.putInt(qryId))
-                    return false;
-
                 commState.idx++;
 
             case 21:
@@ -738,9 +557,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 22:
-                if (!commState.putBoolean(single))
-                    return false;
-
                 commState.idx++;
 
             case 23:
@@ -756,15 +572,9 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 25:
-                if (!commState.putByteArray(valFilterBytes))
-                    return false;
-
                 commState.idx++;
 
             case 26:
-                if (!commState.putByteArray(visBytes))
-                    return false;
-
                 commState.idx++;
 
         }
@@ -782,13 +592,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
         switch (commState.idx) {
             case 2:
-                byte[] afterCbBytes0 = commState.getByteArray();
-
-                if (afterCbBytes0 == BYTE_ARR_NOT_READ)
-                    return false;
-
-                afterCbBytes = afterCbBytes0;
-
                 commState.idx++;
 
             case 3:
@@ -810,23 +613,9 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 5:
-                byte[] beforeCbBytes0 = commState.getByteArray();
-
-                if (beforeCbBytes0 == BYTE_ARR_NOT_READ)
-                    return false;
-
-                beforeCbBytes = beforeCbBytes0;
-
                 commState.idx++;
 
             case 6:
-                byte[] cArgsBytes0 = commState.getByteArray();
-
-                if (cArgsBytes0 == BYTE_ARR_NOT_READ)
-                    return false;
-
-                cArgsBytes = cArgsBytes0;
-
                 commState.idx++;
 
             case 7:
@@ -858,11 +647,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 10:
-                if (buf.remaining() < 1)
-                    return false;
-
-                clone = commState.getBoolean();
-
                 commState.idx++;
 
             case 11:
@@ -918,12 +702,12 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 17:
-                byte[] keyFilterBytes0 = commState.getByteArray();
+                byte[] keyValFilterBytes0 = commState.getByteArray();
 
-                if (keyFilterBytes0 == BYTE_ARR_NOT_READ)
+                if (keyValFilterBytes0 == BYTE_ARR_NOT_READ)
                     return false;
 
-                keyFilterBytes = keyFilterBytes0;
+                keyValFilterBytes = keyValFilterBytes0;
 
                 commState.idx++;
 
@@ -946,11 +730,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 20:
-                if (buf.remaining() < 4)
-                    return false;
-
-                qryId = commState.getInt();
-
                 commState.idx++;
 
             case 21:
@@ -964,11 +743,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 22:
-                if (buf.remaining() < 1)
-                    return false;
-
-                single = commState.getBoolean();
-
                 commState.idx++;
 
             case 23:
@@ -992,23 +766,9 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 25:
-                byte[] valFilterBytes0 = commState.getByteArray();
-
-                if (valFilterBytes0 == BYTE_ARR_NOT_READ)
-                    return false;
-
-                valFilterBytes = valFilterBytes0;
-
                 commState.idx++;
 
             case 26:
-                byte[] visBytes0 = commState.getByteArray();
-
-                if (visBytes0 == BYTE_ARR_NOT_READ)
-                    return false;
-
-                visBytes = visBytes0;
-
                 commState.idx++;
 
         }

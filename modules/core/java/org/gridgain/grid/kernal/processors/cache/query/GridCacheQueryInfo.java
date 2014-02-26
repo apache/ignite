@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -28,9 +27,6 @@ class GridCacheQueryInfo<K, V> {
     private boolean loc;
 
     /** */
-    private boolean single;
-
-    /** */
     private GridPredicate<GridCacheEntry<K, V>> prjPred;
 
     /** */
@@ -43,13 +39,10 @@ class GridCacheQueryInfo<K, V> {
     private GridReducer<List<Object>, Object> fieldsRdc;
 
     /** */
-    private GridCacheQueryBaseAdapter<?, ?, GridCacheQueryBase> qry;
+    private GridCacheQueryAdapter<?> qry;
 
     /** */
     private int pageSize;
-
-    /** */
-    private boolean clone;
 
     /** */
     private boolean incBackups;
@@ -67,63 +60,57 @@ class GridCacheQueryInfo<K, V> {
     private boolean incMeta;
 
     /** */
-    private GridPredicate<?> vis;
+    private boolean all;
 
     /** */
-    private boolean all;
+    private Object[] args;
 
     /**
      * @param loc {@code true} if local query.
-     * @param single Single result or not.
      * @param prjPred Projection predicate.
      * @param trans Transforming closure.
      * @param rdc Reducer.
      * @param fieldsRdc Reducer for fields queries.
      * @param qry Query base.
      * @param pageSize Page size.
-     * @param clone {@code true} if values should be cloned.
      * @param incBackups {@code true} if need to include backups.
      * @param locFut Query future in case of local query.
      * @param sndId Sender node id.
      * @param reqId Request id in case of distributed query.
      * @param incMeta Include meta data or not.
-     * @param vis Visitor predicate.
      * @param all Whether to load all pages.
+     * @param args Arguments.
      */
     GridCacheQueryInfo(
         boolean loc,
-        boolean single,
         GridPredicate<GridCacheEntry<K, V>> prjPred,
         GridClosure<V, Object> trans,
         GridReducer<Map.Entry<K, V>, Object> rdc,
         GridReducer<List<Object>, Object> fieldsRdc,
-        GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry,
+        GridCacheQueryAdapter<?> qry,
         int pageSize,
-        boolean clone,
         boolean incBackups,
         GridCacheQueryFutureAdapter<K, V, ?> locFut,
         UUID sndId,
         long reqId,
         boolean incMeta,
-        GridPredicate<?> vis,
-        boolean all
+        boolean all,
+        Object[] args
     ) {
         this.loc = loc;
-        this.single = single;
         this.prjPred = prjPred;
         this.trans = trans;
         this.rdc = rdc;
         this.fieldsRdc = fieldsRdc;
         this.qry = qry;
         this.pageSize = pageSize;
-        this.clone = clone;
         this.incBackups = incBackups;
         this.locFut = locFut;
         this.sndId = sndId;
         this.reqId = reqId;
         this.incMeta = incMeta;
-        this.vis = vis;
         this.all = all;
+        this.args = args;
     }
 
     /**
@@ -131,13 +118,6 @@ class GridCacheQueryInfo<K, V> {
      */
     boolean local() {
         return loc;
-    }
-
-    /**
-     * @return Single result or not.
-     */
-    boolean single() {
-        return single;
     }
 
     /**
@@ -150,7 +130,7 @@ class GridCacheQueryInfo<K, V> {
     /**
      * @return Query.
      */
-    GridCacheQueryBaseAdapter<?, ?, GridCacheQueryBase> query() {
+    GridCacheQueryAdapter<?> query() {
         return qry;
     }
 
@@ -190,13 +170,6 @@ class GridCacheQueryInfo<K, V> {
     }
 
     /**
-     * @return {@code true} if values should be cloned.
-     */
-    boolean cloneValues() {
-        return clone;
-    }
-
-    /**
      * @return {@code true} if need to include backups.
      */
     boolean includeBackups() {
@@ -225,17 +198,17 @@ class GridCacheQueryInfo<K, V> {
     }
 
     /**
-     * @return Visitor predicate.
-     */
-    GridPredicate<?> visitor() {
-        return vis;
-    }
-
-    /**
      * @return Whether to load all pages.
      */
     boolean allPages() {
         return all;
+    }
+
+    /**
+     * @return Arguments.
+     */
+    Object[] arguments() {
+        return args;
     }
 
     /** {@inheritDoc} */

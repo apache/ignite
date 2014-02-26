@@ -19,135 +19,62 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Per-projection queries object returned to user.
+ * TODO
  *
  * @author @java.author
  * @version @java.version
  */
 public class GridCacheQueriesImpl<K, V> implements GridCacheQueries<K, V> {
-    /** Cache projection, can be {@code null}. */
+    /** */
+    private final GridCacheContext<K, V> ctx;
+
+    /** */
     private GridCacheProjectionImpl<K, V> prj;
 
-    /** Cache context. */
-    private GridCacheContext<K, V> cctx;
-
     /**
-     * Create cache queries implementation.
-     *
-     * @param cctx Cache context.
-     * @param prj Optional cache projection.
+     * @param ctx Context.
+     * @param prj Projection.
      */
-    public GridCacheQueriesImpl(GridCacheContext<K, V> cctx, @Nullable GridCacheProjectionImpl<K, V> prj) {
-        this.cctx = cctx;
+    public GridCacheQueriesImpl(GridCacheContext<K, V> ctx, @Nullable GridCacheProjectionImpl<K, V> prj) {
+        assert ctx != null;
+
+        this.ctx = ctx;
         this.prj = prj;
     }
 
-    /**
-     * Gets metrics (statistics) for all queries executed in this cache. Metrics
-     * are grouped by query clause (e.g. SQL clause), query type, and return value.
-     * <p>
-     * Note that only the last {@code 1000} query metrics are kept. This should be
-     * enough for majority of the applications, as generally applications have
-     * significantly less than {@code 1000} different queries that are executed.
-     * <p>
-     * Note that in addition to query metrics, you can also enable query tracing by setting
-     * {@code "org.gridgain.cache.queries"} logging category to {@code DEBUG} level.
-     *
-     * @return Queries metrics or {@code null} if a query manager is not provided.
-     */
-    public Collection<GridCacheQueryMetrics> queryMetrics() {
-        return cctx.queries().metrics();
+    /** {@inheritDoc} */
+    @Override public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(Class<? extends V> cls, String clause) {
+        return new GridCacheSqlQuery<>(ctx, (GridPredicate<GridCacheEntry<?, ?>>)filter(), cls, clause);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<K, V> createQuery(GridCacheQueryType type) {
-        return cctx.queries().createQuery(type, filter(), flags());
+    @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry) {
+        return new GridCacheSqlFieldsQuery(ctx, (GridPredicate<GridCacheEntry<?, ?>>)filter(), qry);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<K, V> createQuery(GridCacheQueryType type, @Nullable Class<?> cls,
-        @Nullable String clause) {
-        return cctx.queries().createQuery(type, cls, clause, filter(), flags());
+    @Override public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<? extends V> cls, String search) {
+        return new GridCacheFullTextQuery<>(ctx, (GridPredicate<GridCacheEntry<?, ?>>)filter(), cls, search);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<K, V> createQuery(GridCacheQueryType type, @Nullable String clsName,
-        @Nullable String clause) {
-        return cctx.queries().createQuery(type, clsName, clause, filter(), flags());
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheFieldsQuery<K, V> createFieldsQuery(String clause) {
-        return cctx.queries().createFieldsQuery(clause, filter(), flags());
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R1, R2> GridCacheReduceFieldsQuery<K, V, R1, R2> createReduceFieldsQuery(String clause) {
-        return cctx.queries().createReduceFieldsQuery(clause, filter(), flags());
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridCacheSqlMetadata> sqlMetadata() throws GridException {
-        return cctx.queries().sqlMetadata();
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> GridCacheTransformQuery<K, V, T> createTransformQuery() {
-        return cctx.queries().createTransformQuery(filter(), flags());
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> GridCacheTransformQuery<K, V, T> createTransformQuery(GridCacheQueryType type) {
-        return cctx.queries().createTransformQuery(type, filter(), flags());
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> GridCacheTransformQuery<K, V, T> createTransformQuery(GridCacheQueryType type,
-        @Nullable Class<?> cls, @Nullable String clause) {
-        return cctx.queries().createTransformQuery(type, cls, clause, filter(), flags());
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> GridCacheTransformQuery<K, V, T> createTransformQuery(GridCacheQueryType type,
-        @Nullable String clsName, @Nullable String clause) {
-        return cctx.queries().createTransformQuery(type, clsName, clause, filter(), flags());
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R1, R2> GridCacheReduceQuery<K, V, R1, R2> createReduceQuery() {
-        return cctx.queries().createReduceQuery(filter(), flags());
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R1, R2> GridCacheReduceQuery<K, V, R1, R2> createReduceQuery(GridCacheQueryType type) {
-        return cctx.queries().createReduceQuery(type, filter(), flags());
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R1, R2> GridCacheReduceQuery<K, V, R1, R2> createReduceQuery(GridCacheQueryType type,
-        @Nullable Class<?> cls, @Nullable String clause) {
-        return cctx.queries().createReduceQuery(type, cls, clause, filter(), flags());
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R1, R2> GridCacheReduceQuery<K, V, R1, R2> createReduceQuery(GridCacheQueryType type,
-        @Nullable String clsName, @Nullable String clause) {
-        return cctx.queries().createReduceQuery(type, clsName, clause, filter(), flags());
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<?> rebuildIndexes(Class<?> cls) {
-        return cctx.queries().rebuildIndexes(cls);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<?> rebuildAllIndexes() {
-        return cctx.queries().rebuildAllIndexes();
+    @Override public GridCacheQuery<Map.Entry<K, V>> createScanQuery() {
+        return new GridCacheScanQuery<>(ctx, (GridPredicate<GridCacheEntry<?, ?>>)filter());
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheContinuousQuery<K, V> createContinuousQuery() {
-        return cctx.continuousQueries().createQuery(filter());
+        return ctx.continuousQueries().createQuery(filter());
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> rebuildIndexes(Class<?> cls) {
+        return ctx.queries().rebuildIndexes(cls);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> rebuildAllIndexes() {
+        return ctx.queries().rebuildAllIndexes();
     }
 
     /**
@@ -155,12 +82,5 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueries<K, V> {
      */
     @Nullable private GridPredicate<GridCacheEntry<K, V>> filter() {
         return prj == null ? null : prj.predicate();
-    }
-
-    /**
-     * @return Projection flags.
-     */
-    private Set<GridCacheFlag> flags() {
-        return prj == null ? Collections.<GridCacheFlag>emptySet() : prj.flags();
     }
 }

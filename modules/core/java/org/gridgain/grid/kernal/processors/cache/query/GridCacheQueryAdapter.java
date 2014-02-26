@@ -1,11 +1,11 @@
 // @java.file.header
 
 /*  _________        _____ __________________        _____
-*  __  ____/___________(_)______  /__  ____/______ ____(_)_______
-*  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
-*  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
-*  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
-*/
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
@@ -14,109 +14,298 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.logger.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
- * Adapter for cache queries.
+ * TODO
  *
  * @author @java.author
  * @version @java.version
  */
-public class GridCacheQueryAdapter<K, V> extends GridCacheQueryBaseAdapter<K, V, GridCacheQuery<K, V>>
-    implements GridCacheQuery<K, V> {
+public abstract class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
+    /** */
+    protected final GridCacheContext<?, ?> ctx;
+
+    /** */
+    protected final GridPredicate<GridCacheEntry<?, ?>> prjPred;
+
+    /** */
+    private final GridCacheQueryType type;
+
+    /** */
+    private GridLogger log;
+
+    /** */
+    private int pageSize;
+
+    /** */
+    private long timeout;
+
+    /** */
+    private boolean keepAll;
+
+    /** */
+    private boolean incBackups;
+
+    /** */
+    private boolean dedup;
+
+    /** */
+    private GridProjection prj;
+
+    /** */
+    private GridBiPredicate<?, ?> filter;
+
     /**
-     * @param ctx Cache registry.
+     * @param ctx Context.
      * @param type Query type.
-     * @param clause Query clause.
-     * @param cls Query class.
-     * @param clsName Query class name.
-     * @param prjFilter Projection filter.
-     * @param prjFlags Projection flags.
+     * @param prjPred Cache projection filter.
      */
-    public GridCacheQueryAdapter(GridCacheContext<K, V> ctx, @Nullable GridCacheQueryType type, @Nullable String clause,
-        @Nullable Class<?> cls, @Nullable String clsName, GridPredicate<GridCacheEntry<K, V>> prjFilter,
-        Collection<GridCacheFlag> prjFlags) {
-        super(ctx, type, clause, cls, clsName, prjFilter, prjFlags);
+    protected GridCacheQueryAdapter(GridCacheContext<?, ?> ctx, GridCacheQueryType type,
+        @Nullable GridPredicate<GridCacheEntry<?, ?>> prjPred) {
+        assert ctx != null;
+        assert type != null;
+
+        this.ctx = ctx;
+        this.type = type;
+        this.prjPred = prjPred;
+
+        log = ctx.logger(getClass());
+
+        pageSize = DFLT_PAGE_SIZE;
+        timeout = 0;
+        keepAll = true;
+        incBackups = false;
+        dedup = false;
+        prj = null;
+        filter = null;
     }
 
     /**
-     * @param ctx Cache registry.
-     * @param qryId Query id.
-     * @param type Query type.
-     * @param clause Query clause.
-     * @param cls Query class.
-     * @param clsName Query class name.
-     * @param prjFilter Projection filter.
-     * @param prjFlags Projection flags.
+     * @return cache projection filter.
      */
-    public GridCacheQueryAdapter(GridCacheContext<K, V> ctx, int qryId, @Nullable GridCacheQueryType type,
-        @Nullable String clause, @Nullable Class<?> cls, @Nullable String clsName,
-        GridPredicate<GridCacheEntry<K, V>> prjFilter, Collection<GridCacheFlag> prjFlags) {
-        super(ctx, qryId, type, clause, cls, clsName, prjFilter, prjFlags);
+    public GridPredicate<GridCacheEntry<?, ?>> projectionFilter() {
+        return prjPred;
     }
 
     /**
-     * @param qry Query to copy from (ignoring arguments).
+     * @return Type.
      */
-    private GridCacheQueryAdapter(GridCacheQueryAdapter<K, V> qry) {
-        super(qry);
+    public GridCacheQueryType type() {
+        return type;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<K, V> queryArguments(@Nullable Object[] args) {
-        GridCacheQueryAdapter<K, V> cp = new GridCacheQueryAdapter<>(this);
+    @Override public GridCacheQuery<T> pageSize(int pageSize) {
+        GridCacheQueryAdapter<T> cp = copy();
 
-        cp.arguments(args);
+        cp.pageSize = pageSize;
 
         return cp;
     }
 
+    /**
+     * @return Page size.
+     */
+    public int pageSize() {
+        return pageSize;
+    }
+
     /** {@inheritDoc} */
-    @Override protected void registerClasses() throws GridException {
+    @Override public GridCacheQuery<T> timeout(long timeout) {
+        GridCacheQueryAdapter<T> cp = copy();
+
+        cp.timeout = timeout;
+
+        return cp;
+    }
+
+    /**
+     * @return Timeout.
+     */
+    public long timeout() {
+        return timeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheQuery<T> keepAll(boolean keepAll) {
+        GridCacheQueryAdapter<T> cp = copy();
+
+        cp.keepAll = keepAll;
+
+        return cp;
+    }
+
+    /**
+     * @return Keep all flag.
+     */
+    public boolean keepAll() {
+        return keepAll;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheQuery<T> includeBackups(boolean incBackups) {
+        GridCacheQueryAdapter<T> cp = copy();
+
+        cp.incBackups = incBackups;
+
+        return cp;
+    }
+
+    /**
+     * @return Include backups.
+     */
+    public boolean includeBackups() {
+        return incBackups;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheQuery<T> enableDedup(boolean dedup) {
+        GridCacheQueryAdapter<T> cp = copy();
+
+        cp.dedup = dedup;
+
+        return cp;
+    }
+
+    /**
+     * @return Enable dedup flag.
+     */
+    public boolean enableDedup() {
+        return dedup;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheQuery<T> projection(GridProjection prj) {
+        GridCacheQueryAdapter<T> cp = copy();
+
+        cp.prj = prj;
+
+        return cp;
+    }
+
+    /**
+     * @return Grid projection.
+     */
+    public GridProjection projection() {
+        return prj;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> GridCacheQuery<T> remoteFilter(GridBiPredicate<K, V> filter) {
+        GridCacheQueryAdapter<T> cp = copy();
+
+        cp.filter = filter;
+
+        return cp;
+    }
+
+    /**
+     * @return Key-value filter.
+     */
+    public <K, V> GridBiPredicate<K, V> remoteFilter() {
+        return (GridBiPredicate<K, V>)filter;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheQueryFuture<T> execute(@Nullable Object... args) {
+        return execute(null, null, args);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> GridCacheQueryFuture<R> execute(GridReducer <T, R> rmtReducer, @Nullable Object... args) {
+        return execute(rmtReducer, null, args);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> GridCacheQueryFuture<R> execute(GridClosure<T, R> rmtTransform, @Nullable Object... args) {
+        return execute(null, rmtTransform, args);
+    }
+
+    /**
+     * @param rmtReducer Optional reducer.
+     * @param rmtTransform Optional transformer.
+     * @param args Arguments.
+     * @return Future.
+     */
+    private <R> GridCacheQueryFuture<R> execute(@Nullable GridReducer<T, R> rmtReducer,
+        @Nullable GridClosure<T, R> rmtTransform, @Nullable Object... args) {
+        Collection<GridNode> nodes = nodes();
+
+        if (log.isDebugEnabled())
+            log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
+
+        if (ctx.deploymentEnabled()) {
+            try {
+                ctx.deploy().registerClasses(filter);
+                ctx.deploy().registerClasses(args);
+
+                registerClasses();
+            }
+            catch (GridException e) {
+                return new GridCacheQueryErrorFuture<>(ctx.kernalContext(), e);
+            }
+        }
+
+        GridCacheQueryManager qryMgr = ctx.queries();
+
+        return null;
+    }
+
+    /**
+     * @return Nodes to execute on.
+     */
+    private Collection<GridNode> nodes() {
+        Collection<GridNode> nodes = CU.allNodes(ctx);
+
+        if (prj == null) {
+            if (ctx.isReplicated())
+                return Collections.singletonList(ctx.localNode());
+
+            return nodes;
+        }
+
+        return F.view(nodes, new P1<GridNode>() {
+            @Override public boolean apply(GridNode e) {
+                return prj.node(e.id()) != null;
+            }
+        });
+    }
+
+    /**
+     * Registers classes.
+     *
+     * @throws GridException In case of error.
+     */
+    protected void registerClasses() throws GridException {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public GridFuture<Map.Entry<K, V>> executeSingle() {
-        Collection<GridNode> nodes = nodes();
+    /**
+     * @return Copy of this query.
+     */
+    private GridCacheQueryAdapter<T> copy() {
+        GridCacheQueryAdapter<T> cp = copy0();
 
-        if (qryLog.isDebugEnabled())
-            qryLog.debug(U.compact("Executing query for single result on nodes: " + toShortString(nodes)));
+        cp.log = log;
+        cp.pageSize = pageSize;
+        cp.timeout = timeout;
+        cp.keepAll = keepAll;
+        cp.incBackups = incBackups;
+        cp.dedup = dedup;
+        cp.prj = prj;
+        cp.filter = filter;
 
-        return new SingleFuture<Map.Entry<K, V>>(nodes);
+        return cp;
     }
 
-    /** {@inheritDoc} */
-    @Override public GridCacheQueryFuture<Map.Entry<K, V>> execute() {
-        Collection<GridNode> nodes = nodes();
-
-        if (qryLog.isDebugEnabled())
-            qryLog.debug(U.compact("Executing query on nodes: " + toShortString(nodes)));
-
-        return execute(nodes, false, false, null, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<?> visit(GridPredicate<Map.Entry<K, V>> vis) {
-        Collection<GridNode> nodes = nodes();
-
-        if (qryLog.isDebugEnabled())
-            qryLog.debug(U.compact("Executing query with visitor on nodes: " + toShortString(nodes)));
-
-        return execute(nodes, false, false, null, vis);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected GridCacheQueryAdapter<K, V> copy() {
-        return new GridCacheQueryAdapter<>(this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() throws IOException {
-        // No-op.
-    }
+    /**
+     * @return New instance.
+     */
+    protected abstract GridCacheQueryAdapter<T> copy0();
 }

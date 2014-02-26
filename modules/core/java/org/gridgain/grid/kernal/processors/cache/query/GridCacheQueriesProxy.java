@@ -23,36 +23,39 @@ import java.util.*;
  * @version @java.version
  */
 public class GridCacheQueriesProxy<K, V> implements GridCacheQueries<K, V> {
-    /** Cache gateway. */
+    /** */
     private GridCacheGateway<K, V> gate;
 
-    /** Cache projection, can be {@code null}. */
+    /** */
     private GridCacheProjectionImpl<K, V> prj;
 
-    /**  */
+    /** */
     private GridCacheQueries<K, V> delegate;
 
     /**
      * Create cache queries implementation.
      *
-     * @param cctx Cache context.
+     * @param ctx Сontext.
      * @param prj Optional cache projection.
      * @param delegate Delegate object.
      */
-    public GridCacheQueriesProxy(GridCacheContext<K, V> cctx, @Nullable GridCacheProjectionImpl<K, V> prj,
+    public GridCacheQueriesProxy(GridCacheContext<K, V> ctx, @Nullable GridCacheProjectionImpl<K, V> prj,
         GridCacheQueries<K, V> delegate) {
+        assert ctx != null;
+        assert delegate != null;
+
+        gate = ctx.gate();
+
         this.prj = prj;
         this.delegate = delegate;
-
-        gate = cctx.gate();
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheQueryMetrics> queryMetrics() {
+    @Override public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(Class<?> cls, String clause) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.queryMetrics();
+            return delegate.createSqlQuery(cls, clause);
         }
         finally {
             gate.leave(prev);
@@ -60,11 +63,11 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueries<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<K, V> createQuery(GridCacheQueryType type) {
+    @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.createQuery(type);
+            return delegate.createSqlFieldsQuery(qry);
         }
         finally {
             gate.leave(prev);
@@ -72,12 +75,11 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueries<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<K, V> createQuery(GridCacheQueryType type, @Nullable Class<?> cls,
-        @Nullable String clause) {
+    @Override public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<?> cls, String search) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.createQuery(type, cls, clause);
+            return delegate.createFullTextQuery(cls, search);
         }
         finally {
             gate.leave(prev);
@@ -85,12 +87,11 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueries<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<K, V> createQuery(GridCacheQueryType type, @Nullable String clsName,
-        @Nullable String clause) {
+    @Override public GridCacheQuery<Map.Entry<K, V>> createScanQuery() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.createQuery(type, clsName, clause);
+            return delegate.createScanQuery();
         }
         finally {
             gate.leave(prev);
@@ -98,135 +99,11 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueries<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheFieldsQuery<K, V> createFieldsQuery(String clause) {
+    @Override public GridCacheContinuousQuery<K, V> createContinuousQuery() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.createFieldsQuery(clause);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R1, R2> GridCacheReduceFieldsQuery<K, V, R1, R2> createReduceFieldsQuery(String clause) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.createReduceFieldsQuery(clause);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridCacheSqlMetadata> sqlMetadata() throws GridException {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.sqlMetadata();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> GridCacheTransformQuery<K, V, T> createTransformQuery() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.createTransformQuery();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> GridCacheTransformQuery<K, V, T> createTransformQuery(GridCacheQueryType type) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.createTransformQuery(type);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> GridCacheTransformQuery<K, V, T> createTransformQuery(GridCacheQueryType type,
-        @Nullable Class<?> cls, @Nullable String clause) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.createTransformQuery(type, cls, clause);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> GridCacheTransformQuery<K, V, T> createTransformQuery(GridCacheQueryType type,
-        @Nullable String clsName, @Nullable String clause) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.createTransformQuery(type, clsName, clause);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R1, R2> GridCacheReduceQuery<K, V, R1, R2> createReduceQuery() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.createReduceQuery();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R1, R2> GridCacheReduceQuery<K, V, R1, R2> createReduceQuery(GridCacheQueryType type) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.createReduceQuery(type);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R1, R2> GridCacheReduceQuery<K, V, R1, R2> createReduceQuery(GridCacheQueryType type,
-        @Nullable Class<?> cls, @Nullable String clause) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.createReduceQuery(type, cls, clause);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R1, R2> GridCacheReduceQuery<K, V, R1, R2> createReduceQuery(GridCacheQueryType type,
-        @Nullable String clsName, @Nullable String clause) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.createReduceQuery(type, clsName, clause);
+            return delegate.createContinuousQuery();
         }
         finally {
             gate.leave(prev);
@@ -251,18 +128,6 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueries<K, V> {
 
         try {
             return delegate.rebuildAllIndexes();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheContinuousQuery<K, V> createContinuousQuery() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.createContinuousQuery();
         }
         finally {
             gate.leave(prev);

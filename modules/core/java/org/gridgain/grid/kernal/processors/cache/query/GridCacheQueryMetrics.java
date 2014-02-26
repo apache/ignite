@@ -23,6 +23,7 @@ import org.jetbrains.annotations.*;
  * @author @java.author
  * @version @java.version
  */
+// TODO: move to public, return from GridCacheQuery and GridCacheQueries
 public interface GridCacheQueryMetrics {
     /**
      * Gets time of the first query execution.
@@ -78,6 +79,7 @@ public interface GridCacheQueryMetrics {
      *
      * @return Query clause.
      */
+    // TODO: remove
     @Nullable public String clause();
 
     /**
@@ -85,6 +87,7 @@ public interface GridCacheQueryMetrics {
      *
      * @return type Query type.
      */
+    // TODO: remove
     public GridCacheQueryType type();
 
     /**
@@ -92,5 +95,6 @@ public interface GridCacheQueryMetrics {
      *
      * @return Java class name of the values selected by the query.
      */
+    // TODO: remove
     @Nullable public String className();
 }

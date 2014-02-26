@@ -10,8 +10,6 @@
 package org.gridgain.grid.cache.query;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -30,16 +28,16 @@ public interface GridCacheQueries<K, V> {
      * @param clause Query clause.
      * @return Created query.
      */
-    public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(Class<?> cls, String clause);
+    public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(Class<? extends V> cls, String clause);
 
     /**
      * Creates user's SQL fields query for given clause. For more information refer to
      * {@link GridCacheQuery} documentation.
      *
-     * @param query Query.
+     * @param qry Query.
      * @return Created query.
      */
-    public GridCacheQuery<List<?>> createSqlFieldsQuery(String query);
+    public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry);
 
     /**
      * Creates user's full text query, queried class, and query clause.
@@ -49,15 +47,14 @@ public interface GridCacheQueries<K, V> {
      * @param search Search clause.
      * @return Created query.
      */
-    public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<?> cls, String search);
+    public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<? extends V> cls, String search);
 
     /**
      * Creates user's predicate based scan query.
      *
-     * @param filter Filter.
      * @return Created query.
      */
-    public GridCacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable GridBiPredicate<K, V> filter);
+    public GridCacheQuery<Map.Entry<K, V>> createScanQuery();
 
     /**
      * Creates new continuous query.
@@ -92,4 +89,7 @@ public interface GridCacheQueries<K, V> {
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
     public GridFuture<?> rebuildAllIndexes();
+
+    // TODO: add metrics
+    // TODO: add reset metrics
 }

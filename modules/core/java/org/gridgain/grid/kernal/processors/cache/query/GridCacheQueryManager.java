@@ -32,15 +32,14 @@ import org.jetbrains.annotations.*;
 import org.springframework.util.*;
 
 import java.io.*;
-import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
-import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 import static org.gridgain.grid.events.GridEventType.*;
+import static org.gridgain.grid.kernal.GridClosureCallMode.*;
+import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 
 /**
  * Query and index manager.
@@ -298,32 +297,27 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Executes distributed query.
      *
      * @param qry Query.
-     * @param single {@code true} if single result requested, {@code false} if multiple.
-     * @param rmtRdcOnly {@code true} for reduce query when using remote reducer only,
-     *      otherwise it is always {@code false}.
-     * @param pageLsnr Page listener.
-     * @param vis Visitor Predicate.
+     * @param rmtReducer Reducer.
+     * @param rmtTransform Transformer.
+     * @param args Arguments.
      * @return Iterator over query results. Note that results become available as they come.
      */
-    public abstract <R> GridCacheQueryFuture<R> queryLocal(GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry,
-        boolean single, boolean rmtRdcOnly, @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr,
-        @Nullable GridPredicate<?> vis);
+    public abstract GridCacheQueryFuture<?> queryLocal(GridCacheQueryAdapter<?> qry,
+        @Nullable GridReducer<?, ?> rmtReducer, @Nullable GridClosure<?, ?> rmtTransform, @Nullable Object[] args);
 
     /**
      * Executes distributed query.
      *
      * @param qry Query.
      * @param nodes Nodes.
-     * @param single {@code true} if single result requested, {@code false} if multiple.
-     * @param rmtOnly {@code true} for reduce query when using remote reducer only,
-     *      otherwise it is always {@code false}.
-     * @param pageLsnr Page listener.
-     * @param vis Visitor predicate.
+     * @param rmtReducer Reducer.
+     * @param rmtTransform Transformer.
+     * @param args Arguments.
      * @return Iterator over query results. Note that results become available as they come.
      */
-    public abstract <R> GridCacheQueryFuture<R> queryDistributed(GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry,
-        Collection<GridNode> nodes, boolean single, boolean rmtOnly,
-        @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr, @Nullable GridPredicate<?> vis);
+    public abstract GridCacheQueryFuture<?> queryDistributed(GridCacheQueryAdapter<?> qry,
+        Collection<GridNode> nodes, @Nullable GridReducer<?, ?> rmtReducer, @Nullable GridClosure<?, ?> rmtTransform,
+        @Nullable Object[] args);
 
     /**
      * Loads page.
@@ -333,52 +327,50 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param nodes Nodes.
      * @param all Whether to load all pages.
      */
-    public abstract void loadPage(long id, GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry,
-        Collection<GridNode> nodes, boolean all);
+    public abstract void loadPage(long id, GridCacheQueryAdapter<?> qry, Collection<GridNode> nodes, boolean all);
 
-    /**
-     * Executes distributed fields query.
-     *
-     * @param qry Query.
-     * @param single {@code true} if single result requested, {@code false} if multiple.
-     * @param rmtOnly {@code true} for reduce query when using remote reducer only,
-     *      otherwise it is always {@code false}.
-     * @param pageLsnr Page listener.
-     * @param vis Visitor predicate.
-     * @return Iterator over query results. Note that results become available as they come.
-     */
-    public abstract GridCacheFieldsQueryFuture queryFieldsLocal(GridCacheFieldsQueryBase qry, boolean single,
-        boolean rmtOnly, @Nullable GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr,
-        @Nullable GridPredicate<?> vis);
-
-    /**
-     * Executes distributed fields query.
-     *
-     * @param qry Query.
-     * @param nodes Nodes.
-     * @param single {@code true} if single result requested, {@code false} if multiple.
-     * @param rmtOnly {@code true} for reduce query when using remote reducer only,
-     *      otherwise it is always {@code false}.
-     * @param pageLsnr Page listener.
-     * @param vis Visitor predicate.
-     * @return Iterator over query results. Note that results become available as they come.
-     */
-    public abstract GridCacheFieldsQueryFuture queryFieldsDistributed(GridCacheFieldsQueryBase qry,
-        Collection<GridNode> nodes, boolean single, boolean rmtOnly,
-        @Nullable GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr, @Nullable GridPredicate<?> vis);
+//    /**
+//     * Executes distributed fields query.
+//     *
+//     * @param qry Query.
+//     * @param single {@code true} if single result requested, {@code false} if multiple.
+//     * @param rmtOnly {@code true} for reduce query when using remote reducer only,
+//     *      otherwise it is always {@code false}.
+//     * @param pageLsnr Page listener.
+//     * @param vis Visitor predicate.
+//     * @return Iterator over query results. Note that results become available as they come.
+//     */
+//    public abstract GridCacheFieldsQueryFuture queryFieldsLocal(GridCacheFieldsQueryBase qry, boolean single,
+//        boolean rmtOnly, @Nullable GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr,
+//        @Nullable GridPredicate<?> vis);
+//
+//    /**
+//     * Executes distributed fields query.
+//     *
+//     * @param qry Query.
+//     * @param nodes Nodes.
+//     * @param single {@code true} if single result requested, {@code false} if multiple.
+//     * @param rmtOnly {@code true} for reduce query when using remote reducer only,
+//     *      otherwise it is always {@code false}.
+//     * @param pageLsnr Page listener.
+//     * @param vis Visitor predicate.
+//     * @return Iterator over query results. Note that results become available as they come.
+//     */
+//    public abstract GridCacheFieldsQueryFuture queryFieldsDistributed(GridCacheFieldsQueryBase qry,
+//        Collection<GridNode> nodes, boolean single, boolean rmtOnly,
+//        @Nullable GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr, @Nullable GridPredicate<?> vis);
 
     /**
      * Performs query.
      *
      * @param qry Query.
      * @param loc Local query or not.
+     * @param args Arguments.
      * @return Collection of found keys.
      * @throws GridException In case of error.
      */
-    private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> executeQuery(GridCacheQueryBaseAdapter qry,
-        boolean loc) throws GridException {
-        Class<? extends V> resType = resultType(qry, loc);
-
+    private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> executeQuery(GridCacheQueryAdapter<?> qry,
+        boolean loc, @Nullable Object[] args) throws GridException {
         if (qry.type() == null) {
             assert !loc;
 
@@ -387,78 +379,50 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 "GridCacheConfiguration.getMaximumQueryIteratorCount() configuration property).");
         }
 
-        try {
-            executeBeforeCallback(qry);
+        switch (qry.type()) {
+            case SQL:
+                GridCacheSqlQuery<K, V> sqlQry = (GridCacheSqlQuery<K, V>)qry;
 
-            switch (qry.type()) {
-                case SQL:
-                    return idxMgr.query(spi, space, qry.clause(), F.asList(qry.arguments()), resType,
-                        qry.includeBackups(), projectionFilter(qry), keyValueFilter(qry));
+                return idxMgr.query(spi, space, sqlQry.clause(), F.asList(args), sqlQry.queryClass(),
+                    qry.includeBackups(), projectionFilter(qry), keyValueFilter(qry));
 
-                case SCAN:
-                    return scanIterator(qry, resType);
+            case SCAN:
+                return scanIterator(qry, null);
 
-                case TEXT:
-                    return idxMgr.queryText(spi, space, qry.clause(), resType, qry.includeBackups(),
-                        projectionFilter(qry), keyValueFilter(qry));
+            case TEXT:
+                GridCacheFullTextQuery<K, V> textQry = (GridCacheFullTextQuery<K, V>)qry;
 
-                default:
-                    throw new GridException("Unknown query type: " + qry.type());
-            }
-        }
-        finally {
-            executeAfterCallback(qry);
+                return idxMgr.queryText(spi, space, textQry.search(), textQry.queryClass(), qry.includeBackups(),
+                    projectionFilter(qry), keyValueFilter(qry));
+
+            default:
+                throw new GridException("Unknown query type: " + qry.type());
         }
     }
 
-    /**
-     * Performs fields query.
-     *
-     * @param qry Query
-     * @param loc Local query or not.
-     * @return Fields query result.
-     * @throws GridException In case of error.
-     */
-    private GridIndexingFieldsResult executeFieldsQuery(GridCacheFieldsQueryBase qry, boolean loc)
-        throws GridException {
-        assert qry != null;
-
-        if (qry.clause() == null) {
-            assert !loc;
-
-            throw new GridException("Received next page request after iterator was removed. " +
-                "Consider increasing maximum number of stored iterators (see " +
-                "GridCacheConfiguration.getMaximumQueryIteratorCount() configuration property).");
-        }
-
-        try {
-            executeBeforeCallback(qry);
-
-            return idxMgr.queryFields(spi, space, qry.clause(), F.asList(qry.arguments()), qry.includeBackups(),
-                projectionFilter(qry), keyValueFilter(qry));
-        }
-        finally {
-            executeAfterCallback(qry);
-        }
-    }
-
-    /**
-     * @param qry Query.
-     * @param loc Local.
-     * @return Result type for query.
-     * @throws GridException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    private Class<? extends V> resultType(GridCacheQueryBaseAdapter qry, boolean loc) throws GridException {
-        ClassLoader ldr = loc ? cctx.deploy().localLoader() : cctx.deploy().globalLoader();
-
-        try {
-            return qry.queryClass(ldr);
-        }
-        catch (ClassNotFoundException e) {
-            throw new GridException("Failed to load class: " + qry.className(), e);
-        }
-    }
+//    /**
+//     * Performs fields query.
+//     *
+//     * @param qry Query
+//     * @param loc Local query or not.
+//     * @return Fields query result.
+//     * @throws GridException In case of error.
+//     */
+//    private GridIndexingFieldsResult executeFieldsQuery(GridCacheFieldsQueryBase qry, boolean loc)
+//        throws GridException {
+//        assert qry != null;
+//
+//        if (qry.clause() == null) {
+//            assert !loc;
+//
+//            throw new GridException("Received next page request after iterator was removed. " +
+//                "Consider increasing maximum number of stored iterators (see " +
+//                "GridCacheConfiguration.getMaximumQueryIteratorCount() configuration property).");
+//        }
+//
+//        return idxMgr.queryFields(spi, space, qry.clause(), F.asList(qry.arguments()), qry.includeBackups(),
+//            projectionFilter(qry), keyValueFilter(qry));
+//    }
 
     /**
      * @param qry Query.
@@ -468,7 +432,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     @SuppressWarnings({"unchecked"})
     private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> scanIterator(
-        GridCacheQueryBaseAdapter qry, final Class<?> qryCls)
+        GridCacheQueryAdapter<?> qry, final Class<?> qryCls)
         throws GridException {
 
         P1<GridCacheEntry<K, V>> clsPred = new P1<GridCacheEntry<K, V>>() {
@@ -495,8 +459,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         Set<Map.Entry<K, V>> entries = resMap.entrySet();
 
-        final GridPredicate<K> keyFilter = keyFilter(qry);
-        final GridPredicate<V> valFilter = valueFilter(qry);
+        final GridBiPredicate<K, V> keyValFilter = qry.remoteFilter();
+
+        injectResources(keyValFilter);
 
         final GridIterator<GridIndexingKeyValueRow<K, V>> it = F.iterator(
             entries,
@@ -508,8 +473,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             true,
             new P1<Map.Entry<K, V>>() {
                 @Override public boolean apply(Map.Entry<K, V> e) {
-                    return (keyFilter == null || keyFilter.apply(e.getKey())) &&
-                        (valFilter == null || valFilter.apply(e.getValue()));
+                    return keyValFilter == null || keyValFilter.apply(e.getKey(), e.getValue());
                 }
             });
 
@@ -549,189 +513,189 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
     }
 
-    /**
-     * Processes fields query request.
-     *
-     * @param qryInfo Query info.
-     */
-    protected void runFieldsQuery(GridCacheQueryInfo<K, V> qryInfo) {
-        assert qryInfo != null;
-
-        int qryId = qryInfo.query().id();
-
-        if (log.isDebugEnabled())
-            log.debug("Running query [qryId=" + qryId + ", qryInfo=" + qryInfo + ']');
-
-        boolean rmvRes = true;
-
-        try {
-            GridPredicate<GridCacheEntry<K, V>>[] prjFilter = cctx.vararg(qryInfo.projectionPredicate());
-            GridReducer<List<Object>, Object> rdc = qryInfo.fieldsReducer();
-            GridPredicate<Object> vis = (GridPredicate<Object>)qryInfo.visitor();
-
-            for (GridPredicate<GridCacheEntry<K, V>> pred : prjFilter)
-                injectResources(pred);
-
-            injectResources(rdc);
-            injectResources(vis);
-
-            int pageSize = qryInfo.pageSize();
-
-            Collection<Object> data = null;
-            Collection<List<GridIndexingEntity<?>>> entities = null;
-
-            if (qryInfo.local() || rdc != null || vis != null || cctx.isLocalNode(qryInfo.senderId()))
-                data = new ArrayList<>(pageSize);
-            else
-                entities = new ArrayList<>(pageSize);
-
-            GridIndexingFieldsResult res = qryInfo.local() ?
-                executeFieldsQuery((GridCacheFieldsQueryBase)qryInfo.query(), qryInfo.local()) :
-                fieldsQueryResult(qryInfo);
-
-            // If metadata needs to be returned to user and cleaned from internal fields - copy it.
-            List<GridCacheSqlFieldMetadata> meta = qryInfo.includeMetaData() ?
-                (res.metaData() != null ? new ArrayList<>(res.metaData()) : null) :
-                res.metaData();
-
-            BitSet ignored = new BitSet();
-
-            // Filter internal fields.
-            if (meta != null) {
-                Iterator<GridCacheSqlFieldMetadata> metaIt = meta.iterator();
-
-                int i = 0;
-
-                while (metaIt.hasNext()) {
-                    if (IGNORED_FIELDS.contains(metaIt.next().fieldName())) {
-                        ignored.set(i);
-
-                        if (qryInfo.includeMetaData())
-                            metaIt.remove();
-                    }
-
-                    i++;
-                }
-            }
-
-            if (!qryInfo.includeMetaData())
-                meta = null;
-
-            GridCloseableIterator<List<GridIndexingEntity<?>>> it =
-                new GridSpiCloseableIteratorWrapper<>(res.iterator());
-
-            if (log.isDebugEnabled())
-                log.debug("Received fields iterator [qryId=" + qryId + ", iterHasNext=" + it.hasNext() + ']');
-
-            if (!it.hasNext()) {
-                if (rdc != null)
-                    data = Collections.singletonList(rdc.reduce());
-
-                onFieldsPageReady(qryInfo.local(), qryInfo, meta, entities, data, true, null);
-
-                return;
-            }
-
-            int cnt = 0;
-            boolean metaSent = false;
-
-            while (!Thread.currentThread().isInterrupted() && it.hasNext()) {
-                List<GridIndexingEntity<?>> row = it.next();
-
-                // Query is cancelled.
-                if (row == null) {
-                    onPageReady(qryInfo.local(), qryInfo, null, true, null);
-
-                    break;
-                }
-
-                // Filter internal fields.
-                Iterator<GridIndexingEntity<?>> rowIt = row.iterator();
-
-                int i = 0;
-
-                while (rowIt.hasNext()) {
-                    rowIt.next();
-
-                    if (ignored.get(i++))
-                        rowIt.remove();
-                }
-
-                if ((qryInfo.local() || rdc != null || vis != null || cctx.isLocalNode(qryInfo.senderId()))) {
-                    List<Object> fields = new ArrayList<>(row.size());
-
-                    for (GridIndexingEntity<?> ent : row)
-                        fields.add(ent.value());
-
-                    // Visit.
-                    if (vis != null) {
-                        if (!vis.apply(fields) || !it.hasNext()) {
-                            onFieldsPageReady(qryInfo.local(), qryInfo, null, null, null, true, null);
-
-                            return;
-                        }
-                        else
-                            continue;
-                    }
-
-                    // Reduce.
-                    if (rdc != null) {
-                        if (!rdc.collect(fields))
-                            break;
-                    }
-                    else
-                        data.add(fields);
-                }
-                else
-                    entities.add(row);
-
-                if (rdc == null && qryInfo.single()) {
-                    onFieldsPageReady(qryInfo.local(), qryInfo, meta, entities, data, true, null);
-
-                    break;
-                }
-
-                if (rdc == null && ((!qryInfo.allPages() && ++cnt == pageSize) || !it.hasNext())) {
-                    onFieldsPageReady(qryInfo.local(), qryInfo, !metaSent ? meta : null,
-                        entities, data, !it.hasNext(), null);
-
-                    if (it.hasNext())
-                        rmvRes = false;
-
-                    if (!qryInfo.allPages())
-                        return;
-                }
-            }
-
-            if (rdc != null) {
-                onFieldsPageReady(qryInfo.local(), qryInfo, meta, null,
-                    Collections.singletonList(rdc.reduce()), true, null);
-            }
-        }
-        catch (GridException e) {
-            if (log.isDebugEnabled() || !e.hasCause(SQLException.class))
-                U.error(log, "Failed to run fields query [qry=" + qryInfo + ", node=" + cctx.nodeId() + ']', e);
-            else {
-                if (e.hasCause(SQLException.class))
-                    U.error(log, "Failed to run fields query [node=" + cctx.nodeId() +
-                        ", msg=" + e.getCause(SQLException.class).getMessage() + ']');
-                else
-                    U.error(log, "Failed to run fields query [node=" + cctx.nodeId() +
-                        ", msg=" + e.getMessage() + ']');
-            }
-
-            onFieldsPageReady(qryInfo.local(), qryInfo, null, null, null, true, e);
-        }
-        catch (Throwable e) {
-            U.error(log, "Failed to run fields query [qry=" + qryInfo + ", node=" + cctx.nodeId() + "]", e);
-
-            onFieldsPageReady(qryInfo.local(), qryInfo, null, null, null, true, e);
-        }
-        finally {
-            if (rmvRes)
-                removeFieldsQueryResult(qryInfo.senderId(), qryInfo.requestId());
-        }
-    }
+//    /**
+//     * Processes fields query request.
+//     *
+//     * @param qryInfo Query info.
+//     */
+//    protected void runFieldsQuery(GridCacheQueryInfo<K, V> qryInfo) {
+//        assert qryInfo != null;
+//
+//        int qryId = qryInfo.query().id();
+//
+//        if (log.isDebugEnabled())
+//            log.debug("Running query [qryId=" + qryId + ", qryInfo=" + qryInfo + ']');
+//
+//        boolean rmvRes = true;
+//
+//        try {
+//            GridPredicate<GridCacheEntry<K, V>>[] prjFilter = cctx.vararg(qryInfo.projectionPredicate());
+//            GridReducer<List<Object>, Object> rdc = qryInfo.fieldsReducer();
+//            GridPredicate<Object> vis = (GridPredicate<Object>)qryInfo.visitor();
+//
+//            for (GridPredicate<GridCacheEntry<K, V>> pred : prjFilter)
+//                injectResources(pred);
+//
+//            injectResources(rdc);
+//            injectResources(vis);
+//
+//            int pageSize = qryInfo.pageSize();
+//
+//            Collection<Object> data = null;
+//            Collection<List<GridIndexingEntity<?>>> entities = null;
+//
+//            if (qryInfo.local() || rdc != null || vis != null || cctx.isLocalNode(qryInfo.senderId()))
+//                data = new ArrayList<>(pageSize);
+//            else
+//                entities = new ArrayList<>(pageSize);
+//
+//            GridIndexingFieldsResult res = qryInfo.local() ?
+//                executeFieldsQuery((GridCacheFieldsQueryBase)qryInfo.query(), qryInfo.local()) :
+//                fieldsQueryResult(qryInfo);
+//
+//            // If metadata needs to be returned to user and cleaned from internal fields - copy it.
+//            List<GridCacheSqlFieldMetadata> meta = qryInfo.includeMetaData() ?
+//                (res.metaData() != null ? new ArrayList<>(res.metaData()) : null) :
+//                res.metaData();
+//
+//            BitSet ignored = new BitSet();
+//
+//            // Filter internal fields.
+//            if (meta != null) {
+//                Iterator<GridCacheSqlFieldMetadata> metaIt = meta.iterator();
+//
+//                int i = 0;
+//
+//                while (metaIt.hasNext()) {
+//                    if (IGNORED_FIELDS.contains(metaIt.next().fieldName())) {
+//                        ignored.set(i);
+//
+//                        if (qryInfo.includeMetaData())
+//                            metaIt.remove();
+//                    }
+//
+//                    i++;
+//                }
+//            }
+//
+//            if (!qryInfo.includeMetaData())
+//                meta = null;
+//
+//            GridCloseableIterator<List<GridIndexingEntity<?>>> it =
+//                new GridSpiCloseableIteratorWrapper<>(res.iterator());
+//
+//            if (log.isDebugEnabled())
+//                log.debug("Received fields iterator [qryId=" + qryId + ", iterHasNext=" + it.hasNext() + ']');
+//
+//            if (!it.hasNext()) {
+//                if (rdc != null)
+//                    data = Collections.singletonList(rdc.reduce());
+//
+//                onFieldsPageReady(qryInfo.local(), qryInfo, meta, entities, data, true, null);
+//
+//                return;
+//            }
+//
+//            int cnt = 0;
+//            boolean metaSent = false;
+//
+//            while (!Thread.currentThread().isInterrupted() && it.hasNext()) {
+//                List<GridIndexingEntity<?>> row = it.next();
+//
+//                // Query is cancelled.
+//                if (row == null) {
+//                    onPageReady(qryInfo.local(), qryInfo, null, true, null);
+//
+//                    break;
+//                }
+//
+//                // Filter internal fields.
+//                Iterator<GridIndexingEntity<?>> rowIt = row.iterator();
+//
+//                int i = 0;
+//
+//                while (rowIt.hasNext()) {
+//                    rowIt.next();
+//
+//                    if (ignored.get(i++))
+//                        rowIt.remove();
+//                }
+//
+//                if ((qryInfo.local() || rdc != null || vis != null || cctx.isLocalNode(qryInfo.senderId()))) {
+//                    List<Object> fields = new ArrayList<>(row.size());
+//
+//                    for (GridIndexingEntity<?> ent : row)
+//                        fields.add(ent.value());
+//
+//                    // Visit.
+//                    if (vis != null) {
+//                        if (!vis.apply(fields) || !it.hasNext()) {
+//                            onFieldsPageReady(qryInfo.local(), qryInfo, null, null, null, true, null);
+//
+//                            return;
+//                        }
+//                        else
+//                            continue;
+//                    }
+//
+//                    // Reduce.
+//                    if (rdc != null) {
+//                        if (!rdc.collect(fields))
+//                            break;
+//                    }
+//                    else
+//                        data.add(fields);
+//                }
+//                else
+//                    entities.add(row);
+//
+//                if (rdc == null && qryInfo.single()) {
+//                    onFieldsPageReady(qryInfo.local(), qryInfo, meta, entities, data, true, null);
+//
+//                    break;
+//                }
+//
+//                if (rdc == null && ((!qryInfo.allPages() && ++cnt == pageSize) || !it.hasNext())) {
+//                    onFieldsPageReady(qryInfo.local(), qryInfo, !metaSent ? meta : null,
+//                        entities, data, !it.hasNext(), null);
+//
+//                    if (it.hasNext())
+//                        rmvRes = false;
+//
+//                    if (!qryInfo.allPages())
+//                        return;
+//                }
+//            }
+//
+//            if (rdc != null) {
+//                onFieldsPageReady(qryInfo.local(), qryInfo, meta, null,
+//                    Collections.singletonList(rdc.reduce()), true, null);
+//            }
+//        }
+//        catch (GridException e) {
+//            if (log.isDebugEnabled() || !e.hasCause(SQLException.class))
+//                U.error(log, "Failed to run fields query [qry=" + qryInfo + ", node=" + cctx.nodeId() + ']', e);
+//            else {
+//                if (e.hasCause(SQLException.class))
+//                    U.error(log, "Failed to run fields query [node=" + cctx.nodeId() +
+//                        ", msg=" + e.getCause(SQLException.class).getMessage() + ']');
+//                else
+//                    U.error(log, "Failed to run fields query [node=" + cctx.nodeId() +
+//                        ", msg=" + e.getMessage() + ']');
+//            }
+//
+//            onFieldsPageReady(qryInfo.local(), qryInfo, null, null, null, true, e);
+//        }
+//        catch (Throwable e) {
+//            U.error(log, "Failed to run fields query [qry=" + qryInfo + ", node=" + cctx.nodeId() + "]", e);
+//
+//            onFieldsPageReady(qryInfo.local(), qryInfo, null, null, null, true, e);
+//        }
+//        finally {
+//            if (rmvRes)
+//                removeFieldsQueryResult(qryInfo.senderId(), qryInfo.requestId());
+//        }
+//    }
 
     /**
      * Processes cache query request.
@@ -744,10 +708,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         boolean loc = qryInfo.local();
 
-        int qryId = qryInfo.query().id();
-
         if (log.isDebugEnabled())
-            log.debug("Running query [qryId=" + qryId + ", qryInfo=" + qryInfo + ']');
+            log.debug("Running query: " + qryInfo);
 
         Collection<?> data = null;
 
@@ -758,7 +720,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             GridPredicate<GridCacheEntry<K, V>>[] prjFilter = cctx.vararg(qryInfo.projectionPredicate());
             GridClosure<Object, Object> trans = (GridClosure<Object, Object>)qryInfo.transformer();
             GridReducer<Map.Entry<K, V>, Object> rdc = qryInfo.reducer();
-            GridPredicate<Map.Entry<K, V>> vis = (GridPredicate<Map.Entry<K, V>>)qryInfo.visitor();
 
             // Injecting resources into query closures.
             for (GridPredicate<GridCacheEntry<K, V>> pred : prjFilter)
@@ -766,11 +727,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             injectResources(trans);
             injectResources(rdc);
-            injectResources(vis);
 
-            GridCacheQueryBaseAdapter<?, ?, GridCacheQueryBase> qry = qryInfo.query();
-
-            boolean single = qryInfo.single();
+            GridCacheQueryAdapter<?> qry = qryInfo.query();
 
             int pageSize = qryInfo.pageSize();
 
@@ -779,12 +737,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             Map<K, Object> map = new LinkedHashMap<>(pageSize);
 
             GridCloseableIterator<GridIndexingKeyValueRow<K, V>> iter =
-                loc ? executeQuery(qry, loc) : queryIterator(qryInfo);
+                loc ? executeQuery(qry, loc, qryInfo.arguments()) : queryIterator(qryInfo);
 
             GridCacheAdapter<K, V> cache = cctx.cache();
 
             if (log.isDebugEnabled())
-                log.debug("Received index iterator [qryId=" + qryId + ", iterHasNext=" + iter.hasNext() +
+                log.debug("Received index iterator [iterHasNext=" + iter.hasNext() +
                     ", cacheSize=" + cache.size() + ']');
 
             int cnt = 0;
@@ -808,7 +766,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 if (cctx.config().getCacheMode() != LOCAL && qry.type() == SCAN &&
                     !incBackups && !cctx.affinity().primary(cctx.localNode(), key)) {
                     if (log.isDebugEnabled())
-                        log.debug("Ignoring backup element [qryId=" + qryId + ", row=" + row +
+                        log.debug("Ignoring backup element [row=" + row +
                             ", cacheMode=" + cctx.config().getCacheMode() + ", incBackups=" + incBackups +
                             ", primary=" + cctx.affinity().primary(cctx.localNode(), key) + ']');
 
@@ -836,9 +794,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.excludePeekModes(oldExcl);
                         }
 
-                        if (qry.cloneValues())
-                            val = cctx.cloneValue(val);
-
                         GridCacheVersion ver = entry.version();
 
                         unmarshal = !Arrays.equals(row.version(), CU.versionToBytes(ver));
@@ -855,26 +810,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     val = v.value();
 
                 if (log.isDebugEnabled())
-                    log.debug("Record [qryId=" + qryId + ", key=" + key + ", val=" + val + ", incBackups=" +
+                    log.debug("Record [key=" + key + ", val=" + val + ", incBackups=" +
                         incBackups + "priNode=" + U.id8(CU.primaryNode(cctx, key).id()) +
                         ", node=" + U.id8(cctx.grid().localNode().id()) + ']');
 
                 if (val == null) {
                     if (log.isDebugEnabled())
-                        log.debug("Unsuitable record value [qryId=" + qryId + ", val=" + val + ']');
+                        log.debug("Unsuitable record value: " + val);
 
                     continue;
-                }
-
-                // Visit.
-                if (vis != null) {
-                    if (!vis.apply(F.t(key, val)) || !iter.hasNext()) {
-                        onPageReady(loc, qryInfo, null, true, null);
-
-                        return;
-                    }
-                    else
-                        continue;
                 }
 
                 // Reduce.
@@ -891,9 +835,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
 
                 map.put(key, trans == null ? val : trans.apply(val));
-
-                if (single)
-                    break;
 
                 if (!loc) {
                     if (++cnt == pageSize || !iter.hasNext()) {
@@ -949,7 +890,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         if (log.isDebugEnabled())
-            log.debug("End of running query [qryId=" + qryId + ", res=" + data + ']');
+            log.debug("End of running query [res=" + data + ']');
     }
 
     /**
@@ -1027,7 +968,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         if (exec) {
             try {
-                fut.onDone(executeQuery(qryInfo.query(), false));
+                fut.onDone(executeQuery(qryInfo.query(), false, qryInfo.arguments()));
             }
             catch (GridException e) {
                 fut.onDone(e);
@@ -1066,93 +1007,93 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
     }
 
-    /**
-     * @param qryInfo Info.
-     * @return Iterator.
-     * @throws GridException In case of error.
-     */
-    private GridIndexingFieldsResult fieldsQueryResult(GridCacheQueryInfo<?, ?> qryInfo)
-        throws GridException {
-        UUID sndId = qryInfo.senderId();
+//    /**
+//     * @param qryInfo Info.
+//     * @return Iterator.
+//     * @throws GridException In case of error.
+//     */
+//    private GridIndexingFieldsResult fieldsQueryResult(GridCacheQueryInfo<?, ?> qryInfo)
+//        throws GridException {
+//        UUID sndId = qryInfo.senderId();
+//
+//        assert sndId != null;
+//
+//        Map<Long, GridFutureAdapter<GridIndexingFieldsResult>> iters = fieldsQryRes.get(sndId);
+//
+//        if (iters == null) {
+//            iters = new LinkedHashMap<Long, GridFutureAdapter<GridIndexingFieldsResult>>(16, 0.75f, true) {
+//                @Override protected boolean removeEldestEntry(Map.Entry<Long,
+//                    GridFutureAdapter<GridIndexingFieldsResult>> e) {
+//                    boolean rmv = size() > maxIterCnt;
+//
+//                    if (rmv) {
+//                        try {
+//                            GridCloseableIterator<List<GridIndexingEntity<?>>> it =
+//                                new GridSpiCloseableIteratorWrapper<>(e.getValue().get().iterator());
+//
+//                            it.close();
+//                        }
+//                        catch (GridException ex) {
+//                            U.error(log, "Failed to close fields query iterator.", ex);
+//                        }
+//                    }
+//
+//                    return rmv;
+//                }
+//
+//                @Override public boolean equals(Object o) {
+//                    return o == this;
+//                }
+//            };
+//
+//            Map<Long, GridFutureAdapter<GridIndexingFieldsResult>> old = fieldsQryRes.putIfAbsent(sndId, iters);
+//
+//            if (old != null)
+//                iters = old;
+//        }
+//
+//        return fieldsQueryResult(iters, qryInfo);
+//    }
 
-        assert sndId != null;
-
-        Map<Long, GridFutureAdapter<GridIndexingFieldsResult>> iters = fieldsQryRes.get(sndId);
-
-        if (iters == null) {
-            iters = new LinkedHashMap<Long, GridFutureAdapter<GridIndexingFieldsResult>>(16, 0.75f, true) {
-                @Override protected boolean removeEldestEntry(Map.Entry<Long,
-                    GridFutureAdapter<GridIndexingFieldsResult>> e) {
-                    boolean rmv = size() > maxIterCnt;
-
-                    if (rmv) {
-                        try {
-                            GridCloseableIterator<List<GridIndexingEntity<?>>> it =
-                                new GridSpiCloseableIteratorWrapper<>(e.getValue().get().iterator());
-
-                            it.close();
-                        }
-                        catch (GridException ex) {
-                            U.error(log, "Failed to close fields query iterator.", ex);
-                        }
-                    }
-
-                    return rmv;
-                }
-
-                @Override public boolean equals(Object o) {
-                    return o == this;
-                }
-            };
-
-            Map<Long, GridFutureAdapter<GridIndexingFieldsResult>> old = fieldsQryRes.putIfAbsent(sndId, iters);
-
-            if (old != null)
-                iters = old;
-        }
-
-        return fieldsQueryResult(iters, qryInfo);
-    }
-
-    /**
-     * @param resMap Results map.
-     * @param qryInfo Info.
-     * @return Fields query result.
-     * @throws GridException In case of error.
-     */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter",
-        "NonPrivateFieldAccessedInSynchronizedContext"})
-    private GridIndexingFieldsResult fieldsQueryResult(Map<Long, GridFutureAdapter<GridIndexingFieldsResult>> resMap,
-        GridCacheQueryInfo<?, ?> qryInfo) throws GridException {
-        assert resMap != null;
-        assert qryInfo != null;
-
-        GridFutureAdapter<GridIndexingFieldsResult> fut;
-
-        boolean exec = false;
-
-        synchronized (resMap) {
-            fut = resMap.get(qryInfo.requestId());
-
-            if (fut == null) {
-                resMap.put(qryInfo.requestId(), fut =
-                    new GridFutureAdapter<>(cctx.kernalContext()));
-
-                exec = true;
-            }
-        }
-
-        if (exec) {
-            try {
-                fut.onDone(executeFieldsQuery((GridCacheFieldsQueryBase)qryInfo.query(), false));
-            }
-            catch (GridException e) {
-                fut.onDone(e);
-            }
-        }
-
-        return fut.get();
-    }
+//    /**
+//     * @param resMap Results map.
+//     * @param qryInfo Info.
+//     * @return Fields query result.
+//     * @throws GridException In case of error.
+//     */
+//    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter",
+//        "NonPrivateFieldAccessedInSynchronizedContext"})
+//    private GridIndexingFieldsResult fieldsQueryResult(Map<Long, GridFutureAdapter<GridIndexingFieldsResult>> resMap,
+//        GridCacheQueryInfo<?, ?> qryInfo) throws GridException {
+//        assert resMap != null;
+//        assert qryInfo != null;
+//
+//        GridFutureAdapter<GridIndexingFieldsResult> fut;
+//
+//        boolean exec = false;
+//
+//        synchronized (resMap) {
+//            fut = resMap.get(qryInfo.requestId());
+//
+//            if (fut == null) {
+//                resMap.put(qryInfo.requestId(), fut =
+//                    new GridFutureAdapter<>(cctx.kernalContext()));
+//
+//                exec = true;
+//            }
+//        }
+//
+//        if (exec) {
+//            try {
+//                fut.onDone(executeFieldsQuery((GridCacheFieldsQueryBase)qryInfo.query(), false));
+//            }
+//            catch (GridException e) {
+//                fut.onDone(e);
+//            }
+//        }
+//
+//        return fut.get();
+//    }
 
     /**
      * @param sndId Sender node ID.
@@ -1196,129 +1137,46 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     protected abstract boolean onPageReady(boolean loc, GridCacheQueryInfo<K, V> qryInfo,
         @Nullable Collection<?> data, boolean finished, @Nullable Throwable e);
 
-    /**
-     * @param loc Local query or not.
-     * @param qryInfo Query info.
-     * @param metaData Meta data.
-     * @param entities Indexing entities.
-     * @param data Data.
-     * @param finished Last page or not.
-     * @param e Exception in case of error.
-     * @return {@code true} if page was processed right.
-     */
-    protected abstract boolean onFieldsPageReady(boolean loc, GridCacheQueryInfo<K, V> qryInfo,
-        @Nullable List<GridCacheSqlFieldMetadata> metaData,
-        @Nullable Collection<List<GridIndexingEntity<?>>> entities,
-        @Nullable Collection<?> data,
-        boolean finished, @Nullable Throwable e);
+//    /**
+//     * @param loc Local query or not.
+//     * @param qryInfo Query info.
+//     * @param metaData Meta data.
+//     * @param entities Indexing entities.
+//     * @param data Data.
+//     * @param finished Last page or not.
+//     * @param e Exception in case of error.
+//     * @return {@code true} if page was processed right.
+//     */
+//    protected abstract boolean onFieldsPageReady(boolean loc, GridCacheQueryInfo<K, V> qryInfo,
+//        @Nullable List<GridCacheSqlFieldMetadata> metaData,
+//        @Nullable Collection<List<GridIndexingEntity<?>>> entities,
+//        @Nullable Collection<?> data,
+//        boolean finished, @Nullable Throwable e);
 
-    /**
-     *
-     * @param qry Query to validate.
-     * @throws GridException In case of validation error.
-     */
-    public void validateQuery(GridCacheQueryBase<?, ?, GridCacheQueryBase> qry) throws GridException {
-        if (log.isDebugEnabled())
-            log.debug("Validating query: " + qry);
-
-        if (!(qry instanceof GridCacheFieldsQueryBase) && qry.type() == null)
-            throw new GridException("Type must be set for query.");
-
-        if (qry.type() == SQL || qry.type() == TEXT)
-            if (F.isEmpty(qry.className()))
-                throw new GridException("Class must be set for " + qry.type().name() + " query.");
-
-        if (qry.type() == SQL || qry.type() == TEXT || qry instanceof GridCacheFieldsQueryBase) {
-            if (F.isEmpty(qry.clause()))
-                throw new GridException("Clause must be set for " + qry.type().name() + " query.");
-
-            if (!cctx.config().isQueryIndexEnabled())
-                throw new GridException("Indexing is disabled for cache: " + cctx.cache().name());
-        }
-    }
-
-    /**
-     * Creates user's query.
-     *
-     * @param filter Projection filter.
-     * @param flags Projection flags
-     * @return Created query.
-     */
-    public GridCacheQuery<K, V> createQuery(@Nullable GridPredicate<GridCacheEntry<K, V>> filter,
-        Set<GridCacheFlag> flags) {
-        return new GridCacheQueryAdapter<>(cctx, null, null, null, null, filter, flags);
-    }
-
-    /**
-     * Creates user's query.
-     *
-     * @param type Query type (may be {@code null} .
-     * @param filter Projection filter (may be {@code null} .
-     * @param flags Projection flags
-     * @return Created query.
-     */
-    public GridCacheQuery<K, V> createQuery(@Nullable GridCacheQueryType type,
-        @Nullable GridPredicate<GridCacheEntry<K, V>> filter, Set<GridCacheFlag> flags) {
-        return new GridCacheQueryAdapter<>(cctx, type, null, null, null, filter, flags);
-    }
-
-    /**
-     * Creates user's query.
-     *
-     * @param type Query type (may be {@code null} .
-     * @param clsName Query class name (may be {@code null} for {@link GridCacheQueryType#SCAN} queries).
-     * @param clause Query clause (should be {@code null} for {@link GridCacheQueryType#SCAN} queries).
-     * @param filter Projection filter (may be {@code null} .
-     * @param flags Projection flags
-     * @return Created query.
-     */
-    public GridCacheQuery<K, V> createQuery(@Nullable GridCacheQueryType type, @Nullable String clsName,
-        @Nullable String clause, @Nullable GridPredicate<GridCacheEntry<K, V>> filter, Set<GridCacheFlag> flags) {
-        return new GridCacheQueryAdapter<>(cctx, type, clause, null, clsName, filter, flags);
-    }
-
-    /**
-     * Creates fields query.
-     *
-     * @param clause Clause.
-     * @param filter Projection filter.
-     * @param flags Cache flags.
-     * @return Query.
-     */
-    public GridCacheFieldsQuery<K, V> createFieldsQuery(String clause,
-        @Nullable GridPredicate<GridCacheEntry<K, V>> filter, Set<GridCacheFlag> flags) {
-        return new GridCacheFieldsQueryAdapter<>(cctx, clause, filter, flags);
-    }
-
-    /**
-     * Creates reduce fields query.
-     *
-     * @param clause Clause.
-     * @param filter Projection filter.
-     * @param flags Cache flags.
-     * @return Query.
-     */
-    public <R1, R2> GridCacheReduceFieldsQuery<K, V, R1, R2> createReduceFieldsQuery(String clause,
-        @Nullable GridPredicate<GridCacheEntry<K, V>> filter, Set<GridCacheFlag> flags) {
-        return new GridCacheReduceFieldsQueryAdapter<>(cctx, clause, filter, flags);
-    }
-
-    /**
-     * Creates user's query.
-     *
-     * @param type Query type (may be {@code null} .
-     * @param cls Query class (may be {@code null} for {@link GridCacheQueryType#SCAN} queries).
-     * @param clause Query clause (should be {@code null} for {@link GridCacheQueryType#SCAN} queries).
-     * @param filter Projection filter (may be {@code null} .
-     * @param flags Projection flags
-     * @return Created query.
-     */
-    public GridCacheQuery<K, V> createQuery(@Nullable GridCacheQueryType type, @Nullable Class<?> cls,
-        @Nullable String clause, @Nullable GridPredicate<GridCacheEntry<K, V>> filter, Set<GridCacheFlag> flags) {
-        checkPrimitiveIndexEnabled(cls);
-
-        return new GridCacheQueryAdapter<>(cctx, type, clause, cls, null, filter, flags);
-    }
+//    /**
+//     *
+//     * @param qry Query to validate.
+//     * @throws GridException In case of validation error.
+//     */
+//    public void validateQuery(GridCacheQueryBase<?, ?, GridCacheQueryBase> qry) throws GridException {
+//        if (log.isDebugEnabled())
+//            log.debug("Validating query: " + qry);
+//
+//        if (!(qry instanceof GridCacheFieldsQueryBase) && qry.type() == null)
+//            throw new GridException("Type must be set for query.");
+//
+//        if (qry.type() == SQL || qry.type() == TEXT)
+//            if (F.isEmpty(qry.className()))
+//                throw new GridException("Class must be set for " + qry.type().name() + " query.");
+//
+//        if (qry.type() == SQL || qry.type() == TEXT || qry instanceof GridCacheFieldsQueryBase) {
+//            if (F.isEmpty(qry.clause()))
+//                throw new GridException("Clause must be set for " + qry.type().name() + " query.");
+//
+//            if (!cctx.config().isQueryIndexEnabled())
+//                throw new GridException("Indexing is disabled for cache: " + cctx.cache().name());
+//        }
+//    }
 
     /**
      * Checks if a given query class is a Java primitive or wrapper
@@ -1341,121 +1199,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             "(consider enabling indexing for primitive types).");
             }
         }
-    }
-
-    /**
-     * Creates user's transform query.
-     *
-     * @param filter Projection filter.
-     * @param flags Projection flags
-     * @return Created query.
-     */
-    public <T> GridCacheTransformQuery<K, V, T> createTransformQuery(
-        @Nullable GridPredicate<GridCacheEntry<K, V>> filter, Set<GridCacheFlag> flags) {
-        return new GridCacheTransformQueryAdapter<>(cctx, null, null, null, null, filter, flags);
-    }
-
-    /**
-     * Creates user's transform query.
-     *
-     * @param type Query type.
-     * @param filter Projection filter.
-     * @param flags Projection flags
-     * @return Created query.
-     */
-    public <T> GridCacheTransformQuery<K, V, T> createTransformQuery(GridCacheQueryType type,
-        @Nullable GridPredicate<GridCacheEntry<K, V>> filter, Set<GridCacheFlag> flags) {
-        return new GridCacheTransformQueryAdapter<>(cctx, type, null, null, null, filter, flags);
-    }
-
-    /**
-     * Creates user's transform query.
-     *
-     * @param type Query type.
-     * @param clsName Query class name (may be {@code null} for {@link GridCacheQueryType#SCAN} queries).
-     * @param clause Query clause (should be {@code null} for {@link GridCacheQueryType#SCAN} queries).
-     * @param filter Projection filter.
-     * @param flags Projection flags
-     * @return Created query.
-     */
-    public <T> GridCacheTransformQuery<K, V, T> createTransformQuery(GridCacheQueryType type, String clsName,
-        String clause, @Nullable GridPredicate<GridCacheEntry<K, V>> filter, Set<GridCacheFlag> flags) {
-        return new GridCacheTransformQueryAdapter<>(cctx, type, clause, null, clsName, filter, flags);
-    }
-
-    /**
-     * Creates user's transform query.
-     *
-     * @param type Query type.
-     * @param cls Query class (may be {@code null} for {@link GridCacheQueryType#SCAN} queries).
-     * @param clause Query clause (should be {@code null} for {@link GridCacheQueryType#SCAN} queries).
-     * @param filter Projection filter.
-     * @param flags Projection flags
-     * @return Created query.
-     */
-    public <T> GridCacheTransformQuery<K, V, T> createTransformQuery(GridCacheQueryType type, Class<?> cls,
-        String clause, @Nullable GridPredicate<GridCacheEntry<K, V>> filter, Set<GridCacheFlag> flags) {
-        checkPrimitiveIndexEnabled(cls);
-
-        return new GridCacheTransformQueryAdapter<>(cctx, type, clause, cls, null, filter, flags);
-    }
-
-    /**
-     * Creates user's reduce query.
-     *
-     * @param filter Projection filter.
-     * @param flags Projection flags
-     * @return Created query.
-     */
-    public <R1, R2> GridCacheReduceQuery<K, V, R1, R2> createReduceQuery(
-        @Nullable GridPredicate<GridCacheEntry<K, V>> filter, Set<GridCacheFlag> flags) {
-        return new GridCacheReduceQueryAdapter<>(cctx, null, null, null, null, filter, flags);
-    }
-
-    /**
-     * Creates user's reduce query.
-     *
-     * @param type Query type.
-     * @param filter Projection filter.
-     * @param flags Projection flags
-     * @return Created query.
-     */
-    public <R1, R2> GridCacheReduceQuery<K, V, R1, R2> createReduceQuery(GridCacheQueryType type,
-        @Nullable GridPredicate<GridCacheEntry<K, V>> filter, Set<GridCacheFlag> flags) {
-        return new GridCacheReduceQueryAdapter<>(cctx, type, null, null, null, filter, flags);
-    }
-
-    /**
-     * Creates user's reduce query.
-     *
-     * @param type Query type.
-     * @param clsName Query class name (may be {@code null} for {@link GridCacheQueryType#SCAN} queries).
-     * @param clause Query clause (should be {@code null} for {@link GridCacheQueryType#SCAN} queries).
-     * @param filter Projection filter.
-     * @param flags Projection flags
-     * @return Created query.
-     */
-    public <R1, R2> GridCacheReduceQuery<K, V, R1, R2> createReduceQuery(GridCacheQueryType type, String clsName,
-        String clause, @Nullable GridPredicate<GridCacheEntry<K, V>> filter, Set<GridCacheFlag> flags) {
-        return new GridCacheReduceQueryAdapter<>(cctx, type, clause, null, clsName, filter, flags);
-    }
-
-    /**
-     * Creates user's reduce query.
-     *
-     * @param type Query type.
-     * @param cls Query class (may be {@code null} for {@link GridCacheQueryType#SCAN} queries).
-     * @param clause Query clause (should be {@code null} for {@link GridCacheQueryType#SCAN} queries).
-     * @param filter Projection filter.
-     * @param flags Projection flags
-     * @return Created query.
-     */
-    public <R1, R2> GridCacheReduceQuery<K, V, R1, R2> createReduceQuery(GridCacheQueryType type,
-        Class<?> cls, String clause, @Nullable GridPredicate<GridCacheEntry<K, V>> filter,
-        Set<GridCacheFlag> flags) {
-        checkPrimitiveIndexEnabled(cls);
-
-        return new GridCacheReduceQueryAdapter<>(cctx, type, clause, cls, null, filter, flags);
     }
 
     /**
@@ -1544,37 +1287,16 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Gets key/value filter for query.
-     *
-     * @param qry Query.
-     * @return Filter.
-     * @throws GridException In case of error.
-     */
-    private GridIndexingQueryFilter<K, V> keyValueFilter(GridCacheQueryBaseAdapter qry) throws GridException {
-        assert qry != null;
-
-        final GridPredicate<K> keyFilter = keyFilter(qry);
-        final GridPredicate<V> valFilter = valueFilter(qry);
-
-        return new GridIndexingQueryFilter<K, V>() {
-            @Override public boolean apply(String s, K k, V v) {
-                return !F.eq(space, s) || (keyFilter == null || keyFilter.apply(k)) &&
-                    (valFilter == null || valFilter.apply(v));
-            }
-        };
-    }
-
-    /**
      * Gets projection filter for query.
      *
      * @param qry Query.
      * @return Filter.
      */
     @SuppressWarnings("unchecked")
-    private GridIndexingQueryFilter<K, V> projectionFilter(GridCacheQueryBaseAdapter qry) {
+    private GridIndexingQueryFilter<K, V> projectionFilter(GridCacheQueryAdapter<?> qry) {
         assert qry != null;
 
-        final GridPredicate<GridCacheEntry<K, V>> prjFilter = qry.projectionFilter();
+        final GridPredicate<GridCacheEntry<?, ?>> prjFilter = qry.projectionFilter();
 
         return new GridIndexingQueryFilter<K, V>() {
             @Override public boolean apply(String s, K k, V v) {
@@ -1594,77 +1316,25 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Gets key filter for query.
+     * Gets key-value filter for query.
      *
      * @param qry Query.
      * @return Filter.
      * @throws GridException In case of error.
      */
-    @SuppressWarnings("unchecked")
-    private GridPredicate<K> keyFilter(GridCacheQueryBaseAdapter qry) throws GridException {
+    private GridIndexingQueryFilter<K, V> keyValueFilter(GridCacheQueryAdapter<?> qry) throws GridException {
         assert qry != null;
 
-        GridPredicate<K> filter = qry.remoteKeyFilter();
+        final GridBiPredicate<K, V> filter = qry.remoteFilter();
 
         injectResources(filter);
 
-        return filter;
-    }
+        return new GridIndexingQueryFilter<K, V>() {
+            @Override public boolean apply(String s, K k, V v) {
+                return filter == null || !F.eq(space, s) || filter.apply(k, v);
 
-    /**
-     * Gets value filter for query.
-     *
-     * @param qry Query.
-     * @return Filter.
-     * @throws GridException In case of error.
-     */
-    @SuppressWarnings("unchecked")
-    private GridPredicate<V> valueFilter(GridCacheQueryBaseAdapter qry) throws GridException {
-        assert qry != null;
-
-        GridPredicate<V> filter = qry.remoteValueFilter();
-
-        injectResources(filter);
-
-        return filter;
-    }
-
-    /**
-     * Gets before callback for query.
-     *
-     * @param qry Query.
-     * @throws GridException In case of error.
-     */
-    @SuppressWarnings("unchecked")
-    private void executeBeforeCallback(GridCacheQueryBaseAdapter qry) throws GridException {
-        assert qry != null;
-
-        Runnable cb = qry.beforeCallback();
-
-        if (cb != null) {
-            injectResources(cb);
-
-            cb.run();
-        }
-    }
-
-    /**
-     * Gets after callback for query.
-     *
-     * @param qry Query.
-     * @throws GridException In case of error.
-     */
-    @SuppressWarnings("unchecked")
-    private void executeAfterCallback(GridCacheQueryBaseAdapter qry) throws GridException {
-        assert qry != null;
-
-        Runnable cb = qry.afterCallback();
-
-        if (cb != null) {
-            injectResources(cb);
-
-            cb.run();
-        }
+            }
+        };
     }
 
     /**

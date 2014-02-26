@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -63,7 +62,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
      */
     @SuppressWarnings("unchecked")
     protected GridCacheDistributedQueryFuture(GridCacheContext<K, V> ctx, long reqId,
-        GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry, Iterable<GridNode> nodes, boolean single,
+        GridCacheQueryAdapter<?> qry, Iterable<GridNode> nodes, boolean single,
         boolean rmtRdcOnly, @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr, @Nullable GridPredicate<?> vis) {
         super(ctx, qry, false, single, rmtRdcOnly, pageLsnr);
 
@@ -105,8 +104,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
                 subgrid.clear();
             }
 
-            final GridCacheQueryRequest<K, V> req = new GridCacheQueryRequest<>(reqId,
-                qry instanceof GridCacheFieldsQueryBase);
+            final GridCacheQueryRequest<K, V> req = new GridCacheQueryRequest<>(reqId, false);
 
             // Process cancel query directly (without sending) for local node,
             cctx.closures().callLocalSafe(new Callable<Object>() {

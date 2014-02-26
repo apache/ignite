@@ -234,7 +234,7 @@ import org.jetbrains.annotations.*;
  * @author @java.author
  * @version @java.version
  */
-public interface GridCacheQuery<R> {
+public interface GridCacheQuery<T> {
     /** Default query page size. */
     public static final int DFLT_PAGE_SIZE = 1024;
 
@@ -244,7 +244,7 @@ public interface GridCacheQuery<R> {
      *
      * @param  pageSize Page size.
      */
-    public GridCacheQuery<R> pageSize(int pageSize);
+    public GridCacheQuery<T> pageSize(int pageSize);
 
     /**
      * Sets query timeout. {@code 0} means there is no timeout. Default value
@@ -252,7 +252,7 @@ public interface GridCacheQuery<R> {
      *
      * @param timeout Query timeout.
      */
-    public GridCacheQuery<R> timeout(long timeout);
+    public GridCacheQuery<T> timeout(long timeout);
 
     /**
      * Sets whether or not to keep all query results local. If not - only the current page
@@ -260,7 +260,7 @@ public interface GridCacheQuery<R> {
      *
      * @param keepAll Keep results or not.
      */
-    public GridCacheQuery<R> keepAll(boolean keepAll);
+    public GridCacheQuery<T> keepAll(boolean keepAll);
 
     /**
      * Sets whether or not to include backup entries into query result. This flag
@@ -268,7 +268,7 @@ public interface GridCacheQuery<R> {
      *
      * @param incBackups Query {@code includeBackups} flag.
      */
-    public GridCacheQuery<R> includeBackups(boolean incBackups);
+    public GridCacheQuery<T> includeBackups(boolean incBackups);
 
     /**
      * Sets whether or not to deduplicate query result set. If this flag is {@code true}
@@ -277,7 +277,7 @@ public interface GridCacheQuery<R> {
      *
      * @param dedup Query {@code enableDedup} flag.
      */
-    public GridCacheQuery<R> enableDedup(boolean dedup);
+    public GridCacheQuery<T> enableDedup(boolean dedup);
 
     /**
      * Sets optional grid projection to execute this query on.
@@ -285,7 +285,7 @@ public interface GridCacheQuery<R> {
      * @param prj Projection.
      * @return New query object.
      */
-    public GridCacheQuery<R> projection(GridProjection prj);
+    public GridCacheQuery<T> projection(GridProjection prj);
 
     /**
      * Filter to be used on queried nodes prior to returning key-value pairs
@@ -297,7 +297,7 @@ public interface GridCacheQuery<R> {
      * @param filter Filter.
      * @return New query with remote value filter set.
      */
-    public <K, V> GridCacheQuery<R> remoteFilter(GridBiPredicate<K, V> filter);
+    public <K, V> GridCacheQuery<T> remoteFilter(GridBiPredicate<K, V> filter);
 
     /**
      * Executes the query and returns the query future. Caller may decide to iterate
@@ -316,19 +316,22 @@ public interface GridCacheQuery<R> {
      *
      * @return Future for the query result.
      */
-    public GridCacheQueryFuture<R> execute(@Nullable Object... args);
+    public GridCacheQueryFuture<T> execute(@Nullable Object... args);
 
     /**
      * Executes the query the same way as {@link #execute(Object...)} method but reduces result remotely.
      *
-     * @param remoteReducer Remote reducer.
+     * @param rmtReducer Remote reducer.
      * @return Future for the query result.
      */
-    public <O> GridCacheQueryFuture<O> execute(GridReducer<R, O> remoteReducer, @Nullable Object... args);
+    public <R> GridCacheQueryFuture<R> execute(GridReducer<T, R> rmtReducer, @Nullable Object... args);
 
     /**
-     * @param remoteTransform Remote transformer.
+     * @param rmtTransform Remote transformer.
      * @return
      */
-    public <O> GridCacheQueryFuture<O> execute(GridClosure<R, O> remoteTransform, @Nullable Object... args);
+    public <R> GridCacheQueryFuture<R> execute(GridClosure<T, R> rmtTransform, @Nullable Object... args);
+
+    // TODO: add metrics
+    // TODO: add reset metrics
 }

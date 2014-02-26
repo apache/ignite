@@ -38,9 +38,6 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     private long reqId;
 
     /** */
-    private int qryId;
-
-    /** */
     @GridDirectTransient
     private Throwable err;
 
@@ -76,25 +73,21 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
     /**
      * @param reqId Request id.
-     * @param qryId Query id.
      * @param finished Last response or not.
      * @param fields Fields query or not.
      */
-    public GridCacheQueryResponse(long reqId, int qryId, boolean finished, boolean fields) {
+    public GridCacheQueryResponse(long reqId, boolean finished, boolean fields) {
         this.reqId = reqId;
         this.finished = finished;
-        this.qryId = qryId;
         this.fields = fields;
     }
 
     /**
      * @param reqId Request id.
-     * @param qryId Query id.
      * @param err Error.
      */
-    public GridCacheQueryResponse(long reqId, int qryId, Throwable err) {
+    public GridCacheQueryResponse(long reqId, Throwable err) {
         this.reqId = reqId;
-        this.qryId = qryId;
         this.err = err;
         finished = true;
     }
@@ -180,13 +173,6 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
      */
     public long requestId() {
         return reqId;
-    }
-
-    /**
-     * @return Query id.
-     */
-    public int queryId() {
-        return qryId;
     }
 
     /**
@@ -336,7 +322,6 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
         _clone.finished = finished;
         _clone.reqId = reqId;
-        _clone.qryId = qryId;
         _clone.err = err;
         _clone.errBytes = errBytes;
         _clone.fields = fields;
@@ -435,9 +420,6 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 commState.idx++;
 
             case 7:
-                if (!commState.putInt(qryId))
-                    return false;
-
                 commState.idx++;
 
             case 8:
@@ -545,11 +527,6 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 commState.idx++;
 
             case 7:
-                if (buf.remaining() < 4)
-                    return false;
-
-                qryId = commState.getInt();
-
                 commState.idx++;
 
             case 8:

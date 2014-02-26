@@ -21,7 +21,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public interface GridCacheQueryFuture<X> extends GridFuture<Collection<X>> {
+public interface GridCacheQueryFuture<T> extends GridFuture<Collection<T>> {
     /**
      * @return Number of fetched elements which are available immediately.
      */
@@ -33,7 +33,7 @@ public interface GridCacheQueryFuture<X> extends GridFuture<Collection<X>> {
      * @return Next fetched element or {@code null} if all the elements.
      * @throws GridException If failed.
      */
-    @Nullable public X next() throws GridException;
+    @Nullable public T next() throws GridException;
 
     /**
      * Checks if all data is fetched by the query.
