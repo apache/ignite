@@ -316,9 +316,13 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
                 affMap.remove(maskNull(cacheName), fut0);
 
                 fut0.onDone(new GridException("Failed to get affinity mapping from node: " + n, e));
+
+                break;
             }
             catch (RuntimeException | Error e) {
                 fut0.onDone(new GridException("Failed to get affinity mapping from node: " + n, e));
+
+                break;
             }
         }
 
