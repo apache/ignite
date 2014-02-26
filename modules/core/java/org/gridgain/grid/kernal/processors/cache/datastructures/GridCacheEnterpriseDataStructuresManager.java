@@ -95,7 +95,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     @SuppressWarnings("unchecked")
     @Override protected void onKernalStart0() {
         try {
-            if (!cctx.isColocated()) {
+            if (!cctx.isColocated() || cctx.isReplicated()) {
                 assert !cctx.isDht();
 
                 dsView = cctx.cache().<GridCacheInternal, GridCacheInternal>projection
@@ -844,7 +844,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
     /** {@inheritDoc} */
     @Override public void onTxCommitted(GridCacheTxEx<K, V> tx) {
-        if (!cctx.isDht() && tx.internal() && !cctx.isColocated()) {
+        if (!cctx.isDht() && tx.internal() && (!cctx.isColocated() || cctx.isReplicated())) {
             try {
                 waitInitialization();
             }

@@ -16,10 +16,10 @@ import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.future.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -165,7 +165,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws GridException {
         GridTuple<V> val = null;
 
-        if (!modes.contains(NEAR_ONLY)) {
+        if (ctx.isReplicated() || !modes.contains(NEAR_ONLY)) {
             try {
                 val = peek0(true, key, modes, ctx.tm().txx());
             }
@@ -271,7 +271,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 while (true) {
                     try {
-                        entry = ctx.isSwapEnabled() ? entryEx(key) : peekEx(key);
+                        entry = ctx.isSwapOrOffheapEnabled() ? entryEx(key) : peekEx(key);
 
                         // If our DHT cache do has value, then we peek it.
                         if (entry != null) {
@@ -574,15 +574,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     if (ex != null)
                         throw new GridClosureException(ex);
 
-                    GridFuture<GridCacheTxEx<K, V>> fut = tx.prepareAsyncLocal(reads, writes, txNodes, last, lastBackups);
+                    GridFuture<GridCacheTxEx<K, V>> fut = tx.prepareAsyncLocal(reads, writes, txNodes, last,
+                        lastBackups);
 
                     if (tx.isRollbackOnly())
-                        try {
-                            tx.rollback();
-                        }
-                        catch (GridException e) {
-                            U.error(log, "Failed to rollback transaction: " + tx, e);
-                        }
+                        tx.rollbackAsync();
 
                     return fut;
                 }
@@ -590,7 +586,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtCacheAdapter<K, V> {
             new C2<GridCacheTxEx<K, V>, Exception, GridCacheTxEx<K, V>>() {
                 @Nullable @Override public GridCacheTxEx<K, V> apply(GridCacheTxEx<K, V> tx, Exception e) {
                     if (e != null) {
-                        tx.setRollbackOnly(); // Just in case.
+                        // tx can be null of exception occurred.
+                        if (tx != null)
+                            tx.setRollbackOnly(); // Just in case.
 
                         if (!(e instanceof GridCacheTxOptimisticException))
                             U.error(log, "Failed to prepare DHT transaction: " + tx, e);

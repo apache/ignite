@@ -24,7 +24,6 @@ import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
@@ -370,7 +369,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if cache is replicated cache.
      */
     public boolean isReplicated() {
-        return cache != null && cache.isReplicated();
+        return cacheCfg.getCacheMode() == GridCacheMode.REPLICATED;
     }
 
     /**
@@ -444,13 +443,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public GridNearCache<K, V> near() {
         return (GridNearCache<K, V>)cache;
-    }
-
-    /**
-     * @return Replicated cache.
-     */
-    public GridReplicatedCache<K, V> replicated() {
-        return (GridReplicatedCache<K, V>)cache;
     }
 
     /**
@@ -1239,7 +1231,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws GridCacheFlagException If given flags are conflicting with given transaction.
      */
     public void checkTxFlags(@Nullable Collection<GridCacheFlag> flags) throws GridCacheFlagException {
-        GridCacheTxEx tx = tm().tx();
+        GridCacheTxEx tx = tm().userTxx();
 
         if (tx == null || F.isEmpty(flags))
             return;

@@ -14,13 +14,13 @@ import org.jetbrains.annotations.*;
 /**
  * This enum defines mode in which partitioned cache operates.
  * <p>
- * Partitioned distribution mode can be configured via {@link GridCacheConfiguration#getPartitionedDistributionMode()}
+ * Partitioned distribution mode can be configured via {@link GridCacheConfiguration#getDistributionMode()}
  * configuration property.
  *
  * @author @java.author
  * @version @java.version
  */
-public enum GridCachePartitionedDistributionMode {
+public enum GridCacheDistributionMode {
     /**
      * Mode in which local node does not cache any data and communicates with other cache nodes
      * via remote calls.
@@ -50,7 +50,7 @@ public enum GridCachePartitionedDistributionMode {
     PARTITIONED_ONLY;
 
     /** Enumerated values. */
-    private static final GridCachePartitionedDistributionMode[] VALS = values();
+    private static final GridCacheDistributionMode[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -58,7 +58,7 @@ public enum GridCachePartitionedDistributionMode {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static GridCachePartitionedDistributionMode fromOrdinal(byte ord) {
+    @Nullable public static GridCacheDistributionMode fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

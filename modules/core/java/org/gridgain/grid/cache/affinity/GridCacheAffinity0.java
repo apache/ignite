@@ -197,13 +197,13 @@ public interface GridCacheAffinity0<K> {
      * first in the returned collection.
      * <p>
      * If there are only cache nodes in the projection with
-     * {@link GridCacheConfiguration#getPartitionedDistributionMode()} property set to {@code NEAR_ONLY}, then this
+     * {@link GridCacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}, then this
      * method will return an empty collection.
      *
      * @param key Key to get affinity nodes for.
      * @return Collection of primary and backup nodes for the key with primary node
      *      always first, or an empty collection if this projection contains only nodes with
-     *      {@link GridCacheConfiguration#getPartitionedDistributionMode()} property set to {@code NEAR_ONLY}.
+     *      {@link GridCacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}.
      */
     public Collection<GridNode> mapKeyToPrimaryAndBackups(K key);
 
@@ -234,13 +234,13 @@ public interface GridCacheAffinity0<K> {
      * first in the returned collection.
      * <p>
      * If there are only cache nodes in the projection with
-     * {@link GridCacheConfiguration#getPartitionedDistributionMode()} property set to {@code NEAR_ONLY}, then this
+     * {@link GridCacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}, then this
      * method will return an empty collection.
      *
      * @param part Partition to get affinity nodes for.
      * @return Collection of primary and backup nodes for partition with primary node
      *      always first, or an empty collection if this projection contains only nodes with
-     *      {@link GridCacheConfiguration#getPartitionedDistributionMode()} property set to {@code NEAR_ONLY}.
+     *      {@link GridCacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}.
      */
     public Collection<GridNode> mapPartitionToPrimaryAndBackups(int part);
 }

@@ -155,7 +155,7 @@ public class GridDrInternalResponse extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 68;
+        return 64;
     }
 
     /** {@inheritDoc} */
