@@ -34,7 +34,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public final class ComputeCreditRiskExample {
+public final class CreditRiskExample {
     /**
      * @param args Command arguments.
      * @throws GridException If failed.
