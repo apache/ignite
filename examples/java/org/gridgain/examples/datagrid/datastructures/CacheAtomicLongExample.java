@@ -42,51 +42,28 @@ public final class CacheAtomicLongExample {
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
-            print("Starting atomic long example on nodes: " + g.nodes().size());
-
-            // Number nodes in grid.
-            int nodes = g.nodes().size();
+            System.out.println("Starting atomic long example on nodes: " + g.nodes().size());
 
             // Make name for atomic long (by which it will be known in the grid).
             String atomicName = UUID.randomUUID().toString();
 
             // Initialize atomic long in grid.
-            GridCacheAtomicLong atomicLong = g.cache(CACHE_NAME).dataStructures().atomicLong(atomicName, 0, true);
+            final GridCacheAtomicLong atomicLong = g.cache(CACHE_NAME).dataStructures().atomicLong(atomicName, 0, true);
 
-            print("Atomic long initial value : " + atomicLong.get() + '.');
+            System.out.println("Atomic long initial value : " + atomicLong.get() + '.');
 
-            atomicLong.incrementAndGet();
+            // Try increment atomic long from all grid nodes.
+            // Note that this node is also part of the grid.
+            g.forCache(CACHE_NAME).compute().call(new GridCallable<Object>() {
+                @Override public Object call() throws  Exception {
+                    for (int i = 0; i < RETRIES; i++)
+                        System.out.println("AtomicLong value has been incremented: " + atomicLong.incrementAndGet());
 
-            print("Atomic long value after increment: " + atomicLong.get());
-
-            atomicLong.compareAndSet(2, new GridPredicate<Long>() {
-                @Override public boolean apply(Long val) {
-                    return val == 0;
+                    return null;
                 }
-            });
+            }).get();
 
-            print("Atomic long value after failed CAS: " + atomicLong.get());
-
-            atomicLong.compareAndSet(2, new GridPredicate<Long>() {
-                @Override public boolean apply(Long val) {
-                    return val == 1;
-                }
-            });
-
-            print("Atomic long value after successful CAS: " + atomicLong.get());
-            print("");
-            print("Finished atomic long example...");
-            print("Check all nodes for output (this node is also part of the grid).");
-            print("");
+            System.out.println("Atomic long value after successful CAS: " + atomicLong.get());
         }
-    }
-
-    /**
-     * Prints out given object to standard out.
-     *
-     * @param o Object to print.
-     */
-    private static void print(Object o) {
-        System.out.println(">>> " + o);
     }
 }

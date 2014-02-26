@@ -15,8 +15,6 @@ import org.gridgain.grid.lang.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.datastructures.GridCacheQueueType.*;
-
 /**
  * Grid cache distributed queue example. This example demonstrates {@code FIFO} unbounded
  * cache queue.
@@ -73,7 +71,7 @@ public class CacheQueueExample {
      */
     private static GridCacheQueue<String> initializeQueue(Grid g, String queueName) throws GridException {
         // Initialize new FIFO queue.
-        GridCacheQueue<String> queue = g.cache(CACHE_NAME).dataStructures().queue(queueName, FIFO, 0, false, true);
+        GridCacheQueue<String> queue = g.cache(CACHE_NAME).dataStructures().queue(queueName, 0, false, true);
 
         // Initialize queue items.
         // We will be use blocking operation and queue size must be appropriated.
@@ -141,9 +139,9 @@ public class CacheQueueExample {
 
         // Try to work with removed queue.
         try {
-            queue.get();
+            queue.poll();
         }
-        catch (GridException expected) {
+        catch (GridRuntimeException expected) {
             print("Expected exception - " + expected.getMessage());
         }
     }
@@ -185,7 +183,7 @@ public class CacheQueueExample {
         @Override public void run() {
             try {
                 GridCacheQueue<String> queue = GridGain.grid().cache(cacheName).dataStructures().
-                    queue(queueName, FIFO, 0, false, true);
+                    queue(queueName, 0, false, true);
 
                 if (put) {
                     UUID locId = GridGain.grid().localNode().id();
@@ -201,11 +199,11 @@ public class CacheQueueExample {
                 else {
                     // Take items from queue head.
                     for (int i = 0; i < RETRIES; i++)
-                        print("Queue item has been read from queue head: " + queue.poll());
+                        print("Queue item has been read from queue head: " + queue.take());
 
-                    // Take items from queue tail.
+                    // Take items from queue head once again.
                     for (int i = 0; i < RETRIES; i++)
-                        print("Queue item has been read from queue tail: " + queue.pollLast());
+                        print("Queue item has been read from queue head: " + queue.poll());
                 }
             }
             catch (GridException e) {

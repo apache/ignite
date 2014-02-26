@@ -160,6 +160,30 @@ public interface GridCompute {
     public <T, R> GridComputeTaskFuture<R> execute(GridComputeTask<T, R> task, @Nullable T arg);
 
     /**
+     * Executes a task on the grid. For information on how task gets split into remote
+     * jobs and how results are reduced back into one see {@link GridComputeTask} documentation.
+     * <p>
+     * If task for given name has not been deployed yet, then {@code taskName} will be
+     * used as task class name to auto-deploy the task (see Grid#deployTask() method
+     * for deployment algorithm).
+     * <p>
+     * Note that if projection is empty after applying filtering predicates, the result
+     * future will finish with exception. In case of dynamic projection this method
+     * will take a snapshot of all nodes in the projection, apply all filtering predicates,
+     * if any, and if the resulting set of nodes is empty the returned future will
+     * finish with exception.
+     *
+     * @param taskName Name of the task to execute. If task class has {@link GridComputeTaskName} annotation,
+     *      then task is deployed under a name specified within annotation. Otherwise, full
+     *      class name is used as task's name.
+     * @param arg Optional argument of task execution, can be {@code null}.
+     * @return Task future.
+     * @see GridComputeTask for information about task execution.
+     * @see #withName(String)
+     */
+    public <T, R> GridComputeTaskFuture<R> execute(String taskName, @Nullable T arg);
+
+    /**
      * Asynchronously executes given closure on all nodes in this projection.
      * <p>
      * This method does not block and returns immediately with future. All default SPI implementations
@@ -188,30 +212,6 @@ public interface GridCompute {
      * @see #withName(String)
      */
     public GridFuture<?> broadcast(Runnable job);
-
-    /**
-     * Executes a task on the grid. For information on how task gets split into remote
-     * jobs and how results are reduced back into one see {@link GridComputeTask} documentation.
-     * <p>
-     * If task for given name has not been deployed yet, then {@code taskName} will be
-     * used as task class name to auto-deploy the task (see Grid#deployTask() method
-     * for deployment algorithm).
-     * <p>
-     * Note that if projection is empty after applying filtering predicates, the result
-     * future will finish with exception. In case of dynamic projection this method
-     * will take a snapshot of all nodes in the projection, apply all filtering predicates,
-     * if any, and if the resulting set of nodes is empty the returned future will
-     * finish with exception.
-     *
-     * @param taskName Name of the task to execute. If task class has {@link GridComputeTaskName} annotation,
-     *      then task is deployed under a name specified within annotation. Otherwise, full
-     *      class name is used as task's name.
-     * @param arg Optional argument of task execution, can be {@code null}.
-     * @return Task future.
-     * @see GridComputeTask for information about task execution.
-     * @see #withName(String)
-     */
-    public <T, R> GridComputeTaskFuture<R> execute(String taskName, @Nullable T arg);
 
     /**
      * Asynchronously executes given closure on all nodes in this projection.

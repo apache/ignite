@@ -13,57 +13,91 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
-import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
- * TODO: Add class description.
+ * Defines grid projection which represents a common functionality over a group of nodes.
+ * The {@link Grid} interface itself also extends {@code GridProjection} which makes
+ * an instance of {@link Grid} a projection over all grid nodes.
+ * <h1 class="header">Clustering</h1>
+ * Grid projection allows to group grid nodes into various subgroups to perform distributed
+ * operations on them. All {@code 'forXXX(...)'} methods will create a child grid projection
+ * from existing projection. If you create a new projection from current one, then the resulting
+ * projection will include a subset of nodes from current projection. For example, the following
+ * code snippet will create a projection over a random remote node:
+ * <pre name="code" class="java">
+ * Grid g = GridGain.grid();
+ *
+ * GridProjection randomRemoteNodeProjection = g.forRemotes().forRandom();
+ * </pre>
+ * <h1 class="header">Features</h1>
+ * Grid projection provides the following functionality over the underlying group of nodes:
+ * <ul>
+ * <li>Compute ({@link #compute()} - functionality for executing tasks and closures over nodes in this projection.</li>
+ * <li>Messaging ({@link #message()} - functionality for topic-based message exchange over nodes in this projection.</li>
+ * <li>Events ({@link #events()} - functionality for querying and listening to events on nodes in this projection.</li>
+ * </ul>
  *
  * @author @java.author
  * @version @java.version
  */
 public interface GridProjection {
     /**
-     * @return TODO
+     * Gets instance of grid.
+     *
+     * @return Grid instance.
      */
     public Grid grid();
 
     /**
-     * @return TODO
+     * Gets {@code compute} functionality over this grid projection. All operations
+     * on the returned {@link GridCompute} instance will only include nodes from
+     * this projection.
+     *
+     * @return Compute instance over this grid projection.
      */
     public GridCompute compute();
 
     /**
-     * @return TODO
+     * Gets {@code messaging} functionality over this grid projection. All operations
+     * on the returned {@link GridMessaging} instance will only include nodes from
+     * this projection.
+     *
+     * @return Messaging instance over this grid projection.
      */
     public GridMessaging message();
 
     /**
-     * @return TODO
+     * Gets {@code events} functionality over this grid projection. All operations
+     * on the returned {@link GridEvents} instance will only include nodes from
+     * this projection.
+     *
+     * @return Events instance over this grid projection.
      */
     public GridEvents events();
 
     /**
-     * Creates monadic projection with a given set of nodes out of this projection.
-     * Note that nodes not in this projection at the moment of call will be excluded.
+     * Creates a grid projection over a given set of nodes.
      *
      * @param nodes Collection of nodes to create a projection from.
-     * @return Monadic projection with given nodes.
+     * @return Projection over provided grid nodes.
      */
     public GridProjection forNodes(Collection<? extends GridNode> nodes);
 
     /**
-     * // TODO
+     * Creates a grid projection for the given node.
+     *
      * @param node Node to get projection for.
      * @param nodes Optional additional nodes to include into projection.
-     * @return Grid projection for given node.
+     * @return Grid projection for the given node.
      */
     public GridProjection forNode(GridNode node, GridNode... nodes);
 
     /**
-     * // TODO
+     * Creates a grid projection for nodes other than given node.
+     *
      * @param node Node to exclude from grid projection.
      * @return Projection that will contain all nodes that original projection contained excluding
      *      given node.
@@ -78,16 +112,15 @@ public interface GridProjection {
     public GridProjection forOthers(GridProjection prj);
 
     /**
-     * Creates monadic projection with a given set of node IDs out of this projection.
-     * Note that nodes not in this projection at the moment of call will excluded.
+     * Creates a grid projection over nodes with specified node IDs.
      *
-     * @param ids Collection of node IDs defining collection of nodes to create projection with.
-     * @return Monadic projection made out of nodes with given IDs.
+     * @param ids Collection of node IDs.
+     * @return Projection over nodes with specified node IDs.
      */
     public GridProjection forNodeIds(Collection<UUID> ids);
 
     /**
-     * TODO: javadoc
+     * Creates a grid projection for a node with specified ID.
      *
      * @param id Node ID to get projection for.
      * @param ids Optional additional node IDs to include into projection.
@@ -96,13 +129,10 @@ public interface GridProjection {
     public GridProjection forNodeId(UUID id, UUID... ids);
 
     /**
-     * Creates monadic projection with the nodes from this projection that also satisfy given
-     * set of predicates.
+     * Creates a grid projection which includes all nodes that pass the given predicate filter.
      *
-     * @param p Predicate that all should evaluate to {@code true} for a node
-     *      to be included in the final projection.
-     * @return Monadic projection.
-     * @see PN
+     * @param p Predicate filter for nodes to include into this projection.
+     * @return Grid projection for nodes that passed the predicate filter.
      */
     public GridProjection forPredicate(GridPredicate<GridNode> p);
 
@@ -200,9 +230,7 @@ public interface GridProjection {
     @Nullable public GridNode node();
 
     /**
-     * Gets predicate that defines a subset of nodes for this projection at the time of the call.
-     * Note that if projection is based on dynamically changing set of nodes - the predicate
-     * returning from this method will change accordingly from call to call.
+     * Gets predicate that defines a subset of nodes for this projection.
      *
      * @return Predicate that defines a subset of nodes for this projection.
      */
