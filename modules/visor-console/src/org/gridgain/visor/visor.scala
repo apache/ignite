@@ -28,7 +28,7 @@ import org.gridgain.grid.events.GridEventType._
 import org.gridgain.grid.events.GridDiscoveryEvent
 import org.gridgain.grid.kernal.GridEx
 import org.gridgain.grid.kernal.GridNodeAttributes._
-import org.gridgain.grid.lang.{GridBiTuple}
+import org.gridgain.grid.lang.GridBiTuple
 import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi
 import org.gridgain.grid.thread._
 import org.gridgain.grid.util.typedef._
@@ -36,6 +36,9 @@ import org.gridgain.grid.util.{GridUtils => U, GridConfigurationFinder}
 import org.gridgain.scalar._
 import org.gridgain.scalar.scalar._
 import org.gridgain.visor.commands.{VisorTextTable, VisorConsoleCommand}
+import org.gridgain.grid.resources.GridInstanceResource
+import org.gridgain.grid.kernal.processors.task.GridInternal
+import org.gridgain.grid.util.scala.impl
 
 /**
  * Holder for command help information.
@@ -2346,7 +2349,7 @@ object visor extends VisorTag {
                                 .compute()
                                 .withName("visor-log-collector")
                                 .withNoFailover()
-                                .broadcast(() => Collector.collect(LOG_EVTS, g, key))
+                                .broadcast(new CollectorClosure(LOG_EVTS, key))
                                 .get
                                 .flatten
                         }
@@ -2568,3 +2571,20 @@ object Collector {
         evts.toList.sortBy(_.timestamp)
     }
 }
+
+/**
+ * Remote events collector closure.
+ *
+ * @author @java.author
+ * @version @java.version
+ */
+@GridInternal
+class CollectorClosure(types: Seq[Int], key: String) extends CO[Seq[GridEvent]] {
+    @GridInstanceResource
+    private val g: Grid = null
+
+    @impl def apply(): Seq[GridEvent] = {
+        Collector.collect(types, g, key)
+    }
+}
+
