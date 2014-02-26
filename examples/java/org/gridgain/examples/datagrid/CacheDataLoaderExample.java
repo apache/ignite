@@ -37,7 +37,7 @@ public class CacheDataLoaderExample {
     //private static final String CACHE_NAME = "local";
 
     /** Number of entries to load. */
-    private static final int ENTRY_COUNT = 1000000;
+    private static final int ENTRY_COUNT = 500000;
 
     /** Heap size required to run this example. */
     public static final int MIN_MEMORY = 512 * 1024 * 1024;
