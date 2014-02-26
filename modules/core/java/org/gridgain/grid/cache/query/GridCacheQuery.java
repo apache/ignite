@@ -331,7 +331,4 @@ public interface GridCacheQuery<T> {
      * @return
      */
     public <R> GridCacheQueryFuture<R> execute(GridClosure<T, R> rmtTransform, @Nullable Object... args);
-
-    // TODO: add metrics
-    // TODO: add reset metrics
 }

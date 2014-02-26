@@ -26,7 +26,7 @@ import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
  * @author @java.author
  * @version @java.version
  */
-public class GridCacheQueriesImpl<K, V> implements GridCacheQueries<K, V> {
+public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     /** */
     private final GridCacheContext<K, V> ctx;
 
@@ -84,5 +84,13 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueries<K, V> {
      */
     @Nullable private GridPredicate<GridCacheEntry<Object, Object>> filter() {
         return prj == null ? null : ((GridCacheProjectionImpl<Object, Object>)prj).predicate();
+    }
+
+    @Override public Collection<GridCacheQueryMetrics> metrics() {
+        return null; // TODO: implement.
+    }
+
+    @Override public void resetMetrics() {
+        // TODO: implement.
     }
 }

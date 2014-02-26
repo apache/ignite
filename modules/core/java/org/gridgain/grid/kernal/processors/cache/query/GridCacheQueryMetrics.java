@@ -23,7 +23,6 @@ import org.jetbrains.annotations.*;
  * @author @java.author
  * @version @java.version
  */
-// TODO: move to public, return from GridCacheQuery and GridCacheQueries
 public interface GridCacheQueryMetrics {
     /**
      * Gets time of the first query execution.
