@@ -17,36 +17,45 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Defines grid projection interface and monadic set of operations on a set of grid nodes.
+ * Defines compute grid functionality for executing tasks and closures over nodes
+ * in the projection. The methods are grouped as follows:
+ * <ul>
+ * <li>{@code apply(...)} methods execute {@link GridClosure} jobs over nodes in the projection.</li>
+ * <li>
+ *     {@code call(...)} methods execute {@link Callable} jobs over nodes in the projection.
+ *     Use {@link GridCallable} for better performance as it implements {@link Serializable}.
+ * </li>
+ * <li>
+ *     {@code run(...)} methods execute {@link Runnable} jobs over nodes in the projection.
+ *     Use {@link GridRunnable} for better performance as it implements {@link Serializable}.
+ * </li>
+ * <li>{@code broadcast(...)} methods broadcast jobs to all nodes in the projection.</li>
+ * <li>{@code affinity(...)} methods colocate jobs with nodes on which a specified key is cached.</li>
+ * </ul>
  * <p>
- * All main grid entities such as grid and a node instances can be viewed as
- * collection of grid nodes (in case of the grid node this collection consist of only one
- * element). As such they all share the same set of operations that can be performed on a set
- * grid nodes. These operations are defined in {@link GridCompute} interface and called
- * <tt>monadic</tt> as they are equally defined on any arbitrary set of nodes.
+ * Note that regardless of which method is used for executing computations, all SPI implementations
+ * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution, etc.).
  *
  * @author @java.author
  * @version @java.version
  */
 public interface GridCompute {
     /**
-     * @return TODO
+     * Gets grid projection to which this {@code GridCompute} instance belongs.
+     *
+     * @return Grid projection to which this {@code GridCompute} instance belongs.
      */
     public GridProjection projection();
 
     /**
      * Executes given closure on the node where data for provided affinity key is located. This
-     * is known as affinity co-location between compute grid (a closure) and in-memory data grid
+     * is known as affinity co-location between compute grid and in-memory data grid
      * (value with affinity key).
-     * <p>
-     * This method does not block and returns immediately with future. All default SPI implementations
-     * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution, etc.).
-     * Note that if you need greater control on any aspects of Java code execution on the grid
-     * you should implement {@link GridComputeTask} which will provide you with full control over the execution.
      * <p>
      * Note that class {@link GridAbsClosure} implements {@link Runnable} and class {@link GridOutClosure}
      * implements {@link Callable} interface. Note also that class {@link GridFunc} and typedefs provide rich
