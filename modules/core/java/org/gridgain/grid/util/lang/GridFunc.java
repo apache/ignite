@@ -2634,7 +2634,7 @@ public class GridFunc {
      * @return Predicates that evaluates to {@code true} for each node in given collection.
      */
     public static GridPredicate<GridNode> nodeForNodes(@Nullable Collection<? extends GridNode> nodes) {
-        return new GridNodePredicate<>(nodeIds(nodes));
+        return new GridNodePredicate(nodeIds(nodes));
     }
 
     /**
@@ -2647,7 +2647,7 @@ public class GridFunc {
      * @return Predicates that evaluates to {@code true} for each node in given collection.
      */
     public static GridPredicate<GridNode> nodeForNodes(GridNode... nodes) {
-        return new GridNodePredicate<>(nodes);
+        return new GridNodePredicate(nodes);
     }
 
     /**
@@ -2938,26 +2938,6 @@ public class GridFunc {
 
             @Override public boolean apply(GridBiTuple<E1, E2> e) {
                 return p.apply(e.get1(), e.get2());
-            }
-        };
-    }
-
-    /**
-     * Converts predicate with tuple of two values to a predicate with separate two values.
-     *
-     * @param p Predicate to convert.
-     * @param <E1> Type of the 1st value.
-     * @param <E2> Type of the 2nd value.
-     * @return Converted predicate.
-     */
-    private static <E1, E2> GridBiPredicate<E1, E2> asP2(final GridPredicate<GridBiTuple<? super E1, ? super E2>> p) {
-        return new P2<E1, E2>() {
-            {
-                peerDeployLike(p);
-            }
-
-            @Override public boolean apply(E1 e1, E2 e2) {
-                return p.apply(F.t(e1, e2));
             }
         };
     }
@@ -8259,22 +8239,22 @@ public class GridFunc {
     /**
      * Curries collection of closures with given collection of arguments.
      *
-     * @param in Collection to curry.
+     * @param closures Collection to curry.
      * @param args Collection of arguments to curry with.
      * @param <T> Type of closure argument.
      * @param <R> Type of closure return value.
      * @return Collection of curried closures.
      */
-    public static <T, R> Collection<GridOutClosure<R>> curry(Collection<? extends GridClosure<? super T, R>> in,
+    public static <T, R> Collection<GridOutClosure<R>> curry(Collection<? extends GridClosure<? super T, R>> closures,
         Collection<? extends T> args) {
-        A.notNull(in, "in", args, "args");
-        A.ensure(in.size() == args.size(), "in.size() == args.size()");
+        A.notNull(closures, "in", args, "args");
+        A.ensure(closures.size() == args.size(), "closures.size() == args.size()");
 
-        Collection<GridOutClosure<R>> ret = new ArrayList<>(in.size());
+        Collection<GridOutClosure<R>> ret = new ArrayList<>(closures.size());
 
         Iterator<? extends T> iter = args.iterator();
 
-        for (GridClosure<? super T, R> c : in) {
+        for (GridClosure<? super T, R> c : closures) {
             ret.add(curry(c, iter.next()));
         }
 

@@ -264,7 +264,7 @@ public class GridDataLoadCacheUpdaters {
                     tx.commit();
                 }
                 finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         }

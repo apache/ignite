@@ -280,7 +280,7 @@ public class GridWebSessionFilter implements Filter {
                         tx.commit();
                     }
                     finally {
-                        tx.end();
+                        tx.close();
                     }
                 }
                 else

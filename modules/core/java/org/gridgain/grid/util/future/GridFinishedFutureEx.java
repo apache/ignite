@@ -11,9 +11,8 @@ package org.gridgain.grid.util.future;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -108,12 +107,6 @@ public class GridFinishedFutureEx<T> implements GridFuture<T>, Externalizable {
     /** {@inheritDoc} */
     @Override public boolean isDone() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("NullableProblems")
-    @Override public GridAbsPredicate predicate() {
-        return F.curry(F.alwaysTrue(), null);
     }
 
     /** {@inheritDoc} */

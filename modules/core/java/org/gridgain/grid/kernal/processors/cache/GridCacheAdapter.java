@@ -323,13 +323,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /**
-     * @return {@code True} if cache is replicated.
-     */
-    public boolean isReplicated() {
-        return false;
-    }
-
-    /**
      * @return {@code True} if cache is colocated.
      */
     public boolean isColocated() {
@@ -3459,6 +3452,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
             saveFuture(holder, f);
 
+            ctx.tm().txContextReset();
+
             return f;
         }
         finally {
@@ -3499,7 +3494,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     void endTx(GridCacheTx tx) throws GridException {
         awaitLastFut();
 
-        tx.end();
+        tx.close();
     }
 
     /**
@@ -3641,6 +3636,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             GridFuture<T> f = op.op(tx);
 
             saveFuture(holder, f);
+
+            if (tx.implicit())
+                ctx.tm().txContextReset();
 
             return f;
         }

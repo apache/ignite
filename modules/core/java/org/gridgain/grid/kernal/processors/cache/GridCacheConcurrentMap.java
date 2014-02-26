@@ -1855,7 +1855,12 @@ public class GridCacheConcurrentMap<K, V> {
         boolean containsKey(K k) {
             GridCacheEntryEx<K, V> e = ctx.cache().peekEx(k);
 
-            return e != null && !e.obsolete() && F.isAll(e.wrap(false), filter);
+            try {
+                return e != null && !e.obsolete() && (!e.deleted() || e.lockedByThread()) && F.isAll(e.wrap(false), filter);
+            }
+            catch (GridCacheEntryRemovedException ignore) {
+                return false;
+            }
         }
 
         /**

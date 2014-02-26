@@ -199,6 +199,6 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 69;
+        return 65;
     }
 }

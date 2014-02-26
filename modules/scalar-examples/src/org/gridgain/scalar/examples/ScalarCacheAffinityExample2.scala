@@ -31,7 +31,6 @@ import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
 @GridOnlyAvailableIn(Array(GridProductEdition.DATA_GRID))
 object ScalarCacheAffinityExample2 {
     /** Configuration file name. */
-    //private val CONFIG = "examples/config/example-cache-none.xml" // No cache - remote node with cache is required.
     private val CONFIG = "examples/config/example-cache.xml" // Cache.
 
     /** Name of cache specified in spring configuration. */

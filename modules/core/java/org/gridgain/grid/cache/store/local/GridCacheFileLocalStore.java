@@ -385,7 +385,7 @@ public class GridCacheFileLocalStore<K, V> implements GridCacheStore<K, GridBiTu
     }
 
     /** {@inheritDoc} */
-    @Override public void loadAll(GridBiInClosure<K, GridBiTuple<V, ?>> clo,
+    @Override public void loadCache(GridBiInClosure<K, GridBiTuple<V, ?>> clo,
         @Nullable Object... args) throws GridException {
         fileManager(true).loadAll(clo);
     }
