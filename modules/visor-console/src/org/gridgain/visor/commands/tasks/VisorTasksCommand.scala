@@ -566,12 +566,12 @@ class VisorTasksCommand {
     private def mkData(f: GridPredicate[GridEvent]): (List[Task], List[Execution]) = {
         assert(f != null)
 
-        var evts = grid.events().queryLocal(f).toList
+        var evts = grid.events().localQuery(f).toList
 
         val remote = grid.forRemotes()
 
         if (remote.nodes().size() > 0)
-            evts ++= remote.events().queryRemote(f, 0).get.toList
+            evts ++= remote.events().remoteQuery(f, 0).get.toList
 
         var sMap = Map.empty[GridUuid, Execution] // Execution map.
         var tMap = Map.empty[String, Task] // Task map.

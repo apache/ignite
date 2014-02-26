@@ -435,7 +435,7 @@ class VisorAlertCommand {
                 }
             }
 
-            grid.events().listenLocal(lsnr, EVT_NODE_METRICS_UPDATED)
+            grid.events().localListen(lsnr, EVT_NODE_METRICS_UPDATED)
         }
     }
 
@@ -446,7 +446,7 @@ class VisorAlertCommand {
         if (guard.compareAndSet(true, false)) {
             assert(lsnr != null)
 
-            assert(grid.events().stopListenLocal(lsnr))
+            assert(grid.events().stopLocalListen(lsnr))
 
             lsnr = null
         }

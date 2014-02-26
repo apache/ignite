@@ -45,7 +45,7 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<List<GridEvent>> queryRemote(GridPredicate<GridEvent> pe, long timeout) {
+    @Override public GridFuture<List<GridEvent>> remoteQuery(GridPredicate<GridEvent> pe, long timeout) {
         A.notNull(pe, "pe");
 
         guard();
@@ -59,14 +59,14 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> GridFuture<UUID> remoteListen(@Nullable GridBiPredicate<UUID, T> cb,
-                                                                         @Nullable GridPredicate<T> filter, @Nullable int... types) {
-        return remoteListen(1, 0, true, cb, filter, types);
+    @Override public <T extends GridEvent> GridFuture<UUID> remoteListen(@Nullable GridBiPredicate<UUID, T> locLsnr,
+                                                                         @Nullable GridPredicate<T> rmtFilter, @Nullable int... types) {
+        return remoteListen(1, 0, true, locLsnr, rmtFilter, types);
     }
 
     /** {@inheritDoc} */
     @Override public <T extends GridEvent> GridFuture<UUID> remoteListen(int bufSize, long interval,
-                                                                         boolean autoUnsubscribe, @Nullable GridBiPredicate<UUID, T> cb, @Nullable GridPredicate<T> filter,
+                                                                         boolean autoUnsubscribe, @Nullable GridBiPredicate<UUID, T> locLsnr, @Nullable GridPredicate<T> rmtFilter,
                                                                          @Nullable int... types) {
         A.ensure(bufSize > 0, "bufSize > 0");
         A.ensure(interval >= 0, "interval >= 0");
@@ -74,8 +74,8 @@ public class GridEventsImpl implements GridEvents {
         guard();
 
         try {
-            return ctx.continuous().startRoutine(new GridEventConsumeHandler((GridBiPredicate<UUID, GridEvent>)cb,
-                (GridPredicate<GridEvent>)filter, types), bufSize, interval, autoUnsubscribe, prj.predicate());
+            return ctx.continuous().startRoutine(new GridEventConsumeHandler((GridBiPredicate<UUID, GridEvent>) locLsnr,
+                (GridPredicate<GridEvent>) rmtFilter, types), bufSize, interval, autoUnsubscribe, prj.predicate());
         }
         finally {
             unguard();
@@ -83,13 +83,13 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> stopRemoteListen(UUID consumeId) {
-        A.notNull(consumeId, "consumeId");
+    @Override public GridFuture<?> stopRemoteListen(UUID opId) {
+        A.notNull(opId, "consumeId");
 
         guard();
 
         try {
-            return ctx.continuous().stopRoutine(consumeId);
+            return ctx.continuous().stopRoutine(opId);
         }
         finally {
             unguard();
@@ -110,7 +110,7 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridEvent> queryLocal(GridPredicate<GridEvent> p) {
+    @Override public Collection<GridEvent> localQuery(GridPredicate<GridEvent> p) {
         A.notNull(p, "p");
 
         guard();
@@ -142,7 +142,7 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public void listenLocal(GridLocalEventListener lsnr, int[] types) {
+    @Override public void localListen(GridLocalEventListener lsnr, int[] types) {
         A.notNull(lsnr, "lsnr");
         A.notEmpty(types, "types");
 
@@ -157,7 +157,7 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean stopListenLocal(GridLocalEventListener lsnr, @Nullable int... types) {
+    @Override public boolean stopLocalListen(GridLocalEventListener lsnr, @Nullable int... types) {
         A.notNull(lsnr, "lsnr");
 
         guard();

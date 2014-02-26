@@ -206,7 +206,7 @@ class VisorEventsCommand {
 
                         nid = head.id
 
-                        evts = grid.forNode(head).events().queryRemote(filter, 0).get
+                        evts = grid.forNode(head).events().remoteQuery(filter, 0).get
                     }
                 }
                 else {
@@ -220,7 +220,7 @@ class VisorEventsCommand {
 
                         nid = node.id
 
-                        evts = grid.forNode(node).events().queryRemote(filter, 0).get
+                        evts = grid.forNode(node).events().remoteQuery(filter, 0).get
                     }
                     catch {
                         case e: IllegalArgumentException => scold("Invalid node 'id': " + id.get).^^

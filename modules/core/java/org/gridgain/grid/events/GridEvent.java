@@ -23,15 +23,15 @@ import java.util.*;
  * APIs for performing a distributed queries across multiple nodes:
  * <ul>
  *      <li>
- *          {@link GridEvents#queryRemote(GridPredicate , long)} - querying
+ *          {@link GridEvents#remoteQuery(GridPredicate , long)} - querying
  *          events occurred on the nodes specified, including remote nodes.
  *      </li>
  *      <li>
- *          {@link GridEvents#queryLocal(GridPredicate)} - querying only local
+ *          {@link GridEvents#localQuery(GridPredicate)} - querying only local
  *          events stored on this local node.
  *      </li>
  *      <li>
- *          {@link GridEvents#listenLocal(GridLocalEventListener, int...)} - listening
+ *          {@link GridEvents#localListen(GridLocalEventListener, int...)} - listening
  *          to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>

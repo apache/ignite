@@ -1589,7 +1589,7 @@ object visor extends VisorTag {
                 }
             }
 
-            grid.events().listenLocal(nodeJoinLsnr, EVT_NODE_JOINED)
+            grid.events().localListen(nodeJoinLsnr, EVT_NODE_JOINED)
 
             nodeLeftLsnr = new GridLocalEventListener() {
                 def onEvent(e: GridEvent) {
@@ -1618,7 +1618,7 @@ object visor extends VisorTag {
                 }
             }
 
-            grid.events().listenLocal(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
+            grid.events().localListen(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
 
             nodeSegLsnr = new GridLocalEventListener {
                 def onEvent(e: GridEvent) {
@@ -1638,7 +1638,7 @@ object visor extends VisorTag {
                 }
             }
 
-            grid.events().listenLocal(nodeSegLsnr, EVT_NODE_SEGMENTED)
+            grid.events().localListen(nodeSegLsnr, EVT_NODE_SEGMENTED)
 
             nodeStopLsnr = new GridGainListener {
                 def onStateChange(name: String, state: GridGainState) {
@@ -2096,13 +2096,13 @@ object visor extends VisorTag {
 
             if (grid != null && G.state(grid.name) == GridGainState.STARTED) {
                 if (nodeJoinLsnr != null)
-                    grid.events().stopListenLocal(nodeJoinLsnr)
+                    grid.events().stopLocalListen(nodeJoinLsnr)
 
                 if (nodeLeftLsnr != null)
-                    grid.events().stopListenLocal(nodeLeftLsnr)
+                    grid.events().stopLocalListen(nodeLeftLsnr)
 
                 if (nodeSegLsnr != null)
-                    grid.events().stopListenLocal(nodeSegLsnr)
+                    grid.events().stopLocalListen(nodeSegLsnr)
             }
 
             if (nodeStopLsnr != null)
@@ -2557,7 +2557,7 @@ object Collector {
 
         val tenMinAgo = System.currentTimeMillis() - 10 * 60 * 1000
 
-        val evts = g.events().queryLocal((evt: GridEvent) =>
+        val evts = g.events().localQuery((evt: GridEvent) =>
             types.contains(evt.`type`) && evt.localOrder > last && evt.timestamp() > tenMinAgo)
 
         // Update latest order in node local, if not empty.

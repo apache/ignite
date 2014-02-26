@@ -41,10 +41,11 @@ public final class GridEventsQueryExample {
             g.compute().execute(GridEventsExampleTask.class, null).get();
 
             // Retrieve and filter nodes events.
-            List<GridEvent> evts = g.events().queryRemote(
+            List<GridEvent> evts = g.events().remoteQuery(
                 // Always true predicate.
                 new GridPredicate<GridEvent>() {
-                    @Override public boolean apply(GridEvent e) {
+                    @Override
+                    public boolean apply(GridEvent e) {
                         return true;
                     }
                 },
