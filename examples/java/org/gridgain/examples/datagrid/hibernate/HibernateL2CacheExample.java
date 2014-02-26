@@ -57,26 +57,11 @@ import java.util.*;
  * Note: this example uses {@link AccessType#READ_ONLY} L2 cache access type, but you
  * can experiment with other access types by modifying the Hibernate configuration file
  * {@code GRIDGAIN_HOME/examples/config/hibernate.xml}, used by the example.
- * <p>
- * Note: you may also start additional standalone GridGain nodes for this example, in
- * which case the L2 cache data will be split between the nodes
- * ({@link GridCacheMode#PARTITIONED} cache mode). To launch a standalone node, open
- * the console, change the current directory to {@code GRIDGAIN_HOME/bin}, and run the
- * command below.
- * <br>
- * Linux:
- * <pre><code>
- * $ ./ggstart.sh examples/config/example-cache-hibernate.xml
- * </code></pre>
- * Windows:
- * <pre><code>
- * > ggstart.bat examples/config/example-cache-hibernate.xml
- * </code></pre>
  *
  * @author @java.author
  * @version @java.version
  */
-public class GridHibernateL2CacheExample {
+public class HibernateL2CacheExample {
     /** JDBC URL for backing database (an H2 in-memory database is used). */
     private static final String JDBC_URL = "jdbc:h2:mem:example;DB_CLOSE_DELAY=-1";
 
@@ -92,7 +77,7 @@ public class GridHibernateL2CacheExample {
      */
     public static void main(String[] args) throws GridException {
         // Start the GridGain node, run the example, and stop the node when finished.
-        try (Grid grid = GridGain.start("examples/config/example-cache-hibernate.xml")) {
+        try (Grid grid = GridGain.start(HibernateL2CacheExampleNodeStartup.configuration())) {
             // We use a single session factory, but create a dedicated session
             // for each transaction or query. This way we ensure that L1 cache
             // is not used (L1 cache has per-session scope only).

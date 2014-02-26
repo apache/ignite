@@ -13,6 +13,7 @@ import org.gridgain.examples.datagrid.store.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
+import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -46,5 +47,10 @@ public class CacheDummyPersonStore extends GridCacheStoreAdapter<Long, Person> {
         System.out.println("Store remove [key=" + key + ", tx=" + tx + ']');
 
         dummyDB.remove(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void loadCache(GridBiInClosure<Long, Person> clo, Object... args) throws GridException {
+        super.loadCache(clo, args);
     }
 }

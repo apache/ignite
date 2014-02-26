@@ -12,42 +12,22 @@
 -->
 
 <!--
-    GridGain Spring configuration file to startup grid node with SSL rest.
-
-    When starting a standalone GridGain node, you need to execute the following command:
-    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-client-ssl.xml
-
-    When starting GridGain from Java IDE, pass path to this file into GridFactory:
-    GridFactory.start("examples/config/example-client-ssl.xml");
+    Grid configuration with all defaults and enabled p2p deployment and enabled events.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="
-        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
-    <!-- Create a property placeholder configurer so we can refer to GRIDGAIN_HOME environment variable -->
-    <bean name="placeholderConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-        <property name="searchSystemEnvironment" value="true"/>
-    </bean>
-
-    <!--
-        Configuration below demonstrates how to setup SSL for REST communication. Note that in this example
-        we use our custom key- and trust-stores shipped with product. You should generate your own stores
-        to achieve necessary security level.
-    -->
-    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
-        <property name="deploymentMode" value="SHARED"/>
-
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util-2.0.xsd">
+    <bean id="grid.cfg" scope="singleton" class="org.gridgain.grid.GridConfiguration">
         <!-- Set to local host address just for examples. -->
         <property name="localHost" value="127.0.0.1"/>
 
-        <!-- Enable REST with SSL. -->
-        <property name="restEnabled" value="true"/>
-        <property name="restJettyPath" value="examples/config/rest-jetty-ssl.xml"/>
-
-        <property name="restTcpSslEnabled" value="true"/>
-
-        <!-- Require TLS client authentication. -->
-        <property name="restTcpSslClientAuth" value="true"/>
+        <!-- Set deployment mode to be able to deploy jobs and tasks on that node. -->
+        <property name="deploymentMode" value="SHARED"/>
 
         <!--
             For better performance set this property to false in case
@@ -75,51 +55,31 @@
         </property>
 
         <!--
-            Logger to use. By default 'config/gridgain-log4j.xml' logger file will
-            be used. If such file is not found, then default GridGain configuration
-            for logging will be used.
+            URI deployment SPI.
         -->
-        <property name="gridLogger">
-            <bean class="org.gridgain.grid.logger.log4j.GridLog4jLogger">
-                <constructor-arg type="java.lang.String" value="examples/config/grid-client-log4j.xml"/>
-            </bean>
-        </property>
-
-        <!-- Require passcode-based authentication -->
-        <!--
-        <property name="authenticationSpi">
-            <bean class="org.gridgain.grid.spi.authentication.passcode.GridPasscodeAuthenticationSpi">
-                <property name="passcodes">
-                    <map>
-                        <entry key="REMOTE_NODE" value="s3cret"/>
-                        <entry key="REMOTE_CLIENT" value="s3cret"/>
-                    </map>
-                </property>
-            </bean>
-        </property>
-        <property name="secureSessionSpi">
-            <bean class="org.gridgain.grid.spi.securesession.rememberme.GridRememberMeSecureSessionSpi">
-                <property name="ttl" value="3600000"/>
-            </bean>
-        </property>
-        -->
-
-        <!--
-            Both keystore and truststore in this example are in JKS format which is default
-            format for GridSslBasicContextFactory.
-        -->
-        <property name="restTcpSslContextFactory">
-            <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
-                <property name="keyStoreFilePath" value="${GRIDGAIN_HOME}/examples/keystore/server.jks"/>
-                <property name="keyStorePassword" value="123456"/>
-                <property name="trustStoreFilePath" value="${GRIDGAIN_HOME}/examples/keystore/trust.jks"/>
-                <property name="trustStorePassword" value="123456"/>
+        <property name="deploymentSpi">
+            <bean class="org.gridgain.grid.spi.deployment.uri.GridUriDeploymentSpi">
+                <!-- Default SPI configuration used. -->
             </bean>
         </property>
 
         <!--
+            Enable cache events.
+        -->
+        <property name="includeEventTypes">
+            <util:constant static-field="org.gridgain.grid.events.GridEventType.EVTS_CACHE"/>
+        </property>
+
+        <!--
+            TCP discovery SPI configuration with predefined addresses.
             Use the addresses list to provide IP addresses of initial nodes in the grid
             (at least one address must be provided).
+
+            Note:
+            =====
+            If running in distributed environment, you should change IP addresses to the actual IP addresses
+            of the servers on your network. Not all addresses need to be specified, only the addresses
+            of one or more servers which will always be started first.
         -->
         <property name="discoverySpi">
             <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
@@ -162,6 +122,27 @@
                     -->
                 </property>
             </bean>
+        </property>
+
+        <!--
+            Allow indexing SPI to index primitive values.
+        -->
+        <property name="indexingSpi">
+            <list>
+                <bean class="org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi">
+                    <!-- Index primitives. -->
+                    <property name="defaultIndexPrimitiveKey" value="true"/>
+
+                    <!--
+                        Set to false to allow different key types for one value type.
+
+                        Note that this also means that '_key' column cannot participate in
+                        where clause queries either directly through API, through JDBC driver,
+                        or through Object Viewer in Visor DevOps Console.
+                    -->
+                    <!--property name="defaultIndexFixedTyping" value="false"/-->
+                </bean>
+            </list>
         </property>
     </bean>
 </beans>

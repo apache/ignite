@@ -19,10 +19,10 @@ import java.util.concurrent.*;
  * <p>
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-default.xml'}.
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
- * with {@code examples/config/example-default.xml} configuration.
+ * with {@code examples/config/example-compute.xml} configuration.
  * <p>
  * @author @java.author
  * @version @java.version
@@ -38,7 +38,7 @@ public final class ComputeExecutorServiceExample {
      */
     @SuppressWarnings({"TooBroadScope"})
     public static void main(String[] args) throws Exception {
-        try (Grid g = GridGain.start("examples/config/example-default.xml")) {
+        try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
             // Get grid-enabled executor service.
             ExecutorService exec = g.compute().executorService();
 

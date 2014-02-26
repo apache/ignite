@@ -27,7 +27,7 @@ import java.util.*;
  * <p>
  * Alternatively you can run node and router instances from command line.
  * To do so you need to execute commands
- * {@code GRIDGAIN_HOME/bin/ggstart.sh examples/config/example-cache-client.xml}
+ * {@code GRIDGAIN_HOME/bin/ggstart.sh examples/config/example-cache.xml}
  * and {@code GRIDGAIN_HOME/bin/ggrouter.sh config/router/default-router.xml}
  * For more details on how to configure standalone router instances please refer to
  * configuration file {@code GRIDGAIN_HOME/config/router/default-router.xml}.
@@ -51,23 +51,8 @@ import java.util.*;
  * @version @java.version
  */
 public class RouterExample {
-    static {
-        // Disable host verification for testing with example certificates.
-        HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
-            @Override public boolean verify(String hostname, SSLSession sslSes) {
-                return true;
-            }
-        });
-    }
-
     /** Grid node address to connect to. */
     private static final String ROUTER_ADDRESS = "127.0.0.1";
-
-    /**
-     * Change to {@code true} to enable SSL.
-     * Note that you need to appropriately update node and client configurations.
-     */
-    private static final boolean SSL_ENABLED = false;
 
     /** Grid node port to connect to using binary protocol. */
     private static final int ROUTER_TCP_PORT = GridTcpRouterConfiguration.DFLT_TCP_PORT;
@@ -127,22 +112,6 @@ public class RouterExample {
     private static GridClient createTcpClient() throws GridClientException {
         GridClientConfiguration cfg = new GridClientConfiguration();
 
-        if (SSL_ENABLED) {
-            String home = ExamplesUtils.resolveGridGainHome();
-
-            GridSslBasicContextFactory sslFactory = new GridSslBasicContextFactory();
-
-            sslFactory.setKeyStoreFilePath(home + "/examples/keystore/client.jks");
-            sslFactory.setKeyStorePassword("123456".toCharArray());
-
-            sslFactory.setTrustStoreFilePath(home + "/examples/keystore/trust.jks");
-            sslFactory.setTrustStorePassword("123456".toCharArray());
-
-            cfg.setSslContextFactory(sslFactory);
-
-            cfg.setCredentials("s3cret");
-        }
-
         // Point client to a local TCP router.
         cfg.setRouters(Collections.singletonList(ROUTER_ADDRESS + ':' + ROUTER_TCP_PORT));
 
@@ -160,22 +129,6 @@ public class RouterExample {
         GridClientConfiguration cfg = new GridClientConfiguration();
 
         cfg.setProtocol(GridClientProtocol.HTTP);
-
-        if (SSL_ENABLED) {
-            String home = ExamplesUtils.resolveGridGainHome();
-
-            GridSslBasicContextFactory sslFactory = new GridSslBasicContextFactory();
-
-            sslFactory.setKeyStoreFilePath(home + "/examples/keystore/client.jks");
-            sslFactory.setKeyStorePassword("123456".toCharArray());
-
-            sslFactory.setTrustStoreFilePath(home + "/examples/keystore/trust.jks");
-            sslFactory.setTrustStorePassword("123456".toCharArray());
-
-            cfg.setSslContextFactory(sslFactory);
-
-            cfg.setCredentials("s3cret");
-        }
 
         // Point client to a local HTTP router.
         cfg.setRouters(Collections.singletonList(ROUTER_ADDRESS + ":" + ROUTER_HTTP_PORT));

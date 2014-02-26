@@ -29,9 +29,9 @@ import java.util.*;
  * <h1 class="header">Starting Remote Nodes</h1>
  * To try this example you should (but don't have to) start remote grid instances.
  * You can start as many as you like by executing the following script:
- * <pre class="snippet">{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-default.xml</pre>
+ * <pre class="snippet">{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-compute.xml</pre>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
- * with {@code examples/config/example-default.xml} configuration.
+ * with {@code examples/config/example-compute.xml} configuration.
  * <p>
  * Once remote instances are started, you can execute this example from
  * Eclipse, IntelliJ IDEA, or NetBeans (and any other Java IDE) by simply hitting run
@@ -52,7 +52,7 @@ public class ComputeCallableExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = GridGain.start("examples/config/example-default.xml")) {
+        try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
             Collection<GridCallable<Integer>> calls = new ArrayList<>();
 
             // Iterate through all words in the sentence and create callable jobs.

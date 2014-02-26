@@ -22,10 +22,10 @@ import java.util.*;
  * class path as they will not be peer-loaded.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-default.xml'}.
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
- * with {@code examples/config/example-default.xml} configuration.
+ * with {@code examples/config/example-compute.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -46,7 +46,7 @@ public final class MessagingExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Grid g = GridGain.start("examples/config/example-default.xml")) {
+        try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
             if (g.nodes().size() == 1) {
                 System.out.println(">>> Need at least 2 nodes to demonstrate messaging.");
 

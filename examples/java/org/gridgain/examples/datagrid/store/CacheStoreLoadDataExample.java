@@ -38,11 +38,6 @@ import java.util.concurrent.*;
  * @version @java.version
  */
 public class CacheStoreLoadDataExample {
-    /** Cache name. */
-    private static final String CACHE_NAME = "partitioned";
-    //private static final String CACHE_NAME = "replicated";
-    //private static final String CACHE_NAME = "local";
-
     /** Heap size required to run this example. */
     public static final int MIN_MEMORY = 1024 * 1024 * 1024;
 
@@ -59,13 +54,13 @@ public class CacheStoreLoadDataExample {
     public static void main(String[] args) throws Exception {
         ExamplesUtils.checkMinMemory(MIN_MEMORY);
 
-        try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
-            final GridCache<String, Integer> cache = g.cache(CACHE_NAME);
+        try (Grid g = GridGain.start(CacheNodeWithStoreStartup.configure())) {
+            final GridCache<String, Integer> cache = g.cache(null);
 
             long start = System.currentTimeMillis();
 
             // Start loading cache on all caching nodes.
-            g.forCache(CACHE_NAME).compute().broadcast(new Callable<Object>() {
+            g.forCache(null).compute().broadcast(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     // Load cache from persistent store.
                     cache.loadCache(null, 0, ENTRY_COUNT);

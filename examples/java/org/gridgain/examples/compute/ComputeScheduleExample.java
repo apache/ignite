@@ -18,10 +18,10 @@ import org.gridgain.grid.lang.*;
  * three times with initial scheduling delay equal to five seconds.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-default.xml'}.
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
- * with {@code examples/config/example-default.xml} configuration.
+ * with {@code examples/config/example-compute.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -36,7 +36,7 @@ public class ComputeScheduleExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException, InterruptedException {
-        try (Grid g = args.length == 0 ? GridGain.start("examples/config/example-default.xml") : GridGain.start(args[0])) {
+        try (Grid g = args.length == 0 ? GridGain.start("examples/config/example-compute.xml") : GridGain.start(args[0])) {
             // Schedule output message every minute.
             g.scheduler().scheduleLocal(
                 new Runnable() {

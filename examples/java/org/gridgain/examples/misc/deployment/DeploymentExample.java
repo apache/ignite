@@ -29,7 +29,7 @@ import java.util.*;
  * in system classpath, so even in this case the deployment step is unnecessary.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-default.xml'}.
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
  *
  * @author @java.author
  * @version @java.version
@@ -47,7 +47,7 @@ public final class DeploymentExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = args.length == 0 ? GridGain.start("examples/config/example-default.xml") : GridGain.start(args[0])) {
+        try (Grid g = args.length == 0 ? GridGain.start("examples/config/example-compute.xml") : GridGain.start(args[0])) {
             // This task will be deployed on local node and then peer-loaded
             // onto remote nodes on demand. For this example this task is
             // available on the classpath, however in real life that may not

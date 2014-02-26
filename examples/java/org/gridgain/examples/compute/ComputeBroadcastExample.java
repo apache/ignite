@@ -19,10 +19,10 @@ import java.util.*;
  * Demonstrates new functional APIs.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-default.xml'}.
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
- * with {@code examples/config/example-default.xml} configuration.
+ * with {@code examples/config/example-compute.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -37,7 +37,7 @@ public class ComputeBroadcastExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Grid grid = GridGain.start("examples/config/example-default.xml")) {
+        try (Grid grid = GridGain.start("examples/config/example-compute.xml")) {
             // Print hello message on all nodes.
             hello(grid);
 

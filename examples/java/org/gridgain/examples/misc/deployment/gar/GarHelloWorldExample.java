@@ -75,7 +75,7 @@ public final class GarHelloWorldExample {
      */
     public static void main(String[] args) throws GridException {
         try {
-            try (Grid g = GridGain.start(args.length == 0 ? "examples/config/example-gar.xml" : args[0])) {
+            try (Grid g = GridGain.start(args.length == 0 ? "examples/config/example-compute.xml" : args[0])) {
                 // Execute Hello World task from GAR file.
                 g.compute().execute("GridGarHelloWorldTask", "HELLOWORLD.MSG").get();
 

@@ -26,7 +26,7 @@ namespace GridGain.Client {
      * <para/>
      * You can also start a stand-alone GridGain instance by passing the path
      * to configuration file to <c>ggstart.{sh|bat}</c> script, like so:
-     * <c>ggstart.sh examples/config/example-cache-client.xml'</c>.
+     * <c>ggstart.sh examples/config/example-cache.xml'</c>.
      * <para/>
      * After node has been started this example creates a client and performs several cache
      * operations.
