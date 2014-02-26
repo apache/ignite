@@ -33,7 +33,7 @@ public class ClientExampleNodeStartup {
         // Enable full logging for log access in examples.
         System.setProperty(GridSystemProperties.GG_QUIET, "false");
 
-        String springCfgPath = "examples/config/example-client.xml";
+        String springCfgPath = "examples/config/example-compute.xml";
 
         GridGain.start(springCfgPath);
     }
