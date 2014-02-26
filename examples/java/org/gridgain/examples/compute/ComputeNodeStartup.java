@@ -25,6 +25,6 @@ public class ComputeNodeStartup {
      * @throws org.gridgain.grid.GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        GridGain.start("examples/config/example-default.xml");
+        GridGain.start("examples/config/example-compute.xml");
     }
 }

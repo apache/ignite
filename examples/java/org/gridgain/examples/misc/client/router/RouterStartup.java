@@ -31,26 +31,8 @@ import javax.swing.*;
  * @version @java.version
  */
 public class RouterStartup {
-    static {
-        // Disable host verification for testing with example certificates.
-        HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
-            @Override public boolean verify(String hostname, SSLSession sslSes) {
-                return true;
-            }
-        });
-    }
-
-    /** Path to SSL-enabled Jetty configuration for router. */
-    private static final String ROUTER_JETTY_SSL_CFG = "examples/config/router-jetty-ssl.xml";
-
     /** Change to {@code false} to disable {@code TCP_NODELAY}. */
     private static final boolean TCP_NODELAY = true;
-
-    /**
-     * Change to {@code true} to enable SSL.
-     * Note that you need to appropriately update node and client configurations.
-     */
-    private static final boolean SSL_ENABLED = false;
 
     /**
      * Starts up a router with default configuration.
@@ -90,22 +72,6 @@ public class RouterStartup {
 
         cfg.setNoDelay(TCP_NODELAY);
 
-        if (SSL_ENABLED) {
-            String home = ExamplesUtils.resolveGridGainHome();
-
-            GridSslBasicContextFactory sslFactory = new GridSslBasicContextFactory();
-
-            sslFactory.setKeyStoreFilePath(home + "/examples/keystore/client.jks");
-            sslFactory.setKeyStorePassword("123456".toCharArray());
-
-            sslFactory.setTrustStoreFilePath(home + "/examples/keystore/trust.jks");
-            sslFactory.setTrustStorePassword("123456".toCharArray());
-
-            cfg.setSslContextFactory(sslFactory);
-
-            cfg.setCredentials("s3cret");
-        }
-
         return cfg;
     }
 
@@ -119,24 +85,6 @@ public class RouterStartup {
 
         // Uncomment the following line to provide custom Jetty configuration.
         //cfg.setJettyConfigurationPath("config/my-router-jetty.xml");
-
-        if (SSL_ENABLED) {
-            String home = ExamplesUtils.resolveGridGainHome();
-
-            GridSslBasicContextFactory sslFactory = new GridSslBasicContextFactory();
-
-            sslFactory.setKeyStoreFilePath(home + "/examples/keystore/client.jks");
-            sslFactory.setKeyStorePassword("123456".toCharArray());
-
-            sslFactory.setTrustStoreFilePath(home + "/examples/keystore/trust.jks");
-            sslFactory.setTrustStorePassword("123456".toCharArray());
-
-            cfg.setClientSslContextFactory(sslFactory);
-
-            cfg.setCredentials("s3cret");
-
-            cfg.setJettyConfigurationPath(ROUTER_JETTY_SSL_CFG);
-        }
 
         return cfg;
     }

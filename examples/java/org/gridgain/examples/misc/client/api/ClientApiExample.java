@@ -11,8 +11,6 @@ package org.gridgain.examples.misc.client.api;
 
 import org.gridgain.client.*;
 import org.gridgain.client.balancer.*;
-import org.gridgain.client.ssl.*;
-import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 
 import java.net.*;
@@ -39,9 +37,6 @@ import java.util.*;
 public class ClientApiExample {
     /** Grid node address to connect to. */
     private static final String SERVER_ADDRESS = "127.0.0.1";
-
-    /** Change {@link ClientExampleNodeStartup#SSL_ENABLED} to {@code true} to enable SSL. */
-    private static final Boolean SSL_ENABLED = ClientExampleNodeStartup.SSL_ENABLED;
 
     /**
      * Runs client compute example.
@@ -230,22 +225,6 @@ public class ClientApiExample {
      */
     private static GridClient createClient() throws GridClientException {
         GridClientConfiguration cfg = new GridClientConfiguration();
-
-        if (SSL_ENABLED) {
-            String home = ExamplesUtils.resolveGridGainHome();
-
-            GridSslBasicContextFactory sslFactory = new GridSslBasicContextFactory();
-
-            sslFactory.setKeyStoreFilePath(home + "/examples/keystore/client.jks");
-            sslFactory.setKeyStorePassword("123456".toCharArray());
-
-            sslFactory.setTrustStoreFilePath(home + "/examples/keystore/trust.jks");
-            sslFactory.setTrustStorePassword("123456".toCharArray());
-
-            cfg.setSslContextFactory(sslFactory);
-
-            cfg.setCredentials("s3cret");
-        }
 
         // Point client to a local node. Note that this server is only used
         // for initial connection. After having established initial connection

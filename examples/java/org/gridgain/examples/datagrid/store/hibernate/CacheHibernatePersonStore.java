@@ -13,6 +13,7 @@ import org.gridgain.examples.datagrid.store.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
 import org.hibernate.*;
 import org.hibernate.cfg.*;
@@ -113,6 +114,42 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void loadCache(GridBiInClosure<Long, Person> clo, Object... args) throws GridException {
+        if (args == null || args.length == 0 || args[0] == null)
+            throw new GridException("Expected entry count parameter is not provided.");
+
+        final int entryCnt = (Integer)args[0];
+
+        Session ses = session(null);
+
+        try {
+            int cnt = 0;
+
+            List res = ses.createCriteria(Person.class).list();
+
+            if (res != null) {
+                Iterator iter = res.iterator();
+
+                while (cnt < entryCnt && iter.hasNext()) {
+                    Person person = (Person)iter.next();
+
+                    clo.apply(person.getId(), person);
+
+                    cnt++;
+                }
+            }
+
+            System.out.println("Loaded " + cnt + " values into cache.");
+        }
+        catch (HibernateException e) {
+            throw new GridException("Failed to load values from cache store.", e);
+        }
+        finally {
+            end(ses, null);
+        }
+    }
+
     /**
      * Rolls back hibernate session.
      *
@@ -136,7 +173,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
      * @param ses Hibernate session.
      * @param tx Cache ongoing transaction.
      */
-    private void end(Session ses, GridCacheTx tx) {
+    private void end(Session ses, @Nullable GridCacheTx tx) {
         // Commit only if there is no cache transaction,
         // otherwise txEnd() will do all required work.
         if (tx == null) {
@@ -185,7 +222,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
      * @param tx Cache transaction.
      * @return Session.
      */
-    private Session session(GridCacheTx tx) {
+    private Session session(@Nullable GridCacheTx tx) {
         Session ses;
 
         if (tx != null) {

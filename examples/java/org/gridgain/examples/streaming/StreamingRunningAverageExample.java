@@ -152,7 +152,7 @@ public class StreamingRunningAverageExample {
 
             // Store average in local space if it was not done before.
             if (avg == null) {
-                Average old = loc.putIfAbsent("avg", new Average());
+                Average old = loc.putIfAbsent("avg", avg = new Average());
 
                 if (old != null)
                     avg = old;

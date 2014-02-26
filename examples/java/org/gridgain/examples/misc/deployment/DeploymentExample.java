@@ -7,11 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.misc.deployment.direct;
+package org.gridgain.examples.misc.deployment;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
+import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -29,14 +31,14 @@ import java.util.*;
  * in system classpath, so even in this case the deployment step is unnecessary.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-default.xml'}.
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
  *
  * @author @java.author
  * @version @java.version
  */
 public final class DeploymentExample {
     /** Name of the deployed task. */
-    static final String TASK_NAME = "GridDeploymentExampleTask";
+    static final String TASK_NAME = "ExampleTask";
 
     /**
      * Deploys, executes and undeploys example task on the grid.
@@ -47,15 +49,14 @@ public final class DeploymentExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = args.length == 0 ? GridGain.start("examples/config/example-default.xml") : GridGain.start(args[0])) {
+        try (Grid g = args.length == 0 ? GridGain.start("examples/config/example-compute.xml") : GridGain.start(args[0])) {
             // This task will be deployed on local node and then peer-loaded
             // onto remote nodes on demand. For this example this task is
             // available on the classpath, however in real life that may not
             // always be the case. In those cases you should use explicit
             // 'Grid.deployTask(Class)}' apply and then use 'Grid.execute(String, Object)'
             // method passing your task name as first parameter.
-            g.compute().localDeployTask(DeploymentExampleTask.class,
-                DeploymentExampleTask.class.getClassLoader());
+            g.compute().localDeployTask(ExampleTask.class, ExampleTask.class.getClassLoader());
 
             for (Map.Entry<String, Class<? extends GridComputeTask<?, ?>>> e : g.compute().localTasks().entrySet())
                 System.out.println(">>> Found locally deployed task [alias=" + e.getKey() + ", taskCls=" + e.getValue());
@@ -66,7 +67,7 @@ public final class DeploymentExample {
 
             // Execute the task passing class name as a parameter. The system will find
             // the deployed task by its class name and execute it.
-            // grid.execute(GridDeploymentExampleTask.class.getName(), null).get();
+            // grid.execute(ExampleTask.class.getName(), null).get();
 
             // Undeploy task
             g.compute().undeployTask(TASK_NAME);
@@ -75,6 +76,44 @@ public final class DeploymentExample {
             System.out.println(">>> Finished executing Grid Direct Deployment Example.");
             System.out.println(">>> Check participating nodes output.");
             System.out.println(">>>");
+        }
+    }
+
+    /**
+     * Example task used to demonstrate direct task deployment through API.
+     * For this example this task as available on the classpath, however
+     * in real life that may not always be the case. In those cases
+     * you should use explicit {@link GridCompute#localDeployTask(Class, ClassLoader)} apply and
+     * then use {@link GridCompute#execute(String, Object)}
+     * method passing your task name as first parameter.
+     * <p>
+     * Note that this task specifies explicit task name. Task name is optional
+     * and is added here for demonstration purpose. If not provided, it will
+     * default to the task class name.
+     */
+    @GridComputeTaskName(TASK_NAME)
+    public static class ExampleTask extends GridComputeTaskSplitAdapter<String, Object> {
+        /** {@inheritDoc} */
+        @Override protected Collection<? extends GridComputeJob> split(int gridSize, String arg) throws GridException {
+            Collection<GridComputeJob> jobs = new ArrayList<>(gridSize);
+
+            for (int i = 0; i < gridSize; i++) {
+                jobs.add(new GridComputeJobAdapter() {
+                    @Nullable @Override public Serializable execute() {
+                        System.out.println(">>> Executing deployment example job on this node.");
+
+                        // This job does not return any result.
+                        return null;
+                    }
+                });
+            }
+
+            return jobs;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+            return null;
         }
     }
 }

@@ -20,13 +20,13 @@ import scalar._
  * 2 times with initial scheduling delay equal to five seconds.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-default.xml'`.
+ * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
  *
  * @author @java.author
  * @version @java.version
  */
 object ScalarScheduleRunnableExample extends App {
-    scalar("examples/config/example-default.xml") {
+    scalar("examples/config/example-compute.xml") {
         val g = grid$
 
         // Schedule output message every minute.

@@ -13,6 +13,7 @@ import org.gridgain.examples.datagrid.store.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -169,6 +170,42 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
         }
         finally {
             end(tx, conn);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void loadCache(GridBiInClosure<Long, Person> clo, Object... args) throws GridException {
+        if (args == null || args.length == 0 || args[0] == null)
+            throw new GridException("Expected entry count parameter is not provided.");
+
+        final int entryCnt = (Integer)args[0];
+
+        Connection conn = null;
+
+        try {
+            conn = connection(null);
+
+            try (PreparedStatement st = conn.prepareStatement("select * from PERSONS")) {
+                try (ResultSet rs = st.executeQuery()) {
+                    int cnt = 0;
+
+                    while (cnt < entryCnt && rs.next()) {
+                        Person person = person(rs.getLong(1), rs.getString(2), rs.getString(3));
+
+                        clo.apply(person.getId(), person);
+
+                        cnt++;
+                    }
+
+                    System.out.println("Loaded " + cnt + " values into cache.");
+                }
+            }
+        }
+        catch (SQLException e) {
+            throw new GridException("Failed to load values from cache store.", e);
+        }
+        finally {
+            end(null, conn);
         }
     }
 

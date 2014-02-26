@@ -10,8 +10,6 @@
 package org.gridgain.examples.misc.client.api;
 
 import org.gridgain.client.*;
-import org.gridgain.client.ssl.*;
-import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.product.*;
 
@@ -41,9 +39,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 public class ClientCacheExample {
     /** Grid node address to connect to. */
     private static final String SERVER_ADDRESS = "127.0.0.1";
-
-    /** Change {@link ClientCacheExampleNodeStartup#SSL_ENABLED} to {@code true} to enable SSL. */
-    private static final Boolean SSL_ENABLED = ClientCacheExampleNodeStartup.SSL_ENABLED;
 
     /** Count of keys to be stored in this example. */
     public static final int KEYS_CNT = 10;
@@ -228,22 +223,6 @@ public class ClientCacheExample {
      */
     private static GridClient createClient() throws GridClientException {
         GridClientConfiguration cfg = new GridClientConfiguration();
-
-        if (SSL_ENABLED) {
-            String home = ExamplesUtils.resolveGridGainHome();
-
-            GridSslBasicContextFactory sslFactory = new GridSslBasicContextFactory();
-
-            sslFactory.setKeyStoreFilePath(home + "/examples/keystore/client.jks");
-            sslFactory.setKeyStorePassword("123456".toCharArray());
-
-            sslFactory.setTrustStoreFilePath(home + "/examples/keystore/trust.jks");
-            sslFactory.setTrustStorePassword("123456".toCharArray());
-
-            cfg.setSslContextFactory(sslFactory);
-
-            cfg.setCredentials("s3cret");
-        }
 
         GridClientDataConfiguration cacheCfg = new GridClientDataConfiguration();
 

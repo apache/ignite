@@ -24,13 +24,13 @@ import java.util
  * As a trade off in such cases the more code needs to be written vs. simple closure execution.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-default.xml'`.
+ * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
  *
  * @author @java.author
  * @version @java.version
  */
 object ScalarTaskExample extends App {
-    scalar("examples/config/example-default.xml") {
+    scalar("examples/config/example-compute.xml") {
         grid$.compute().execute(classOf[GridHelloWorld], "Hello Cloud World!").get
     }
 

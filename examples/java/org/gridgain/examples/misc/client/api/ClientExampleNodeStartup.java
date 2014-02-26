@@ -24,12 +24,6 @@ import org.gridgain.grid.*;
  */
 public class ClientExampleNodeStartup {
     /**
-     * Change to {@code true} to enable SSL.
-     * Note that you need to appropriately update router and client configurations.
-     */
-    static final Boolean SSL_ENABLED = false;
-
-    /**
      * Starts up a node with specified cache configuration.
      *
      * @param args Command line arguments, none required.
@@ -39,8 +33,7 @@ public class ClientExampleNodeStartup {
         // Enable full logging for log access in examples.
         System.setProperty(GridSystemProperties.GG_QUIET, "false");
 
-        String springCfgPath = SSL_ENABLED ? "examples/config/example-client-ssl.xml" :
-            "examples/config/example-client.xml";
+        String springCfgPath = "examples/config/example-client.xml";
 
         GridGain.start(springCfgPath);
     }

@@ -23,7 +23,7 @@ import java.util.concurrent.*;
  * <h1 class="header">Starting Remote Nodes</h1>
  * To try this example you need to start at least one remote grid instance.
  * You can start as many as you like by executing the following script:
- * <pre class="snippet">{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-default.xml</pre>
+ * <pre class="snippet">{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-compute.xml</pre>
  * Once remote instances are started, you can execute this example from
  * Eclipse, IntelliJ IDEA, or NetBeans (and any other Java IDE) by simply hitting run
  * button. You will see that all nodes discover each other and
@@ -31,7 +31,7 @@ import java.util.concurrent.*;
  * output).
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
- * with {@code examples/config/example-default.xml} configuration.
+ * with {@code examples/config/example-compute.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -46,7 +46,7 @@ public class MessagingPingPongExample {
      */
     public static void main(String[] args) throws GridException {
         // Game is played over the default grid.
-        try (Grid g = GridGain.start("examples/config/example-default.xml")) {
+        try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
             if (g.forRemotes().nodes().size() < 1) {
                 System.err.println("I need a partner to play a ping pong!");
 
@@ -93,6 +93,8 @@ public class MessagingPingPongExample {
                     try {
                         if (cnt.getCount() == 1) {
                             g.forNodeId(nodeId).message().send(null, "STOP");
+
+                            cnt.countDown();
 
                             return false; // Stop listening.
                         }
