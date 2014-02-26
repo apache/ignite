@@ -9,9 +9,11 @@
 
 package org.gridgain.examples.datagrid.store;
 
-import org.gridgain.examples.datagrid.store.jdbc.*;
+import org.gridgain.examples.datagrid.store.dummy.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.spi.deployment.local.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -46,6 +48,14 @@ public class CacheNodeWithStoreStartup {
     public static GridConfiguration configure() throws GridException {
         GridConfiguration cfg = new GridConfiguration();
 
+        cfg.setLocalHost("127.0.0.1");
+
+        GridOptimizedMarshaller marsh = new GridOptimizedMarshaller();
+
+        marsh.setRequireSerializable(false);
+
+        cfg.setMarshaller(marsh);
+
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryMulticastIpFinder();
@@ -53,6 +63,7 @@ public class CacheNodeWithStoreStartup {
         Collection<String> addrs = new ArrayList<>();
 
         String addr = "127.0.0.1";
+
         int port = 47500;
 
         for (int i = 0; i < 10; i++)
@@ -66,8 +77,8 @@ public class CacheNodeWithStoreStartup {
 
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        // cacheCfg.setStore(new CacheDummyPersonStore());
-        cacheCfg.setStore(new CacheJdbcPersonStore());
+        cacheCfg.setStore(new CacheDummyPersonStore());
+        // cacheCfg.setStore(new CacheJdbcPersonStore());
         // cacheCfg.setStore(new CacheHibernatePersonStore());
 
         cfg.setDiscoverySpi(discoSpi);
