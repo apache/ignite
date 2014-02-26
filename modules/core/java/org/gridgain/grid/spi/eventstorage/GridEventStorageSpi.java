@@ -49,7 +49,7 @@ public interface GridEventStorageSpi extends GridSpi, GridSpiJsonConfigurable {
      * @param p Event predicate filter.
      * @return Collection of events.
      */
-    public Collection<GridEvent> localEvents(GridPredicate<? super GridEvent> p);
+    public <T extends GridEvent> Collection<T> localEvents(GridPredicate<T> p);
 
     /**
      * Records single event.

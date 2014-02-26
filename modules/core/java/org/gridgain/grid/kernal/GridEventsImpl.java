@@ -45,7 +45,7 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<List<GridEvent>> remoteQuery(GridPredicate<GridEvent> pe, long timeout) {
+    @Override public <T extends GridEvent> GridFuture<List<T>> remoteQuery(GridPredicate<T> pe, long timeout) {
         A.notNull(pe, "pe");
 
         guard();
@@ -97,7 +97,7 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<GridEvent> waitForLocal(@Nullable GridPredicate<GridEvent> p,
+    @Override public <T extends GridEvent> GridFuture<T> waitForLocal(@Nullable GridPredicate<T> p,
         @Nullable int... types) {
         guard();
 
@@ -110,7 +110,7 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridEvent> localQuery(GridPredicate<GridEvent> p) {
+    @Override public <T extends GridEvent> Collection<T> localQuery(GridPredicate<T> p) {
         A.notNull(p, "p");
 
         guard();
@@ -142,7 +142,7 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public void localListen(GridLocalEventListener lsnr, int[] types) {
+    @Override public void localListen(GridPredicate<? extends GridEvent> lsnr, int[] types) {
         A.notNull(lsnr, "lsnr");
         A.notEmpty(types, "types");
 
@@ -157,7 +157,7 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean stopLocalListen(GridLocalEventListener lsnr, @Nullable int... types) {
+    @Override public boolean stopLocalListen(GridPredicate<? extends GridEvent> lsnr, @Nullable int... types) {
         A.notNull(lsnr, "lsnr");
 
         guard();

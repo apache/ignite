@@ -467,6 +467,16 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
     }
 
     /**
+     * Adds local event listener.
+     *
+     * @param lsnr User listener to add.
+     * @param types Event types to subscribe listener for.
+     */
+    public void addLocalEventListener(GridPredicate<? extends GridEvent> lsnr, int[] types) {
+        addLocalEventListener(new UserListenerWrapper(lsnr), types);
+    }
+
+    /**
      * Adds local event listener. Note that this method specifically disallow an empty
      * array of event type to prevent accidental subscription for all system event that
      * may lead to a drastic performance decrease.
@@ -550,6 +560,46 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
     }
 
     /**
+     * Removes user listener for specified events, if any. If no event types provided - it
+     * remove the listener for all its registered events.
+     *
+     * @param lsnr User listener predicate.
+     * @param types Event types.
+     * @return Returns {@code true} if removed.
+     */
+    public boolean removeLocalEventListener(GridPredicate<? extends GridEvent> lsnr, @Nullable int... types) {
+        assert lsnr != null;
+
+        boolean found = false;
+
+        if (F.isEmpty(types)) {
+            for (Set<GridLocalEventListener> set : lsnrs.values()) {
+                for (GridLocalEventListener l : set) {
+                    if (l instanceof UserListenerWrapper && ((UserListenerWrapper)l).listener().equals(lsnr)) {
+                        found = set.remove(l);
+                    }
+                }
+            }
+        }
+        else {
+            assert types != null;
+
+            for (int type : types) {
+                Set<GridLocalEventListener> set = lsnrs.get(type);
+
+                if (set != null) {
+                    for (GridLocalEventListener l : set) {
+                        if (l instanceof UserListenerWrapper && ((UserListenerWrapper)l).listener().equals(lsnr))
+                            found = set.remove(l);
+                    }
+                }
+            }
+        }
+
+        return found;
+    }
+
+    /**
      * Removes listener for specified events, if any. If no event types provided - it
      * remove the listener for all its registered events.
      *
@@ -587,14 +637,14 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @param types Event types to wait for.
      * @return Event future.
      */
-    public GridFuture<GridEvent> waitForEvent(@Nullable final GridPredicate<? super GridEvent> p,
+    public <T extends GridEvent> GridFuture<T> waitForEvent(@Nullable final GridPredicate<T> p,
         @Nullable int... types) {
-        final GridFutureAdapter<GridEvent> fut = new GridFutureAdapter<>(ctx);
+        final GridFutureAdapter<T> fut = new GridFutureAdapter<>(ctx);
 
         addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(GridEvent evt) {
-                if (p == null || p.apply(evt)) {
-                    fut.onDone(evt);
+                if (p == null || p.apply((T)evt)) {
+                    fut.onDone((T)evt);
 
                     removeLocalEventListener(this);
                 }
@@ -674,7 +724,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @param p Grid event predicate.
      * @return Collection of grid events.
      */
-    public Collection<GridEvent> localEvents(GridPredicate<? super GridEvent> p) {
+    public <T extends GridEvent> Collection<T> localEvents(GridPredicate<T> p) {
         assert p != null;
 
         return getSpi().localEvents(p);
@@ -686,12 +736,12 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @param timeout Maximum time to wait for result, if {@code 0}, then wait until result is received.
      * @return Collection of events.
      */
-    public GridFuture<List<GridEvent>> remoteEventsAsync(final GridPredicate<? super GridEvent> p,
+    public <T extends GridEvent> GridFuture<List<T>> remoteEventsAsync(final GridPredicate<T> p,
         final Collection<? extends GridNode> nodes, final long timeout) {
         assert p != null;
         assert nodes != null;
 
-        final GridFutureAdapter<List<GridEvent>> fut = new GridFutureAdapter<>(ctx);
+        final GridFutureAdapter<List<T>> fut = new GridFutureAdapter<>(ctx);
 
         ctx.closure().runLocalSafe(new GPR() {
             @Override public void run() {
@@ -715,7 +765,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @throws GridException Thrown in case of any errors.
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "deprecation"})
-    private List<GridEvent> query(GridPredicate<? super GridEvent> p, Collection<? extends GridNode> nodes,
+    private <T extends GridEvent> List<T> query(GridPredicate<T> p, Collection<? extends GridNode> nodes,
         long timeout) throws GridException {
         assert p != null;
         assert nodes != null;
@@ -728,7 +778,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
         GridIoManager ioMgr = ctx.io();
 
-        final List<GridEvent> evts = new ArrayList<>();
+        final List<T> evts = new ArrayList<>();
 
         final AtomicReference<Throwable> err = new AtomicReference<>();
 
@@ -783,7 +833,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
                 synchronized (qryMux) {
                     if (uids.remove(nodeId)) {
                         if (res.events() != null)
-                            evts.addAll(res.events());
+                            evts.addAll((Collection<T>)res.events());
                     }
                     else
                         U.warn(log, "Received duplicate response (ignoring) [nodeId=" + nodeId +
@@ -1027,6 +1077,36 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
             finally {
                 leaveBusy();
             }
+        }
+    }
+
+    /**
+     * Listener wrapping user-provided listener predicate.
+     */
+    private class UserListenerWrapper implements GridLocalEventListener {
+        /** */
+        private final GridPredicate<GridEvent> lsnr;
+
+        /**
+         * @param lsnr User listener
+         */
+        private UserListenerWrapper(GridPredicate<? extends GridEvent> lsnr) {
+            this.lsnr = (GridPredicate<GridEvent>)lsnr;
+        }
+
+        /**
+         * @return User listener.
+         */
+        private GridPredicate<? extends GridEvent> listener() {
+            return lsnr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onEvent(GridEvent evt) {
+           boolean rmv = !lsnr.apply(evt);
+
+            if (rmv)
+                removeLocalEventListener(this);
         }
     }
 }

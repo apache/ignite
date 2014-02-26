@@ -227,12 +227,12 @@ public class GridMemoryEventStorageSpi extends GridSpiAdapter implements GridEve
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridEvent> localEvents(GridPredicate<? super GridEvent> p) {
+    @Override public <T extends GridEvent> Collection<T> localEvents(GridPredicate<T> p) {
         A.notNull(p, "p");
 
         cleanupQueue();
 
-        return F.retain(evts, true, p);
+        return F.retain((Collection<T>)evts, true, p);
     }
 
     /** {@inheritDoc} */

@@ -206,7 +206,7 @@ public interface GridEvents {
      * @see GridEvent
      * @see GridEventType
      */
-    public void localListen(GridBiPredicate<UUID, ? extends GridEvent> lsnr, int... types);
+    public void localListen(GridPredicate<? extends GridEvent> lsnr, int... types);
 
     /**
      * Removes local event listener.
@@ -218,7 +218,7 @@ public interface GridEvents {
      * @see GridEventType
      * @see GridEvent
      */
-    public boolean stopLocalListen(GridBiPredicate<UUID, ? extends GridEvent> lsnr, @Nullable int... types);
+    public boolean stopLocalListen(GridPredicate<? extends GridEvent> lsnr, @Nullable int... types);
 
     /**
      * Enables provided events. Allows to start recording events that

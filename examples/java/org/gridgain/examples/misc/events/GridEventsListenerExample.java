@@ -11,6 +11,7 @@ package org.gridgain.examples.misc.events;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.lang.*;
 
 import static org.gridgain.grid.events.GridEventType.*;
 
@@ -38,9 +39,11 @@ public final class GridEventsListenerExample {
     public static void main(String[] args) throws GridException {
         try (Grid g = args.length == 0 ? GridGain.start("examples/config/example-default.xml") : GridGain.start(args[0])) {
             // Define event listener
-            GridLocalEventListener lsnr = new GridLocalEventListener() {
-                @Override public void onEvent(GridEvent evt) {
+            GridPredicate<? extends GridEvent> lsnr = new GridPredicate<GridEvent>() {
+                @Override public boolean apply(GridEvent evt) {
                     System.out.println(">>> Grid event occurred: " + evt);
+
+                    return true;
                 }
             };
 
