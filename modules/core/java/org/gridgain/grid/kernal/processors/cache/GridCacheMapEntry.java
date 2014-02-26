@@ -1665,7 +1665,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean markObsoleteIfEmpty(@Nullable GridCacheVersion ver) {
+    @Override public boolean markObsoleteIfEmpty(@Nullable GridCacheVersion ver) throws GridException {
         boolean obsolete = false;
         boolean deferred = false;
 
@@ -1674,9 +1674,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (obsoleteVersionExtras() != null)
                     return false;
 
-                long expireTime = expireTimeExtras();
-
-                if ((expireTime > 0L && (expireTime - U.currentTimeMillis() <= 0L)) || !hasValueUnlocked()) {
+                if (!hasValueUnlocked() || checkExpired()) {
                     if (ver == null)
                         ver = nextVersion();
 
