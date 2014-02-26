@@ -11,6 +11,7 @@ package org.gridgain.examples.messaging;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.examples.compute.*;
 
@@ -63,12 +64,16 @@ public class MessagingPingPongExample {
 
             // Set up remote player.
             nodeB.message().remoteListen(null, new GridBiPredicate<UUID, String>() {
+                /** This will be injected on node listener comes to. */
+                @GridInstanceResource
+                private Grid grid;
+
                 @Override public boolean apply(UUID nodeId, String rcvMsg) {
-                    System.out.println(rcvMsg);
+                    System.out.println("Received message [msg=" + rcvMsg + ", sender=" + nodeId + ']');
 
                     try {
                         if ("PING".equals(rcvMsg)) {
-                            g.forNodeId(nodeId).message().send(null, "PONG");
+                            grid.forNodeId(nodeId).message().send(null, "PONG");
 
                             return true; // Continue listening.
                         }
@@ -88,7 +93,7 @@ public class MessagingPingPongExample {
             // Set up local player.
             g.message().localListen(null, new GridBiPredicate<UUID, String>() {
                 @Override public boolean apply(UUID nodeId, String rcvMsg) {
-                    System.out.println(rcvMsg);
+                    System.out.println("Received message [msg=" + rcvMsg + ", sender=" + nodeId + ']');
 
                     try {
                         if (cnt.getCount() == 1) {
@@ -100,6 +105,8 @@ public class MessagingPingPongExample {
                         }
                         else if ("PONG".equals(rcvMsg))
                             g.forNodeId(nodeId).message().send(null, "PING");
+                        else
+                            throw new RuntimeException("Received unexpected message: " + rcvMsg);
 
                         cnt.countDown();
 
