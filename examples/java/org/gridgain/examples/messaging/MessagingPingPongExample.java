@@ -64,7 +64,7 @@ public class MessagingPingPongExample {
             // Set up remote player.
             nodeB.message().remoteListen(null, new GridBiPredicate<UUID, String>() {
                 @Override public boolean apply(UUID nodeId, String rcvMsg) {
-                    System.out.println(rcvMsg);
+                    System.out.println(nodeId + ": " + rcvMsg);
 
                     try {
                         if ("PING".equals(rcvMsg)) {
@@ -88,7 +88,7 @@ public class MessagingPingPongExample {
             // Set up local player.
             g.message().localListen(null, new GridBiPredicate<UUID, String>() {
                 @Override public boolean apply(UUID nodeId, String rcvMsg) {
-                    System.out.println(rcvMsg);
+                    System.out.println(nodeId + ": " + rcvMsg);
 
                     try {
                         if (cnt.getCount() == 1) {
