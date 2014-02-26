@@ -21,6 +21,7 @@ import org.gridgain.grid.spi.indexing.h2.*;
 import java.util.*;
 
 import static org.gridgain.grid.GridDeploymentMode.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
@@ -75,6 +76,7 @@ public class MemcacheRestExampleNodeStartup {
 
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
 
+        cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setPreloadMode(SYNC);
 

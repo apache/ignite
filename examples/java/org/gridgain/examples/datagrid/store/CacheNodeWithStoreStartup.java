@@ -9,8 +9,6 @@
 
 package org.gridgain.examples.datagrid.store;
 
-import org.gridgain.examples.datagrid.store.dummy.*;
-import org.gridgain.examples.datagrid.store.hibernate.*;
 import org.gridgain.examples.datagrid.store.jdbc.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -19,6 +17,8 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 
 import java.util.*;
+
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 
 /**
  * Starts up an empty node with example cache configuration.
@@ -63,6 +63,8 @@ public class CacheNodeWithStoreStartup {
         discoSpi.setIpFinder(ipFinder);
 
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
+
+        cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         // cacheCfg.setStore(new CacheDummyPersonStore());
         cacheCfg.setStore(new CacheJdbcPersonStore());
