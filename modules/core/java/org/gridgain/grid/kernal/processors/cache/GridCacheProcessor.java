@@ -233,11 +233,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cfg.getDistributionMode() != NEAR_PARTITIONED &&
                     cfg.getDistributionMode() != NEAR_ONLY);
 
-            if (cfg.getAffinity() instanceof GridCachePartitionAffinity) {
-                GridCachePartitionAffinity aff = (GridCachePartitionAffinity)cfg.getAffinity();
-
-                perf.add("Decrease number of backups (set 'keyBackups' to 0)", aff.getKeyBackups() == 0);
-            }
+            if (cfg.getAffinity() != null)
+                perf.add("Decrease number of backups (set 'keyBackups' to 0)", cfg.getAffinity().keyBackups() == 0);
         }
 
         // Suppress warning if at least one ATOMIC cache found.

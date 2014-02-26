@@ -250,8 +250,8 @@ public class GridGgfsProcessor extends GridProcessorAdapter {
             if (dataCache.configuration().getCacheMode() == PARTITIONED) {
                 GridCacheAffinity aff = dataCache.configuration().getAffinity();
 
-                if (aff instanceof GridCachePartitionAffinity) {
-                    int backups = ((GridCachePartitionAffinity)aff).getKeyBackups();
+                if (aff != null) {
+                    int backups = aff.keyBackups();
 
                     if (backups != 0)
                         throw new GridException("GGFS data cache cannot be used with backups (set backup count " +
