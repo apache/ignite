@@ -77,6 +77,7 @@ public class MemcacheRestExampleNodeStartup {
 
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
 
+        cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setPreloadMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
