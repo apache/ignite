@@ -27,7 +27,7 @@ GridClientProjectionImpl::GridClientProjectionImpl(
         TGridClientSharedDataPtr pData,
         GridClientProjectionListener& prjLsnr,
         TGridClientNodePredicatePtr pFilter):
-                sharedData(pData), prjLsnr(prjLsnr), filter(pFilter), dfltAffinity(new GridClientPartitionedAffinity()) {
+                sharedData(pData), prjLsnr(prjLsnr), filter(pFilter), dfltAffinity(new GridClientPartitionAffinity()) {
     vector<GridClientDataConfiguration> dataCfg = pData->clientConfiguration().dataConfiguration();
 
     // Read affinity configuration from vector to affinity map.

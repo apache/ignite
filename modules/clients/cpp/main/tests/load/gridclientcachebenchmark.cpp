@@ -187,7 +187,7 @@ int main(int argc, const char** argv) {
     // Set remote cache name.
     cacheCfg.name(vm["cachename"].as<string>());
 
-    std::shared_ptr<GridClientDataAffinity> ptrAffinity(new GridClientPartitionedAffinity());
+    std::shared_ptr<GridClientDataAffinity> ptrAffinity(new GridClientPartitionAffinity());
 
     // Set client partitioned affinity for this cache.
     cacheCfg.affinity(ptrAffinity);

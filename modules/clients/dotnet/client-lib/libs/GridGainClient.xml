@@ -1693,7 +1693,7 @@
             Consistent globally unique node ID. Unlike the Id property,
             this property contains a consistent node ID which survives node restarts.</summary>
         </member>
-        <member name="T:GridGain.Client.GridClientPartitionedAffinity">
+        <member name="T:GridGain.Client.GridClientPartitionAffinity">
             <summary>
             Affinity function for partitioned cache. This function supports the following configuration:
             <ul>
@@ -1709,19 +1709,19 @@
             </ul>
             </summary>
         </member>
-        <member name="F:GridGain.Client.GridClientPartitionedAffinity.DefaultPartitionsCount">
+        <member name="F:GridGain.Client.GridClientPartitionAffinity.DefaultPartitionsCount">
             <summary>Default number of partitions.</summary> 
         </member>
-        <member name="F:GridGain.Client.GridClientPartitionedAffinity.nodeHash">
+        <member name="F:GridGain.Client.GridClientPartitionAffinity.nodeHash">
             <summary>Node hash.</summary> 
         </member>
-        <member name="F:GridGain.Client.GridClientPartitionedAffinity.addedNodes">
+        <member name="F:GridGain.Client.GridClientPartitionAffinity.addedNodes">
             <summary>Added nodes info.</summary> 
         </member>
-        <member name="M:GridGain.Client.GridClientPartitionedAffinity.#ctor">
+        <member name="M:GridGain.Client.GridClientPartitionAffinity.#ctor">
             <summary>Empty constructor with all defaults.</summary> 
         </member>
-        <member name="M:GridGain.Client.GridClientPartitionedAffinity.#ctor(System.Int32,System.Predicate{System.Guid})">
+        <member name="M:GridGain.Client.GridClientPartitionAffinity.#ctor(System.Int32,System.Predicate{System.Guid})">
              <summary>
              Initializes optional counts for replicas and backups.
              <para/>
@@ -1732,19 +1732,19 @@
                   will be selected from all nodes outside of this filter, and backups will be selected
                   from all nodes inside it.
         </member>
-        <member name="M:GridGain.Client.GridClientPartitionedAffinity.Node``1(System.Object,System.Collections.Generic.ICollection{``0})">
+        <member name="M:GridGain.Client.GridClientPartitionAffinity.Node``1(System.Object,System.Collections.Generic.ICollection{``0})">
             <inheritdoc /> 
         </member>
-        <member name="M:GridGain.Client.GridClientPartitionedAffinity.Partition(System.Object)">
+        <member name="M:GridGain.Client.GridClientPartitionAffinity.Partition(System.Object)">
             <inheritdoc /> 
         </member>
-        <member name="M:GridGain.Client.GridClientPartitionedAffinity.OnNodeAdded(GridGain.Client.IGridClientNode)">
+        <member name="M:GridGain.Client.GridClientPartitionAffinity.OnNodeAdded(GridGain.Client.IGridClientNode)">
             <inheritdoc /> 
         </member>
-        <member name="M:GridGain.Client.GridClientPartitionedAffinity.OnNodeRemoved(GridGain.Client.IGridClientNode)">
+        <member name="M:GridGain.Client.GridClientPartitionAffinity.OnNodeRemoved(GridGain.Client.IGridClientNode)">
             <inheritdoc /> 
         </member>
-        <member name="M:GridGain.Client.GridClientPartitionedAffinity.ResolveNodeInfo(GridGain.Client.IGridClientNode)">
+        <member name="M:GridGain.Client.GridClientPartitionAffinity.ResolveNodeInfo(GridGain.Client.IGridClientNode)">
              <summary>
              Resolve node info for specified node.
              Add node to hash circle if this is the first node invocation.</summary>
@@ -1752,10 +1752,10 @@
              <param name="node">Node to get info for.</param>
              <returns>Node info.</returns>
         </member>
-        <member name="M:GridGain.Client.GridClientPartitionedAffinity.LookupFilter``1(System.Collections.Generic.IDictionary{GridGain.Client.GridClientPartitionedAffinity.NodeInfo,``0},System.Predicate{System.Guid},System.Boolean)">
+        <member name="M:GridGain.Client.GridClientPartitionAffinity.LookupFilter``1(System.Collections.Generic.IDictionary{GridGain.Client.GridClientPartitionAffinity.NodeInfo,``0},System.Predicate{System.Guid},System.Boolean)">
             <summary>Lookup filter.</summary> 
         </member>
-        <member name="P:GridGain.Client.GridClientPartitionedAffinity.Partitions">
+        <member name="P:GridGain.Client.GridClientPartitionAffinity.Partitions">
             <summary>
             Total number of key partitions. To ensure that all partitions are
             equally distributed across all nodes, please make sure that this
@@ -1766,7 +1766,7 @@
             Note that for fully replicated caches this method should always
             return <c>1</c>.</summary>
         </member>
-        <member name="P:GridGain.Client.GridClientPartitionedAffinity.BackupsFilter">
+        <member name="P:GridGain.Client.GridClientPartitionAffinity.BackupsFilter">
             <summary>
             Optional backup filter. If not <c>null</c>, then primary nodes will be
             selected from all nodes outside of this filter, and backups will be selected
@@ -1774,7 +1774,7 @@
             <para/>
             Note that <c>excludeNeighbors</c> parameter is ignored if <c>backupFilter</c> is set.</summary>
         </member>
-        <member name="P:GridGain.Client.GridClientPartitionedAffinity.HashIdResolver">
+        <member name="P:GridGain.Client.GridClientPartitionAffinity.HashIdResolver">
             <summary>
             Gets hash ID resolver for nodes. This resolver is used to provide
             alternate hash ID, other than node ID.
@@ -1785,7 +1785,7 @@
             puts node on the same location on the hash ring, hence minimizing required
             repartitioning.</summary>
         </member>
-        <member name="T:GridGain.Client.GridClientPartitionedAffinity.NodeInfo">
+        <member name="T:GridGain.Client.GridClientPartitionAffinity.NodeInfo">
             <summary>Node info.</summary> 
         </member>
         <member name="T:GridGain.Client.Hasher.IGridClientConsistentHashObject">
@@ -1798,26 +1798,26 @@
             
              <returns>A hash code for the object.</returns>
         </member>
-        <member name="M:GridGain.Client.GridClientPartitionedAffinity.NodeInfo.#ctor(System.Guid,System.Object)">
+        <member name="M:GridGain.Client.GridClientPartitionAffinity.NodeInfo.#ctor(System.Guid,System.Object)">
             @param nodeId Node Id.
             @param hashId Hash Id.
         </member>
-        <member name="M:GridGain.Client.GridClientPartitionedAffinity.NodeInfo.GetHashCode">
+        <member name="M:GridGain.Client.GridClientPartitionAffinity.NodeInfo.GetHashCode">
             {@inheritDoc} 
         </member>
-        <member name="M:GridGain.Client.GridClientPartitionedAffinity.NodeInfo.Equals(System.Object)">
+        <member name="M:GridGain.Client.GridClientPartitionAffinity.NodeInfo.Equals(System.Object)">
             {@inheritDoc} 
         </member>
-        <member name="M:GridGain.Client.GridClientPartitionedAffinity.NodeInfo.CompareTo(GridGain.Client.GridClientPartitionedAffinity.NodeInfo)">
+        <member name="M:GridGain.Client.GridClientPartitionAffinity.NodeInfo.CompareTo(GridGain.Client.GridClientPartitionAffinity.NodeInfo)">
             {@inheritDoc} 
         </member>
-        <member name="M:GridGain.Client.GridClientPartitionedAffinity.NodeInfo.ToString">
+        <member name="M:GridGain.Client.GridClientPartitionAffinity.NodeInfo.ToString">
             {@inheritDoc} 
         </member>
-        <member name="P:GridGain.Client.GridClientPartitionedAffinity.NodeInfo.NodeId">
+        <member name="P:GridGain.Client.GridClientPartitionAffinity.NodeInfo.NodeId">
             Node Id. 
         </member>
-        <member name="P:GridGain.Client.GridClientPartitionedAffinity.NodeInfo.HashId">
+        <member name="P:GridGain.Client.GridClientPartitionAffinity.NodeInfo.HashId">
             Hash Id. 
         </member>
         <member name="T:GridGain.Client.GridClientProtocol">

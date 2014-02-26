@@ -241,7 +241,7 @@ namespace GridGain.Client {
             cacheCfg.Name = "partitioned";
 
             // Set client partitioned affinity for this cache.
-            cacheCfg.Affinity = new GridClientPartitionedAffinity();
+            cacheCfg.Affinity = new GridClientPartitionAffinity();
 
             var cfg = new GridClientConfiguration();
 

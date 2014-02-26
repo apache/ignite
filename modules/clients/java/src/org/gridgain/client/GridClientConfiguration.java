@@ -775,7 +775,7 @@ public class GridClientConfiguration {
             return null;
 
         if ("partitioned".equals(affinity))
-            return new GridClientPartitionedAffinity();
+            return new GridClientPartitionAffinity();
 
         return newInstance(GridClientDataAffinity.class, affinity);
     }
