@@ -49,22 +49,33 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     @Override protected void start0() throws GridException {
         if (store instanceof GridLifecycleAware) {
             // Avoid second start() call on store in case when near cache is enabled.
-            if (cctx.config().isWriteBehindEnabled() || cctx.isNear() || !CU.isNearEnabled(cctx))
-                ((GridLifecycleAware)store).start();
+            if (cctx.config().isWriteBehindEnabled()) {
+                if (!cctx.isNear())
+                    ((GridLifecycleAware)store).start();
+            }
+            else {
+                if (cctx.isNear() || !CU.isNearEnabled(cctx))
+                    ((GridLifecycleAware)store).start();
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         if (store instanceof GridLifecycleAware) {
-            // Avoid second stop() call on store in case when near cache is enabled.
-            if (cctx.config().isWriteBehindEnabled() || cctx.isNear() || !CU.isNearEnabled(cctx)) {
-                try {
-                    ((GridLifecycleAware)store).stop();
+            try {
+                // Avoid second start() call on store in case when near cache is enabled.
+                if (cctx.config().isWriteBehindEnabled()) {
+                    if (!cctx.isNear())
+                        ((GridLifecycleAware)store).stop();
                 }
-                catch (GridException e) {
-                    U.error(log(), "Failed to stop cache store.", e);
+                else {
+                    if (cctx.isNear() || !CU.isNearEnabled(cctx))
+                        ((GridLifecycleAware)store).stop();
                 }
+            }
+            catch (GridException e) {
+                U.error(log(), "Failed to stop cache store.", e);
             }
         }
     }
