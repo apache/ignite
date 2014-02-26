@@ -63,7 +63,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             if (affMap.isEmpty())
                 return; // Skip empty affinity map.
 
-            GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+            final GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
             // Clean up affinity functions if such cache no more exists.
             if (evtType == EVT_NODE_FAILED || evtType == EVT_NODE_LEFT) {
@@ -82,17 +82,21 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
             // Cleanup outdated caches.
             for (GridFuture<GridAffinityCache> f : affMap.values()) {
-                try {
-                    GridAffinityCache affCache = f.get();
+                f.listenAsync(new CI1<GridFuture<GridAffinityCache>>() {
+                    @Override public void apply(GridFuture<GridAffinityCache> f) {
+                        try {
+                            GridAffinityCache affCache = f.get();
 
-                    if (affCache != null)
-                        affCache.cleanUpCache(discoEvt.topologyVersion());
-                }
-                catch (GridException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to get affinity cache [discoEvt=" + discoEvt +
-                            ", err=" + e.getMessage() + ']');
-                }
+                            if (affCache != null)
+                                affCache.cleanUpCache(discoEvt.topologyVersion());
+                        }
+                        catch (GridException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to get affinity cache [discoEvt=" + discoEvt +
+                                    ", err=" + e.getMessage() + ']');
+                        }
+                    }
+                });
             }
         }
     };
