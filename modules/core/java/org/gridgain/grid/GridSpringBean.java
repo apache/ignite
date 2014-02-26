@@ -284,10 +284,10 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forAttribute(String n, @Nullable String v) {
+    @Override public GridProjection forAttribute(String name, @Nullable String val) {
         assert g != null;
 
-        return g.forAttribute(n, v);
+        return g.forAttribute(name, val);
     }
 
     /** {@inheritDoc} */

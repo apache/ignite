@@ -98,16 +98,17 @@ public interface GridProjection {
     /**
      * Creates a grid projection for nodes other than given node.
      *
-     * @param node Node to exclude from grid projection.
+     * @param node Node to exclude from new grid projection.
      * @return Projection that will contain all nodes that original projection contained excluding
      *      given node.
      */
     public GridProjection forOthers(GridNode node);
 
     /**
-     * // TODO
-     * @param prj
-     * @return
+     * Creates a grid projection for nodes not included into given projection.
+     *
+     * @param prj Projection to exclude from new grid projection.
+     * @return Projection for nodes not included into given projection.
      */
     public GridProjection forOthers(GridProjection prj);
 
@@ -137,20 +138,21 @@ public interface GridProjection {
     public GridProjection forPredicate(GridPredicate<GridNode> p);
 
     /**
-     * Creates monadic projection with the nodes from this projection that have given node
-     * attribute with optional value. If value is {@code null} than simple attribute presence
-     * (with any value) will be used for inclusion of the node.
+     * Creates projection for nodes containing given name and value
+     * specified in user attributes.
+     * <p>
+     * User attributes for every node are optional and can be specified in
+     * grid node configuration. See {@link GridConfiguration#getUserAttributes()}
+     * for more information.
      *
-     * @param n Name of the attribute.
-     * @param v Optional attribute value to match.
-     * @return Monadic projection.
+     * @param name Name of the attribute.
+     * @param val Optional attribute value to match.
+     * @return Grid projection for nodes containing specified attribute.
      */
-    public GridProjection forAttribute(String n, @Nullable String v);
+    public GridProjection forAttribute(String name, @Nullable String val);
 
     /**
-     * Creates monadic projection with the nodes from this projection that have configured
-     * all caches with given names. If node does not have at least one of these caches, it will not
-     * be included to result projection.
+     * Creates projection for all nodes that have cache with specified name running.
      *
      * @param cacheName Cache name.
      * @param cacheNames Optional additional cache names to include into projection.
@@ -159,9 +161,7 @@ public interface GridProjection {
     public GridProjection forCache(String cacheName, @Nullable String... cacheNames);
 
     /**
-     * Creates monadic projection with the nodes from this projection that have configured
-     * streamers with given names. If node does not have at least one of these streamers, it will not
-     * be included to result projection.
+     * Creates projection for all nodes that have streamer with specified name running.
      *
      * @param streamerName Streamer name.
      * @param streamerNames Optional additional streamer names to include into projection.
@@ -170,14 +170,14 @@ public interface GridProjection {
     public GridProjection forStreamer(String streamerName, @Nullable String... streamerNames);
 
     /**
-     * Gets monadic projection consisting from the nodes in this projection excluding the local node, if any.
+     * Gets grid projection consisting from the nodes in this projection excluding the local node.
      *
-     * @return Monadic projection consisting from the nodes in this projection excluding the local node, if any.
+     * @return Grid projection consisting from the nodes in this projection excluding the local node, if any.
      */
     public GridProjection forRemotes();
 
     /**
-     * Gets monadic projection consisting from the nodes in this projection residing on the
+     * Gets grid projection consisting from the nodes in this projection residing on the
      * same host as given node.
      *
      * @param node Node residing on the host for which projection is created.
@@ -186,7 +186,7 @@ public interface GridProjection {
     public GridProjection forHost(GridNode node);
 
     /**
-     * Gets monadic projection consisting from the daemon nodes in this projection.
+     * Gets projection consisting from the daemon nodes in this projection.
      * <p>
      * Daemon nodes are the usual grid nodes that participate in topology but not
      * visible on the main APIs, i.e. they are not part of any projections. The only
@@ -197,14 +197,14 @@ public interface GridProjection {
      * excluded from "normal" topology so that it won't participate in task execution
      * or in-memory data grid storage.
      *
-     * @return Monadic projection consisting from the daemon nodes in this projection.
+     * @return Grid projection consisting from the daemon nodes in this projection.
      */
     public GridProjection forDaemons();
 
     /**
-     * Creates monadic projection with one random node from current projection.
+     * Creates grid projection with one random node from current projection.
      *
-     * @return Monadic projection.
+     * @return Grid projection with one random node from current projection.
      */
     public GridProjection forRandom();
 
@@ -216,7 +216,7 @@ public interface GridProjection {
     public Collection<GridNode> nodes();
 
     /**
-     * Gets a node for given ID from this optionally filtered projection.
+     * Gets a node for given ID from this grid projection.
      *
      * @param nid Node ID.
      * @return Node with given ID from this projection or {@code null} if such node does not exist in this
@@ -225,7 +225,10 @@ public interface GridProjection {
     @Nullable public GridNode node(UUID nid);
 
     /**
-     * @return // TODO
+     * Gets first node from the list of nodes in this projection. This method is specifically
+     * useful for projection over one node only.
+     *
+     * @return First node from the list of nodes in this projection or {@code null} if projection is empty.
      */
     @Nullable public GridNode node();
 
@@ -241,7 +244,6 @@ public interface GridProjection {
      *
      * @return Grid project metrics snapshot.
      * @throws GridException If projection is empty.
-     * @see GridNode#metrics()
      */
     public GridProjectionMetrics metrics() throws GridException;
 }

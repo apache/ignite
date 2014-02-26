@@ -284,10 +284,10 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forAttribute(String n, @Nullable final String v) {
-        A.notNull(n, "n");
+    @Override public final GridProjection forAttribute(String name, @Nullable final String val) {
+        A.notNull(name, "n");
 
-        return forPredicate(new AttributeFilter(n, v));
+        return forPredicate(new AttributeFilter(name, val));
     }
 
     /** {@inheritDoc} */
