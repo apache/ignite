@@ -11,6 +11,8 @@ package org.gridgain.grid.compute;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.deployment.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
@@ -37,9 +39,44 @@ import java.util.concurrent.*;
  * <li>{@code broadcast(...)} methods broadcast jobs to all nodes in the projection.</li>
  * <li>{@code affinity(...)} methods colocate jobs with nodes on which a specified key is cached.</li>
  * </ul>
- * <p>
- * Note that regardless of which method is used for executing computations, all SPI implementations
- * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution, etc.).
+ * <h1 class="header">Serializable</h1>
+ * Also note that {@link Runnable} and {@link Callable} implementations must support serialization as required
+ * by the configured marshaller. For example, {@link GridOptimizedMarshaller} requires {@link Serializable}
+ * objects by default, but can be configured not to. Generally speaking objects that implement {@link Serializable}
+ * or {@link Externalizable} will perform better. For {@link Runnable} and {@link Callable} interfaces
+ * GridGain has analogous {@link GridRunnable} and {@link GridCallable} classes which are
+ * {@link Serializable}.
+ * <h1 class="header">Resource Injection</h1>
+ * All compute jobs, including closures, runnables, callables, and tasks can be injected with
+ * grid resources. Both, field and method based injections are supported. The following grid
+ * resources can be injected:
+ * <ul>
+ * <li>{@link GridTaskSessionResource}</li>
+ * <li>{@link GridInstanceResource}</li>
+ * <li>{@link GridLoggerResource}</li>
+ * <li>{@link GridHomeResource}</li>
+ * <li>{@link GridExecutorServiceResource}</li>
+ * <li>{@link GridLocalNodeIdResource}</li>
+ * <li>{@link GridMBeanServerResource}</li>
+ * <li>{@link GridMarshallerResource}</li>
+ * <li>{@link GridSpringApplicationContextResource}</li>
+ * <li>{@link GridSpringResource}</li>
+ * </ul>
+ * Refer to corresponding resource documentation for more information.
+ * Here is an example of how to inject instance of {@link Grid} into a computation:
+ * <pre name="code" class="java">
+ * public class MyGridJob extends GridRunnable {
+ *      ...
+ *      &#64;GridInstanceResource
+ *      private Grid grid;
+ *      ...
+ *  }
+ * </pre>
+ * <h1 class="header">Computation SPIs</h1>
+ * Note that regardless of which method is used for executing computations, all relevant SPI implementations
+ * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution,
+ * checkpoints, etc.). If you need to override configured defaults, you should use compute task together with
+ * {@link GridComputeTaskSpis} annotation. Refer to {@link GridComputeTask} documentation for more information.
  *
  * @author @java.author
  * @version @java.version
@@ -56,20 +93,6 @@ public interface GridCompute {
      * Executes given closure on the node where data for provided affinity key is located. This
      * is known as affinity co-location between compute grid and in-memory data grid
      * (value with affinity key).
-     * <p>
-     * Note that class {@link GridAbsClosure} implements {@link Runnable} and class {@link GridOutClosure}
-     * implements {@link Callable} interface. Note also that class {@link GridFunc} and typedefs provide rich
-     * APIs and functionality for closures and predicates based processing in GridGain. While Java interfaces
-     * {@link Runnable} and {@link Callable} allow for lowest common denominator for APIs - it is advisable
-     * to use richer Functional Programming support provided by GridGain available in {@link org.gridgain.grid.lang}
-     * package.
-     * <p>
-     * Notice that {@link Runnable} and {@link Callable} implementations must support serialization as required
-     * by the configured marshaller. For example, JDK marshaller will require that implementations would
-     * be serializable. Other marshallers, e.g. JBoss marshaller, may not have this limitation. Please consult
-     * with specific marshaller implementation for the details. Note that all closures and predicates in
-     * {@link org.gridgain.grid.lang} package are serializable and can be freely used in the distributed
-     * context with all marshallers currently shipped with GridGain.
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
