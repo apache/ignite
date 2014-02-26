@@ -103,7 +103,6 @@ size_t GridClientTcpPacket::getHeaderSize() const {
 }
 
 void GridClientTcpPacket::setPacketSize(int32_t size) {
-
     sizeHeader.resize(sizeof(size));
     memset(&sizeHeader[0],0,sizeof(size));
 
@@ -121,6 +120,7 @@ void GridClientTcpPacket::setData(int8_t* start, int8_t* end) {
 
 ObjectWrapper GridClientTcpPacket::getData() const {
     ObjectWrapper ret;
+
     GridClientProtobufMarshaller::unmarshal(data, ret);
 
     return ret;
@@ -189,7 +189,6 @@ int GridClientTcpConnection::getPacketSize(const int8_t* header) {
     return packetSize;
 }
 
-
 /**
  * Connect to a host/port.
  *
@@ -212,6 +211,7 @@ void GridClientSyncTcpConnection::connect(const string& pHost, int pPort) {
 
         if (sslSock.get() == NULL) {
             asio::connect(getSocket(), endpoint_iter);
+
             getSocket().set_option(boost::asio::ip::tcp::no_delay(true));
         }
         else {
@@ -429,8 +429,6 @@ void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket,
         //read headers from header buffer
         result.setAdditionalHeadersAndData((int8_t*)recvBuffer->pBuffer, nBytes);
     }
-
-
 }
 
 void GridClientSyncTcpConnection::sendPing() {
@@ -615,11 +613,11 @@ void GridClientAsyncTcpConnection::handleAsyncWrite(TGridAsyncIoDataPtr dataPtr,
             asio::buffer(dataPtr->headerBuf, GridClientTcpPacket::BASIC_HEADER_SIZE),
             asio::transfer_exactly(GridClientTcpPacket::BASIC_HEADER_SIZE),
             boost::bind(
-                    &GridClientAsyncTcpConnection::handleAsyncReadHeader,
-                    this,
-                    dataPtr,
-                    boost::asio::placeholders::error,
-                    boost::asio::placeholders::bytes_transferred));
+                &GridClientAsyncTcpConnection::handleAsyncReadHeader,
+                this,
+                dataPtr,
+                boost::asio::placeholders::error,
+                boost::asio::placeholders::bytes_transferred));
 }
 
 void GridClientAsyncTcpConnection::handleAsyncReadHeader(TGridAsyncIoDataPtr dataPtr,
@@ -685,7 +683,6 @@ void GridClientAsyncTcpConnection::handleAsyncReadBody(TGridAsyncIoDataPtr dataP
  * @param pPort Port to connect to.
  */
 void GridClientRawSyncTcpConnection::connect(const string& pHost, int pPort) {
-
     port = pPort;
     address = pHost;
 

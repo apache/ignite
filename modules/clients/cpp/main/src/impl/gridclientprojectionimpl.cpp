@@ -99,7 +99,6 @@ void GridClientProjectionImpl::withReconnectHandling(ClientProjectionClosure& c,
     // First, we try the affinity node.
     TGridClientNodePtr node = affinityNode(cacheName, affKey);
 
-
     set<GridUuid> seenUuids;
 
     GridClientCompositeFilter<GridClientNode> filter;

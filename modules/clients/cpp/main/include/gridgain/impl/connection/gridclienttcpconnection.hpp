@@ -27,7 +27,9 @@ using org::gridgain::grid::kernal::processors::rest::client::message::ObjectWrap
 /** Forward declaration. */
 class GridClientConnectionPool;
 
+/** Forward declaration. */
 class GridClientSyncTcpConnection;
+
 /**
  * This class represents a data packet used in
  * GridGain binary protocol for data exchange.
@@ -96,6 +98,7 @@ public:
     friend std::ostream& operator <<(std::ostream& stream, const GridClientTcpPacket& packet);
 
     friend class GridClientSyncTcpConnection;
+
     friend class GridClientRawSyncTcpConnection;
 
 private:
@@ -315,7 +318,6 @@ private:
     std::string address;
     int port;
     struct sockaddr_in server;
-
 };
 
 

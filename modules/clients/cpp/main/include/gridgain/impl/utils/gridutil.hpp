@@ -34,7 +34,7 @@ public:
      * @param v Vector to output.
      * @return Target stream (for chaining).
      */
-    static std::ostream& toStream(std::ostream &out, const std::vector<std::string> &v);
+    static std::ostream& toStream(std::ostream& out, const std::vector<std::string>& v);
 
 
     /**
@@ -44,7 +44,7 @@ public:
      * @param v Vector to output.
      * @return Target stream (for chaining).
      */
-    static std::ostream& toStream(std::ostream &out, const std::vector<GridSocketAddress> &v);
+    static std::ostream& toStream(std::ostream& out, const std::vector<GridSocketAddress>& v);
 
     /**
      * Returns current system time in milliseconds.

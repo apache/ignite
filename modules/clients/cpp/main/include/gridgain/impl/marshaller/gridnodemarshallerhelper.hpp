@@ -41,14 +41,14 @@ public:
      *
      * @param pIntAddrs List of address strings.
      */
-    void setTcpAddresses(std::vector<GridSocketAddress> & pIntAddrs);
+    void setTcpAddresses(std::vector<GridSocketAddress>& pIntAddrs);
 
     /**
      * Sets REST HTTP server addresses.
      *
      * @param pExtAddrs List of address strings.
      */
-    void setJettyAddresses(std::vector<GridSocketAddress> & pExtAddrs);
+    void setJettyAddresses(std::vector<GridSocketAddress>& pExtAddrs);
 
     /**
      * Sets metrics.
@@ -83,14 +83,14 @@ public:
      *
      * @param routerAddress Router address.
      */
-    void setRouterJettyAddress(GridSocketAddress & routerAddress);
+    void setRouterJettyAddress(GridSocketAddress& routerAddress);
 
     /**
      * Sets the router HTTP address.
      *
      * @param routerAddress Router address.
      */
-    void setRouterTcpAddress(GridSocketAddress & routerAddress);
+    void setRouterTcpAddress(GridSocketAddress& routerAddress);
 
     /**
      * Sets the number of replicas for this node.

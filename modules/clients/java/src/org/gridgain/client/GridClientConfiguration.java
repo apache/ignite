@@ -104,7 +104,7 @@ public class GridClientConfiguration {
     private ExecutorService executor;
 
     /** Marshaller. */
-    private GridClientMarshaller marshaller = new GridClientJdkMarshaller();
+    private GridClientMarshaller marshaller = new GridClientOptimizedMarshaller();
 
     /**
      * Creates default configuration.

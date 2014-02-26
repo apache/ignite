@@ -95,7 +95,6 @@ void GridClientTcpCommandExecutor::executeTaskCmd(const GridSocketAddress& host,
     executeCmd(host, taskCmd, rslt);
 }
 
-
 /**
  * Sends a general command to a remote host.
  *

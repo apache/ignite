@@ -6,6 +6,7 @@
  *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
+
 #include "gridgain/impl/utils/gridclientdebug.hpp"
 
 #include <iostream>

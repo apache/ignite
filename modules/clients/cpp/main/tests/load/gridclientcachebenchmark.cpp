@@ -78,7 +78,7 @@ int randomInt(int max, unsigned int* seed) {
 class TestThread: private boost::noncopyable {
 public:
     /**
-     * Constructes the test thread.
+     * Constructs the test thread.
      *
      * @param iterationCnt How many iterations to perform.
      */
@@ -96,7 +96,7 @@ public:
 
             int value = 42;
 
-                switch (opType) {
+            switch (opType) {
                 case PUT: {
                     TGridClientVariantMap theMap;
                     theMap[42] = 42;

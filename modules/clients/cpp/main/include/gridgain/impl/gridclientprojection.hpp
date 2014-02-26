@@ -87,7 +87,7 @@ protected:
     }
 
     /** Returns the unique ID of the client. */
-    GridUuid & clientUniqueUuid() {
+    GridUuid& clientUniqueUuid() {
         return sharedData->clientUniqueUuid();
     }
 

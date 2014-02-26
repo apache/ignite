@@ -6,6 +6,7 @@
  *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
+
 #include "gridgain/impl/utils/gridclientdebug.hpp"
 
 #include <iostream>
@@ -59,9 +60,8 @@ void GridClientProtobufMarshaller::marshal(const std::string& str, std::vector<i
 }
 
 void GridClientProtobufMarshaller::marshal(int64_t i64, std::vector<int8_t>& bytes) {
-
     bytes.resize(sizeof(i64));
-    memset(&bytes[0],0,sizeof(i64));
+    memset(&bytes[0], 0, sizeof(i64));
 
     GridClientByteUtils::valueToBytes(i64, &bytes[0], sizeof(i64));
 }
@@ -71,7 +71,6 @@ void GridClientProtobufMarshaller::marshal(const GridUuid& uuid, std::vector<int
 }
 
 void GridClientProtobufMarshaller::unmarshal(const std::vector<int8_t>& bytes, ::google::protobuf::Message& msg) {
-
     ::unmarshalMsg((int8_t*)bytes.data(), bytes.size(), msg);
 }
 
