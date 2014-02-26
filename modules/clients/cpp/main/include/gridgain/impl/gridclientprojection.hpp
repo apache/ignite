@@ -86,6 +86,11 @@ protected:
         return sharedData->clientUniqueId();
     }
 
+    /** Returns the unique ID of the client. */
+    GridUuid & clientUniqueUuid() {
+        return sharedData->clientUniqueUuid();
+    }
+
     /** Returns the actual list of the nodes in the current topology. */
     TNodesSet topologyNodes() const {
         return sharedData->topology()->nodes();

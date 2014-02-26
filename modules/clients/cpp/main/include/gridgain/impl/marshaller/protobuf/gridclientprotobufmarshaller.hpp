@@ -180,12 +180,14 @@ public:
     }
 
     /**
-     * Marshals a Protobuf message to an array of bytes.
+     * Marshals a Protobuf message to an array of bytes. Note that memory is allocated using new[] inside the call and client code is responsible for calling delete[] on the buffer
      *
      * @param msg Message to marshal.
-     * @param bytes Octetstring to write result to.
+     * @param pBuffer - buffer to accept serialized message
+     * @param bufferLength - Length of data packed into buffer. Note that client is responsible for calling delete[] on the buffer
      */
-    static void marshalMsg(const ::google::protobuf::Message& msg, std::string& bytes);
+    static void marshalMsg(const ::google::protobuf::Message& msg, int8_t * & pBuffer, unsigned long & bufferLength);
+
 };
 
 /**

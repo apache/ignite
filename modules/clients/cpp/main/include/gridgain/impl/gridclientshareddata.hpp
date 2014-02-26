@@ -58,6 +58,10 @@ public:
         return clientId.uuid();
     }
 
+    GridUuid & clientUniqueUuid() {
+        return clientId;
+    }
+
     /**
      * Method for accessing client UUID.
      *

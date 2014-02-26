@@ -41,14 +41,14 @@ public:
      *
      * @param pIntAddrs List of address strings.
      */
-    void setTcpAddresses(const std::vector<std::string>& pIntAddrs);
+    void setTcpAddresses(std::vector<GridSocketAddress> & pIntAddrs);
 
     /**
      * Sets REST HTTP server addresses.
      *
      * @param pExtAddrs List of address strings.
      */
-    void setJettyAddresses(const std::vector<std::string>& pExtAddrs);
+    void setJettyAddresses(std::vector<GridSocketAddress> & pExtAddrs);
 
     /**
      * Sets metrics.
@@ -65,20 +65,6 @@ public:
     void setAttributes(const TGridClientVariantMap& pAttrs);
 
     /**
-     * Sets REST binary protocol port.
-     *
-     * @param pTcpPort Port on which REST binary protocol is bound.
-     */
-    void setTcpPort(int pTcpPort);
-
-    /**
-     * Sets REST http port.
-     *
-     * @param pJettyPort REST http port.
-     */
-    void setJettyPort(int pJettyPort);
-
-    /**
      * Sets configured node caches.
      *
      * @param pCaches std::map where key is cache name and value is cache mode ("LOCAL", "REPLICATED", "PARTITIONED").
@@ -93,25 +79,18 @@ public:
     void setDefaultCacheMode(const std::string& dfltCacheMode);
 
     /**
-     * Sets the router address.
+     * Sets the router TCP address.
      *
      * @param routerAddress Router address.
      */
-    void setRouterAddress(const std::string& routerAddress);
+    void setRouterJettyAddress(GridSocketAddress & routerAddress);
 
     /**
-     * Sets the router TCP port.
+     * Sets the router HTTP address.
      *
-     * @param tcpPort Router TCP port.
+     * @param routerAddress Router address.
      */
-    void setRouterTcpPort(int tcpPort);
-
-    /**
-     * Sets the router HTTP port.
-     *
-     * @param jettyPort Router HTTP port.
-     */
-    void setRouterJettyPort(int jettyPort);
+    void setRouterTcpAddress(GridSocketAddress & routerAddress);
 
     /**
      * Sets the number of replicas for this node.

@@ -165,7 +165,7 @@ static bool doUnwrapSimpleType (const ObjectWrapper& objWrapper, GridClientVaria
             return getTaskTesult(binary, var);
 
         default: // Non-simple type
-        	break;
+            break;
     }
 
     return unwrapRes;
@@ -193,53 +193,60 @@ public:
     }
 
     virtual void visit(const int16_t pShort) const {
-        TByteVector bytes;
+        int8_t bytes[sizeof(pShort)];
 
-        assert(sizeof(pShort) == 2);
+        memset(&bytes[0],0,sizeof(pShort));
 
-        GridClientByteUtils::valueToBytes(pShort, bytes);
+        GridClientByteUtils::valueToBytes(pShort, &bytes[0], sizeof(pShort));
 
-        serialize(SHORT, bytes);
+        serialize(SHORT, bytes, sizeof(pShort));
     }
 
     virtual void visit(const int32_t pInt) const {
-        TByteVector bytes;
 
-        assert(sizeof(pInt) == 4);
+        int8_t bytes[sizeof(pInt)];
 
-        GridClientByteUtils::valueToBytes(pInt, bytes);
+        memset(&bytes[0], 0, sizeof(pInt));
 
-        serialize(INT32, bytes);
+        GridClientByteUtils::valueToBytes(pInt, &bytes[0], sizeof(pInt));
+
+        serialize(INT32, bytes, sizeof(pInt));
     }
 
     virtual void visit(const int64_t pLong) const {
-        TByteVector bytes;
+        int8_t bytes[sizeof(pLong)];
 
-        assert(sizeof(pLong) == 8);
+        memset(&bytes[0],0,sizeof(pLong));
 
-        GridClientByteUtils::valueToBytes(pLong, bytes);
+        GridClientByteUtils::valueToBytes(pLong, &bytes[0], sizeof(pLong));
 
-        serialize(INT64, bytes);
+        serialize(INT64, bytes, sizeof(pLong));
     }
 
     virtual void visit(const float pFloat) const {
-        TByteVector bytes;
 
         int32_t intBits = GridFloatHasheableObject::floatToIntBits(pFloat);
 
-        GridClientByteUtils::valueToBytes(intBits, bytes);
+        int8_t bytes[sizeof(intBits)];
 
-        serialize(INT32, bytes);
+        memset(&bytes[0],0,sizeof(intBits));
+
+        GridClientByteUtils::valueToBytes(intBits, &bytes[0], sizeof(intBits));
+
+        serialize(INT32, bytes, sizeof(intBits));
     }
 
     virtual void visit(const double pDouble) const {
-        TByteVector bytes;
 
         int64_t longBits = GridDoubleHasheableObject::doubleToLongBits(pDouble);
 
-        GridClientByteUtils::valueToBytes(longBits, bytes);
+        int8_t bytes[sizeof(longBits)];
 
-        serialize(INT64, bytes);
+        memset(&bytes[0],0,sizeof(longBits));
+
+        GridClientByteUtils::valueToBytes(longBits, &bytes[0], sizeof(longBits));
+
+        serialize(INT64, bytes,sizeof(longBits));
     }
 
     virtual void visit(const string& pText) const {
@@ -270,7 +277,13 @@ public:
 
         objWrapper.set_type(COLLECTION);
 
-        GridClientProtobufMarshaller::marshalMsg(c, *objWrapper.mutable_binary());
+        int8_t * pBuffer;
+        unsigned long bufferLength;
+
+        GridClientProtobufMarshaller::marshalMsg(c, pBuffer, bufferLength);
+        objWrapper.set_binary(pBuffer, bufferLength);
+        delete[] pBuffer;
+
     }
 
     virtual void visit(const GridUuid& uuid) const {
@@ -286,6 +299,15 @@ public:
 
         if (bytes.size() > 0)
             objWrapper.set_binary(bytes.data(), bytes.size());
+        else
+            objWrapper.set_binary((void*)NULL, 0);
+    }
+
+    void serialize(const ObjectWrapperType& type, int8_t * bytes, int byteslen) const {
+        objWrapper.set_type(type);
+
+        if (byteslen > 0)
+            objWrapper.set_binary(bytes, byteslen);
         else
             objWrapper.set_binary((void*)NULL, 0);
     }

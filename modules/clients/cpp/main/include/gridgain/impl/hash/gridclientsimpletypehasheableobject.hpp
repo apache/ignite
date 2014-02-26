@@ -40,7 +40,11 @@ public:
      * @param bytes Vector to fill.
      */
     virtual void convertToBytes(std::vector<int8_t>& bytes) const {
-        GridClientByteUtils::valueToBytes(val, bytes, GridClientByteUtils::LITTLE_ENDIAN_ORDER);
+
+        bytes.resize(sizeof(val));
+        memset(&bytes[0],0,sizeof(val));
+
+        GridClientByteUtils::valueToBytes(val, &bytes[0],sizeof(val), GridClientByteUtils::LITTLE_ENDIAN_ORDER);
     }
 
     /**

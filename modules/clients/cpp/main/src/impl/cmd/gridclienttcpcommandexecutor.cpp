@@ -95,6 +95,7 @@ void GridClientTcpCommandExecutor::executeTaskCmd(const GridSocketAddress& host,
     executeCmd(host, taskCmd, rslt);
 }
 
+
 /**
  * Sends a general command to a remote host.
  *
@@ -158,7 +159,7 @@ void GridClientTcpCommandExecutor::stop() {
  * @param respMsg Protobuf ObjectWrapper response to fill.
  */
 void GridClientTcpCommandExecutor::sendPacket(std::shared_ptr<GridClientTcpConnection> conn,
-	const GridClientTcpPacket& tcpPacket, GridClientTcpPacket& tcpResponse) {
+    const GridClientTcpPacket& tcpPacket, GridClientTcpPacket& tcpResponse) {
     try {
         conn->send(tcpPacket, tcpResponse);
     }

@@ -32,6 +32,9 @@ public:
     ClientMessageProjectionClosure(std::string pClientId) :
         clientId(pClientId) {};
 
+    ClientMessageProjectionClosure(GridUuid & clientId) :
+        clientId(clientId) {};
+
     /**
      * Fills generic message command fields.
      *
@@ -47,7 +50,7 @@ public:
 
 private:
     /** Client id. */
-    std::string clientId;
+    GridUuid clientId;
 };
 
 #endif

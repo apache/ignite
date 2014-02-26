@@ -17,7 +17,7 @@ COMMON_SRC = src/model/gridclientuuid.cpp src/model/gridclientvariant.cpp \
 
 lib_LTLIBRARIES = libgridgain-client.la
 libgridgain_client_la_SOURCES = $(COMMON_SRC)
-libgridgain_client_la_LIBADD = -lboost_system -lboost_thread -lcrypto -lprotobuf -lssl
+libgridgain_client_la_LIBADD = -lboost_system -lboost_thread -lcrypto -lprotobuf -lssl -lboost_program_options
 libgridgain_client_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -release $(PACKAGE_VERSION)
 
 EXTRA_DIST=$(wildcard src/*.cpp) $(wildcard include/*.hpp)

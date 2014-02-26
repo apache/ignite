@@ -14,6 +14,8 @@
 #include <string>
 #include <functional>
 
+#include <boost/uuid/uuid.hpp>
+
 #include <gridgain/gridhasheableobject.hpp>
 
 /**
@@ -23,6 +25,11 @@
  * @version @cpp.version
  */
 class GRIDGAIN_API GridUuid: public GridHasheableObject {
+    class Impl {
+    public:
+        /** Wrapped Boost uuid. */
+        boost::uuids::uuid uuid_;
+    };
 public:
     /**
      * Public default constructor. Creates an empty UUID.
@@ -140,7 +147,7 @@ public:
     void rawBytes(std::vector<int8_t>& bytes) const;
 private:
     class Impl;
-    Impl* pimpl;
+    Impl pimpl;
 
     /**
      * Prints UUID to stream

@@ -223,9 +223,10 @@ int64_t GridDoubleHasheableObject::doubleToRawLongBits(double val) {
  * @param bytes Vector to fill.
  */
 void GridDoubleHasheableObject::convertToBytes(std::vector<int8_t>& bytes) const {
-    bytes.clear();
-
     int64_t val = doubleToRawLongBits(doubleVal);
 
-    GridClientByteUtils::valueToBytes(val, bytes, GridClientByteUtils::LITTLE_ENDIAN_ORDER);
+    bytes.resize(sizeof(val));
+    memset(&bytes[0],0,sizeof(val));
+
+    GridClientByteUtils::valueToBytes(val, &bytes[0], sizeof(val), GridClientByteUtils::LITTLE_ENDIAN_ORDER);
 }

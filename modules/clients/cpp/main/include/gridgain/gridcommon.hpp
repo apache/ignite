@@ -14,6 +14,7 @@
 #include <memory>
 #include <unordered_map>
 #include <cstdint>
+#include <cstring>
 
 #define strtoll _strtoi64
 
@@ -21,5 +22,6 @@
 
 #include <memory>
 #include <unordered_map>
+#include <cstring>
 
 #endif

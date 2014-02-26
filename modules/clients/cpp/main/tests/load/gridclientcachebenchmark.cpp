@@ -13,36 +13,56 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/thread.hpp>
 #include <boost/foreach.hpp>
+#include <boost/program_options.hpp>
+#include <boost/timer.hpp>
 
 #include "gridtestcommon.hpp"
+#include "gridgain/impl/gridclientpartitionedaffinity.hpp"
 
-/** Number of keys, used in PUT/GET operations. */
-const int KEY_COUNT = 1000;
+std::atomic < unsigned long long > gIters;
 
-/** Size of arrays used as stored values. */
-const int VALUE_LENGTH = 1024*4;
+/** Maximum number of distinct keys. */
+const int KEY_COUNT = 1000000;
 
-/** Probability of put operation in percents; probability of get is 100 - WRITE_PROB. */
-const int WRITE_PROB_PERCENT = 20;
-
-/** Cached values for store. */
-std::vector<std::vector<int8_t> > values;
+/** Map of command line arguments */
+boost::program_options::variables_map vm;
 
 /** GridGain client interface. */
 TGridClientPtr client;
 
-/**
- * Generates random values into the vector.
- *
- * This function is NOT thread-safe.
- *
- * @param vec A vector to generate random values into.
- * @param length A number of values to generate.
- */
-void genRandomBytes(std::vector<int8_t>& vec, int length) {
-    for (int i = 0; i < length; i++) {
-        vec.push_back((int8_t)rand());
+/** Used to stop worker threads. */
+TGridAtomicBool gExit;
+
+/** Used to stop only collect status after warmup. */
+TGridAtomicBool gWarmupDone;
+
+enum GridClientCacheTestType {
+    PUT = 0, GET, PUT_TX, GET_TX, NUM_TEST_TYPES
+};
+
+void StatsPrinterThreadProc()
+{
+    while(true)
+    {
+        std::cout << "Operations for last second: " << gIters << std::endl;
+        gIters = 0;
+        boost::this_thread::sleep(boost::posix_time::seconds(1));
     }
+}
+
+
+GridClientCacheTestType testTypeFromString(std::string typeName)
+{
+    if (!strcmp(typeName.c_str(), "PUT"))
+        return PUT;
+    else if (!strcmp(typeName.c_str(), "PUT_TX"))
+        return PUT_TX;
+    else if (!strcmp(typeName.c_str(), "GET_TX"))
+        return GET_TX;
+    else if (!strcmp(typeName.c_str(), "GET"))
+        return GET;
+    return NUM_TEST_TYPES;
+
 }
 
 /**
@@ -62,33 +82,51 @@ public:
      *
      * @param iterationCnt How many iterations to perform.
      */
-    TestThread(int iterationCnt) {
-        iters = 0;
+    TestThread(GridClientCacheTestType op) {
+        iters = 1;
 
         seed = time(NULL);
 
-        thread = boost::thread(boost::bind(&TestThread::run, this, iterationCnt));
+        thread = boost::thread(boost::bind(&TestThread::run, this, op));
     }
 
-    void run(int iterationCnt) {
+    void run(GridClientCacheTestType opType) {
         try {
-            TGridClientDataPtr data = client->data(CACHE_NAME);
+            TGridClientDataPtr data = client->data(vm["cachename"].as<string>());
 
-            for (int i = 0; i < iterationCnt; i++) {
-                if (randomInt(100, &seed) <= WRITE_PROB_PERCENT) {
-                    data->put(randomInt(KEY_COUNT - 1, &seed), values.at(randomInt(KEY_COUNT - 1, &seed)));
+            int value = 42;
+
+                switch (opType) {
+                case PUT: {
+                    TGridClientVariantMap theMap;
+                    theMap[42] = 42;
+                    while (!gExit )
+                    {
+                        //                      data->put(randomInt(KEY_COUNT - 1, &seed), value);
+                                                data->putAll(theMap);
+                                                ++gIters;
+                    }
                 }
-                else {
-                    data->get((int16_t)randomInt(KEY_COUNT - 1, &seed));
+                    break;
+                case PUT_TX: {
+                }
+                    break;
+                case GET: {
+                    while (!gExit && ++iters )
+                        data->get((int16_t) randomInt(KEY_COUNT - 1, &seed));
+                }
+                    break;
+                case GET_TX: {
+                }
+                    break;
+                default:
+                    std::cerr << "Invalid test operation.\n";
+                    break;
                 }
 
-                iters++;
-            }
-        }
-        catch (GridClientException& e) {
+        } catch (GridClientException& e) {
             std::cerr << "GridClientException: " << e.what() << "\n";
-        }
-        catch (...) {
+        } catch (...) {
             std::cerr << "Unknown exception.\n";
         }
     }
@@ -112,86 +150,86 @@ private:
 
 typedef std::shared_ptr<TestThread> TestThreadPtr;
 
-/**
- * Prints tests summary,
- *
- * @param workers Collection of test worker threads.
- * @param startTime Time when test eas started.
- */
-void printSummary(std::vector<TestThreadPtr>& workers, long startTime) {
-    long total = 0;
+int main(int argc, const char** argv) {
 
-    int thCnt = workers.size();
+    gExit = false;
+    gWarmupDone = false;
 
-    for (std::vector<TestThreadPtr>::iterator i = workers.begin(); i != workers.end(); i++)
-        total += (*i)->getIters();
+    using namespace std;
+    using namespace boost::program_options;
 
-    double timeSpent = ((double)(currentTimeMillis() - startTime)) / 1000;
+    // initialize random seed
+    srand(time(NULL));
 
-    printf("%8d, %12.0f, %12.0f, %12li, %12.2lf\n", thCnt, (double)total/timeSpent,
-            (double)total/timeSpent/thCnt, total, timeSpent);
-}
+    // Declare the supported options.
+    options_description desc("Allowed options");
+    desc.add_options()("help", "produce help message")("host", value<string>(),
+            "Host to connect to")("port", value<int>(), "Port to connect to")(
+            "threads", value<int>(), "Number of threads")("testtype",
+            value<string>(), "Type of operations to run")("cachename",
+            value<string>(), "Cache name")
+            ("warmupseconds", value<int>(), "Seconds to warm up")
+            ("runseconds", value<int>(), "Seconds to run")
+            ("usetransactions",boost::program_options::value<bool>(), "Use transactions (bool)");
 
-/**
- * Runs the cache benchmark.
- *
- * @param threadCnt Number of submitting threads.
- * @param iterationCnt Number of operations per thread.
- */
-void gridClientCacheBenchmark(int threadCnt, int iterationCnt) {
-    values.clear();
-
-    // initialize values cache
-    for (int i = 0; i < KEY_COUNT; i++) {
-        std::vector<int8_t> vec;
-
-        genRandomBytes(vec, VALUE_LENGTH);
-
-        assert(vec.size() == (size_t)VALUE_LENGTH);
-
-        values.push_back(vec);
-    }
-
-    assert(values.size() == (size_t)KEY_COUNT);
+    store(parse_command_line(argc, argv, desc), vm);
+    notify(vm);
 
     GridClientConfiguration cfg = clientConfig();
 
     std::vector<GridSocketAddress> servers;
-    servers.push_back(GridSocketAddress("127.0.0.1", 11211));
+    servers.push_back(GridSocketAddress(vm["host"].as<string>(), vm["port"].as<int>())); // localhost:11211
+
     cfg.servers(servers);
 
-    client = GridClientFactory::start(cfg);
+    GridClientDataConfiguration cacheCfg;
 
+    // Set remote cache name.
+    cacheCfg.name(vm["cachename"].as<string>());
+
+    std::shared_ptr<GridClientDataAffinity> ptrAffinity(new GridClientPartitionedAffinity());
+
+    // Set client partitioned affinity for this cache.
+    cacheCfg.affinity(ptrAffinity);
+
+    std::vector<GridClientDataConfiguration> dataConfigurations;
+    dataConfigurations.push_back(cacheCfg);
+
+    cfg.dataConfiguration(dataConfigurations);
+
+
+    client = GridClientFactory::start(cfg);
     std::vector<TestThreadPtr> workers;
 
-    double startTime = currentTimeMillis();
+    boost::thread printerThread(StatsPrinterThreadProc);
 
-    for(int i = 0; i < threadCnt; i++) {
-        workers.push_back(TestThreadPtr(new TestThread(iterationCnt)));
+    int numThreads = vm["threads"].as<int>();
+    for (int i = 0; i < numThreads; i++) {
+        workers.push_back(TestThreadPtr(new TestThread(testTypeFromString(vm["testtype"].as<string>()))));
     }
+
+    // let it warm up for requested amount of time and start gathering stats
+    boost::this_thread::sleep(boost::posix_time::seconds( vm["warmupseconds"].as<int>()));
+    gWarmupDone = true;
+
+    // Let tests run for requested amount of time and then signal the exit
+    boost::this_thread::sleep(boost::posix_time::seconds( vm["runseconds"].as<int>()));
+    gExit = true;
+
 
     //join all threads
-    for (std::vector<TestThreadPtr>::iterator i = workers.begin(); i != workers.end(); i++) {
+    for (std::vector<TestThreadPtr>::iterator i = workers.begin();
+            i != workers.end(); i++) {
         (*i)->join();
     }
-
-    printSummary(workers, startTime);
 
     workers.clear();
     client.reset();
 
+
     GridClientFactory::stopAll();
-}
 
-int main(int argc, const char** argv) {
-    // initialize random seed
-    srand(time(NULL));
 
-    printf("%8s, %12s, %12s, %12s, %12s\n", "Threads", "It./s.", "It./s.*th.", "Iters.", "Time (sec.)");
-
-    for (int i = 4; i <= 128; i *= 2) {
-        gridClientCacheBenchmark(i, 10000);
-    }
 
     return EXIT_SUCCESS;
 }
