@@ -561,35 +561,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
      * @return Returns {@code true} if removed.
      */
     public boolean removeLocalEventListener(GridPredicate<? extends GridEvent> lsnr, @Nullable int... types) {
-        assert lsnr != null;
-
-        boolean found = false;
-
-        if (F.isEmpty(types)) {
-            for (Set<GridLocalEventListener> set : lsnrs.values()) {
-                for (GridLocalEventListener l : set) {
-                    if (l instanceof UserListenerWrapper && ((UserListenerWrapper)l).listener().equals(lsnr)) {
-                        found = set.remove(l);
-                    }
-                }
-            }
-        }
-        else {
-            assert types != null;
-
-            for (int type : types) {
-                Set<GridLocalEventListener> set = lsnrs.get(type);
-
-                if (set != null) {
-                    for (GridLocalEventListener l : set) {
-                        if (l instanceof UserListenerWrapper && ((UserListenerWrapper)l).listener().equals(lsnr))
-                            found = set.remove(l);
-                    }
-                }
-            }
-        }
-
-        return found;
+        return removeLocalEventListener(new UserListenerWrapper(lsnr), types);
     }
 
     /**
@@ -1074,14 +1046,14 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
     }
 
     /**
-     * Listener wrapping user-provided listener predicate.
+     * Wraps user listener predicate provided via {@link GridEvents#localListen(GridPredicate, int...)}.
      */
     private class UserListenerWrapper implements GridLocalEventListener {
         /** */
         private final GridPredicate<GridEvent> lsnr;
 
         /**
-         * @param lsnr User listener
+         * @param lsnr User listener predicate.
          */
         private UserListenerWrapper(GridPredicate<? extends GridEvent> lsnr) {
             this.lsnr = (GridPredicate<GridEvent>)lsnr;
@@ -1096,10 +1068,27 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
         /** {@inheritDoc} */
         @Override public void onEvent(GridEvent evt) {
-           boolean rmv = !lsnr.apply(evt);
-
-            if (rmv)
+            if (!lsnr.apply(evt))
                 removeLocalEventListener(this);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            UserListenerWrapper that = (UserListenerWrapper) o;
+
+            return lsnr.equals(that.lsnr);
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return lsnr.hashCode();
         }
     }
 }
