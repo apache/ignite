@@ -137,12 +137,12 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridCacheQueue<T> queue(String name, GridCacheQueueType type, int cap,
-        boolean collocated, boolean create) throws GridException {
+    @Override public <T> GridCacheQueue<T> queue(String name, int cap, boolean collocated, boolean create)
+        throws GridException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
-            return delegate.queue(name, type, cap, collocated, create);
+            return delegate.queue(name, cap, collocated, create);
         }
         finally {
             gate.leave(old);

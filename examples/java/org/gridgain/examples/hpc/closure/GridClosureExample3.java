@@ -33,7 +33,7 @@ public class GridClosureExample3 {
     public static void main(String[] args) throws Exception {
         try (Grid g = GridGain.start(args.length == 0 ? "examples/config/example-default.xml" : args[0])) {
             // Broadcasts message to all nodes.
-            g.compute().run(new Runnable() {
+            g.compute().broadcast(new Runnable() {
                     @Override public void run() {
                         System.out.println(">>>>>");
                         System.out.println(">>>>> Hello Node! :)");

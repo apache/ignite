@@ -64,9 +64,6 @@ public enum GridCacheFlag {
     /** Synchronous commit. */
     SYNC_COMMIT,
 
-    /** Synchronous rollback. */
-    SYNC_ROLLBACK,
-
     /**
      * Switches a cache projection to work in {@code 'invalidation'} mode.
      * Instead of updating remote entries with new values, small invalidation

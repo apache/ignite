@@ -52,7 +52,7 @@ import org.gridgain.grid.*;
  * @see GridCacheDataStructures#atomicSequence(String, long, boolean)
  * @see GridCacheDataStructures#removeAtomicSequence(String)
  */
-public interface GridCacheAtomicSequence extends GridMetadataAware {
+public interface GridCacheAtomicSequence {
     /**
      * Name of atomic sequence.
      *
@@ -77,28 +77,12 @@ public interface GridCacheAtomicSequence extends GridMetadataAware {
     public long incrementAndGet() throws GridException;
 
     /**
-     * Asynchronously increments and returns atomic sequence value.
-     *
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Long> incrementAndGetAsync() throws GridException;
-
-    /**
      * Gets and increments current value of atomic sequence.
      *
      * @return Value of atomic sequence before increment.
      * @throws GridException If operation failed.
      */
     public long getAndIncrement() throws GridException;
-
-    /**
-     * Asynchronously increments atomic sequence value and returns previous atomic sequence value.
-     *
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Long> getAndIncrementAsync() throws GridException;
 
     /**
      * Adds {@code l} elements to atomic sequence and gets value of atomic sequence.
@@ -110,15 +94,6 @@ public interface GridCacheAtomicSequence extends GridMetadataAware {
     public long addAndGet(long l) throws GridException;
 
     /**
-     * Asynchronously adds {@code l} elements to atomic sequence and gets value of atomic sequence.
-     *
-     * @param l Number of added elements.
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Long> addAndGetAsync(long l) throws GridException;
-
-    /**
      * Gets current value of atomic sequence and adds {@code l} elements.
      *
      * @param l Number of added elements.
@@ -126,15 +101,6 @@ public interface GridCacheAtomicSequence extends GridMetadataAware {
      * @throws GridException If operation failed.
      */
     public long getAndAdd(long l) throws GridException;
-
-    /**
-     * Asynchronously gets current value of atomic sequence and adds {@code l} elements.
-     *
-     * @param l Number of added elements.
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Long> getAndAddAsync(long l) throws GridException;
 
     /**
      * Gets local batch size for this atomic sequence.

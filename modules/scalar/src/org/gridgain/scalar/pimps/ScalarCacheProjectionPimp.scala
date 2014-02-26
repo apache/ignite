@@ -18,8 +18,6 @@ import org.gridgain.grid.cache._
 import org.gridgain.grid.lang._
 import org.gridgain.scalar._
 import org.jetbrains.annotations.Nullable
-import org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
-import GridCacheQueryType._
 import scalar._
 
 /**
@@ -578,9 +576,9 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(kp != null)
         assert(vp != null)
 
-        val q = value.cache[K, V]().queries().createQuery(SCAN, cls, null)
-            .remoteKeyFilter(kp)
-            .remoteValueFilter(vp)
+        val q = value.cache[K, V]().queries().createScanQuery(null)
+            // TODO GG-7625 .remoteKeyFilter(kp)
+            // TODO GG-7625 .remoteValueFilter(vp)
 
         (if (grid != null) q.projection(grid) else q).execute().get.map(e => (e.getKey, e.getValue))
     }
@@ -685,11 +683,11 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
 
         val q =
             if (!args.isEmpty)
-                value.cache().queries().createQuery(SQL, cls, clause).queryArguments(args.asInstanceOf[Seq[Object]]: _*)
+                value.cache().queries().createSqlQuery(cls, clause)// TODO GG-7625 .queryArguments(args.asInstanceOf[Seq[Object]]: _*)
             else
-                value.cache().queries().createQuery(SQL, cls, clause)
+                value.cache().queries().createSqlQuery(cls, clause)
 
-        (if (grid != null) q.projection(grid) else q).execute().get.map(e => (e.getKey, e.getValue))
+        (if (grid != null) q.projection(grid) else q).execute(args).get.map(e => (e.getKey, e.getValue))
     }
 
     /**
@@ -810,7 +808,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(cls != null)
         assert(clause != null)
 
-        val q = value.cache().queries().createQuery(TEXT, cls, clause)
+        val q = value.cache().queries().createFullTextQuery(cls, clause)
 
         (if (grid != null) q.projection(grid) else q).execute().get.map(e => (e.getKey, e.getValue))
     }
@@ -909,10 +907,10 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(vp != null)
         assert(trans != null)
 
-        val q = value.cache[K, V]().queries().createTransformQuery[T](SCAN, cls, null)
-            .remoteKeyFilter(kp)
-            .remoteValueFilter(vp)
-            .remoteTransformer(trans)
+        val q = value.cache[K, V]().queries().createScanQuery[T](null)
+            // TODO GG-7625 .remoteKeyFilter(kp)
+            // TODO GG-7625 .remoteValueFilter(vp)
+        // TODO GG-7625 .remoteTransformer(trans)
 
         toScalaItr[K, T]((if (grid != null) q.projection(grid) else q).execute().get)
     }
@@ -1028,10 +1026,10 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
 
         val q =
             (if (!args.isEmpty)
-                value.cache[K, V]().queries().createTransformQuery[T](SQL, cls, clause).queryArguments(args.toArray)
+                value.cache[K, V]().queries().createSqlQuery[T](cls, clause)// TODO GG-7625 .queryArguments(args.toArray)
             else
-                value.cache[K, V]().queries().createTransformQuery[T](SQL, cls, clause))
-            .remoteTransformer(trans)
+                value.cache[K, V]().queries().createSqlQuery[T](cls, clause))
+        // TODO GG-7625 .remoteTransformer(trans)
 
         toScalaItr((if (grid != null) q.projection(grid) else q).execute().get)
     }
@@ -1170,8 +1168,8 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(clause != null)
         assert(trans != null)
 
-        val q = value.cache[K, V]().queries().createTransformQuery[T](TEXT, cls, clause)
-            .remoteTransformer(trans)
+        val q = value.cache[K, V]().queries().createFullTextQuery[T](cls, clause)
+        // TODO GG-7625 .remoteTransformer(trans)
 
         toScalaItr((if (grid != null) q.projection(grid) else q).execute().get)
     }
@@ -1280,13 +1278,13 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(rmtRdc != null)
         assert(locRdc != null)
 
-        val q = value.cache[K, V]().queries().createReduceQuery[R1, R2](SCAN, cls, null)
-            .remoteKeyFilter(kp)
-            .remoteValueFilter(vp)
-            .remoteReducer(toEntryReducer(rmtRdc))
-            .localReducer(locRdc)
+        val q = value.cache[K, V]().queries().createScanQuery[R1, R2]()
+            // TODO GG-7625 .remoteKeyFilter(kp)
+            // TODO GG-7625 .remoteValueFilter(vp)
+            // TODO GG-7625 .remoteReducer(toEntryReducer(rmtRdc))
+            // TODO GG-7625 .localReducer(locRdc)
 
-        (if (grid != null) q.projection(grid) else q).reduce().get
+        (if (grid != null) q.projection(grid) else q).execute().get
     }
 
     /**
@@ -1408,13 +1406,13 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
 
         val q =
             (if (!args.isEmpty)
-                value.cache[K, V]().queries().createReduceQuery[R1, R2](SQL, cls, clause).queryArguments(args.toArray)
+                value.cache[K, V]().queries().createSqlQuery[R1, R2](cls, clause)// TODO GG-7625 .queryArguments(args.toArray)
             else
-                value.cache[K, V]().queries().createReduceQuery[R1, R2](SQL, cls, clause))
-            .remoteReducer(toEntryReducer(rmtRdc))
-            .localReducer(locRdc)
+                value.cache[K, V]().queries().createSqlQuery[R1, R2](cls, clause))
+            // TODO GG-7625 .remoteReducer(toEntryReducer(rmtRdc))
+            // TODO GG-7625 .localReducer(locRdc)
 
-        (if (grid != null) q.projection(grid) else q).reduce().get
+        (if (grid != null) q.projection(grid) else q).execute().get
     }
 
     /**
@@ -1561,11 +1559,11 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(rmtRdc != null)
         assert(locRdc != null)
 
-        val q = value.cache[K, V]().queries().createReduceQuery[R1, R2](TEXT, cls, clause)
-            .remoteReducer(toEntryReducer(rmtRdc))
-            .localReducer(locRdc)
+        val q = value.cache[K, V]().queries().createFullTextQuery[R1, R2](cls, clause)
+            // TODO GG-7625 .remoteReducer(toEntryReducer(rmtRdc))
+            // TODO GG-7625 .localReducer(locRdc)
 
-        (if (grid != null) q.projection(grid) else q).reduce().get
+        (if (grid != null) q.projection(grid) else q).execute().get
     }
 
     /**
@@ -1677,12 +1675,12 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(vp != null)
         assert(rmtRdc != null)
 
-        val q = value.cache[K, V]().queries().createReduceQuery[R, R](SCAN, cls, null)
-            .remoteKeyFilter(kp)
-            .remoteValueFilter(vp)
-            .remoteReducer(toEntryReducer(rmtRdc))
+        val q = value.cache[K, V]().queries().createScanQuery[R, R](null)
+            // TODO GG-7625 .remoteKeyFilter(kp)
+            // TODO GG-7625 .remoteValueFilter(vp)
+            // TODO GG-7625 .remoteReducer(toEntryReducer(rmtRdc))
 
-        (if (grid != null) q.projection(grid) else q).reduceRemote().get
+        (if (grid != null) q.projection(grid) else q).execute().get
     }
 
     /**
@@ -1796,12 +1794,12 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
 
         val q =
             (if (!args.isEmpty)
-                value.cache[K, V]().queries().createReduceQuery[R, R](SQL, cls, clause).queryArguments(args.toArray)
+                value.cache[K, V]().queries().createSqlQuery[R, R](cls, clause)// TODO GG-7625 .queryArguments(args.toArray)
             else
-                value.cache[K, V]().queries().createReduceQuery[R, R](SQL, cls, clause))
-            .remoteReducer(toEntryReducer(rmtRdc))
+                value.cache[K, V]().queries().createSqlQuery[R, R](cls, clause))
+            // TODO GG-7625 .remoteReducer(toEntryReducer(rmtRdc))
 
-        (if (grid != null) q.projection(grid) else q).reduceRemote().get
+        (if (grid != null) q.projection(grid) else q).execute().get
     }
 
     /**
@@ -1938,10 +1936,10 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(clause != null)
         assert(rmtRdc != null)
 
-        val q = value.cache[K, V]().queries().createReduceQuery[R, R](TEXT, cls, clause)
-            .remoteReducer(toEntryReducer(rmtRdc))
+        val q = value.cache[K, V]().queries().createFullTextQuery[R, R](cls, clause)
+            // TODO GG-7625 .remoteReducer(toEntryReducer(rmtRdc))
 
-        (if (grid != null) q.projection(grid) else q).reduceRemote().get
+        (if (grid != null) q.projection(grid) else q).execute().get
     }
 
     /**
@@ -2043,7 +2041,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
 
         val q =
             if (!args.isEmpty)
-                value.cache[K, V]().queries().createFieldsQuery(clause).queryArguments(args.toArray)
+                value.cache[K, V]().queries().createFieldsQuery(clause)// TODO GG-7625 .queryArguments(args.toArray)
             else
                 value.cache[K, V]().queries().createFieldsQuery(clause)
 
