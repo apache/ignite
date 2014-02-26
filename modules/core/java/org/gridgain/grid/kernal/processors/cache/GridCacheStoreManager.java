@@ -48,6 +48,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** {@inheritDoc} */
     @Override protected void start0() throws GridException {
         if (store instanceof GridLifecycleAware) {
+            // Avoid second start() call on store in case when near cache is enabled.
             if (cctx.config().isWriteBehindEnabled() || cctx.isNear() || !CU.isNearEnabled(cctx))
                 ((GridLifecycleAware)store).start();
         }
@@ -56,6 +57,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         if (store instanceof GridLifecycleAware) {
+            // Avoid second stop() call on store in case when near cache is enabled.
             if (cctx.config().isWriteBehindEnabled() || cctx.isNear() || !CU.isNearEnabled(cctx)) {
                 try {
                     ((GridLifecycleAware)store).stop();
