@@ -9,11 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.query.jdbc;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.cache.query.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
@@ -23,7 +20,6 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.sql.*;
 import java.util.*;
 
 /**
@@ -92,68 +88,70 @@ public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<Strin
 
         /** {@inheritDoc} */
         @Override public Object execute() throws GridException {
-            byte status;
-            byte[] data;
+//            byte status;
+//            byte[] data;
+//
+//            try {
+//                GridCache<?, ?> cache = ((GridEx)grid).cachex(cacheName);
+//
+//                assert cache != null;
+//
+//                Collection<GridCacheSqlMetadata> metas = cache.queries().sqlMetadata();
+//
+//                Map<String, Map<String, Map<String, String>>> schemasMap =
+//                    new HashMap<>(metas.size());
+//                Collection<List<Object>> indexesInfo = new LinkedList<>();
+//
+//                for (GridCacheSqlMetadata meta : metas) {
+//                    String name = meta.cacheName();
+//
+//                    if (name == null)
+//                        name = "PUBLIC";
+//
+//                    Collection<String> types = meta.types();
+//
+//                    Map<String, Map<String, String>> typesMap =
+//                        new HashMap<>(types.size());
+//
+//                    for (String type : types) {
+//                        typesMap.put(type.toUpperCase(), meta.fields(type));
+//
+//                        for (GridCacheSqlIndexMetadata idx : meta.indexes(type)) {
+//                            int cnt = 0;
+//
+//                            for (String field : idx.fields()) {
+//                                indexesInfo.add(F.<Object>asList(name, type.toUpperCase(), !idx.unique(),
+//                                    idx.name().toUpperCase(), ++cnt, field, idx.descending(field)));
+//                            }
+//                        }
+//                    }
+//
+//                    schemasMap.put(name, typesMap);
+//                }
+//
+//                status = 0;
+//
+//                data = MARSHALLER.marshal(F.asList(schemasMap, indexesInfo));
+//            }
+//            catch (Throwable t) {
+//                U.error(log, "Failed to get metadata for JDBC.", t);
+//
+//                SQLException err = new SQLException(t.getMessage());
+//
+//                status = 1;
+//
+//                data = MARSHALLER.marshal(err);
+//            }
+//
+//            byte[] packet = new byte[data.length + 1];
+//
+//            packet[0] = status;
+//
+//            U.arrayCopy(data, 0, packet, 1, data.length);
+//
+//            return packet;
 
-            try {
-                GridCache<?, ?> cache = ((GridEx)grid).cachex(cacheName);
-
-                assert cache != null;
-
-                Collection<GridCacheSqlMetadata> metas = cache.queries().sqlMetadata();
-
-                Map<String, Map<String, Map<String, String>>> schemasMap =
-                    new HashMap<>(metas.size());
-                Collection<List<Object>> indexesInfo = new LinkedList<>();
-
-                for (GridCacheSqlMetadata meta : metas) {
-                    String name = meta.cacheName();
-
-                    if (name == null)
-                        name = "PUBLIC";
-
-                    Collection<String> types = meta.types();
-
-                    Map<String, Map<String, String>> typesMap =
-                        new HashMap<>(types.size());
-
-                    for (String type : types) {
-                        typesMap.put(type.toUpperCase(), meta.fields(type));
-
-                        for (GridCacheSqlIndexMetadata idx : meta.indexes(type)) {
-                            int cnt = 0;
-
-                            for (String field : idx.fields()) {
-                                indexesInfo.add(F.<Object>asList(name, type.toUpperCase(), !idx.unique(),
-                                    idx.name().toUpperCase(), ++cnt, field, idx.descending(field)));
-                            }
-                        }
-                    }
-
-                    schemasMap.put(name, typesMap);
-                }
-
-                status = 0;
-
-                data = MARSHALLER.marshal(F.asList(schemasMap, indexesInfo));
-            }
-            catch (Throwable t) {
-                U.error(log, "Failed to get metadata for JDBC.", t);
-
-                SQLException err = new SQLException(t.getMessage());
-
-                status = 1;
-
-                data = MARSHALLER.marshal(err);
-            }
-
-            byte[] packet = new byte[data.length + 1];
-
-            packet[0] = status;
-
-            U.arrayCopy(data, 0, packet, 1, data.length);
-
-            return packet;
+            return null;
         }
     }
 }

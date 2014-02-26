@@ -28,7 +28,7 @@ public interface GridCacheQueries<K, V> {
      * @param clause Query clause.
      * @return Created query.
      */
-    public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(Class<? extends V> cls, String clause);
+    public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(Class<?> cls, String clause);
 
     /**
      * Creates user's SQL fields query for given clause. For more information refer to
@@ -47,7 +47,7 @@ public interface GridCacheQueries<K, V> {
      * @param search Search clause.
      * @return Created query.
      */
-    public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<? extends V> cls, String search);
+    public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<?> cls, String search);
 
     /**
      * Creates user's predicate based scan query.

@@ -21,7 +21,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
@@ -145,7 +144,7 @@ public class GridPopularWordsRealTimeExample {
      */
     private static TimerTask scheduleQuery(final Grid g, Timer timer, final int cnt) {
         TimerTask task = new TimerTask() {
-            private GridCacheQuery<String, Integer> qry;
+            private GridCacheQuery<Map.Entry<String, Integer>> qry;
 
             @Override public void run() {
                 try {
@@ -155,7 +154,7 @@ public class GridPopularWordsRealTimeExample {
                     if (qry == null)
                         // Don't select words shorter than 3 letters.
                         qry = cache.queries().
-                            createQuery(SQL, Integer.class, "length(_key) > 3 order by _val desc limit " + cnt);
+                            createSqlQuery(Integer.class, "length(_key) > 3 order by _val desc limit " + cnt);
 
                     List<Map.Entry<String, Integer>> results =
                         new ArrayList<>(qry.execute().get());

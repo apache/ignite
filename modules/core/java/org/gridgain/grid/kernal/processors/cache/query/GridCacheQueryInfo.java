@@ -22,33 +22,24 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-class GridCacheQueryInfo<K, V> {
+class GridCacheQueryInfo {
     /** */
     private boolean loc;
 
     /** */
-    private GridPredicate<GridCacheEntry<K, V>> prjPred;
+    private GridPredicate<GridCacheEntry<Object, Object>> prjPred;
 
     /** */
-    private GridClosure<V, Object> trans;
+    private GridClosure<Object, Object> trans;
 
     /** */
-    private GridReducer<Map.Entry<K, V>, Object> rdc;
-
-    /** */
-    private GridReducer<List<Object>, Object> fieldsRdc;
+    private GridReducer<Object, Object> rdc;
 
     /** */
     private GridCacheQueryAdapter<?> qry;
 
     /** */
-    private int pageSize;
-
-    /** */
-    private boolean incBackups;
-
-    /** */
-    private GridCacheQueryFutureAdapter<K, V, ?> locFut;
+    private GridCacheLocalQueryFuture<?, ?, ?> locFut;
 
     /** */
     private UUID sndId;
@@ -70,10 +61,7 @@ class GridCacheQueryInfo<K, V> {
      * @param prjPred Projection predicate.
      * @param trans Transforming closure.
      * @param rdc Reducer.
-     * @param fieldsRdc Reducer for fields queries.
      * @param qry Query base.
-     * @param pageSize Page size.
-     * @param incBackups {@code true} if need to include backups.
      * @param locFut Query future in case of local query.
      * @param sndId Sender node id.
      * @param reqId Request id in case of distributed query.
@@ -83,14 +71,11 @@ class GridCacheQueryInfo<K, V> {
      */
     GridCacheQueryInfo(
         boolean loc,
-        GridPredicate<GridCacheEntry<K, V>> prjPred,
-        GridClosure<V, Object> trans,
-        GridReducer<Map.Entry<K, V>, Object> rdc,
-        GridReducer<List<Object>, Object> fieldsRdc,
+        GridPredicate<GridCacheEntry<Object, Object>> prjPred,
+        GridClosure<Object, Object> trans,
+        GridReducer<Object, Object> rdc,
         GridCacheQueryAdapter<?> qry,
-        int pageSize,
-        boolean incBackups,
-        GridCacheQueryFutureAdapter<K, V, ?> locFut,
+        GridCacheLocalQueryFuture<?, ?, ?> locFut,
         UUID sndId,
         long reqId,
         boolean incMeta,
@@ -101,10 +86,7 @@ class GridCacheQueryInfo<K, V> {
         this.prjPred = prjPred;
         this.trans = trans;
         this.rdc = rdc;
-        this.fieldsRdc = fieldsRdc;
         this.qry = qry;
-        this.pageSize = pageSize;
-        this.incBackups = incBackups;
         this.locFut = locFut;
         this.sndId = sndId;
         this.reqId = reqId;
@@ -137,49 +119,28 @@ class GridCacheQueryInfo<K, V> {
     /**
      * @return Projection predicate.
      */
-    GridPredicate<GridCacheEntry<K, V>> projectionPredicate() {
+    GridPredicate<GridCacheEntry<Object, Object>> projectionPredicate() {
         return prjPred;
     }
 
     /**
      * @return Transformer.
      */
-    GridClosure<V, Object> transformer() {
+    GridClosure<?, Object> transformer() {
         return trans;
     }
 
     /**
      * @return Reducer.
      */
-    GridReducer<Map.Entry<K, V>, Object> reducer() {
+    GridReducer<?, Object> reducer() {
         return rdc;
-    }
-
-    /**
-     * @return Reducer for fields queries.
-     */
-    GridReducer<List<Object>, Object> fieldsReducer() {
-        return fieldsRdc;
-    }
-
-    /**
-     * @return Page size.
-     */
-    int pageSize() {
-        return pageSize;
-    }
-
-    /**
-     * @return {@code true} if need to include backups.
-     */
-    boolean includeBackups() {
-        return incBackups;
     }
 
     /**
      * @return Query future in case of local query.
      */
-    @Nullable GridCacheQueryFutureAdapter<K, V, ?> localQueryFuture() {
+    @Nullable GridCacheLocalQueryFuture<?, ?, ?> localQueryFuture() {
         return locFut;
     }
 

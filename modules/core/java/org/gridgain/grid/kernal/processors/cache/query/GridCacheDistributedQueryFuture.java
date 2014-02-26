@@ -11,10 +11,8 @@ package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -39,9 +37,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     /** */
     private CountDownLatch firstPageLatch = new CountDownLatch(1);
 
-    /** */
-    private boolean vis;
-
     /**
      * Required by {@link Externalizable}.
      */
@@ -54,17 +49,11 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
      * @param reqId Request ID.
      * @param qry Query.
      * @param nodes Nodes.
-     * @param single Single result or not.
-     * @param rmtRdcOnly {@code true} for reduce query when using remote reducer only,
-     *     otherwise it is always {@code false}.
-     * @param pageLsnr Page listener.
-     * @param vis Visitor predicate.
      */
     @SuppressWarnings("unchecked")
-    protected GridCacheDistributedQueryFuture(GridCacheContext<K, V> ctx, long reqId,
-        GridCacheQueryAdapter<?> qry, Iterable<GridNode> nodes, boolean single,
-        boolean rmtRdcOnly, @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr, @Nullable GridPredicate<?> vis) {
-        super(ctx, qry, false, single, rmtRdcOnly, pageLsnr);
+    protected GridCacheDistributedQueryFuture(GridCacheContext<K, V> ctx, long reqId, GridCacheQueryBean qry,
+        Iterable<GridNode> nodes) {
+        super(ctx, qry, false);
 
         assert reqId > 0;
 
@@ -73,8 +62,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         GridCacheQueryManager<K, V> mgr = ctx.queries();
 
         assert mgr != null;
-
-        this.vis = vis != null;
 
         synchronized (mux) {
             for (GridNode node : nodes)
@@ -104,7 +91,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
                 subgrid.clear();
             }
 
-            final GridCacheQueryRequest<K, V> req = new GridCacheQueryRequest<>(reqId, false);
+            final GridCacheQueryRequest req = new GridCacheQueryRequest(reqId, false);
 
             // Process cancel query directly (without sending) for local node,
             cctx.closures().callLocalSafe(new Callable<Object>() {
@@ -180,9 +167,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     @Override protected void loadPage() {
         assert !Thread.holdsLock(mux);
 
-        if (vis)
-            return;
-
         Collection<GridNode> nodes = null;
 
         synchronized (mux) {
@@ -194,16 +178,13 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         }
 
         if (nodes != null)
-            cctx.queries().loadPage(reqId, qry, nodes, false);
+            cctx.queries().loadPage(reqId, qry.query(), nodes, false);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
     @Override protected void loadAllPages() throws GridInterruptedException {
         assert !Thread.holdsLock(mux);
-
-        if (vis)
-            return;
 
         U.await(firstPageLatch);
 
@@ -215,7 +196,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         }
 
         if (nodes != null)
-            cctx.queries().loadPage(reqId, qry, nodes, true);
+            cctx.queries().loadPage(reqId, qry.query(), nodes, true);
     }
 
     /**

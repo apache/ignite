@@ -27,18 +27,24 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public abstract class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
+public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     /** */
-    protected final GridCacheContext<?, ?> ctx;
+    private final GridCacheContext<?, ?> cctx;
 
     /** */
-    protected final GridPredicate<GridCacheEntry<?, ?>> prjPred;
+    private final GridPredicate<GridCacheEntry<Object, Object>> prjPred;
 
     /** */
     private final GridCacheQueryType type;
 
     /** */
-    private GridLogger log;
+    private final GridLogger log;
+
+    /** */
+    private final Class<?> cls;
+
+    /** */
+    private final String clause;
 
     /** */
     private int pageSize;
@@ -59,23 +65,29 @@ public abstract class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     private GridProjection prj;
 
     /** */
-    private GridBiPredicate<?, ?> filter;
+    private GridBiPredicate<Object, Object> filter;
 
     /**
-     * @param ctx Context.
+     * @param cctx Context.
      * @param type Query type.
+     * @param cls Class.
+     * @param clause Clause.
      * @param prjPred Cache projection filter.
      */
-    protected GridCacheQueryAdapter(GridCacheContext<?, ?> ctx, GridCacheQueryType type,
-        @Nullable GridPredicate<GridCacheEntry<?, ?>> prjPred) {
-        assert ctx != null;
+    protected GridCacheQueryAdapter(
+        GridCacheContext<?, ?> cctx, GridCacheQueryType type,
+        @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred,
+        @Nullable Class<?> cls, @Nullable String clause) {
+        assert cctx != null;
         assert type != null;
 
-        this.ctx = ctx;
+        this.cctx = cctx;
         this.type = type;
+        this.cls = cls;
+        this.clause = clause;
         this.prjPred = prjPred;
 
-        log = ctx.logger(getClass());
+        log = cctx.logger(getClass());
 
         pageSize = DFLT_PAGE_SIZE;
         timeout = 0;
@@ -87,9 +99,42 @@ public abstract class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     }
 
     /**
+     * @param cctx Context.
+     * @param prjPred Cache projection filter.
+     * @param type Query type.
+     * @param log Logger.
+     * @param pageSize Page size.
+     * @param timeout Timeout.
+     * @param keepAll Keep all flag.
+     * @param incBackups Include backups flag.
+     * @param dedup Enable dedup flag.
+     * @param prj Grid projection.
+     * @param filter Key-value filter.
+     * @param cls Class.
+     * @param clause Clause.
+     */
+    public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridPredicate<GridCacheEntry<Object, Object>> prjPred,
+        GridCacheQueryType type, GridLogger log, int pageSize, long timeout, boolean keepAll, boolean incBackups,
+        boolean dedup, GridProjection prj, GridBiPredicate<Object, Object> filter, Class<?> cls, String clause) {
+        this.cctx = cctx;
+        this.prjPred = prjPred;
+        this.type = type;
+        this.log = log;
+        this.pageSize = pageSize;
+        this.timeout = timeout;
+        this.keepAll = keepAll;
+        this.incBackups = incBackups;
+        this.dedup = dedup;
+        this.prj = prj;
+        this.filter = filter;
+        this.cls = cls;
+        this.clause = clause;
+    }
+
+    /**
      * @return cache projection filter.
      */
-    public GridPredicate<GridCacheEntry<?, ?>> projectionFilter() {
+    public GridPredicate<GridCacheEntry<Object, Object>> projectionFilter() {
         return prjPred;
     }
 
@@ -100,13 +145,25 @@ public abstract class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         return type;
     }
 
+    /**
+     * @return Class.
+     */
+    @Nullable public Class<?> queryClass() {
+        return cls;
+    }
+
+    /**
+     * @return Clause.
+     */
+    @Nullable public String clause() {
+        return clause;
+    }
+
     /** {@inheritDoc} */
     @Override public GridCacheQuery<T> pageSize(int pageSize) {
-        GridCacheQueryAdapter<T> cp = copy();
+        this.pageSize = pageSize;
 
-        cp.pageSize = pageSize;
-
-        return cp;
+        return this;
     }
 
     /**
@@ -118,11 +175,9 @@ public abstract class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<T> timeout(long timeout) {
-        GridCacheQueryAdapter<T> cp = copy();
+        this.timeout = timeout;
 
-        cp.timeout = timeout;
-
-        return cp;
+        return this;
     }
 
     /**
@@ -134,11 +189,9 @@ public abstract class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<T> keepAll(boolean keepAll) {
-        GridCacheQueryAdapter<T> cp = copy();
+        this.keepAll = keepAll;
 
-        cp.keepAll = keepAll;
-
-        return cp;
+        return this;
     }
 
     /**
@@ -150,11 +203,9 @@ public abstract class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<T> includeBackups(boolean incBackups) {
-        GridCacheQueryAdapter<T> cp = copy();
+        this.incBackups = incBackups;
 
-        cp.incBackups = incBackups;
-
-        return cp;
+        return this;
     }
 
     /**
@@ -166,11 +217,9 @@ public abstract class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<T> enableDedup(boolean dedup) {
-        GridCacheQueryAdapter<T> cp = copy();
+        this.dedup = dedup;
 
-        cp.dedup = dedup;
-
-        return cp;
+        return this;
     }
 
     /**
@@ -182,11 +231,9 @@ public abstract class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<T> projection(GridProjection prj) {
-        GridCacheQueryAdapter<T> cp = copy();
+        this.prj = prj;
 
-        cp.prj = prj;
-
-        return cp;
+        return this;
     }
 
     /**
@@ -198,11 +245,9 @@ public abstract class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
 
     /** {@inheritDoc} */
     @Override public <K, V> GridCacheQuery<T> remoteFilter(GridBiPredicate<K, V> filter) {
-        GridCacheQueryAdapter<T> cp = copy();
+        this.filter = (GridBiPredicate<Object, Object>)filter;
 
-        cp.filter = filter;
-
-        return cp;
+        return this;
     }
 
     /**
@@ -210,6 +255,13 @@ public abstract class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      */
     public <K, V> GridBiPredicate<K, V> remoteFilter() {
         return (GridBiPredicate<K, V>)filter;
+    }
+
+    /**
+     * @throws GridException If query is invalid.
+     */
+    public void validate() throws GridException {
+        // TODO: gg-7625
     }
 
     /** {@inheritDoc} */
@@ -240,32 +292,34 @@ public abstract class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         if (log.isDebugEnabled())
             log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
 
-        if (ctx.deploymentEnabled()) {
+        if (cctx.deploymentEnabled()) {
             try {
-                ctx.deploy().registerClasses(filter);
-                ctx.deploy().registerClasses(args);
-
-                registerClasses();
+                cctx.deploy().registerClasses(cls, filter, rmtReducer, rmtTransform);
+                cctx.deploy().registerClasses(args);
             }
             catch (GridException e) {
-                return new GridCacheQueryErrorFuture<>(ctx.kernalContext(), e);
+                return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), e);
             }
         }
 
-        GridCacheQueryManager qryMgr = ctx.queries();
+        GridCacheQueryBean bean = new GridCacheQueryBean(this, (GridReducer<Object, Object>)rmtReducer,
+            (GridClosure<Object, Object>)rmtTransform, args);
 
-        return null;
+        GridCacheQueryManager qryMgr = cctx.queries();
+
+        return (GridCacheQueryFuture<R>)(nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId()) ?
+            qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
     }
 
     /**
      * @return Nodes to execute on.
      */
     private Collection<GridNode> nodes() {
-        Collection<GridNode> nodes = CU.allNodes(ctx);
+        Collection<GridNode> nodes = CU.allNodes(cctx);
 
         if (prj == null) {
-            if (ctx.isReplicated())
-                return Collections.singletonList(ctx.localNode());
+            if (cctx.isReplicated())
+                return Collections.singletonList(cctx.localNode());
 
             return nodes;
         }
@@ -276,36 +330,4 @@ public abstract class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
             }
         });
     }
-
-    /**
-     * Registers classes.
-     *
-     * @throws GridException In case of error.
-     */
-    protected void registerClasses() throws GridException {
-        // No-op.
-    }
-
-    /**
-     * @return Copy of this query.
-     */
-    private GridCacheQueryAdapter<T> copy() {
-        GridCacheQueryAdapter<T> cp = copy0();
-
-        cp.log = log;
-        cp.pageSize = pageSize;
-        cp.timeout = timeout;
-        cp.keepAll = keepAll;
-        cp.incBackups = incBackups;
-        cp.dedup = dedup;
-        cp.prj = prj;
-        cp.filter = filter;
-
-        return cp;
-    }
-
-    /**
-     * @return New instance.
-     */
-    protected abstract GridCacheQueryAdapter<T> copy0();
 }

@@ -10,15 +10,12 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -49,7 +46,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     protected GridLogger log;
 
     /** */
-    protected final GridCacheQueryAdapter<?> qry;
+    protected final GridCacheQueryBean qry;
 
     /** Set of received keys used to deduplicate query result set. */
     private final Collection<K> keys = new HashSet<>();
@@ -81,12 +78,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** */
     protected boolean loc;
 
-    /** */
-    protected boolean single;
-
-    /** */
-    private GridBiInClosure<UUID, Collection<R>> pageLsnr;
-
     /**
      *
      */
@@ -98,25 +89,19 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param cctx Context.
      * @param qry Query.
      * @param loc Local query or not.
-     * @param single Single result or not.
-     * @param pageLsnr Page listener which is executed each time on page arrival.
      */
-    protected GridCacheQueryFutureAdapter(GridCacheContext<K, V> cctx,
-        GridCacheQueryAdapter<?> qry, boolean loc, boolean single,
-        @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr) {
+    protected GridCacheQueryFutureAdapter(GridCacheContext<K, V> cctx, GridCacheQueryBean qry, boolean loc) {
         super(cctx.kernalContext());
 
         this.cctx = cctx;
         this.qry = qry;
         this.loc = loc;
-        this.single = single;
-        this.pageLsnr = pageLsnr;
 
         log = U.logger(ctx, logRef, GridCacheQueryFutureAdapter.class);
 
         startTime = U.currentTimeMillis();
 
-        long timeout = qry.timeout();
+        long timeout = qry.query().timeout();
 
         if (timeout > 0) {
             endTime = startTime + timeout;
@@ -132,7 +117,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /**
      * @return Query.
      */
-    public GridCacheQueryAdapter<?> query() {
+    public GridCacheQueryBean query() {
         return qry;
     }
 
@@ -140,7 +125,8 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     @Override public boolean onDone(Collection<R> res, Throwable err) {
         cctx.time().removeTimeoutObject(this);
 
-        qry.onExecuted(res, err, startTime(), duration());
+        // TODO: gg-7625
+//        qry.onExecuted(res, err, startTime(), duration());
 
         return super.onDone(res, err);
     }
@@ -154,6 +140,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     @Override public R next() {
         try {
             return unmaskNull(internalIterator().next());
+        }
+        catch (NoSuchElementException ignored) {
+            return null;
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
@@ -201,7 +190,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             if (c == null && !isDone()) {
                 loadPage();
 
-                long timeout = qry.timeout();
+                long timeout = qry.query().timeout();
 
                 long waitTime = timeout == 0 ? Long.MAX_VALUE : timeout - (U.currentTimeMillis() - startTime);
 
@@ -256,7 +245,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      */
     @SuppressWarnings({"unchecked"})
     private Collection<?> dedupIfRequired(Collection<?> col) {
-        if (!qry.enableDedup())
+        if (!qry.query().enableDedup())
             return col;
 
         Collection<Object> dedupCol = new LinkedList<>();
@@ -304,17 +293,14 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
             data = dedupIfRequired((Collection<Object>)data);
 
-            if (pageLsnr != null)
-                pageLsnr.apply(nodeId, (Collection<R>)data);
-
             synchronized (mux) {
                 enqueue(data);
 
-                if (qry.keepAll())
+                if (qry.query().keepAll())
                     allCol.addAll(maskNulls((Collection<Object>)data));
 
                 if (onPage(nodeId, finished)) {
-                    onDone((Collection<R>)(qry.keepAll() ? unmaskNulls(allCol) : data));
+                    onDone((Collection<R>)(qry.query().keepAll() ? unmaskNulls(allCol) : data));
 
                     clear();
                 }
@@ -446,125 +432,12 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         return S.toString(GridCacheQueryFutureAdapter.class, this);
     }
 
-    /**
-     *
-     */
+    /** */
     public void printMemoryStats() {
         X.println(">>> Query future memory statistics.");
         X.println(">>>  queueSize: " + queue.size());
         X.println(">>>  allCollSize: " + allCol.size());
         X.println(">>>  keysSize: " + keys.size());
         X.println(">>>  cnt: " + cnt);
-    }
-
-    /**
-     * Base runnable for cache queries.
-     */
-    protected static class LocalQueryRunnable<K, V, R> implements GridPlainRunnable {
-        /** Query future. */
-        private GridCacheQueryFutureAdapter<K, V, R> fut;
-
-        /** Query manager. */
-        private GridCacheQueryManager<K, V> mgr;
-
-        /** Single result or not.*/
-        private boolean single;
-
-        /** */
-        private GridPredicate<?> vis;
-
-        /**
-         * @param mgr Query manager.
-         * @param fut Query future.
-         * @param single Single result or not.
-         * @param vis Visitor predicate.
-         */
-        protected LocalQueryRunnable(GridCacheQueryManager<K, V> mgr, GridCacheQueryFutureAdapter<K, V, R> fut,
-            boolean single, @Nullable GridPredicate<?> vis) {
-            this.mgr = mgr;
-            this.fut = fut;
-            this.single = single;
-            this.vis = vis;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            try {
-//                mgr.validateQuery(fut.query());
-//
-//                if (fut.query() instanceof GridCacheFieldsQueryBase)
-//                    mgr.runFieldsQuery(localQueryInfo(fut, single, vis));
-//                else
-                    mgr.runQuery(localQueryInfo(fut, single, vis));
-            }
-            catch (Throwable e) {
-                fut.onDone(e);
-            }
-        }
-
-        /**
-         * @param fut Query future.
-         * @param single Single result or not.
-         * @param vis Visitor predicate.
-         * @return Query info.
-         */
-        @SuppressWarnings({"unchecked"})
-        private GridCacheQueryInfo<K, V> localQueryInfo(GridCacheQueryFutureAdapter<K, V, R> fut, boolean single,
-            @Nullable GridPredicate<?> vis) {
-            this.fut = fut;
-
-            GridCacheQueryAdapter<?> qry = fut.query();
-
-            GridPredicate<GridCacheEntry<?, ?>> prjPred =
-                qry.projectionFilter() == null ? F.<GridCacheEntry<?, ?>>alwaysTrue() : qry.projectionFilter();
-
-            GridClosure<V, Object> trans = null;
-
-            if (qry instanceof GridCacheTransformQueryAdapter) {
-                GridCacheTransformQueryAdapter tmp = (GridCacheTransformQueryAdapter)qry;
-
-                trans = tmp.remoteTransformer();
-            }
-
-            GridReducer<Map.Entry<K, V>, Object> rdc = null;
-
-            if (qry instanceof GridCacheReduceQueryAdapter) {
-                GridCacheReduceQueryAdapter tmp = (GridCacheReduceQueryAdapter)qry;
-
-                rdc = tmp.remoteReducer();
-            }
-
-            GridReducer<List<Object>, Object> fieldsRdc = null;
-
-            if (qry instanceof GridCacheReduceFieldsQueryAdapter) {
-                GridCacheReduceFieldsQueryAdapter tmp = (GridCacheReduceFieldsQueryAdapter)qry;
-
-                fieldsRdc = tmp.remoteReducer();
-            }
-
-            boolean incMeta = false;
-
-            if (qry instanceof GridCacheFieldsQueryBase)
-                incMeta = ((GridCacheFieldsQueryBase)qry).includeMetadata();
-
-            return new GridCacheQueryInfo<>(
-                true,
-                single,
-                prjPred,
-                trans,
-                rdc,
-                fieldsRdc,
-                qry,
-                qry.pageSize(),
-                qry.cloneValues(),
-                qry.includeBackups(),
-                fut,
-                null,
-                -1,
-                incMeta,
-                vis,
-                true
-            );
-        }
     }
 }

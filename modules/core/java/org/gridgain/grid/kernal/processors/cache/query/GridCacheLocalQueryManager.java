@@ -9,11 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
-import com.ibm.ws.management.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.lang.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -30,7 +27,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     @SuppressWarnings("unchecked")
     @Override protected boolean onPageReady(
         boolean loc,
-        GridCacheQueryInfo<K, V> qryInfo,
+        GridCacheQueryInfo qryInfo,
         Collection<?> data,
         boolean finished, Throwable e) {
         GridCacheQueryFutureAdapter fut = qryInfo.localQueryFuture();
@@ -75,20 +72,18 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQueryFuture<?> queryLocal(GridCacheQueryAdapter<?> qry,
-        @Nullable GridReducer<?, ?> rmtReducer, @Nullable GridClosure<?, ?> rmtTransform, @Nullable Object[] args) {
+    @Override public GridCacheQueryFuture<?> queryLocal(GridCacheQueryBean qry) {
         assert cctx.config().getCacheMode() == LOCAL;
 
         if (log.isDebugEnabled())
             log.debug("Executing query on local node: " + qry);
 
-        GridCacheLocalQueryFuture<K, V, R> fut =
-            new GridCacheLocalQueryFuture<>(cctx, qry, single, rmtRdcOnly, pageLsnr, vis);
+        GridCacheLocalQueryFuture<K, V, ?> fut = new GridCacheLocalQueryFuture<>(cctx, qry);
 
         try {
-            validateQuery(qry);
+            qry.query().validate();
 
-            fut.execute(sync);
+            fut.execute();
         }
         catch (GridException e) {
             fut.onDone(e);
@@ -98,9 +93,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQueryFuture<?> queryDistributed(GridCacheQueryAdapter<?> qry,
-        Collection<GridNode> nodes, @Nullable GridReducer<?, ?> rmtReducer, @Nullable GridClosure<?, ?> rmtTransform,
-        @Nullable Object[] args) {
+    @Override public GridCacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Collection<GridNode> nodes) {
         assert cctx.config().getCacheMode() == LOCAL;
 
         throw new GridRuntimeException("Distributed queries are not available for local cache " +

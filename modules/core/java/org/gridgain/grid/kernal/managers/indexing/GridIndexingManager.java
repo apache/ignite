@@ -1137,6 +1137,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          * @param valType Value type.
          */
         private TypeId(String space, Class<?> valType) {
+            assert valType != null;
+
             this.space = space;
             this.valType = valType;
         }

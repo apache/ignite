@@ -21,7 +21,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.nio.*;
-import java.util.*;
 
 import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 
@@ -52,35 +51,28 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
     /** */
     @GridDirectTransient
-    private GridBiPredicate<K, V> keyValFilter;
+    private GridBiPredicate<Object, Object> keyValFilter;
 
     /** */
     private byte[] keyValFilterBytes;
 
     /** */
     @GridDirectTransient
-    private GridPredicate<GridCacheEntry<K, V>> prjFilter;
+    private GridPredicate<GridCacheEntry<Object, Object>> prjFilter;
 
     /** */
     private byte[] prjFilterBytes;
 
     /** */
     @GridDirectTransient
-    private GridReducer<Map.Entry<K, Object>, Object> rdc;
+    private GridReducer<Object, Object> rdc;
 
     /** */
     private byte[] rdcBytes;
 
     /** */
     @GridDirectTransient
-    private GridReducer<List<Object>, Object> fieldsRdc;
-
-    /** */
-    private byte[] fieldsRdcBytes;
-
-    /** */
-    @GridDirectTransient
-    private GridClosure<V, Object> trans;
+    private GridClosure<Object, Object> trans;
 
     /** */
     private byte[] transBytes;
@@ -160,7 +152,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
      * @param keyValFilter Key-value filter.
      * @param prjFilter Projection filter.
      * @param rdc Reducer.
-     * @param fieldsRdc Fields query reducer.
      * @param trans Transformer.
      * @param pageSize Page size.
      * @param incBackups {@code true} if need to include backups.
@@ -174,11 +165,10 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         boolean fields,
         String clause,
         String clsName,
-        GridBiPredicate<K, V> keyValFilter,
-        GridPredicate<GridCacheEntry<K, V>> prjFilter,
-        GridReducer<Map.Entry<K, Object>, Object> rdc,
-        GridReducer<List<Object>, Object> fieldsRdc,
-        GridClosure<V, Object> trans,
+        GridBiPredicate<Object, Object> keyValFilter,
+        GridPredicate<GridCacheEntry<Object, Object>> prjFilter,
+        GridReducer<Object, Object> rdc,
+        GridClosure<Object, Object> trans,
         int pageSize,
         boolean incBackups,
         Object[] args,
@@ -192,10 +182,10 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         this.type = type;
         this.fields = fields;
         this.clause = clause;
+        this.clsName = clsName;
         this.keyValFilter = keyValFilter;
         this.prjFilter = prjFilter;
         this.rdc = rdc;
-        this.fieldsRdc = fieldsRdc;
         this.trans = trans;
         this.pageSize = pageSize;
         this.incBackups = incBackups;
@@ -226,13 +216,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 prepareObject(rdc, ctx);
 
             rdcBytes = CU.marshal(ctx, rdc);
-        }
-
-        if (fieldsRdc != null) {
-            if (ctx.deploymentEnabled())
-                prepareObject(fieldsRdc, ctx);
-
-            fieldsRdcBytes = CU.marshal(ctx, fieldsRdc);
         }
 
         if (trans != null) {
@@ -266,9 +249,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
         if (rdcBytes != null)
             rdc = mrsh.unmarshal(rdcBytes, ldr);
-
-        if (fieldsRdcBytes != null)
-            fieldsRdc = mrsh.unmarshal(fieldsRdcBytes, ldr);
 
         if (transBytes != null)
             trans = mrsh.unmarshal(transBytes, ldr);
@@ -336,33 +316,26 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     /**
      * @return Key-value filter.
      */
-    public GridBiPredicate<K, V> keyValueFilter() {
+    public GridBiPredicate<Object, Object> keyValueFilter() {
         return keyValFilter;
     }
 
     /** {@inheritDoc} */
-    public GridPredicate<GridCacheEntry<K, V>> projectionFilter() {
+    public GridPredicate<GridCacheEntry<Object, Object>> projectionFilter() {
         return prjFilter;
     }
 
     /**
      * @return Reducer.
      */
-    public GridReducer<Map.Entry<K, Object>, Object> reducer() {
+    public GridReducer<Object, Object> reducer() {
         return rdc;
-    }
-
-    /**
-     * @return Reducer for fields queries.
-     */
-    public GridReducer<List<Object>, Object> fieldsReducer() {
-        return fieldsRdc;
     }
 
     /**
      * @return Transformer.
      */
-    public GridClosure<V, Object> transformer() {
+    public GridClosure<Object, Object> transformer() {
         return trans;
     }
 
@@ -422,8 +395,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         _clone.prjFilterBytes = prjFilterBytes;
         _clone.rdc = rdc;
         _clone.rdcBytes = rdcBytes;
-        _clone.fieldsRdc = fieldsRdc;
-        _clone.fieldsRdcBytes = fieldsRdcBytes;
         _clone.trans = trans;
         _clone.transBytes = transBytes;
         _clone.args = args;
@@ -506,9 +477,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 13:
-                if (!commState.putByteArray(fieldsRdcBytes))
-                    return false;
-
                 commState.idx++;
 
             case 14:
@@ -668,13 +636,6 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 13:
-                byte[] fieldsRdcBytes0 = commState.getByteArray();
-
-                if (fieldsRdcBytes0 == BYTE_ARR_NOT_READ)
-                    return false;
-
-                fieldsRdcBytes = fieldsRdcBytes0;
-
                 commState.idx++;
 
             case 14:

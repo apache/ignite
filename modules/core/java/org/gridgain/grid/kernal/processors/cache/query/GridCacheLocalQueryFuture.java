@@ -10,10 +10,11 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
-import org.jetbrains.annotations.*;
+import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.io.*;
 import java.util.*;
@@ -41,30 +42,18 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     /**
      * @param ctx Context.
      * @param qry Query.
-     * @param single Single result or not.
-     * @param rmtRdcOnly {@code true} for reduce query when using remote reducer only,
-     *      otherwise it is always {@code false}.
-     * @param pageLsnr Page listener.
-     * @param vis Visitor predicate.
      */
-    protected GridCacheLocalQueryFuture(GridCacheContext<K, V> ctx,
-        GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry, boolean single, boolean rmtRdcOnly,
-        @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr, @Nullable GridPredicate<?> vis) {
-        super(ctx, qry, true, single, rmtRdcOnly, pageLsnr);
+    protected GridCacheLocalQueryFuture(GridCacheContext<K, V> ctx, GridCacheQueryBean qry) {
+        super(ctx, qry, true);
 
-        run = new LocalQueryRunnable<>(ctx.queries(), this, single, vis);
+        run = new LocalQueryRunnable<>();
     }
 
     /**
      * Executes query runnable.
-     *
-     * @param sync Whether to execute synchronously.
      */
-    void execute(boolean sync) {
-        if (sync)
-            run.run();
-        else
-            fut = ctx.closure().runLocalSafe(run, true);
+    void execute() {
+        fut = ctx.closure().runLocalSafe(run, true);
     }
 
     /** {@inheritDoc} */
@@ -86,5 +75,57 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     /** {@inheritDoc} */
     @Override protected void loadAllPages() {
         // No-op.
+    }
+
+    /** */
+    private class LocalQueryRunnable<K, V, R> implements GridPlainRunnable {
+        /** {@inheritDoc} */
+        @Override public void run() {
+            try {
+                qry.query().validate();
+
+                // TODO: gg-7625
+//                if (fut.query() instanceof GridCacheFieldsQueryBase)
+//                    mgr.runFieldsQuery(localQueryInfo(fut, single, vis));
+//                else
+                    cctx.queries().runQuery(localQueryInfo());
+            }
+            catch (Throwable e) {
+                onDone(e);
+            }
+        }
+
+        /**
+         * @return Query info.
+         */
+        @SuppressWarnings({"unchecked"})
+        private GridCacheQueryInfo localQueryInfo() {
+            GridCacheQueryBean qry = query();
+
+            GridPredicate<GridCacheEntry<Object, Object>> prjPred = qry.query().projectionFilter() == null ?
+                F.<GridCacheEntry<Object, Object>>alwaysTrue() : qry.query().projectionFilter();
+
+            GridReducer<Object, Object> rdc = qry.reducer();
+            GridClosure<Object, Object> trans = qry.transform();
+
+//            boolean incMeta = false;
+//
+//            if (qry instanceof GridCacheFieldsQueryBase)
+//                incMeta = ((GridCacheFieldsQueryBase)qry).includeMetadata();
+
+            return new GridCacheQueryInfo(
+                true,
+                prjPred,
+                trans,
+                rdc,
+                qry.query(),
+                GridCacheLocalQueryFuture.this,
+                null,
+                -1,
+                false, // TODO: gg-7625
+                true,
+                qry.arguments()
+            );
+        }
     }
 }

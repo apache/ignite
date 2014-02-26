@@ -18,6 +18,8 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
+
 /**
  * TODO
  *
@@ -43,28 +45,28 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueries<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(Class<? extends V> cls, String clause) {
-        return new GridCacheSqlQuery<>(ctx, (GridPredicate<GridCacheEntry<?, ?>>)filter(), cls, clause);
+    @Override public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(Class<?> cls, String clause) {
+        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), (Class<?>)cls, clause);
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry) {
-        return new GridCacheSqlFieldsQuery(ctx, (GridPredicate<GridCacheEntry<?, ?>>)filter(), qry);
+        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), null, qry);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<? extends V> cls, String search) {
-        return new GridCacheFullTextQuery<>(ctx, (GridPredicate<GridCacheEntry<?, ?>>)filter(), cls, search);
+    @Override public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<?> cls, String search) {
+        return new GridCacheQueryAdapter<>(ctx, TEXT, filter(), (Class<?>)cls, search);
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<Map.Entry<K, V>> createScanQuery() {
-        return new GridCacheScanQuery<>(ctx, (GridPredicate<GridCacheEntry<?, ?>>)filter());
+        return new GridCacheQueryAdapter<>(ctx, SCAN, filter(), null, null);
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheContinuousQuery<K, V> createContinuousQuery() {
-        return ctx.continuousQueries().createQuery(filter());
+        return ctx.continuousQueries().createQuery(prj == null ? null : prj.predicate());
     }
 
     /** {@inheritDoc} */
@@ -80,7 +82,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueries<K, V> {
     /**
      * @return Optional projection filter.
      */
-    @Nullable private GridPredicate<GridCacheEntry<K, V>> filter() {
-        return prj == null ? null : prj.predicate();
+    @Nullable private GridPredicate<GridCacheEntry<Object, Object>> filter() {
+        return prj == null ? null : ((GridCacheProjectionImpl<Object, Object>)prj).predicate();
     }
 }

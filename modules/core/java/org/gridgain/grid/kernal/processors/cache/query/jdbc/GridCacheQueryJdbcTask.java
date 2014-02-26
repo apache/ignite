@@ -9,12 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.query.jdbc;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.cache.query.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
@@ -22,16 +18,14 @@ import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 
 import java.math.*;
 import java.net.*;
 import java.sql.*;
-import java.util.*;
 import java.util.Date;
+import java.util.*;
 
 import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  * Task for JDBC adapter.
@@ -156,114 +150,116 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
 
         /** {@inheritDoc} */
         @Override public Object execute() throws GridException {
-            String cacheName = argument("cache");
-            String sql = argument("sql");
-            Long timeout = argument("timeout");
-            List<Object> args = argument("args");
-            UUID futId = argument("futId");
-            Integer pageSize = argument("pageSize");
-            Integer maxRows = argument("maxRows");
+//            String cacheName = argument("cache");
+//            String sql = argument("sql");
+//            Long timeout = argument("timeout");
+//            List<Object> args = argument("args");
+//            UUID futId = argument("futId");
+//            Integer pageSize = argument("pageSize");
+//            Integer maxRows = argument("maxRows");
+//
+//            assert pageSize != null;
+//            assert maxRows != null;
+//
+//            GridTuple4<GridCacheFieldsQueryFuture, Integer, Boolean, Collection<String>> t = null;
+//
+//            Collection<String> tbls = null;
+//            Collection<String> cols;
+//            Collection<String> types = null;
+//
+//            if (first) {
+//                assert sql != null;
+//                assert timeout != null;
+//                assert args != null;
+//                assert futId == null;
+//
+//                GridCache<?, ?> cache = ((GridEx)grid).cachex(cacheName);
+//
+//                GridCacheFieldsQuery<?, ?> qry = cache.queries().createFieldsQuery(sql).queryArguments(args.toArray());
+//
+//                qry.includeMetadata(true);
+//                qry.pageSize(pageSize);
+//                qry.timeout(timeout);
+//
+//                // Query local and replicated caches only locally.
+//                if (cache.configuration().getCacheMode() != PARTITIONED)
+//                    qry = qry.projection(grid.forLocal());
+//
+//                GridCacheQueryFuture fut = qry.execute();
+//
+//                Collection<GridCacheSqlFieldMetadata> meta = fut.metadata().get();
+//
+//                if (meta == null) {
+//                    // Try to extract initial SQL exception.
+//                    try {
+//                        fut.get();
+//                    }
+//                    catch (GridException e) {
+//                        if (e.hasCause(SQLException.class))
+//                            throw new GridInternalException(e.getCause(SQLException.class).getMessage(), e);
+//                    }
+//
+//                    throw new GridInternalException("Query failed on all nodes. Probably you are requesting " +
+//                        "nonexistent table (check database metadata) or you are trying to join data that is " +
+//                        "stored in non-collocated mode.");
+//                }
+//
+//                tbls = new ArrayList<>(meta.size());
+//                cols = new ArrayList<>(meta.size());
+//                types = new ArrayList<>(meta.size());
+//
+//                for (GridCacheSqlFieldMetadata desc : meta) {
+//                    tbls.add(desc.typeName());
+//                    cols.add(desc.fieldName().toUpperCase());
+//                    types.add(desc.fieldTypeName());
+//                }
+//
+//                futId = UUID.randomUUID();
+//
+//                grid.nodeLocalMap().put(futId, t = F.t(fut, 0, false, cols));
+//
+//                scheduleRemoval(futId);
+//            }
+//
+//            assert futId != null;
+//
+//            if (t == null)
+//                t = grid.<UUID, GridTuple4<GridCacheFieldsQueryFuture, Integer,
+//                    Boolean, Collection<String>>>nodeLocalMap().get(futId);
+//
+//            assert t != null;
+//
+//            cols = t.get4();
+//
+//            Collection<List<Object>> fields = new LinkedList<>();
+//
+//            GridCacheFieldsQueryFuture fut = t.get1();
+//
+//            int pageCnt = 0;
+//            int totalCnt = t.get2();
+//
+//            while (fut.hasNext() && pageCnt++ < pageSize && (maxRows == 0 || totalCnt++ < maxRows)) {
+//                fields.add(F.transformList(fut.next(), new C1<Object, Object>() {
+//                    @Override public Object apply(Object val) {
+//                        if (val != null && !sqlType(val))
+//                            val = val.toString();
+//
+//                        return val;
+//                    }
+//                }));
+//            }
+//
+//            boolean finished = !fut.hasNext() || totalCnt == maxRows;
+//
+//            if (!finished)
+//                grid.nodeLocalMap().put(futId, F.t(fut, totalCnt, true, cols));
+//            else
+//                grid.nodeLocalMap().remove(futId);
+//
+//            return first ? F.asList(grid.localNode().id(), futId, tbls, cols, types, fields, finished) :
+//                F.asList(fields, finished);
 
-            assert pageSize != null;
-            assert maxRows != null;
-
-            GridTuple4<GridCacheFieldsQueryFuture, Integer, Boolean, Collection<String>> t = null;
-
-            Collection<String> tbls = null;
-            Collection<String> cols;
-            Collection<String> types = null;
-
-            if (first) {
-                assert sql != null;
-                assert timeout != null;
-                assert args != null;
-                assert futId == null;
-
-                GridCache<?, ?> cache = ((GridEx)grid).cachex(cacheName);
-
-                GridCacheFieldsQuery<?, ?> qry = cache.queries().createFieldsQuery(sql).queryArguments(args.toArray());
-
-                qry.includeMetadata(true);
-                qry.pageSize(pageSize);
-                qry.timeout(timeout);
-
-                // Query local and replicated caches only locally.
-                if (cache.configuration().getCacheMode() != PARTITIONED)
-                    qry = qry.projection(grid.forLocal());
-
-                GridCacheQueryFuture fut = qry.execute();
-
-                Collection<GridCacheSqlFieldMetadata> meta = fut.metadata().get();
-
-                if (meta == null) {
-                    // Try to extract initial SQL exception.
-                    try {
-                        fut.get();
-                    }
-                    catch (GridException e) {
-                        if (e.hasCause(SQLException.class))
-                            throw new GridInternalException(e.getCause(SQLException.class).getMessage(), e);
-                    }
-
-                    throw new GridInternalException("Query failed on all nodes. Probably you are requesting " +
-                        "nonexistent table (check database metadata) or you are trying to join data that is " +
-                        "stored in non-collocated mode.");
-                }
-
-                tbls = new ArrayList<>(meta.size());
-                cols = new ArrayList<>(meta.size());
-                types = new ArrayList<>(meta.size());
-
-                for (GridCacheSqlFieldMetadata desc : meta) {
-                    tbls.add(desc.typeName());
-                    cols.add(desc.fieldName().toUpperCase());
-                    types.add(desc.fieldTypeName());
-                }
-
-                futId = UUID.randomUUID();
-
-                grid.nodeLocalMap().put(futId, t = F.t(fut, 0, false, cols));
-
-                scheduleRemoval(futId);
-            }
-
-            assert futId != null;
-
-            if (t == null)
-                t = grid.<UUID, GridTuple4<GridCacheFieldsQueryFuture, Integer,
-                    Boolean, Collection<String>>>nodeLocalMap().get(futId);
-
-            assert t != null;
-
-            cols = t.get4();
-
-            Collection<List<Object>> fields = new LinkedList<>();
-
-            GridCacheFieldsQueryFuture fut = t.get1();
-
-            int pageCnt = 0;
-            int totalCnt = t.get2();
-
-            while (fut.hasNext() && pageCnt++ < pageSize && (maxRows == 0 || totalCnt++ < maxRows)) {
-                fields.add(F.transformList(fut.next(), new C1<Object, Object>() {
-                    @Override public Object apply(Object val) {
-                        if (val != null && !sqlType(val))
-                            val = val.toString();
-
-                        return val;
-                    }
-                }));
-            }
-
-            boolean finished = !fut.hasNext() || totalCnt == maxRows;
-
-            if (!finished)
-                grid.nodeLocalMap().put(futId, F.t(fut, totalCnt, true, cols));
-            else
-                grid.nodeLocalMap().remove(futId);
-
-            return first ? F.asList(grid.localNode().id(), futId, tbls, cols, types, fields, finished) :
-                F.asList(fields, finished);
+            return null;
         }
 
         /**
@@ -273,25 +269,25 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
          * @throws GridException In case of error.
          */
         private void scheduleRemoval(final UUID id) throws GridException {
-            grid.scheduler().scheduleLocal(new CAX() {
-                @Override public void applyx() throws GridException {
-                    GridTuple3<GridCacheFieldsQueryFuture, Integer, Boolean> t =
-                        grid.<UUID, GridTuple3<GridCacheFieldsQueryFuture, Integer, Boolean>>nodeLocalMap().get(id);
-
-                    if (t != null) {
-                        // If future was accessed since last scheduling,
-                        // set access flag to false and reschedule.
-                        if (t.get3()) {
-                            t.set3(false);
-
-                            scheduleRemoval(id);
-                        }
-                        // Remove stored future otherwise.
-                        else
-                            grid.nodeLocalMap().remove(id);
-                    }
-                }
-            }, "{" + RMV_DELAY + ", 1} * * * * *");
+//            grid.scheduler().scheduleLocal(new CAX() {
+//                @Override public void applyx() throws GridException {
+//                    GridTuple3<GridCacheFieldsQueryFuture, Integer, Boolean> t =
+//                        grid.<UUID, GridTuple3<GridCacheFieldsQueryFuture, Integer, Boolean>>nodeLocalMap().get(id);
+//
+//                    if (t != null) {
+//                        // If future was accessed since last scheduling,
+//                        // set access flag to false and reschedule.
+//                        if (t.get3()) {
+//                            t.set3(false);
+//
+//                            scheduleRemoval(id);
+//                        }
+//                        // Remove stored future otherwise.
+//                        else
+//                            grid.nodeLocalMap().remove(id);
+//                    }
+//                }
+//            }, "{" + RMV_DELAY + ", 1} * * * * *");
         }
 
         /**

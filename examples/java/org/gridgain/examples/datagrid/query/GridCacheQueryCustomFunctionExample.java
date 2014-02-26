@@ -12,8 +12,8 @@ package org.gridgain.examples.datagrid.query;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.product.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
@@ -52,8 +52,8 @@ public class GridCacheQueryCustomFunctionExample {
             cache.put(17, "11");
             cache.put(9, "9");
 
-            GridCacheQuery<Integer, String> qry = cache.queries().createQuery(GridCacheQueryType.SQL, String.class,
-                "to_hex(_key) <> _val");
+            GridCacheQuery<Map.Entry<Integer, String>> qry = cache.queries().createSqlQuery(String.class, "to_hex" +
+                "(_key) <> _val");
 
             GridCacheQueryFuture<Map.Entry<Integer, String>> res = qry.execute();
 
@@ -61,11 +61,11 @@ public class GridCacheQueryCustomFunctionExample {
                 print("Hex value  '" + entry.getValue() + "' is not equal to key " + entry.getKey());
 
 
-            GridFuture<List<Object>> res1 = cache.queries()
-                .createFieldsQuery("select to_hex(sum(from_hex(_val))) from String").
-                executeSingle();
+            GridCacheQueryFuture<List<?>> res1 = cache.queries()
+                .createSqlFieldsQuery("select to_hex(sum(from_hex(_val))) from String").
+                execute();
 
-            print("Hex sum of all hex values is '" + res1.get().get(0) + "'");
+            print("Hex sum of all hex values is '" + F.first(res1.get()).get(0) + "'");
         }
 
         print("Custom SQL function example finished.");

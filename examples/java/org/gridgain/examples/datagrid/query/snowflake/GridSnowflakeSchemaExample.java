@@ -16,8 +16,6 @@ import org.gridgain.grid.cache.query.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
-
 /**
  * <a href="http://en.wikipedia.org/wiki/Snowflake_schema">Snowflake Schema</a> is a logical
  * arrangement of data in which data is split into {@code dimensions} and {@code facts}.
@@ -125,14 +123,13 @@ public class GridSnowflakeSchemaExample {
         // ========================
 
         // Create cross cache query to get all purchases made at store1.
-        GridCacheQuery<Integer, FactPurchase> storePurchases = factCache.queries().createQuery(
-            SQL,
+        GridCacheQuery<Map.Entry<Integer, FactPurchase>> storePurchases = factCache.queries().createSqlQuery(
             FactPurchase.class,
             "from \"replicated\".DimStore, \"partitioned\".FactPurchase " +
                 "where DimStore.id=FactPurchase.storeId and DimStore.name=?");
 
         printQueryResults("All purchases made at store1:",
-            storePurchases.queryArguments("Store1").execute().get());
+            storePurchases.execute("Store1").get());
     }
 
     /**
@@ -160,15 +157,14 @@ public class GridSnowflakeSchemaExample {
 
         // Create cross cache query to get all purchases made at store2
         // for specified products.
-        GridCacheQuery<Integer, FactPurchase> prodPurchases = factCache.queries().createQuery(
-            SQL,
+        GridCacheQuery<Map.Entry<Integer, FactPurchase>> prodPurchases = factCache.queries().createSqlQuery(
             FactPurchase.class,
             "from \"replicated\".DimStore, \"replicated\".DimProduct, \"partitioned\".FactPurchase " +
                 "where DimStore.id=FactPurchase.storeId and DimProduct.id=FactPurchase.productId " +
                 "and DimStore.name=? and DimProduct.id in(?, ?, ?)");
 
         printQueryResults("All purchases made at store2 for 3 specific products:",
-            prodPurchases.queryArguments("Store2", p1.getId(), p2.getId(), p3.getId()).execute().get());
+            prodPurchases.execute("Store2", p1.getId(), p2.getId(), p3.getId()).get());
     }
 
     /**
