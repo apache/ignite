@@ -11,21 +11,14 @@ package org.gridgain.examples.datagrid.hibernate;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.partitioned.*;
-import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.ATOMIC;
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.TRANSACTIONAL;
-import static org.gridgain.grid.cache.GridCacheMode.PARTITIONED;
-import static org.gridgain.grid.cache.GridCacheMode.REPLICATED;
-import static org.gridgain.grid.cache.GridCachePartitionedDistributionMode.PARTITIONED_ONLY;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.FULL_SYNC;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
  * Starts up an empty node with example cache configuration.

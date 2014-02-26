@@ -11,7 +11,7 @@ package org.gridgain.examples.ggfs;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.partitioned.*;
+import org.gridgain.grid.cache.affinity.partition.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.product.*;
@@ -23,7 +23,7 @@ import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCachePartitionedDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
@@ -93,8 +93,8 @@ public class GgfsEndpointNodeStartup {
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        dataCacheCfg.setPartitionedDistributionMode(PARTITIONED_ONLY);
-        dataCacheCfg.setAffinity(new GridCachePartitionedAffinity(0));
+        dataCacheCfg.setDistributionMode(PARTITIONED_ONLY);
+        dataCacheCfg.setAffinity(new GridCachePartitionAffinity(0));
         dataCacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksMapper(512));
 
         cfg.setCacheConfiguration(metaCacheCfg, dataCacheCfg);
