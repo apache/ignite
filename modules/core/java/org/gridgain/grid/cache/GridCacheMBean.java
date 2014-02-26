@@ -196,15 +196,6 @@ public interface GridCacheMBean {
     public boolean isWriteBehindEnabled();
 
     /**
-     * Returns {@code true} if write-behind is configured to update cache store on DHT primary
-     * nodes instead of near nodes.
-     *
-     * @return {@code True} if write-behind uses DHT primary nodes for store updates.
-     */
-    @GridMBeanDescription("True if write-behind uses primary nodes for store updates.")
-    public boolean isWriteBehindPreferPrimary();
-
-    /**
      * Gets the maximum size of the write-behind buffer. When the count of unique keys
      * in write buffer exceeds this value, the buffer is scheduled for write to the underlying store.
      * <p/>

@@ -47,18 +47,22 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws GridException {
-        if (store instanceof GridLifecycleAware)
-            ((GridLifecycleAware)store).start();
+        if (store instanceof GridLifecycleAware) {
+            if (cctx.config().isWriteBehindEnabled() || cctx.isNear() || !CU.isNearEnabled(cctx))
+                ((GridLifecycleAware)store).start();
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         if (store instanceof GridLifecycleAware) {
-            try {
-                ((GridLifecycleAware)store).stop();
-            }
-            catch (GridException e) {
-                U.error(log(), "Failed to stop cache store.", e);
+            if (cctx.config().isWriteBehindEnabled() || cctx.isNear() || !CU.isNearEnabled(cctx)) {
+                try {
+                    ((GridLifecycleAware)store).stop();
+                }
+                catch (GridException e) {
+                    U.error(log(), "Failed to stop cache store.", e);
+                }
             }
         }
     }

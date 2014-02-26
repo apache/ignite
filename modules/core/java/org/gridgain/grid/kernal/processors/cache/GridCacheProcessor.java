@@ -607,7 +607,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = createComponent(GridCacheDrManager.class);
 
-            GridCacheStore nearStore = cacheStore(ctx.gridName(), cfg, true);
+            GridCacheStore nearStore = cacheStore(ctx.gridName(), cfg, isNearEnabled(cfg));
             GridCacheStoreManager storeMgr = new GridCacheStoreManager(nearStore);
 
             GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
@@ -1040,10 +1040,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "txSerializableEnabled",
                             "Transaction serializable enabled", locAttr.txSerializableEnabled(),
                             rmtAttr.txSerializableEnabled(), true);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindPreferPrimary",
-                            "Write behind prefer primary", locAttr.writeBehindPreferPrimary(),
-                            rmtAttr.writeBehindPreferPrimary(), true);
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
                             "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
@@ -1600,8 +1596,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfg.getStore() == null || !cfg.isWriteBehindEnabled())
             return cfg.getStore();
 
-        // Write-behind store is used on near nodes with useDht=false and vice-versa.
-        if ((near ^ cfg.isWriteBehindPreferPrimary()) || !isNearEnabled(cfg)) {
+        // Write-behind store is used in DHT cache only.
+        if (!near) {
             GridCacheWriteBehindStore store = new GridCacheWriteBehindStore(gridName, cfg.getName(), log,
                 cfg.getStore());
 
