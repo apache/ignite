@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
@@ -53,9 +52,6 @@ public class GridCachePerThreadTxCommitBuffer<K, V> implements GridCacheTxCommit
     /** {@inheritDoc} */
     @Override public void addCommittedTx(GridCacheTxEx<K, V> tx) {
         long threadId = tx.threadId();
-
-        if (tx instanceof GridReplicatedTxRemote)
-            threadId = ((GridCacheTxRemoteEx)tx).remoteThreadId();
 
         StoreKey key = new StoreKey(tx.eventNodeId(), threadId);
 

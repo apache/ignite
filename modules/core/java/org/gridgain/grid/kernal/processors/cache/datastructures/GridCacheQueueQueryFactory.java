@@ -578,7 +578,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
                             tx.commit();
                         }
                         finally {
-                            tx.end();
+                            tx.close();
                         }
 
                         retVal.set1(retVal.get1() + size);
@@ -613,7 +613,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
                         tx.commit();
                     }
                     finally {
-                        tx.end();
+                        tx.close();
                     }
 
                     retVal.set1(retVal.get1() + keys.size());
@@ -733,7 +733,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
                     tx.commit();
                 }
                 finally {
-                    tx.end();
+                    tx.close();
                 }
 
                 retVal.set1(keys.size());

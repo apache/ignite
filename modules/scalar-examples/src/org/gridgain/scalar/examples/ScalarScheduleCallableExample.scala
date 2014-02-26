@@ -22,13 +22,13 @@ import java.util.Date
  * `GridScheduleFuture.get()` blocking current thread and waiting for result of the next execution.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-default.xml'`.
+ * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
  *
  * @author @java.author
  * @version @java.version
  */
 object ScalarScheduleCallableExample extends App {
-    scalar("examples/config/example-default.xml") {
+    scalar("examples/config/example-compute.xml") {
         var cnt = 0
 
         // Schedule callable that returns incremented value each time.

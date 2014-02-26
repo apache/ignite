@@ -327,7 +327,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             throw U.cast(e);
         }
         finally {
-            tx.end();
+            tx.close();
         }
     }
 
@@ -394,7 +394,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             throw U.cast(e);
         }
         finally {
-            tx.end();
+            tx.close();
 
             assert validTxState(false);
 
@@ -551,7 +551,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             tx.commit();
         }
         finally {
-            tx.end();
+            tx.close();
         }
 
         return res;
@@ -635,7 +635,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             tx.commit();
         }
         finally {
-            tx.end();
+            tx.close();
         }
     }
 
@@ -753,7 +753,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             return fileInfo;
         }
         finally {
-            tx.end();
+            tx.close();
         }
     }
 
@@ -857,7 +857,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             return resId;
         }
         finally {
-            tx.end();
+            tx.close();
         }
     }
 
@@ -1010,7 +1010,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             return res;
         }
         finally {
-            tx.end();
+            tx.close();
         }
     }
 
@@ -1054,7 +1054,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             return res;
         }
         finally {
-            tx.end();
+            tx.close();
         }
     }
 
@@ -1190,7 +1190,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             return info;
         }
         finally {
-            tx.end();
+            tx.close();
         }
     }
 
@@ -1266,7 +1266,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         }
         finally {
             if (tx != null)
-                tx.end();
+                tx.close();
         }
     }
 
@@ -1290,7 +1290,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             return !F.eq(prev, val);
         }
         finally {
-            tx.end();
+            tx.close();
         }
     }
 
@@ -2213,7 +2213,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     throw e;
             }
             finally {
-                tx.end();
+                tx.close();
             }
         }
 
@@ -2334,7 +2334,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             tx.commit();
         }
         finally {
-            tx.end();
+            tx.close();
         }
     }
 

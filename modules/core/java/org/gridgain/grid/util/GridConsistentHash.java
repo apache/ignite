@@ -511,7 +511,6 @@ public class GridConsistentHash<N> {
 
         int hash = hash(key);
 
-        List<N> ret = new ArrayList<>(cnt);
         Collection<N> failed = new GridLeanSet<>();
 
         rw.readLock().lock();
@@ -521,6 +520,8 @@ public class GridConsistentHash<N> {
                 return Collections.emptyList();
 
             int size = nodes.size();
+
+            List<N> ret = new ArrayList<>(Math.min(cnt, size));
 
             // Move clock-wise starting from selected position.
             for (SortedSet<N> set : circle.tailMap(hash, true).values()) { // Circle tail.
