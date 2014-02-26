@@ -207,7 +207,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };
@@ -254,7 +254,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };

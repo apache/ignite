@@ -67,6 +67,6 @@
                 <constructor-arg value="1000"/>
             </bean>
         </property>
-        <property name="partitionedDistributionMode" value="NEAR_ONLY"/>
+        <property name="distributionMode" value="NEAR_ONLY"/>
     </bean>
 </beans>

@@ -353,9 +353,9 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
      * @param args {@inheritDoc}
      * @throws GridException {@inheritDoc}
      */
-    @Override public void loadAll(GridBiInClosure<K, V> clo, @Nullable Object... args)
+    @Override public void loadCache(GridBiInClosure<K, V> clo, @Nullable Object... args)
         throws GridException {
-        store.loadAll(clo, args);
+        store.loadCache(clo, args);
     }
 
     /** {@inheritDoc} */

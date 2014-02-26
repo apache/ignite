@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.partitioned.*;
+import org.gridgain.grid.cache.affinity.partition.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -20,7 +20,7 @@ import java.io.*;
 
 import static org.gridgain.grid.cache.GridCacheConfiguration.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCachePartitionedDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 
 /**
  * Cache attributes.
@@ -80,7 +80,7 @@ public class GridCacheAttributes implements Externalizable {
     private GridCachePreloadMode preloadMode;
 
     /** Partitioned cache mode. */
-    private GridCachePartitionedDistributionMode partDistro;
+    private GridCacheDistributionMode partDistro;
 
     /** Preload batch size. */
     private int preloadBatchSize;
@@ -201,7 +201,7 @@ public class GridCacheAttributes implements Externalizable {
         evictSync = cfg.isEvictSynchronized();
         indexingSpiName = cfg.getIndexingSpiName();
         name = cfg.getName();
-        partDistro = GridCacheUtils.synchronizationMode(cfg);
+        partDistro = GridCacheUtils.distributionMode(cfg);
         preloadBatchSize = cfg.getPreloadBatchSize();
         preloadMode = cfg.getPreloadMode();
         qryIdxEnabled = cfg.isQueryIndexEnabled();
@@ -224,8 +224,8 @@ public class GridCacheAttributes implements Externalizable {
         GridCacheAffinity aff = cfg.getAffinity();
 
         if (aff != null) {
-            if (aff instanceof GridCachePartitionedAffinity) {
-                GridCachePartitionedAffinity aff0 = (GridCachePartitionedAffinity) aff;
+            if (aff instanceof GridCachePartitionAffinity) {
+                GridCachePartitionAffinity aff0 = (GridCachePartitionAffinity) aff;
 
                 affInclNeighbors = aff0.isExcludeNeighbors();
                 affKeyBackups = aff0.getKeyBackups();
@@ -278,7 +278,7 @@ public class GridCacheAttributes implements Externalizable {
      * @return {@code True} if near cache is enabled.
      */
     public boolean nearCacheEnabled() {
-        return cacheMode() == PARTITIONED &&
+        return cacheMode() != LOCAL &&
             (partDistro == NEAR_PARTITIONED || partDistro == NEAR_ONLY);
     }
 
@@ -288,7 +288,7 @@ public class GridCacheAttributes implements Externalizable {
      */
     @SuppressWarnings("SimplifiableIfStatement")
     public boolean isAffinityNode() {
-        if (cacheMode() != PARTITIONED)
+        if (cacheMode() == LOCAL)
             return true;
 
         return partDistro == PARTITIONED_ONLY || partDistro == NEAR_PARTITIONED;
@@ -452,7 +452,7 @@ public class GridCacheAttributes implements Externalizable {
     /**
      * @return Partitioned cache mode.
      */
-    public GridCachePartitionedDistributionMode partitionedTaxonomy() {
+    public GridCacheDistributionMode partitionedTaxonomy() {
         return partDistro;
     }
 
@@ -682,7 +682,7 @@ public class GridCacheAttributes implements Externalizable {
         evictSync  = in.readBoolean();
         indexingSpiName = U.readString(in);
         name = U.readString(in);
-        partDistro = U.readEnum(in, GridCachePartitionedDistributionMode.class);
+        partDistro = U.readEnum(in, GridCacheDistributionMode.class);
         preloadBatchSize = in.readInt();
         preloadMode = U.readEnum(in, GridCachePreloadMode.class);
         qryIdxEnabled = in.readBoolean();

@@ -540,15 +540,6 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public GridAbsPredicate predicate() {
-        return new PA() {
-            @Override public boolean apply() {
-                return isDone();
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
     @Override public void listenAsync(@Nullable GridInClosure<? super GridFuture<R>> lsnr) {
         if (lsnr != null) {
             Throwable err;
@@ -782,15 +773,6 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
                 throw U.cast(err);
 
             return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridAbsPredicate predicate() {
-            return new PA() {
-                @Override public boolean apply() {
-                    return isDone();
-                }
-            };
         }
 
         /** {@inheritDoc} */

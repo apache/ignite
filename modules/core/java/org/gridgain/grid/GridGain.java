@@ -812,8 +812,7 @@ public class GridGain {
      * @return Started grid.
      * @throws GridException If grid could not be started.
      */
-    private static GridNamedInstance start0(GridStartContext startCtx)
-        throws GridException {
+    private static GridNamedInstance start0(GridStartContext startCtx) throws GridException {
         assert startCtx != null;
 
         String name = startCtx.config().getGridName();
@@ -1401,7 +1400,6 @@ public class GridGain {
             myCfg.setIncludeProperties(cfg.getIncludeProperties());
             myCfg.setLifeCycleEmailNotification(cfg.isLifeCycleEmailNotification());
             myCfg.setMetricsLogFrequency(cfg.getMetricsLogFrequency());
-            myCfg.setLocalEventListeners(cfg.getLocalEventListeners());
             myCfg.setNetworkSendRetryDelay(cfg.getNetworkSendRetryDelay());
             myCfg.setNetworkSendRetryCount(cfg.getNetworkSendRetryCount());
             myCfg.setDataCenterId(cfg.getDataCenterId());
@@ -1828,11 +1826,11 @@ public class GridGain {
 
                 int cloneIdx = 0;
 
-                for (GridCacheConfiguration ccfg : cacheCfgs)
-                    clone[cloneIdx++] = new GridCacheConfiguration(ccfg);
-
                 for (String drSysCache : drSysCaches)
                     clone[cloneIdx++] = replicationSystemCache(drSysCache);
+
+                for (GridCacheConfiguration ccfg : cacheCfgs)
+                    clone[cloneIdx++] = new GridCacheConfiguration(ccfg);
 
                 myCfg.setCacheConfiguration(clone);
             }

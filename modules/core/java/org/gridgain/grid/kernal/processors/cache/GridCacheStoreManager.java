@@ -181,7 +181,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 log.debug("Loading all values from store.");
 
             try {
-                store.loadAll(new GridBiInClosure<K, Object>() {
+                store.loadCache(new GridBiInClosure<K, Object>() {
                     @Override public void apply(K k, Object o) {
                         V v;
                         GridCacheVersion ver = null;

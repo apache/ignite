@@ -371,7 +371,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            GridIndexingQueryFilter<K, V> backupFilter = backupsFilter(includeBackups);
+            GridIndexingQueryFilter<K, V> backupFilter = backupsFilter(space, includeBackups);
 
             return getSpi(spi).queryFields(space, clause, params,
                 backupFilter != null ? F.concat(filters, backupFilter) : filters);
@@ -407,7 +407,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             if (type == null || !type.registered())
                 return new GridEmptyCloseableIterator<>();
 
-            GridIndexingQueryFilter<K, V> backupFilter = backupsFilter(includeBackups);
+            GridIndexingQueryFilter<K, V> backupFilter = backupsFilter(space, includeBackups);
 
             return new GridSpiCloseableIteratorWrapper<>(getSpi(spi).query(space, clause, params, type,
                 backupFilter != null ? F.concat(filters, backupFilter) : filters));
@@ -442,7 +442,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             if (type == null || !type.registered())
                 return new GridEmptyCloseableIterator<>();
 
-            GridIndexingQueryFilter<K, V> backupFilter = backupsFilter(includeBackups);
+            GridIndexingQueryFilter<K, V> backupFilter = backupsFilter(space, includeBackups);
 
             return new GridSpiCloseableIteratorWrapper<>(getSpi(spi).queryText(space, clause, type,
                 backupFilter != null ? F.concat(filters, backupFilter) : filters));
@@ -456,11 +456,12 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param <K> Key type.
      * @param <V> Value type.
      * @return Predicate.
+     * @param spaceName Space name.
      * @param includeBackups Include backups.
      */
     @SuppressWarnings("unchecked")
-    private <K, V> GridIndexingQueryFilter<K, V> backupsFilter(boolean includeBackups) {
-        if (includeBackups)
+    @Nullable private <K, V> GridIndexingQueryFilter<K, V> backupsFilter(String spaceName, boolean includeBackups) {
+        if (includeBackups || ctx.cache().internalCache(spaceName).context().isReplicated())
             return null;
 
         final UUID nodeId = ctx.localNodeId();
@@ -468,7 +469,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         return new GridIndexingQueryFilter<K, V>() {
             @Override public boolean apply(String spaceName, K key, V val) {
                 try {
-                    return nodeId.equals(ctx.affinity().mapKeyToNode(spaceName, key).id());
+                    return ctx.cache().internalCache(spaceName).context().isReplicated() ||
+                        nodeId.equals(ctx.affinity().mapKeyToNode(spaceName, key).id());
                 }
                 catch (GridException e) {
                     throw F.wrap(e);

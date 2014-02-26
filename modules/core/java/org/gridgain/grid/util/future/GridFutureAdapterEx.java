@@ -348,15 +348,6 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
     }
 
     /** {@inheritDoc} */
-    @Override public GridAbsPredicate predicate() {
-        return new PA() {
-            @Override public boolean apply() {
-                return isDone();
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isCancelled() {
         checkValid();
 

@@ -11,7 +11,7 @@ package org.gridgain.grid.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.partitioned.*;
+import org.gridgain.grid.cache.affinity.partition.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.lang.*;
@@ -197,7 +197,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
     public Iterator<Map.Entry<K, V>> offHeapIterator() throws GridException;
 
     /**
-     * Delegates to {@link GridCacheStore#loadAll(GridBiInClosure,Object...)} method
+     * Delegates to {@link GridCacheStore#loadCache(GridBiInClosure,Object...)} method
      * to load state from the underlying persistent storage. The loaded values
      * will then be given to the optionally passed in predicate, and, if the predicate returns
      * {@code true}, will be stored in cache. If predicate is {@code null}, then
@@ -215,13 +215,13 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * @param p Optional predicate (may be {@code null}). If provided, will be used to
      *      filter values to be put into cache.
      * @param args Optional user arguments to be passed into
-     *      {@link GridCacheStore#loadAll(GridBiInClosure, Object...)} method.
+     *      {@link GridCacheStore#loadCache(GridBiInClosure, Object...)} method.
      * @throws GridException If loading failed.
      */
     public void loadCache(@Nullable GridBiPredicate<K, V> p, long ttl, @Nullable Object... args) throws GridException;
 
     /**
-     * Asynchronously delegates to {@link GridCacheStore#loadAll(GridBiInClosure, Object...)} method
+     * Asynchronously delegates to {@link GridCacheStore#loadCache(GridBiInClosure, Object...)} method
      * to reload state from the underlying persistent storage. The reloaded values
      * will then be given to the optionally passed in predicate, and if the predicate returns
      * {@code true}, will be stored in cache. If predicate is {@code null}, then
@@ -239,7 +239,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      *      filter values to be put into cache.
      * @param ttl Time to live for loaded entries ({@code 0} for infinity).
      * @param args Optional user arguments to be passed into
-     *      {@link GridCacheStore#loadAll(GridBiInClosure,Object...)} method.
+     *      {@link GridCacheStore#loadCache(GridBiInClosure,Object...)} method.
      * @return Future to be completed whenever loading completes.
      */
     public GridFuture<?> loadCacheAsync(@Nullable GridBiPredicate<K, V> p, long ttl, @Nullable Object... args);
@@ -297,7 +297,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * the left nodes, and that nodes are restarted before
      * {@link GridCacheConfiguration#getPreloadPartitionedDelay() preloadDelay} expires. To place nodes
      * on the same place in consistent hash ring, use
-     * {@link GridCachePartitionedAffinity#setHashIdResolver(GridCachePartitionedHashResolver)} to make sure that
+     * {@link GridCachePartitionAffinity#setHashIdResolver(GridCachePartitionHashResolver)} to make sure that
      * a node maps to the same hash ID if re-started.
      * <p>
      * See {@link GridCacheConfiguration#getPreloadPartitionedDelay()} for more information on how to configure

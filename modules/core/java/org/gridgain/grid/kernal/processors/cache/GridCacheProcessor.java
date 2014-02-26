@@ -12,8 +12,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.partitioned.*;
-import org.gridgain.grid.cache.affinity.replicated.*;
+import org.gridgain.grid.cache.affinity.partition.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.eviction.ggfs.*;
 import org.gridgain.grid.cache.store.*;
@@ -28,7 +27,6 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
@@ -47,7 +45,7 @@ import static org.gridgain.grid.GridDeploymentMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheConfiguration.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCachePartitionedDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
@@ -95,7 +93,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public GridCacheProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        caches = new HashMap<>();
+        caches = new LinkedHashMap<>();
         proxies = new HashMap<>();
         publicProxies = new HashMap<>();
         preloadFuts = new TreeMap<>();
@@ -131,12 +129,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cfg.setMemoryMode(DFLT_MEMORY_MODE);
 
         if (cfg.getAffinity() == null) {
-            if (cfg.getCacheMode() == REPLICATED)
-                cfg.setAffinity(new GridCacheReplicatedAffinity());
-            else if (cfg.getCacheMode() == PARTITIONED) {
-                GridCachePartitionedAffinity aff = new GridCachePartitionedAffinity();
+            if (cfg.getCacheMode() == PARTITIONED) {
+                GridCachePartitionAffinity aff = new GridCachePartitionAffinity();
 
-                aff.setHashIdResolver(new GridCachePartitionedConsistentIdHashResolver());
+                aff.setHashIdResolver(new GridCachePartitionConsistentIdHashResolver());
+
+                cfg.setAffinity(aff);
+            }
+            else if (cfg.getCacheMode() == REPLICATED) {
+                GridCachePartitionAffinity aff = new GridCachePartitionAffinity(false, Integer.MAX_VALUE, 512);
+
+                aff.setHashIdResolver(new GridCachePartitionConsistentIdHashResolver());
 
                 cfg.setAffinity(aff);
             }
@@ -145,11 +148,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
         else {
             if (cfg.getCacheMode() == PARTITIONED) {
-                if (cfg.getAffinity() instanceof GridCachePartitionedAffinity) {
-                    GridCachePartitionedAffinity aff = (GridCachePartitionedAffinity)cfg.getAffinity();
+                if (cfg.getAffinity() instanceof GridCachePartitionAffinity) {
+                    GridCachePartitionAffinity aff = (GridCachePartitionAffinity)cfg.getAffinity();
 
                     if (aff.getHashIdResolver() == null)
-                        aff.setHashIdResolver(new GridCachePartitionedConsistentIdHashResolver());
+                        aff.setHashIdResolver(new GridCachePartitionConsistentIdHashResolver());
                 }
             }
         }
@@ -157,7 +160,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfg.getAffinityMapper() == null)
             cfg.setAffinityMapper(new GridCacheDefaultAffinityMapper());
 
-        GridCacheEvictionPolicy evictPlc =  cfg.getEvictionPolicy();
+        GridCacheEvictionPolicy evictPlc = cfg.getEvictionPolicy();
 
         if (evictPlc instanceof GridCacheGgfsPerBlockLruEvictionPolicy && cfg.getEvictionFilter() == null)
             cfg.setEvictionFilter(new GridCacheGgfsEvictionFilter());
@@ -165,28 +168,29 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfg.getPreloadMode() == null)
             cfg.setPreloadMode(ASYNC);
 
-        if (cfg.getCacheMode() == PARTITIONED) {
+        if (cfg.getCacheMode() == PARTITIONED || cfg.getCacheMode() == REPLICATED) {
             if (cfg.getAtomicityMode() == null)
                 cfg.setAtomicityMode(ATOMIC);
 
-            if (cfg.getPartitionedDistributionMode() == null)
-                cfg.setPartitionedDistributionMode(CU.synchronizationMode(cfg));
+            if (cfg.getDistributionMode() == null)
+                cfg.setDistributionMode(CU.distributionMode(cfg));
 
-            if (cfg.getPartitionedDistributionMode() == PARTITIONED_ONLY ||
-                cfg.getPartitionedDistributionMode() == CLIENT_ONLY) {
+            if (cfg.getDistributionMode() == PARTITIONED_ONLY ||
+                cfg.getDistributionMode() == CLIENT_ONLY) {
                 if (cfg.getNearEvictionPolicy() != null)
                     U.quietAndWarn(log, "Ignoring near eviction policy since near cache is disabled.");
             }
 
-            assert cfg.getPartitionedDistributionMode() != null;
+            assert cfg.getDistributionMode() != null;
         }
         else {
-            // This will have to change when LOCAL and REPLICATED caches will support ATOMIC mode.
+            assert cfg.getCacheMode() == LOCAL;
+
             if (cfg.getAtomicityMode() == null)
                 cfg.setAtomicityMode(TRANSACTIONAL);
 
             if (cfg.getAtomicityMode() == ATOMIC) {
-                U.quietAndWarn(log, "Cache atomicity mode ATOMIC supported for PARTITIONED cache only (ignoring) " +
+                U.quietAndWarn(log, "Cache atomicity mode ATOMIC is not supported for LOCAL cache (ignoring) " +
                     "[cacheName=" + cfg.getName() + ", cacheMode=" + cfg.getCacheMode() + ']');
 
                 cfg.setAtomicityMode(TRANSACTIONAL);
@@ -226,14 +230,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (cfg.getCacheMode() == PARTITIONED) {
             perf.add("Disable near cache (set 'partitionDistributionMode' to PARTITIONED_ONLY or CLIENT_ONLY)",
-                cfg.getPartitionedDistributionMode() != NEAR_PARTITIONED &&
-                    cfg.getPartitionedDistributionMode() != NEAR_ONLY);
+                cfg.getDistributionMode() != NEAR_PARTITIONED &&
+                    cfg.getDistributionMode() != NEAR_ONLY);
 
-            if (cfg.getAffinity() instanceof GridCachePartitionedAffinity) {
-                GridCachePartitionedAffinity aff = (GridCachePartitionedAffinity)cfg.getAffinity();
-
-                perf.add("Decrease number of backups (set 'keyBackups' to 0)", aff.getKeyBackups() == 0);
-            }
+            if (cfg.getAffinity() != null)
+                perf.add("Decrease number of backups (set 'keyBackups' to 0)", cfg.getAffinity().keyBackups() == 0);
         }
 
         // Suppress warning if at least one ATOMIC cache found.
@@ -264,18 +265,32 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void validate(GridConfiguration c, GridCacheConfiguration cc) throws GridException {
         if (cc.getCacheMode() == REPLICATED) {
-            if (cc.getAffinity().getClass().equals(GridCachePartitionedAffinity.class))
-                throw new GridException("Cannot start REPLICATED cache with GridCachePartitionedAffinity (switch " +
-                    "to GridCacheReplicatedAffinity or provide custom affinity) [cacheName=" + cc.getName() + ']');
+            if (!(cc.getAffinity() instanceof GridCachePartitionAffinity))
+                throw new GridException("REPLICATED cache can be started only with GridCachePartitionAffinity" +
+                    " [cacheName=" + cc.getName() + ", affinity=" + cc.getAffinity().getClass().getName() + ']');
+
+            GridCachePartitionAffinity aff = (GridCachePartitionAffinity)cc.getAffinity();
+
+            if (aff.getKeyBackups() != Integer.MAX_VALUE)
+                throw new GridException("For REPLICATED cache number of backups in GridCachePartitionAffinity must " +
+                    "be set to Integer.MAX_VALUE [cacheName=" + cc.getName() +
+                    ", backups=" + aff.getKeyBackups() + ']');
+
+            if (aff.isExcludeNeighbors())
+                throw new GridException("For REPLICATED cache flag 'excludeNeighbors' in GridCachePartitionAffinity " +
+                    "cannot be set [cacheName=" + cc.getName() + ']');
 
             if (cc.getWriteSynchronizationMode() == PRIMARY_SYNC)
                 throw new GridException("Cannot start REPLICATED cache with PRIMARY_SYNC write synchronization mode " +
                     "(switch to FULL_SYNC or FULL_ASYNC mode instead) [cacheName=" + cc.getName() + ']');
-        }
 
-        if (cc.getCacheMode() == PARTITIONED && cc.getAffinity().getClass().equals(GridCacheReplicatedAffinity.class))
-            throw new GridException("Cannot start PARTITIONED cache with GridCacheReplicatedAffinity (switch " +
-                "to GridCachePartitionedAffinity or provide custom affinity) [cacheName=" + cc.getName() + ']');
+            if (cc.getDistributionMode() == NEAR_PARTITIONED) {
+                U.warn(log, "NEAR_PARTITIONED distribution mode cannot be used with REPLICATED cache, " +
+                    "will be changed to PARTITIONED_ONLY [cacheName=" + cc.getName() + ']');
+
+                cc.setDistributionMode(PARTITIONED_ONLY);
+            }
+        }
 
         if (cc.getCacheMode() == LOCAL && !cc.getAffinity().getClass().equals(LocalAffinity.class))
             U.warn(log, "GridCacheAffinity configuration parameter will be ignored for local cache [cacheName=" +
@@ -286,9 +301,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             assertParameter(cc.getPreloadBatchSize() > 0, "preloadBatchSize > 0");
         }
 
-        if (cc.getCacheMode() == PARTITIONED) {
+        if (cc.getCacheMode() == PARTITIONED || cc.getCacheMode() == REPLICATED) {
             if (isNearEnabled(cc) && cc.getAtomicityMode() == ATOMIC)
-                throw new GridException("Cannot start PARTITIONED cache with ATOMIC atomicity mode and near-enabled" +
+                throw new GridException("Cannot start cache with ATOMIC atomicity mode and near-enabled" +
                     " partition distribution mode [cacheName=" + cc.getName() + ']');
 
             if (cc.getAtomicityMode() == ATOMIC && cc.getWriteSynchronizationMode() == FULL_ASYNC)
@@ -305,7 +320,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "cacheName=" + cc.getName() + ']');
             }
         }
-        else
+        else if (cc.getCacheMode() == LOCAL)
             assert cc.getAtomicityMode() != ATOMIC : "Invalid configuration: " + cc;
 
         if (ctx.config().getDeploymentMode() == PRIVATE || ctx.config().getDeploymentMode() == ISOLATED)
@@ -416,9 +431,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             assertParameter(drSndCfg.getMode() != null, "cfg.getDrSenderConfiguration().getMode() != null");
 
-            if (cc.getCacheMode() != PARTITIONED)
-                throw new GridException("Data center replication is only supported for PARTITIONED cache " +
-                    "(not for " + cc.getCacheMode() + " cache).");
+            if (cc.getCacheMode() == LOCAL)
+                throw new GridException("Data center replication is not supported for LOCAL cache");
 
             assertParameter(drSndCfg.getBatchSendSize() > 0, "cfg.getDrSenderConfiguration().getBatchSendSize() > 0");
 
@@ -473,7 +487,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("IfMayBeConditional")
     private Collection<GridCacheManager> dhtExcludes(GridCacheContext ctx) {
-        if (ctx.config().getCacheMode() != PARTITIONED || !isNearEnabled(ctx))
+        if (ctx.config().getCacheMode() == LOCAL || !isNearEnabled(ctx))
             return Collections.emptyList();
         else
             return F.asList((GridCacheManager)ctx.dgc(), ctx.queries(), ctx.continuousQueries());
@@ -595,8 +609,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
             GridCacheVersionManager verMgr = new GridCacheVersionManager();
             GridCacheEventManager evtMgr = new GridCacheEventManager();
-            GridCacheSwapManager swapMgr = new GridCacheSwapManager(cfg.getCacheMode() != PARTITIONED ||
-                !isNearEnabled(cfg));
+            GridCacheSwapManager swapMgr = new GridCacheSwapManager(cfg.getCacheMode() == LOCAL || !isNearEnabled(cfg));
             GridCacheDgcManager dgcMgr = new GridCacheDgcManager();
             GridCacheDeploymentManager depMgr = new GridCacheDeploymentManager();
             GridCacheEvictionManager evictMgr = new GridCacheEvictionManager();
@@ -643,12 +656,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     break;
                 }
+                case PARTITIONED:
                 case REPLICATED: {
-                    cache = new GridReplicatedCache(cacheCtx);
-
-                    break;
-                }
-                case PARTITIONED: {
                     if (isNearEnabled(cfg))
                         cache = new GridNearCache(cacheCtx);
                     else {
@@ -703,7 +712,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              * Start DHT cache.
              * ================
              */
-            if (cfg.getCacheMode() == PARTITIONED && isNearEnabled(cfg)) {
+            if (cfg.getCacheMode() != LOCAL && isNearEnabled(cfg)) {
                 /*
                  * Specifically don't create the following managers
                  * here and reuse the one from Near cache:
@@ -1732,6 +1741,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public void removeNode(UUID nodeId) {
             // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public int keyBackups() {
+            return 0;
         }
     }
 }

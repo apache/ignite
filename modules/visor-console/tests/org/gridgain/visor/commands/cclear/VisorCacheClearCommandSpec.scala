@@ -16,6 +16,7 @@ import VisorCacheClearCommand._
 import org.gridgain.grid._
 import cache._
 import GridCacheMode._
+import GridCacheAtomicityMode._
 import org.gridgain.grid.{GridGain => G}
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
@@ -60,6 +61,7 @@ class VisorCacheClearCommandSpec extends VisorRuntimeBaseSpec(2) {
         val cfg = new GridCacheConfiguration
 
         cfg.setCacheMode(REPLICATED)
+        cfg.setAtomicityMode(TRANSACTIONAL)
         cfg.setName(name)
 
         cfg

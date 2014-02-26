@@ -62,6 +62,8 @@ public interface GridCacheAffinity extends Serializable {
      */
     public int partitions();
 
+    public int keyBackups();
+
     /**
      * Gets partition number for a given key starting from {@code 0}. Partitioned caches
      * should make sure that keys are about evenly distributed across all partitions
