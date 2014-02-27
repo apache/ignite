@@ -146,7 +146,6 @@ public:
      */
     void rawBytes(std::vector<int8_t>& bytes) const;
 private:
-    class Impl;
     Impl pimpl;
 
     /**

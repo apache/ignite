@@ -449,7 +449,6 @@ public:
     bool hasAnyValue() const;
 
 private:
-    class Impl;
     Impl pimpl;
 };
 
