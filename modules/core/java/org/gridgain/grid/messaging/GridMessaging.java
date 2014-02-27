@@ -83,7 +83,8 @@ public interface GridMessaging {
      *
      * @param topic Topic to send to, {@code null} for default topic.
      * @param msg Message to send.
-     * @param timeout Message timeout in milliseconds, {@code 0} for never.
+     * @param timeout Message timeout in milliseconds, {@code 0} for default
+     *      which is {@link GridConfiguration#getNetworkTimeout()}.
      * @throws GridException If failed to send a message to any of the nodes.
      * @throws GridEmptyProjectionException Thrown in case when this projection is empty.
      */
