@@ -149,7 +149,7 @@ public interface GridCompute {
     public <T, R> GridComputeTaskFuture<R> execute(Class<? extends GridComputeTask<T, R>> taskCls, @Nullable T arg);
 
     /**
-     * Executes given task on the grid projection. For step-by-step explanation of task execution process
+     * Executes given task on this grid projection. For step-by-step explanation of task execution process
      * refer to {@link GridComputeTask} documentation.
      *
      * @param task Instance of task to execute. If task class has {@link GridComputeTaskName} annotation,
@@ -161,7 +161,7 @@ public interface GridCompute {
     public <T, R> GridComputeTaskFuture<R> execute(GridComputeTask<T, R> task, @Nullable T arg);
 
     /**
-     * Executes given task on the grid projection. For step-by-step explanation of task execution process
+     * Executes given task on this grid projection. For step-by-step explanation of task execution process
      * refer to {@link GridComputeTask} documentation.
      * <p>
      * If task for given name has not been deployed yet, then {@code taskName} will be
@@ -203,7 +203,7 @@ public interface GridCompute {
     public <R, T> GridFuture<Collection<R>> broadcast(GridClosure<T, R> job, @Nullable T arg);
 
     /**
-     * Executes provided job on a node in the grid projection.
+     * Executes provided job on a node in this grid projection.
      *
      * @param job Job closure to execute.
      * @return Future of this execution.
@@ -211,7 +211,7 @@ public interface GridCompute {
     public GridFuture<?> run(Runnable job);
 
     /**
-     * Executes collection of jobs on grid nodes within the grid projection.
+     * Executes collection of jobs on grid nodes within this grid projection.
      *
      * @param jobs Collection of jobs to execute.
      * @return Future for this execution.
@@ -219,7 +219,7 @@ public interface GridCompute {
     public GridFuture<?> run(Collection<? extends Runnable> jobs);
 
     /**
-     * Executes provided job on a node in the grid projection. The result of the
+     * Executes provided job on a node in this grid projection. The result of the
      * job execution is returned from teh result closure.
      *
      * @param job Job to execute.
@@ -228,7 +228,7 @@ public interface GridCompute {
     public <R> GridFuture<R> call(Callable<R> job);
 
     /**
-     * Executes collection of jobs on nodes within the grid projection.
+     * Executes collection of jobs on nodes within this grid projection.
      * Collection of all returned job results is returned from the result future.
      *
      * @param jobs Collection of jobs to execute.
@@ -237,7 +237,7 @@ public interface GridCompute {
     public <R> GridFuture<Collection<R>> call(Collection<? extends Callable<R>> jobs);
 
     /**
-     * Executes collection of jobs on nodes within the grid projection. The returned
+     * Executes collection of jobs on nodes within this grid projection. The returned
      * job results will be reduced into an individual result by provided reducer.
      *
      * @param jobs Collection of jobs to execute.
@@ -247,7 +247,7 @@ public interface GridCompute {
     public <R1, R2> GridFuture<R2> call(Collection<? extends Callable<R1>> jobs, GridReducer<R1, R2> rdc);
 
     /**
-     * Executes provided closure job on a node in the grid projection. This method is different
+     * Executes provided closure job on a node in this grid projection. This method is different
      * from {@code run(...)} and {@code call(...)} methods in a way that it receives job argument
      * which is then passed into the closure at execution time.
      *
@@ -258,7 +258,7 @@ public interface GridCompute {
     public <R, T> GridFuture<R> apply(GridClosure<T, R> job, @Nullable T arg);
 
     /**
-     * Executes provided closure job on nodes within the grid projection. A new job is executed for
+     * Executes provided closure job on nodes within this grid projection. A new job is executed for
      * every argument in the passed in collection. The number of actual job executions will be
      * equal to size of the job arguments collection.
      *
@@ -269,7 +269,7 @@ public interface GridCompute {
     public <T, R> GridFuture<Collection<R>> apply(GridClosure<T, R> job, @Nullable Collection<? extends T> args);
 
     /**
-     * Executes provided closure job on nodes within the grid projection. A new job is executed for
+     * Executes provided closure job on nodes within this grid projection. A new job is executed for
      * every argument in the passed in collection. The number of actual job executions will be
      * equal to size of the job arguments collection. The returned job results will be reduced
      * into an individual result by provided reducer.
@@ -284,7 +284,7 @@ public interface GridCompute {
 
     /**
      * Creates new {@link ExecutorService} which will execute all submitted
-     * {@link Callable} and {@link Runnable} jobs on nodes in the grid projection. This essentially
+     * {@link Callable} and {@link Runnable} jobs on nodes in this grid projection. This essentially
      * creates a <b><i>Distributed Thread Pool</i</b> that can be used as a
      * replacement for local thread pools.
      *
@@ -401,7 +401,7 @@ public interface GridCompute {
     public Map<String, Class<? extends GridComputeTask<?, ?>>> localTasks();
 
     /**
-     * Makes the best attempt to undeploy a task with given name from the grid projection. Note that this
+     * Makes the best attempt to undeploy a task with given name from this grid projection. Note that this
      * method returns immediately and does not wait until the task will actually be
      * undeployed on every node.
      *
