@@ -545,8 +545,8 @@ private class VisorCacheDataTask extends VisorConsoleMultiNodeTask[Option[String
                         reads = c.metrics.reads,
                         writes = c.metrics.writes,
 
-                        queries = None /* TODO GG-7625
-                            if (c.queries().queryMetrics == null) None else Some(c.queries().queryMetrics.collect {
+                        queries =
+                            if (c.queries().metrics == null) None else Some(c.queries().metrics.collect {
                             case q =>
                                 VisorCacheQueryData(
                                     clause = safe(q.clause.trim, "<n/a>"),
@@ -556,7 +556,7 @@ private class VisorCacheDataTask extends VisorConsoleMultiNodeTask[Option[String
                                         case TEXT => "Text"
                                         case null => "SQL"
                                     },
-                                    clsName = U.compact(safe(q.className, "<n/a>")),
+                                    clsName = U.compact(safe(q.queryClass.getName, "<n/a>")),
                                     execs = q.executions,
                                     fails = q.fails,
                                     firstTime = q.firstRunTime,
@@ -565,9 +565,7 @@ private class VisorCacheDataTask extends VisorConsoleMultiNodeTask[Option[String
                                     maxTime = q.maximumTime,
                                     avgTime = q.averageTime
                                 )
-                        }.
-                            filterNot(_.clsName.contains("datastructures")).toList)
-                        */
+                        }.filterNot(_.clsName.contains("datastructures")).toList)
                     )
             }.toSeq
         }

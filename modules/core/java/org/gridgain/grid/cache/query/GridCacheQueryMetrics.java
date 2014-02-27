@@ -7,9 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache.query;
+package org.gridgain.grid.cache.query;
 
-import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -78,7 +78,6 @@ public interface GridCacheQueryMetrics {
      *
      * @return Query clause.
      */
-    // TODO: remove
     @Nullable public String clause();
 
     /**
@@ -86,7 +85,6 @@ public interface GridCacheQueryMetrics {
      *
      * @return type Query type.
      */
-    // TODO: remove
     public GridCacheQueryType type();
 
     /**
@@ -94,6 +92,5 @@ public interface GridCacheQueryMetrics {
      *
      * @return Java class name of the values selected by the query.
      */
-    // TODO: remove
-    @Nullable public String className();
+    @Nullable public Class<?> queryClass();
 }

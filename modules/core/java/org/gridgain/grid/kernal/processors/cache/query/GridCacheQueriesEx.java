@@ -21,10 +21,6 @@ import java.util.*;
  * @version @java.version
  */
 public interface GridCacheQueriesEx<K, V> extends GridCacheQueries<K, V> {
-    public Collection<GridCacheQueryMetrics> metrics();
-
-    public void resetMetrics();
-
     public Collection<GridCacheSqlMetadata> sqlMetadata() throws GridException;
 
     public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta);

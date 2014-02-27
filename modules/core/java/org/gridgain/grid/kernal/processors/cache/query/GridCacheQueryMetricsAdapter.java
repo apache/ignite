@@ -9,8 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 
@@ -77,21 +79,6 @@ public class GridCacheQueryMetricsAdapter implements GridCacheQueryMetrics, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQueryType type() {
-        return key.type();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String className() {
-        return key.className();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String clause() {
-        return key.clause();
-    }
-
-    /** {@inheritDoc} */
     @Override public long firstRunTime() {
         return firstTime;
     }
@@ -124,6 +111,21 @@ public class GridCacheQueryMetricsAdapter implements GridCacheQueryMetrics, Exte
     /** {@inheritDoc} */
     @Override public int fails() {
         return fails;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String clause() {
+        return key.clause();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheQueryType type() {
+        return key.type();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Class<?> queryClass() {
+        return key.queryClass();
     }
 
     /**
@@ -229,6 +231,6 @@ public class GridCacheQueryMetricsAdapter implements GridCacheQueryMetrics, Exte
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheQueryMetricsAdapter.class, this,
-            "type", key.type(), "clsName", key.className(), "clause", key.clause());
+            "type", key.type(), "clsName", key.queryClass().getName(), "clause", key.clause());
     }
 }

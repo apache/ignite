@@ -82,12 +82,12 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
 
     /** {@inheritDoc} */
     @Override public Collection<GridCacheQueryMetrics> metrics() {
-        return null; // TODO: implement.
+        return ctx.queries().metrics();
     }
 
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
-        // TODO: implement.
+        ctx.queries().resetMetrics();
     }
 
     /** {@inheritDoc} */

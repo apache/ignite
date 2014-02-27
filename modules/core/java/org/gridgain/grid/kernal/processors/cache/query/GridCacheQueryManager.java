@@ -1144,6 +1144,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     * Resets metrics.
+     */
+    public void resetMetrics() {
+        metrics.clear();
+    }
+
+    /**
      * @param m Updated metrics.
      * @param startTime Execution start time.
      * @param duration Execution duration.

@@ -55,22 +55,28 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     private final boolean incMeta;
 
     /** */
-    private int pageSize;
+    private final GridCacheQueryMetricsKey metricsKey;
 
     /** */
-    private long timeout;
+    private volatile GridCacheQueryMetricsAdapter metrics;
 
     /** */
-    private boolean keepAll;
+    private volatile int pageSize;
 
     /** */
-    private boolean incBackups;
+    private volatile long timeout;
 
     /** */
-    private boolean dedup;
+    private volatile boolean keepAll;
 
     /** */
-    private GridProjection prj;
+    private volatile boolean incBackups;
+
+    /** */
+    private volatile boolean dedup;
+
+    /** */
+    private volatile GridProjection prj;
 
     /**
      * @param cctx Context.
@@ -103,6 +109,9 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         incBackups = false;
         dedup = false;
         prj = null;
+
+        metricsKey = new GridCacheQueryMetricsKey(type, cls, clause);
+        metrics = new GridCacheQueryMetricsAdapter(metricsKey);
     }
 
     /**
@@ -139,6 +148,8 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         this.cls = cls;
         this.clause = clause;
         this.incMeta = incMeta;
+
+        metricsKey = null;
     }
 
     /**
@@ -274,6 +285,26 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         // TODO: gg-7625
     }
 
+    /**
+     * @param res Query result.
+     * @param err Error or {@code null} if query executed successfully.
+     * @param startTime Start time.
+     * @param duration Duration.
+     */
+    public void onExecuted(Object res, Throwable err, long startTime, long duration) {
+        boolean fail = err != null;
+
+        // Update own metrics.
+        metrics.onQueryExecute(startTime, duration, fail);
+
+        // Update metrics in query manager.
+        cctx.queries().onMetricsUpdate(metrics, startTime, duration, fail);
+
+        if (log.isDebugEnabled())
+            log.debug("Query execution finished [qry=" + this + ", startTime=" + startTime +
+                ", duration=" + duration + ", fail=" + fail + ", res=" + res + ']');
+    }
+
     /** {@inheritDoc} */
     @Override public GridCacheQueryFuture<T> execute(@Nullable Object... args) {
         return execute(null, null, args);
@@ -287,6 +318,14 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     /** {@inheritDoc} */
     @Override public <R> GridCacheQueryFuture<R> execute(GridClosure<T, R> rmtTransform, @Nullable Object... args) {
         return execute(null, rmtTransform, args);
+    }
+
+    @Override public GridCacheQueryMetrics metrics() {
+        return metrics.copy();
+    }
+
+    @Override public void resetMetrics() {
+        metrics = new GridCacheQueryMetricsAdapter(metricsKey);
     }
 
     /**
