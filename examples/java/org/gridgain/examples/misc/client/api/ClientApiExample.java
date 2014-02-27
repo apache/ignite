@@ -167,51 +167,6 @@ public class ClientApiExample {
             GridClientFuture<List<GridClientNode>> topFut = prj.refreshTopologyAsync(false, false);
 
             System.out.println(">>> Refreshed topology asynchronously : " + topFut.get());
-
-            try {
-                // Client can be used to query logs.
-                Collection<String> log = prj.log(2, 9);
-
-                System.out.println(">>> First log lines:");
-
-                for (Object o : log.toArray())
-                    System.out.println(o);
-
-                System.out.println("<<< End of log.");
-
-                // Log entries may be fetched asynchronously.
-                GridClientFuture<List<String>> futLog = prj.logAsync(2, 9);
-
-                System.out.println(">>> First log lines fetched asynchronously:");
-
-                for (Object o : futLog.get().toArray())
-                    System.out.println(o);
-
-                System.out.println("<<< End of log.");
-
-                // Log file name can also be specified explicitly.
-                log = prj.log("work/log/gridgain.log", 2, 9);
-
-                System.out.println(">>> First log lines from log file work/log/gridgain.log:");
-
-                for (Object o : log.toArray())
-                    System.out.println(o);
-
-                System.out.println("<<< End of log.");
-
-                // Asynchronous version supported as well.
-                futLog = prj.logAsync("work/log/gridgain.log", 2, 9);
-
-                System.out.println(">>> First log lines fetched asynchronously:");
-
-                for (Object o : futLog.get().toArray())
-                    System.out.println(o);
-
-                System.out.println("<<< End of log.");
-            }
-            catch (GridClientException e) {
-                System.out.println("Log file was not found: " + e);
-            }
         }
     }
 
