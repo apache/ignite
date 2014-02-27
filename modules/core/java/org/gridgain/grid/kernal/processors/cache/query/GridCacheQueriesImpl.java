@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -46,16 +47,24 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(Class<?> cls, String clause) {
+        A.notNull(cls, "cls");
+        A.notNull(clause, "clause");
+
         return new GridCacheQueryAdapter<>(ctx, SQL, filter(), (Class<?>)cls, clause, null, false);
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry) {
+        A.notNull(qry, "qry");
+
         return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, null, false);
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<?> cls, String search) {
+        A.notNull(cls, "cls");
+        A.notNull(search, "search");
+
         return new GridCacheQueryAdapter<>(ctx, TEXT, filter(), (Class<?>)cls, search, null, false);
     }
 
@@ -72,6 +81,8 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> rebuildIndexes(Class<?> cls) {
+        A.notNull(cls, "cls");
+
         return ctx.queries().rebuildIndexes(cls);
     }
 
@@ -97,6 +108,8 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta) {
+        assert qry != null;
+
         return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, null, incMeta);
     }
 

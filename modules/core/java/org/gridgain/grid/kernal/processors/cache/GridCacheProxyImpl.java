@@ -85,7 +85,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         gate = ctx.gate();
         cache = ctx.cache();
 
-        qry = new GridCacheQueriesProxy<>(ctx, prj, (GridCacheQueriesEx<K, V>)delegate.queries());
+        qry = new GridCacheQueriesProxy<>(ctx, prj, (GridCacheQueriesEx<K, V>)ctx.cache().queries());
         dataStructures = new GridCacheDataStructuresProxy<>(ctx, ctx.cache().dataStructures());
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }

@@ -183,6 +183,8 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<T> pageSize(int pageSize) {
+        A.ensure(pageSize > 0, "pageSize > 0");
+
         this.pageSize = pageSize;
 
         return this;
@@ -197,6 +199,8 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<T> timeout(long timeout) {
+        A.ensure(timeout >= 0, "timeout >= 0");
+
         this.timeout = timeout;
 
         return this;
