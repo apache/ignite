@@ -27,11 +27,12 @@ import java.util.*;
  * takes place:
  * <ol>
  * <li>
- *      Job gets put on waiting list which is passed to underlying
- *      {@link GridCollisionSpi} SPI.
+ *      If collision SPI is defined, then job gets put on waiting list which is passed to underlying
+ *      {@link GridCollisionSpi} SPI. Otherwise job will be submitted to the executor
+ *      service responsible for job execution immediately upon arrival.
  * </li>
  * <li>
- *      The Collision SPI will decide one of the following scheduling policies:
+ *      If collision SPI is configured, then it will decide one of the following scheduling policies:
  *      <ul>
  *      <li>
  *          Job will be kept on waiting list. In this case, job will not get a
