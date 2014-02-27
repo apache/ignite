@@ -9,12 +9,9 @@
 
 package org.gridgain.grid.cache.query;
 
-import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.jetbrains.annotations.*;
-
 /**
  * Cache query metrics used to obtain statistics on query. You can get query metrics via
- * {@link GridCacheQueries#queryMetrics()} method which will provide metrics for all queries
+ * {@link GridCacheQueries#metrics()} method which will provide metrics for all queries
  * executed on cache.
  * <p>
  * Note that in addition to query metrics, you can also enable query tracing by setting
@@ -24,20 +21,6 @@ import org.jetbrains.annotations.*;
  * @version @java.version
  */
 public interface GridCacheQueryMetrics {
-    /**
-     * Gets time of the first query execution.
-     *
-     * @return First execution time.
-     */
-    public long firstRunTime();
-
-    /**
-     * Gets time of the last query execution.
-     *
-     * @return Last execution time.
-     */
-    public long lastRunTime();
-
     /**
      * Gets minimum execution time of query.
      *
@@ -72,25 +55,4 @@ public interface GridCacheQueryMetrics {
      * @return total number of times a query execution failed.
      */
     public int fails();
-
-    /**
-     * Gets query clause.
-     *
-     * @return Query clause.
-     */
-    @Nullable public String clause();
-
-    /**
-     * Gets query type.
-     *
-     * @return type Query type.
-     */
-    public GridCacheQueryType type();
-
-    /**
-     * Gets Java class name of the values selected by the query.
-     *
-     * @return Java class name of the values selected by the query.
-     */
-    @Nullable public Class<?> queryClass();
 }

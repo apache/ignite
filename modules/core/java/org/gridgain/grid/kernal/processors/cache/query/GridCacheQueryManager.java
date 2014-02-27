@@ -38,7 +38,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
@@ -51,15 +50,6 @@ import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
  */
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {
-    /** Number of entries to keep in annotation cache. */
-    private static final int DFLT_CLS_CACHE_SIZE = 1000;
-
-    /** */
-    private static final List<GridCachePeekMode> SWAP_GLOBAL = F.asList(SWAP, GLOBAL);
-
-    /** */
-    private static final GridCachePeekMode[] TX = new GridCachePeekMode[] {GridCachePeekMode.TX};
-
     /** */
     private static final Collection<String> IGNORED_FIELDS = F.asList(
         "_GG_VAL_STR__",
@@ -79,10 +69,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /** */
     private int maxIterCnt;
 
-    /** Queries metrics bounded cache. */
-    private final ConcurrentMap<GridCacheQueryMetricsKey, GridCacheQueryMetricsAdapter> metrics =
-        new GridBoundedConcurrentLinkedHashMap<>(
-            DFLT_CLS_CACHE_SIZE);
+    /** */
+    private volatile GridCacheQueryMetricsAdapter metrics = new GridCacheQueryMetricsAdapter();
 
     /** */
     private final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<GridCloseableIterator<
@@ -369,6 +357,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             case TEXT:
                 return idxMgr.queryText(spi, space, qry.clause(), (Class<? extends V>)U.box(qry.queryClass()),
                     qry.includeBackups(), projectionFilter(qry));
+
+            case SQL_FIELDS:
+                assert false : "SQL fields query is incorrectly processed.";
 
             default:
                 throw new GridException("Unknown query type: " + qry.type());
@@ -723,41 +714,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     continue;
                 }
 
-                V val = null;
-
                 GridIndexingEntity<V> v = row.value();
 
-//                if (v == null || !v.hasValue()) {
-//                    assert v == null || v.bytes() != null;
-//
-//                    GridCacheEntryEx<K, V> entry = cache.entryEx(key);
-//
-//                    boolean unmarshal;
-//
-//                    try {
-//                        GridCachePeekMode[] oldExcl = cctx.excludePeekModes(TX);
-//
-//                        try {
-//                            val = entry.peek(SWAP_GLOBAL, prjFilter);
-//                        }
-//                        finally {
-//                            cctx.excludePeekModes(oldExcl);
-//                        }
-//
-//                        GridCacheVersion ver = entry.version();
-//
-//                        unmarshal = !Arrays.equals(row.version(), CU.versionToBytes(ver));
-//                    }
-//                    catch (GridCacheEntryRemovedException ignored) {
-//                        // If entry has been removed concurrently we have to unmarshal from bytes.
-//                        unmarshal = true;
-//                    }
-//
-//                    if (unmarshal && v != null)
-//                        val = v.value();
-//                }
-//                else
-                    val = v.value();
+                assert v != null && v.hasValue();
+
+                V val = v.value();
 
                 if (log.isDebugEnabled())
                     log.debug("Record [key=" + key + ", val=" + val + ", incBackups=" +
@@ -1140,33 +1101,23 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @return Cache queries metrics.
      */
-    public Collection<GridCacheQueryMetrics> metrics() {
-        return new GridBoundedLinkedHashSet<GridCacheQueryMetrics>(metrics.values(), DFLT_CLS_CACHE_SIZE);
+    public GridCacheQueryMetrics metrics() {
+        return metrics.copy();
     }
 
     /**
      * Resets metrics.
      */
     public void resetMetrics() {
-        metrics.clear();
+        metrics = new GridCacheQueryMetricsAdapter();
     }
 
     /**
-     * @param m Updated metrics.
-     * @param startTime Execution start time.
      * @param duration Execution duration.
      * @param fail {@code true} if execution failed.
      */
-    public void onMetricsUpdate(GridCacheQueryMetricsAdapter m, long startTime, long duration, boolean fail) {
-        assert m != null;
-
-        GridCacheQueryMetricsAdapter prev = metrics.get(m.key());
-
-        if (prev == null)
-            prev = metrics.putIfAbsent(m.key(), m.copy());
-
-        if (prev != null)
-            prev.onQueryExecute(startTime, duration, fail);
+    public void onMetricsUpdate(long duration, boolean fail) {
+        metrics.onQueryExecute(duration, fail);
     }
 
     /**
@@ -1262,7 +1213,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @Override public void printMemoryStats() {
         X.println(">>>");
         X.println(">>> Query manager memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
-        X.println(">>>   Metrics: " + metrics.size());
     }
 
     /**

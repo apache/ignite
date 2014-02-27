@@ -545,27 +545,28 @@ private class VisorCacheDataTask extends VisorConsoleMultiNodeTask[Option[String
                         reads = c.metrics.reads,
                         writes = c.metrics.writes,
 
-                        queries =
-                            if (c.queries().metrics == null) None else Some(c.queries().metrics.collect {
-                            case q =>
-                                VisorCacheQueryData(
-                                    clause = safe(q.clause.trim, "<n/a>"),
-                                    `type` = q.`type` match {
-                                        case SCAN => "Scan"
-                                        case SQL => "SQL"
-                                        case TEXT => "Text"
-                                        case null => "SQL"
-                                    },
-                                    clsName = U.compact(safe(q.queryClass.getName, "<n/a>")),
-                                    execs = q.executions,
-                                    fails = q.fails,
-                                    firstTime = q.firstRunTime,
-                                    lastTime = q.lastRunTime,
-                                    minTime = q.minimumTime,
-                                    maxTime = q.maximumTime,
-                                    avgTime = q.averageTime
-                                )
-                        }.filterNot(_.clsName.contains("datastructures")).toList)
+                        // TODO: GG-7625
+                        queries = None
+//                            if (c.queries().metrics == null) None else Some(c.queries().metrics.collect {
+//                            case q =>
+//                                VisorCacheQueryData(
+//                                    clause = safe(q.clause.trim, "<n/a>"),
+//                                    `type` = q.`type` match {
+//                                        case SCAN => "Scan"
+//                                        case SQL => "SQL"
+//                                        case TEXT => "Text"
+//                                        case null => "SQL"
+//                                    },
+//                                    clsName = U.compact(safe(q.queryClass.getName, "<n/a>")),
+//                                    execs = q.executions,
+//                                    fails = q.fails,
+//                                    firstTime = q.firstRunTime,
+//                                    lastTime = q.lastRunTime,
+//                                    minTime = q.minimumTime,
+//                                    maxTime = q.maximumTime,
+//                                    avgTime = q.averageTime
+//                                )
+//                        }.filterNot(_.clsName.contains("datastructures")).toList)
                     )
             }.toSeq
         }

@@ -136,7 +136,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheQueryMetrics> metrics() {
+    @Override public GridCacheQueryMetrics metrics() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

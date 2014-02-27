@@ -145,12 +145,14 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         }
         else {
             if (!cancelIds.contains(new CancelMessageId(req.id(), sndId))) {
-                GridCacheQueryResponse res = null;
+                if (!F.eq(req.cacheName(), cctx.name())) {
+                    GridCacheQueryResponse res = new GridCacheQueryResponse(req.id(),
+                        new GridException("Received request for incorrect cache [expected=" + cctx.name() +
+                            ", actual=" + req.cacheName()));
 
-                if (!F.eq(req.cacheName(), cctx.name()))
-                    res = new GridCacheQueryResponse(req.id(), true, req.fields());
-
-                if (res == null) {
+                    sendQueryResponse(sndId, res, 0);
+                }
+                else {
                     threads.put(req.id(), Thread.currentThread());
 
                     try {
@@ -170,8 +172,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                         threads.remove(req.id());
                     }
                 }
-                else
-                    sendQueryResponse(sndId, res, 0);
             }
         }
     }

@@ -92,7 +92,7 @@ public interface GridCacheQueries<K, V> {
      */
     public GridFuture<?> rebuildAllIndexes();
 
-    public Collection<GridCacheQueryMetrics> metrics();
+    public GridCacheQueryMetrics metrics();
 
     public void resetMetrics();
 }

@@ -55,9 +55,6 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     private final boolean incMeta;
 
     /** */
-    private final GridCacheQueryMetricsKey metricsKey;
-
-    /** */
     private volatile GridCacheQueryMetricsAdapter metrics;
 
     /** */
@@ -110,8 +107,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         dedup = false;
         prj = null;
 
-        metricsKey = new GridCacheQueryMetricsKey(type, cls, clause);
-        metrics = new GridCacheQueryMetricsAdapter(metricsKey);
+        metrics = new GridCacheQueryMetricsAdapter();
     }
 
     /**
@@ -148,8 +144,6 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         this.cls = cls;
         this.clause = clause;
         this.incMeta = incMeta;
-
-        metricsKey = null;
     }
 
     /**
@@ -295,10 +289,10 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         boolean fail = err != null;
 
         // Update own metrics.
-        metrics.onQueryExecute(startTime, duration, fail);
+        metrics.onQueryExecute(duration, fail);
 
         // Update metrics in query manager.
-        cctx.queries().onMetricsUpdate(metrics, startTime, duration, fail);
+        cctx.queries().onMetricsUpdate(duration, fail);
 
         if (log.isDebugEnabled())
             log.debug("Query execution finished [qry=" + this + ", startTime=" + startTime +
@@ -325,7 +319,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     }
 
     @Override public void resetMetrics() {
-        metrics = new GridCacheQueryMetricsAdapter(metricsKey);
+        metrics = new GridCacheQueryMetricsAdapter();
     }
 
     /**

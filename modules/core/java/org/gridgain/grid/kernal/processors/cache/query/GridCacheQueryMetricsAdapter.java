@@ -11,8 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 
@@ -23,19 +21,6 @@ import java.io.*;
  * @version @java.version
  */
 public class GridCacheQueryMetricsAdapter implements GridCacheQueryMetrics, Externalizable {
-    /** Query metrics key. */
-    @GridToStringExclude
-    private GridCacheQueryMetricsKey key;
-
-    /** Query creation time. */
-    private long createTime = U.currentTimeMillis();
-
-    /** First run time. */
-    private volatile long firstTime;
-
-    /** Last run time. */
-    private volatile long lastTime;
-
     /** Minimum time of execution. */
     private volatile long minTime;
 
@@ -51,42 +36,11 @@ public class GridCacheQueryMetricsAdapter implements GridCacheQueryMetrics, Exte
     /** Number of fails. */
     private volatile int fails;
 
+    /** Whether query was executed at least once. */
+    private boolean executed;
+
     /** Mutex. */
     private final Object mux = new Object();
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridCacheQueryMetricsAdapter() {
-        /* No-op. */
-    }
-
-    /**
-     *
-     * @param key Query metrics key.
-     */
-    public GridCacheQueryMetricsAdapter(GridCacheQueryMetricsKey key) {
-        assert key != null;
-
-        this.key = key;
-    }
-
-    /**
-     * @return Metrics key.
-     */
-    GridCacheQueryMetricsKey key() {
-        return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long firstRunTime() {
-        return firstTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long lastRunTime() {
-        return lastTime;
-    }
 
     /** {@inheritDoc} */
     @Override public long minimumTime() {
@@ -113,51 +67,32 @@ public class GridCacheQueryMetricsAdapter implements GridCacheQueryMetrics, Exte
         return fails;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public String clause() {
-        return key.clause();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheQueryType type() {
-        return key.type();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Class<?> queryClass() {
-        return key.queryClass();
-    }
-
     /**
      * Callback for query execution.
      *
-     * @param startTime Start queue time.
      * @param duration Duration of queue execution.
      * @param fail {@code True} query executed unsuccessfully {@code false} otherwise.
      */
-    public void onQueryExecute(long startTime, long duration, boolean fail) {
-        if (fail) {
-            fails++;
-
-            return;
-        }
-
+    public void onQueryExecute(long duration, boolean fail) {
         synchronized (mux) {
-            lastTime = startTime;
-
-            if (firstTime == 0) {
-                firstTime = lastTime;
+            if (!executed) {
                 minTime = duration;
                 maxTime = duration;
+
+                executed = true;
+            }
+            else {
+                if (minTime > duration)
+                    minTime = duration;
+
+                if (maxTime < duration)
+                    maxTime = duration;
             }
 
-            if (minTime > duration)
-                minTime = duration;
-
-            if (maxTime < duration)
-                maxTime = duration;
-
             execs++;
+
+            if (fail)
+                fails++;
 
             avgTime = (avgTime * (execs - 1) + duration) / execs;
         }
@@ -169,12 +104,10 @@ public class GridCacheQueryMetricsAdapter implements GridCacheQueryMetrics, Exte
      * @return Copy.
      */
     public GridCacheQueryMetricsAdapter copy() {
-        GridCacheQueryMetricsAdapter m = new GridCacheQueryMetricsAdapter(key);
+        GridCacheQueryMetricsAdapter m = new GridCacheQueryMetricsAdapter();
 
         synchronized (mux) {
             m.fails = fails;
-            m.firstTime = firstTime;
-            m.lastTime = lastTime;
             m.minTime = minTime;
             m.maxTime = maxTime;
             m.execs = execs;
@@ -186,10 +119,6 @@ public class GridCacheQueryMetricsAdapter implements GridCacheQueryMetrics, Exte
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(key);
-        out.writeLong(createTime);
-        out.writeLong(firstTime);
-        out.writeLong(lastTime);
         out.writeLong(minTime);
         out.writeLong(maxTime);
         out.writeDouble(avgTime);
@@ -199,10 +128,6 @@ public class GridCacheQueryMetricsAdapter implements GridCacheQueryMetrics, Exte
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        key = (GridCacheQueryMetricsKey)in.readObject();
-        createTime = in.readLong();
-        firstTime = in.readLong();
-        lastTime = in.readLong();
         minTime = in.readLong();
         maxTime = in.readLong();
         avgTime = in.readDouble();
@@ -211,26 +136,7 @@ public class GridCacheQueryMetricsAdapter implements GridCacheQueryMetrics, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        if (obj == this)
-            return true;
-
-        if (!(obj instanceof GridCacheQueryMetricsAdapter))
-            return false;
-
-        GridCacheQueryMetricsAdapter oth = (GridCacheQueryMetricsAdapter)obj;
-
-        return oth.key.equals(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return key.hashCode();
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheQueryMetricsAdapter.class, this,
-            "type", key.type(), "clsName", key.queryClass().getName(), "clause", key.clause());
+        return S.toString(GridCacheQueryMetricsAdapter.class, this);
     }
 }
