@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.swapspace.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.json.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;

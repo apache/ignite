@@ -31,7 +31,7 @@ import java.util.*;
  *          events stored on this local node.
  *      </li>
  *      <li>
- *          {@link GridEvents#localListen(GridLocalEventListener, int...)} - listening
+ *          {@link GridEvents#localListen(GridPredicate, int...)} - listening
  *          to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>

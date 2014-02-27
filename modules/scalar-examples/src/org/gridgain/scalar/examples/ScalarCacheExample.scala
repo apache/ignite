@@ -14,7 +14,7 @@ package org.gridgain.scalar.examples
 import org.gridgain.scalar.scalar
 import scalar._
 import org.gridgain.grid.cache._
-import org.gridgain.grid.events.{GridLocalEventListener, GridEventType, GridEvent}
+import org.gridgain.grid.events.{GridEventType, GridEvent}
 import GridEventType._
 import collection.JavaConversions._
 import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}

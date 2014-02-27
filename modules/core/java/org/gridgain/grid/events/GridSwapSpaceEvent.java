@@ -23,7 +23,7 @@ import java.util.*;
  *          querying only local events stored on this local node.
  *      </li>
  *      <li>
- *          {@link GridEvents#localListen(GridLocalEventListener, int...)} -
+ *          {@link GridEvents#localListen(GridPredicate, int...)} -
  *          listening to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>

@@ -10,6 +10,7 @@
 package org.gridgain.grid.events;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
@@ -21,7 +22,7 @@ import java.util.*;
  * <p>
  * Note that this interface defines not only
  * individual type constants but arrays of types as well to be conveniently used with
- * {@link GridEvents#localListen(GridLocalEventListener, int...)} method:
+ * {@link GridEvents#localListen(GridPredicate, int...)} method:
  * <ul>
  * <li>{@link #EVTS_CHECKPOINT}</li>
  * <li>{@link #EVTS_DEPLOYMENT}</li>
@@ -843,7 +844,7 @@ public interface GridEventType {
 
     /**
      * All license events. This array can be directly passed into
-     * {@link GridEvents#localListen(GridLocalEventListener, int...)} method to
+     * {@link GridEvents#localListen(GridPredicate, int...)} method to
      * subscribe to all license events.
      *
      * @see GridLicenseEvent
@@ -856,7 +857,7 @@ public interface GridEventType {
 
     /**
      * All checkpoint events. This array can be directly passed into
-     * {@link GridEvents#localListen(GridLocalEventListener, int...)} method to
+     * {@link GridEvents#localListen(GridPredicate, int...)} method to
      * subscribe to all checkpoint events.
      *
      * @see GridCheckpointEvent
@@ -869,7 +870,7 @@ public interface GridEventType {
 
     /**
      * All deployment events. This array can be directly passed into
-     * {@link GridEvents#localListen(GridLocalEventListener, int...)} method to
+     * {@link GridEvents#localListen(GridPredicate, int...)} method to
      * subscribe to all deployment events.
      *
      * @see GridDeploymentEvent
@@ -913,7 +914,7 @@ public interface GridEventType {
      * {@link #EVTS_DISCOVERY_ALL} array.
      * <p>
      * This array can be directly passed into
-     * {@link GridEvents#localListen(GridLocalEventListener, int...)} method to
+     * {@link GridEvents#localListen(GridPredicate, int...)} method to
      * subscribe to all discovery events <b>except</b> for {@link #EVT_NODE_METRICS_UPDATED}.
      *
      * @see GridDiscoveryEvent
@@ -928,7 +929,7 @@ public interface GridEventType {
 
     /**
      * All discovery events. This array can be directly passed into
-     * {@link GridEvents#localListen(GridLocalEventListener, int...)} method to
+     * {@link GridEvents#localListen(GridPredicate, int...)} method to
      * subscribe to all discovery events.
      *
      * @see GridDiscoveryEvent
@@ -944,7 +945,7 @@ public interface GridEventType {
 
     /**
      * All grid job execution events. This array can be directly passed into
-     * {@link GridEvents#localListen(GridLocalEventListener, int...)} method to
+     * {@link GridEvents#localListen(GridPredicate, int...)} method to
      * subscribe to all grid job execution events.
      *
      * @see GridJobEvent
@@ -964,7 +965,7 @@ public interface GridEventType {
 
     /**
      * All grid task execution events. This array can be directly passed into
-     * {@link GridEvents#localListen(GridLocalEventListener, int...)} method to
+     * {@link GridEvents#localListen(GridPredicate, int...)} method to
      * subscribe to all grid task execution events.
      *
      * @see GridTaskEvent
@@ -980,7 +981,7 @@ public interface GridEventType {
 
     /**
      * All cache events. This array can be directly passed into
-     * {@link GridEvents#localListen(GridLocalEventListener, int...)} method to
+     * {@link GridEvents#localListen(GridPredicate, int...)} method to
      * subscribe to all cache events.
      */
     public static final int[] EVTS_CACHE = {
@@ -998,7 +999,7 @@ public interface GridEventType {
 
     /**
      * All cache preload events. This array can be directly passed into
-     * {@link GridEvents#localListen(GridLocalEventListener, int...)} method to
+     * {@link GridEvents#localListen(GridPredicate, int...)} method to
      * subscribe to all cache preload events.
      */
     public static final int[] EVTS_CACHE_PRELOAD = {
@@ -1012,7 +1013,7 @@ public interface GridEventType {
 
     /**
      * All swap space events. This array can be directly passed into
-     * {@link GridEvents#localListen(GridLocalEventListener, int...)} method to
+     * {@link GridEvents#localListen(GridPredicate, int...)} method to
      * subscribe to all cloud events.
      *
      * @see GridSwapSpaceEvent
@@ -1027,7 +1028,7 @@ public interface GridEventType {
 
     /**
      * All authentication events. This array can be directly passed into
-     * {@link GridEvents#localListen(GridLocalEventListener, int...)} method to
+     * {@link GridEvents#localListen(GridPredicate, int...)} method to
      * subscribe to all cloud events.
      *
      * @see GridAuthenticationEvent
@@ -1039,7 +1040,7 @@ public interface GridEventType {
 
     /**
      * All secure session events. This array can be directly passed into
-     * {@link GridEvents#localListen(GridLocalEventListener, int...)} method to
+     * {@link GridEvents#localListen(GridPredicate, int...)} method to
      * subscribe to all GGFS events.
      *
      * @see GridGgfsEvent
@@ -1051,7 +1052,7 @@ public interface GridEventType {
 
     /**
      * All GGFS events. This array can be directly passed into
-     * {@link GridEvents#localListen(GridLocalEventListener, int...)} method to
+     * {@link GridEvents#localListen(GridPredicate, int...)} method to
      * subscribe to all cloud events.
      *
      * @see GridSecureSessionEvent
