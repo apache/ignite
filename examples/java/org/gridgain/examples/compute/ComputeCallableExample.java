@@ -18,7 +18,7 @@ import java.util.*;
  * Demonstrates using of {@link GridCallable} job execution on the grid.
  * <p>
  * This example takes a sentence composed of multiple words and counts number of non-space
- * characters in the sentence by having each compute job count characters in an individual
+ * characters in the sentence by having each compute job count characters in each individual
  * word.
  * <p>
  * Remote nodes should always be started with special configuration file which
