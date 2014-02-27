@@ -60,7 +60,7 @@ public class GgfsHadoopFileSystemExample {
     private static final boolean USE_HDFS = false;
 
     /** Default path to the folder to copy in case it is not specified explicitly in arguments. */
-    private static final String DFLT_PATH = "os/examples/java/org/gridgain/examples";
+    private static final String DFLT_PATH = "examples/java/org/gridgain/examples";
 
     /**
      * <tt>Hadoop FS driver</tt> example shows configuration and simple operations
