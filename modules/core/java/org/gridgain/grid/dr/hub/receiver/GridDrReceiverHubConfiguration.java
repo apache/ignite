@@ -52,9 +52,6 @@ public class GridDrReceiverHubConfiguration {
     /** Default per node parallel operations for DR data loader. */
     public static final int DFLT_PARALLEL_LOAD_OPS = 16;
 
-    /** Default keys count per single operation for DR data loader. */
-    public static final int DFLT_PER_OP_KEYS_CNT = 1024;
-
     /** Replication server host. */
     private String locInboundHost;
 
@@ -88,9 +85,6 @@ public class GridDrReceiverHubConfiguration {
     /** Data loader per node buffer size. */
     private int perNodeBufSize = DFLT_PER_NODE_BUF_SIZE;
 
-    /** Data loader per operation keys count. */
-    private int perOpKeysCnt = DFLT_PER_OP_KEYS_CNT;
-
     /** Data loader per node parallel load operations. */
     private int perNodeParallelLoadOps = DFLT_PARALLEL_LOAD_OPS;
 
@@ -115,7 +109,6 @@ public class GridDrReceiverHubConfiguration {
         msgQueueLimit = cfg.getMessageQueueLimit();
         perNodeBufSize = cfg.getPerNodeBufferSize();
         perNodeParallelLoadOps = cfg.getPerNodeParallelLoadOperations();
-        perOpKeysCnt = cfg.getPerOperationKeysCount();
         selectorCnt = cfg.getSelectorCount();
         tcpNodelay = cfg.isTcpNodelay();
         workerCnt = cfg.getWorkerThreads();
@@ -349,27 +342,6 @@ public class GridDrReceiverHubConfiguration {
      */
     public void setPerNodeBufferSize(int perNodeBufSize) {
         this.perNodeBufSize = perNodeBufSize;
-    }
-
-    /**
-     * Gets per-operation keys count. When data arrives to receiver cache it is split into several parts of the given
-     * size and applied to cache sequentially.
-     * <p>
-     * Defaults to {@link #DFLT_PER_OP_KEYS_CNT}.
-     *
-     * @return Per-operation keys count.
-     */
-    public int getPerOperationKeysCount() {
-        return perOpKeysCnt;
-    }
-
-    /**
-     * Sets per-operation keys count. See {@link #getPerOperationKeysCount()} for more information.
-     *
-     * @param perOpKeysCnt Per-operation keys count.
-     */
-    public void setPerOperationKeysCount(int perOpKeysCnt) {
-        this.perOpKeysCnt = perOpKeysCnt;
     }
 
     /**
