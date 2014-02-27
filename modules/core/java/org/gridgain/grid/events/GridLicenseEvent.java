@@ -12,6 +12,7 @@ package org.gridgain.grid.events;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
+
 import java.util.*;
 
 /**
@@ -34,7 +35,7 @@ import java.util.*;
  *          listening to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>
- * User can also wait for events using method {@link GridEvents#waitForLocal(org.gridgain.grid.lang.GridPredicate, int...)}.
+ * User can also wait for events using method {@link GridEvents#waitForLocal(GridPredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
  * Note that by default all events in GridGain are enabled and therefore generated and stored
  * by whatever event storage SPI is configured. GridGain can and often does generate thousands events per seconds

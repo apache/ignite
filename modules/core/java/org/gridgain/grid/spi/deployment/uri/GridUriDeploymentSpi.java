@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.deployment.uri;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
@@ -87,8 +87,8 @@ import java.util.Map.*;
  * </ul>
  * GAR file may be deployed without descriptor file. If there is no descriptor file, SPI
  * will scan all classes in archive and instantiate those that implement
- * {@link org.gridgain.grid.compute.GridComputeTask} interface. In that case, all grid task classes must have a
- * public no-argument constructor. Use {@link org.gridgain.grid.compute.GridComputeTaskAdapter} adapter for
+ * {@link GridComputeTask} interface. In that case, all grid task classes must have a
+ * public no-argument constructor. Use {@link GridComputeTaskAdapter} adapter for
  * convenience when creating grid tasks.
  * <p>
  * By default, all downloaded GAR files that have digital signature in {@code META-INF}
@@ -173,7 +173,7 @@ import java.util.Map.*;
  * <a name="classes"></a>
  * <h1 class="header">Classes</h1>
  * For this protocol SPI will scan folder specified by URI on file system
- * looking for compiled classes that implement {@link org.gridgain.grid.compute.GridComputeTask} interface.
+ * looking for compiled classes that implement {@link GridComputeTask} interface.
  * This protocol comes very handy during development, as it allows developer
  * to specify IDE compilation output folder as URI and all task classes
  * in that folder will be deployed automatically.

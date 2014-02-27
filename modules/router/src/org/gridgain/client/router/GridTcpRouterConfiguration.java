@@ -6,6 +6,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.net.*;
 import java.util.*;
 
 /**
@@ -109,7 +110,7 @@ public class GridTcpRouterConfiguration {
     /**
      * Gets flag indicating whether {@code TCP_NODELAY} option should be set for accepted client connections.
      * Setting this option reduces network latency and should be set to {@code true} in majority of cases.
-     * For more information, see {@link java.net.Socket#setTcpNoDelay(boolean)}
+     * For more information, see {@link Socket#setTcpNoDelay(boolean)}
      * <p/>
      * If not specified, default value is {@code true}.
      *
@@ -146,7 +147,7 @@ public class GridTcpRouterConfiguration {
      * of both rest binary server and out coming connections.
      *
      * @return SslContextFactory instance.
-     * @see org.gridgain.client.ssl.GridSslContextFactory
+     * @see GridSslContextFactory
      */
     @Nullable public GridSslContextFactory getSslContextFactory() {
         return sslCtxFactory;

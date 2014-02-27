@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.events;
 
+import org.gridgain.examples.datagrid.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
@@ -26,7 +27,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * Remote nodes should always be started with configuration file which includes
  * cache: {@code 'ggstart.sh examples/config/example-cache.xml'}.
  * <p>
- * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will start
+ * Alternatively you can run {@link CacheNodeStartup} in another JVM which will start
  * GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author

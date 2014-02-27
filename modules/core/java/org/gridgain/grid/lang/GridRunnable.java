@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.lang;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -21,9 +21,9 @@ import java.io.*;
  * runnable object {@link Serializable} and also adds peer deployment hooks to make sure that
  * deployment information is not lost.
  * <p>
- * Note that this class implements {@link org.gridgain.grid.compute.GridComputeJob} interface for convenience and can be
- * used in {@link org.gridgain.grid.compute.GridComputeTask} implementations directly, if needed, as an alternative to
- * {@link org.gridgain.grid.compute.GridComputeJobAdapter}.
+ * Note that this class implements {@link GridComputeJob} interface for convenience and can be
+ * used in {@link GridComputeTask} implementations directly, if needed, as an alternative to
+ * {@link GridComputeJobAdapter}.
  *
  * @author @java.author
  * @version @java.version
@@ -33,7 +33,7 @@ public abstract class GridRunnable extends GridLambdaAdapter implements Runnable
      * Does nothing by default. Child classes may override this method
      * to provide implementation-specific cancellation logic.
      * <p>
-     * Note that this method is here only to support {@link org.gridgain.grid.compute.GridComputeJob} interface
+     * Note that this method is here only to support {@link GridComputeJob} interface
      * and only makes sense whenever this class is used as grid job or is
      * executed via any of {@link GridProjection} methods.
      * <p>

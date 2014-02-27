@@ -35,7 +35,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * configuration property). By default all nodes get equal weight defined by
  * {@link #DFLT_NODE_WEIGHT} (value is {@code 10}).
  * <h1 class="header">Coding Example</h1>
- * If you are using {@link org.gridgain.grid.compute.GridComputeTaskSplitAdapter} then load balancing logic
+ * If you are using {@link GridComputeTaskSplitAdapter} then load balancing logic
  * is transparent to your code and is handled automatically by the adapter.
  * Here is an example of how your task could look:
  * <pre name="code" class="java">
@@ -57,7 +57,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * </pre>
  * If you need more fine-grained control over how some jobs within task get mapped to a node
  * and use affinity load balancing for some other jobs within task, then you should use
- * {@link org.gridgain.grid.compute.GridComputeTaskAdapter}. Here is an example of how your task will look. Note that in this
+ * {@link GridComputeTaskAdapter}. Here is an example of how your task will look. Note that in this
  * case we manually inject load balancer and use it to pick the best node. Doing it in
  * such way would allow user to map some jobs manually and for others use load balancer.
  * <pre name="code" class="java">

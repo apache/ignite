@@ -10,6 +10,7 @@
 package org.gridgain.grid.ggfs.mapreduce;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.ggfs.*;
 
 import java.io.*;
@@ -30,7 +31,7 @@ import java.io.*;
  * on {@link GridGgfsRangeInputStream} bounded to range start and end, or manually wrap provided input stream with
  * {@link GridGgfsRangeInputStream}.
  * <p>
- * You can inject any resources in concrete implementation, just as with regular {@link org.gridgain.grid.compute.GridComputeJob} implementations.
+ * You can inject any resources in concrete implementation, just as with regular {@link GridComputeJob} implementations.
  *
  * @author @java.author
  * @version @java.version
@@ -54,7 +55,7 @@ public interface GridGgfsJob {
      * This method is called when system detects that completion of this
      * job can no longer alter the overall outcome (for example, when parent task
      * has already reduced the results). Job is also cancelled when
-     * {@link org.gridgain.grid.compute.GridComputeTaskFuture#cancel()} is called.
+     * {@link GridComputeTaskFuture#cancel()} is called.
      * <p>
      * Note that job cancellation is only a hint, and just like with
      * {@link Thread#interrupt()}  method, it is really up to the actual job

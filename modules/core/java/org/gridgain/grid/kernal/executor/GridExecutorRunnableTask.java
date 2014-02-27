@@ -9,17 +9,18 @@
 
 package org.gridgain.grid.kernal.executor;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
+
 import java.util.*;
 
 /**
- * This class defines own implementation for {@link org.gridgain.grid.compute.GridComputeTask}. This class used by
+ * This class defines own implementation for {@link GridComputeTask}. This class used by
  * {@link GridExecutorService} when commands submitted and can be
  * randomly assigned to available grid nodes. This grid task creates only one
- * {@link org.gridgain.grid.compute.GridComputeJob} and transfer it to any available node. See {@link org.gridgain.grid.compute.GridComputeTaskSplitAdapter}
+ * {@link GridComputeJob} and transfer it to any available node. See {@link GridComputeTaskSplitAdapter}
  * for more details.
  *
  * @author @java.author

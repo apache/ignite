@@ -39,7 +39,7 @@ import java.util.*;
  * </li>
  * </ol>
  * Note that when job throws an exception it will be treated as a failure, and the task
- * will return {@link org.gridgain.grid.compute.GridComputeJobResultPolicy#FAILOVER} policy. This will
+ * will return {@link GridComputeJobResultPolicy#FAILOVER} policy. This will
  * cause the job to automatically failover to another node for execution.
  * The new job will simply print out the argument passed in.
  * <p>

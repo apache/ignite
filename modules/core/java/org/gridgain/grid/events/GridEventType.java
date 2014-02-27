@@ -10,6 +10,7 @@
 package org.gridgain.grid.events;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -291,7 +292,7 @@ public interface GridEventType {
 
     /**
      * Built-in event type: grid job was mapped in
-     * {@link org.gridgain.grid.compute.GridComputeTask#map(List, Object)} method.
+     * {@link GridComputeTask#map(List, Object)} method.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
@@ -302,7 +303,7 @@ public interface GridEventType {
 
     /**
      * Built-in event type: grid job result was received by
-     * {@link org.gridgain.grid.compute.GridComputeTask#result(org.gridgain.grid.compute.GridComputeJobResult, List)} method.
+     * {@link GridComputeTask#result(GridComputeJobResult, List)} method.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.

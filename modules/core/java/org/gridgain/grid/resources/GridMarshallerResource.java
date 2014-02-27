@@ -10,8 +10,10 @@
 package org.gridgain.grid.resources;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.spi.*;
+
 import java.lang.annotation.*;
 
 /**
@@ -20,8 +22,8 @@ import java.lang.annotation.*;
  * <p>
  * Marshaller can be injected into instances of following classes:
  * <ul>
- * <li>{@link org.gridgain.grid.compute.GridComputeTask}</li>
- * <li>{@link org.gridgain.grid.compute.GridComputeJob}</li>
+ * <li>{@link GridComputeTask}</li>
+ * <li>{@link GridComputeJob}</li>
  * <li>{@link GridSpi}</li>
  * <li>{@link GridLifecycleBean}</li>
  * <li>{@link GridUserResource @GridUserResource}</li>
