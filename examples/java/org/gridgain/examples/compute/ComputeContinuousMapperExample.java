@@ -75,9 +75,8 @@ public class ComputeContinuousMapperExample {
             // Wait for task completion.
             int phraseLen = fut.get();
 
-            System.out.println(">>>");
+            System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + phraseLen + "'.");
-            System.out.println(">>>");
         }
     }
 
@@ -88,9 +87,8 @@ public class ComputeContinuousMapperExample {
      * @return Number of characters in the given word.
      */
     static int charCount(String word) {
-        System.out.println(">>>");
+        System.out.println();
         System.out.println(">>> Printing '" + word + "' from grid job at time: " + new Date());
-        System.out.println(">>>");
 
         return word.length();
     }
