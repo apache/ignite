@@ -177,9 +177,10 @@ public class ComputeFailoverCheckpointExample {
 
                     System.out.println(">>> Job will be failed over to another node.");
 
-                    // For example purposes, we fail on purpose after every stage.
+                    // For example purposes, we fail on purpose after first stage.
                     // This exception will cause job to be failed over to another node.
-                    throw new GridRuntimeException("Expected example job exception.");
+                    if (i == 0)
+                        throw new GridRuntimeException("Expected example job exception.");
                 }
 
                 return sum;
