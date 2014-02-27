@@ -131,6 +131,7 @@ namespace GridGain.Client {
                 lookup.Add(ResolveNodeInfo(n), n);
 
             NodeInfo nodeInfo;
+
             int part = Partition(key);
 
             if (BackupsFilter == null) {
