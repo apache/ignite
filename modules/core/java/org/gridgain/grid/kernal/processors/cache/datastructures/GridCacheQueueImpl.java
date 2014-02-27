@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
@@ -28,6 +29,7 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.kernal.processors.cache.datastructures.GridCacheQueueOperation.*;
+import static org.gridgain.grid.kernal.processors.cache.datastructures.GridCacheQueueQueryFactory.*;
 
 /**
  * Queue implementation.
@@ -270,32 +272,32 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
      * @throws GridException If operation failed.
      */
     private boolean internalContains(T[] items, Object[] hashes) throws GridException {
+        GridCacheQuery<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> qry =
+            qryFactory.containsQuery();
 
-//        GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>, boolean[],
-//            Boolean> qry = qryFactory.containsQuery(items).queryArguments(qid, hashes);
-//
-//        if (collocated) {
-//            // For case if primary node was changed during request.
-//            GridNode node = CU.primaryNode(cctx, key);
-//
-//            qry.projection(cctx.grid().forNode(node));
-//        }
-//
-//        return qry.reduce().get();
-        return false;
+        if (collocated) {
+            // For case if primary node was changed during request.
+            GridNode node = CU.primaryNode(cctx, key);
+
+            qry.projection(cctx.grid().forNode(node));
+        }
+
+        ContainsQueryLocalReducer locRdc = new ContainsQueryLocalReducer(items.length);
+
+        return F.reduce(qry.execute(new ContainsQueryRemoteReducer<T>(items), qid, hashes).get(), locRdc);
     }
 
     /** {@inheritDoc} */
     @Override public T poll() {
-//        try {
-//            checkRemovedx();
-//
-//            return CU.outTx(queryCallable(qryFactory.firstItemQuery(), false), cctx);
-//        }
-//        catch (GridException e) {
-//            throw new GridRuntimeException(e);
-//        }
-        return null;
+        try {
+            checkRemovedx();
+
+            return CU.outTx(queryCallable(qryFactory.firstItemQuery(), new TerminalItemQueryLocalReducer<T>(true),
+                false), cctx);
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -310,20 +312,19 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
     /** {@inheritDoc} */
     @Override public T poll(long timeout, TimeUnit unit) {
-//        A.ensure(timeout >= 0, "Timeout cannot be negative: " + timeout);
-//
-//        try {
-//            checkRemovedx();
-//
-//            boolean peek = false;
-//
-//            return blockReadOp(queryCallable(qryFactory.firstItemQuery(), peek), TAKE_TIMEOUT, timeout,
-//                unit, peek);
-//        }
-//        catch (GridException e) {
-//            throw new GridRuntimeException(e);
-//        }
-        return null;
+        A.ensure(timeout >= 0, "Timeout cannot be negative: " + timeout);
+
+        try {
+            checkRemovedx();
+
+            boolean peek = false;
+
+            return blockReadOp(queryCallable(qryFactory.firstItemQuery(), new TerminalItemQueryLocalReducer<T>(true),
+                peek), TAKE_TIMEOUT, timeout, unit, peek);
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -338,15 +339,15 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
     /** {@inheritDoc} */
     @Override public T peek() {
-//        try {
-//            checkRemovedx();
-//
-//            return CU.outTx(queryCallable(qryFactory.firstItemQuery(), true), cctx);
-//        }
-//        catch (GridException e) {
-//            throw new GridRuntimeException(e);
-//        }
-        return null;
+        try {
+            checkRemovedx();
+
+            return CU.outTx(queryCallable(qryFactory.firstItemQuery(), new TerminalItemQueryLocalReducer<T>(true),
+                true), cctx);
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -418,17 +419,17 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
     /** {@inheritDoc} */
     @Override public T take() {
-//        try {
-//            checkRemovedx();
-//
-//            boolean peek = false;
-//
-//            return blockReadOp(queryCallable(qryFactory.firstItemQuery(), peek), TAKE, peek);
-//        }
-//        catch (GridException e) {
-//            throw new GridRuntimeException(e);
-//        }
-        return null;
+        try {
+            checkRemovedx();
+
+            boolean peek = false;
+
+            return blockReadOp(queryCallable(qryFactory.firstItemQuery(), new TerminalItemQueryLocalReducer<T>(true),
+                peek), TAKE, peek);
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -660,9 +661,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
                 checkRemovedx();
 
-                GridCacheTx tx = CU.txStartInternal(cctx, queueHdrView, PESSIMISTIC, REPEATABLE_READ);
-
-                try {
+                try (GridCacheTx tx = CU.txStartInternal(cctx, queueHdrView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheQueueHeader globalHdr = queueHdrView.get(key);
 
                     checkRemovedx();
@@ -721,150 +720,138 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
                     return true;
                 }
-                finally {
-                    tx.close();
-                }
             }
         };
     }
 
-//    /**
-//     * Method implements universal method for getting object from queue.
-//     *
-//     * @param qry Query.
-//     * @param peek {@code true} don't release received queue item, {@code false} release received queue item.
-//     * @return Callable.
-//     */
-//    private Callable<T> queryCallable(final GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>,
-//        Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>, Map.Entry<GridCacheQueueItemKey,
-//        GridCacheQueueItemImpl<T>>> qry, final boolean peek) {
-//        return new Callable<T>() {
-//            @Nullable @Override public T call() throws Exception {
-//                checkRemovedx();
-//
-//                GridCacheTx tx = CU.txStartInternal(cctx, cctx.cache(), PESSIMISTIC, REPEATABLE_READ);
-//
-//                try {
-//                    GridCacheQueueHeader globalHdr = queueHdrView.get(key);
-//
-//                    checkRemovedx();
-//
-//                    assert globalHdr != null : "Failed to find queue header in cache: " + GridCacheQueueImpl.this;
-//
-//                    if (globalHdr.empty()) {
-//                        tx.setRollbackOnly();
-//
-//                        // Block all readers.
-//                        synchronized (mux) {
-//                            readSem.drainPermits();
-//                        }
-//
-//                        return null;
-//                    }
-//
-//                    Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> entry;
-//
-//                    if (collocated) {
-//                        // For case if primary node was changed during request.
-//                        while (true) {
-//                            GridNode node = CU.primaryNode(cctx, key);
-//
-//                            qry.projection(cctx.grid().forNode(node));
-//
-//                            entry = qry.queryArguments(qid).reduce().get();
-//
-//                            if (log.isDebugEnabled())
-//                                log.debug("Entry has been found [node=" + node + ", entry=" + entry + ", queue=" +
-//                                    GridCacheQueueImpl.this + ']');
-//
-//                            // Entry wasn't found perhaps grid topology was changed.
-//                            GridNode node2;
-//
-//                            if (entry == null)
-//                                node2 = CU.primaryNode(cctx, key);
-//                            else
-//                                break;
-//
-//                            // Topology wasn't changed.
-//                            if (node.equals(node2))
-//                                break;
-//
-//                            if (log.isDebugEnabled())
-//                                log.debug("Entry wasn't found for queue: " + GridCacheQueueImpl.this);
-//                        }
-//                    }
-//                    else {
-//                        // In non-collocated mode query can return already removed entry. We should check this issue.
-//                        while (true) {
-//                            entry = qry.queryArguments(qid).reduce().get();
-//
-//                            // We don't have eny items in queue.
-//                            if (entry == null)
-//                                break;
-//
-//                            GridCacheQueueItem<T> val = itemView.get(entry.getKey());
-//
-//                            if (val == null) {
-//                                if (log.isDebugEnabled())
-//                                    log.debug("Already removed entry have been found [entry=" + entry + ", queue=" +
-//                                        GridCacheQueueImpl.this + ']');
-//
-//                                // Re-remove the key as it was removed before.
-//                                itemView.remove(entry.getKey());
-//                            }
-//                            else {
-//                                if (log.isDebugEnabled())
-//                                    log.debug("Queue entry have been found [entry=" + entry + ", queue=" +
-//                                        GridCacheQueueImpl.this + ']');
-//
-//                                break;
-//                            }
-//                        }
-//                    }
-//
-//                    if (entry == null) {
-//                        tx.setRollbackOnly();
-//
-//                        if (log.isDebugEnabled())
-//                            log.debug("Failed to find queue item in: " + GridCacheQueueImpl.this);
-//
-//                        return null;
-//                    }
-//
-//                    GridCacheQueueItem<T> val = entry.getValue();
-//
-//                    assert val != null : "Failed to get entry value: " + entry;
-//                    assert val.userObject() != null : "Failed to get user object from value: " + entry;
-//
-//                    if (!peek) {
-//                        // Check queue size.
-//                        assert globalHdr.size() > 0 : "Queue is empty but item has been found [item=" + val +
-//                            ", header=" + globalHdr + ", queue=" + GridCacheQueueImpl.this + ']';
-//
-//                        globalHdr.decrementSize();
-//
-//                        // Refresh queue header in cache.
-//                        queueHdrView.putx(key, globalHdr);
-//
-//                        // Remove item from cache.
-//                        boolean wasRmvd = itemView.removex(entry.getKey());
-//
-//                        assert wasRmvd : "Already deleted entry: " + entry;
-//                    }
-//
-//                    tx.commit();
-//
-//                    if (log.isDebugEnabled())
-//                        log.debug("Retrieved queue item [item=" + val + ", queue=" + GridCacheQueueImpl.this + ']');
-//
-//                    return val.userObject();
-//                }
-//                finally {
-//                    tx.close();
-//                }
-//            }
-//        };
-//    }
+    /**
+     * Method implements universal method for getting object from queue.
+     *
+     * @param qry Query.
+     * @param rdc Local reducer.
+     * @param peek {@code true} don't release received queue item, {@code false} release received queue item.
+     * @return Callable.
+     */
+    private Callable<T> queryCallable(final GridCacheQuery<Map.Entry<GridCacheQueueItemKey,
+        GridCacheQueueItemImpl<T>>> qry, final GridReducer<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>,
+        Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> rdc, final boolean peek) {
+        return new Callable<T>() {
+            @Nullable @Override public T call() throws Exception {
+                checkRemovedx();
+
+                try (GridCacheTx tx = CU.txStartInternal(cctx, cctx.cache(), PESSIMISTIC, REPEATABLE_READ)) {
+                    GridCacheQueueHeader globalHdr = queueHdrView.get(key);
+
+                    checkRemovedx();
+
+                    assert globalHdr != null : "Failed to find queue header in cache: " + GridCacheQueueImpl.this;
+
+                    if (globalHdr.empty()) {
+                        tx.setRollbackOnly();
+
+                        // Block all readers.
+                        synchronized (mux) {
+                            readSem.drainPermits();
+                        }
+
+                        return null;
+                    }
+
+                    Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> entry;
+
+                    if (collocated) {
+                        // For case if primary node was changed during request.
+                        while (true) {
+                            GridNode node = CU.primaryNode(cctx, key);
+
+                            qry.projection(cctx.grid().forNode(node));
+
+                            entry = F.reduce(qry.execute(new OneRecordReducer<T>(), qid).get(), rdc);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Entry has been found [node=" + node + ", entry=" + entry + ", queue=" +
+                                    GridCacheQueueImpl.this + ']');
+
+                            // Entry wasn't found perhaps grid topology was changed.
+                            GridNode node2;
+
+                            if (entry == null) node2 = CU.primaryNode(cctx, key);
+                            else break;
+
+                            // Topology wasn't changed.
+                            if (node.equals(node2)) break;
+
+                            if (log.isDebugEnabled())
+                                log.debug("Entry wasn't found for queue: " + GridCacheQueueImpl.this);
+                        }
+                    }
+                    else {
+                        // In non-collocated mode query can return already removed entry. We should check this issue.
+                        while (true) {
+                            entry = F.reduce(qry.execute(new OneRecordReducer<T>(), qid).get(), rdc);
+
+                            // We don't have eny items in queue.
+                            if (entry == null) break;
+
+                            GridCacheQueueItem<T> val = itemView.get(entry.getKey());
+
+                            if (val == null) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Already removed entry have been found [entry=" + entry + ", queue=" +
+                                        GridCacheQueueImpl.this + ']');
+
+                                // Re-remove the key as it was removed before.
+                                itemView.remove(entry.getKey());
+                            }
+                            else {
+                                if (log.isDebugEnabled())
+                                    log.debug("Queue entry have been found [entry=" + entry + ", queue=" +
+                                        GridCacheQueueImpl.this + ']');
+
+                                break;
+                            }
+                        }
+                    }
+
+                    if (entry == null) {
+                        tx.setRollbackOnly();
+
+                        if (log.isDebugEnabled()) log.debug("Failed to find queue item in: " + GridCacheQueueImpl.this);
+
+                        return null;
+                    }
+
+                    GridCacheQueueItem<T> val = entry.getValue();
+
+                    assert val != null : "Failed to get entry value: " + entry;
+                    assert val.userObject() != null : "Failed to get user object from value: " + entry;
+
+                    if (!peek) {
+                        // Check queue size.
+                        assert globalHdr.size() > 0 : "Queue is empty but item has been found [item=" + val +
+                            ", header=" + globalHdr + ", queue=" + GridCacheQueueImpl.this + ']';
+
+                        globalHdr.decrementSize();
+
+                        // Refresh queue header in cache.
+                        queueHdrView.putx(key, globalHdr);
+
+                        // Remove item from cache.
+                        boolean wasRmvd = itemView.removex(entry.getKey());
+
+                        assert wasRmvd : "Already deleted entry: " + entry;
+                    }
+
+                    tx.commit();
+
+                    if (log.isDebugEnabled())
+                        log.debug("Retrieved queue item [item=" + val + ", queue=" + GridCacheQueueImpl.this + ']');
+
+                    return val.userObject();
+                }
+            }
+        };
+    }
 
     /**
      * Method implements universal method for clear queue.
@@ -880,49 +867,49 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                 // Result of operations.
                 GridBiTuple<Integer, GridException> qryRes = new T2<>(0, null);
 
-                GridCacheTx tx = CU.txStartInternal(cctx, cctx.cache(), PESSIMISTIC, REPEATABLE_READ);
-
                 int queueOldSize;
 
-                try {
+                try (GridCacheTx tx = CU.txStartInternal(cctx, cctx.cache(), PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheQueueHeader globalHdr = queueHdrView.get(key);
 
                     checkRemovedx();
 
                     assert globalHdr != null : "Failed to find queue header in cache: " + GridCacheQueueImpl.this;
 
-//                    GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>,
-//                        GridBiTuple<Integer, GridException>, GridBiTuple<Integer, GridException>> qry =
-//                        qryFactory.removeAllKeysQuery(batchSize).queryArguments(qid);
-//
-//                    if (collocated) {
-//                        // For case if primary node was changed during request.
-//                        while (true) {
-//                            GridNode node = CU.primaryNode(cctx, key);
-//
-//                            qry.projection(cctx.grid().forNode(node));
-//
-//                            GridBiTuple<Integer, GridException> tup = qry.reduce().get();
-//
-//                            // Check topology changes.
-//                            GridNode node2 = CU.primaryNode(cctx, key);
-//
-//                            // If topology wasn't changed then break loop.
-//                            if (node.equals(node2)) {
-//                                qryRes = tup;
-//
-//                                break;
-//                            }
-//                            else
-//                                qryRes.set(qryRes.get1() + tup.get1(), tup.get2() != null ? tup.get2() : qryRes.get2());
-//
-//                            if (log.isDebugEnabled())
-//                                log.debug("Node topology was changed, request will be repeated for queue: " +
-//                                    GridCacheQueueImpl.this);
-//                        }
-//                    }
-//                    else
-//                        qryRes = qry.reduce().get();
+                    GridCacheQuery<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> qry =
+                        qryFactory.removeAllKeysQuery();
+
+                    if (collocated) {
+                        // For case if primary node was changed during request.
+                        while (true) {
+                            GridNode node = CU.primaryNode(cctx, key);
+
+                            qry.projection(cctx.grid().forNode(node));
+
+                            GridBiTuple<Integer, GridException> tup =
+                                F.reduce(qry.execute(qryFactory.removeAllKeysReducer(batchSize), qid).get(),
+                                    new RemoveAllKeysQueryLocalReducer());
+
+                            // Check topology changes.
+                            GridNode node2 = CU.primaryNode(cctx, key);
+
+                            // If topology wasn't changed then break loop.
+                            if (node.equals(node2)) {
+                                qryRes = tup;
+
+                                break;
+                            }
+                            else
+                                qryRes.set(qryRes.get1() + tup.get1(), tup.get2() != null ? tup.get2() : qryRes.get2());
+
+                            if (log.isDebugEnabled())
+                                log.debug("Node topology was changed, request will be repeated for queue: " +
+                                    GridCacheQueueImpl.this);
+                        }
+                    }
+                    else
+                        qryRes = F.reduce(qry.execute(qryFactory.removeAllKeysReducer(batchSize), qid).get(),
+                            new RemoveAllKeysQueryLocalReducer());
 
                     assert qryRes != null;
 
@@ -944,9 +931,6 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                         log.debug("Queue size mismatch [itemsNumber=" + qryRes.get1() +
                             ", headerOldSize=" + queueOldSize + ", newHeader=" + globalHdr + ", queue=" +
                             GridCacheQueueImpl.this + ']');
-                }
-                finally {
-                    tx.close();
                 }
 
                 // Throw remote exception if it's happened.
@@ -980,9 +964,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                 for (T item : items)
                     hashes.add(item.hashCode());
 
-                GridCacheTx tx = CU.txStartInternal(cctx, cctx.cache(), PESSIMISTIC, REPEATABLE_READ);
-
-                try {
+                try (GridCacheTx tx = CU.txStartInternal(cctx, cctx.cache(), PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheQueueHeader globalHdr = queueHdrView.get(key);
 
                     checkRemovedx();
@@ -995,39 +977,41 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                         return false;
                     }
 
-//                    GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>,
-//                        GridBiTuple<Integer, GridException>, GridBiTuple<Integer, GridException>> qry =
-//                        qryFactory.itemsKeysQuery(items, retain, items.size() == 1).
-//                            queryArguments(qid, hashes.toArray());
-//
-//                    if (collocated) {
-//                        // For case if primary node was changed during request.
-//                        while (true) {
-//                            GridNode node = CU.primaryNode(cctx, key);
-//
-//                            qry.projection(cctx.grid().forNode(node));
-//
-//                            GridBiTuple<Integer, GridException> tup = qry.reduce().get();
-//
-//                            // Check topology changes.
-//                            GridNode node2 = CU.primaryNode(cctx, key);
-//
-//                            // If topology wasn't changed then break loop.
-//                            if (node.equals(node2)) {
-//                                qryRes = tup;
-//
-//                                break;
-//                            }
-//                            else
-//                                qryRes.set(qryRes.get1() + tup.get1(), tup.get2() != null ? tup.get2() : qryRes.get2());
-//
-//                            if (log.isDebugEnabled())
-//                                log.debug("Node topology was changed, request will be repeated for queue: " +
-//                                    GridCacheQueueImpl.this);
-//                        }
-//                    }
-//                    else
-//                        qryRes = qry.reduce().get();
+                    GridCacheQuery<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> qry =
+                        qryFactory.itemsKeysQuery();
+
+                    if (collocated) {
+                        // For case if primary node was changed during request.
+                        while (true) {
+                            GridNode node = CU.primaryNode(cctx, key);
+
+                            qry.projection(cctx.grid().forNode(node));
+
+                            GridBiTuple<Integer, GridException> tup = F.reduce(qry.execute(qryFactory
+                                .itemsKeysReducer(items, retain, items.size() == 1), qid, hashes.toArray()).
+                                get(), new RemoveItemsQueryLocalReducer());
+
+                            // Check topology changes.
+                            GridNode node2 = CU.primaryNode(cctx, key);
+
+                            // If topology wasn't changed then break loop.
+                            if (node.equals(node2)) {
+                                qryRes = tup;
+
+                                break;
+                            }
+                            else
+                                qryRes.set(qryRes.get1() + tup.get1(), tup.get2() != null ? tup.get2() : qryRes.get2());
+
+                            if (log.isDebugEnabled())
+                                log.debug("Node topology was changed, request will be repeated for queue: " +
+                                    GridCacheQueueImpl.this);
+                        }
+                    }
+                    else
+                        qryRes = F.reduce(qry.execute(qryFactory.itemsKeysReducer(items, retain, items.size() == 1),
+                            qid, hashes.toArray()).
+                            get(), new RemoveItemsQueryLocalReducer());
 
                     assert qryRes != null;
 
@@ -1041,11 +1025,8 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
                         if (log.isDebugEnabled())
                             log.debug("Items were removed [itemsNumber=" + qryRes.get1() + ", queueHeader=" +
-                                    globalHdr + ", queue=" + GridCacheQueueImpl.this + ']');
+                                globalHdr + ", queue=" + GridCacheQueueImpl.this + ']');
                     }
-                }
-                finally {
-                    tx.close();
                 }
 
                 // Throw remote exception if it's happened.
@@ -1323,47 +1304,47 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                 // Query execution result.
                 GridBiTuple<Integer, GridException> qryRes = new T2<>(0, null);
 
-                GridCacheTx tx = CU.txStartInternal(cctx, cctx.cache(), PESSIMISTIC, REPEATABLE_READ);
-
-                try {
+                try (GridCacheTx tx = CU.txStartInternal(cctx, cctx.cache(), PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheQueueHeader globalHdr = queueHdrView.get(key);
 
                     checkRemovedx();
 
                     assert globalHdr != null : "Failed to find queue header in cache: " + GridCacheQueueImpl.this;
 
-//                    GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>,
-//                        GridBiTuple<Integer, GridException>, GridBiTuple<Integer, GridException>> qry =
-//                        qryFactory.removeAllKeysQuery(batchSize).queryArguments(qid);
-//
-//                    if (collocated) {
-//                        // For case if primary node was changed during request.
-//                        while (true) {
-//                            GridNode node = CU.primaryNode(cctx, key);
-//
-//                            qry = qry.projection(cctx.grid().forNode(node));
-//
-//                            GridBiTuple<Integer, GridException> tup = qry.reduce().get();
-//
-//                            // Check topology changes.
-//                            GridNode node2 = CU.primaryNode(cctx, key);
-//
-//                            // If topology wasn't changed then break loop.
-//                            if (node.equals(node2)) {
-//                                qryRes = tup;
-//
-//                                break;
-//                            }
-//                            else
-//                                qryRes.set(qryRes.get1() + tup.get1(), tup.get2() != null ? tup.get2() : qryRes.get2());
-//
-//                            if (log.isDebugEnabled())
-//                                log.debug("Node topology was changed, request will be repeated for queue: " +
-//                                    GridCacheQueueImpl.this);
-//                        }
-//                    }
-//                    else
-//                        qryRes = qry.reduce().get();
+                    GridCacheQuery<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> qry =
+                        qryFactory.removeAllKeysQuery();
+
+                    if (collocated) {
+                        // For case if primary node was changed during request.
+                        while (true) {
+                            GridNode node = CU.primaryNode(cctx, key);
+
+                            qry = qry.projection(cctx.grid().forNode(node));
+
+                            GridBiTuple<Integer, GridException> tup =
+                                F.reduce(qry.execute(qryFactory.removeAllKeysReducer(batchSize), qid).get(),
+                                    new RemoveAllKeysQueryLocalReducer());
+
+                            // Check topology changes.
+                            GridNode node2 = CU.primaryNode(cctx, key);
+
+                            // If topology wasn't changed then break loop.
+                            if (node.equals(node2)) {
+                                qryRes = tup;
+
+                                break;
+                            }
+                            else
+                                qryRes.set(qryRes.get1() + tup.get1(), tup.get2() != null ? tup.get2() : qryRes.get2());
+
+                            if (log.isDebugEnabled())
+                                log.debug("Node topology was changed, request will be repeated for queue: " +
+                                    GridCacheQueueImpl.this);
+                        }
+                    }
+                    else
+                        qryRes = F.reduce(qry.execute(qryFactory.removeAllKeysReducer(batchSize), qid).get(),
+                            new RemoveAllKeysQueryLocalReducer());
 
                     assert qryRes != null;
 
@@ -1384,8 +1365,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
                         queueHdrView.removex(key);
 
-                        if (log.isDebugEnabled())
-                            log.debug("Queue will be removed: " + GridCacheQueueImpl.this);
+                        if (log.isDebugEnabled()) log.debug("Queue will be removed: " + GridCacheQueueImpl.this);
                     }
 
                     tx.commit();
@@ -1394,9 +1374,6 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                         log.debug("Queue size mismatch [itemsNumber=" + qryRes.get1() +
                             ", headerOldSize=" + queueOldSize + ", newHeader=" + globalHdr + ", queue=" +
                             GridCacheQueueImpl.this + ']');
-                }
-                finally {
-                    tx.close();
                 }
 
                 // Throw remote exception if it's happened.
@@ -1449,7 +1426,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
         private static final int DFLT_PAGE_SIZE = 10;
 
         /** Query iterator. */
-//        private final GridIterator<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> iter;
+        private final Iterator<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> iter;
 
         /** Current entry. */
         private Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> entry;
@@ -1457,36 +1434,36 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
         /**
          * Default constructor.
          *
+         * @throws GridException In case of error.
          */
-        private GridCacheQueueIterator() {
-//            GridCacheQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> qry =
-//                qryFactory.itemsQuery().queryArguments(qid);
-//
-//            qry.pageSize(DFLT_PAGE_SIZE);
-//
-//            GridProjection prj = cctx.grid().forNode(CU.primaryNode(cctx, key));
-//
-//            if (collocated)
-//                qry.projection(prj);
-//
-//            iter = qry.execute();
-//
-//            assert iter != null;
+        private GridCacheQueueIterator() throws GridException {
+            GridCacheQuery<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> qry =
+                qryFactory.itemsQuery();
+
+            qry.pageSize(DFLT_PAGE_SIZE);
+
+            GridProjection prj = cctx.grid().forNode(CU.primaryNode(cctx, key));
+
+            if (collocated)
+                qry.projection(prj);
+
+            iter = qry.execute(qid).get().iterator();
+
+            assert iter != null;
         }
 
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
             checkRemoved();
 
-//            return iter.hasNext();
-            return false;
+            return iter.hasNext();
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public T next() {
             checkRemoved();
 
-//            entry = iter.next();
+            entry = iter.next();
 
             assert entry != null;
             assert entry.getValue() != null;
@@ -1512,9 +1489,9 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
                 boolean res = CU.outTx(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
-                            GridCacheTx tx = CU.txStartInternal(cctx, cctx.cache(), PESSIMISTIC, REPEATABLE_READ);
 
-                            try {
+                            try (GridCacheTx tx = CU.txStartInternal(cctx, cctx.cache(), PESSIMISTIC,
+                                REPEATABLE_READ)) {
                                 GridCacheQueueHeader globalHdr = queueHdrView.get(key);
 
                                 checkRemovedx();
@@ -1552,9 +1529,6 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                                 tx.commit();
 
                                 return true;
-                            }
-                            finally {
-                                tx.close();
                             }
                         }
                     }, cctx);
