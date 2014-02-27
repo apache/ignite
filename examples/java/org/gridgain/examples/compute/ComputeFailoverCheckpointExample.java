@@ -173,7 +173,7 @@ public class ComputeFailoverCheckpointExample {
 
                     // Save checkpoint with scope of task execution.
                     // It will be automatically removed when task completes.
-                    jobSes.saveCheckpoint(cpKey, state);
+                    jobSes.saveCheckpoint(cpKey, this.state);
 
                     System.out.println(">>> Job will be failed over to another node.");
 
