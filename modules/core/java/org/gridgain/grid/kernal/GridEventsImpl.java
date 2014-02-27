@@ -60,14 +60,14 @@ public class GridEventsImpl implements GridEvents {
 
     /** {@inheritDoc} */
     @Override public <T extends GridEvent> GridFuture<UUID> remoteListen(@Nullable GridBiPredicate<UUID, T> locLsnr,
-                                                                         @Nullable GridPredicate<T> rmtFilter, @Nullable int... types) {
+        @Nullable GridPredicate<T> rmtFilter, @Nullable int... types) {
         return remoteListen(1, 0, true, locLsnr, rmtFilter, types);
     }
 
     /** {@inheritDoc} */
     @Override public <T extends GridEvent> GridFuture<UUID> remoteListen(int bufSize, long interval,
-                                                                         boolean autoUnsubscribe, @Nullable GridBiPredicate<UUID, T> locLsnr, @Nullable GridPredicate<T> rmtFilter,
-                                                                         @Nullable int... types) {
+        boolean autoUnsubscribe, @Nullable GridBiPredicate<UUID, T> locLsnr, @Nullable GridPredicate<T> rmtFilter,
+        @Nullable int... types) {
         A.ensure(bufSize > 0, "bufSize > 0");
         A.ensure(interval >= 0, "interval >= 0");
 

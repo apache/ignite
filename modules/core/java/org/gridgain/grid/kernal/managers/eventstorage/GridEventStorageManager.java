@@ -460,7 +460,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
     }
 
     /**
-     * Adds local event listener.
+     * Adds local user event listener.
      *
      * @param lsnr User listener to add.
      * @param types Event types to subscribe listener for.
@@ -554,7 +554,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
 
     /**
      * Removes user listener for specified events, if any. If no event types provided - it
-     * remove the listener for all its registered events.
+     * removes the listener for all its registered events.
      *
      * @param lsnr User listener predicate.
      * @param types Event types.
@@ -1080,7 +1080,7 @@ public class GridEventStorageManager extends GridManagerAdapter<GridEventStorage
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            UserListenerWrapper that = (UserListenerWrapper) o;
+            UserListenerWrapper that = (UserListenerWrapper)o;
 
             return lsnr.equals(that.lsnr);
 
