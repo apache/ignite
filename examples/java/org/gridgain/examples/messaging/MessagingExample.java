@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.messaging;
 
+import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.examples.compute.*;
@@ -16,10 +17,9 @@ import org.gridgain.examples.compute.*;
 import java.util.*;
 
 /**
- * Example that demonstrates how to exchange messages between nodes. Use such
- * functionality for cases when you need to communicate to other nodes outside
- * of grid task. In such cases all your message classes must be in system
- * class path as they will not be peer-loaded.
+ * Example that demonstrates how to exchange messages between nodes.
+ * <p>
+ * To run this example you must have at least one remote node started.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
@@ -38,20 +38,15 @@ public final class MessagingExample {
     private enum TOPIC { ORDERED, UNORDERED }
 
     /**
-     * Shows several use-cases for ordered and unordered messages.
+     * Executes example.
      *
-     * @param args Command line arguments, none required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      {@code "examples/config/"} for configuration file examples.
-     * @throws Exception If example execution failed.
+     * @param args Command line arguments, none required.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
-            if (g.nodes().size() == 1) {
-                System.out.println(">>> Need at least 2 nodes to demonstrate messaging.");
-
+            if (!ExamplesUtils.checkMinTopologySize(g, 2))
                 return;
-            }
 
             System.out.println();
             System.out.println(">>> Messaging example started.");
