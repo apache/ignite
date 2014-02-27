@@ -11,13 +11,12 @@ package org.gridgain.grid.util.io;
 
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Arrays;
+import java.io.*;
+import java.util.*;
 
 /**
  * This class defines output stream backed by byte array.
- * It is identical to {@link java.io.ByteArrayOutputStream} with no synchronization.
+ * It is identical to {@link ByteArrayOutputStream} with no synchronization.
  *
  * @author @java.author
  * @version @java.version
@@ -118,7 +117,7 @@ public class GridByteArrayOutputStream extends OutputStream {
      * output stream is discarded. The output stream can be used again,
      * reusing the already allocated buffer space.
      *
-     * @see java.io.ByteArrayInputStream#count
+     * @see ByteArrayInputStream#count
      */
     public void reset() {
         cnt = 0;
@@ -139,7 +138,7 @@ public class GridByteArrayOutputStream extends OutputStream {
      * have been copied into it.
      *
      * @return the current contents of this output stream, as a byte array.
-     * @see java.io.ByteArrayOutputStream#size()
+     * @see ByteArrayOutputStream#size()
      */
     public byte[] toByteArray() {
         return Arrays.copyOf(buf, cnt);
@@ -150,7 +149,7 @@ public class GridByteArrayOutputStream extends OutputStream {
      *
      * @return the value of the <code>count</code> field, which is the number
      *         of valid bytes in this output stream.
-     * @see java.io.ByteArrayOutputStream#count
+     * @see ByteArrayOutputStream#count
      */
     public int size() {
         return cnt;

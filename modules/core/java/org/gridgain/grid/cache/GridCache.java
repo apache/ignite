@@ -15,6 +15,7 @@ import org.gridgain.grid.cache.affinity.partition.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.spi.discovery.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -65,8 +66,8 @@ import java.util.*;
  * in this case will result in {@link NullPointerException}.
  * <h1 class="header">Allowed Discovery SPIs</h1>
  * When working with distributed cache, proper node ordering is required on startup. For that
- * reason cache can be used only with implementations of {@link org.gridgain.grid.spi.discovery.GridDiscoverySpi}
- * that are annotated with {@link org.gridgain.grid.spi.discovery.GridDiscoverySpiOrderSupport} annotation.
+ * reason cache can be used only with implementations of {@link GridDiscoverySpi}
+ * that are annotated with {@link GridDiscoverySpiOrderSupport} annotation.
  * User can also relax this annotation and can manually ensure that nodes are started sequentially (not concurrently).
  * To do that, {@link GridSystemProperties#GG_NO_DISCO_ORDER} must be provided at startup.
  *

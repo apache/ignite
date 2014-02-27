@@ -15,8 +15,7 @@ import java.util.*;
 /**
  * GridGain index descriptor.
  * <p>
- * Provides information about one of the indexes created by
- * {@link org.gridgain.grid.spi.indexing.GridIndexingSpi}.
+ * Provides information about one of the indexes created by {@link GridIndexingSpi}.
  * <p>
  * All index descriptors can be obtained from
  * {@link GridCacheSqlMetadata#indexes(String)} method.

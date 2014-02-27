@@ -58,9 +58,9 @@ public interface GridCollisionJobContext {
     public boolean activate();
 
     /**
-     * Cancels the job. If job was active (executing) method {@link org.gridgain.grid.compute.GridComputeJob#cancel()} will
+     * Cancels the job. If job was active (executing) method {@link GridComputeJob#cancel()} will
      * be called on the job. If job was in wait state, then it will be {@code rejected}
-     * prior to execution and {@link org.gridgain.grid.compute.GridComputeJob#cancel()} will not be called.
+     * prior to execution and {@link GridComputeJob#cancel()} will not be called.
      * <p>
      * Collision resolution is handled concurrently, so it may be possible that other threads
      * already activated or cancelled/rejected this job. This method will return {@code true}

@@ -812,7 +812,7 @@ public class GridNioServer<T> {
          * @param gridName Grid name.
          * @param name Worker name.
          * @param log Logger.
-         * @throws org.gridgain.grid.GridException If selector could not be created.
+         * @throws GridException If selector could not be created.
          */
         protected AbstractNioClientWorker(int idx, @Nullable String gridName, String name, GridLogger log)
             throws GridException {

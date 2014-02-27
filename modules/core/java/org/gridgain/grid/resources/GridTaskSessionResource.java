@@ -9,16 +9,18 @@
 
 package org.gridgain.grid.resources;
 
+import org.gridgain.grid.compute.*;
+
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of {@link org.gridgain.grid.compute.GridComputeTaskSession} resource.
+ * Annotates a field or a setter method for injection of {@link GridComputeTaskSession} resource.
  * Task session can be injected into instances of following classes:
  * <p>
  * Distributed Task Session can be injected into instances of following classes:
  * <ul>
- * <li>{@link org.gridgain.grid.compute.GridComputeTask}</li>
- * <li>{@link org.gridgain.grid.compute.GridComputeJob}</li>
+ * <li>{@link GridComputeTask}</li>
+ * <li>{@link GridComputeJob}</li>
  * </ul>
  * <p>
  * Here is how injection would typically happen:

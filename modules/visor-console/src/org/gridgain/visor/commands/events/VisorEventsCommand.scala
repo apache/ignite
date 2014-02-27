@@ -516,7 +516,7 @@ private class VisorConsoleCollectEventsTask
                         case _ => true
                     })
 
-                    Left(g.events().queryLocal(filter)
+                    Left(g.events().localQuery(filter)
                         .map(e => VisorEventData(e.`type`, e.timestamp(), e.name(), e.shortDisplay(), mnemonic(e)))
                         .toArray)
 

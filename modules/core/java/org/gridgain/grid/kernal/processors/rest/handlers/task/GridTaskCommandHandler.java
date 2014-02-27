@@ -14,6 +14,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
@@ -225,8 +226,13 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                                 desc = new TaskDescriptor(true, f.get(), null);
                             }
                             catch (GridException e) {
-                                U.error(log, "Failed to execute task [name=" + name + ", clientId=" +
-                                    req.getClientId() + ']', e);
+                                if (e.hasCause(GridTopologyException.class, GridEmptyProjectionException.class))
+                                    U.warn(log, "Failed to execute task due to topology issues (are all mapped " +
+                                        "nodes alive?) [name=" + name + ", clientId=" + req.getClientId() +
+                                        ", err=" + e + ']');
+                                else
+                                    U.error(log, "Failed to execute task [name=" + name + ", clientId=" +
+                                        req.getClientId() + ']', e);
 
                                 desc = new TaskDescriptor(true, null, e);
                             }

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid;
 
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.mbean.*;
 
 import javax.management.*;
@@ -198,7 +199,7 @@ public interface GridKernalMBean {
      * This method will attempt to undeploy all versions on the grid task with
      * given name.
      *
-     * @param taskName Name of the task to undeploy. If task class has {@link org.gridgain.grid.compute.GridComputeTaskName} annotation,
+     * @param taskName Name of the task to undeploy. If task class has {@link GridComputeTaskName} annotation,
      *      then task was deployed under a name specified within annotation. Otherwise, full
      *      class name should be used as task's name.
      * @throws JMException Thrown if undeploy failed.
