@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.job;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;

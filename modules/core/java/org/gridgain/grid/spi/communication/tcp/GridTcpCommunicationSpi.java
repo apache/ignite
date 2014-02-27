@@ -11,6 +11,7 @@ package org.gridgain.grid.spi.communication.tcp;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;

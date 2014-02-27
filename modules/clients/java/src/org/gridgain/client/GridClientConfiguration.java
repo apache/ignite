@@ -16,6 +16,7 @@ import org.gridgain.client.marshaller.protobuf.*;
 import org.gridgain.client.ssl.*;
 import org.jetbrains.annotations.*;
 
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -263,7 +264,7 @@ public class GridClientConfiguration {
     /**
      * Gets flag indicating whether {@code TCP_NODELAY} flag should be enabled for outgoing connections.
      * This flag reduces communication latency and in the majority of cases should be set to true. For more
-     * information, see {@link java.net.Socket#setTcpNoDelay(boolean)}
+     * information, see {@link Socket#setTcpNoDelay(boolean)}
      * <p>
      * If not set, default value is {@link #DFLT_TCP_NODELAY}
      *

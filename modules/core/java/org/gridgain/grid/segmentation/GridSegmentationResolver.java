@@ -10,6 +10,9 @@
 package org.gridgain.grid.segmentation;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.segmentation.reachability.*;
+import org.gridgain.grid.segmentation.sharedfs.*;
+import org.gridgain.grid.segmentation.tcp.*;
 
 import java.io.*;
 
@@ -30,9 +33,9 @@ import java.io.*;
  * <p>
  * The following implementations are built-in:
  * <ul>
- *     <li>{@link org.gridgain.grid.segmentation.reachability.GridReachabilitySegmentationResolver}</li>
- *     <li>{@link org.gridgain.grid.segmentation.sharedfs.GridSharedFsSegmentationResolver}</li>
- *     <li>{@link org.gridgain.grid.segmentation.tcp.GridTcpSegmentationResolver}</li>
+ *     <li>{@link GridReachabilitySegmentationResolver}</li>
+ *     <li>{@link GridSharedFsSegmentationResolver}</li>
+ *     <li>{@link GridTcpSegmentationResolver}</li>
  * </ul>
  *
  * @author @java.author

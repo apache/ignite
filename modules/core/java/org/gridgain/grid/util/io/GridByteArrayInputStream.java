@@ -15,7 +15,7 @@ import java.io.*;
 
 /**
  * This class defines input stream backed by byte array.
- * It is identical to {@link java.io.ByteArrayInputStream} with no synchronization.
+ * It is identical to {@link ByteArrayInputStream} with no synchronization.
  *
  * @author @java.author
  * @version @java.version
