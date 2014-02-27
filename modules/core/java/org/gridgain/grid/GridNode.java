@@ -9,6 +9,7 @@
 
 package org.gridgain.grid;
 
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
@@ -21,7 +22,7 @@ import java.util.*;
  * Interface representing a single grid node. Use {@link #attribute(String)} or
  * {@link #metrics()} to get static and dynamic information about remote nodes.
  * {@code GridNode} list, which includes all nodes within task topology, is provided
- * to {@link org.gridgain.grid.compute.GridComputeTask#map(List, Object)} method. You can also get a handle on
+ * to {@link GridComputeTask#map(List, Object)} method. You can also get a handle on
  * discovered nodes by calling any of the following methods:
  * <ul>
  * <li>{@link Grid#localNode()}</li>
@@ -90,7 +91,7 @@ import java.util.*;
  * Grid node metrics provide information about other nodes that can frequently change,
  * such as Heap and Non-Heap memory utilization, CPU load, number of active and waiting
  * grid jobs, etc... This information can become useful during job collision resolution or
- * {@link org.gridgain.grid.compute.GridComputeTask#map(List, Object)} operation when jobs are assigned to remote nodes
+ * {@link GridComputeTask#map(List, Object)} operation when jobs are assigned to remote nodes
  * for execution. For example, you can only pick nodes that don't have any jobs waiting
  * to be executed.
  * <p>
@@ -143,7 +144,7 @@ public interface GridNode extends GridMetadataAware {
      * Gets metrics snapshot for this node. Note that node metrics are constantly updated
      * and provide up to date information about nodes. For example, you can get
      * an idea about CPU load on remote node via {@link GridNodeMetrics#getCurrentCpuLoad()}
-     * method and use it during {@link org.gridgain.grid.compute.GridComputeTask#map(List, Object)} or during collision
+     * method and use it during {@link GridComputeTask#map(List, Object)} or during collision
      * resolution.
      * <p>
      * Node metrics are updated with some delay which is directly related to heartbeat
@@ -231,7 +232,7 @@ public interface GridNode extends GridMetadataAware {
      * <p>
      * Daemon nodes are the usual grid nodes that participate in topology but not
      * visible on the main APIs, i.e. they are not part of any projections. The only
-     * way to see daemon nodes is to use {@link org.gridgain.grid.Grid#forDaemons()} method.
+     * way to see daemon nodes is to use {@link Grid#forDaemons()} method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
      * is build on GridGain and needs to participate in the topology but should be

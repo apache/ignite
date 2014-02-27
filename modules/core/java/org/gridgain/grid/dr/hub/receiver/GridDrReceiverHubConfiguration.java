@@ -9,8 +9,9 @@
 
 package org.gridgain.grid.dr.hub.receiver;
 
-import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.nio.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Data center replication receiver hub configuration.
@@ -118,7 +119,7 @@ public class GridDrReceiverHubConfiguration {
     /**
      * Gets local host name receiver hub TCP server is bound to.
      * <p>
-     * If not set, {@link org.gridgain.grid.GridConfiguration#getLocalHost()} will be used.
+     * If not set, {@link GridConfiguration#getLocalHost()} will be used.
      * <p>
      * Defaults to {@code null}.
      *

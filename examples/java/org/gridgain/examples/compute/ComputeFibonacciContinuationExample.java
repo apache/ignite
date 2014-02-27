@@ -22,8 +22,8 @@ import java.util.*;
  * This example demonstrates how to use continuation feature of GridGain by
  * performing the distributed recursive calculation of {@code 'Fibonacci'}
  * numbers on the grid. Continuations
- * functionality is exposed via {@link org.gridgain.grid.compute.GridComputeJobContext#holdcc()} and
- * {@link org.gridgain.grid.compute.GridComputeJobContext#callcc()} method calls in {@link FibonacciClosure} class.
+ * functionality is exposed via {@link GridComputeJobContext#holdcc()} and
+ * {@link GridComputeJobContext#callcc()} method calls in {@link FibonacciClosure} class.
  * <p>
  * This is a powerful design pattern which allows for creation of fully distributively recursive
  * (a.k.a. nested) tasks or closures with continuations. This example also shows

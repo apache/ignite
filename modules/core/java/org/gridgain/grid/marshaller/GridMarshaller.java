@@ -10,6 +10,8 @@
 package org.gridgain.grid.marshaller;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.marshaller.jdk.*;
+import org.gridgain.grid.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -21,8 +23,8 @@ import java.io.*;
  * <p>
  * Gridgain provides the following {@code GridMarshaller} implementations:
  * <ul>
- * <li>{@link org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller} - default</li>
- * <li>{@link org.gridgain.grid.marshaller.jdk.GridJdkMarshaller}</li>
+ * <li>{@link GridOptimizedMarshaller} - default</li>
+ * <li>{@link GridJdkMarshaller}</li>
  * </ul>
  * <p>
  * Below are examples of marshaller configuration, usage, and injection into tasks, jobs,

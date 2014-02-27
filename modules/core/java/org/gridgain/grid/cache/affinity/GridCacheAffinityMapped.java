@@ -10,6 +10,7 @@
 package org.gridgain.grid.cache.affinity;
 
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.loadbalancing.*;
 
@@ -82,7 +83,7 @@ import java.util.concurrent.*;
  * It is also possible to route computations to the nodes where the data is cached. This concept
  * is otherwise known as {@code Collocation Of Computations And Data}. In this case,
  * {@code @GridCacheAffinityMapped} annotation allows to specify a routing affinity key for a
- * {@link org.gridgain.grid.compute.GridComputeJob} or any other grid computation, such as {@link Runnable}, {@link Callable}, or
+ * {@link GridComputeJob} or any other grid computation, such as {@link Runnable}, {@link Callable}, or
  * {@link GridClosure}. It should be attached to a method or field that provides affinity key
  * for the computation. Only one annotation per class is allowed. Whenever such annotation is detected,
  * then {@link GridLoadBalancingSpi} will be bypassed, and computation will be routed to the grid node

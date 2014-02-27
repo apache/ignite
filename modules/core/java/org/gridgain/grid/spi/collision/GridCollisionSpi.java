@@ -10,7 +10,11 @@
 package org.gridgain.grid.spi.collision;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.spi.collision.fifoqueue.*;
+import org.gridgain.grid.spi.collision.jobstealing.*;
+import org.gridgain.grid.spi.collision.priorityqueue.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -28,9 +32,9 @@ import org.jetbrains.annotations.*;
  * grid jobs should be executed on a destination grid node. GridGain comes with the following
  * ready implementations for collision resolution that cover most popular strategies:
  * <ul>
- *      <li>{@link org.gridgain.grid.spi.collision.fifoqueue.GridFifoQueueCollisionSpi}</li>
- *      <li>{@link org.gridgain.grid.spi.collision.priorityqueue.GridPriorityQueueCollisionSpi}</li>
- *      <li>{@link org.gridgain.grid.spi.collision.jobstealing.GridJobStealingCollisionSpi}</li>
+ *      <li>{@link GridFifoQueueCollisionSpi}</li>
+ *      <li>{@link GridPriorityQueueCollisionSpi}</li>
+ *      <li>{@link GridJobStealingCollisionSpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
  * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
@@ -66,7 +70,7 @@ public interface GridCollisionSpi extends GridSpi, GridSpiJsonConfigurable {
      * GridGain uses this listener to enable job stealing from overloaded to underloaded nodes.
      * However, you can also utilize it, for instance, to provide time based collision
      * resolution. To achieve this, you most likely would mark some job by setting a certain
-     * attribute in job context (see {@link org.gridgain.grid.compute.GridComputeJobContext}) for a job that requires
+     * attribute in job context (see {@link GridComputeJobContext}) for a job that requires
      * time-based scheduling and set some timer in your SPI implementation that would wake up
      * after a certain period of time. Once this period is reached, you would notify this
      * listener that a collision resolution should take place. Then inside of your collision

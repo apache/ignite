@@ -10,7 +10,12 @@
 package org.gridgain.grid.spi.failover;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.spi.failover.always.*;
+import org.gridgain.grid.spi.failover.jobstealing.*;
+import org.gridgain.grid.spi.failover.never.*;
+
 import java.util.*;
 
 /**
@@ -25,14 +30,14 @@ import java.util.*;
  * grid nodes and provides another node on which the job execution will be retried.
  * It is up to failover SPI to make sure that job is not mapped to the node it
  * failed on. The failed node can be retrieved from
- * {@link org.gridgain.grid.compute.GridComputeJobResult#getNode() GridFailoverContext.getJobResult().node()}
+ * {@link GridComputeJobResult#getNode() GridFailoverContext.getJobResult().node()}
  * method.
  * <p>
  * GridGain comes with the following built-in failover SPI implementations:
  * <ul>
- *      <li>{@link org.gridgain.grid.spi.failover.never.GridNeverFailoverSpi}</li>
- *      <li>{@link org.gridgain.grid.spi.failover.always.GridAlwaysFailoverSpi}</li>
- *      <li>{@link org.gridgain.grid.spi.failover.jobstealing.GridJobStealingFailoverSpi}</li>
+ *      <li>{@link GridNeverFailoverSpi}</li>
+ *      <li>{@link GridAlwaysFailoverSpi}</li>
+ *      <li>{@link GridJobStealingFailoverSpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
  * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
@@ -46,8 +51,8 @@ import java.util.*;
  */
 public interface GridFailoverSpi extends GridSpi, GridSpiJsonConfigurable {
     /**
-     * This method is called when method {@link org.gridgain.grid.compute.GridComputeTask#result(org.gridgain.grid.compute.GridComputeJobResult, List)} returns
-     * value {@link org.gridgain.grid.compute.GridComputeJobResultPolicy#FAILOVER} policy indicating that the result of
+     * This method is called when method {@link GridComputeTask#result(GridComputeJobResult, List)} returns
+     * value {@link GridComputeJobResultPolicy#FAILOVER} policy indicating that the result of
      * job execution must be failed over. Implementation of this method should examine failover
      * context and choose one of the grid nodes from supplied {@code topology} to retry job execution
      * on it. For best performance it is advised that {@link GridFailoverContext#getBalancedNode(List)}

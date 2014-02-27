@@ -28,7 +28,7 @@ public interface GridSpiCloseableIterator<T> extends Iterator<T>, AutoCloseable,
      * The method is invoked automatically on objects managed by the
      * {@code try-with-resources} statement.
      *
-     * @throws org.gridgain.grid.GridException In case of error.
+     * @throws GridException In case of error.
      */
     @Override public void close() throws GridException;
 }
