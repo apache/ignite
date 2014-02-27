@@ -73,7 +73,7 @@ public class ComputeCallableExample {
             int sum = 0;
 
             // Add up individual word lengths received from remote nodes.
-            for (Integer len : res)
+            for (int len : res)
                 sum += len;
 
             System.out.println();

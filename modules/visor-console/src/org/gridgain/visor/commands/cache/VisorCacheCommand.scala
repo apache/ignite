@@ -554,6 +554,7 @@ private class VisorCacheDataTask extends VisorConsoleMultiNodeTask[Option[String
                                         case SCAN => "Scan"
                                         case SQL => "SQL"
                                         case TEXT => "Text"
+                                        case null => "SQL"
                                     },
                                     clsName = U.compact(safe(q.className, "<n/a>")),
                                     execs = q.executions,
