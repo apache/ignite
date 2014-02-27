@@ -1775,7 +1775,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
             this.plc = plc;
             this.nodeId = nodeId;
             this.topic = topic;
-            this.timeout = skipOnTimeout ? ctx.config().getNetworkTimeout() : timeout;
+            this.timeout = skipOnTimeout && timeout == 0 ? ctx.config().getNetworkTimeout() : timeout;
             this.skipOnTimeout = skipOnTimeout;
 
             endTime = endTime(timeout);
