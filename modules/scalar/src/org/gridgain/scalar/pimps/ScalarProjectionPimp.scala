@@ -557,7 +557,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
         reduceAsync$(s, r, p).get
 
     /**
-     * Executes given closure on the nodes where data for provided affinity keys are located. This
+     * Executes given closure on the nodes where data for provided affinity key is located. This
      * is known as affinity co-location between compute grid (a closure) and in-memory data grid
      * (value with affinity key). Note that implementation of multiple executions of the same closure will
      * be wrapped as a single task that splits into multiple `job`s that will be mapped to nodes
@@ -577,8 +577,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * context with all marshallers currently shipped with GridGain.
      *
      * @param cacheName Name of the cache to use for affinity co-location.
-     * @param affKeys Collection of affinity keys. All dups will be ignored. If `null` or empty
-     *      this method is no-op.
+     * @param affKey Affinity key.
      * @param r Closure to affinity co-located on the node with given affinity key and execute.
      *      If `null` - this method is no-op.
      * @param p Optional filtering predicate. If `null` provided - all nodes in this projection will be used for topology.
@@ -590,12 +589,12 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @throws GridInterruptedException Subclass of `GridException` thrown if the wait was interrupted.
      * @throws GridFutureCancelledException Subclass of `GridException` thrown if computation was cancelled.
      */
-    def affinityRun$(cacheName: String, @Nullable affKeys: Seq[_], @Nullable r: Run, @Nullable p: NF) {
-        affinityRunAsync$(cacheName, affKeys, r, p).get
+    def affinityRun$(cacheName: String, @Nullable affKey: Any, @Nullable r: Run, @Nullable p: NF) {
+        affinityRunAsync$(cacheName, affKey, r, p).get
     }
 
     /**
-     * Executes given closure on the nodes where data for provided affinity keys are located. This
+     * Executes given closure on the nodes where data for provided affinity key is located. This
      * is known as affinity co-location between compute grid (a closure) and in-memory data grid
      * (value with affinity key). Note that implementation of multiple executions of the same closure will
      * be wrapped as a single task that splits into multiple `job`s that will be mapped to nodes
@@ -622,8 +621,7 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * context with all marshallers currently shipped with GridGain.
      *
      * @param cacheName Name of the cache to use for affinity co-location.
-     * @param affKeys Collection of affinity keys. All dups will be ignored. If `null` or
-     *      empty - this method is no-op.
+     * @param affKey Affinity key.
      * @param r Closure to affinity co-located on the node with given affinity key and execute.
      *      If `null` - this method is no-op.
      * @param p Optional filtering predicate. If `null` provided - all nodes in this projection will be used for topology.
@@ -636,8 +634,8 @@ class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Itera
      * @throws GridInterruptedException Subclass of `GridException` thrown if the wait was interrupted.
      * @throws GridFutureCancelledException Subclass of `GridException` thrown if computation was cancelled.
      */
-    def affinityRunAsync$(cacheName: String, @Nullable affKeys: Seq[_], @Nullable r: Run,
+    def affinityRunAsync$(cacheName: String, @Nullable affKey: Any, @Nullable r: Run,
         @Nullable p: NF): GridFuture[_] = {
-        forPredicate(p).compute().affinityRun(cacheName, toJavaCollection(affKeys), toRunnable(r))
+        forPredicate(p).compute().affinityRun(cacheName, affKey, toRunnable(r))
     }
 }

@@ -29,7 +29,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCachePartitionedDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheTxState.*;
@@ -711,7 +711,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         if (tx == null && !req.explicitLock()) {
             U.warn(log, "Received finish request for completed transaction (the message may be too late " +
                 "and transaction could have been DGCed by now) [commit=" + req.commit() +
-                ", xid=" + req.version().asGridUuid() + ']');
+                ", xid=" + req.version() + ']');
 
             // Always send finish response.
             GridCacheMessage<K, V> res = new GridNearTxFinishResponse<>(req.version(), req.threadId(), req.futureId(),
@@ -2830,7 +2830,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public List<GridCacheClearAllRunnable<K, V>> splitClearAll() {
-        GridCachePartitionedDistributionMode mode = configuration().getPartitionedDistributionMode();
+        GridCacheDistributionMode mode = configuration().getDistributionMode();
 
         return (mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED) ? super.splitClearAll() :
             Collections.<GridCacheClearAllRunnable<K, V>>emptyList();

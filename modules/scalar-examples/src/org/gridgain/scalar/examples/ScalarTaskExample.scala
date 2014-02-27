@@ -15,6 +15,7 @@ import org.gridgain.scalar.scalar
 import scalar._
 import collection.JavaConversions._
 import org.gridgain.grid.compute._
+import java.util
 
 /**
  * Demonstrates use of full grid task API using Scalar. Note that using task-based
@@ -23,22 +24,24 @@ import org.gridgain.grid.compute._
  * As a trade off in such cases the more code needs to be written vs. simple closure execution.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-default.xml'`.
+ * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
  *
  * @author @java.author
  * @version @java.version
  */
 object ScalarTaskExample extends App {
-    scalar("examples/config/example-default.xml") {
+    scalar("examples/config/example-compute.xml") {
         grid$.compute().execute(classOf[GridHelloWorld], "Hello Cloud World!").get
     }
 
     /**
      * This task encapsulates the logic of MapReduce.
      */
-    class GridHelloWorld extends GridComputeTaskNoReduceSplitAdapter[String] {
+    class GridHelloWorld extends GridComputeTaskSplitAdapter[String, Void] {
         def split(gridSize: Int, arg: String): java.util.Collection[_ <: GridComputeJob] = {
             (for (w <- arg.split(" ")) yield toJob(() => println(w))).toSeq
         }
+
+        def reduce(results: util.List[GridComputeJobResult]) = null
     }
 }

@@ -63,11 +63,11 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity0<K> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean primary(GridNode n, K key) {
+    @Override public boolean isPrimary(GridNode n, K key) {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
-            return delegate.primary(n, key);
+            return delegate.isPrimary(n, key);
         }
         finally {
             gate.leave(old);
@@ -75,11 +75,11 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity0<K> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean backup(GridNode n, K key) {
+    @Override public boolean isBackup(GridNode n, K key) {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
-            return delegate.backup(n, key);
+            return delegate.isBackup(n, key);
         }
         finally {
             gate.leave(old);
@@ -87,11 +87,11 @@ public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity0<K> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean primaryOrBackup(GridNode n, K key) {
+    @Override public boolean isPrimaryOrBackup(GridNode n, K key) {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
-            return delegate.primaryOrBackup(n, key);
+            return delegate.isPrimaryOrBackup(n, key);
         }
         finally {
             gate.leave(old);

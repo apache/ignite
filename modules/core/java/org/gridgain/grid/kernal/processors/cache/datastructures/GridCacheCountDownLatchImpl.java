@@ -230,7 +230,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                                 return new CountDownLatch(val.get());
                             }
                             finally {
-                                tx.end();
+                                tx.close();
                             }
                         }
                     },
@@ -344,7 +344,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                 return retVal;
             }
             finally {
-                tx.end();
+                tx.close();
             }
         }
     }

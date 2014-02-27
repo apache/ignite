@@ -66,7 +66,14 @@ public class GridCacheExplicitLockSpan<K> extends ReentrantLock {
 
             assert this.topSnapshot.topologyVersion() == topSnapshot.topologyVersion();
 
-            ensureDeque(cand.key()).add(cand);
+            Deque<GridCacheMvccCandidate<K>> deque = ensureDeque(cand.key());
+
+            GridCacheMvccCandidate<K> old = F.first(deque);
+
+            deque.add(cand);
+
+            if (old != null && old.owner())
+                cand.setOwner();
 
             return true;
         }

@@ -420,7 +420,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     tx.commit();
                 }
                 finally {
-                    tx.end();
+                    tx.close();
                 }
 
                 return true;

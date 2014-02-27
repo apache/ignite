@@ -13,10 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -407,15 +405,6 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     public boolean isFailed() {
         // Must read endTime first.
         return endTime != 0 && err != null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridAbsPredicate predicate() {
-        return new PA() {
-            @Override public boolean apply() {
-                return isDone();
-            }
-        };
     }
 
     /** {@inheritDoc} */

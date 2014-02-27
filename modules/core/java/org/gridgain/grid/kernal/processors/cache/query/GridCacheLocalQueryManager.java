@@ -121,7 +121,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
         assert cctx.config().getCacheMode() == LOCAL;
 
         throw new GridRuntimeException("Distributed queries are not available for local cache " +
-            "(use 'GridCacheQuery.execute(grid.localNode())' instead) [cacheName=" + cctx.name() + ']');
+            "(use 'GridCacheQuery.execute(grid.forLocal())' instead) [cacheName=" + cctx.name() + ']');
     }
 
     /** {@inheritDoc} */
@@ -177,6 +177,6 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
         assert cctx.config().getCacheMode() == LOCAL;
 
         throw new GridRuntimeException("Distributed queries are not available for local cache " +
-            "(use 'GridCacheQuery.execute(grid.localNode())' instead) [cacheName=" + cctx.name() + ']');
+            "(use 'GridCacheQuery.execute(grid.forLocal())' instead) [cacheName=" + cctx.name() + ']');
     }
 }

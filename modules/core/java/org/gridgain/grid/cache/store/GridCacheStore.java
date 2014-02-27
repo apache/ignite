@@ -87,8 +87,7 @@ public interface GridCacheStore<K, V> {
      *      {@link GridCache#loadCache(GridBiPredicate, long, Object...)} method.
      * @throws GridException If loading failed.
      */
-    public void loadAll(GridBiInClosure<K, V> clo, @Nullable Object... args)
-        throws GridException;
+    public void loadCache(GridBiInClosure<K, V> clo, @Nullable Object... args) throws GridException;
 
     /**
      * Loads all values for given keys and passes every value to the provided closure.
@@ -102,8 +101,8 @@ public interface GridCacheStore<K, V> {
      * @param c Closure to call for every loaded element.
      * @throws GridException If load failed.
      */
-    public void loadAll(@Nullable GridCacheTx tx, @Nullable Collection<? extends K> keys,
-        GridBiInClosure<K, V> c) throws GridException;
+    public void loadAll(@Nullable GridCacheTx tx, Collection<? extends K> keys, GridBiInClosure<K, V> c)
+        throws GridException;
 
     /**
      * Stores a given value in persistent storage. Note that cache transaction is implicitly created
@@ -115,7 +114,7 @@ public interface GridCacheStore<K, V> {
      * @param val Value to put.
      * @throws GridException If put failed.
      */
-    public void put(@Nullable GridCacheTx tx, K key, @Nullable V val) throws GridException;
+    public void put(@Nullable GridCacheTx tx, K key, V val) throws GridException;
 
     /**
      * Stores given key value pairs in persistent storage. Note that cache transaction is implicitly created
@@ -126,7 +125,7 @@ public interface GridCacheStore<K, V> {
      * @param map Values to store.
      * @throws GridException If store failed.
      */
-    public void putAll(@Nullable GridCacheTx tx, @Nullable Map<? extends K, ? extends V> map) throws GridException;
+    public void putAll(@Nullable GridCacheTx tx, Map<? extends K, ? extends V> map) throws GridException;
 
     /**
      * Removes the value identified by given key from persistent storage. Note that cache transaction is
@@ -148,7 +147,7 @@ public interface GridCacheStore<K, V> {
      * @param keys Keys to remove.
      * @throws GridException If remove failed.
      */
-    public void removeAll(@Nullable GridCacheTx tx, @Nullable Collection<? extends K> keys) throws GridException;
+    public void removeAll(@Nullable GridCacheTx tx, Collection<? extends K> keys) throws GridException;
 
     /**
      * Tells store to commit or rollback a transaction depending on the value of the {@code 'commit'}

@@ -331,15 +331,15 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                     if (!state(PREPARING)) {
                         if (setRollbackOnly()) {
                             if (timedOut())
-                                fut.onError(new GridCacheTxTimeoutException("Transaction timed out and was " +
-                                    "rolled back: " + this));
+                                fut.onError(null, null, new GridCacheTxTimeoutException("Transaction timed out and " +
+                                    "was rolled back: " + this));
                             else
-                                fut.onError(new GridException("Invalid transaction state for prepare [state=" +
-                                    state() + ", tx=" + this + ']'));
+                                fut.onError(null, null, new GridException("Invalid transaction state for prepare " +
+                                    "[state=" + state() + ", tx=" + this + ']'));
                         }
                         else
-                            fut.onError(new GridCacheTxRollbackException("Invalid transaction state for prepare " +
-                                "[state=" + state() + ", tx=" + this + ']'));
+                            fut.onError(null, null, new GridCacheTxRollbackException("Invalid transaction state for " +
+                                "prepare [state=" + state() + ", tx=" + this + ']'));
 
                         return;
                     }
@@ -353,9 +353,6 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                     cctx.mvcc().addFuture(fut);
 
                     fut.prepare();
-                }
-                catch (GridCacheTxTimeoutException | GridCacheTxOptimisticException e) {
-                    fut.onError(e);
                 }
                 catch (GridException e) {
                     setRollbackOnly();
@@ -371,7 +368,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                         U.error(log, "Failed to rollback transaction: " + this, e1);
                     }
 
-                    fut.onError(new GridCacheTxRollbackException(msg, e));
+                    fut.onError(null, null, new GridCacheTxRollbackException(msg, e));
                 }
             }
             else {
@@ -408,55 +405,32 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
         GridFuture<GridCacheTxEx<K, V>> prepareFut = prepFut.get();
 
-        if (prepareFut.isDone()) {
-            try {
-                // Make sure that here are no exceptions.
-                prepareFut.get();
+        prepareFut.listenAsync(new CI1<GridFuture<GridCacheTxEx<K, V>>>() {
+            @Override public void apply(GridFuture<GridCacheTxEx<K, V>> f) {
+                GridDhtColocatedTxFinishFuture<K, V> commitFut0 = commitFut.get();
 
-                if (finish(true))
-                    fut.finish(true);
-                else
-                    fut.onError(new GridException("Failed to commit transaction: " + CU.txString(this)));
-            }
-            catch (Error | RuntimeException e) {
-                commitErr.compareAndSet(null, e);
+                try {
+                    // Make sure that here are no exceptions.
+                    f.get();
 
-                throw e;
-            }
-            catch (GridException e) {
-                commitErr.compareAndSet(null, e);
-
-                fut.onError(e);
-            }
-        }
-        else {
-            prepareFut.listenAsync(new CI1<GridFuture<GridCacheTxEx<K, V>>>() {
-                @Override public void apply(GridFuture<GridCacheTxEx<K, V>> f) {
-                    GridDhtColocatedTxFinishFuture<K, V> commitFut0 = commitFut.get();
-
-                    try {
-                        // Make sure that here are no exceptions.
-                        f.get();
-
-                        if (finish(true))
-                            commitFut0.finish(true);
-                        else
-                            commitFut0.onError(new GridException("Failed to commit transaction: " +
-                                CU.txString(GridDhtColocatedTxLocal.this)));
-                    }
-                    catch (Error | RuntimeException e) {
-                        commitErr.compareAndSet(null, e);
-
-                        throw e;
-                    }
-                    catch (GridException e) {
-                        commitErr.compareAndSet(null, e);
-
-                        commitFut0.onError(e);
-                    }
+                    if (finish(true))
+                        commitFut0.finish(true);
+                    else
+                        commitFut0.onError(new GridException("Failed to commit transaction: " +
+                            CU.txString(GridDhtColocatedTxLocal.this)));
                 }
-            });
-        }
+                catch (Error | RuntimeException e) {
+                    commitErr.compareAndSet(null, e);
+
+                    throw e;
+                }
+                catch (GridException e) {
+                    commitErr.compareAndSet(null, e);
+
+                    commitFut0.onError(e);
+                }
+            }
+        });
 
         return fut;
     }
@@ -786,6 +760,34 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         if (log.isDebugEnabled())
             log.debug("Added mappings to transaction [locId=" + cctx.nodeId() + ", key=" + key + ", node=" + node +
                 ", tx=" + this + ']');
+    }
+
+    /**
+     * Removes mapping in case of optimistic tx failure on primary node.
+     *
+     * @param failedNodeId Failed node ID.
+     * @param mapQueue Mappings queue.
+     */
+    void removeKeysMapping(UUID failedNodeId, Iterable<GridDistributedTxMapping<K, V>> mapQueue) {
+        assert optimistic();
+        assert failedNodeId != null;
+        assert mapQueue != null;
+
+        mappings.remove(failedNodeId);
+
+        for (GridDistributedTxMapping<K, V> m : mapQueue) {
+            UUID nodeId = m.node().id();
+
+            GridDistributedTxMapping<K, V> mapping = mappings.get(nodeId);
+
+            if (mapping != null) {
+                for (GridCacheTxEntry<K, V> entry : m.entries())
+                    mapping.removeEntry(entry);
+
+                if (mapping.entries().isEmpty())
+                    mappings.remove(nodeId);
+            }
+        }
     }
 
     /**
