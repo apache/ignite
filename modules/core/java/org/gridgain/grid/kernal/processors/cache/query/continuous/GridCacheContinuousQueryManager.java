@@ -114,7 +114,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override protected void stop0(boolean cancel) {
+    @Override protected void onKernalStop0(boolean cancel) {
         U.interrupt(threads);
         U.joinThreads(threads, log);
     }
