@@ -545,7 +545,8 @@ private class VisorCacheDataTask extends VisorConsoleMultiNodeTask[Option[String
                         reads = c.metrics.reads,
                         writes = c.metrics.writes,
 
-                        queries = if (c.queries().queryMetrics == null) None else Some(c.queries().queryMetrics.collect {
+                        queries = None /* TODO GG-7625
+                            if (c.queries().queryMetrics == null) None else Some(c.queries().queryMetrics.collect {
                             case q =>
                                 VisorCacheQueryData(
                                     clause = safe(q.clause.trim, "<n/a>"),
@@ -565,6 +566,7 @@ private class VisorCacheDataTask extends VisorConsoleMultiNodeTask[Option[String
                                 )
                         }.
                             filterNot(_.clsName.contains("datastructures")).toList)
+                        */
                     )
             }.toSeq
         }

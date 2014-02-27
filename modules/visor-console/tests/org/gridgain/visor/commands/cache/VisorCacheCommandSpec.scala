@@ -74,11 +74,11 @@ class VisorCacheCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndA
         c.put(3, Foo(150))
 
         // Create two queries
-        val q1 = c.queries().createQuery(SQL, classOf[Foo], "_key > ?")
-        c.queries().createQuery(SQL, classOf[Foo], "_key = ?")
+        val q1 = c.queries().createSqlQuery(classOf[Foo], "_key > ?")
+        c.queries().createSqlQuery(classOf[Foo], "_key = ?")
 
         // Execute only one query
-        q1.queryArguments(100.asInstanceOf[java.lang.Integer]).execute().get
+        q1.execute(100.asInstanceOf[java.lang.Integer]).get
 
         visor cache "-a"
     }
