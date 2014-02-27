@@ -441,7 +441,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             fut.onPage(null, metadata, data, null, finished);
         }
         else {
-            GridCacheQueryResponse<K, V> res = new GridCacheQueryResponse<>(qryInfo.requestId(), finished, true);
+            GridCacheQueryResponse<K, V> res = new GridCacheQueryResponse<>(qryInfo.requestId(), finished,
+                qryInfo.reducer() == null);
 
             res.metadata(metadata);
             res.data(entities != null ? entities : data);
