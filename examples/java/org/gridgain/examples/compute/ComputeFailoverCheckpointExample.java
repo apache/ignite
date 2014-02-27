@@ -115,7 +115,7 @@ public class ComputeFailoverCheckpointExample {
             System.out.println();
             System.out.println(">>> Finished executing fail-over example with checkpoints.");
             System.out.println(">>> Total number of characters in the phrase is '" + charCnt + "'.");
-            System.out.println(">>> You should see exception stack trace from failed job on remote node.");
+            System.out.println(">>> You should see exception stack trace from failed job on some node.");
             System.out.println(">>> Failed job will be failed over to another node.");
         }
     }
