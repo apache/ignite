@@ -46,22 +46,22 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(Class<?> cls, String clause) {
-        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), (Class<?>)cls, clause);
+        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), (Class<?>)cls, clause, false);
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry) {
-        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), null, qry);
+        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, false);
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<?> cls, String search) {
-        return new GridCacheQueryAdapter<>(ctx, TEXT, filter(), (Class<?>)cls, search);
+        return new GridCacheQueryAdapter<>(ctx, TEXT, filter(), (Class<?>)cls, search, false);
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<Map.Entry<K, V>> createScanQuery() {
-        return new GridCacheQueryAdapter<>(ctx, SCAN, filter(), null, null);
+        return new GridCacheQueryAdapter<>(ctx, SCAN, filter(), null, null, false);
     }
 
     /** {@inheritDoc} */
@@ -79,18 +79,30 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
         return ctx.queries().rebuildAllIndexes();
     }
 
+    /** {@inheritDoc} */
+    @Override public Collection<GridCacheQueryMetrics> metrics() {
+        return null; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetMetrics() {
+        // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridCacheSqlMetadata> sqlMetadata() throws GridException {
+        return ctx.queries().sqlMetadata();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta) {
+        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, incMeta);
+    }
+
     /**
      * @return Optional projection filter.
      */
     @Nullable private GridPredicate<GridCacheEntry<Object, Object>> filter() {
         return prj == null ? null : ((GridCacheProjectionImpl<Object, Object>)prj).predicate();
-    }
-
-    @Override public Collection<GridCacheQueryMetrics> metrics() {
-        return null; // TODO: implement.
-    }
-
-    @Override public void resetMetrics() {
-        // TODO: implement.
     }
 }

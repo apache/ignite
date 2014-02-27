@@ -121,6 +121,13 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         return qry;
     }
 
+    /**
+     * @return If fields query.
+     */
+    boolean fields() {
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean onDone(Collection<R> res, Throwable err) {
         cctx.time().removeTimeoutObject(this);

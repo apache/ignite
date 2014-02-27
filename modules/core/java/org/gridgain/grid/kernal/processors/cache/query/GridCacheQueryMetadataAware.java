@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.query.*;
 
 import java.util.*;
 
@@ -20,12 +19,6 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public interface GridCacheQueriesEx<K, V> extends GridCacheQueries<K, V> {
-    public Collection<GridCacheQueryMetrics> metrics();
-
-    public void resetMetrics();
-
-    public Collection<GridCacheSqlMetadata> sqlMetadata() throws GridException;
-
-    public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta);
+public interface GridCacheQueryMetadataAware {
+    public GridFuture<List<GridCacheSqlFieldMetadata>> metadata();
 }

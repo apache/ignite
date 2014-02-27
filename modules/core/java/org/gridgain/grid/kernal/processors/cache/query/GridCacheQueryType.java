@@ -32,6 +32,11 @@ public enum GridCacheQueryType {
     SQL,
 
     /**
+     * SQL-based fields query.
+     */
+    SQL_FIELDS,
+
+    /**
      * Text search query.
      */
     TEXT;

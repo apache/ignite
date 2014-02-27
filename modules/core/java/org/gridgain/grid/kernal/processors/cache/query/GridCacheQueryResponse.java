@@ -182,6 +182,13 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
         return err;
     }
 
+    /**
+     * @return If fields query.
+     */
+    public boolean fields() {
+        return fields;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("TypeMayBeWeakened")
     @Nullable private Collection<byte[]> marshalFieldsCollection(@Nullable Collection<Object> col,

@@ -84,10 +84,9 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
             try {
                 qry.query().validate();
 
-                // TODO: gg-7625
-//                if (fut.query() instanceof GridCacheFieldsQueryBase)
-//                    mgr.runFieldsQuery(localQueryInfo(fut, single, vis));
-//                else
+                if (fields())
+                    cctx.queries().runFieldsQuery(localQueryInfo());
+                else
                     cctx.queries().runQuery(localQueryInfo());
             }
             catch (Throwable e) {
@@ -108,11 +107,6 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
             GridReducer<Object, Object> rdc = qry.reducer();
             GridClosure<Object, Object> trans = qry.transform();
 
-//            boolean incMeta = false;
-//
-//            if (qry instanceof GridCacheFieldsQueryBase)
-//                incMeta = ((GridCacheFieldsQueryBase)qry).includeMetadata();
-
             return new GridCacheQueryInfo(
                 true,
                 prjPred,
@@ -122,7 +116,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
                 GridCacheLocalQueryFuture.this,
                 null,
                 -1,
-                false, // TODO: gg-7625
+                qry.query().includeMetadata(),
                 true,
                 qry.arguments()
             );

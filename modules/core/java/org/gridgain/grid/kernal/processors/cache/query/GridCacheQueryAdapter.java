@@ -21,6 +21,8 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
+
 /**
  * TODO
  *
@@ -45,6 +47,9 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
 
     /** */
     private final String clause;
+
+    /** */
+    private final boolean incMeta;
 
     /** */
     private int pageSize;
@@ -72,12 +77,13 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      * @param type Query type.
      * @param cls Class.
      * @param clause Clause.
+     * @param incMeta Include metadata flag.
      * @param prjPred Cache projection filter.
      */
     protected GridCacheQueryAdapter(
         GridCacheContext<?, ?> cctx, GridCacheQueryType type,
         @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred,
-        @Nullable Class<?> cls, @Nullable String clause) {
+        @Nullable Class<?> cls, @Nullable String clause, boolean incMeta) {
         assert cctx != null;
         assert type != null;
 
@@ -86,6 +92,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         this.cls = cls;
         this.clause = clause;
         this.prjPred = prjPred;
+        this.incMeta = incMeta;
 
         log = cctx.logger(getClass());
 
@@ -112,10 +119,12 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      * @param filter Key-value filter.
      * @param cls Class.
      * @param clause Clause.
+     * @param incMeta Include metadata flag.
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridPredicate<GridCacheEntry<Object, Object>> prjPred,
         GridCacheQueryType type, GridLogger log, int pageSize, long timeout, boolean keepAll, boolean incBackups,
-        boolean dedup, GridProjection prj, GridBiPredicate<Object, Object> filter, Class<?> cls, String clause) {
+        boolean dedup, GridProjection prj, GridBiPredicate<Object, Object> filter, Class<?> cls, String clause,
+        boolean incMeta) {
         this.cctx = cctx;
         this.prjPred = prjPred;
         this.type = type;
@@ -129,6 +138,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         this.filter = filter;
         this.cls = cls;
         this.clause = clause;
+        this.incMeta = incMeta;
     }
 
     /**
@@ -157,6 +167,13 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      */
     @Nullable public String clause() {
         return clause;
+    }
+
+    /**
+     * @return Include metadata flag.
+     */
+    public boolean includeMetadata() {
+        return incMeta;
     }
 
     /** {@inheritDoc} */
@@ -285,6 +302,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      * @param args Arguments.
      * @return Future.
      */
+    @SuppressWarnings("IfMayBeConditional")
     private <R> GridCacheQueryFuture<R> execute(@Nullable GridReducer<T, R> rmtReducer,
         @Nullable GridClosure<T, R> rmtTransform, @Nullable Object... args) {
         Collection<GridNode> nodes = nodes();
@@ -307,8 +325,13 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
 
         GridCacheQueryManager qryMgr = cctx.queries();
 
-        return (GridCacheQueryFuture<R>)(nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId()) ?
-            qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
+        boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
+
+        if (type == SQL_FIELDS)
+            return (GridCacheQueryFuture<R>)(loc ? qryMgr.queryFieldsLocal(bean) :
+                qryMgr.queryFieldsDistributed(bean, nodes));
+        else
+            return (GridCacheQueryFuture<R>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
     }
 
     /**

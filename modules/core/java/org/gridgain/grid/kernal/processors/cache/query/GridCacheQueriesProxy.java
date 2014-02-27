@@ -22,7 +22,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridCacheQueriesProxy<K, V> implements GridCacheQueries<K, V> {
+public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V> {
     /** */
     private GridCacheGateway<K, V> gate;
 
@@ -30,7 +30,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueries<K, V> {
     private GridCacheProjectionImpl<K, V> prj;
 
     /** */
-    private GridCacheQueries<K, V> delegate;
+    private GridCacheQueriesEx<K, V> delegate;
 
     /**
      * Create cache queries implementation.
@@ -40,7 +40,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueries<K, V> {
      * @param delegate Delegate object.
      */
     public GridCacheQueriesProxy(GridCacheContext<K, V> ctx, @Nullable GridCacheProjectionImpl<K, V> prj,
-        GridCacheQueries<K, V> delegate) {
+        GridCacheQueriesEx<K, V> delegate) {
         assert ctx != null;
         assert delegate != null;
 
@@ -128,6 +128,54 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueries<K, V> {
 
         try {
             return delegate.rebuildAllIndexes();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridCacheQueryMetrics> metrics() {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.metrics();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetMetrics() {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            delegate.resetMetrics();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridCacheSqlMetadata> sqlMetadata() throws GridException {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.sqlMetadata();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.createSqlFieldsQuery(qry, incMeta);
         }
         finally {
             gate.leave(prev);
