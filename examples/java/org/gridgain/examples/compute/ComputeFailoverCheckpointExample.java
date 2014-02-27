@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.compute;
 
+import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
@@ -100,29 +101,22 @@ public class ComputeFailoverCheckpointExample {
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start(CONFIG)) {
-            GridFuture<Integer> f = g.compute().apply(new CheckPointJob(), "Stage1 Stage2 Stage3");
+            if (!ExamplesUtils.checkMinTopologySize(g, 2))
+                return;
+
+            System.out.println();
+            System.out.println("Job failover and checkpoint example started.");
+
+            GridFuture<Integer> f = g.compute().apply(new CheckPointJob(), "Stage1 Stage2");
 
             // Number of letters.
             int charCnt = f.get();
 
-            System.out.println(">>>");
-
-            if (charCnt < 0) {
-                System.out.println(">>> \"Hello World\" checkpoint example finished with wrong result.");
-                System.out.println(">>> Checkpoint was not found. Make sure that Checkpoint SPI on all nodes ");
-                System.out.println(">>> has the same configuration (the 'directoryPath' configuration parameter for");
-                System.out.println(">>> GridSharedFsCheckpointSpi on all nodes should point to the same location).");
-            }
-            else {
-                System.out.println(">>> Finished executing fail-over example with checkpoints.");
-                System.out.println(">>> Total number of characters in the phrase is '" + charCnt + "'.");
-                System.out.println(">>> You should see exception stack trace from failed job on one node.");
-                System.out.println(">>> Failed job will be failed over to another node.");
-                System.out.println(">>> You should see print out of 'Hello World' on another node.");
-                System.out.println(">>> Check all nodes for output (this node is also part of the grid).");
-            }
-
-            System.out.println(">>>");
+            System.out.println();
+            System.out.println(">>> Finished executing fail-over example with checkpoints.");
+            System.out.println(">>> Total number of characters in the phrase is '" + charCnt + "'.");
+            System.out.println(">>> You should see exception stack trace from failed job on some node.");
+            System.out.println(">>> Failed job will be failed over to another node.");
         }
     }
 
@@ -149,6 +143,9 @@ public class ComputeFailoverCheckpointExample {
          * Otherwise, it will execute the grid-enabled method.
          */
         @Override public Integer apply(String phrase) {
+            System.out.println();
+            System.out.println(">>> Executing fail-over example job.");
+
             this.phrase = phrase;
 
             List<String> words = Arrays.asList(phrase.split(" "));
@@ -169,17 +166,21 @@ public class ComputeFailoverCheckpointExample {
                     sum = state.get2();
                 }
 
-                for (int i = idx + 1; i < words.size(); i++) {
+                for (int i = idx; i < words.size(); i++) {
                     sum += words.get(i).length();
 
-                    this.state = new GridBiTuple<>(i, sum);
+                    this.state = new GridBiTuple<>(i + 1, sum);
 
                     // Save checkpoint with scope of task execution.
                     // It will be automatically removed when task completes.
                     jobSes.saveCheckpoint(cpKey, state);
 
-                    // For example purposes, we fail on purpose after every stage.
-                    throw new GridRuntimeException("Expected example job exception.");
+                    System.out.println(">>> Job will be failed over to another node.");
+
+                    // For example purposes, we fail on purpose after first stage.
+                    // This exception will cause job to be failed over to another node.
+                    if (i == 0)
+                        throw new GridRuntimeException("Expected example job exception.");
                 }
 
                 return sum;
@@ -196,9 +197,12 @@ public class ComputeFailoverCheckpointExample {
          * @throws GridException If failed.
          */
         @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
-            if (state != null)
+            if (state != null) {
+                System.out.println(">>> Executing callback due to master node failure.");
+
                 // Save checkpoint with global scope, so another task execution can pick it up.
                 ses.saveCheckpoint(checkpointKey(), state, GridComputeTaskSessionScope.GLOBAL_SCOPE, 0);
+            }
         }
 
         /**
