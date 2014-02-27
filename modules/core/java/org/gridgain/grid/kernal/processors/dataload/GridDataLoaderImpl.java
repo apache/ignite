@@ -902,11 +902,11 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
                 if (ctx.deploy().enabled()) {
                     try {
-                        dep = ctx.deploy().deploy(jobPda0.deployClass(), jobPda0.classLoader());
-
                         jobPda0 = jobPda;
 
                         assert jobPda0 != null;
+
+                        dep = ctx.deploy().deploy(jobPda0.deployClass(), jobPda0.classLoader());
                     }
                     catch (GridException e) {
                         U.error(log, "Failed to deploy class (request will not be sent): " + jobPda0.deployClass(), e);
