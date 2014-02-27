@@ -29,20 +29,6 @@ GridClientConfiguration clientConfiguration() {
 //
 //    servers.push_back(GridSocketAddress(SERVER_ADDRESS, GridClientProtocolConfiguration::DFLT_HTTP_PORT));
 
-//    To enable communication over SSL uncomment the following lines.
-//    ================================
-//    GridGain node should be started with config examples/config/example-cache-ssl.xml .
-//
-//    GridClientProtocolConfiguration protoCfg;
-//
-//    protoCfg.sslEnabled(true);
-//
-//    protoCfg.certificateFilePath("examples/keystore/client.pem");
-//
-//    protoCfg.certificateFilePassword("123456");
-//
-//    clientConfig.setProtocolConfiguration(protoCfg);
-
     for (int i = TCP_PORT; i < TCP_PORT + MAX_NODES; i++)
         servers.push_back(GridSocketAddress(SERVER_ADDRESS, i));
 

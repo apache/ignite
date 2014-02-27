@@ -23,7 +23,9 @@ import java.util.*;
  */
 public interface GridMessaging {
     /**
-     * @return TODO
+     * Gets grid projection to which this {@code GridMessaging} instance belongs.
+     *
+     * @return Grid projection to which this {@code GridMessaging} instance belongs.
      */
     public GridProjection projection();
 

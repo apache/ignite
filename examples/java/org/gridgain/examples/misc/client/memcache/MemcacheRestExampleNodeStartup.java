@@ -64,6 +64,7 @@ public class MemcacheRestExampleNodeStartup {
 
         marsh.setRequireSerializable(false);
 
+        cfg.setMarshaller(marsh);
 
         GridH2IndexingSpi indexSpi = new GridH2IndexingSpi();
 
@@ -79,6 +80,7 @@ public class MemcacheRestExampleNodeStartup {
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setPreloadMode(SYNC);
+        cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setCacheConfiguration(cacheCfg);
 

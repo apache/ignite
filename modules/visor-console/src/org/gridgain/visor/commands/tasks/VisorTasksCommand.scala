@@ -20,13 +20,13 @@ import org.gridgain.grid.util.typedef.X
 import org.gridgain.grid.lang.GridPredicate
 import org.gridgain.grid.kernal.processors.task.GridInternal
 import org.gridgain.grid.util.{GridUtils => U, GridUuid}
-import org.gridgain.scalar._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor._
 import visor._
 import collection.immutable._
 import collection.JavaConversions._
 import scala.util.control.Breaks._
+import org.gridgain.visor.commands.{VisorConsoleUtils => CU}
 
 /**
  * Task execution state.
@@ -239,21 +239,10 @@ private case class Task(
 class VisorContainsFilter(n: Long, s: String) extends GridPredicate[GridEvent] {
     override def apply(e: GridEvent): Boolean = {
         (e.timestamp >= System.currentTimeMillis - n) && (e match {
-            case te: GridTaskEvent => !contains(te.taskName(), s)
-            case je: GridJobEvent => !contains(je.taskName(), s)
+            case te: GridTaskEvent => !CU.containsInTaskName(te.taskName(), te.taskClassName(), s)
+            case je: GridJobEvent => !CU.containsInTaskName(je.taskName(), je.taskClassName(), s)
             case _ => false
         })
-    }
-
-    /**
-     * Tests whether or not this task host has `visor` substring in it.
-     *
-     * @param taskName Task host to check.
-     */
-    private def contains(taskName: String, s: String): Boolean = {
-        assert(taskName != null)
-
-        taskName.toLowerCase.contains(s)
     }
 }
 
@@ -1139,17 +1128,6 @@ class VisorTasksCommand {
                     break()
             }
         }
-    }
-
-    /**
-     * Tests whether or not this task host has `visor` substring in it.
-     *
-     * @param taskName Task host to check.
-     */
-    private def isVisor(taskName: String): Boolean = {
-        assert(taskName != null)
-
-        taskName.toLowerCase.contains("visor")
     }
 
     /**
