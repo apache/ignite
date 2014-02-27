@@ -314,6 +314,12 @@ public:
      */
     virtual void sendPing();
 
+    /**
+     * Closes connection.
+     */
+    virtual void close();
+
+
 private:
     /**
      * Performs a handshake with server.

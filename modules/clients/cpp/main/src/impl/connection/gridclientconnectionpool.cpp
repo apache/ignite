@@ -56,7 +56,6 @@ std::shared_ptr<GridClientTcpConnection> GridClientConnectionPool::rentTcpConnec
     }
 
     // If no any available connection, we create and return a new one.
-
     try {
         if (!protoCfg.sslEnabled())
 //      TODO: GG-7677 move that to configuration ( sync, async, raw connection modes )

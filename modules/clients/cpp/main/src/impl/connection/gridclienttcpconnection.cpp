@@ -396,7 +396,6 @@ void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket,
 
         //read headers from header buffer
         result.setAdditionalHeadersAndData((int8_t*)pBuffer, nBytes);
-        //      std::cout << "Bytes Read " << nBytes + GridClientTcpPacket::BASIC_HEADER_SIZE << std::endl;
     }
     else
     {
@@ -695,14 +694,9 @@ void GridClientRawSyncTcpConnection::connect(const string& pHost, int pPort) {
         //Create socket
         sock = socket(AF_INET, SOCK_STREAM, 0);
         if (sock == -1) {
-            perror("Could not create socket.");
-
-            exit(-1);
+            std::cout << "Could not create socket" << std::endl;
+            exit(1);
         }
-
-        cout << "Socket created\n";
-    } else { /* OK , nothing */
-        cout << "Socket already created\n";
     }
 
     //setup address structure
@@ -712,10 +706,7 @@ void GridClientRawSyncTcpConnection::connect(const string& pHost, int pPort) {
 
         //resolve the hostname, its not an ip address
         if ((he = gethostbyname(address.c_str())) == NULL) {
-            //gethostbyname failed
-            herror("gethostbyname");
-            cout << "Failed to resolve hostname\n";
-
+            std::cout << "Failed to resolve hostname" << std::endl;
             return ;
         }
 
@@ -723,11 +714,7 @@ void GridClientRawSyncTcpConnection::connect(const string& pHost, int pPort) {
         addr_list = (struct in_addr **) he->h_addr_list;
 
         for (int i = 0; addr_list[i] != NULL; i++) {
-            //strcpy(ip , inet_ntoa(*addr_list[i]) );
             server.sin_addr = *addr_list[i];
-
-            cout << address << " resolved to " << inet_ntoa(*addr_list[i]) << endl;
-
             break;
         }
     }
@@ -742,15 +729,11 @@ void GridClientRawSyncTcpConnection::connect(const string& pHost, int pPort) {
 
     //Connect to remote server
     if (::connect(sock, (struct sockaddr *) &server, sizeof(server)) < 0) {
-        perror("connect failed. Error");
+        std::cout << "Connect failed." << std::endl;
         return;
     }
 
-    cout << "Connected, calling handshake()\n";
-
     handshake();
-
-    cout << "Connected, handshake complete\n";
 
     return;
 }
@@ -837,7 +820,7 @@ void GridClientRawSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPack
     pBufferToConstruct += gridTcpPacket.destinationIdHeader.size();
     memcpy(pBufferToConstruct,gridTcpPacket.data.data(), gridTcpPacket.data.size());
 
-    int bytesSent = ::send(sock, pBufferToSend, bytesToSend, 0);
+    int bytesSent = ::send(sock, (const char *) pBufferToSend, bytesToSend, 0);
 
     delete[] pBufferToSend;
 
@@ -854,7 +837,7 @@ void GridClientRawSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPack
         int8_t headerBuffer[GridClientTcpPacket::BASIC_HEADER_SIZE];
         memset (headerBuffer, 0, GridClientTcpPacket::BASIC_HEADER_SIZE);
 
-        int bytesRead = ::recv(sock, headerBuffer, GridClientTcpPacket::BASIC_HEADER_SIZE, 0);
+        int bytesRead = ::recv(sock, (char *) headerBuffer, GridClientTcpPacket::BASIC_HEADER_SIZE, 0);
 
 
         // Check error.
@@ -891,7 +874,7 @@ void GridClientRawSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPack
         recvBuffer->bufferLen = packetSize;
     }
 
-    nBytes = ::recv(sock, recvBuffer->pBuffer, packetSize, 0);
+    nBytes = ::recv(sock, (char *) recvBuffer->pBuffer, packetSize, 0);
 
     if (nBytes < 0 || nBytes < packetSize) {
         GG_LOG_AND_THROW(GridClientConnectionResetException,
@@ -908,18 +891,29 @@ void GridClientRawSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPack
 
 /**
  * Non-SSL TCP connection constructor.
- *
  */
 GridClientRawSyncTcpConnection::GridClientRawSyncTcpConnection() : sock (-1) {
 }
 
 /**
- * Donstructor.
- *
+ * Destructor.
  */
 GridClientRawSyncTcpConnection::~GridClientRawSyncTcpConnection() {
-	if (sock != -1)
-		::close(sock);
+    close();
+}
+
+/**
+ * closes connection.
+ */
+void GridClientRawSyncTcpConnection::close()
+{
+    if (sock != -1)
+#ifdef _MSC_VER
+        ::closesocket(sock);
+#else
+        ::close(sock);
+#endif
+
 }
 
 
@@ -943,7 +937,7 @@ void GridClientRawSyncTcpConnection::sendPing() {
     pBufferToConstruct += sizeof(GridClientTcpPacket::SIGNAL_CHAR);
     memcpy(pBufferToConstruct,(const void*)pingPacket.sizeHeader.data(), sizeof(int32_t));
 
-    int bytesSent = ::send(sock, pBufferToSend, bytesToSend, 0);
+    int bytesSent = ::send(sock, (const char *) pBufferToSend, bytesToSend, 0);
 
     delete[] pBufferToSend;
 
@@ -964,7 +958,7 @@ void GridClientRawSyncTcpConnection::handshake() {
 
     memcpy (handshakeBuffer,(const char*)HANDSHAKE_PACKET, sizeof(HANDSHAKE_PACKET));
 
-    int bytesSent = ::send(sock, handshakeBuffer, sizeof(HANDSHAKE_PACKET), 0);
+    int bytesSent = ::send(sock, (const char *) handshakeBuffer, sizeof(HANDSHAKE_PACKET), 0);
 
     if (bytesSent != sizeof(HANDSHAKE_PACKET))
         GG_LOG_AND_THROW(GridClientConnectionResetException,
@@ -974,7 +968,7 @@ void GridClientRawSyncTcpConnection::handshake() {
 
     GG_LOG_DEBUG("Successfully sent a handshake packet [host=%s, port=%d]", host.c_str(), port);
 
-    int bytesRead = ::recv(sock, handshakeBuffer, 1, 0);
+    int bytesRead = ::recv(sock, (char *) handshakeBuffer, 1, 0);
 
     if (bytesRead < 1)
         GG_LOG_AND_THROW(GridClientConnectionResetException,
