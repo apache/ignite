@@ -8,9 +8,13 @@
  */
 #include "gridgain/impl/utils/gridclientdebug.hpp"
 
+#ifdef _MSC_VER
+#include <winsock2.h>
+#else
 #include <sys/socket.h>    //socket
 #include <arpa/inet.h> //inet_addr
 #include <netdb.h> //hostent
+#endif
 
 #include <iostream>
 #include <deque>
@@ -901,6 +905,23 @@ void GridClientRawSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPack
     //read headers from header buffer
     result.setAdditionalHeadersAndData((int8_t*)recvBuffer->pBuffer, nBytes);
 }
+
+/**
+ * Non-SSL TCP connection constructor.
+ *
+ */
+GridClientRawSyncTcpConnection::GridClientRawSyncTcpConnection() : sock (-1) {
+}
+
+/**
+ * Donstructor.
+ *
+ */
+GridClientRawSyncTcpConnection::~GridClientRawSyncTcpConnection() {
+	if (sock != -1)
+		::close(sock);
+}
+
 
 /**
  * Sends a TCP ping packet over connection.

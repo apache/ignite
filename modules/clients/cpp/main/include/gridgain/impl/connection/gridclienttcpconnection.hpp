@@ -270,7 +270,13 @@ public:
      * Non-SSL TCP connection constructor.
      *
      */
-    GridClientRawSyncTcpConnection() { sock = -1; }
+    GridClientRawSyncTcpConnection();
+
+    /**
+     * Donstructor.
+     *
+     */
+    ~GridClientRawSyncTcpConnection();
 
     /**
      * Connect to a host/port.
