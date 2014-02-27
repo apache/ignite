@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.events;
 
+import org.gridgain.examples.datagrid.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
@@ -26,7 +27,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * Remote nodes should always be started with configuration file which includes
  * cache: {@code 'ggstart.sh examples/config/example-cache.xml'}.
  * <p>
- * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will start
+ * Alternatively you can run {@link CacheNodeStartup} in another JVM which will start
  * GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author
@@ -66,11 +67,13 @@ public class EventsApiExample {
         Grid g = GridGain.grid();
 
         // Register event listener for all local task execution events.
-        g.events().addLocalListener(new GridLocalEventListener() {
-            @Override public void onEvent(GridEvent evt) {
-                GridTaskEvent taskEvt = (GridTaskEvent)evt;
+        g.events().localListen(new GridPredicate<GridEvent>() {
+            @Override public boolean apply(GridEvent evt) {
+                GridTaskEvent taskEvt = (GridTaskEvent) evt;
 
                 System.out.println("Git event notification [evt=" + evt.name() + ", taskName=" + taskEvt.taskName() + ']');
+
+                return true;
             }
         }, EVTS_TASK_EXECUTION);
 
@@ -93,7 +96,7 @@ public class EventsApiExample {
         GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
         // Register remote event listeners on all nodes running cache.
-        GridFuture<?> fut = g.forCache(CACHE_NAME).events().consumeRemote(
+        GridFuture<?> fut = g.forCache(CACHE_NAME).events().remoteListen(
             // This optional local callback is called for each event notification
             // that passed remote predicate filter.
             new GridBiPredicate<UUID, GridCacheEvent>() {

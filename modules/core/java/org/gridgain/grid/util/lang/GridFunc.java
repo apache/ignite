@@ -24,6 +24,7 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.math.*;
 import java.util.*;
+import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -1563,9 +1564,9 @@ public class GridFunc {
      * Note that this method doesn't create a new collection but simply iterates over the input one.
      *
      * @param res Collection of grid job res.
-     * @param <T> Type of the data item to cast to. See {@link org.gridgain.grid.compute.GridComputeJobResult#getData()} method.
+     * @param <T> Type of the data item to cast to. See {@link GridComputeJobResult#getData()} method.
      * @return Collections of data items casted to type {@code T}.
-     * @see org.gridgain.grid.compute.GridComputeJobResult#getData()
+     * @see GridComputeJobResult#getData()
      */
     public static <T> Collection<T> jobResults(@Nullable Collection<? extends GridComputeJobResult> res) {
         if (isEmpty(res))
@@ -4510,7 +4511,7 @@ public class GridFunc {
      *      is thrown.
      * @param <T> Type of the collection.
      * @return Out closure that wraps access to input collection.
-     * @see #jobProducer(org.gridgain.grid.compute.GridComputeJob[], boolean)
+     * @see #jobProducer(GridComputeJob[], boolean)
      */
     public static <T> GridOutClosure<T> producer(final Iterable<? extends T> c, final boolean cyclic) {
         A.notNull(c, "c");
@@ -4547,7 +4548,7 @@ public class GridFunc {
      *      is thrown.
      * @param <T> Type of the collection.
      * @return Out closure that wraps access to input collection.
-     * @see #jobProducer(org.gridgain.grid.compute.GridComputeJob[], boolean)
+     * @see #jobProducer(GridComputeJob[], boolean)
      */
     public static <T> GridOutClosure<T> producer(T[] c, boolean cyclic) {
         A.notNull(c, "c");
@@ -4556,9 +4557,9 @@ public class GridFunc {
     }
 
     /**
-     * Gets closure that wraps access to the given collection of {@link org.gridgain.grid.compute.GridComputeJob} instances.
+     * Gets closure that wraps access to the given collection of {@link GridComputeJob} instances.
      * Every time resulting closure is called it will return the next job in the input collection.
-     * Note that this method will wrap job from input collection using {@link org.gridgain.grid.compute.GridComputeJobWrapper}
+     * Note that this method will wrap job from input collection using {@link GridComputeJobWrapper}
      * class before returning it. It is convenient when the resulting closure is used to produce
      * jobs that server as map's keys.
      *
@@ -4576,9 +4577,9 @@ public class GridFunc {
     }
 
     /**
-     * Gets closure that wraps access to the given collection of {@link org.gridgain.grid.compute.GridComputeJob} instances.
+     * Gets closure that wraps access to the given collection of {@link GridComputeJob} instances.
      * Every time resulting closure is called it will return the next job in the input collection.
-     * Note that this method will wrap job from input collection using {@link org.gridgain.grid.compute.GridComputeJobWrapper}
+     * Note that this method will wrap job from input collection using {@link GridComputeJobWrapper}
      * class before returning it. It is convenient when the resulting closure is used to produce
      * jobs that server as map's keys.
      *
@@ -6296,7 +6297,7 @@ public class GridFunc {
      * @see #meta(String...)
      * @see #meta(Iterable)
      * @see #meta(String, Object)
-     * @see #metaEntry(java.util.Map.Entry[])
+     * @see #metaEntry(Entry[])
      * @see #metaEntry(Collection)
      */
     public static <T extends GridMetadataAware> GridPredicate<T> meta(@Nullable Map<String, ?> meta) {
@@ -6319,7 +6320,7 @@ public class GridFunc {
      * @param <T> Type of returned predicate.
      * @return Predicate that accepts subclass of {@link GridMetadataAware} interface
      *      and evaluates to {@code true} if it contains given metadata.
-     * @see #metaEntry(java.util.Map.Entry[])
+     * @see #metaEntry(Entry[])
      * @see #meta(String...)
      * @see #meta(Iterable)
      */
@@ -8032,13 +8033,13 @@ public class GridFunc {
     }
 
     /**
-     * Gets utility predicate that accepts {@link java.util.Map.Entry} value and compares
+     * Gets utility predicate that accepts {@link Entry} value and compares
      * its value to the given value.
      *
      * @param val Value to compare entry's value.
      * @param <K> Map key type.
      * @param <V> Map value type.
-     * @return Predicate that accepts {@link java.util.Map.Entry} value and compares its value
+     * @return Predicate that accepts {@link Entry} value and compares its value
      *      to the given value.
      */
     public static <K, V> GridPredicate<Map.Entry<K, V>> mapValue(@Nullable final V val) {
@@ -8501,7 +8502,7 @@ public class GridFunc {
 
     /**
      * Gets closure that returns key for an entry. The closure internally
-     * delegates to {@link java.util.Map.Entry#getKey()} method.
+     * delegates to {@link Entry#getKey()} method.
      *
      * @param <K> Key type.
      * @return Closure that returns key for an entry.
@@ -8513,7 +8514,7 @@ public class GridFunc {
 
     /**
      * Gets closure that returns key for cache entry. The closure internally
-     * delegates to {@link java.util.Map.Entry#getKey()} method.
+     * delegates to {@link Entry#getKey()} method.
      *
      * @param <K> Key type.
      * @return Closure that returns key for an entry.
@@ -8525,7 +8526,7 @@ public class GridFunc {
 
     /**
      * Gets closure that returns value for an entry. The closure internally
-     * delegates to {@link java.util.Map.Entry#getValue()} method.
+     * delegates to {@link Entry#getValue()} method.
      *
      * @param <V> Value type.
      * @return Closure that returns key for an entry.

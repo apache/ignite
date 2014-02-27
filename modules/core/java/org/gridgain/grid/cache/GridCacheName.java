@@ -10,6 +10,7 @@
 package org.gridgain.grid.cache;
 
 import org.gridgain.grid.cache.affinity.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
 
 import java.lang.annotation.*;
@@ -17,7 +18,7 @@ import java.util.concurrent.*;
 
 /**
  * Allows to specify cache name from grid computations. It is used to provide cache name
- * for affinity routing of grid computations, such as {@link org.gridgain.grid.compute.GridComputeJob}, {@link Runnable},
+ * for affinity routing of grid computations, such as {@link GridComputeJob}, {@link Runnable},
  * {@link Callable}, or {@link GridClosure}. It should be used only in conjunction with
  * {@link GridCacheAffinityMapped @GridCacheAffinityMapped} annotation, and should be attached to a method or field
  * that provides cache name for the computation. Only one annotation per class
