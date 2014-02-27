@@ -28,15 +28,16 @@ import org.gridgain.grid.lang.*;
  */
 public class ComputeScheduleExample {
     /**
-     * Executes scheduling example.
+     * Executes example.
      *
-     * @param args Command line arguments, none required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      {@code "examples/config/"} for configuration file examples.
+     * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException, InterruptedException {
-        try (Grid g = args.length == 0 ? GridGain.start("examples/config/example-compute.xml") : GridGain.start(args[0])) {
+        try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
+            System.out.println();
+            System.out.println("Compute schedule example started.");
+
             // Schedule output message every minute.
             g.scheduler().scheduleLocal(
                 new Runnable() {
@@ -44,6 +45,7 @@ public class ComputeScheduleExample {
                         try {
                             g.compute().broadcast(new GridRunnable() {
                                 @Override public void run() {
+                                    System.out.println();
                                     System.out.println("Howdy! :)");
                                 }
                             }).get();
@@ -60,6 +62,7 @@ public class ComputeScheduleExample {
             Thread.sleep(1000 * 60 * 3);
 
             // Prints.
+            System.out.println();
             System.out.println(">>> Check all nodes for hello message output.");
         }
     }

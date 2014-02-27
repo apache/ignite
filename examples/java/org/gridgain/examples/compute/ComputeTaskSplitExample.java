@@ -9,44 +9,31 @@ import java.util.*;
 /**
  * Demonstrates a simple use of GridGain grid with {@link org.gridgain.grid.compute.GridComputeTaskSplitAdapter}.
  * <p>
- * String "Hello Grid Enabled World!" is passed as an argument to
- * {@link GridCompute#execute(String, Object)} method.
- * This method also takes as an argument a task instance, which splits the
- * string into words and wraps each word into a child job, which prints
- * the word to standard output and returns the word length. Those jobs
- * are then distributed among the running nodes. The {@code reduce(...)}
- * method then receives all job results and sums them up. The result
- * of task execution is the number of non-space characters in the
- * sentence that is passed in. All nodes should also print out the words
- * that were processed on them.
+ * Phrase passed as task argument is split into jobs eahc taking one word. Then jobs are distributed among
+ * grid nodes. Each node computes word length and returns result to master node where total phrase length
+ * is calculated on reduce stage.
  * <p>
- * <h1 class="header">Starting Remote Nodes</h1>
- * To try this example you should (but don't have to) start remote grid instances.
- * You can start as many as you like by executing the following script:
- * <pre class="snippet">{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-compute.xml</pre>
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
+ * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-compute.xml} configuration.
- * <p>
- * Once remote instances are started, you can execute this example from
- * Eclipse, IntelliJ IDEA, or NetBeans (and any other Java IDE) by simply hitting run
- * button. You will see that all nodes discover each other and
- * some of the nodes will participate in task execution (check node
- * output).
  *
  * @author @java.author
  * @version @java.version
  */
 public class ComputeTaskSplitExample {
     /**
-     * Execute {@code HelloWorld} example with {@link org.gridgain.grid.compute.GridComputeTaskSplitAdapter}.
+     * Executes example.
      *
-     * @param args Command line arguments, none required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      {@code "examples/config/"} for configuration file examples.
+     * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
+            System.out.println();
+            System.out.println("Compute task split example started.");
+
             // Execute task on the grid and wait for its completion.
             int cnt = g.compute().execute(CharacterCountTask.class, "Hello Grid Enabled World!").get();
 
