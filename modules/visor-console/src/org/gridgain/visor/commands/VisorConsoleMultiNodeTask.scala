@@ -33,7 +33,7 @@ trait VisorConsoleMultiNodeTask[A, R] extends GridComputeTask[A, R] {
     /**
      * Create job for specified argument.
      *
-     * @param arg Job argumnet.
+     * @param arg Job argument.
      * @return Job that will be mapped to nodes.
      */
     protected def job(arg: A): GridComputeJob

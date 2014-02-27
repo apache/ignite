@@ -898,11 +898,14 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
                 }
 
                 GridDeployment dep = null;
-
-                GridPeerDeployAware jobPda0 = jobPda;
+                GridPeerDeployAware jobPda0 = null;
 
                 if (ctx.deploy().enabled()) {
                     try {
+                        jobPda0 = jobPda;
+
+                        assert jobPda0 != null;
+
                         dep = ctx.deploy().deploy(jobPda0.deployClass(), jobPda0.classLoader());
                     }
                     catch (GridException e) {
@@ -999,7 +1002,11 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
             if (errBytes != null) {
                 try {
-                    err = ctx.config().getMarshaller().unmarshal(errBytes, jobPda.classLoader());
+                    GridPeerDeployAware jobPda0 = jobPda;
+
+                    err = ctx.config().getMarshaller().unmarshal(
+                        errBytes,
+                        jobPda0 != null ? jobPda0.classLoader() : U.gridClassLoader());
                 }
                 catch (GridException e) {
                     f.onDone(null, new GridException("Failed to unmarshal response.", e));
