@@ -1048,31 +1048,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         @Nullable Collection<?> data,
         boolean finished, @Nullable Throwable e);
 
-//    /**
-//     *
-//     * @param qry Query to validate.
-//     * @throws GridException In case of validation error.
-//     */
-//    public void validateQuery(GridCacheQueryBase<?, ?, GridCacheQueryBase> qry) throws GridException {
-//        if (log.isDebugEnabled())
-//            log.debug("Validating query: " + qry);
-//
-//        if (!(qry instanceof GridCacheFieldsQueryBase) && qry.type() == null)
-//            throw new GridException("Type must be set for query.");
-//
-//        if (qry.type() == SQL || qry.type() == TEXT)
-//            if (F.isEmpty(qry.className()))
-//                throw new GridException("Class must be set for " + qry.type().name() + " query.");
-//
-//        if (qry.type() == SQL || qry.type() == TEXT || qry instanceof GridCacheFieldsQueryBase) {
-//            if (F.isEmpty(qry.clause()))
-//                throw new GridException("Clause must be set for " + qry.type().name() + " query.");
-//
-//            if (!cctx.config().isQueryIndexEnabled())
-//                throw new GridException("Indexing is disabled for cache: " + cctx.cache().name());
-//        }
-//    }
-
     /**
      * Checks if a given query class is a Java primitive or wrapper
      * and throws {@link IllegalStateException} if there is configured {@link GridH2IndexingSpi}

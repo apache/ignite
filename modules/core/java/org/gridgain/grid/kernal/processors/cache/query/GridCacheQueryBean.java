@@ -65,6 +65,8 @@ public class GridCacheQueryBean {
      * @return Transformer.
      */
     @Nullable public GridClosure<Object, Object> transform() {
+
+
         return trans;
     }
 

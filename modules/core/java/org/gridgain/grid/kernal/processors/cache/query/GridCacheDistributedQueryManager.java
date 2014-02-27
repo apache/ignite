@@ -662,6 +662,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         if (locNode != null) {
             cctx.closures().callLocalSafe(new Callable<Object>() {
                 @Override public Object call() throws Exception {
+                    req.beforeLocalExecution(cctx);
+
                     processQueryRequest(locNodeId, req);
 
                     return null;

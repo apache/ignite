@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 
@@ -96,16 +97,22 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
 
         /**
          * @return Query info.
+         * @throws GridException In case of error.
          */
         @SuppressWarnings({"unchecked"})
-        private GridCacheQueryInfo localQueryInfo() {
+        private GridCacheQueryInfo localQueryInfo() throws GridException {
             GridCacheQueryBean qry = query();
 
             GridPredicate<GridCacheEntry<Object, Object>> prjPred = qry.query().projectionFilter() == null ?
                 F.<GridCacheEntry<Object, Object>>alwaysTrue() : qry.query().projectionFilter();
 
-            GridReducer<Object, Object> rdc = qry.reducer();
-            GridClosure<Object, Object> trans = qry.transform();
+            GridMarshaller marsh = cctx.marshaller();
+
+            GridReducer<Object, Object> rdc = qry.reducer() != null ?
+                marsh.<GridReducer<Object, Object>>unmarshal(marsh.marshal(qry.reducer()), null) : null;
+
+            GridClosure<Object, Object> trans = qry.transform() != null ?
+                marsh.<GridClosure<Object, Object>>unmarshal(marsh.marshal(qry.transform()), null) : null;
 
             return new GridCacheQueryInfo(
                 true,

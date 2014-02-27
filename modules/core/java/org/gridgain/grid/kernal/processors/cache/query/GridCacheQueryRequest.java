@@ -258,6 +258,17 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     }
 
     /**
+     * @param ctx Context.
+     * @throws GridException In case of error.
+     */
+    void beforeLocalExecution(GridCacheContext<K, V> ctx) throws GridException {
+        GridMarshaller marsh = ctx.marshaller();
+
+        rdc = rdc != null ? marsh.<GridReducer<Object, Object>>unmarshal(marsh.marshal(rdc), null) : null;
+        trans = trans != null ? marsh.<GridClosure<Object, Object>>unmarshal(marsh.marshal(trans), null) : null;
+    }
+
+    /**
      * @return Request id.
      */
     public long id() {

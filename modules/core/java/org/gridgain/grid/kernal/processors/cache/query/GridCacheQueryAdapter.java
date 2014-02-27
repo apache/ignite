@@ -276,7 +276,8 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      * @throws GridException If query is invalid.
      */
     public void validate() throws GridException {
-        // TODO: gg-7625
+        if (type != SCAN && !cctx.config().isQueryIndexEnabled())
+            throw new GridException("Indexing is disabled for cache: " + cctx.cache().name());
     }
 
     /**
