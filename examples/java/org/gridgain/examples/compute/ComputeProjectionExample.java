@@ -50,6 +50,14 @@ public class ComputeProjectionExample {
 
             // Say hello to all nodes residing on the same host with random node.
             sayHello(grid.forHost(randomNode.node()));
+
+            // Say hello to all nodes that have "worker" attribute define and
+            // have current CPU load less than 50%.
+            sayHello(grid.forPredicate(new GridPredicate<GridNode>() {
+                @Override public boolean apply(GridNode n) {
+                    return n.attribute("worker") != null && n.metrics().getCurrentCpuLoad() < 0.5;
+                }
+            }));
         }
     }
 
