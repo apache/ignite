@@ -24,7 +24,8 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 /**
  * This example shows usage of {@link GridGgfsHadoopFileSystem Hadoop FS driver}.
  * <p>
- * Before running this example you must start remote node using {@link GgfsEndpointNodeStartup}.
+ * Before running this example you must start at least one remote node using
+ * {@link GgfsEndpointNodeStartup}.
  *
  * @author @java.author
  * @version @java.version
