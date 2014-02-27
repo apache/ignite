@@ -7,10 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.util;
+package org.gridgain.grid.kernal.managers.eventstorage;
 
 import org.gridgain.grid.events.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.lang.*;
 
 import java.io.*;
@@ -25,8 +24,9 @@ import java.util.*;
  *
  * @author @java.author
  * @version @java.version
+ * @see GridEvents#localListen(GridPredicate, int...)
  */
-public interface GridLocalEventListener extends EventListener, Serializable {
+public interface GridLocalEventListener extends EventListener {
     /**
      * Local event callback.
      *
