@@ -116,14 +116,6 @@ public interface GridDrReceiverHubMBean {
     public int getPerNodeBufferSize();
 
     /**
-     * Gets data center replication data loader per operation keys count.
-     *
-     * @return Per operation keys count.
-     */
-    @GridMBeanDescription("DR data loader per operation keys count.")
-    public int getPerOperationKeysCount();
-
-    /**
      * Gets per node parallel load operations.
      *
      * @return Per node parallel load operations.
