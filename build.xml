@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    @xml.file.header
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+-->
+
+<project name="GridGain Development Build" basedir=".">
+    <description>
+        GridGain build script.
+    </description>
+
+    <property environment="env"/>
+
+    <condition property="tmp.dir" value="${TMP_DIR}" else="${java.io.tmpdir}">
+        <isset property="TMP_DIR"/>
+    </condition>
+
+    <condition property="gridgain.home" value="${GG_HOME}">
+        <isset property="GG_HOME"/>
+    </condition>
+    <condition property="gridgain.home" value="${env.GRIDGAIN_HOME}">
+        <and>
+            <not>
+                <isset property="gridgain.home"/>
+            </not>
+            <isset property="env.GRIDGAIN_HOME"/>
+        </and>
+    </condition>
+
+    <condition property="jdk.home" value="${JAVA_HOME}">
+        <isset property="JAVA_HOME"/>
+    </condition>
+    <condition property="jdk.home" value="${env.JAVA_HOME}">
+        <and>
+            <not>
+                <isset property="jdk.home"/>
+            </not>
+            <isset property="env.JAVA_HOME"/>
+        </and>
+    </condition>
+
+    <property name="tmp.src" value="${tmp.dir}/src"/>
+    <property name="tmp.dist" value="${tmp.dir}/dist"/>
+    <property name="tmp.cls" value="${tmp.dir}/classes"/>
+
+    <property name="dir.core" value="${gridgain.home}/modules/core"/>
+    <property name="dir.client" value="${gridgain.home}/modules/clients"/>
+    <property name="dir.router" value="${gridgain.home}/modules/router"/>
+    <property name="dir.jdbc" value="${gridgain.home}/modules/jdbc-driver"/>
+    <property name="dir.scalar" value="${gridgain.home}/modules/scalar"/>
+    <property name="dir.visor-console" value="${gridgain.home}/modules/visor-console"/>
+
+    <property name="dir.core.src" value="${dir.core}/java"/>
+    <property name="dir.client.src" value="${dir.client}/java/src"/>
+    <property name="dir.router.src" value="${dir.router}/src"/>
+    <property name="dir.jdbc.src" value="${dir.jdbc}/src"/>
+    <property name="dir.scalar.src" value="${dir.scalar}/src"/>
+    <property name="dir.visor-console.src" value="${dir.visor-console}/src"/>
+    <property name="dir.libs" value="${gridgain.home}/libs"/>
+    <property name="dir.libs.rel" value="target/libs"/>
+
+    <property name="jar.dev" value="%ANT_AUGMENTED_GGJAR%"/>
+
+    <target name="mk.collect.libs">
+        <echo message=""/>
+        <echo message="mk.collect.libs"/>
+
+        <exec executable="mvn" dir="${gridgain.home}" failonerror="yes">
+            <arg line="clean install"/>
+        </exec>
+
+        <delete dir="${dir.libs}"/>
+        <mkdir dir="${dir.libs}"/>
+
+        <copy todir="${dir.libs}">
+            <fileset dir="${dir.core}/${dir.libs.rel}"/>
+        </copy>
+
+        <copy todir="${dir.libs}" overwrite="no">
+            <fileset dir="${dir.client}/${dir.libs.rel}"/>
+        </copy>
+
+        <copy todir="${dir.libs}" overwrite="no">
+            <fileset dir="${dir.router}/${dir.libs.rel}"/>
+        </copy>
+
+        <copy todir="${dir.libs}" overwrite="no">
+            <fileset dir="${dir.jdbc}/${dir.libs.rel}"/>
+        </copy>
+
+        <copy todir="${dir.libs}" overwrite="no">
+            <fileset dir="${dir.scalar}/${dir.libs.rel}"/>
+        </copy>
+
+        <copy todir="${dir.libs}" overwrite="no">
+            <fileset dir="${dir.visor-console}/${dir.libs.rel}"/>
+        </copy>
+
+        <path id="libs.gg">
+            <fileset dir="${dir.libs}">
+                <include name="*.jar"/>
+            </fileset>
+        </path>
+    </target>
+
+    <!--
+        Build GridGain development JAR.
+    -->
+    <target name="mk.dev.jar" depends="mk.collect.libs">
+        <echo message=""/>
+        <echo message="mk.dev.jar"/>
+
+        <delete dir="${tmp.src}"/>
+        <mkdir dir="${tmp.src}"/>
+
+        <!-- Copy Java sources. -->
+        <copy todir="${tmp.src}">
+            <fileset dir="${dir.core.src}"/>
+        </copy>
+        <copy todir="${tmp.src}">
+            <fileset dir="${dir.client.src}"/>
+        </copy>
+        <copy todir="${tmp.src}">
+            <fileset dir="${dir.router.src}"/>
+        </copy>
+        <copy todir="${tmp.src}">
+            <fileset dir="${dir.jdbc.src}"/>
+        </copy>
+
+        <!-- Build directly from sources. -->
+        <gg.jar
+            java.src.dir="${tmp.src}"
+            scalar.src.dir="${dir.scalar.src}"
+            visor-console.src.dir="${dir.visor-console.src}"
+            jar.dir="${tmp.dist}"
+            jar.name="${jar.dev}"/>
+
+        <copy file="${tmp.dist}/${jar.dev}" tofile="${gridgain.home}/${jar.dev}"/>
+    </target>
+
+    <!-- Builds GridGain JAR with given parameters. -->
+    <macrodef name="gg.jar">
+        <attribute name="java.src.dir"/>
+        <attribute name="scalar.src.dir"/>
+        <attribute name="visor-console.src.dir"/>
+        <attribute name="jar.name"/>
+        <attribute name="jar.dir"/>
+
+        <sequential>
+            <gg.compile
+                java.src.dir="@{java.src.dir}"
+                scalar.src.dir="@{scalar.src.dir}"
+                visor-console.src.dir="@{visor-console.src.dir}"/>
+
+            <!-- Create JAR file. -->
+            <jar destfile="@{jar.dir}/@{jar.name}" basedir="${tmp.cls}">
+                <manifest>
+                    <section name="GridGain">
+                        <!--<attribute name="Implementation-Version" value="${gg.global.ver.dot}"/>-->
+                        <!--<attribute name="Implementation-Vendor" value="${biz.copyright.text}"/>-->
+                        <attribute name="Implementation-Title" value="@{jar.name}"/>
+                    </section>
+                </manifest>
+            </jar>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="gg.compile">
+        <attribute name="java.src.dir"/>
+        <attribute name="scalar.src.dir"/>
+        <attribute name="visor-console.src.dir"/>
+
+        <sequential>
+            <!-- Init Scala support. -->
+            <taskdef resource="scala/tools/ant/antlib.xml">
+                <classpath>
+                    <path refid="libs.gg"/>
+                </classpath>
+            </taskdef>
+
+            <delete dir="${tmp.cls}"/>
+            <mkdir dir="${tmp.cls}"/>
+
+            <gg.javac srcdir="@{java.src.dir}" destdir="${tmp.cls}" msg="Compiled main sources.">
+                <path refid="libs.gg"/>
+            </gg.javac>
+
+            <!-- Copy resources. -->
+            <copy todir="${tmp.cls}">
+                <fileset dir="@{java.src.dir}">
+                    <include name="**/*.cer"/>
+                    <include name="**/rest.html"/>
+                    <include name="**/favicon.ico"/>
+                    <include name="**/*.xml"/>
+                    <include name="**/*.dylib"/>
+                    <include name="**/*.so"/>
+                    <include name="**/*.properties"/>
+                </fileset>
+            </copy>
+
+            <!-- Compile Scalar source code. -->
+            <scalac
+                encoding="UTF-8"
+                force="always"
+                target="jvm-1.5"
+                srcdir="@{scalar.src.dir}"
+                destdir="${tmp.cls}">
+                <classpath>
+                    <path refid="libs.gg"/>
+                    <path location="${tmp.cls}"/>
+                </classpath>
+                <include name="**/*.scala"/>
+            </scalac>
+
+            <!-- Compile Visor Console source code. -->
+            <scalac
+                encoding="UTF-8"
+                force="always"
+                target="jvm-1.5"
+                srcdir="@{visor-console.src.dir}"
+                destdir="${tmp.cls}">
+                <classpath>
+                    <path refid="libs.gg"/>
+                    <path location="${tmp.cls}"/>
+                </classpath>
+                <include name="**/*.scala"/>
+            </scalac>
+        </sequential>
+    </macrodef>
+
+    <!-- Macrodef for java compiler call. -->
+    <macrodef name="gg.javac">
+        <attribute name="msg"/>
+        <attribute name="srcdir"/>
+        <attribute name="destdir"/>
+
+        <element name="cp" implicit="yes"/>
+
+        <sequential>
+            <javac
+                target="1.7"
+                source="1.7"
+                compiler="javac1.7"
+                memoryInitialSize="512m"
+                memoryMaximumSize="512m"
+                includeantruntime="false"
+                fork="yes"
+                executable="${jdk.home}/bin/javac"
+                srcdir="@{srcdir}"
+                destdir="@{destdir}"
+                debug="true"
+                encoding="UTF-8"
+                nowarn="on">
+                <compilerarg value="-XDignore.symbol.file"/>
+                <classpath>
+                    <cp/>
+                </classpath>
+                <include name="**/*.java"/>
+            </javac>
+
+            <!-- Copy resources. -->
+            <copy todir="@{destdir}">
+                <fileset dir="@{srcdir}">
+                    <exclude name="**/*.java"/>
+                    <exclude name="**/*.html"/>
+                    <exclude name="**/*.md"/>
+                </fileset>
+            </copy>
+        </sequential>
+    </macrodef>
+</project>
