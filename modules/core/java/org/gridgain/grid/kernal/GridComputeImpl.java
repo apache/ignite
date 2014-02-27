@@ -76,26 +76,6 @@ public class GridComputeImpl implements GridCompute {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> affinityRun(@Nullable final String cacheName, Collection<?> affKeys,
-        final Runnable job) {
-        A.notEmpty(affKeys, "affKeys");
-        A.notNull(job, "job");
-
-        guard();
-
-        try {
-            return ctx.closure().runAsync(BALANCE, F.transform(affKeys, new CX1<Object, CA>() {
-                    @Override public CA applyx(Object affKey) throws GridException {
-                        return wrapRun(cacheName, affKey, job);
-                    }
-                }), prj.nodes());
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public <R> GridFuture<R> affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job) {
         A.notNull(affKey, "affKey");
         A.notNull(job, "job");
@@ -107,30 +87,6 @@ public class GridComputeImpl implements GridCompute {
         }
         catch (GridException e) {
             return new GridFinishedFuture<>(ctx, e);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> GridFuture<Collection<R>> affinityCall(@Nullable final String cacheName, Collection<?> affKeys,
-        final Callable<R> job) {
-        A.notEmpty(affKeys, "affKeys");
-        A.notNull(job, "job");
-
-        guard();
-
-        try {
-            return ctx.closure().callAsync(
-                    BALANCE,
-                    F.transform(affKeys, new CX1<Object, CO<R>>() {
-                        @Override public CO<R> applyx(Object affKey) throws GridException {
-                            return wrapCall(cacheName, affKey, job);
-                        }
-                    }),
-                    prj.nodes()
-                );
         }
         finally {
             unguard();
@@ -534,18 +490,18 @@ public class GridComputeImpl implements GridCompute {
      * @throws GridException In case of error.
      */
     @SuppressWarnings("UnusedDeclaration")
-    private CA wrapRun(@Nullable final String cacheName, Object affKey, final Runnable run) throws GridException {
+    private Runnable wrapRun(@Nullable final String cacheName, Object affKey, final Runnable run) throws GridException {
         // In case cache key is passed instead of affinity key.
         final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
 
-        return new CA() {
+        return new GridRunnable() {
             @GridCacheName
             private final String cn = cacheName;
 
             @GridCacheAffinityMapped
             private final Object ak = affKey0;
 
-            @Override public void apply() {
+            @Override public void run() {
                 run.run();
             }
         };
@@ -561,19 +517,19 @@ public class GridComputeImpl implements GridCompute {
      * @throws GridException In case of error.
      */
     @SuppressWarnings("UnusedDeclaration")
-    private <R> CO<R> wrapCall(@Nullable final String cacheName, Object affKey, final Callable<R> call)
+    private <R> Callable<R> wrapCall(@Nullable final String cacheName, Object affKey, final Callable<R> call)
         throws GridException {
         // In case cache key is passed instead of affinity key.
         final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
 
-        return new CO<R>() {
+        return new GridCallable<R>() {
             @GridCacheName
             private final String cn = cacheName;
 
             @GridCacheAffinityMapped
             private final Object ak = affKey0;
 
-            @Override public R apply() {
+            @Override public R call() {
                 try {
                     return call.call();
                 }

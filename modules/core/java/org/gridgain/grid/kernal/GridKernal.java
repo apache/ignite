@@ -2272,9 +2272,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         if (!F.isEmpty(cfg.getSegmentationResolvers()))
             F.copy(objs, cfg.getSegmentationResolvers());
 
-        if (!F.isEmpty(cfg.getLocalEventListeners()))
-            objs.addAll(cfg.getLocalEventListeners().keySet());
-
         F.copy(objs, cfg.getClientMessageInterceptor(), cfg.getRestTcpSslContextFactory(),
             cfg.getMarshaller(), cfg.getGridLogger(), cfg.getMBeanServer());
 

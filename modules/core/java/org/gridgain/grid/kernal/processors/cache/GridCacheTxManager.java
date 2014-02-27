@@ -15,7 +15,6 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
@@ -1921,8 +1920,7 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
          * @param tx Transaction.
          */
         private void commitIfPrepared(GridCacheTxEx<K, V> tx) {
-            assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote ||
-                tx instanceof GridReplicatedTxRemote : tx;
+            assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote  : tx;
             assert !F.isEmpty(tx.transactionNodes());
             assert tx.nearXidVersion() != null;
 
@@ -1944,8 +1942,7 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
          * @param tx Transaction.
          */
         private void commitIfRemotelyCommitted(GridCacheTxEx<K, V> tx) {
-            assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote ||
-                tx instanceof GridReplicatedTxRemote : tx;
+            assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote : tx;
 
             GridCachePessimisticCheckCommittedTxFuture<K, V> fut = new GridCachePessimisticCheckCommittedTxFuture<>(
                 cctx, tx, evtNodeId);

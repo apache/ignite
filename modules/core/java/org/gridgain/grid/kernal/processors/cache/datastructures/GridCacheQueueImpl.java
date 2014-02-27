@@ -62,9 +62,6 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
     /** Bounded flag. */
     private volatile boolean bounded;
 
-    /** Queue type. */
-    private GridCacheQueueType type;
-
     /** Maximum queue size. */
     private int cap;
 
@@ -105,10 +102,6 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
     @GridToStringExclude
     private final Object mux = new Object();
 
-    /** Meta data.*/
-    @GridToStringExclude
-    private GridMetadataAwareAdapter meta = new GridMetadataAwareAdapter();
-
     /** Internal error state of the queue. */
     @GridToStringInclude
     private volatile Exception err;
@@ -125,7 +118,8 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
      * @param qryFactory Query factory.
      */
     public GridCacheQueueImpl(String qid, GridCacheQueueHeader hdr, GridCacheInternalKey key,
-        GridCacheContext cctx, GridCacheProjection<GridCacheInternalKey, GridCacheQueueHeader> queueHdrView,
+        GridCacheContext<?, ?> cctx, GridCacheProjection<GridCacheInternalKey,
+        GridCacheQueueHeader> queueHdrView,
         GridCacheProjection<GridCacheQueueItemKey, GridCacheQueueItem<T>> itemView,
         GridCacheQueueQueryFactory<T> qryFactory) {
         assert qid != null;
@@ -142,7 +136,6 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
         this.queueHdrView = queueHdrView;
         this.itemView = itemView;
         this.qryFactory = qryFactory;
-        type = hdr.type();
 
         readSem = new Semaphore(hdr.size(), true);
 
@@ -165,84 +158,38 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void copyMeta(GridMetadataAware from) {
-        meta.copyMeta(from);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void copyMeta(Map<String, ?> data) {
-        meta.copyMeta(data);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V> V addMeta(String name, V val) {
-        return meta.addMeta(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V> V putMetaIfAbsent(String name, V val) {
-        return meta.putMetaIfAbsent(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V> V putMetaIfAbsent(String name, Callable<V> c) {
-        return meta.putMetaIfAbsent(name, c);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V> V addMetaIfAbsent(String name, V val) {
-        return meta.addMetaIfAbsent(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V> V addMetaIfAbsent(String name, @Nullable Callable<V> c) {
-        return meta.addMetaIfAbsent(name, c);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <V> V meta(String name) {
-        return meta.meta(name);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <V> V removeMeta(String name) {
-        return meta.removeMeta(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V> boolean removeMeta(String name, V val) {
-        return meta.removeMeta(name, val);
-    }
-
-    @Override public <V> Map<String, V> allMeta() {
-        return meta.allMeta();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasMeta(String name) {
-        return meta.hasMeta(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V> boolean hasMeta(String name, V val) {
-        return meta.hasMeta(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V> boolean replaceMeta(String name, V curVal, V newVal) {
-        return meta.replaceMeta(name, curVal, newVal);
-    }
-
-    /** {@inheritDoc} */
     @Override public String name() {
         return qid;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQueueType type() {
-        return type;
+    @Override public boolean offer(T item) {
+        A.notNull(item, "item");
+
+        checkRemoved();
+
+        try {
+            return CU.outTx(addCallable(Arrays.asList(item)), cctx);
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean offer(T item, long timeout, TimeUnit unit) {
+        A.notNull(item, "item");
+        A.ensure(timeout >= 0, "Timeout cannot be negative: " + timeout);
+
+        try {
+            checkRemovedx();
+
+            return bounded ? blockWriteOp(Arrays.asList(item), PUT_TIMEOUT, timeout, unit) :
+                CU.outTx(addCallable(Arrays.asList(item)), cctx);
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -251,36 +198,20 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
         checkRemoved();
 
-        boolean retVal;
-
         try {
-            retVal = CU.outTx(addCallable(Arrays.asList(item)), cctx);
+            boolean retVal = CU.outTx(addCallable(Arrays.asList(item)), cctx);
+
+            if (!retVal)
+                throw new IllegalStateException();
+
+            return true;
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
         }
-
-        return retVal;
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> addAsync(T item) {
-        A.notNull(item, "item");
-
-        return cctx.closures().callLocalSafe(addCallable(Arrays.asList(item)), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean addx(T item) throws GridException {
-        A.notNull(item, "item");
-
-        checkRemovedx();
-
-        return CU.outTx(addCallable(Arrays.asList(item)), cctx);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked cast")
     @Override public boolean addAll(Collection<? extends T> items) {
         A.notNull(items, "items");
 
@@ -295,25 +226,6 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked cast")
-    @Override public boolean addAllx(Collection<? extends T> items) throws GridException {
-        A.notNull(items, "items");
-
-        checkRemovedx();
-
-        return CU.outTx(addCallable((Collection<T>)items), cctx);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings( {"unchecked"})
-    @Override public GridFuture<Boolean> addAllAsync(Collection<? extends T> items) {
-        A.notNull(items, "items");
-
-        return cctx.closures().callLocalSafe(addCallable((Collection<T>)items), true);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked cast")
     @Override public boolean contains(Object o) {
         A.notNull(o, "o");
 
@@ -332,21 +244,6 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked cast")
-    @Override public boolean containsx(Object o) throws GridException {
-        A.notNull(o, "o");
-
-        T item = (T)o;
-
-        T[] items = (T[])new Object[] {item};
-
-        Object[] hashes = new Object[] {item.hashCode()};
-
-        return internalContains(items, hashes);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public boolean containsAll(Collection<?> items) {
         A.ensure(!F.isEmpty(items), "items cannot be empty");
 
@@ -368,23 +265,6 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
         }
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public boolean containsAllx(Collection<?> items) throws GridException {
-        A.ensure(!F.isEmpty(items), "items cannot be empty");
-
-        // Try to cast collection.
-        Collection<T> items0 = (Collection<T>)items;
-
-        // Prepare id's for query.
-        Collection<Integer> hashes = new LinkedList<>();
-
-        for (T item : items0)
-            hashes.add(item.hashCode());
-
-        return internalContains((T[])items0.toArray(), hashes.toArray());
-    }
-
     /**
      * @param hashes Array of items hash code
      * @param items Array of items.
@@ -394,7 +274,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
     private boolean internalContains(T[] items, Object[] hashes) throws GridException {
 
         GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>, boolean[],
-            Boolean> qry = qryFactory.containsQuery(type, items).queryArguments(qid, hashes);
+            Boolean> qry = qryFactory.containsQuery(items).queryArguments(qid, hashes);
 
         if (collocated) {
             // For case if primary node was changed during request.
@@ -407,55 +287,67 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public T poll() throws GridException {
-        checkRemovedx();
+    @Override public T poll() {
+        try {
+            checkRemovedx();
 
-        return CU.outTx(queryCallable(qryFactory.firstItemQuery(type()), false), cctx);
+            return CU.outTx(queryCallable(qryFactory.firstItemQuery(), false), cctx);
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<T> pollAsync() {
-        return cctx.closures().callLocalSafe(queryCallable(qryFactory.firstItemQuery(type()), false), true);
+    @Override public T remove() {
+        T res = poll();
+
+        if (res == null)
+            throw new NoSuchElementException();
+
+        return res;
     }
 
     /** {@inheritDoc} */
-    @Override public T pollLast() throws GridException {
-        checkRemovedx();
+    @Override public T poll(long timeout, TimeUnit unit) {
+        A.ensure(timeout >= 0, "Timeout cannot be negative: " + timeout);
 
-        return CU.outTx(queryCallable(qryFactory.lastItemQuery(type()), false), cctx);
+        try {
+            checkRemovedx();
+
+            boolean peek = false;
+
+            return blockReadOp(queryCallable(qryFactory.firstItemQuery(), peek), TAKE_TIMEOUT, timeout,
+                unit, peek);
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<T> pollLastAsync() {
-        return cctx.closures().callLocalSafe(queryCallable(qryFactory.lastItemQuery(type()), false), true);
+    @Override public T element() {
+        T el = peek();
+
+        if (el == null)
+            throw new NoSuchElementException();
+
+        return el;
     }
 
     /** {@inheritDoc} */
-    @Override public T peek() throws GridException {
-        checkRemovedx();
+    @Override public T peek() {
+        try {
+            checkRemovedx();
 
-        return CU.outTx(queryCallable(qryFactory.firstItemQuery(type()), true), cctx);
+            return CU.outTx(queryCallable(qryFactory.firstItemQuery(), true), cctx);
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<T> peekAsync() {
-        return cctx.closures().callLocalSafe(queryCallable(qryFactory.firstItemQuery(type()), true), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public T peekLast() throws GridException {
-        checkRemovedx();
-
-        return CU.outTx(queryCallable(qryFactory.lastItemQuery(type()), true), cctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<T> peekLastAsync() {
-        return cctx.closures().callLocalSafe(queryCallable(qryFactory.lastItemQuery(type()), true), true);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked cast")
     @Override public boolean remove(Object item) {
         A.notNull(item, "item");
 
@@ -472,23 +364,6 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> removeAsync(T item) {
-        A.notNull(item, "item");
-
-        return cctx.closures().callLocalSafe(removeItemsCallable(Arrays.asList(item), false), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removex(T item) throws GridException {
-        A.notNull(item, "item");
-
-        checkRemovedx();
-
-        return CU.outTx(removeItemsCallable(Arrays.asList(item), false), cctx);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked cast")
     @Override public boolean removeAll(Collection<?> items) {
         A.ensure(!F.isEmpty(items), "items cannot be empty");
 
@@ -506,29 +381,6 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked cast")
-    @Override public GridFuture<Boolean> removeAllAsync(Collection<?> items) {
-        A.ensure(!F.isEmpty(items), "items cannot be empty");
-
-        // Try to cast collection.
-        Collection<T> items0 = (Collection<T>)items;
-
-        return cctx.closures().callLocalSafe(removeItemsCallable(items0, false), true);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked cast")
-    @Override public boolean removeAllx(Collection<?> items) throws GridException {
-        // Try to cast collection.
-        Collection<T> items0 = (Collection<T>)items;
-
-        checkRemovedx();
-
-        return CU.outTx(removeItemsCallable(items0, false), cctx);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked cast")
     @Override public boolean retainAll(Collection<?> items) {
         A.ensure(!F.isEmpty(items), "items cannot be empty");
 
@@ -546,219 +398,34 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked cast")
-    @Override public GridFuture<Boolean> retainAllAsync(Collection<?> items) {
-        A.ensure(!F.isEmpty(items), "items cannot be empty");
-
-        // Try to cast collection.
-        Collection<T> items0 = (Collection<T>)items;
-
-        return cctx.closures().callLocalSafe(removeItemsCallable(items0, true), true);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked cast")
-    @Override public boolean retainAllx(Collection<?> items) throws GridException {
-        A.ensure(!F.isEmpty(items), "items cannot be empty");
-
-        // Try to cast collection.
-        Collection<T> items0 = (Collection<T>)items;
-
-        checkRemovedx();
-
-        return CU.outTx(removeItemsCallable(items0, true), cctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int position(T item) throws GridException {
+    @Override public void put(T item) {
         A.notNull(item, "item");
 
-        checkRemovedx();
+        try {
+            checkRemovedx();
 
-        if (!collocated)
-            throw new GridException("Operation position(..) is supported only in collocated mode.");
-
-        GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>, Integer, Integer> qry =
-            qryFactory.itemPositionQuery(type, item).queryArguments(qid);
-
-        qry.projection(cctx.grid().forNodes(Collections.singleton(CU.primaryNode(cctx, key))));
-
-        Collection<Integer> res = qry.reduceRemote().get();
-
-        checkRemovedx();
-
-        Integer pos = F.first(res);
-
-        assert pos != null;
-
-        return pos;
+            if (bounded)
+                blockWriteOp(Arrays.asList(item), PUT);
+            else
+                CU.outTx(addCallable(Arrays.asList(item)), cctx);
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<T> items(Integer... positions) throws GridException {
-        checkRemovedx();
+    @Override public T take() {
+        try {
+            checkRemovedx();
 
-        if (!collocated)
-            throw new GridException("Operation items(..) is supported only in collocated mode.");
+            boolean peek = false;
 
-        if (F.isEmpty(positions))
-            return Collections.emptyList();
-
-        GridCacheQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> qry = qryFactory.
-            itemsAtPositionsQuery(type);
-
-        qry.projection(cctx.grid().forNodes(Collections.singleton(CU.primaryNode(cctx, key))));
-
-        Collection<GridCacheQueueItemImpl<T>> queueItems = F.viewReadOnly(
-            qry.queryArguments(qid, positions).execute().get(), F.<GridCacheQueueItemImpl<T>>mapEntry2Value());
-
-        Collection<T> userItems = new LinkedList<>();
-
-        for (GridCacheQueueItemImpl<T> queueItem : queueItems)
-            userItems.add(queueItem.userObject());
-
-        return userItems;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void put(T item) throws GridException {
-        A.notNull(item, "item");
-
-        checkRemovedx();
-
-        if (bounded)
-            blockWriteOp(Arrays.asList(item), PUT);
-        else
-            CU.outTx(addCallable(Arrays.asList(item)), cctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean put(T item, long timeout, TimeUnit unit) throws GridException {
-        A.notNull(item, "item");
-        A.ensure(timeout >= 0, "Timeout cannot be negative: " + timeout);
-
-        checkRemovedx();
-
-        return bounded ? blockWriteOp(Arrays.asList(item), PUT_TIMEOUT, timeout, unit) :
-            CU.outTx(addCallable(Arrays.asList(item)), cctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> putAsync(T item) {
-        A.notNull(item, "item");
-
-        return cctx.closures().callLocalSafe(addCallable(Arrays.asList(item)), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public T take() throws GridException {
-        checkRemovedx();
-
-        boolean peek = false;
-
-        return blockReadOp(queryCallable(qryFactory.firstItemQuery(type), peek), TAKE, peek);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public T takeLast() throws GridException {
-        checkRemovedx();
-
-        boolean peek = false;
-
-        return blockReadOp(queryCallable(qryFactory.lastItemQuery(type), peek), TAKE_LAST, peek);
-    }
-
-    /** {@inheritDoc} */
-    @Override public T take(long timeout, TimeUnit unit) throws GridException {
-        A.ensure(timeout >= 0, "Timeout cannot be negative: " + timeout);
-
-        checkRemovedx();
-
-        boolean peek = false;
-
-        return blockReadOp(queryCallable(qryFactory.firstItemQuery(type), peek), TAKE_TIMEOUT, timeout,
-            unit, peek);
-    }
-
-    /** {@inheritDoc} */
-    @Override public T takeLast(long timeout, TimeUnit unit) throws GridException {
-        A.ensure(timeout >= 0, "Timeout cannot be negative: " + timeout);
-
-        checkRemovedx();
-
-        boolean peek = false;
-
-        return blockReadOp(queryCallable(qryFactory.lastItemQuery(type), peek), TAKE_LAST_TIMEOUT, timeout,
-            unit, peek);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public GridFuture<T> takeAsync() {
-        return cctx.closures().callLocalSafe(queryCallable(qryFactory.firstItemQuery(type), false), true);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public GridFuture<T> takeLastAsync() {
-        return cctx.closures().callLocalSafe(queryCallable(qryFactory.lastItemQuery(type), false), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public T get() throws GridException {
-        checkRemovedx();
-
-        boolean peek = true;
-
-        return blockReadOp(queryCallable(qryFactory.firstItemQuery(type), peek), GET, peek);
-    }
-
-    /** {@inheritDoc} */
-    @Override public T getLast() throws GridException {
-        checkRemovedx();
-
-        boolean peek = true;
-
-        return blockReadOp(queryCallable(qryFactory.lastItemQuery(type), peek), GET_LAST, peek);
-    }
-
-    /** {@inheritDoc} */
-    @Override public T get(long timeout, TimeUnit unit) throws GridException {
-        A.ensure(timeout >= 0, "Timeout cannot be negative: " + timeout);
-
-        checkRemovedx();
-
-        boolean peek = true;
-
-        return blockReadOp(queryCallable(qryFactory.firstItemQuery(type), peek), GET_TIMEOUT, timeout,
-            unit, peek);
-    }
-
-    /** {@inheritDoc} */
-    @Override public T getLast(long timeout, TimeUnit unit) throws GridException {
-        A.ensure(timeout >= 0, "Timeout cannot be negative: " + timeout);
-
-        checkRemovedx();
-
-        boolean peek = true;
-
-        return blockReadOp(queryCallable(qryFactory.lastItemQuery(type), peek), GET_LAST_TIMEOUT, timeout,
-            unit, peek);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<T> getAsync() {
-        return cctx.closures().callLocalSafe(queryCallable(qryFactory.firstItemQuery(type), true), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<T> getLastAsync() {
-        return cctx.closures().callLocalSafe(queryCallable(qryFactory.lastItemQuery(type), true), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clearx() throws GridException {
-        checkRemovedx();
-
-        CU.outTx(clearCallable(0), cctx);
+            return blockReadOp(queryCallable(qryFactory.firstItemQuery(), peek), TAKE, peek);
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -776,15 +443,6 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void clearx(int batchSize) throws GridException {
-        A.ensure(batchSize >= 0, "Batch size cannot be negative: " + batchSize);
-
-        checkRemovedx();
-
-        CU.outTx(clearCallable(batchSize), cctx);
-    }
-
-    /** {@inheritDoc} */
     @Override public void clear() {
         checkRemoved();
 
@@ -794,22 +452,6 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
         catch (GridException e) {
             throw new GridRuntimeException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> clearAsync() {
-        return cctx.closures().callLocalSafe(clearCallable(0), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isEmptyx() throws GridException {
-        checkRemovedx();
-
-        GridCacheQueueHeader globalHdr = queueHdrView.get(key);
-
-        assert globalHdr != null : "Failed to find queue header in cache: " + this;
-
-        return globalHdr.empty();
     }
 
     /** {@inheritDoc} */
@@ -831,17 +473,6 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public int sizex() throws GridException {
-        checkRemovedx();
-
-        GridCacheQueueHeader globalHdr = queueHdrView.get(key);
-
-        assert globalHdr != null : "Failed to find queue header in cache: " + this;
-
-        return globalHdr.size();
-    }
-
-    /** {@inheritDoc} */
     @Override public int size() {
         checkRemoved();
 
@@ -857,6 +488,37 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
         assert globalHdr != null : "Failed to find queue header in cache: " + this;
 
         return globalHdr.size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int remainingCapacity() {
+        if (!bounded)
+            return Integer.MAX_VALUE;
+
+        int remaining = cap - size();
+
+        return remaining > 0 ? remaining : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int drainTo(Collection<? super T> c) {
+        return drainTo(c, Integer.MAX_VALUE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int drainTo(Collection<? super T> c, int maxElements) {
+        int max = Math.min(maxElements, size());
+
+        for (int i = 0; i < max; i++) {
+            T el = poll();
+
+            if (el == null)
+                return i;
+
+            c.add(el);
+        }
+
+        return max;
     }
 
     /** {@inheritDoc} */
@@ -1024,17 +686,6 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
                     // Prepare data.
                     for (T item : items) {
-                        int pri = 0;
-
-                        Object annotatedVal = cctx.dataStructures().priorityAnnotations().annotatedValue(item);
-
-                        if (annotatedVal != null)
-                            if (!(annotatedVal instanceof Integer))
-                                throw new GridException("Invalid queue priority type [expected=int, actual=" +
-                                    annotatedVal.getClass() + ']');
-                            else
-                                pri = (Integer)annotatedVal;
-
                         // Increment queue size and sequence.
                         globalHdr.incrementSize();
 
@@ -1044,7 +695,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                         GridCacheQueueItemKey itemKey = new GridCacheQueueItemKeyImpl(seq, qid, collocated);
 
                         // Make new queue item.
-                        GridCacheQueueItemImpl<T> val = new GridCacheQueueItemImpl<>(qid, seq, pri, item);
+                        GridCacheQueueItemImpl<T> val = new GridCacheQueueItemImpl<>(qid, seq, item);
 
                         val.enqueueTime(U.currentTimeMillis());
 
@@ -1068,7 +719,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                     return true;
                 }
                 finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };
@@ -1206,7 +857,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                     return val.userObject();
                 }
                 finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };
@@ -1239,7 +890,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
                     GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>,
                         GridBiTuple<Integer, GridException>, GridBiTuple<Integer, GridException>> qry =
-                        qryFactory.removeAllKeysQuery(type, batchSize).queryArguments(qid);
+                        qryFactory.removeAllKeysQuery(batchSize).queryArguments(qid);
 
                     if (collocated) {
                         // For case if primary node was changed during request.
@@ -1292,7 +943,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                             GridCacheQueueImpl.this + ']');
                 }
                 finally {
-                    tx.end();
+                    tx.close();
                 }
 
                 // Throw remote exception if it's happened.
@@ -1343,7 +994,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
                     GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>,
                         GridBiTuple<Integer, GridException>, GridBiTuple<Integer, GridException>> qry =
-                        qryFactory.itemsKeysQuery(type, items, retain, items.size() == 1).
+                        qryFactory.itemsKeysQuery(items, retain, items.size() == 1).
                             queryArguments(qid, hashes.toArray());
 
                     if (collocated) {
@@ -1391,7 +1042,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                     }
                 }
                 finally {
-                    tx.end();
+                    tx.close();
                 }
 
                 // Throw remote exception if it's happened.
@@ -1680,7 +1331,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
                     GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>,
                         GridBiTuple<Integer, GridException>, GridBiTuple<Integer, GridException>> qry =
-                        qryFactory.removeAllKeysQuery(type, batchSize).queryArguments(qid);
+                        qryFactory.removeAllKeysQuery(batchSize).queryArguments(qid);
 
                     if (collocated) {
                         // For case if primary node was changed during request.
@@ -1742,7 +1393,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                             GridCacheQueueImpl.this + ']');
                 }
                 finally {
-                    tx.end();
+                    tx.close();
                 }
 
                 // Throw remote exception if it's happened.
@@ -1806,7 +1457,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
          */
         private GridCacheQueueIterator() {
             GridCacheQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> qry =
-                qryFactory.itemsQuery(type).queryArguments(qid);
+                qryFactory.itemsQuery().queryArguments(qid);
 
             qry.pageSize(DFLT_PAGE_SIZE);
 
@@ -1899,7 +1550,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
                                 return true;
                             }
                             finally {
-                                tx.end();
+                                tx.close();
                             }
                         }
                     }, cctx);
@@ -1940,7 +1591,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
         try {
             GridBiTuple<GridCacheContext, String> t = stash.get();
 
-            return t.get1().dataStructures().queue(t.get2(), GridCacheQueueType.FIFO, Integer.MAX_VALUE, true, false);
+            return t.get1().dataStructures().queue(t.get2(), Integer.MAX_VALUE, true, false);
         }
         catch (GridException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

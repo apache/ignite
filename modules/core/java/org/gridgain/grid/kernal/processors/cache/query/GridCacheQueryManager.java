@@ -805,7 +805,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 K key = row.key().value();
 
                 // Filter backups for SCAN queries. Other types are filtered in indexing manager.
-                if (cctx.config().getCacheMode() != LOCAL && qry.type() == SCAN &&
+                if (!cctx.isReplicated() && cctx.config().getCacheMode() != LOCAL && qry.type() == SCAN &&
                     !incBackups && !cctx.affinity().primary(cctx.localNode(), key)) {
                     if (log.isDebugEnabled())
                         log.debug("Ignoring backup element [qryId=" + qryId + ", row=" + row +

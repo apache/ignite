@@ -18,11 +18,11 @@
 # Import common functions.
 #
 if [ "${GRIDGAIN_HOME}" = "" ];
-    then GRIDGAIN_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
+    then GRIDGAIN_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";GRIDGAIN_HOME_TMP="$(dirname "${GRIDGAIN_HOME_TMP}")"
     else GRIDGAIN_HOME_TMP=${GRIDGAIN_HOME};
 fi
 
-source "${GRIDGAIN_HOME_TMP}"/bin/include/functions.sh
+source "${GRIDGAIN_HOME_TMP}"/os/bin/include/functions.sh
 
 #
 # Discover GRIDGAIN_HOME environment variable.
@@ -43,4 +43,4 @@ export MAIN_CLASS=org.gridgain.client.router.impl.GridRouterCommandLineStartup
 #
 # Start router service.
 #
-. "${GRIDGAIN_HOME}/bin/ggstart.sh" $@
+. "${GRIDGAIN_HOME}/os/bin/ggstart.sh" $@

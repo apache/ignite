@@ -1462,7 +1462,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public List<GridCacheClearAllRunnable<K, V>> splitClearAll() {
-        switch (configuration().getPartitionedDistributionMode()) {
+        switch (configuration().getDistributionMode()) {
             case NEAR_PARTITIONED:
                 GridCacheVersion obsoleteVer = ctx.versions().next();
 

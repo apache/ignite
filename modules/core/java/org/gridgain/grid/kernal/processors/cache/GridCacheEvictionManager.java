@@ -15,7 +15,6 @@ import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.replicated.preloader.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.thread.*;
@@ -544,11 +543,6 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         ", nodeId" + cctx.localNode().id() + ']');
             }
         }
-        else if (cctx.isReplicated()) {
-            GridReplicatedPreloader<K, V> preldr = (GridReplicatedPreloader<K, V>)cctx.cache().preloader();
-
-            preldr.onEntryEvicted(key, ver);
-        }
         else
             assert false : "Failed to save eviction info: " + cctx.namexx();
     }
@@ -562,12 +556,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         if (!cctx.preloadEnabled())
             return false;
 
-        if (cctx.isReplicated()) {
-            GridReplicatedPreloader<K, V> preldr = (GridReplicatedPreloader<K, V>)cctx.cache().preloader();
-
-            return preldr.lock();
-        }
-        else if (cctx.isDht() || cctx.isColocated()) {
+        if (cctx.isDht() || cctx.isColocated()) {
             try {
                 GridDhtLocalPartition<K, V> part = cctx.dht().topology().localPartition(p, -1, false);
 
@@ -603,12 +592,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         if (!cctx.preloadEnabled())
             return;
 
-        if (cctx.isReplicated()) {
-            GridReplicatedPreloader<K, V> preldr = (GridReplicatedPreloader<K, V>)cctx.cache().preloader();
-
-            preldr.unlock();
-        }
-        else if (cctx.isDht() || cctx.isColocated()) {
+        if (cctx.isDht() || cctx.isColocated()) {
             try {
                 GridDhtLocalPartition<K, V> part = cctx.dht().topology().localPartition(p, -1, false);
 

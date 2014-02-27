@@ -202,7 +202,7 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 64;
+        return 60;
     }
 
     /** {@inheritDoc} */
