@@ -151,7 +151,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      * No-reduce task adapter.
      */
-    private static abstract class TaskNoReduceAdapter<T> extends GridComputeTaskAdapter<T, Void> {
+    private abstract static class TaskNoReduceAdapter<T> extends GridComputeTaskAdapter<T, Void> {
         /**
          * @param pda Peer deploy aware instance.
          */

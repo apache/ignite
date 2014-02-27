@@ -796,8 +796,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     }
 
     /**
-     * If the job implements {@link org.gridgain.grid.compute.GridComputeJobMasterLeaveAware#onMasterNodeLeft} interface then invoke
-     * {@link org.gridgain.grid.compute.GridComputeJobMasterLeaveAware#onMasterNodeLeft(org.gridgain.grid.compute.GridComputeTaskSession)} method.
+     * If the job implements {@link GridComputeJobMasterLeaveAware#onMasterNodeLeft} interface then invoke
+     * {@link GridComputeJobMasterLeaveAware#onMasterNodeLeft(GridComputeTaskSession)} method.
      *
      * @return {@code True} if master leave has been handled (either by this call or before).
      */
