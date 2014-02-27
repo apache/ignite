@@ -545,7 +545,7 @@ private class VisorCacheDataTask extends VisorConsoleMultiNodeTask[Option[String
                         reads = c.metrics.reads,
                         writes = c.metrics.writes,
 
-                        // TODO: GG-7625
+                        // TODO: GG-7625: New metrics API
                         queries = None
 //                            if (c.queries().metrics == null) None else Some(c.queries().metrics.collect {
 //                            case q =>

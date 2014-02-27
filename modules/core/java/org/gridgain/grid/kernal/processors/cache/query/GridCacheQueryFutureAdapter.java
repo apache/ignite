@@ -58,7 +58,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     private final Collection<Object> allCol = new LinkedList<>();
 
     /** */
-    private volatile int cnt;
+    private final AtomicInteger cnt = new AtomicInteger();
 
     /** */
     private Iterator<R> iter;
@@ -139,13 +139,17 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
     /** {@inheritDoc} */
     @Override public int available() {
-        return cnt;
+        return cnt.get();
     }
 
     /** {@inheritDoc} */
     @Override public R next() {
         try {
-            return unmaskNull(internalIterator().next());
+            R next = unmaskNull(internalIterator().next());
+
+            cnt.decrementAndGet();
+
+            return next;
         }
         catch (NoSuchElementException ignored) {
             return null;
@@ -241,7 +245,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
         queue.add((Collection<R>)col);
 
-        cnt += col.size();
+        cnt.addAndGet(col.size());
     }
 
     /**

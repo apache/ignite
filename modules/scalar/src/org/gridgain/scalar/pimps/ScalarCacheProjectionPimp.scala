@@ -677,6 +677,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
 
         val q = value.cache().queries().createSqlQuery(cls, clause)
 
+        // TODO: GG-7625: solve issue with varargs
         (if (grid != null) q.projection(grid) else q).execute(args).get.map(e => (e.getKey, e.getValue))
     }
 
