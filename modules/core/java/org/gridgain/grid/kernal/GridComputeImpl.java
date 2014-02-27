@@ -219,7 +219,7 @@ public class GridComputeImpl implements GridCompute {
         guard();
 
         try {
-            return ctx.closure().callAsync(BALANCE, F.curry(job, arg), prj.nodes());
+            return ctx.closure().callAsync(job, arg, prj.nodes());
         }
         finally {
             unguard();
@@ -270,18 +270,12 @@ public class GridComputeImpl implements GridCompute {
     @Override public <T, R> GridFuture<Collection<R>> apply(final GridClosure<T, R> job,
         @Nullable Collection<? extends T> args) {
         A.notNull(job, "job");
+        A.notNull(args, "args");
 
         guard();
 
         try {
-            return job == null ? new GridFinishedFuture<Collection<R>>(ctx) :
-                ctx.closure().callAsync(BALANCE,
-                    F.transform(args, new C1<T, Callable<R>>() {
-                        @Override public Callable<R> apply(T arg) {
-                            return F.curry(job, arg);
-                        }
-                    }),
-                    prj.nodes());
+            return ctx.closure().callAsync(job, args, prj.nodes());
         }
         finally {
             unguard();
@@ -304,22 +298,16 @@ public class GridComputeImpl implements GridCompute {
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2, T> GridFuture<R2> apply(final GridClosure<T, R1> job,
-        @Nullable Collection<? extends T> args, GridReducer<R1, R2> rdc) {
+    @Override public <R1, R2, T> GridFuture<R2> apply(GridClosure<T, R1> job,
+        Collection<? extends T> args, GridReducer<R1, R2> rdc) {
         A.notNull(job, "job");
         A.notNull(rdc, "rdc");
+        A.notNull(args, "args");
 
         guard();
 
         try {
-            return job == null ? new GridFinishedFuture<R2>(ctx) :
-                ctx.closure().forkjoinAsync(BALANCE,
-                    F.transform(args, new C1<T, Callable<R1>>() {
-                        @Override public Callable<R1> apply(T arg) {
-                            return F.curry(job, arg);
-                        }
-                    }),
-                    rdc, prj.nodes());
+            return ctx.closure().callAsync(job, args, rdc, prj.nodes());
         }
         finally {
             unguard();

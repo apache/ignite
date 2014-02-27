@@ -2805,7 +2805,8 @@ public class GridFunc {
      */
     public static <T extends Runnable> Collection<GridComputeJob> absJobs(@Nullable Collection<? extends T> c) {
         return isEmpty(c) ? Collections.<GridComputeJob>emptyList() : viewReadOnly(c, new C1<T, GridComputeJob>() {
-            @Override public GridComputeJob apply(T e) {
+            @Override
+            public GridComputeJob apply(T e) {
                 return job(e);
             }
         });
@@ -2819,7 +2820,8 @@ public class GridFunc {
      */
     public static Collection<GridComputeJob> outJobs(@Nullable Callable<?>... c) {
         return isEmpty(c) ? Collections.<GridComputeJob>emptyList() : transform(c, new C1<Callable<?>, GridComputeJob>() {
-            @Override public GridComputeJob apply(Callable<?> e) {
+            @Override
+            public GridComputeJob apply(Callable<?> e) {
                 return job(e);
             }
         });
@@ -2845,6 +2847,7 @@ public class GridFunc {
      * @param c Closure to convert to grid job.
      * @return Grid job made out of closure.
      */
+    @SuppressWarnings("IfMayBeConditional")
     public static GridComputeJob job(final Callable<?> c) {
         A.notNull(c, "job");
 
@@ -2852,20 +2855,42 @@ public class GridFunc {
             return (GridComputeJob) c;
         }
 
-        return new GridComputeJobAdapter() {
-            {
-                setPeerDeployAware(U.peerDeployAware(c));
-            }
+        if (c instanceof GridComputeJobMasterLeaveAware) {
+            return new GridMasterLeaveAwareComputeJobAdapter() {
+                {
+                    setPeerDeployAware(U.peerDeployAware(c));
+                }
 
-            @Override public Object execute() {
-                try {
-                    return c.call();
+                @Override public Object execute() {
+                    try {
+                        return c.call();
+                    }
+                    catch (Exception e) {
+                        throw new GridRuntimeException(e);
+                    }
                 }
-                catch (Exception e) {
-                    throw new GridRuntimeException(e);
+
+                @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
+                    ((GridComputeJobMasterLeaveAware)c).onMasterNodeLeft(ses);
                 }
-            }
-        };
+            };
+        }
+        else {
+            return new GridComputeJobAdapter() {
+                {
+                    setPeerDeployAware(U.peerDeployAware(c));
+                }
+
+                @Override public Object execute() {
+                    try {
+                        return c.call();
+                    }
+                    catch (Exception e) {
+                        throw new GridRuntimeException(e);
+                    }
+                }
+            };
+        }
     }
 
     /**
@@ -2874,24 +2899,81 @@ public class GridFunc {
      * @param r Closure to convert to grid job.
      * @return Grid job made out of closure.
      */
+    @SuppressWarnings("IfMayBeConditional")
     public static GridComputeJob job(final Runnable r) {
         A.notNull(r, "job");
 
         if (r instanceof GridComputeJob)
             return (GridComputeJob)r;
 
-        return new GridComputeJobAdapter() {
-            {
-                peerDeployLike(U.peerDeployAware(r));
-            }
+        if (r instanceof GridComputeJobMasterLeaveAware) {
+            return new GridMasterLeaveAwareComputeJobAdapter() {
+                {
+                    peerDeployLike(U.peerDeployAware(r));
+                }
 
-            @Nullable
-            @Override public Object execute() {
-                r.run();
+                @Nullable @Override public Object execute() {
+                    r.run();
 
-                return null;
-            }
-        };
+                    return null;
+                }
+
+                @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
+                    ((GridComputeJobMasterLeaveAware)r).onMasterNodeLeft(ses);
+                }
+            };
+        }
+        else {
+            return new GridComputeJobAdapter() {
+                {
+                    peerDeployLike(U.peerDeployAware(r));
+                }
+
+                @Nullable @Override public Object execute() {
+                    r.run();
+
+                    return null;
+                }
+            };
+        }
+    }
+
+    /**
+     * Converts given closure with arguments to grid job.
+     * @param job Job.
+     * @param arg Optional argument.
+     * @return Job.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    public static <T, R> GridComputeJob job(final GridClosure<T, R> job, @Nullable final T arg) {
+        A.notNull(job, "job");
+
+        if (job instanceof GridComputeJobMasterLeaveAware) {
+            return new GridMasterLeaveAwareComputeJobAdapter() {
+                {
+                    peerDeployLike(U.peerDeployAware(job));
+                }
+
+                @Nullable @Override public Object execute() {
+                    return job.apply(arg);
+                }
+
+                @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
+                    ((GridComputeJobMasterLeaveAware)job).onMasterNodeLeft(ses);
+                }
+            };
+        }
+        else {
+            return new GridComputeJobAdapter() {
+                {
+                    peerDeployLike(U.peerDeployAware(job));
+                }
+
+                @Nullable @Override public Object execute() {
+                    return job.apply(arg);
+                }
+            };
+        }
     }
 
     /**

@@ -699,6 +699,76 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param job Job closure.
+     * @param arg Optional job argument.
+     * @param nodes Grid nodes.
+     * @return Grid future for execution result.
+     */
+    public <T, R> GridFuture<R> callAsync(GridClosure<T, R> job, @Nullable T arg,
+        @Nullable Collection<GridNode> nodes) {
+        enterBusy();
+
+        try {
+            if (F.isEmpty(nodes))
+                return new GridFinishedFuture<>(ctx, makeException());
+
+            ctx.task().setThreadContext(TC_SUBGRID, nodes);
+
+            return ctx.task().execute(new T9<>(job, arg), null, false);
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
+     * @param job Job closure.
+     * @param args Job arguments.
+     * @param nodes Grid nodes.
+     * @return Grid future for execution result.
+     */
+    public <T, R> GridFuture<Collection<R>> callAsync(GridClosure<T, R> job, @Nullable Collection<? extends T> args,
+        @Nullable Collection<GridNode> nodes) {
+        enterBusy();
+
+        try {
+            if (F.isEmpty(nodes))
+                return new GridFinishedFuture<>(ctx, makeException());
+
+            ctx.task().setThreadContext(TC_SUBGRID, nodes);
+
+            return ctx.task().execute(new T10<>(job, args), null, false);
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
+     * @param job Job closure.
+     * @param args Job arguments.
+     * @param rdc Reducer.
+     * @param nodes Grid nodes.
+     * @return Grid future for execution result.
+     */
+    public <T, R1, R2> GridFuture<R2> callAsync(GridClosure<T, R1> job,
+        Collection<? extends T> args, GridReducer<R1, R2> rdc, @Nullable Collection<GridNode> nodes) {
+        enterBusy();
+
+        try {
+            if (F.isEmpty(nodes))
+                return new GridFinishedFuture<>(ctx, makeException());
+
+            ctx.task().setThreadContext(TC_SUBGRID, nodes);
+
+            return ctx.task().execute(new T11<>(job, args, rdc), null, false);
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
      * Task that is free of dragged in enclosing context for the method
      * {@link GridClosureProcessor#callAsync(GridClosureCallMode, Callable, Collection)}
      */
@@ -745,6 +815,169 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     return r.getData();
 
             throw new GridException("Failed to find successful job result: " + res);
+        }
+    }
+
+    /**
+     */
+    private class T9<T, R> extends GridComputeTaskAdapter<Void, R> {
+        /** */
+        private GridClosure<T, R> job;
+
+        /** */
+        private T arg;
+
+        /** */
+        @GridLoadBalancerResource
+        private GridComputeLoadBalancer lb;
+
+        /**
+         * @param job Job.
+         * @param arg Optional job argument.
+         */
+        private T9(
+            GridClosure<T, R> job,
+            @Nullable T arg) {
+            super(U.peerDeployAware(job));
+
+            this.job = job;
+            this.arg = arg;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
+            throws GridException {
+            Map<GridComputeJob, GridNode> map = new HashMap<>(1, 1);
+
+            JobMapper mapper = new JobMapper(map);
+
+            GridComputeJob job = F.job(this.job, this.arg);
+
+            mapper.map(job, lb.getBalancedNode(job, null));
+
+            return map;
+        }
+
+        /** {@inheritDoc} */
+        @Override public R reduce(List<GridComputeJobResult> res) throws GridException {
+            for (GridComputeJobResult r : res)
+                if (r.getException() == null)
+                    return r.getData();
+
+            throw new GridException("Failed to find successful job result: " + res);
+        }
+    }
+
+    /**
+     */
+    private class T10<T, R> extends GridComputeTaskAdapter<Void, Collection<R>> {
+        /** */
+        private GridClosure<T, R> job;
+
+        /** */
+        private Collection<? extends T> args;
+
+        /** */
+        @GridLoadBalancerResource
+        private GridComputeLoadBalancer lb;
+
+        /**
+         * @param job Job.
+         * @param args Job arguments.
+         */
+        private T10(
+            GridClosure<T, R> job,
+            Collection<? extends T> args) {
+            super(U.peerDeployAware(job));
+
+            this.job = job;
+            this.args = args;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
+            throws GridException {
+            Map<GridComputeJob, GridNode> map = new HashMap<>(args.size(), 1);
+
+            JobMapper mapper = new JobMapper(map);
+
+            for (T jobArg : args) {
+                GridComputeJob job = F.job(this.job, jobArg);
+
+                mapper.map(job, lb.getBalancedNode(job, null));
+            }
+
+            return map;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<R> reduce(List<GridComputeJobResult> res) throws GridException {
+            return F.jobResults(res);
+        }
+    }
+
+    /**
+     */
+    private class T11<T, R1, R2> extends GridComputeTaskAdapter<Void, R2> {
+        /** */
+        private GridClosure<T, R1> job;
+
+        /** */
+        private Collection<? extends T> args;
+
+        /** */
+        private GridReducer<R1, R2> rdc;
+
+        /** */
+        @GridLoadBalancerResource
+        private GridComputeLoadBalancer lb;
+
+        /**
+         * @param job Job.
+         * @param args Job arguments.
+         * @param rdc Reducer.
+         */
+        private T11(
+            GridClosure<T, R1> job,
+            Collection<? extends T> args,
+            GridReducer<R1, R2> rdc) {
+            super(U.peerDeployAware(job));
+
+            this.job = job;
+            this.args = args;
+            this.rdc = rdc;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
+            throws GridException {
+            Map<GridComputeJob, GridNode> map = new HashMap<>(args.size(), 1);
+
+            JobMapper mapper = new JobMapper(map);
+
+            for (T jobArg : args) {
+                GridComputeJob job = F.job(this.job, jobArg);
+
+                mapper.map(job, lb.getBalancedNode(job, null));
+            }
+
+            return map;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridComputeJobResultPolicy result(GridComputeJobResult res, List<GridComputeJobResult> rcvd)
+            throws GridException {
+            GridComputeJobResultPolicy resPlc = super.result(res, rcvd);
+
+            if (res.getException() == null && resPlc != FAILOVER && !rdc.collect((R1) res.getData()))
+                resPlc = REDUCE; // If reducer returned false - reduce right away.
+
+            return resPlc;
+        }
+
+        /** {@inheritDoc} */
+        @Override public R2 reduce(List<GridComputeJobResult> res) throws GridException {
+            return rdc.reduce();
         }
     }
 
