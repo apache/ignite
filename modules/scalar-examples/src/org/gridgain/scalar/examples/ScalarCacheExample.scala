@@ -18,6 +18,7 @@ import org.gridgain.grid.events.{GridLocalEventListener, GridEventType, GridEven
 import GridEventType._
 import collection.JavaConversions._
 import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
+import org.gridgain.grid.lang.GridPredicate
 
 /**
  * Demonstrates basic In-Memory Data Grid operations with Scalar.
@@ -120,9 +121,11 @@ object ScalarCacheExample extends App {
         val g = grid$
 
         g *< (() => {
-            val lsnr = new GridLocalEventListener {
-                def onEvent(e: GridEvent) {
+            val lsnr = new GridPredicate[GridEvent] {
+                override def apply(e: GridEvent): Boolean = {
                     println(e.shortDisplay)
+
+                    true
                 }
             }
 

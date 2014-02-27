@@ -28,7 +28,7 @@ import org.gridgain.grid.events.GridEventType._
 import org.gridgain.grid.events.GridDiscoveryEvent
 import org.gridgain.grid.kernal.GridEx
 import org.gridgain.grid.kernal.GridNodeAttributes._
-import org.gridgain.grid.lang.GridBiTuple
+import org.gridgain.grid.lang.{GridPredicate, GridBiTuple}
 import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi
 import org.gridgain.grid.thread._
 import org.gridgain.grid.util.typedef._
@@ -143,13 +143,13 @@ object visor extends VisorTag {
     private var cmdLst: Seq[VisorConsoleCommandHolder] = Nil
 
     /** Node left listener. */
-    private var nodeLeftLsnr: GridLocalEventListener = null
+    private var nodeLeftLsnr: GridPredicate[GridEvent] = null
 
     /** Node join listener. */
-    private var nodeJoinLsnr: GridLocalEventListener = null
+    private var nodeJoinLsnr: GridPredicate[GridEvent] = null
 
     /** Node segmentation listener. */
-    private var nodeSegLsnr: GridLocalEventListener = null
+    private var nodeSegLsnr: GridPredicate[GridEvent] = null
 
     /** Node stop listener.  */
     private var nodeStopLsnr: GridGainListener = null
@@ -1566,8 +1566,8 @@ object visor extends VisorTag {
                     setVarIfAbsent(ip.get, "h")
             })
 
-            nodeJoinLsnr = new GridLocalEventListener() {
-                def onEvent(e: GridEvent) {
+            nodeJoinLsnr = new GridPredicate[GridEvent]() {
+                override def apply(e: GridEvent): Boolean = {
                     e match {
                         case de: GridDiscoveryEvent =>
                             setVarIfAbsent(U.id8(de.eventNodeId), "n")
@@ -1589,13 +1589,15 @@ object visor extends VisorTag {
                                     )
                             }
                     }
+
+                    true
                 }
             }
 
             grid.events().localListen(nodeJoinLsnr, EVT_NODE_JOINED)
 
-            nodeLeftLsnr = new GridLocalEventListener() {
-                def onEvent(e: GridEvent) {
+            nodeLeftLsnr = new GridPredicate[GridEvent]() {
+                override def apply(e: GridEvent): Boolean = {
                     e match {
                         case (de: GridDiscoveryEvent) =>
                             val nv = mfind(U.id8(de.eventNodeId))
@@ -1618,13 +1620,15 @@ object visor extends VisorTag {
                                 }
                             }
                     }
+
+                    true
                 }
             }
 
             grid.events().localListen(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
 
-            nodeSegLsnr = new GridLocalEventListener {
-                def onEvent(e: GridEvent) {
+            nodeSegLsnr = new GridPredicate[GridEvent] {
+                override def apply(e: GridEvent): Boolean = {
                     e match {
                         case de: GridDiscoveryEvent =>
                             if (de.eventNodeId == grid.localNode.id) {
@@ -1638,6 +1642,8 @@ object visor extends VisorTag {
                                 close()
                             }
                     }
+
+                    true
                 }
             }
 
