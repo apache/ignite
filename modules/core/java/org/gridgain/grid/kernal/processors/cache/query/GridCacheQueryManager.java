@@ -349,8 +349,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> executeQuery(GridCacheQueryAdapter<?> qry,
         @Nullable Object[] args, boolean loc) throws GridException {
-        U.dumpStack();
-
         if (qry.type() == null) {
             assert !loc;
 
@@ -362,15 +360,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         switch (qry.type()) {
             case SQL:
                 return idxMgr.query(spi, space, qry.clause(), F.asList(args),
-                    (Class<? extends V>)U.box(qry.queryClass()), qry.includeBackups(), projectionFilter(qry),
-                    keyValueFilter(qry));
+                    (Class<? extends V>)U.box(qry.queryClass()), qry.includeBackups(), projectionFilter(qry));
 
             case SCAN:
                 return scanIterator(qry);
 
             case TEXT:
                 return idxMgr.queryText(spi, space, qry.clause(), (Class<? extends V>)U.box(qry.queryClass()),
-                    qry.includeBackups(), projectionFilter(qry), keyValueFilter(qry));
+                    qry.includeBackups(), projectionFilter(qry));
 
             default:
                 throw new GridException("Unknown query type: " + qry.type());
@@ -402,7 +399,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         assert qry.type() == SQL_FIELDS;
 
         return idxMgr.queryFields(spi, space, qry.clause(), F.asList(args), qry.includeBackups(),
-            projectionFilter(qry), keyValueFilter(qry));
+            projectionFilter(qry));
     }
 
     /**
@@ -434,7 +431,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         Set<Map.Entry<K, V>> entries = resMap.entrySet();
 
-        final GridBiPredicate<K, V> keyValFilter = qry.remoteFilter();
+        final GridBiPredicate<K, V> keyValFilter = qry.scanFilter();
 
         injectResources(keyValFilter);
 
@@ -1247,28 +1244,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 catch (GridDhtInvalidPartitionException ignore) {
                     return false;
                 }
-            }
-        };
-    }
-
-    /**
-     * Gets key-value filter for query.
-     *
-     * @param qry Query.
-     * @return Filter.
-     * @throws GridException In case of error.
-     */
-    private GridIndexingQueryFilter<K, V> keyValueFilter(GridCacheQueryAdapter<?> qry) throws GridException {
-        assert qry != null;
-
-        final GridBiPredicate<K, V> filter = qry.remoteFilter();
-
-        injectResources(filter);
-
-        return new GridIndexingQueryFilter<K, V>() {
-            @Override public boolean apply(String s, K k, V v) {
-                return filter == null || !F.eq(space, s) || filter.apply(k, v);
-
             }
         };
     }

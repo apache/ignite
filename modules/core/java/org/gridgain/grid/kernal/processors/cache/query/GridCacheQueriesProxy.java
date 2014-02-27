@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.query;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -87,11 +88,11 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<Map.Entry<K, V>> createScanQuery() {
+    @Override public GridCacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable GridBiPredicate<K, V> filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.createScanQuery();
+            return delegate.createScanQuery(filter);
         }
         finally {
             gate.leave(prev);

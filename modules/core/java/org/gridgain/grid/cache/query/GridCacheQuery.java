@@ -288,18 +288,6 @@ public interface GridCacheQuery<T> {
     public GridCacheQuery<T> projection(GridProjection prj);
 
     /**
-     * Filter to be used on queried nodes prior to returning key-value pairs
-     * to user.
-     * <p>
-     * If filter is set, then it will be used for every query execution. Only values that
-     * pass the filter will be included in query result.
-     *
-     * @param filter Filter.
-     * @return New query with remote value filter set.
-     */
-    public <K, V> GridCacheQuery<T> remoteFilter(GridBiPredicate<K, V> filter);
-
-    /**
      * Executes the query and returns the query future. Caller may decide to iterate
      * over the returned future directly in which case the iterator may block until
      * the next value will become available, or wait for the whole query to finish

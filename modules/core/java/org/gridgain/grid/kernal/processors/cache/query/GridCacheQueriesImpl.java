@@ -46,22 +46,23 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(Class<?> cls, String clause) {
-        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), (Class<?>)cls, clause, false);
+        return new GridCacheQueryAdapter<>(ctx, SQL, filter(), (Class<?>)cls, clause, null, false);
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry) {
-        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, false);
+        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, null, false);
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<?> cls, String search) {
-        return new GridCacheQueryAdapter<>(ctx, TEXT, filter(), (Class<?>)cls, search, false);
+        return new GridCacheQueryAdapter<>(ctx, TEXT, filter(), (Class<?>)cls, search, null, false);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<Map.Entry<K, V>> createScanQuery() {
-        return new GridCacheQueryAdapter<>(ctx, SCAN, filter(), null, null, false);
+    @Override public GridCacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable GridBiPredicate<K, V> filter) {
+        return new GridCacheQueryAdapter<>(ctx, SCAN, filter(), null, null, (GridBiPredicate<Object, Object>)filter,
+            false);
     }
 
     /** {@inheritDoc} */
@@ -96,7 +97,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
 
     /** {@inheritDoc} */
     @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta) {
-        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, incMeta);
+        return new GridCacheQueryAdapter<>(ctx, SQL_FIELDS, filter(), null, qry, null, incMeta);
     }
 
     /**

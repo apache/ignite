@@ -10,6 +10,8 @@
 package org.gridgain.grid.cache.query;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.lang.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -54,7 +56,7 @@ public interface GridCacheQueries<K, V> {
      *
      * @return Created query.
      */
-    public GridCacheQuery<Map.Entry<K, V>> createScanQuery();
+    public GridCacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable GridBiPredicate<K, V> filter);
 
     /**
      * Creates new continuous query.

@@ -578,7 +578,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(cls != null)
         assert(kvp != null)
 
-        val q = value.cache[K, V]().queries().createScanQuery().remoteFilter(kvp)
+        val q = value.cache[K, V]().queries().createScanQuery(kvp)
 
         (if (grid != null) q.projection(grid) else q).execute().get.map(e => (e.getKey, e.getValue))
     }
@@ -895,7 +895,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(kvp != null)
         assert(trans != null)
 
-        val q = value.cache[K, V]().queries().createScanQuery().remoteFilter(kvp)
+        val q = value.cache[K, V]().queries().createScanQuery(kvp)
 
         toScalaItr[K, T]((if (grid != null) q.projection(grid) else q).execute(toRemoteTransformer[K, V, T](trans)).get)
     }
@@ -1247,7 +1247,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(rmtRdc != null)
         assert(locRdc != null)
 
-        val q = value.cache[K, V]().queries().createScanQuery().remoteFilter(kvp)
+        val q = value.cache[K, V]().queries().createScanQuery(kvp)
 
         locRdc((if (grid != null) q.projection(grid) else q).execute(toEntryReducer(rmtRdc)).get)
     }
@@ -1624,7 +1624,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(kvp != null)
         assert(rmtRdc != null)
 
-        val q = value.cache[K, V]().queries().createScanQuery().remoteFilter(kvp)
+        val q = value.cache[K, V]().queries().createScanQuery(kvp)
 
         (if (grid != null) q.projection(grid) else q).execute(toEntryReducer(rmtRdc)).get
     }

@@ -49,6 +49,9 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     private final String clause;
 
     /** */
+    private final GridBiPredicate<Object, Object> filter;
+
+    /** */
     private final boolean incMeta;
 
     /** */
@@ -69,21 +72,18 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     /** */
     private GridProjection prj;
 
-    /** */
-    private GridBiPredicate<Object, Object> filter;
-
     /**
      * @param cctx Context.
      * @param type Query type.
      * @param cls Class.
      * @param clause Clause.
+     * @param filter Scan filter.
      * @param incMeta Include metadata flag.
      * @param prjPred Cache projection filter.
      */
-    protected GridCacheQueryAdapter(
-        GridCacheContext<?, ?> cctx, GridCacheQueryType type,
-        @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred,
-        @Nullable Class<?> cls, @Nullable String clause, boolean incMeta) {
+    protected GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridCacheQueryType type,
+        @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred, @Nullable Class<?> cls,
+        @Nullable String clause, GridBiPredicate<Object, Object> filter, boolean incMeta) {
         assert cctx != null;
         assert type != null;
 
@@ -92,6 +92,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         this.cls = cls;
         this.clause = clause;
         this.prjPred = prjPred;
+        this.filter = filter;
         this.incMeta = incMeta;
 
         log = cctx.logger(getClass());
@@ -102,7 +103,6 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         incBackups = false;
         dedup = false;
         prj = null;
-        filter = null;
     }
 
     /**
@@ -260,17 +260,10 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         return prj;
     }
 
-    /** {@inheritDoc} */
-    @Override public <K, V> GridCacheQuery<T> remoteFilter(GridBiPredicate<K, V> filter) {
-        this.filter = (GridBiPredicate<Object, Object>)filter;
-
-        return this;
-    }
-
     /**
      * @return Key-value filter.
      */
-    public <K, V> GridBiPredicate<K, V> remoteFilter() {
+    public <K, V> GridBiPredicate<K, V> scanFilter() {
         return (GridBiPredicate<K, V>)filter;
     }
 
