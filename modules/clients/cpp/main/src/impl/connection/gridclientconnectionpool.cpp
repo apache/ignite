@@ -59,10 +59,8 @@ std::shared_ptr<GridClientTcpConnection> GridClientConnectionPool::rentTcpConnec
 
     try {
         if (!protoCfg.sslEnabled())
-//      TODO: move that to configuration ( sync, async, raw connection modes )    
-//      conn.reset(new GridClientRawSyncTcpConnection());
+//      TODO: GG-7677 move that to configuration ( sync, async, raw connection modes )
         conn.reset(new GridClientSyncTcpConnection());
-//      conn.reset(new GridClientAsyncTcpConnection());
         else {
             boost::shared_ptr<boost::asio::ssl::context> ssl = createSslContext();
 
