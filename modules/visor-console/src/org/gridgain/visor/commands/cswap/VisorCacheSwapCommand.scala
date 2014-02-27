@@ -118,13 +118,13 @@ class VisorCacheSwapCommand {
             val res = prj.compute()
                 .withName("visor-cswap-task")
                 .withNoFailover()
-                .call(new SwapCommand(caches)).get
+                .broadcast(new SwapCommand(caches)).get
 
             val t = VisorTextTable()
 
             t #= ("Node ID8(@)", "Entries Swapped", "Cache Size Before", "Cache Size After")
 
-            t += (nodeId8(res._1), res._2, res._3, res._4)
+            res.foreach(r => t += (nodeId8(r._1), r._2, r._3, r._4))
 
             t.render()
         }

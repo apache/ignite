@@ -32,16 +32,13 @@ import java.util.*;
  * This information is initialized once within grid, during node startup, and
  * remains the same throughout the lifetime of a node. Use
  * {@link GridConfiguration#getUserAttributes()} method to initialize your custom
- * node attributes at startup. For example, to provide benchmark data about
- * every node from Spring XML configuration file, you would do the following:
+ * node attributes at startup. Here is an example of how to assign an attribute to a node at startup:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
  *     ...
  *     &lt;property name="userAttributes">
  *         &lt;map>
- *             &lt;entry key="grid.node.benchmark">
- *                 &lt;bean class="org.gridgain.grid.benchmarks.GridLocalNodeBenchmark" init-method="start"/>
- *             &lt;/entry>
+ *             &lt;entry key="worker" value="true"/>
  *         &lt;/map>
  *     &lt;/property>
  *     ...

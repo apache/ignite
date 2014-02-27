@@ -71,7 +71,7 @@ public class GgfsMapReduceExample {
                 writeFile(fs, fsPath, file);
 
                 Collection<Line> lines = fs.execute(new GrepTask(), GridGgfsNewLineRecordResolver.NEW_LINE,
-                    Collections.singleton(fsPath), false, regexStr);
+                    Collections.singleton(fsPath), regexStr).get();
 
                 if (lines.isEmpty())
                     print("No lines were found.");

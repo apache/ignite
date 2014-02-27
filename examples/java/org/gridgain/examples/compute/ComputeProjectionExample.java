@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.compute;
 
+import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 
@@ -35,6 +36,9 @@ public class ComputeProjectionExample {
      */
     public static void main(String[] args) throws Exception {
         try (Grid grid = GridGain.start("examples/config/example-compute.xml")) {
+            if (!ExamplesUtils.checkMinTopologySize(grid, 2))
+                return;
+
             // Say hello to all nodes in the grid, including local node.
             // Note, that Grid itself also implements GridProjection.
             sayHello(grid);
@@ -50,6 +54,13 @@ public class ComputeProjectionExample {
 
             // Say hello to all nodes residing on the same host with random node.
             sayHello(grid.forHost(randomNode.node()));
+
+            // Say hello to all nodes that have current CPU load less than 50%.
+            sayHello(grid.forPredicate(new GridPredicate<GridNode>() {
+                @Override public boolean apply(GridNode n) {
+                    return n.metrics().getCurrentCpuLoad() < 0.5;
+                }
+            }));
         }
     }
 
