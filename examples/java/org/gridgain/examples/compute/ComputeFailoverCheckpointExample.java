@@ -175,12 +175,13 @@ public class ComputeFailoverCheckpointExample {
                     // It will be automatically removed when task completes.
                     jobSes.saveCheckpoint(cpKey, this.state);
 
-                    System.out.println(">>> Job will be failed over to another node.");
-
                     // For example purposes, we fail on purpose after first stage.
                     // This exception will cause job to be failed over to another node.
-                    if (i == 0)
-                        throw new GridRuntimeException("Expected example job exception.");
+                    if (i == 0) {
+                        System.out.println(">>> Job will be failed over to another node.");
+
+                        throw new GridComputeJobFailoverException("Expected example job exception.");
+                    }
                 }
 
                 return sum;
