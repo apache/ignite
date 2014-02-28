@@ -66,6 +66,7 @@ std::ostream& GridUtil::toStream(std::ostream &out, const std::vector<std::strin
 
         out << v[i];
     }
+    return out;
 }
 
 std::ostream& GridUtil::toStream(std::ostream &out, const std::vector<GridSocketAddress> &v) {
