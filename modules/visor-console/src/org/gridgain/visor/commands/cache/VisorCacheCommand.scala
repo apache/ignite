@@ -23,11 +23,8 @@ import org.gridgain.grid.kernal.processors.task.GridInternal
 import org.gridgain.grid.util.scala.impl
 import org.gridgain.grid.util.typedef._
 import org.gridgain.grid.cache._
-import org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
-import GridCacheQueryType._
 import org.gridgain.grid.kernal.GridEx
 import org.gridgain.grid.resources.GridInstanceResource
-import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import visor._
@@ -156,9 +153,9 @@ class VisorCacheCommand {
                 if (hasArgFlag("i", argLst)) {
                     askForNode("Select node from:") match {
                         case Some(nid) => ask("Detailed statistics (y/n) [n]: ", "n") match {
-                            case "n" | "N" => nl(); cache("-id=" + nid) ^^
-                            case "y" | "Y" => nl(); cache("-a -id=" + nid) ^^
-                            case x => nl(); warn("Invalid answer: " + x) ^^
+                            case "n" | "N" => nl(); cache("-id=" + nid).^^
+                            case "y" | "Y" => nl(); cache("-a -id=" + nid).^^
+                            case x => nl(); warn("Invalid answer: " + x).^^
                         }
                         case None => break()
                     }
@@ -174,15 +171,15 @@ class VisorCacheCommand {
                 var node: Option[GridNode] = None
 
                 if (id8.isDefined && id.isDefined)
-                    scold("Only one of '-id8' or '-id' is allowed.") ^^
+                    scold("Only one of '-id8' or '-id' is allowed.").^^
 
                 if (id8.isDefined) {
                     val ns = nodeById8(id8.get)
 
                     if (ns.isEmpty)
-                        scold("Unknown 'id8' value: " + id8.get) ^^
+                        scold("Unknown 'id8' value: " + id8.get).^^
                     else if (ns.size != 1)
-                        scold("'id8' resolves to more than one node (use full 'id' instead): " + id8.get) ^^
+                        scold("'id8' resolves to more than one node (use full 'id' instead): " + id8.get).^^
                     else
                         node = ns.headOption
                 }
@@ -191,23 +188,23 @@ class VisorCacheCommand {
                         node = Option(grid.node(java.util.UUID.fromString(id.get)))
 
                         if (!node.isDefined)
-                            scold("'id' does not match any node: " + id.get) ^^
+                            scold("'id' does not match any node: " + id.get).^^
                     }
                     catch {
-                        case e: IllegalArgumentException => scold("Invalid node 'id': " + id.get) ^^
+                        case e: IllegalArgumentException => scold("Invalid node 'id': " + id.get).^^
                     }
 
                 val sortType = argValue("s", argLst)
                 val reversed = hasArgName("r", argLst)
 
                 if (sortType.isDefined && !isValidSortType(sortType.get))
-                    scold("Invalid '-s' argument in: " + args) ^^
+                    scold("Invalid '-s' argument in: " + args).^^
 
                 // Get cache stats data from all nodes.
                 val aggrData = cacheData(node, name)
 
                 if (aggrData.isEmpty)
-                    scold("No caches found.") ^^
+                    scold("No caches found.").^^
 
                 println("Time of the snapshot: " + formatDateTime(System.currentTimeMillis))
 
@@ -475,15 +472,6 @@ private class VisorCacheDataTask extends VisorConsoleMultiNodeTask[Option[String
         @GridInstanceResource
         private val g: GridEx = null
 
-        /**
-         * Can't use `safe` from visor to avoid pulling it into remote node.
-         */
-        private def safe(@Nullable a: Any, dflt: Any = ""): String = {
-            assert(dflt != null)
-
-            if (a != null) a.toString else dflt.toString
-        }
-
         override def execute(): AnyRef = {
             val caches: Iterable[GridCache[_, _]] = name match {
                 case Some(n) => Seq(g.cachex(n))
@@ -633,7 +621,7 @@ private case class VisorCacheAggregatedData(
     var minWrites: Int = Int.MaxValue,
     var avgWrites: Double = 0.0,
     var maxWrites: Int = 0,
-    val qryMetrics: VisorAggregatedCacheQueryMetrics = VisorAggregatedCacheQueryMetrics(),
+    qryMetrics: VisorAggregatedCacheQueryMetrics = VisorAggregatedCacheQueryMetrics(),
     var data: Seq[VisorCacheData] = Seq.empty[VisorCacheData]
 )
 

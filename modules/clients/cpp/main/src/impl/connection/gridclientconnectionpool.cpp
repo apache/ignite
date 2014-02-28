@@ -56,10 +56,12 @@ std::shared_ptr<GridClientTcpConnection> GridClientConnectionPool::rentTcpConnec
     }
 
     // If no any available connection, we create and return a new one.
+    GG_LOG_DEBUG("New TCP connection to %s:%d", host.c_str(), port);
 
     try {
         if (!protoCfg.sslEnabled())
-            conn.reset(new GridClientAsyncTcpConnection());
+            //TODO: GG-7677 move type of connection to client configuration ( sync, async, raw connection modes )
+            conn.reset(new GridClientSyncTcpConnection());
         else {
             boost::shared_ptr<boost::asio::ssl::context> ssl = createSslContext();
 
@@ -118,7 +120,6 @@ std::shared_ptr<GridClientHttpConnection> GridClientConnectionPool::rentHttpConn
     }
 
     // If no any available connection, we create and return a new one.
-
     GG_LOG_DEBUG("New HTTP connection to %s:%d", host.c_str(), port);
 
     if (!protoCfg.sslEnabled()) {

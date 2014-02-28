@@ -22,7 +22,7 @@ import java.io.*;
  */
 public class GridDrUtils {
     /** Key used to store {@code GridDrPauseInfo} in system cache. */
-    public static final Integer DR_COMMON_KEY = 0;
+    public static final Integer DR_GLOBAL_SYNC = 0;
 
     /** Maximum amount of data centers. */
     public static final int MAX_DATA_CENTERS = 32;

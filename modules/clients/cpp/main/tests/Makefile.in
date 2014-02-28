@@ -58,7 +58,8 @@ noinst_PROGRAMS = gridgain-tests$(EXEEXT) \
 	gridgain-async-client-load-test$(EXEEXT) \
 	gridgain-cache-benchmark$(EXEEXT) router-example$(EXEEXT) \
 	gridgain-leak-test$(EXEEXT) \
-	gridgain-nio-echo-benchmark$(EXEEXT)
+	gridgain-nio-echo-benchmark$(EXEEXT) \
+	gridgain-marshalling-benchmark$(EXEEXT)
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(srcdir)/../config.guess \
 	$(srcdir)/../config.sub $(srcdir)/../depcomp \
@@ -107,6 +108,17 @@ gridgain_leak_test_DEPENDENCIES = $(PARENT_DIR)/libgridgain-client.la
 gridgain_leak_test_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
 	$(CXXFLAGS) $(gridgain_leak_test_LDFLAGS) $(LDFLAGS) -o $@
+am_gridgain_marshalling_benchmark_OBJECTS =  \
+	gridclientmarshallingbenchmark.$(OBJEXT) \
+	gridtestcommon.$(OBJEXT)
+gridgain_marshalling_benchmark_OBJECTS =  \
+	$(am_gridgain_marshalling_benchmark_OBJECTS)
+gridgain_marshalling_benchmark_DEPENDENCIES =  \
+	$(PARENT_DIR)/libgridgain-client.la
+gridgain_marshalling_benchmark_LINK = $(LIBTOOL) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(AM_CXXFLAGS) $(CXXFLAGS) \
+	$(gridgain_marshalling_benchmark_LDFLAGS) $(LDFLAGS) -o $@
 am_gridgain_nio_echo_benchmark_OBJECTS = NIOEchoBenchmark.$(OBJEXT)
 gridgain_nio_echo_benchmark_OBJECTS =  \
 	$(am_gridgain_nio_echo_benchmark_OBJECTS)
@@ -183,6 +195,7 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 SOURCES = $(gridgain_async_client_load_test_SOURCES) \
 	$(gridgain_cache_benchmark_SOURCES) \
 	$(gridgain_leak_test_SOURCES) \
+	$(gridgain_marshalling_benchmark_SOURCES) \
 	$(gridgain_nio_echo_benchmark_SOURCES) \
 	$(gridgain_router_tests_SOURCES) $(gridgain_tests_SOURCES) \
 	$(gridgain_threadpool_load_test_SOURCES) \
@@ -190,6 +203,7 @@ SOURCES = $(gridgain_async_client_load_test_SOURCES) \
 DIST_SOURCES = $(gridgain_async_client_load_test_SOURCES) \
 	$(gridgain_cache_benchmark_SOURCES) \
 	$(gridgain_leak_test_SOURCES) \
+	$(gridgain_marshalling_benchmark_SOURCES) \
 	$(gridgain_nio_echo_benchmark_SOURCES) \
 	$(gridgain_router_tests_SOURCES) $(gridgain_tests_SOURCES) \
 	$(gridgain_threadpool_load_test_SOURCES) \
@@ -345,6 +359,9 @@ AM_CXXFLAGS = -Wall -std=c++0x
 gridgain_nio_echo_benchmark_SOURCES = NIOEchoBenchmark.cpp
 gridgain_nio_echo_benchmark_LDADD = -lboost_system -lboost_thread -lboost_program_options
 gridgain_nio_echo_benchmark_LDFLAGS = -static-libtool-libs -L/usr/local/lib
+gridgain_marshalling_benchmark_SOURCES = load/gridclientmarshallingbenchmark.cpp gridtestcommon.cpp
+gridgain_marshalling_benchmark_LDADD = $(PARENT_DIR)/libgridgain-client.la -lboost_system -lboost_thread -lboost_program_options -lcrypto -lprotobuf -lssl
+gridgain_marshalling_benchmark_LDFLAGS = -static-libtool-libs -L/usr/local/lib
 gridgain_tests_SOURCES = gridtestcommon.cpp gridclientaffinityselftest.cpp gridclientabstractselftest.cpp gridclientconsistenthashtest.cpp gridclientexampletest.cpp gridclientfactoryfixture.hpp gridclientfactoryselfttest.cpp gridclientprotobufserializationsimpletest.cpp gridthreadpoolselftest.cpp gridclientconnectionpoolselftest.cpp \
     teamcity_messages.cpp teamcity_boost.cpp
 
@@ -444,6 +461,9 @@ gridgain-cache-benchmark$(EXEEXT): $(gridgain_cache_benchmark_OBJECTS) $(gridgai
 gridgain-leak-test$(EXEEXT): $(gridgain_leak_test_OBJECTS) $(gridgain_leak_test_DEPENDENCIES) $(EXTRA_gridgain_leak_test_DEPENDENCIES) 
 	@rm -f gridgain-leak-test$(EXEEXT)
 	$(gridgain_leak_test_LINK) $(gridgain_leak_test_OBJECTS) $(gridgain_leak_test_LDADD) $(LIBS)
+gridgain-marshalling-benchmark$(EXEEXT): $(gridgain_marshalling_benchmark_OBJECTS) $(gridgain_marshalling_benchmark_DEPENDENCIES) $(EXTRA_gridgain_marshalling_benchmark_DEPENDENCIES) 
+	@rm -f gridgain-marshalling-benchmark$(EXEEXT)
+	$(gridgain_marshalling_benchmark_LINK) $(gridgain_marshalling_benchmark_OBJECTS) $(gridgain_marshalling_benchmark_LDADD) $(LIBS)
 gridgain-nio-echo-benchmark$(EXEEXT): $(gridgain_nio_echo_benchmark_OBJECTS) $(gridgain_nio_echo_benchmark_DEPENDENCIES) $(EXTRA_gridgain_nio_echo_benchmark_DEPENDENCIES) 
 	@rm -f gridgain-nio-echo-benchmark$(EXEEXT)
 	$(gridgain_nio_echo_benchmark_LINK) $(gridgain_nio_echo_benchmark_OBJECTS) $(gridgain_nio_echo_benchmark_LDADD) $(LIBS)
@@ -475,6 +495,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gridclientconsistenthashtest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gridclientexampletest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gridclientfactoryselfttest.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gridclientmarshallingbenchmark.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gridclientmemoryleaktest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gridclientprotobufserializationsimpletest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gridgain_router_tests-gridclientabstractselftest.Po@am__quote@
@@ -551,6 +572,20 @@ gridclientmemoryleaktest.obj: load/gridclientmemoryleaktest.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='load/gridclientmemoryleaktest.cpp' object='gridclientmemoryleaktest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o gridclientmemoryleaktest.obj `if test -f 'load/gridclientmemoryleaktest.cpp'; then $(CYGPATH_W) 'load/gridclientmemoryleaktest.cpp'; else $(CYGPATH_W) '$(srcdir)/load/gridclientmemoryleaktest.cpp'; fi`
+
+gridclientmarshallingbenchmark.o: load/gridclientmarshallingbenchmark.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT gridclientmarshallingbenchmark.o -MD -MP -MF $(DEPDIR)/gridclientmarshallingbenchmark.Tpo -c -o gridclientmarshallingbenchmark.o `test -f 'load/gridclientmarshallingbenchmark.cpp' || echo '$(srcdir)/'`load/gridclientmarshallingbenchmark.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/gridclientmarshallingbenchmark.Tpo $(DEPDIR)/gridclientmarshallingbenchmark.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='load/gridclientmarshallingbenchmark.cpp' object='gridclientmarshallingbenchmark.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o gridclientmarshallingbenchmark.o `test -f 'load/gridclientmarshallingbenchmark.cpp' || echo '$(srcdir)/'`load/gridclientmarshallingbenchmark.cpp
+
+gridclientmarshallingbenchmark.obj: load/gridclientmarshallingbenchmark.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT gridclientmarshallingbenchmark.obj -MD -MP -MF $(DEPDIR)/gridclientmarshallingbenchmark.Tpo -c -o gridclientmarshallingbenchmark.obj `if test -f 'load/gridclientmarshallingbenchmark.cpp'; then $(CYGPATH_W) 'load/gridclientmarshallingbenchmark.cpp'; else $(CYGPATH_W) '$(srcdir)/load/gridclientmarshallingbenchmark.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/gridclientmarshallingbenchmark.Tpo $(DEPDIR)/gridclientmarshallingbenchmark.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='load/gridclientmarshallingbenchmark.cpp' object='gridclientmarshallingbenchmark.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o gridclientmarshallingbenchmark.obj `if test -f 'load/gridclientmarshallingbenchmark.cpp'; then $(CYGPATH_W) 'load/gridclientmarshallingbenchmark.cpp'; else $(CYGPATH_W) '$(srcdir)/load/gridclientmarshallingbenchmark.cpp'; fi`
 
 gridgain_router_tests-gridtestcommon.o: gridtestcommon.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gridgain_router_tests_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT gridgain_router_tests-gridtestcommon.o -MD -MP -MF $(DEPDIR)/gridgain_router_tests-gridtestcommon.Tpo -c -o gridgain_router_tests-gridtestcommon.o `test -f 'gridtestcommon.cpp' || echo '$(srcdir)/'`gridtestcommon.cpp
