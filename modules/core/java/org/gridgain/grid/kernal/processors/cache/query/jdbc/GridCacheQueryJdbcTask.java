@@ -9,19 +9,21 @@
 
 package org.gridgain.grid.kernal.processors.cache.query.jdbc;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.spi.indexing.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 
 import java.math.*;
 import java.net.*;
@@ -29,8 +31,8 @@ import java.sql.*;
 import java.util.*;
 import java.util.Date;
 
-import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
 
 /**
  * Task for JDBC adapter.
@@ -166,7 +168,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
             assert pageSize != null;
             assert maxRows != null;
 
-            GridTuple4<GridCacheFieldsQueryFuture, Integer, Boolean, Collection<String>> t = null;
+            GridTuple4<GridCacheQueryFuture<List<?>>, Integer, Boolean, Collection<String>> t = null;
 
             Collection<String> tbls = null;
             Collection<String> cols;
@@ -180,9 +182,9 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
 
                 GridCache<?, ?> cache = ((GridEx)grid).cachex(cacheName);
 
-                GridCacheFieldsQuery<?, ?> qry = cache.queries().createFieldsQuery(sql).queryArguments(args.toArray());
+                GridCacheQuery<List<?>> qry =
+                    ((GridCacheQueriesEx<?, ?>)cache.queries()).createSqlFieldsQuery(sql, true);
 
-                qry.includeMetadata(true);
                 qry.pageSize(pageSize);
                 qry.timeout(timeout);
 
@@ -190,9 +192,9 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
                 if (cache.configuration().getCacheMode() != PARTITIONED)
                     qry = qry.projection(grid.forLocal());
 
-                GridCacheFieldsQueryFuture fut = qry.execute();
+                GridCacheQueryFuture<List<?>> fut = qry.execute(args.toArray());
 
-                Collection<GridCacheSqlFieldMetadata> meta = fut.metadata().get();
+                Collection<GridIndexingFieldMetadata> meta = ((GridCacheQueryMetadataAware)fut).metadata().get();
 
                 if (meta == null) {
                     // Try to extract initial SQL exception.
@@ -213,7 +215,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
                 cols = new ArrayList<>(meta.size());
                 types = new ArrayList<>(meta.size());
 
-                for (GridCacheSqlFieldMetadata desc : meta) {
+                for (GridIndexingFieldMetadata desc : meta) {
                     tbls.add(desc.typeName());
                     cols.add(desc.fieldName().toUpperCase());
                     types.add(desc.fieldTypeName());
@@ -229,8 +231,8 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
             assert futId != null;
 
             if (t == null)
-                t = grid.<UUID, GridTuple4<GridCacheFieldsQueryFuture, Integer,
-                    Boolean, Collection<String>>>nodeLocalMap().get(futId);
+                t = grid.<UUID, GridTuple4<GridCacheQueryFuture<List<?>>, Integer, Boolean,
+                    Collection<String>>>nodeLocalMap().get(futId);
 
             assert t != null;
 
@@ -238,13 +240,15 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
 
             Collection<List<Object>> fields = new LinkedList<>();
 
-            GridCacheFieldsQueryFuture fut = t.get1();
+            GridCacheQueryFuture<List<?>> fut = t.get1();
 
             int pageCnt = 0;
             int totalCnt = t.get2();
 
-            while (fut.hasNext() && pageCnt++ < pageSize && (maxRows == 0 || totalCnt++ < maxRows)) {
-                fields.add(F.transformList(fut.next(), new C1<Object, Object>() {
+            List<?> next;
+
+            while ((next = fut.next()) != null && pageCnt++ < pageSize && (maxRows == 0 || totalCnt++ < maxRows)) {
+                fields.add(F.transformList(next, new C1<Object, Object>() {
                     @Override public Object apply(Object val) {
                         if (val != null && !sqlType(val))
                             val = val.toString();
@@ -254,7 +258,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
                 }));
             }
 
-            boolean finished = !fut.hasNext() || totalCnt == maxRows;
+            boolean finished = next == null || totalCnt == maxRows;
 
             if (!finished)
                 grid.nodeLocalMap().put(futId, F.t(fut, totalCnt, true, cols));
@@ -274,8 +278,8 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
         private void scheduleRemoval(final UUID id) throws GridException {
             grid.scheduler().scheduleLocal(new CAX() {
                 @Override public void applyx() throws GridException {
-                    GridTuple3<GridCacheFieldsQueryFuture, Integer, Boolean> t =
-                        grid.<UUID, GridTuple3<GridCacheFieldsQueryFuture, Integer, Boolean>>nodeLocalMap().get(id);
+                    GridTuple3<GridCacheQueryFuture<List<?>>, Integer, Boolean> t =
+                        grid.<UUID, GridTuple3<GridCacheQueryFuture<List<?>>, Integer, Boolean>>nodeLocalMap().get(id);
 
                     if (t != null) {
                         // If future was accessed since last scheduling,

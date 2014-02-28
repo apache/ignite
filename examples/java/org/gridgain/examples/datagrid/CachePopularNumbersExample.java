@@ -120,7 +120,7 @@ public class CachePopularNumbersExample {
      */
     private static TimerTask scheduleQuery(final Grid g, Timer timer, final int cnt) {
         TimerTask task = new TimerTask() {
-            private GridCacheFieldsQuery qry;
+            private GridCacheQuery<List<?>> qry;
 
             @Override public void run() {
                 // Get reference to cache.
@@ -128,13 +128,13 @@ public class CachePopularNumbersExample {
 
                 if (qry == null)
                     qry = cache.queries().
-                        createFieldsQuery("select _key, _val from Long order by _val desc limit " + cnt);
+                        createSqlFieldsQuery("select _key, _val from Long order by _val desc limit " + cnt);
 
                 try {
-                    List<List<Object>> results = new ArrayList<>(qry.execute().get());
+                    List<List<?>> results = new ArrayList<>(qry.execute().get());
 
-                    Collections.sort(results, new Comparator<List<Object>>() {
-                        @Override public int compare(List<Object> r1, List<Object> r2) {
+                    Collections.sort(results, new Comparator<List<?>>() {
+                        @Override public int compare(List<?> r1, List<?> r2) {
                             long cnt1 = (Long)r1.get(1);
                             long cnt2 = (Long)r2.get(1);
 
@@ -143,7 +143,7 @@ public class CachePopularNumbersExample {
                     });
 
                     for (int i = 0; i < cnt; i++) {
-                        List<Object> res = results.get(i);
+                        List<?> res = results.get(i);
 
                         System.out.println(res.get(0) + "=" + res.get(1));
                     }

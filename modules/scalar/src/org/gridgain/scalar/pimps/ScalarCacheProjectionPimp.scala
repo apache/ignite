@@ -13,12 +13,13 @@ package org.gridgain.scalar.pimps
 
 import collection._
 import collection.JavaConversions._
+import org.jetbrains.annotations.Nullable
 import org.gridgain.grid._
 import org.gridgain.grid.cache._
 import org.gridgain.grid.lang._
+import org.gridgain.grid.util.lang.{GridFunc => F}
+import org.gridgain.grid.util.scala.impl
 import org.gridgain.scalar._
-import org.jetbrains.annotations.Nullable
-import query.GridCacheQueryType._
 import scalar._
 
 /**
@@ -78,12 +79,6 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
     /** Type alias. */
     protected type EntryPred = (GridCacheEntry[K, V]) => Boolean
 
-    /** Type alias */
-    protected type KeyPred = K => Boolean
-
-    /** Type alias */
-    protected type ValuePred = V => Boolean
-
     /** Type alias. */
     protected type KvPred = (K, V) => Boolean
 
@@ -120,6 +115,15 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
 
             def reduce(): R = {
                 rdc(seq)
+            }
+        }
+    }
+
+    private def toRemoteTransformer[K, V, T](trans: V => T):
+        GridClosure[java.util.Map.Entry[K, V], java.util.Map.Entry[K, T]] = {
+        new GridClosure[java.util.Map.Entry[K, V], java.util.Map.Entry[K, T]] {
+            @impl def apply(e: java.util.Map.Entry[K, V]): java.util.Map.Entry[K, T] = {
+                F.t(e.getKey, trans(e.getValue))
             }
         }
     }
@@ -567,19 +571,14 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param kp Key filter. See `GridCacheQuery` for more details.
-     * @param vp Value filter. See `GridCacheQuery` for more details..
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
-    def scan(@Nullable grid: GridProjection = null, cls: Class[_ <: V], kp: KeyPred,
-        vp: ValuePred): Iterable[(K, V)] = {
+    def scan(@Nullable grid: GridProjection = null, cls: Class[_ <: V], kvp: KvPred): Iterable[(K, V)] = {
         assert(cls != null)
-        assert(kp != null)
-        assert(vp != null)
+        assert(kvp != null)
 
-        val q = value.cache[K, V]().queries().createQuery(SCAN, cls, null)
-            .remoteKeyFilter(kp)
-            .remoteValueFilter(vp)
+        val q = value.cache[K, V]().queries().createScanQuery(kvp)
 
         (if (grid != null) q.projection(grid) else q).execute().get.map(e => (e.getKey, e.getValue))
     }
@@ -599,16 +598,14 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param grid Grid projection on which this query will be executed. If `null` the
      *     global projection will be used.
-     * @param kp Key filter. See `GridCacheQuery` for more details.
-     * @param vp Value filter. See `GridCacheQuery` for more details..
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
-    def scan(@Nullable grid: GridProjection, kp: KeyPred, vp: ValuePred)
+    def scan(@Nullable grid: GridProjection, kvp: KvPred)
         (implicit m: Manifest[V]): Iterable[(K, V)] = {
-        assert(kp != null)
-        assert(vp != null)
+        assert(kvp != null)
 
-        scan(grid, m.erasure.asInstanceOf[Class[V]], kp, vp)
+        scan(grid, m.erasure.asInstanceOf[Class[V]], kvp)
     }
 
     /**
@@ -623,16 +620,14 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param kp Key filter. See `GridCacheQuery` for more details.
-     * @param vp Value filter. See `GridCacheQuery` for more details..
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
-    def scan(cls: Class[_ <: V], kp: KeyPred, vp: ValuePred): Iterable[(K, V)] = {
+    def scan(cls: Class[_ <: V], kvp: KvPred): Iterable[(K, V)] = {
         assert(cls != null)
-        assert(kp != null)
-        assert(vp != null)
+        assert(kvp != null)
 
-        scan(null, cls, kp, vp)
+        scan(null, cls, kvp)
     }
 
     /**
@@ -648,15 +643,13 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param kp Key filter. See `GridCacheQuery` for more details.
-     * @param vp Value filter. See `GridCacheQuery` for more details..
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
-    def scan(kp: KeyPred, vp: ValuePred)(implicit m: Manifest[V]): Iterable[(K, V)] = {
-        assert(kp != null)
-        assert(vp != null)
+    def scan(kvp: KvPred)(implicit m: Manifest[V]): Iterable[(K, V)] = {
+        assert(kvp != null)
 
-        scan(m.erasure.asInstanceOf[Class[V]], kp, vp)
+        scan(m.erasure.asInstanceOf[Class[V]], kvp)
     }
 
     /**
@@ -682,13 +675,11 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(clause != null)
         assert(args != null)
 
-        val q =
-            if (!args.isEmpty)
-                value.cache().queries().createQuery(SQL, cls, clause).queryArguments(args.asInstanceOf[Seq[Object]]: _*)
-            else
-                value.cache().queries().createQuery(SQL, cls, clause)
+        val q = value.cache().queries().createSqlQuery(cls, clause)
 
-        (if (grid != null) q.projection(grid) else q).execute().get.map(e => (e.getKey, e.getValue))
+        (if (grid != null) q.projection(grid) else q)
+            .execute(args.asInstanceOf[Seq[Object]]: _*)
+            .get.map(e => (e.getKey, e.getValue))
     }
 
     /**
@@ -809,7 +800,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(cls != null)
         assert(clause != null)
 
-        val q = value.cache().queries().createQuery(TEXT, cls, clause)
+        val q = value.cache().queries().createFullTextQuery(cls, clause)
 
         (if (grid != null) q.projection(grid) else q).execute().get.map(e => (e.getKey, e.getValue))
     }
@@ -896,24 +887,19 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param kp Key filter. See `GridCacheQuery` for more details.
-     * @param vp Value filter. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
-    def scanTransform[T](@Nullable grid: GridProjection = null, cls: Class[_ <: V], kp: KeyPred, vp: ValuePred,
-        trans: V => T): Iterable[(K, T)] = {
+    def scanTransform[T](@Nullable grid: GridProjection = null, cls: Class[_ <: V], kvp: KvPred, trans: V => T):
+        Iterable[(K, T)] = {
         assert(cls != null)
-        assert(kp != null)
-        assert(vp != null)
+        assert(kvp != null)
         assert(trans != null)
 
-        val q = value.cache[K, V]().queries().createTransformQuery[T](SCAN, cls, null)
-            .remoteKeyFilter(kp)
-            .remoteValueFilter(vp)
-            .remoteTransformer(trans)
+        val q = value.cache[K, V]().queries().createScanQuery(kvp)
 
-        toScalaItr[K, T]((if (grid != null) q.projection(grid) else q).execute().get)
+        toScalaItr[K, T]((if (grid != null) q.projection(grid) else q).execute(toRemoteTransformer[K, V, T](trans)).get)
     }
 
     /**
@@ -929,20 +915,17 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param kp Key filter. See `GridCacheQuery` for more details.
-     * @param vp Value filter. See `GridCacheQuery` for more details.
+     * @param grid Grid projection on which this query will be executed. If `null` the global projection will be used.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
-    def scanTransform[T](@Nullable grid: GridProjection, kp: KeyPred, vp: ValuePred,
-        trans: V => T)(implicit m: Manifest[V]): Iterable[(K, T)] = {
-        assert(kp != null)
-        assert(vp != null)
+    def scanTransform[T](@Nullable grid: GridProjection, kvp: KvPred, trans: V => T)(implicit m: Manifest[V]):
+        Iterable[(K, T)] = {
+        assert(kvp != null)
         assert(trans != null)
 
-        scanTransform(grid, m.erasure.asInstanceOf[Class[V]], kp, vp, trans)
+        scanTransform(grid, m.erasure.asInstanceOf[Class[V]], kvp, trans)
     }
 
     /**
@@ -957,19 +940,16 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param kp Key filter. See `GridCacheQuery` for more details.
-     * @param vp Value filter. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
-    def scanTransform[T](cls: Class[_ <: V], kp: KeyPred, vp: ValuePred,
-        trans: V => T): Iterable[(K, T)] = {
+    def scanTransform[T](cls: Class[_ <: V], kvp: KvPred, trans: V => T): Iterable[(K, T)] = {
         assert(cls != null)
-        assert(kp != null)
-        assert(vp != null)
+        assert(kvp != null)
         assert(trans != null)
 
-        scanTransform(null, cls, kp, vp, trans)
+        scanTransform(null, cls, kvp, trans)
     }
 
     /**
@@ -985,18 +965,16 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param kp Key filter. See `GridCacheQuery` for more details.
-     * @param vp Value filter. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
-    def scanTransform[T](kp: KeyPred, vp: ValuePred, trans: V => T)
+    def scanTransform[T](kvp: KvPred, trans: V => T)
         (implicit m: Manifest[V]): Iterable[(K, T)] = {
-        assert(kp != null)
-        assert(vp != null)
+        assert(kvp != null)
         assert(trans != null)
 
-        scanTransform(m.erasure.asInstanceOf[Class[V]], kp, vp, trans)
+        scanTransform(m.erasure.asInstanceOf[Class[V]], kvp, trans)
     }
 
     /**
@@ -1025,14 +1003,10 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(trans != null)
         assert(args != null)
 
-        val q =
-            (if (!args.isEmpty)
-                value.cache[K, V]().queries().createTransformQuery[T](SQL, cls, clause).queryArguments(args.toArray)
-            else
-                value.cache[K, V]().queries().createTransformQuery[T](SQL, cls, clause))
-            .remoteTransformer(trans)
+        val q = value.cache[K, V]().queries().createSqlQuery(cls, clause)
 
-        toScalaItr((if (grid != null) q.projection(grid) else q).execute().get)
+        toScalaItr((if (grid != null) q.projection(grid) else q)
+            .execute(toRemoteTransformer[K, V, T](trans), args.asInstanceOf[Seq[Object]]: _*).get)
     }
 
     /**
@@ -1108,8 +1082,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param args Optional list of query arguments.
      * @return Collection of cache key-value pairs.
      */
-    def sqlTransform[T](cls: Class[_ <: V], clause: String, trans: V => T,
-        args: Any*): Iterable[(K, T)] = {
+    def sqlTransform[T](cls: Class[_ <: V], clause: String, trans: V => T, args: Any*): Iterable[(K, T)] = {
         assert(cls != null)
         assert(clause != null)
         assert(trans != null)
@@ -1169,10 +1142,9 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(clause != null)
         assert(trans != null)
 
-        val q = value.cache[K, V]().queries().createTransformQuery[T](TEXT, cls, clause)
-            .remoteTransformer(trans)
+        val q = value.cache[K, V]().queries().createFullTextQuery(cls, clause)
 
-        toScalaItr((if (grid != null) q.projection(grid) else q).execute().get)
+        toScalaItr((if (grid != null) q.projection(grid) else q).execute(toRemoteTransformer[K, V, T](trans)).get)
     }
 
     /**
@@ -1265,27 +1237,21 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param kp Key filter. See `GridCacheQuery` for more details.
-     * @param vp Value filter. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
      */
-    def scanReduce[R1, R2](@Nullable grid: GridProjection = null, cls: Class[_ <: V], kp: KeyPred,
-        vp: ValuePred, rmtRdc: Iterable[(K, V)] => R1, locRdc: Iterable[R1] => R2): R2 = {
+    def scanReduce[R1, R2](@Nullable grid: GridProjection = null, cls: Class[_ <: V], kvp: KvPred,
+        rmtRdc: Iterable[(K, V)] => R1, locRdc: Iterable[R1] => R2): R2 = {
         assert(cls != null)
-        assert(kp != null)
-        assert(vp != null)
+        assert(kvp != null)
         assert(rmtRdc != null)
         assert(locRdc != null)
 
-        val q = value.cache[K, V]().queries().createReduceQuery[R1, R2](SCAN, cls, null)
-            .remoteKeyFilter(kp)
-            .remoteValueFilter(vp)
-            .remoteReducer(toEntryReducer(rmtRdc))
-            .localReducer(locRdc)
+        val q = value.cache[K, V]().queries().createScanQuery(kvp)
 
-        (if (grid != null) q.projection(grid) else q).reduce().get
+        locRdc((if (grid != null) q.projection(grid) else q).execute(toEntryReducer(rmtRdc)).get)
     }
 
     /**
@@ -1303,20 +1269,18 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param grid Grid projection on which this query will be executed. If `null` the
      *     global projection will be used.
-     * @param kp Key filter. See `GridCacheQuery` for more details.
-     * @param vp Value filter. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
      */
-    def scanReduce[R1, R2](@Nullable grid: GridProjection, kp: KeyPred, vp: ValuePred,
+    def scanReduce[R1, R2](@Nullable grid: GridProjection, kvp: KvPred,
         rmtRdc: Iterable[(K, V)] => R1, locRdc: Iterable[R1] => R2)(implicit m: Manifest[V]): R2 = {
-        assert(kp != null)
-        assert(vp != null)
+        assert(kvp != null)
         assert(rmtRdc != null)
         assert(locRdc != null)
 
-        scanReduce(grid, m.erasure.asInstanceOf[Class[V]], kp, vp, rmtRdc, locRdc)
+        scanReduce(grid, m.erasure.asInstanceOf[Class[V]], kvp, rmtRdc, locRdc)
     }
 
     /**
@@ -1331,21 +1295,19 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param kp Key filter. See `GridCacheQuery` for more details.
-     * @param vp Value filter. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
      */
-    def scanReduce[R1, R2](cls: Class[_ <: V], kp: KeyPred, vp: ValuePred,
+    def scanReduce[R1, R2](cls: Class[_ <: V], kvp: KvPred,
         rmtRdc: Iterable[(K, V)] => R1, locRdc: Iterable[R1] => R2): R2 = {
         assert(cls != null)
-        assert(kp != null)
-        assert(vp != null)
+        assert(kvp != null)
         assert(rmtRdc != null)
         assert(locRdc != null)
 
-        scanReduce(null, cls, kp, vp, rmtRdc, locRdc)
+        scanReduce(null, cls, kvp, rmtRdc, locRdc)
     }
 
     /**
@@ -1361,20 +1323,18 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param kp Key filter. See `GridCacheQuery` for more details.
-     * @param vp Value filter. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
      */
-    def scanReduce[R1, R2](kp: KeyPred, vp: ValuePred, rmtRdc: Iterable[(K, V)] => R1,
+    def scanReduce[R1, R2](kvp: KvPred, rmtRdc: Iterable[(K, V)] => R1,
         locRdc: Iterable[R1] => R2)(implicit m: Manifest[V]): R2 = {
-        assert(kp != null)
-        assert(vp != null)
+        assert(kvp != null)
         assert(rmtRdc != null)
         assert(locRdc != null)
 
-        scanReduce(m.erasure.asInstanceOf[Class[V]], kp, vp, rmtRdc, locRdc)
+        scanReduce(m.erasure.asInstanceOf[Class[V]], kvp, rmtRdc, locRdc)
     }
 
     /**
@@ -1405,15 +1365,10 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(locRdc != null)
         assert(args != null)
 
-        val q =
-            (if (!args.isEmpty)
-                value.cache[K, V]().queries().createReduceQuery[R1, R2](SQL, cls, clause).queryArguments(args.toArray)
-            else
-                value.cache[K, V]().queries().createReduceQuery[R1, R2](SQL, cls, clause))
-            .remoteReducer(toEntryReducer(rmtRdc))
-            .localReducer(locRdc)
+        val q = value.cache[K, V]().queries().createSqlQuery(cls, clause)
 
-        (if (grid != null) q.projection(grid) else q).reduce().get
+        locRdc((if (grid != null) q.projection(grid) else q)
+            .execute(toEntryReducer(rmtRdc), args.asInstanceOf[Seq[Object]]: _*).get)
     }
 
     /**
@@ -1560,11 +1515,9 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(rmtRdc != null)
         assert(locRdc != null)
 
-        val q = value.cache[K, V]().queries().createReduceQuery[R1, R2](TEXT, cls, clause)
-            .remoteReducer(toEntryReducer(rmtRdc))
-            .localReducer(locRdc)
+        val q = value.cache[K, V]().queries().createFullTextQuery(cls, clause)
 
-        (if (grid != null) q.projection(grid) else q).reduce().get
+        locRdc((if (grid != null) q.projection(grid) else q).execute(toEntryReducer(rmtRdc)).get)
     }
 
     /**
@@ -1664,24 +1617,19 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param kp Key filter. See `GridCacheQuery` for more details.
-     * @param vp Value filter. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
-    def scanReduceRemote[R](@Nullable grid: GridProjection = null, cls: Class[_ <: V], kp: KeyPred,
-        vp: ValuePred, rmtRdc: Iterable[(K, V)] => R): Iterable[R] = {
+    def scanReduceRemote[R](@Nullable grid: GridProjection = null, cls: Class[_ <: V], kvp: KvPred,
+        rmtRdc: Iterable[(K, V)] => R): Iterable[R] = {
         assert(cls != null)
-        assert(kp != null)
-        assert(vp != null)
+        assert(kvp != null)
         assert(rmtRdc != null)
 
-        val q = value.cache[K, V]().queries().createReduceQuery[R, R](SCAN, cls, null)
-            .remoteKeyFilter(kp)
-            .remoteValueFilter(vp)
-            .remoteReducer(toEntryReducer(rmtRdc))
+        val q = value.cache[K, V]().queries().createScanQuery(kvp)
 
-        (if (grid != null) q.projection(grid) else q).reduceRemote().get
+        (if (grid != null) q.projection(grid) else q).execute(toEntryReducer(rmtRdc)).get
     }
 
     /**
@@ -1697,20 +1645,17 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param grid Grid projection on which this query will be executed. If `null` the
-     *     global projection will be used.
-     * @param kp Key filter. See `GridCacheQuery` for more details.
-     * @param vp Value filter. See `GridCacheQuery` for more details.
+     * @param grid Grid projection on which this query will be executed. If `null` the global projection will be used.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
-    def scanReduceRemote[R](@Nullable grid: GridProjection, kp: KeyPred, vp: ValuePred,
+    def scanReduceRemote[R](@Nullable grid: GridProjection, kvp: KvPred,
         rmtRdc: Iterable[(K, V)] => R)(implicit m: Manifest[V]): Iterable[R] = {
-        assert(kp != null)
-        assert(vp != null)
+        assert(kvp != null)
         assert(rmtRdc != null)
 
-        scanReduceRemote(grid, m.erasure.asInstanceOf[Class[V]], kp, vp, rmtRdc)
+        scanReduceRemote(grid, m.erasure.asInstanceOf[Class[V]], kvp, rmtRdc)
     }
 
     /**
@@ -1725,19 +1670,16 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param kp Key filter. See `GridCacheQuery` for more details.
-     * @param vp Value filter. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
-    def scanReduceRemote[R](cls: Class[_ <: V], kp: KeyPred, vp: ValuePred,
-        rmtRdc: Iterable[(K, V)] => R): Iterable[R] = {
+    def scanReduceRemote[R](cls: Class[_ <: V], kvp: KvPred, rmtRdc: Iterable[(K, V)] => R): Iterable[R] = {
         assert(cls != null)
-        assert(kp != null)
-        assert(vp != null)
+        assert(kvp != null)
         assert(rmtRdc != null)
 
-        scanReduceRemote(null, cls, kp, vp, rmtRdc)
+        scanReduceRemote(null, cls, kvp, rmtRdc)
     }
 
     /**
@@ -1753,18 +1695,15 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param kp Key filter. See `GridCacheQuery` for more details.
-     * @param vp Value filter. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
-    def scanReduceRemote[R](kp: KeyPred, vp: ValuePred, rmtRdc: Iterable[(K, V)] => R)
-        (implicit m: Manifest[V]): Iterable[R] = {
-        assert(kp != null)
-        assert(vp != null)
+    def scanReduceRemote[R](kvp: KvPred, rmtRdc: Iterable[(K, V)] => R)(implicit m: Manifest[V]): Iterable[R] = {
+        assert(kvp != null)
         assert(rmtRdc != null)
 
-        scanReduceRemote(m.erasure.asInstanceOf[Class[V]], kp, vp, rmtRdc)
+        scanReduceRemote(m.erasure.asInstanceOf[Class[V]], kvp, rmtRdc)
     }
 
     /**
@@ -1793,14 +1732,10 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(rmtRdc != null)
         assert(args != null)
 
-        val q =
-            (if (!args.isEmpty)
-                value.cache[K, V]().queries().createReduceQuery[R, R](SQL, cls, clause).queryArguments(args.toArray)
-            else
-                value.cache[K, V]().queries().createReduceQuery[R, R](SQL, cls, clause))
-            .remoteReducer(toEntryReducer(rmtRdc))
+        val q = value.cache[K, V]().queries().createSqlQuery(cls, clause)
 
-        (if (grid != null) q.projection(grid) else q).reduceRemote().get
+        (if (grid != null) q.projection(grid) else q)
+            .execute(toEntryReducer(rmtRdc), args.asInstanceOf[Seq[Object]]: _*).get
     }
 
     /**
@@ -1904,8 +1839,8 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param args Optional list of query arguments.
      * @return Collection of reduced values.
      */
-    def sqlReduceRemote[R](clause: String, rmtRdc: Iterable[(K, V)] => R,
-        args: Any*)(implicit m: Manifest[V]): Iterable[R] = {
+    def sqlReduceRemote[R](clause: String, rmtRdc: Iterable[(K, V)] => R, args: Any*)
+        (implicit m: Manifest[V]): Iterable[R] = {
         assert(clause != null)
         assert(rmtRdc != null)
         assert(args != null)
@@ -1937,10 +1872,9 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(clause != null)
         assert(rmtRdc != null)
 
-        val q = value.cache[K, V]().queries().createReduceQuery[R, R](TEXT, cls, clause)
-            .remoteReducer(toEntryReducer(rmtRdc))
+        val q = value.cache[K, V]().queries().createFullTextQuery(cls, clause)
 
-        (if (grid != null) q.projection(grid) else q).reduceRemote().get
+        (if (grid != null) q.projection(grid) else q).execute(toEntryReducer(rmtRdc)).get
     }
 
     /**
@@ -2040,14 +1974,10 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         assert(clause != null)
         assert(args != null)
 
-        val q =
-            if (!args.isEmpty)
-                value.cache[K, V]().queries().createFieldsQuery(clause).queryArguments(args.toArray)
-            else
-                value.cache[K, V]().queries().createFieldsQuery(clause)
+        val q = value.cache[K, V]().queries().createSqlFieldsQuery(clause)
 
-        (if (grid != null) q.projection(grid) else q).execute()
-            .get.toIndexedSeq.map((s: java.util.List[Object]) => s.toIndexedSeq)
+        (if (grid != null) q.projection(grid) else q).execute(args.asInstanceOf[Seq[Object]]: _*)
+            .get.toIndexedSeq.map((s: java.util.List[_]) => s.toIndexedSeq)
     }
 
     /**
