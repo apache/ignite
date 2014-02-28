@@ -8,7 +8,7 @@ import java.util.*;
 
 /**
  * Demonstrates a simple use of GridGain grid with
- * {@link org.gridgain.grid.compute.GridComputeTaskAdapter}.
+ * {@link GridComputeTaskAdapter}.
  * <p>
  * String "Hello Grid Enabled World!" is passed as an argument to
  * {@link GridCompute#execute(String, Object)} method.
@@ -39,7 +39,7 @@ import java.util.*;
  */
 public class ComputeTaskMapExample {
     /**
-     * Execute {@code HelloWorld} example with {@link org.gridgain.grid.compute.GridComputeTaskSplitAdapter}.
+     * Execute {@code HelloWorld} example with {@link GridComputeTaskSplitAdapter}.
      *
      * @param args Command line arguments, none required but if provided
      *      first one should point to the Spring XML configuration file. See

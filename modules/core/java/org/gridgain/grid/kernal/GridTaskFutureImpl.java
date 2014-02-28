@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -27,7 +27,7 @@ import static java.util.concurrent.TimeUnit.*;
  *
  * @author @java.author
  * @version @java.version
- * @param <R> Type of the task result returning from {@link org.gridgain.grid.compute.GridComputeTask#reduce(List)} method.
+ * @param <R> Type of the task result returning from {@link GridComputeTask#reduce(List)} method.
  */
 public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements GridComputeTaskFuture<R> {
     /** */

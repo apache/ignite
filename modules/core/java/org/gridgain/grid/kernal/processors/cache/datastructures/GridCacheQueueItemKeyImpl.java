@@ -50,7 +50,7 @@ public class GridCacheQueueItemKeyImpl implements Externalizable, GridCacheQueue
     }
 
     /**
-     * Required by {@link java.io.Externalizable}.
+     * Required by {@link Externalizable}.
      */
     public GridCacheQueueItemKeyImpl() {
         // No-op.

@@ -85,7 +85,7 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
      * @param val Value.
      * @param valType Value type.
      * @param expirationTime Expiration time.
-     * @throws org.gridgain.grid.spi.GridSpiException If failed.
+     * @throws GridSpiException If failed.
      */
     public GridH2KeyValueRowOffheap(GridH2RowDescriptor desc, Object key, int keyType, @Nullable Object val, int valType,
         long expirationTime) throws GridSpiException {

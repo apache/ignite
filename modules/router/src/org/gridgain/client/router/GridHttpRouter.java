@@ -9,9 +9,9 @@
 
 package org.gridgain.client.router;
 
-import java.util.*;
-
 import org.gridgain.client.*;
+
+import java.util.*;
 
 /**
  * HTTP router interface.
@@ -55,8 +55,8 @@ public interface GridHttpRouter {
      * Unique router Ids are automatically generated on router startup.
      * They are used to control router's lifecycle via {@link GridRouterFactory}.
      *
-     * @see GridRouterFactory#httpRouter(java.util.UUID)
-     * @see GridRouterFactory#stopHttpRouter(java.util.UUID)
+     * @see GridRouterFactory#httpRouter(UUID)
+     * @see GridRouterFactory#stopHttpRouter(UUID)
      * @return Router Id.
      */
     public UUID id();

@@ -11,11 +11,11 @@ package org.gridgain.grid.spi.eventstorage.memory;
 
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.eventstorage.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -42,7 +42,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * <ul>
  * <li>Event queue size (see {@link #setExpireCount(long)})</li>
  * <li>Event time-to-live value (see {@link #setExpireAgeMs(long)})</li>
- * <li>{@link #setFilter(org.gridgain.grid.lang.GridPredicate)} - Event filter that should be used for decision to accept event.</li>
+ * <li>{@link #setFilter(GridPredicate)} - Event filter that should be used for decision to accept event.</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
  * GridMemoryEventStorageSpi is used by default and should be explicitly configured only
@@ -227,12 +227,12 @@ public class GridMemoryEventStorageSpi extends GridSpiAdapter implements GridEve
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridEvent> localEvents(GridPredicate<? super GridEvent> p) {
+    @Override public <T extends GridEvent> Collection<T> localEvents(GridPredicate<T> p) {
         A.notNull(p, "p");
 
         cleanupQueue();
 
-        return F.retain(evts, true, p);
+        return F.retain((Collection<T>)evts, true, p);
     }
 
     /** {@inheritDoc} */
