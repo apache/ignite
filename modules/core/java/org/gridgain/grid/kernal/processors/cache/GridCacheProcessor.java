@@ -1726,13 +1726,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      */
     private static class LocalAffinityFunction implements GridCacheAffinityFunction {
-        /** {@inheritDoc} */
-        @Override public Collection<GridNode> nodes(int part, Collection<GridNode> nodes) {
-            for (GridNode n : nodes)
-                if (n.isLocal())
-                    return Arrays.asList(n);
+        @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
+            GridNode locNode = null;
 
-            throw new GridRuntimeException("Local node is not included into affinity nodes for 'LOCAL' cache");
+            for (GridNode n : affCtx.currentTopologySnapshot()) {
+                if (n.isLocal()) {
+                    locNode = n;
+
+                    break;
+                }
+            }
+
+            if (locNode == null)
+                throw new GridRuntimeException("Local node is not included into affinity nodes for 'LOCAL' cache");
+
+            List<List<GridNode>> res = new ArrayList<>(partitions());
+
+            for (int part = 0; part < partitions(); part++)
+                res.add(Collections.singletonList(locNode));
+
+            return Collections.unmodifiableList(res);
         }
 
         /** {@inheritDoc} */

@@ -383,7 +383,31 @@ public class GridCachePartitionAffinityFunction implements GridCacheAffinityFunc
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridNode> nodes(int part, Collection<GridNode> nodes) {
+    @SuppressWarnings("unchecked")
+    @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext ctx) {
+        List<List<GridNode>> res = new ArrayList<>(parts);
+
+        Collection<GridNode> topSnapshot = ctx.currentTopologySnapshot();
+
+        for (int part = 0; part < parts; part++) {
+            res.add(F.isEmpty(topSnapshot) ?
+                Collections.<GridNode>emptyList() :
+                // Wrap affinity nodes with unmodifiable list since unmodifiable generic collection
+                // doesn't provide equals and hashCode implementations.
+                U.sealList(nodes(part, topSnapshot)));
+        }
+
+        return res;
+    }
+
+    /**
+     * Assigns nodes to one partition.
+     *
+     * @param part Partition to assign nodes for.
+     * @param nodes Cache topology nodes.
+     * @return Assigned nodes, first node is primary, others are backups.
+     */
+    public Collection<GridNode> nodes(int part, Collection<GridNode> nodes) {
         if (nodes == null)
             return Collections.emptyList();
 

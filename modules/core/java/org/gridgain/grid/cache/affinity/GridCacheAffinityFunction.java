@@ -11,6 +11,8 @@ package org.gridgain.grid.cache.affinity;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.events.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -95,11 +97,12 @@ public interface GridCacheAffinityFunction extends Serializable {
      * <code>N</code> is primary for some key <code>K</code>, if any other node(s) leave
      * grid and no node joins grid, node <code>N</code> will remain primary for key <code>K</code>.
      *
-     * @param part Partition to get nodes for.
-     * @param nodes Nodes to choose from.
-     * @return Affinity nodes for the given partition.
+     * @param affCtx Affinity function context. Will provide all required information to calculate
+     *      new partition assignments.
+     * @return Unmodifiable list indexed by partition number. Each element of array is a collection in which
+     *      first node is a primary node and other nodes are backup nodes.
      */
-    public Collection<GridNode> nodes(int part, Collection<GridNode> nodes);
+    public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx);
 
     /**
      * Removes node from affinity. This method is called when it is safe to remove left node from
