@@ -814,22 +814,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridGgfsConfiguration[] ggfsCfgs = ctx.grid().configuration().getGgfsConfiguration();
 
         if (ggfsCfgs != null) {
-            for (GridGgfsConfiguration ggfsC : ggfsCfgs) {
-                sysCaches.add(ggfsC.getMetaCacheName());
-                sysCaches.add(ggfsC.getDataCacheName());
+            for (GridGgfsConfiguration ggfsCfg : ggfsCfgs) {
+                addSystemCache(ggfsCfg.getMetaCacheName());
+                addSystemCache(ggfsCfg.getDataCacheName());
             }
         }
 
         for (GridCacheConfiguration ccfg : ctx.grid().configuration().getCacheConfiguration()) {
             if (ccfg.getDrSenderConfiguration() != null)
-                sysCaches.add(CU.cacheNameForReplicationSystemCache(ccfg.getName()));
+                addSystemCache(CU.cacheNameForReplicationSystemCache(ccfg.getName()));
         }
 
         GridDrSenderHubConfiguration sndHubCfg = ctx.grid().configuration().getDrSenderHubConfiguration();
 
         if (sndHubCfg != null && sndHubCfg.getCacheNames() != null) {
             for (String cacheName : sndHubCfg.getCacheNames())
-                sysCaches.add(CU.cacheNameForReplicationSystemCache(cacheName));
+                addSystemCache(CU.cacheNameForReplicationSystemCache(cacheName));
         }
 
         for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
@@ -841,6 +841,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Started cache processor.");
+    }
+
+    /**
+     * Add system cache.
+     *
+     * @param name Cache name.
+     */
+    private void addSystemCache(String name) {
+        GridCacheAdapter<?, ?> cache = caches.remove(name);
+
+        assert cache != null;
+
+        // System caches must be stopped after "normal" caches.
+        caches.put(name, cache);
+
+        sysCaches.add(CU.cacheNameForReplicationSystemCache(name));
     }
 
     /** {@inheritDoc} */
@@ -1240,6 +1256,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
+            U.debug("STOPPING CACHE: " + cache.name());
+
             GridCacheContext ctx = cache.context();
 
             if (isNearEnabled(ctx)) {
