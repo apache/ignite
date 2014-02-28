@@ -32,17 +32,13 @@
         </and>
     </condition>
 
-    <condition property="jdk.home" value="${JAVA_HOME}">
-        <isset property="JAVA_HOME"/>
-    </condition>
     <condition property="jdk.home" value="${env.JAVA_HOME}">
-        <and>
-            <not>
-                <isset property="jdk.home"/>
-            </not>
-            <isset property="env.JAVA_HOME"/>
-        </and>
+        <isset property="env.JAVA_HOME"/>
     </condition>
+
+    <fail unless="gridgain.home"
+          message="Please specify Ant property GG_HOME (environment variable GRIDGAIN_HOME will also work)."/>
+    <fail unless="jdk.home" message="Please specify JAVA_HOME environment variable."/>
 
     <property name="tmp.src" value="${tmp.dir}/src"/>
     <property name="tmp.dist" value="${tmp.dir}/dist"/>
@@ -70,7 +66,7 @@
         <echo message=""/>
         <echo message="mk.collect.libs"/>
 
-        <exec executable="mvn" dir="${gridgain.home}" failonerror="yes">
+        <exec executable="mvn" dir="${gridgain.home}" failonerror="yes" >
             <arg line="clean install"/>
         </exec>
 
@@ -161,8 +157,6 @@
             <jar destfile="@{jar.dir}/@{jar.name}" basedir="${tmp.cls}">
                 <manifest>
                     <section name="GridGain">
-                        <!--<attribute name="Implementation-Version" value="${gg.global.ver.dot}"/>-->
-                        <!--<attribute name="Implementation-Vendor" value="${biz.copyright.text}"/>-->
                         <attribute name="Implementation-Title" value="@{jar.name}"/>
                     </section>
                 </manifest>
