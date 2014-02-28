@@ -64,7 +64,7 @@ GridUuid GridUuid::randomUuid() {
 }
 
 GridUuid& GridUuid::operator=(const GridUuid& rhs){
-    if (this != &rhs) 
+    if (this != &rhs)
         pimpl.uuid_ = rhs.pimpl.uuid_;
 
     return *this;
@@ -143,5 +143,5 @@ bool GridUuid::operator < (const GridUuid& other) const {
 }
 
 bool GridUuid::operator == (const GridUuid& other) const {
-     return pimpl.uuid_ == other.pimpl.uuid_;
+    return pimpl.uuid_ == other.pimpl.uuid_;
 }

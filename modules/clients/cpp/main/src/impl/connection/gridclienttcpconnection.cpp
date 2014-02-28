@@ -325,7 +325,7 @@ void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket,
                 boost::asio::buffer(
                     (const void*) &GridClientTcpPacket::SIGNAL_CHAR, sizeof(GridClientTcpPacket::SIGNAL_CHAR)),
                     boost::asio::buffer((const void*) gridTcpPacket.sizeHeader.data(), sizeof(int32_t))
-                    };
+            };
 
             totalBytesWritten += asio::write(getSocket(), bufsToSend, ec);
         }

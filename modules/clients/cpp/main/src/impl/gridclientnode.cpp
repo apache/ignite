@@ -148,6 +148,7 @@ const GridSocketAddress & GridClientNode::getRouterTcpAddress() const {
     return pimpl->routerTcpAddress;
 
 }
+
 const GridSocketAddress & GridClientNode::getRouterJettyAddress() const {
     return pimpl->routerJettyAddress;
 }

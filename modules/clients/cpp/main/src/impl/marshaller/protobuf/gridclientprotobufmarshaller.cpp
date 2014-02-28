@@ -35,7 +35,9 @@ static void unwrap(const ObjectWrapper& obj, GridClientNode& node);
 void GridClientProtobufMarshaller::marshalMsg(const ::google::protobuf::Message& msg, int8_t*& pBuffer,
     unsigned long& bufferLength) {
     bufferLength = msg.ByteSize();
+
     pBuffer = new int8_t[bufferLength];
+
     msg.SerializeToArray(pBuffer, bufferLength);
 }
 
@@ -52,6 +54,7 @@ void GridClientProtobufMarshaller::marshal(const ::google::protobuf::Message& ms
     marshalMsg(msg, pBuffer, bufferSize);
 
     bytes.assign(pBuffer, pBuffer + bufferSize);
+
     delete[] pBuffer;
 }
 
@@ -221,11 +224,14 @@ static void wrapRequest(const GridClientMessageCommand& cmd, const ObjectWrapper
     unsigned long bufferLength;
 
     GridClientProtobufMarshaller::marshalMsg(src, pBuffer, bufferLength);
+
     req.set_body(pBuffer, bufferLength);
+
     delete[] pBuffer;
 
     GridClientProtobufMarshaller::marshalMsg(req, pBuffer, bufferLength);
     objWrapper.set_binary(pBuffer, bufferLength);
+
     delete[] pBuffer;
 }
 
