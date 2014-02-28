@@ -78,9 +78,8 @@ public interface GridScheduler {
      *      where {@code n1} is delay of scheduling in seconds and {@code n2} is the number of execution. Both
      *      parameters are optional.
      * @return Scheduled execution future.
-     * @throws GridException Thrown in case of any errors.
      */
-    public GridSchedulerFuture<?> scheduleLocal(Runnable job, String ptrn) throws GridException;
+    public GridSchedulerFuture<?> scheduleLocal(Runnable job, String ptrn);
 
     /**
      * Schedules job for execution using local <b>cron-based</b> scheduling.
@@ -90,7 +89,6 @@ public interface GridScheduler {
      *      where {@code n1} is delay of scheduling in seconds and {@code n2} is the number of execution. Both
      *      parameters are optional.
      * @return Scheduled execution future.
-     * @throws GridException Thrown in case of any errors.
      */
     public <R> GridSchedulerFuture<R> scheduleLocal(Callable<R> c, String ptrn) throws GridException;
 }

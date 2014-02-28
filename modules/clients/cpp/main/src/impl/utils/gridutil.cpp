@@ -70,6 +70,17 @@ std::ostream& GridUtil::toStream(std::ostream &out, const std::vector<std::strin
     return out;
 }
 
+std::ostream& GridUtil::toStream(std::ostream &out, const std::vector<GridSocketAddress> &v) {
+    for (size_t i = 1; i < v.size(); ++i) {
+        if (i != 0)
+            out << ",";
+
+        out << v[i].host() << ":" << v[i].port();
+    }
+
+    return out;
+}
+
 int64_t GridUtil::currentTimeMillis() {
 #ifdef _MSC_VER // Windows
     /**
@@ -96,7 +107,8 @@ int64_t GridUtil::currentTimeMillis() {
 std::vector<int8_t> GridUtil::getVersionNumeric() {
     std::vector<int8_t> ret(4, 0); // Vector of 4 zeros.
 
-    GridClientByteUtils::valueToBytes(GridStringHasheableObject(VER_STR).hashCode(), ret, GridClientByteUtils::BIG_ENDIAN_ORDER);
+    GridClientByteUtils::valueToBytes(GridStringHasheableObject(VER_STR).hashCode(), &ret[0], ret.size(),
+        GridClientByteUtils::BIG_ENDIAN_ORDER);
 
     return ret;
 }

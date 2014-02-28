@@ -33,7 +33,7 @@ import java.util.concurrent.*;
 * @version @java.version
 */
 @SuppressWarnings("NullableProblems")
-public class GridClientPartitionedAffinity implements GridClientDataAffinity, GridClientTopologyListener {
+public class GridClientPartitionAffinity implements GridClientDataAffinity, GridClientTopologyListener {
     /**
      * This resolver is used to provide alternate hash ID, other than node ID.
      * <p>
@@ -93,7 +93,7 @@ public class GridClientPartitionedAffinity implements GridClientDataAffinity, Gr
     /**
      * Empty constructor with all defaults.
      */
-    public GridClientPartitionedAffinity() {
+    public GridClientPartitionAffinity() {
         this(null, null);
     }
 
@@ -107,7 +107,7 @@ public class GridClientPartitionedAffinity implements GridClientDataAffinity, Gr
      *      will be selected from all nodes outside of this filter, and backups will be selected
      *      from all nodes inside it.
      */
-    public GridClientPartitionedAffinity(Integer parts, GridClientPredicate<UUID> backupFilter) {
+    public GridClientPartitionAffinity(Integer parts, GridClientPredicate<UUID> backupFilter) {
         this.parts = parts == null ? DFLT_PARTITION_CNT : parts;
         this.backupFilter = backupFilter;
 

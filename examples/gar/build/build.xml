@@ -35,7 +35,7 @@
           message="Please specify Ant property GG_HOME (environment variable GRIDGAIN_HOME will also work)."/>
 
     <property name="base.dir" value="${gridgain.home}"/>
-    <property name="examples.gar.dir" value="${base.dir}/os/examples/gar"/>
+    <property name="examples.gar.dir" value="${base.dir}/examples/gar"/>
     <property name="examples.gar.src.dir" value="${examples.gar.dir}/src"/>
     <property name="examples.gar.deploy.dir" value="${examples.gar.dir}/deploy"/>
     <property name="libs.dir" value="${base.dir}/libs"/>

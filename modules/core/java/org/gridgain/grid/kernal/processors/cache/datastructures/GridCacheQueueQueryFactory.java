@@ -17,10 +17,10 @@ import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -29,7 +29,6 @@ import java.util.concurrent.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
-import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
 
 /**
  * Query factory responsible for providing all queries utilized by queue service.
@@ -37,6 +36,7 @@ import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
  * @author @java.author
  * @version @java.version
  */
+@SuppressWarnings("PackageVisibleInnerClass")
 class GridCacheQueueQueryFactory<T> implements Externalizable {
     /** Deserialization stash. */
     private static final ThreadLocal<GridTuple<GridCacheContext>> stash =
@@ -50,35 +50,22 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
     private GridCacheContext cctx;
 
     /** Query to get all queue items. */
-    private GridCacheQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> itemsQry;
+    private GridCacheQuery<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> itemsQry;
 
     /** Query to first queue item. */
-    private GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>,
-        Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>, Map.Entry<GridCacheQueueItemKey,
-        GridCacheQueueItemImpl<T>>> firstItemQry;
-
-    /** Query to last queue item. */
-    private GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>,
-        Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>, Map.Entry<GridCacheQueueItemKey,
-        GridCacheQueueItemImpl<T>>> lastItemQry;
+    private GridCacheQuery<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> firstItemQry;
 
     /** Query to get all queue keys. */
-    private GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>,
-        GridBiTuple<Integer, GridException>, GridBiTuple<Integer, GridException>> rmvAllKeysQry;
+    private GridCacheQuery<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> rmvAllKeysQry;
 
     /** Query to check contains of given items. */
-    private GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>,
-        boolean[], Boolean> containsQry;
+    private GridCacheQuery<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> containsQry;
 
     /** Query to get keys of given items. */
-    private GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>,
-        GridBiTuple<Integer, GridException>, GridBiTuple<Integer, GridException>> rmvItemsQry;
+    private GridCacheQuery<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> rmvItemsQry;
 
     /** Query to get queue items at specified positions. */
-    private GridCacheQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> itemsAtPosQry;
-
-    /** Query to get position of queue item. */
-    private GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>, Integer, Integer> posOfItemQry;
+    private GridCacheQuery<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> itemsAtPosQry;
 
     /** Queries object. */
     private GridCacheQueries<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> qry;
@@ -88,7 +75,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
      */
     @SuppressWarnings("TypeMayBeWeakened")
     @GridToStringExclude
-    private final SequenceComparator<T> seqComp = new SequenceComparator<>();
+    private static final SequenceComparator<?> SEQ_COMP = new SequenceComparator<>();
 
     /** Queue items view.*/
     private GridCacheProjection<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> itemView;
@@ -132,21 +119,15 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
      */
     private void initItemsQueries() {
         // Query to get ordered items from given queue.
-        itemsQry = qry.createQuery(SQL, GridCacheQueueItemImpl.class.getName(), "qid=? " +
-            "order by seq asc");
+        itemsQry = qry.createSqlQuery(GridCacheQueueItemImpl.class, "qid=? order by seq asc");
 
         // Query to get items at specified positions from given queue.
         // Uses optimized H2 array syntax to avoid big IN(..) clauses.
-        itemsAtPosQry = qry.createQuery(SQL, GridCacheQueueItemImpl.class.getName(),
+        itemsAtPosQry = qry.createSqlQuery(GridCacheQueueItemImpl.class,
             "select * from " +
                 "(select *, rownum as r from " +
                 "(select * from GridCacheQueueItemImpl where qid=? " + "order by seq asc" + ')' +
                 ") where r-1 in (select * from table(x int=?))");
-
-        // Query to get positions of given items in a queue.
-        // The reducer will be set later, during call time.
-        posOfItemQry = qry.createReduceQuery(SQL, GridCacheQueueItemImpl.class.getName(),
-            "qid=? " + "order by seq asc");
     }
 
     /**
@@ -154,11 +135,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
      */
     private void initRemoveAllKeysQuery() {
         // Query to get all keys in a queue.
-        GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>, GridBiTuple<Integer, GridException>,
-            GridBiTuple<Integer, GridException>> rmvAllKeysQry = qry.createReduceQuery(SQL,
-            GridCacheQueueItemImpl.class.getName(), "qid=? " + "order by seq asc");
-
-        this.rmvAllKeysQry = rmvAllKeysQry.localReducer(new RemoveAllKeysQueryLocalReducer());
+        rmvAllKeysQry = qry.createSqlQuery(GridCacheQueueItemImpl.class, "qid=? " + "order by seq asc");
     }
 
     /**
@@ -167,12 +144,8 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
     private void initRemoveItemsQuery() {
         // Query to check contains of given items in a queue.
         // Uses optimized H2 array syntax to avoid big IN(..) clauses.
-        GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>, GridBiTuple<Integer, GridException>,
-            GridBiTuple<Integer, GridException>> rmvItemsQry = qry.createReduceQuery(SQL,
-            GridCacheQueueItemImpl.class.getName(), " qid=? and id in (select * from table(x int=?)) " +
-            "order by seq asc");
-
-        this.rmvItemsQry = rmvItemsQry.localReducer(new RemoveItemsQueryLocalReducer());
+        rmvItemsQry = qry.createSqlQuery(GridCacheQueueItemImpl.class,
+            "qid=? and id in (select * from table(x int=?)) " + "order by seq asc");
     }
 
     /**
@@ -181,7 +154,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
     private void initContainsQuery() {
         // Query to check contains of given items in a queue.
         // Uses optimized H2 array syntax to avoid big IN(..) clauses.
-        containsQry = qry.createReduceQuery(SQL, GridCacheQueueItemImpl.class.getName(),
+        containsQry = qry.createSqlQuery(GridCacheQueueItemImpl.class,
             " qid=? and id in (select * from table(x int=?)) " + "order by seq asc");
     }
 
@@ -189,99 +162,71 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
      * Initialize queue item query.
      */
     private void initQueueItemQuery() {
-        // Reducer for receiving only one record from partitioned cache from primary node.
-        OneRecordReducer<T> rdcOneRecord = new OneRecordReducer<>();
-
         // Query to first item (regarding to order) from given queue.
-        GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>,
-            Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>,
-            Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> firstItemQry =
-            qry.createReduceQuery(SQL, GridCacheQueueItemImpl.class.getName(),
+        firstItemQry = qry.createSqlQuery(GridCacheQueueItemImpl.class,
                 " qid=? " + "order by seq asc");
-
-        // Query to last item (regarding to order) from given queue.
-        GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>,
-            Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>,
-            Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> lastItemQry =
-            qry.createReduceQuery(SQL, GridCacheQueueItemImpl.class.getName(),
-                " qid=? " + "order by seq desc");
-
-        this.firstItemQry = firstItemQry.remoteReducer(rdcOneRecord);
-        this.lastItemQry = lastItemQry.remoteReducer(rdcOneRecord);
     }
 
     /**
      * @return Cache query for requesting all queue items.
      */
-    GridCacheQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> itemsQuery() {
+    GridCacheQuery<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> itemsQuery() {
         return itemsQry;
     }
 
     /**
-     * @param items Items.
-     * @param retain Retain flag.
-     * @param single Single flag.
      * @return Cache query for requesting all queue keys of collection of queue item.
      */
-    GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>, GridBiTuple<Integer, GridException>,
-        GridBiTuple<Integer, GridException>> itemsKeysQuery(
-        final Iterable<?> items,
-        final boolean retain,
-        final boolean single) {
-        return rmvItemsQry.remoteReducer(new RemoveItemsQueryRemoteReducer<>(cctx, itemView, items, retain, single));
-    }
-
-    /**
-     * @param size Size to remove.
-     * @return Cache query for requesting all queue keys.
-     */
-    GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>, GridBiTuple<Integer, GridException>,
-        GridBiTuple<Integer, GridException>> removeAllKeysQuery(final Integer size) {
-        return rmvAllKeysQry.remoteReducer(new RemoveAllKeysQueryRemoteReducer<>(cctx, itemView, size));
+    GridCacheQuery<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> itemsKeysQuery() {
+        return rmvItemsQry;
     }
 
     /**
      * @param items Items.
+     * @param retain Retain.
+     * @param single Single.
+     * @return Reducer.
+     */
+    GridReducer<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>, GridBiTuple<Integer, GridException>>
+        itemsKeysReducer(Iterable<?> items, boolean retain, boolean single) {
+        return new RemoveItemsQueryRemoteReducer<>(cctx, itemView, items, retain, single);
+    }
+
+    /**
+     * @return Cache query for requesting all queue keys.
+     */
+    GridCacheQuery<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> removeAllKeysQuery() {
+        return rmvAllKeysQry;
+    }
+
+    /**
+     * @param size Size.
+     * @return Reducer.
+     */
+    GridReducer<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>, GridBiTuple<Integer, GridException>>
+        removeAllKeysReducer(int size) {
+        return new RemoveAllKeysQueryRemoteReducer<>(cctx, itemView, size);
+    }
+
+    /**
      * @return Cache query for checking contains queue item.
      */
-    GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>, boolean[], Boolean> containsQuery(
-        final Object[] items) {
-        return containsQry
-            .remoteReducer(new ContainsQueryRemoteReducer<T>(items))
-            .localReducer(new ContainsQueryLocalReducer(items.length));
+    GridCacheQuery<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> containsQuery() {
+        return containsQry;
     }
 
     /**
      * @return Cache query for requesting all queue items.
      */
-    GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>, Map.Entry<GridCacheQueueItemKey,
-        GridCacheQueueItemImpl<T>>, Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>>
-        firstItemQuery() {
-        return firstItemQry.localReducer(new TerminalItemQueryLocalReducer<>(seqComp, true));
-    }
-
-    /**
-     * @return Cache query for requesting all queue items.
-     */
-    GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>, Map.Entry<GridCacheQueueItemKey,
-        GridCacheQueueItemImpl<T>>, Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> lastItemQuery() {
-        return lastItemQry.localReducer(new TerminalItemQueryLocalReducer<>(seqComp, false));
+    GridCacheQuery<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> firstItemQuery() {
+        return firstItemQry;
     }
 
     /**
      * @return Cache query for requesting queue items at specified positions.
      */
-    GridCacheQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> itemsAtPositionsQuery() {
+    GridCacheQuery<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> itemsAtPositionsQuery() {
         return itemsAtPosQry;
-    }
-
-    /**
-     * @param item Object to find position for.
-     * @return Cache query for requesting item position.
-     */
-    GridCacheReduceQuery<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>, Integer, Integer> itemPositionQuery(
-        final Object item) {
-        return posOfItemQry.remoteReducer(new PositionQueryRemoteReducer<T>(item));
     }
 
     /** {@inheritDoc} */
@@ -320,22 +265,21 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
     /**
      *
      */
-    private static class TerminalItemQueryLocalReducer<T>
+    static class TerminalItemQueryLocalReducer<T>
         extends R1<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>,
         Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> {
         /** */
-        private Comparator<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> cmp;
+        @SuppressWarnings("OverlyStrongTypeCast")
+        private final Comparator<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> cmp =
+            (SequenceComparator<T>)SEQ_COMP;
 
         /** */
         private boolean first;
 
         /**
-         * @param cmp Comparator.
          * @param first First flag.
          */
-        private TerminalItemQueryLocalReducer(
-            Comparator<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> cmp, boolean first) {
-            this.cmp = cmp;
+        TerminalItemQueryLocalReducer(boolean first) {
             this.first = first;
         }
 
@@ -363,7 +307,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
     /**
      *
      */
-    private static class RemoveItemsQueryLocalReducer
+    static class RemoveItemsQueryLocalReducer
         extends R1<GridBiTuple<Integer, GridException>, GridBiTuple<Integer, GridException>> {
         /** */
         private final GridBiTuple<Integer, GridException> retVal = new T2<>(0, null);
@@ -388,7 +332,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
     /**
      *
      */
-    private static class RemoveAllKeysQueryLocalReducer
+    static class RemoveAllKeysQueryLocalReducer
         extends R1<GridBiTuple<Integer, GridException>, GridBiTuple<Integer, GridException>> {
         /** */
         private final GridBiTuple<Integer, GridException> retVal = new T2<>(0, null);
@@ -447,14 +391,14 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
     /**
      *
      */
-    private static class ContainsQueryLocalReducer extends R1<boolean[], Boolean> {
+    static class ContainsQueryLocalReducer extends R1<boolean[], Boolean> {
         /** */
         private final boolean[] arr;
 
         /**
          * @param size Reduce size.
          */
-        private ContainsQueryLocalReducer(int size) {
+        ContainsQueryLocalReducer(int size) {
             arr = new boolean[size];
         }
 
@@ -484,8 +428,8 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
     /**
      *
      */
-    private static class ContainsQueryRemoteReducer<T> extends R1<Map.Entry<GridCacheQueueItemKey,
-        GridCacheQueueItemImpl<T>>,boolean[]> {
+    static class ContainsQueryRemoteReducer<T> extends R1<Map.Entry<GridCacheQueueItemKey,
+        GridCacheQueueItemImpl<T>>, boolean[]> {
         /** Items. */
         private final Object[] items;
 
@@ -495,7 +439,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
         /**
          * @param items Items.
          */
-        private ContainsQueryRemoteReducer(Object[] items) {
+        ContainsQueryRemoteReducer(Object[] items) {
             this.items = items;
 
             retVal = new boolean[items.length];
@@ -570,16 +514,11 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
                     keys.add(entry.getKey());
 
                     if (size > 0 && keys.size() == size) {
-                        GridCacheTx tx = CU.txStartInternal(cctx, itemView, PESSIMISTIC,
-                            REPEATABLE_READ);
 
-                        try {
+                        try (GridCacheTx tx = CU.txStartInternal(cctx, itemView, PESSIMISTIC, REPEATABLE_READ)) {
                             itemView.removeAll(keys);
 
                             tx.commit();
-                        }
-                        finally {
-                            tx.close();
                         }
 
                         retVal.set1(retVal.get1() + size);
@@ -605,16 +544,11 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
         @Override public GridBiTuple<Integer, GridException> reduce() {
             try {
                 if (!keys.isEmpty()) {
-                    GridCacheTx tx = CU.txStartInternal(cctx, itemView, PESSIMISTIC,
-                        REPEATABLE_READ);
 
-                    try {
+                    try (GridCacheTx tx = CU.txStartInternal(cctx, itemView, PESSIMISTIC, REPEATABLE_READ)) {
                         itemView.removeAll(keys);
 
                         tx.commit();
-                    }
-                    finally {
-                        tx.close();
                     }
 
                     retVal.set1(retVal.get1() + keys.size());
@@ -726,15 +660,11 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
                 return retVal;
 
             try {
-                GridCacheTx tx = CU.txStartInternal(cctx, itemView, PESSIMISTIC, REPEATABLE_READ);
 
-                try {
+                try (GridCacheTx tx = CU.txStartInternal(cctx, itemView, PESSIMISTIC, REPEATABLE_READ)) {
                     itemView.removeAll(keys);
 
                     tx.commit();
-                }
-                finally {
-                    tx.close();
                 }
 
                 retVal.set1(keys.size());
@@ -750,7 +680,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
     /**
      * One record reducer.
      */
-    private static class OneRecordReducer<T>
+    static class OneRecordReducer<T>
         extends GridReducer<Map.Entry<GridCacheQueueItemKey,GridCacheQueueItemImpl<T>>,
         Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> {
         /** */

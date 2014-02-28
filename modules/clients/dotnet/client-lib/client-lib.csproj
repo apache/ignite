@@ -93,7 +93,7 @@
     <Compile Include="client\IGridClientNode.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="client\GridClientPartitionedAffinity.cs">
+    <Compile Include="client\GridClientPartitionAffinity.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="client\GridClientProtocol.cs" />

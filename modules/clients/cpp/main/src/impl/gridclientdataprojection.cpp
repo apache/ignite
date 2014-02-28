@@ -29,6 +29,10 @@ public:
             : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
     }
 
+    CacheRequestProjectionClosure(GridUuid & clientId, GridCacheRequestCommand& cacheCmd)
+            : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
+    }
+
     CacheRequestProjectionClosure(std::string clientId, GridCacheRequestCommand& cacheCmd)
             : ClientMessageProjectionClosure(clientId.c_str()), cmd(cacheCmd) {
     }
@@ -143,14 +147,13 @@ bool GridClientDataProjectionImpl::put(const GridClientVariant& key, const GridC
     if (invalidated) throw GridClientClosedException();
 
     GridCacheRequestCommand cmd(GridCacheRequestCommand::PUT);
-    GridCacheRequestCommand::TKeyValueMap keyValues;
 
     cmd.setKey(key);
     cmd.setValue(val);
     cmd.setCacheName(prjCacheName);
     cmd.setFlags(prjFlags);
 
-    CacheRequestProjectionClosure c(clientUniqueId(), cmd);
+    CacheRequestProjectionClosure c(clientUniqueUuid(), cmd);
 
     this->withReconnectHandling(c, prjCacheName, GridClientVariantHasheableObject(key));
 

@@ -36,7 +36,7 @@ namespace GridGain.Client {
      * </ul>
      * </summary>
      */
-    public class GridClientPartitionedAffinity : IGridClientDataAffinity, IGridClientTopologyListener {
+    public class GridClientPartitionAffinity : IGridClientDataAffinity, IGridClientTopologyListener {
         /** <summary>Default number of partitions.</summary> */
         public const int DefaultPartitionsCount = 10000;
 
@@ -47,7 +47,7 @@ namespace GridGain.Client {
         private readonly IDictionary<Guid, NodeInfo> addedNodes = new ConcurrentDictionary<Guid, NodeInfo>();
 
         /** <summary>Empty constructor with all defaults.</summary> */
-        public GridClientPartitionedAffinity()
+        public GridClientPartitionAffinity()
             : this(DefaultPartitionsCount, null) {
         }
 
@@ -62,7 +62,7 @@ namespace GridGain.Client {
          *      will be selected from all nodes outside of this filter, and backups will be selected
          *      from all nodes inside it.
          */
-        public GridClientPartitionedAffinity(int parts, Predicate<Guid> backupsFilter) {
+        public GridClientPartitionAffinity(int parts, Predicate<Guid> backupsFilter) {
             Partitions = parts;
             BackupsFilter = backupsFilter;
 
@@ -131,6 +131,7 @@ namespace GridGain.Client {
                 lookup.Add(ResolveNodeInfo(n), n);
 
             NodeInfo nodeInfo;
+
             int part = Partition(key);
 
             if (BackupsFilter == null) {

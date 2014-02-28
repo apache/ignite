@@ -83,11 +83,11 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
+DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/aminclude.am \
 	$(srcdir)/config.h.in $(srcdir)/gridgain-client.pc.in \
-	$(top_srcdir)/configure AUTHORS COPYING ChangeLog NEWS \
-	config.guess config.sub depcomp install-sh ltmain.sh missing
+	$(top_srcdir)/configure config.guess config.sub depcomp \
+	install-sh ltmain.sh missing
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_prog_doxygen.m4 \
@@ -420,7 +420,7 @@ COMMON_SRC = src/model/gridclientuuid.cpp src/model/gridclientvariant.cpp \
 
 lib_LTLIBRARIES = libgridgain-client.la
 libgridgain_client_la_SOURCES = $(COMMON_SRC)
-libgridgain_client_la_LIBADD = -lboost_system -lboost_thread -lcrypto -lprotobuf -lssl
+libgridgain_client_la_LIBADD = -lboost_system -lboost_thread -lcrypto -lprotobuf -lssl -lboost_program_options
 libgridgain_client_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -release $(PACKAGE_VERSION)
 EXTRA_DIST = $(wildcard src/*.cpp) $(wildcard include/*.hpp)
 pkgconfigdir = $(libdir)/pkgconfig
