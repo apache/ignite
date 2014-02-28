@@ -68,14 +68,14 @@ public:
      *
      * @return List of address strings.
      */
-    std::vector<std::string> getTcpAddresses() const;
+    const std::vector<GridSocketAddress> & getTcpAddresses() const;
 
     /**
      * Gets REST HTTP server addresses.
      *
      * @return List of address strings.
      */
-    std::vector<std::string> getJettyAddresses() const;
+    const std::vector<GridSocketAddress> & getJettyAddresses() const;
 
     /**
      * Gets metrics.
@@ -91,19 +91,6 @@ public:
      */
     TGridClientVariantMap getAttributes() const;
 
-    /**
-     * Gets REST binary protocol port.
-     *
-     * @return Port on which REST binary protocol is bound.
-     */
-    int getTcpPort() const;
-
-    /**
-     * Gets REST http protocol port.
-     *
-     * @return Http port.
-     */
-    int getJettyPort() const;
 
     /**
      * Gets configured node caches.
@@ -125,28 +112,21 @@ public:
      * @param proto Protocol - TCP or HTTP
      * @return List of host/port pairs.
      */
-    std::vector<GridSocketAddress> availableAddresses(GridClientProtocol proto) const;
+    const std::vector<GridSocketAddress> & availableAddresses(GridClientProtocol proto) const;
 
     /**
-     * Returns the router address.
+     * Returns the router TCP address.
      *
-     * @return Router address (IP or host name) or empty string, if absent.
+     * @return Router address (host name and port).
      */
-    std::string getRouterAddress() const;
+    const GridSocketAddress & getRouterTcpAddress() const;
 
     /**
-     * Returns the router TCP port.
+     * Returns the router Jetty address.
      *
-     * @return Router TCP port number or -1, if absent.
+     * @return Router address (host name and port).
      */
-    int getRouterTcpPort() const;
-
-    /**
-     * Gets the router HTTP port.
-     *
-     * @return Router HTTP port number or -1, if absent.
-     */
-    int getRouterJettyPort() const;
+    const GridSocketAddress & getRouterJettyAddress() const;
 
     /**
      * Returns the number of replicas for this node.

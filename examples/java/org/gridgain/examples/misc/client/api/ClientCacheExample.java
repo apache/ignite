@@ -233,7 +233,7 @@ public class ClientCacheExample {
         cacheCfg.setName("partitioned");
 
         // Set client partitioned affinity for this cache.
-        cacheCfg.setAffinity(new GridClientPartitionedAffinity());
+        cacheCfg.setAffinity(new GridClientPartitionAffinity());
 
         cfg.setDataConfigurations(Collections.singletonList(cacheCfg));
 

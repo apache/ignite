@@ -37,6 +37,7 @@ public @interface GridCacheQueryGroupIndex {
     /**
      * List of group indexes for type.
      */
+    @SuppressWarnings("PublicInnerClass")
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.TYPE})
     public static @interface List {

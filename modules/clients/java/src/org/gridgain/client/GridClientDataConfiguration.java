@@ -68,7 +68,7 @@ public class GridClientDataConfiguration {
      * Affinity allows to contact exactly the node where the data is and therefore
      * avoiding extra network hops.
      * <p>
-     * Use {@link GridClientPartitionedAffinity} as default affinity communication to
+     * Use {@link GridClientPartitionAffinity} as default affinity communication to
      * work with remote partitioned caches.
      *
      * @return Cache affinity to use.
@@ -82,7 +82,7 @@ public class GridClientDataConfiguration {
      * Affinity allows to contact exactly the node where the data is and therefore
      * avoiding extra network hops.
      * <p>
-     * Use {@link GridClientPartitionedAffinity} as default affinity communication to
+     * Use {@link GridClientPartitionAffinity} as default affinity communication to
      * work with remote partitioned caches.
      *
      * @param affinity Client data affinity.

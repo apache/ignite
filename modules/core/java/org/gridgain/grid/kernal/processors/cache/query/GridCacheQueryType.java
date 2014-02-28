@@ -7,8 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.cache.query;
+package org.gridgain.grid.kernal.processors.cache.query;
 
+import org.gridgain.grid.cache.query.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -29,6 +30,11 @@ public enum GridCacheQueryType {
      * SQL-based query.
      */
     SQL,
+
+    /**
+     * SQL-based fields query.
+     */
+    SQL_FIELDS,
 
     /**
      * Text search query.

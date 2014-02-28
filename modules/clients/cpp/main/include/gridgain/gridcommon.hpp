@@ -23,3 +23,5 @@
 #include <unordered_map>
 
 #endif
+
+#include <cstring>

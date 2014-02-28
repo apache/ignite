@@ -31,7 +31,7 @@ import java.lang.annotation.*;
  *     indexing.setIndexCustomFunctionClasses(MyFunctions.class);
  *
  *     // And use in queries.
- *     cache.createFieldsQuery("select sqr(2) where sqr(1) = 1");
+ *     cache.queries().createSqlFieldsQuery("select sqr(2) where sqr(1) = 1");
  * </pre>
  * <p>
  * For more information about H2 custom functions please refer to

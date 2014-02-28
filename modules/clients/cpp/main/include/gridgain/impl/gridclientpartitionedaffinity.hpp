@@ -51,7 +51,7 @@ typedef std::function<GridClientVariant (const GridClientNode&)> GridHashIdResol
  * @author @cpp.author
  * @version @cpp.version
  */
-class GridClientPartitionedAffinity: public GridClientDataAffinity {
+class GridClientPartitionAffinity: public GridClientDataAffinity {
 public:
     /** Default number of partitions. */
     static const int DFLT_PARTITION_CNT = 10000;
@@ -71,10 +71,10 @@ public:
     /**
      * Default constructor.
      */
-    GridClientPartitionedAffinity();
+    GridClientPartitionAffinity();
 
     /** Vitrual destructor. */
-    virtual ~GridClientPartitionedAffinity();
+    virtual ~GridClientPartitionAffinity();
 
     /**
      * Maps the key to the primary node.

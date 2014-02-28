@@ -6,6 +6,7 @@
  *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
+
 #include "gridgain/impl/utils/gridclientdebug.hpp"
 
 #include <iostream>
@@ -31,30 +32,30 @@ using namespace org::gridgain::grid::kernal::processors::rest::client::message;
 /** Forward declaration of the function. */
 static void unwrap(const ObjectWrapper& obj, GridClientNode& node);
 
-void GridClientProtobufMarshaller::marshalMsg(const ::google::protobuf::Message& msg, std::string& bytes) {
-    std::ostringstream os (std::ostringstream::out | std::ostringstream::binary);
+void GridClientProtobufMarshaller::marshalMsg(const ::google::protobuf::Message& msg, int8_t*& pBuffer,
+    unsigned long& bufferLength) {
+    bufferLength = msg.ByteSize();
 
-    msg.SerializeToOstream(&os);
+    pBuffer = new int8_t[bufferLength];
 
-    std::string result(os.str());
-
-    bytes.assign((const int8_t*) result.c_str(), (const int8_t*)result.c_str() + result.length());
+    msg.SerializeToArray(pBuffer, bufferLength);
 }
 
-static void unmarshalMsg(const std::string& bytes, ::google::protobuf::Message& msg) {
-    std::istringstream is(bytes, std::istringstream::in | std::istringstream::binary);
-
-    bool parsedOk = msg.ParseFromIstream(&is);
+static void unmarshalMsg(int8_t* pBuffer, int size, ::google::protobuf::Message& msg) {
+    bool parsedOk = msg.ParseFromArray(pBuffer, size);
 
     assert(parsedOk);
 }
 
 void GridClientProtobufMarshaller::marshal(const ::google::protobuf::Message& msg, std::vector<int8_t>& bytes) {
-    std::string strBytes;
+    int8_t* pBuffer;
+    unsigned long bufferSize;
 
-    marshalMsg(msg, strBytes);
+    marshalMsg(msg, pBuffer, bufferSize);
 
-    bytes.assign(strBytes.data(), strBytes.data() + strBytes.size());
+    bytes.assign(pBuffer, pBuffer + bufferSize);
+
+    delete[] pBuffer;
 }
 
 void GridClientProtobufMarshaller::marshal(const std::string& str, std::vector<int8_t>& bytes) {
@@ -62,7 +63,10 @@ void GridClientProtobufMarshaller::marshal(const std::string& str, std::vector<i
 }
 
 void GridClientProtobufMarshaller::marshal(int64_t i64, std::vector<int8_t>& bytes) {
-    GridClientByteUtils::valueToBytes(i64, bytes);
+    bytes.resize(sizeof(i64));
+    memset(&bytes[0], 0, sizeof(i64));
+
+    GridClientByteUtils::valueToBytes(i64, &bytes[0], sizeof(i64));
 }
 
 void GridClientProtobufMarshaller::marshal(const GridUuid& uuid, std::vector<int8_t>& bytes) {
@@ -70,15 +74,12 @@ void GridClientProtobufMarshaller::marshal(const GridUuid& uuid, std::vector<int
 }
 
 void GridClientProtobufMarshaller::unmarshal(const std::vector<int8_t>& bytes, ::google::protobuf::Message& msg) {
-    std::string strBytes(bytes.data(), bytes.data() + bytes.size());
-
-    ::unmarshalMsg(strBytes, msg);
+    ::unmarshalMsg((int8_t*) bytes.data(), bytes.size(), msg);
 }
 
 /** Helper templates for unwrapping data from the ProtoBuf collections. */
-template <class TD>
-void unwrapCollection(const ::google::protobuf::RepeatedPtrField<ObjectWrapper>& src,
-        std::vector<TD>& dst) {
+template<class TD>
+void unwrapCollection(const ::google::protobuf::RepeatedPtrField<ObjectWrapper>& src, std::vector<TD>& dst) {
     dst.clear();
 
     for (auto it = src.begin(); it != src.end(); ++it) {
@@ -92,17 +93,16 @@ void unwrapCollection(const ::google::protobuf::RepeatedPtrField<ObjectWrapper>&
     }
 }
 
-template <class TS, class TD> void unwrapCollection(const ::google::protobuf::RepeatedPtrField<TS> src,
-        std::vector<TD>& dst) {
-    std::back_insert_iterator< std::vector<TD> > backInsertIter(dst);
+template<class TS, class TD> void unwrapCollection(const ::google::protobuf::RepeatedPtrField<TS> src,
+    std::vector<TD>& dst) {
+    std::back_insert_iterator<std::vector<TD> > backInsertIter(dst);
 
     dst.clear();
 
     std::copy(src.begin(), src.end(), backInsertIter);
 }
 
-template <class T> void unwrapCollection(const ObjectWrapper& objWrapper,
-        std::vector<T>& res) {
+template<class T> void unwrapCollection(const ObjectWrapper& objWrapper, std::vector<T>& res) {
     assert(objWrapper.type() == COLLECTION);
     assert(objWrapper.has_binary());
 
@@ -110,17 +110,19 @@ template <class T> void unwrapCollection(const ObjectWrapper& objWrapper,
 
     ::Collection coll;
 
-    unmarshalMsg(objWrapper.binary(), coll);
+    unmarshalMsg(objWrapper.binary().c_str(), objWrapper.binary().size(), coll);
 
     unwrapCollection(coll, res);
 }
 
-template <class K, class V, class T> class MapInserter {
+template<class K, class V, class T> class MapInserter {
 public:
-    MapInserter(std::map<K, V>& pMap) : map(pMap) {}
+    MapInserter(std::map<K, V>& pMap) : map(pMap) {
+        // No-op.
+    }
 
-    void operator() (const T& obj) {
-        std::pair<K,V> pair;
+    void operator()(const T& obj) {
+        std::pair<K, V> pair;
 
         transformValues(obj, pair);
 
@@ -134,11 +136,11 @@ private:
 
 class ProtobufMapInserter {
 public:
-    ProtobufMapInserter(::Map& pProtoMap) :
-        protoMap(pProtoMap) {
+    ProtobufMapInserter(::Map& pProtoMap) : protoMap(pProtoMap) {
+        // No-op.
     }
 
-    void operator() (std::pair<GridClientVariant,GridClientVariant> pair) {
+    void operator()(std::pair<GridClientVariant, GridClientVariant> pair) {
         KeyValue* keyValue = protoMap.add_entry();
         ObjectWrapper* key = keyValue->mutable_key();
         ObjectWrapper* value = keyValue->mutable_value();
@@ -151,17 +153,15 @@ private:
     ::Map& protoMap;
 };
 
-template <class K, class V> void unwrapMap(::Map map, std::map<K,V>& res) {
+template<class K, class V> void unwrapMap(::Map map, std::map<K, V>& res) {
     res.clear();
 
     const ::google::protobuf::RepeatedPtrField< ::KeyValue >& repFileds = map.entry();
 
-    std::for_each(repFileds.begin(), repFileds.end(), MapInserter<K, V,
-            ::KeyValue>(res));
+    std::for_each(repFileds.begin(), repFileds.end(), MapInserter<K, V, ::KeyValue>(res));
 }
 
-template <class K, class V> void unwrapMap(ObjectWrapper objWrapper,
-        std::map<K,V>& res) {
+template<class K, class V> void unwrapMap(ObjectWrapper objWrapper, std::map<K, V>& res) {
     assert(objWrapper.type() == MAP);
     assert(objWrapper.has_binary());
 
@@ -169,17 +169,15 @@ template <class K, class V> void unwrapMap(ObjectWrapper objWrapper,
 
     ::Map map;
 
-    unmarshalMsg(objWrapper.binary(), map);
+    unmarshalMsg((int8_t*) objWrapper.binary().c_str(), objWrapper.binary().size(), map);
 
     const ::google::protobuf::RepeatedPtrField< ::KeyValue >& repFileds = map.entry();
 
-    std::for_each(repFileds.begin(), repFileds.end(), MapInserter<K, V,
-            ::KeyValue>(res));
+    std::for_each(repFileds.begin(), repFileds.end(), MapInserter<K, V, ::KeyValue>(res));
 }
 
 /** Helper templates for unwrapping data from the ProtoBuf maps. */
-static void transformValues (::KeyValue keyValue, std::pair<GridClientVariant,
-        GridClientVariant>& pair) {
+static void transformValues(::KeyValue keyValue, std::pair<GridClientVariant, GridClientVariant>& pair) {
     assert(keyValue.has_key());
     assert(keyValue.has_value());
 
@@ -187,8 +185,7 @@ static void transformValues (::KeyValue keyValue, std::pair<GridClientVariant,
     GridClientObjectWrapperConvertor::unwrapSimpleType(keyValue.value(), pair.second);
 }
 
-static void transformValues(::KeyValue keyValue, std::pair<std::string,
-        GridClientVariant>& pair) {
+static void transformValues(::KeyValue keyValue, std::pair<std::string, GridClientVariant>& pair) {
     assert(keyValue.has_key());
     assert(keyValue.has_value());
 
@@ -201,14 +198,10 @@ static void transformValues(::KeyValue keyValue, std::pair<std::string,
 }
 
 static void fillRequestHeader(const GridClientMessage& clientMsg, ProtoRequest& protoReq) {
-//    protoReq.set_requestid(clientMsg.getRequestId());
-//    protoReq.set_clientid(clientMsg.getClientId());
     protoReq.set_sessiontoken(clientMsg.sessionToken());
 }
 
 static void fillResponseHeader(const ProtoResponse& resp, GridClientMessageResult& clientMsg) {
-//    clientMsg.setClientId(resp.clientid());
-//    clientMsg.setRequestId(resp.requestid());
     clientMsg.setStatus((GridClientMessageResult::StatusCode) resp.status());
 
     clientMsg.sessionToken(resp.sessiontoken());
@@ -218,7 +211,7 @@ static void fillResponseHeader(const ProtoResponse& resp, GridClientMessageResul
 }
 
 static void wrapRequest(const GridClientMessageCommand& cmd, const ObjectWrapperType& type,
-      const ::google::protobuf::Message& src, ObjectWrapper& objWrapper) {
+    const ::google::protobuf::Message& src, ObjectWrapper& objWrapper) {
     GG_LOG_DEBUG("Wrapping request: %s", src.DebugString().c_str());
 
     ProtoRequest req;
@@ -227,9 +220,19 @@ static void wrapRequest(const GridClientMessageCommand& cmd, const ObjectWrapper
 
     objWrapper.set_type(type);
 
-    GridClientProtobufMarshaller::marshalMsg(src, *req.mutable_body());
+    int8_t * pBuffer;
+    unsigned long bufferLength;
 
-    GridClientProtobufMarshaller::marshalMsg(req, *objWrapper.mutable_binary());
+    GridClientProtobufMarshaller::marshalMsg(src, pBuffer, bufferLength);
+
+    req.set_body(pBuffer, bufferLength);
+
+    delete[] pBuffer;
+
+    GridClientProtobufMarshaller::marshalMsg(req, pBuffer, bufferLength);
+    objWrapper.set_binary(pBuffer, bufferLength);
+
+    delete[] pBuffer;
 }
 
 void GridClientProtobufMarshaller::wrap(const GridTopologyRequestCommand& reqCmd, ObjectWrapper& objWrapper) {
@@ -239,9 +242,9 @@ void GridClientProtobufMarshaller::wrap(const GridTopologyRequestCommand& reqCmd
 
     topReq.set_includemetrics(reqCmd.getIncludeMetrics());
 
-    if (! reqCmd.getNodeId().empty())
+    if (!reqCmd.getNodeId().empty())
         topReq.set_nodeid(reqCmd.getNodeId());
-    else if (! reqCmd.getNodeIp().empty())
+    else if (!reqCmd.getNodeIp().empty())
         topReq.set_nodeip(reqCmd.getNodeIp());
 
     wrapRequest(reqCmd, TOPOLOGY_REQUEST, topReq, objWrapper);
@@ -271,7 +274,7 @@ static void unwrapResponse(const ObjectWrapper& objWrapper, ProtoResponse& resp)
     assert(objWrapper.type() == RESPONSE);
     assert(objWrapper.has_binary());
 
-    unmarshalMsg(objWrapper.binary(), resp);
+    unmarshalMsg((int8_t*) objWrapper.binary().c_str(), objWrapper.binary().size(), resp);
 }
 
 void GridClientProtobufMarshaller::unwrap(const ObjectWrapper& objWrapper, GridClientMessageTopologyResult& topRslt) {
@@ -298,7 +301,7 @@ void GridClientProtobufMarshaller::unwrap(const ObjectWrapper& objWrapper, GridC
 
             ::Collection coll;
 
-            unmarshalMsg(binary, coll);
+            unmarshalMsg((int8_t*) binary.c_str(), binary.size(), coll);
 
             unwrapCollection(coll.item(), nodes);
 
@@ -309,8 +312,7 @@ void GridClientProtobufMarshaller::unwrap(const ObjectWrapper& objWrapper, GridC
     topRslt.setNodes(nodes);
 }
 
-void GridClientProtobufMarshaller::unwrap(const ObjectWrapper& objWrapper,
-        GridClientMessageAuthenticationResult& authRslt) {
+void GridClientProtobufMarshaller::unwrap(const ObjectWrapper& objWrapper, GridClientMessageAuthenticationResult& authRslt) {
     ProtoResponse resp;
 
     GG_LOG_DEBUG("Unwrap: %s", objWrapper.DebugString().c_str());
@@ -342,7 +344,7 @@ void GridClientProtobufMarshaller::unwrap(const ObjectWrapper& objWrapper, GridC
 
         ::Collection coll;
 
-        unmarshalMsg(binary, coll);
+        unmarshalMsg((int8_t*) binary.c_str(), binary.size(), coll);
 
         for (auto it = coll.item().begin(); it != coll.item().end(); ++it) {
             const ObjectWrapper& el = (*it);
@@ -357,12 +359,12 @@ void GridClientProtobufMarshaller::unwrap(const ObjectWrapper& objWrapper, GridC
 void GridClientProtobufMarshaller::wrap(const GridCacheRequestCommand& cmd, ObjectWrapper& objWrapper) {
     ProtoCacheRequest cacheReq;
 
-    cacheReq.set_operation((::ProtoCacheRequest_GridCacheOperation)cmd.getOperation());
+    cacheReq.set_operation((::ProtoCacheRequest_GridCacheOperation) cmd.getOperation());
 
     if (cmd.getCacheName().size() > 0)
         cacheReq.set_cachename(cmd.getCacheName());
     else
-        cacheReq.set_cachename((const char*)NULL, 0);
+        cacheReq.set_cachename((const char*) NULL, 0);
 
     if (cmd.getKey().hasAnyValue()) {
         ::ObjectWrapper* key = cacheReq.mutable_key();
@@ -382,23 +384,22 @@ void GridClientProtobufMarshaller::wrap(const GridCacheRequestCommand& cmd, Obje
         GridClientObjectWrapperConvertor::wrapSimpleType(cmd.getValue2(), *value);
     }
 
-    if (! cmd.getValues().empty()) {
+    if (!cmd.getValues().empty()) {
         ::Map* map = cacheReq.mutable_values();
-         const GridCacheRequestCommand::TKeyValueMap& srcMap = cmd.getValues();
+        const GridCacheRequestCommand::TKeyValueMap& srcMap = cmd.getValues();
 
-         std::for_each(srcMap.begin(), srcMap.end(), ProtobufMapInserter(*map));
+        std::for_each(srcMap.begin(), srcMap.end(), ProtobufMapInserter(*map));
     }
-    
+
     std::set<GridClientCacheFlag> flags = cmd.getFlags();
-    
+
     if (!flags.empty())
         cacheReq.set_cacheflagson(GridClientByteUtils::bitwiseOr(flags.begin(), flags.end(), 0));
 
     wrapRequest(cmd, CACHE_REQUEST, cacheReq, objWrapper);
 }
 
-void GridClientProtobufMarshaller::unwrap(const ObjectWrapper& objWrapper,
-        GridClientMessageCacheModifyResult& msgRes) {
+void GridClientProtobufMarshaller::unwrap(const ObjectWrapper& objWrapper, GridClientMessageCacheModifyResult& msgRes) {
     ProtoResponse resp;
 
     unwrapResponse(objWrapper, resp);
@@ -419,7 +420,7 @@ void GridClientProtobufMarshaller::unwrap(const ObjectWrapper& objWrapper,
         msgRes.setOperationResult(false);
 }
 
-void GridClientProtobufMarshaller::unwrap(const ObjectWrapper& objWrapper, GridClientMessageCacheMetricResult& msgRes){
+void GridClientProtobufMarshaller::unwrap(const ObjectWrapper& objWrapper, GridClientMessageCacheMetricResult& msgRes) {
     ProtoResponse resp;
 
     unwrapResponse(objWrapper, resp);
@@ -510,10 +511,10 @@ static void unwrap(const ObjectWrapper& objWrapper, GridClientNode& res) {
 
     ::ProtoNodeBean bean;
 
-	boost::asio::io_service ioSrvc;
+    boost::asio::io_service ioSrvc;
     boost::asio::ip::tcp::resolver resolver(ioSrvc);
 
-    unmarshalMsg(objWrapper.binary(), bean);
+    unmarshalMsg((int8_t*) objWrapper.binary().c_str(), objWrapper.binary().size(), bean);
 
     GridNodeMarshallerHelper helper(res);
 
@@ -525,99 +526,96 @@ static void unwrap(const ObjectWrapper& objWrapper, GridClientNode& res) {
 
     helper.setConsistentId(consistentId);
 
-    helper.setTcpPort(bean.tcpport());
-    helper.setJettyPort(bean.jettyport());
+    int tcpport = bean.tcpport();
+    int jettyport = bean.jettyport();
 
-    std::vector<std::string> addresses;
+    std::vector<GridSocketAddress> addresses;
 
-    {
-    	for (int i = 0; i < bean.jettyaddress_size(); ++i)
-    	{
-    		std::string newJettyAddressIp = bean.jettyaddress(i);
+    for (int i = 0; i < bean.jettyaddress_size(); ++i) {
+        if (bean.jettyaddress(i).size()) {
+            GridSocketAddress newJettyAddress = GridSocketAddress(bean.jettyaddress(i), jettyport);
 
-    		if (newJettyAddressIp.size())
-    		{
-        	    boost::asio::ip::tcp::resolver::query queryIp(newJettyAddressIp, boost::lexical_cast<std::string>(bean.jettyport()));
-        	    boost::system::error_code ec;
-       	    	boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryIp,ec);
-       	    	if (!ec)
-       	    		addresses.push_back(newJettyAddressIp);
-       	    	else
-       	    		GG_LOG_ERROR("Error resolving hostname: %s, %s",newJettyAddressIp.c_str(), ec.message().c_str());
-    		}
-    	}
+            boost::asio::ip::tcp::resolver::query queryIp(bean.jettyaddress(i),
+                boost::lexical_cast<std::string>(bean.jettyport()));
 
-    	for (int i = 0; i < bean.jettyhostname_size(); ++i)
-    	{
-    		std::string newJettyAddressHostname = bean.jettyhostname(i);
+            boost::system::error_code ec;
 
+            boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryIp, ec);
 
-    		if (newJettyAddressHostname.size())
-    		{
-        	    boost::asio::ip::tcp::resolver::query queryHostname(newJettyAddressHostname, boost::lexical_cast<std::string>(bean.jettyport()));
-        	    boost::system::error_code ec;
-       	    	boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryHostname,ec);
-       	    	if (!ec)
-       	    		addresses.push_back(newJettyAddressHostname);
-       	    	else
-       	    		GG_LOG_ERROR("Error resolving hostname: %s, %s",newJettyAddressHostname.c_str(), ec.message().c_str());
-    		}
-
-    	}
-
-        helper.setJettyAddresses(addresses);
+            if (!ec)
+                addresses.push_back(newJettyAddress);
+            else
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", bean.jettyaddress(i).c_str(), ec.message().c_str());
+        }
     }
+
+    for (int i = 0; i < bean.jettyhostname_size(); ++i) {
+        if (bean.jettyhostname(i).size()) {
+            GridSocketAddress newJettyAddress = GridSocketAddress(bean.jettyhostname(i), jettyport);
+
+            boost::asio::ip::tcp::resolver::query queryHostname(bean.jettyhostname(i),
+                boost::lexical_cast<std::string>(bean.jettyport()));
+
+            boost::system::error_code ec;
+
+            boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryHostname, ec);
+
+            if (!ec)
+                addresses.push_back(newJettyAddress);
+            else
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", bean.jettyhostname(i).c_str(), ec.message().c_str());
+        }
+
+    }
+
+    helper.setJettyAddresses(addresses);
     addresses.clear();
-    {
-    	for (int i = 0; i < bean.tcpaddress_size(); ++i)
-    	{
-    		std::string newTCPAddressIp = bean.tcpaddress(i);
 
-    		if (newTCPAddressIp.size())
-    		{
-        	    boost::asio::ip::tcp::resolver::query queryIp(newTCPAddressIp, boost::lexical_cast<std::string>(bean.tcpport()));
-        	    boost::system::error_code ec;
-       	    	boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryIp,ec);
-       	    	if (!ec)
-       	    		addresses.push_back(newTCPAddressIp);
-       	    	else
-       	    		GG_LOG_ERROR("Error resolving hostname: %s, %s",newTCPAddressIp.c_str(), ec.message().c_str());
-    		}
-    	}
-    	for (int i = 0; i < bean.tcphostname_size(); ++i)
-    	{
-    		std::string newTCPAddressHostname = bean.tcphostname(i);
+    for (int i = 0; i < bean.tcpaddress_size(); ++i) {
+        if (bean.tcpaddress(i).size()) {
+            GridSocketAddress newTCPAddress = GridSocketAddress(bean.tcpaddress(i), tcpport);
 
-    		if (newTCPAddressHostname.size())
-    		{
-        	    boost::asio::ip::tcp::resolver::query queryHostname(newTCPAddressHostname, boost::lexical_cast<std::string>(bean.tcpport()));
-        	    boost::system::error_code ec;
-       	    	boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryHostname,ec);
-       	    	if (!ec)
-       	    		addresses.push_back(newTCPAddressHostname);
-       	    	else
-       	    		GG_LOG_ERROR("Error resolving hostname: %s, %s",newTCPAddressHostname.c_str(), ec.message().c_str());
-    		}
-    	}
+            boost::asio::ip::tcp::resolver::query queryIp(bean.tcpaddress(i),
+                boost::lexical_cast<std::string>(bean.tcpport()));
 
-        helper.setTcpAddresses(addresses);
+            boost::system::error_code ec;
+
+            boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryIp, ec);
+
+            if (!ec)
+                addresses.push_back(newTCPAddress);
+            else
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", bean.tcpaddress(i).c_str(), ec.message().c_str());
+        }
     }
 
-    {
-        std::map<GridClientVariant, GridClientVariant> cachesVars;
+    for (int i = 0; i < bean.tcphostname_size(); ++i) {
+        if (bean.tcphostname(i).size()) {
+            GridSocketAddress newTCPAddress = GridSocketAddress(bean.tcphostname(i), tcpport);
 
-        unwrapMap(bean.caches(), cachesVars);
+            boost::asio::ip::tcp::resolver::query queryHostname(bean.tcphostname(i),
+                boost::lexical_cast<std::string>(bean.tcpport()));
 
-        helper.setCaches(cachesVars);
+            boost::system::error_code ec;
+
+            boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryHostname, ec);
+
+            if (!ec)
+                addresses.push_back(newTCPAddress);
+            else
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", bean.tcphostname(i).c_str(), ec.message().c_str());
+        }
     }
 
-    {
-        std::map<GridClientVariant, GridClientVariant> attrs;
+    helper.setTcpAddresses(addresses);
 
-        unwrapMap(bean.attributes(), attrs);
+    std::map<GridClientVariant, GridClientVariant> cachesVars;
+    unwrapMap(bean.caches(), cachesVars);
+    helper.setCaches(cachesVars);
 
-        helper.setAttributes(attrs);
-    }
+    std::map<GridClientVariant, GridClientVariant> attrs;
+    unwrapMap(bean.attributes(), attrs);
+    helper.setAttributes(attrs);
 
     if (bean.has_metrics()) {
         const ::ProtoNodeMetricsBean& metrics = bean.metrics();

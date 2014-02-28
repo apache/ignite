@@ -63,7 +63,7 @@ GridClientConfiguration affinityClientConfiguration() {
 
     {
         GridClientDataConfiguration dataCfg;
-        GridClientPartitionedAffinity* aff = new GridClientPartitionedAffinity();
+        GridClientPartitionAffinity* aff = new GridClientPartitionAffinity();
 
         aff->setDefaultReplicas(512);
         aff->setHashIdResolver(hashIdResolver);
@@ -76,7 +76,7 @@ GridClientConfiguration affinityClientConfiguration() {
 
     {
         GridClientDataConfiguration dataCfg;
-        GridClientPartitionedAffinity* aff = new GridClientPartitionedAffinity();
+        GridClientPartitionAffinity* aff = new GridClientPartitionAffinity();
 
         aff->setDefaultReplicas(512);
         aff->setHashIdResolver(hashIdResolver);
@@ -104,7 +104,7 @@ class NoopProjectionListener : public GridClientProjectionListener {
 BOOST_AUTO_TEST_SUITE(GridClientAffinitySelftTest)
 
 BOOST_AUTO_TEST_CASE(testSimplePartitionedAffinity) {
-    GridClientPartitionedAffinity aff;
+    GridClientPartitionAffinity aff;
 
     aff.setDefaultReplicas(512);
     aff.setHashIdResolver(hashIdResolver);
@@ -291,7 +291,7 @@ TNodesSet nodesListToSet(const TNodesList& list) {
 }
 
 BOOST_AUTO_TEST_CASE(testPartitionedAffinity) {
-    GridClientPartitionedAffinity aff;
+    GridClientPartitionAffinity aff;
 
     aff.setHashIdResolver(hashIdResolver);
 
