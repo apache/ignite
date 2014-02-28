@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.ggfs;
+package org.gridgain.examples.ggfs.filesystem;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.FileSystem;
@@ -25,13 +25,13 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * This example shows usage of {@link GridGgfsHadoopFileSystem Hadoop FS driver}.
  * <p>
  * Before running this example you must start at least one remote node using
- * {@link GgfsEndpointNodeStartup}.
+ * {@link GgfsFileSystemNodeStartup}.
  *
  * @author @java.author
  * @version @java.version
  */
 @GridOnlyAvailableIn(HADOOP)
-public class GgfsHadoopFileSystemExample {
+public class GgfsFileSystemExample {
     /** Path to the default hadoop configuration. */
     private static final String HADOOP_FS_CFG = "/config/hadoop/core-site.xml";
 
@@ -52,7 +52,7 @@ public class GgfsHadoopFileSystemExample {
     public static void main(String[] args) throws IOException {
         try {
             System.out.println();
-            System.out.println(">>> GGFS Hadoop file system started.");
+            System.out.println(">>> GGFS file system example started.");
 
             String path = args.length > 0 ? args[0] : DFLT_PATH;
 

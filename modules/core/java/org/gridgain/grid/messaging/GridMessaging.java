@@ -106,6 +106,14 @@ public interface GridMessaging {
     public void localListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p);
 
     /**
+     * Unregisters local listener for given topic on local node only.
+     *
+     * @param topic Topic to unsubscribe from.
+     * @param p Listener predicate.
+     */
+    public void stopLocalListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p);
+
+    /**
      * Adds a message listener for a given topic to all nodes in the projection (possibly including
      * this node if it belongs to the projection as well). This means that any node within this grid
      * projection can send a message for a given topic and all nodes within projection will receive

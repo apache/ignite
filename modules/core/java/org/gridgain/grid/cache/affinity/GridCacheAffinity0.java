@@ -17,6 +17,9 @@ import java.util.*;
 
 /**
  * TODO: Add interface description.
+ *  Various {@code 'mapKeysToNodes(..)'} methods which provide node affinity mapping for
+ *  given keys. All {@code 'mapKeysToNodes(..)'} methods are not transactional and will not enlist
+ *  keys into ongoing transaction.
  *
  * @author @java.author
  * @version @java.version

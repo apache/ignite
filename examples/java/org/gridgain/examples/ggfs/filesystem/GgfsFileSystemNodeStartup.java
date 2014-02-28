@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.ggfs;
+package org.gridgain.examples.ggfs.filesystem;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -37,7 +37,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @version @java.version
  */
 @GridOnlyAvailableIn(HADOOP)
-public class GgfsEndpointNodeStartup {
+public class GgfsFileSystemNodeStartup {
     /**
      * Start up an empty node with specified cache configuration.
      *
@@ -63,16 +63,13 @@ public class GgfsEndpointNodeStartup {
 
         marsh.setRequireSerializable(false);
 
+        cfg.setMarshaller(marsh);
+
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
 
-        Collection<String> addrs = new ArrayList<>();
-
-        for (int i = 0; i < 10; i++)
-            addrs.add("127.0.0.1:" + (47500 + i));
-
-        ipFinder.setAddresses(addrs);
+        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
 
         discoSpi.setIpFinder(ipFinder);
 

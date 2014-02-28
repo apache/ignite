@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.cache.query.jdbc;
 
-import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
@@ -100,7 +100,7 @@ public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<Strin
 
                 assert cache != null;
 
-                Collection<GridCacheSqlMetadata> metas = cache.queries().sqlMetadata();
+                Collection<GridCacheSqlMetadata> metas = ((GridCacheQueriesEx<?, ?>)cache.queries()).sqlMetadata();
 
                 Map<String, Map<String, Map<String, String>>> schemasMap =
                     new HashMap<>(metas.size());

@@ -50,7 +50,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
 
     /** {@inheritDoc} */
     @Override public Person load(@Nullable GridCacheTx tx, Long key) throws GridException {
-        System.out.println("Store load [key=" + key + ", tx=" + tx + ']');
+        System.out.println(">>> Store load [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         Session ses = session(tx);
 
@@ -70,7 +70,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
     /** {@inheritDoc} */
     @Override public void put(@Nullable GridCacheTx tx, Long key, @Nullable Person val)
         throws GridException {
-        System.out.println("Store put [key=" + key + ", val=" + val + ", tx=" + tx + ']');
+        System.out.println(">>> Store put [key=" + key + ", val=" + val + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         if (val == null) {
             remove(tx, key);
@@ -96,7 +96,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
     /** {@inheritDoc} */
     @SuppressWarnings({"JpaQueryApiInspection"})
     @Override public void remove(@Nullable GridCacheTx tx, Long key) throws GridException {
-        System.out.println("Store remove [key=" + key + ", tx=" + tx + ']');
+        System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         Session ses = session(tx);
 
@@ -140,7 +140,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
                 }
             }
 
-            System.out.println("Loaded " + cnt + " values into cache.");
+            System.out.println(">>> Loaded " + cnt + " values into cache.");
         }
         catch (HibernateException e) {
             throw new GridException("Failed to load values from cache store.", e);

@@ -23,21 +23,15 @@ using namespace std;
 
 const static size_t RETRY_CNT = 1;
 
-GridClientProjectionImpl::GridClientProjectionImpl(
-    TGridClientSharedDataPtr pData,
-    GridClientProjectionListener& prjLsnr,
-    TGridClientNodePredicatePtr pFilter):
-        sharedData(pData), prjLsnr(prjLsnr), filter(pFilter), dfltAffinity(new GridClientPartitionedAffinity()) {
+GridClientProjectionImpl::GridClientProjectionImpl(TGridClientSharedDataPtr pData, GridClientProjectionListener& prjLsnr,
+        TGridClientNodePredicatePtr pFilter) : sharedData(pData), prjLsnr(prjLsnr), filter(pFilter),
+        dfltAffinity(new GridClientPartitionAffinity()) {
+
     vector<GridClientDataConfiguration> dataCfg = pData->clientConfiguration().dataConfiguration();
 
     // Read affinity configuration from vector to affinity map.
-    std::transform(
-        dataCfg.begin(),
-        dataCfg.end(),
-        std::inserter(affinityMap, affinityMap.end()),
-        [] (GridClientDataConfiguration& c) {
-            return std::make_pair(c.name(), c.affinity());
-        });
+    std::transform(dataCfg.begin(), dataCfg.end(), std::inserter(affinityMap, affinityMap.end()),
+        [] (GridClientDataConfiguration& c) { return std::make_pair(c.name(), c.affinity()); });
 }
 
 /**
@@ -142,8 +136,6 @@ bool GridClientProjectionImpl::processClosure(TGridClientNodePtr node, ClientPro
     bool routing = !addrs.empty();
 
     if (!routing) {
-        assert(addrs.empty());
-
         addrs = node->availableAddresses(protocol());
     }
 
@@ -173,17 +165,19 @@ bool GridClientProjectionImpl::processClosure(TGridClientNodePtr node, ClientPro
         }
     }
     else { //no routing
-        for (size_t addrIdx = 0; addrIdx < addrs.size(); ++addrIdx) {
+        int numAddrs = addrs.size();
+
+        for (size_t addrIdx = 0; addrIdx < numAddrs; ++addrIdx) {
             try {
                 c.apply(node, addrs[addrIdx], *exec); //networking here
 
                 return true;
             }
             catch (GridClientConnectionResetException&) {
-            	prjLsnr.onNodeIoFailed(*node);
+                prjLsnr.onNodeIoFailed(*node);
             }
             catch (GridServerUnreachableException&) {
-            	prjLsnr.onNodeIoFailed(*node);
+                prjLsnr.onNodeIoFailed(*node);
             }
         }
     }

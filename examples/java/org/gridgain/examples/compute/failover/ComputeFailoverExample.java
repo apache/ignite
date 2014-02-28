@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.compute;
+package org.gridgain.examples.compute.failover;
 
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
@@ -25,19 +25,12 @@ import java.util.*;
  * The example tries to compute phrase length. In order to mitigate possible node failures, intermediate
  * result is saved as as checkpoint after each job step.
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
- * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
- * with {@code examples/config/example-compute.xml} configuration.
+ * Remote nodes must be started using {@link ComputeFailoverNodeStartup}.
  *
  * @author @java.author
  * @version @java.version
  */
-public class ComputeFailoverCheckpointExample {
-    /** Path to configuration file. */
-    private static final String CONFIG = "examples/config/example-checkpoint.xml";
-
+public class ComputeFailoverExample {
     /**
      * Executes example.
      *
@@ -45,12 +38,12 @@ public class ComputeFailoverCheckpointExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = GridGain.start(CONFIG)) {
+        try (Grid g = GridGain.start(ComputeFailoverNodeStartup.configuration())) {
             if (!ExamplesUtils.checkMinTopologySize(g, 2))
                 return;
 
             System.out.println();
-            System.out.println("Compute failover and checkpoint example started.");
+            System.out.println("Compute failover example started.");
 
             GridFuture<Integer> f = g.compute().apply(new CheckPointJob(), "Stage1 Stage2");
 
