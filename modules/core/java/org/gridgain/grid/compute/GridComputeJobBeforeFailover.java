@@ -9,15 +9,17 @@
 
 package org.gridgain.grid.compute;
 
+import org.gridgain.grid.spi.failover.*;
+
 import java.lang.annotation.*;
 
 /**
  * This annotation allows to call a method right before job is submitted to
- * Failover SPI. In this method job can re-create necessary state that was
+ * {@link GridFailoverSpi}. In this method job can re-create necessary state that was
  * cleared, for example, in method with {@link GridComputeJobAfterSend} annotation.
  * <p>
- * This annotation can be applied to {@link GridComputeJob} instances only. It is
- * invoked no caller node after remote execution has failed and before the
+ * This annotation can be applied to methods of {@link GridComputeJob} instances only. It is
+ * invoked on the caller node after remote execution has failed and before the
  * job gets failed over to another node.
  * <p>
  * Example:
