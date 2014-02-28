@@ -31,7 +31,10 @@ import java.util.*;
  * in system classpath, so even in this case the deployment step is unnecessary.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
+ * <p>
+ * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -41,15 +44,16 @@ public final class DeploymentExample {
     static final String TASK_NAME = "ExampleTask";
 
     /**
-     * Deploys, executes and undeploys example task on the grid.
+     * Executes example.
      *
-     * @param args Command line arguments, none required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      {@code "examples/config/"} for configuration file examples.
+     * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = args.length == 0 ? GridGain.start("examples/config/example-compute.xml") : GridGain.start(args[0])) {
+        try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
+            System.out.println();
+            System.out.println(">>> Deployment example started.");
+
             // This task will be deployed on local node and then peer-loaded
             // onto remote nodes on demand. For this example this task is
             // available on the classpath, however in real life that may not
@@ -72,10 +76,9 @@ public final class DeploymentExample {
             // Undeploy task
             g.compute().undeployTask(TASK_NAME);
 
-            System.out.println(">>>");
+            System.out.println();
             System.out.println(">>> Finished executing Grid Direct Deployment Example.");
             System.out.println(">>> Check participating nodes output.");
-            System.out.println(">>>");
         }
     }
 

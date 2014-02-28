@@ -25,31 +25,21 @@ import java.util.concurrent.*;
  * framework. Grid bean is described in spring-bean.xml file and instantiated
  * by Spring context. Once application completed its execution Spring will
  * apply grid bean destructor and stop the grid.
- * <p>
- * <h1 class="header">Starting Remote Nodes</h1>
- * To try this example you should (but don't have to) start remote grid instances.
- * You can start as many as you like by executing the following script:
- * <pre class="snippet">{GRIDGAIN_HOME}/bin/ggstart.{bat|sh}</pre>
- * Once remote instances are started, you can execute this example from
- * Eclipse, IntelliJ IDEA, or NetBeans (and any other Java IDE) by simply hitting run
- * button. You will see that all nodes discover each other and
- * some of the nodes will participate in task execution (check node
- * output).
- * <p>
- * <h1 class="header">Spring Configuration</h1>
- * This example uses spring-bean.xml file which one can find in examples/config directory.
  *
  * @author @java.author
  * @version @java.version
  */
 public final class SpringBeanExample {
     /**
-     * Executes simple {@code HelloWorld} example on the grid (without splitting).
+     * Executes example.
      *
-     * @param args Command line arguments, none of them are used.
-     * @throws Exception If example execution failed.
+     * @param args Command line arguments, none required.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
+        System.out.println();
+        System.out.println(">>> Spring bean example started.");
+
         // Initialize Spring factory.
         ClassPathXmlApplicationContext ctx =
             new ClassPathXmlApplicationContext("org/gridgain/examples/misc/springbean/spring-bean.xml");

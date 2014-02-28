@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.compute;
+package org.gridgain.examples.compute.failover;
 
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
@@ -22,90 +22,32 @@ import java.util.*;
 /**
  * Demonstrates the usage of checkpoints in GridGain.
  * <p>
- * Example may take configuration file as the only parameter. By default it
- * uses sharedfs checkpoint implementation.
+ * The example tries to compute phrase length. In order to mitigate possible node failures, intermediate
+ * result is saved as as checkpoint after each job step.
  * <p>
- * String "Hello World" is passed as an argument to
- * {@link #sayIt(CharSequence)} method, which prints the phrase and returns it's length. The task, created
- * within the main method, responsible for split and
- * reduce logic will do the following:
- * <ol>
- * <li>Save checkpoint with key '{@code fail}' and value '{@code true}'.</li>
- * <li>Pass the passed in string as an argument into remote job for execution.</li>
- * <li>
- *   The job will check the value of checkpoint with key '{@code fail}'. If it
- *   is {@code true}, then it will set it to {@code false} and throw
- *   exception to simulate a failure. If it is {@code false}, then
- *   it will run the {@link ComputeFailoverCheckpointExample#sayIt(CharSequence)} method.
- * </li>
- * </ol>
- * Note that when job throws an exception it will be treated as a failure, and the task
- * will return {@link GridComputeJobResultPolicy#FAILOVER} policy. This will
- * cause the job to automatically failover to another node for execution.
- * The new job will simply print out the argument passed in.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * The possible outcome will look as following:
- * <pre class="snippet">
- * NODE #1 (failure occurred on this node)
- * Exception:
- * ----------
- * [18:04:15] (omg) Failed to execute job [jobId=...]
- * class org.gridgain.grid.GridException: Example job exception.
- * at org.gridgain.examples1.hpc.checkpoint.GridCheckpointExample$1$1.execute(GridCheckpointExample.java:238)
- * at org.gridgain.examples1.hpc.checkpoint.GridCheckpointExample$1$1.execute(GridCheckpointExample.java:208)
- * at org.gridgain.grid.kernal.processors.job.GridJobWorker$2.call(GridJobWorker.java:448)
- * at org.gridgain.grid.util.GridUtils.wrapThreadLoader(GridUtils.java:5195)
- * at org.gridgain.grid.kernal.processors.job.GridJobWorker.execute0(GridJobWorker.java:446)
- * at org.gridgain.grid.kernal.processors.job.GridJobWorker.body(GridJobWorker.java:399)
- * at org.gridgain.grid.util.worker.GridWorker$1.run(GridWorker.java:145)
- * at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:441)
- * at java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)
- * at java.util.concurrent.FutureTask.run(FutureTask.java:138)
- * at org.gridgain.grid.util.worker.GridWorker.run(GridWorker.java:192)
- * at java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
- * at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
- * at java.lang.Thread.run(Thread.java:662)
- *
- * NODE #2 (job was failed over to this node)
- * [02-Aug-2012 18:04:15][WARN ][gridgain-#117%null%][GridAlwaysFailoverSpi] Failed over job to a new node [newNode=...]
- * >>>
- * >>> Printing 'Hello World' on this node.
- * >>>
- * </pre>
- * <p>
- * <h1 class="header">Starting Remote Nodes</h1>
- * To try this example you need to start remote grid instances.
- * You can start as many as you like by executing the following script:
- * <pre class="snippet">{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-checkpoint.xml</pre>
- * Once remote instances are started, you can execute this example from
- * Eclipse, IntelliJ IDEA, or NetBeans (and any other Java IDE) by simply hitting run
- * button. You will see that all nodes discover each other and
- * some of the nodes will participate in task execution (check node
- * output).
- * <p>
+ * Alternatively you can run {@link org.gridgain.examples.compute.ComputeNodeStartup} in another JVM which will start GridGain node
+ * with {@code examples/config/example-compute.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
  */
-public class ComputeFailoverCheckpointExample {
-    /** Path to configuration file. */
-    private static final String CONFIG = "examples/config/example-checkpoint.xml";
-
+public class ComputeFailoverExample {
     /**
-     * Executes example with checkpoint.
+     * Executes example.
      *
-     * @param args Command line arguments, none required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      {@code "examples/config/"} for configuration file examples.
+     * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = GridGain.start(CONFIG)) {
+        try (Grid g = GridGain.start(ComputeFailoverNodeStartup.configuration())) {
             if (!ExamplesUtils.checkMinTopologySize(g, 2))
                 return;
 
             System.out.println();
-            System.out.println("Job failover and checkpoint example started.");
+            System.out.println("Compute failover example started.");
 
             GridFuture<Integer> f = g.compute().apply(new CheckPointJob(), "Stage1 Stage2");
 
@@ -177,6 +119,7 @@ public class ComputeFailoverCheckpointExample {
                     // For example purposes, we fail on purpose after first stage.
                     // This exception will cause job to be failed over to another node.
                     if (i == 0) {
+                        System.out.println();
                         System.out.println(">>> Job will be failed over to another node.");
 
                         throw new GridComputeJobFailoverException("Expected example job exception.");

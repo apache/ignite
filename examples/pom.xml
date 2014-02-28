@@ -84,6 +84,9 @@
             <resource>
                 <directory>java</directory>
             </resource>
+            <resource>
+                <directory>gar</directory>
+            </resource>
         </resources>
     </build>
 </project>

@@ -16,7 +16,27 @@ import org.jetbrains.annotations.*;
 import java.util.concurrent.*;
 
 /**
- * TODO: Add interface description.
+ * Provides functionality for scheduling jobs locally using UNIX cron-based syntax.
+ * Instance of {@code GridScheduler} is obtained from grid as follows:
+ * <pre name="code" class="java">
+ * GridScheduler s = GridGain.grid().scheduler();
+ * </pre>
+ * <p>
+ * Scheduler supports standard UNIX {@code cron} format with optional prefix of
+ * <tt>{n1, n2}</tt>, where {@code n1} is delay of scheduling in seconds and
+ * {@code n2} is the number of execution. Both parameters are optional.
+ * Here's an example of scheduling a closure that broadcasts a message
+ * to all nodes five times, once every minute, with initial delay of two seconds:
+ * <pre name="code" class="java">
+ * GridGain.grid().scheduler().scheduleLocal(
+ *     GridSchedulerFuture&lt;?&gt; = GridGain.grid().scheduler().scheduleLocal(new Callable&lt;Object&gt;() {
+ *         &#64;Override public Object call() throws GridException {
+ *             g.broadcast(new GridCallable() {...}).get();
+ *         }
+ *     }, "{2, 5} * * * * *" // 2 seconds delay with 5 executions only.
+ * );
+ * </pre>
+
  *
  * @author @java.author
  * @version @java.version
@@ -50,29 +70,9 @@ public interface GridScheduler {
     public <R> GridFuture<R> callLocal(@Nullable Callable<R> c);
 
     /**
-     * Schedules closure for execution using local <b>cron-based</b> scheduling.
-     * <p>
-     * Here's an example of scheduling a closure that broadcasts a message
-     * to all nodes five times, once every minute, with initial delay in two seconds:
-     * <pre name="code" class="java">
-     * GridGain.grid().scheduleLocal(
-     *     new CA() { // CA is a type alias for GridAbsClosure.
-     *         &#64;Override public void apply() {
-     *             try {
-     *                 g.run(BROADCAST, F.println("Hello Node! :)");
-     *             }
-     *             catch (GridException e) {
-     *                 throw new GridClosureException(e);
-     *             }
-     *         }
-     *     }, "{2, 5} * * * * *" // 2 seconds delay with 5 executions only.
-     * );
-     * </pre>
-     * <p>
-     * Note that class {@link GridRunnable} implements {@link Runnable} and class {@link GridOutClosure}
-     * implements {@link Callable} interface.
+     * Schedules job for execution using local <b>cron-based</b> scheduling.
      *
-     * @param c Closure to schedule to run as a background cron-based job.
+     * @param job Job to schedule to run as a background cron-based job.
      *      If {@code null} - this method is no-op.
      * @param ptrn Scheduling pattern in UNIX cron format with optional prefix <tt>{n1, n2}</tt>
      *      where {@code n1} is delay of scheduling in seconds and {@code n2} is the number of execution. Both
@@ -80,40 +80,17 @@ public interface GridScheduler {
      * @return Scheduled execution future.
      * @throws GridException Thrown in case of any errors.
      */
-    public GridSchedulerFuture<?> scheduleLocal(@Nullable Runnable c, String ptrn) throws GridException;
+    public GridSchedulerFuture<?> scheduleLocal(Runnable job, String ptrn) throws GridException;
 
     /**
-     * Schedules closure for execution using local <b>cron-based</b> scheduling.
-     * <p>
-     * Here's an example of scheduling a closure that broadcasts a message
-     * to all nodes five times, once every minute, with initial delay in two seconds:
-     * <pre name="code" class="java">
-     * GridGain.grid().scheduleLocal(
-     *     new CO<String>() { // CO is a type alias for GridOutClosure.
-     *         &#64;Override public String apply() {
-     *             try {
-     *                 g.run(BROADCAST, F.println("Hello Node! :)");
+     * Schedules job for execution using local <b>cron-based</b> scheduling.
      *
-     *                 return "OK";
-     *             }
-     *             catch (GridException e) {
-     *                 throw new GridClosureException(e);
-     *             }
-     *         }
-     *     }, "{2, 5} * * * * *" // 2 seconds delay with 5 executions only.
-     * );
-     * </pre>
-     * <p>
-     * Note that class {@link GridRunnable} implements {@link Runnable} and class {@link GridOutClosure}
-     * implements {@link Callable} interface.
-     *
-     * @param c Closure to schedule to run as a background cron-based job.
-     *       If {@code null} - this method is no-op.
+     * @param c Job to schedule to run as a background cron-based job.
      * @param ptrn Scheduling pattern in UNIX cron format with optional prefix <tt>{n1, n2}</tt>
      *      where {@code n1} is delay of scheduling in seconds and {@code n2} is the number of execution. Both
      *      parameters are optional.
      * @return Scheduled execution future.
      * @throws GridException Thrown in case of any errors.
      */
-    public <R> GridSchedulerFuture<R> scheduleLocal(@Nullable Callable<R> c, String ptrn) throws GridException;
+    public <R> GridSchedulerFuture<R> scheduleLocal(Callable<R> c, String ptrn) throws GridException;
 }

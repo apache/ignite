@@ -16,6 +16,10 @@ import java.util.*;
 
 /**
  * TODO: Add interface description.
+ *  Various {@code 'createXxxQuery(..)'} methods to query cache using either {@link GridCacheQueryType#SQL SQL},
+ *  {@link GridCacheQueryType#TEXT TEXT} text search, or
+ *  {@link GridCacheQueryType#SCAN SCAN} for filter-based full scan (see {@link GridCacheQuery}
+ *   for more information).
  *
  * @author @java.author
  * @version @java.version
