@@ -26,7 +26,7 @@ import java.util.*;
  */
 public class CacheStoreExample {
     /** Global person ID to use across entire example. */
-    private static final Long id = UUID.randomUUID().getLeastSignificantBits();
+    private static final Long id = Math.abs(UUID.randomUUID().getLeastSignificantBits());
 
     /**
      * Executes example.
@@ -49,7 +49,7 @@ public class CacheStoreExample {
 
                 System.out.println("Read value: " + val);
 
-                val = cache.put(id, person(1, "Isaac", "Newton"));
+                val = cache.put(id, person(id, "Isaac", "Newton"));
 
                 System.out.println("Overwrote old value: " + val);
 

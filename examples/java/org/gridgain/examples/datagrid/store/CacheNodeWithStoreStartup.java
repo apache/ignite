@@ -12,8 +12,6 @@ package org.gridgain.examples.datagrid.store;
 import org.gridgain.examples.datagrid.store.dummy.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.marshaller.optimized.*;
-import org.gridgain.grid.spi.deployment.local.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -50,33 +48,21 @@ public class CacheNodeWithStoreStartup {
 
         cfg.setLocalHost("127.0.0.1");
 
-        GridOptimizedMarshaller marsh = new GridOptimizedMarshaller();
-
-        marsh.setRequireSerializable(false);
-
-        cfg.setMarshaller(marsh);
-
+        // Discovery SPI.
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryMulticastIpFinder();
 
-        Collection<String> addrs = new ArrayList<>();
-
-        String addr = "127.0.0.1";
-
-        int port = 47500;
-
-        for (int i = 0; i < 10; i++)
-            addrs.add(addr + ':' + port++);
-
-        ipFinder.setAddresses(addrs);
+        ipFinder.setAddresses(Arrays.asList("127.0.0.1:47500..47509"));
 
         discoSpi.setIpFinder(ipFinder);
 
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
 
+        // Set atomicity as transaction, since we are showing transactions in example.
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        // Uncomment other cache stores to try them.
         cacheCfg.setStore(new CacheDummyPersonStore());
         // cacheCfg.setStore(new CacheJdbcPersonStore());
         // cacheCfg.setStore(new CacheHibernatePersonStore());

@@ -73,7 +73,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
                     conn.rollback();
             }
 
-            System.out.println("Transaction ended [xid=" + tx.xid() + ", commit=" + commit + ']');
+            System.out.println(">>> Transaction ended [xid=" + tx.xid() + ", commit=" + commit + ']');
         }
         catch (SQLException e) {
             throw new GridException("Failed to end transaction [xid=" + tx.xid() + ", commit=" + commit + ']', e);
@@ -81,9 +81,8 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Person load(@Nullable GridCacheTx tx, Long key)
-        throws GridException {
-        System.out.println("Store load [key=" + key + ", tx=" + tx + ']');
+    @Nullable @Override public Person load(@Nullable GridCacheTx tx, Long key) throws GridException {
+        System.out.println(">>> Store load [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         Connection conn = null;
 
@@ -112,7 +111,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
     /** {@inheritDoc} */
     @Override public void put(@Nullable GridCacheTx tx, Long key, Person val)
         throws GridException {
-        System.out.println("Store put [key=" + key + ", val=" + val + ", tx=" + tx + ']');
+        System.out.println(">>> Store put [key=" + key + ", val=" + val + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         Connection conn = null;
 
@@ -152,7 +151,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Override public void remove(@Nullable GridCacheTx tx, Long key) throws GridException {
-        System.out.println("Store remove [key=" + key + ", tx=" + tx + ']');
+        System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         Connection conn = null;
 
@@ -197,7 +196,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
                         cnt++;
                     }
 
-                    System.out.println("Loaded " + cnt + " values into cache.");
+                    System.out.println(">>> Loaded " + cnt + " values into cache.");
                 }
             }
         }

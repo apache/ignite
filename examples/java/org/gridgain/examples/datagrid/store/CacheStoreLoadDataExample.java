@@ -12,10 +12,7 @@ package org.gridgain.examples.datagrid.store;
 import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.lang.*;
-
-import java.util.concurrent.*;
 
 /**
  * Loads data from persistent store at cache startup by calling
@@ -54,7 +51,7 @@ public class CacheStoreLoadDataExample {
             long start = System.currentTimeMillis();
 
             // Start loading cache on all caching nodes.
-            g.forCache(null).compute().broadcast(new Callable<Object>() {
+            g.forCache(null).compute().broadcast(new GridCallable<Object>() {
                 @Override public Object call() throws Exception {
                     // Load cache from persistent store.
                     cache.loadCache(null, 0, ENTRY_COUNT);

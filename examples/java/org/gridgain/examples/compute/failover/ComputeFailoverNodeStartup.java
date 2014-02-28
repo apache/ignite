@@ -10,7 +10,6 @@
 package org.gridgain.examples.compute.failover;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.checkpoint.sharedfs.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -49,28 +48,19 @@ public class ComputeFailoverNodeStartup {
         cfg.setLocalHost("127.0.0.1");
         cfg.setPeerClassLoadingEnabled(true);
 
-        GridOptimizedMarshaller marsh = new GridOptimizedMarshaller();
-
-        marsh.setRequireSerializable(false);
-
-        cfg.setMarshaller(marsh);
-
+        // Configure checkpoint SPI.
         GridSharedFsCheckpointSpi checkpointSpi = new GridSharedFsCheckpointSpi();
 
         checkpointSpi.setDirectoryPaths(Collections.singletonList("/work/checkpoint/sharedfs"));
 
         cfg.setCheckpointSpi(checkpointSpi);
 
+        // Configure discovery SPI.
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
 
-        Collection<String> addrs = new ArrayList<>();
-
-        for (int i = 0; i < 10; i++)
-            addrs.add("127.0.0.1:" + (47500 + i));
-
-        ipFinder.setAddresses(addrs);
+        ipFinder.setAddresses(Arrays.asList("127.0.0.1:47500..47509"));
 
         discoSpi.setIpFinder(ipFinder);
 
