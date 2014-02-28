@@ -308,40 +308,34 @@ class VisorCacheCommand {
 
                         csT.render()
 
-                        println("\nNodes for: " + cacheNameVar)
+                        nl()
+                        println("Nodes for: " + cacheNameVar)
 
                         ciT.render()
 
+                        // Print footnote.
+                        println("'Hi' - Number of cache hits.")
+                        println("'Mi' - Number of cache misses.")
+                        println("'Rd' - number of cache reads.")
+                        println("'Wr' - Number of cache writes.")
+
+                        // Print metrics.
                         val qm = ad.qryMetrics
 
-                        println("\nQueries metrics:")
-                        println("Minimum execution time: " + X.timeSpan2HMSM(qm.minTime))
-                        println("Maximum execution time: " + X.timeSpan2HMSM(qm.maxTime))
-                        println("Average execution time: " + X.timeSpan2HMSM(qm.avgTime.toLong))
-                        println("Total Number of executions: " + qm.execs)
-                        println("Total number of failures: " + qm.fails)
+                        nl()
+                        println("Aggregated queries metrics:")
+                        println("  Minimum execution time: " + X.timeSpan2HMSM(qm.minTime))
+                        println("  Maximum execution time: " + X.timeSpan2HMSM(qm.maxTime))
+                        println("  Average execution time: " + X.timeSpan2HMSM(qm.avgTime.toLong))
+                        println("  Total number of executions: " + qm.execs)
+                        println("  Total number of failures:   " + qm.fails)
                     })
 
-                    nl()
-
-                    footnote()
                 }
                 else
                     println("\nUse \"-a\" flag to see detailed statistics.")
             }
         }
-    }
-
-    /**
-     * Prints footnote.
-     */
-    private def footnote() {
-        println("'Hi' - Number of cache hits.")
-        println("'Mi' - Number of cache misses.")
-        println("'Rd' - number of cache reads.")
-        println("'Wr' - Number of cache writes.")
-        println("\n'Ex' - Number of query executions.")
-        println("'Fa' - Number of query failures.")
     }
 
     /**
@@ -496,29 +490,33 @@ private class VisorCacheDataTask extends VisorConsoleMultiNodeTask[Option[String
                 case None => g.cachesx()
             }
 
-            caches.collect {
-                case c =>
-                    val m = g.localNode.metrics
-                    val qm = c.queries().metrics()
+            if (caches != null)
+                caches.collect {
+                    case c =>
+                        val m = g.localNode.metrics
+                        val qm = c.queries().metrics()
 
-                    VisorCacheData(
-                        cacheName = c.name,
-                        nodeId = g.localNode.id,
-                        cpus = m.getTotalCpus,
-                        heapUsed = m.getHeapMemoryUsed / m.getHeapMemoryMaximum * 100,
-                        cpuLoad = m.getCurrentCpuLoad * 100,
-                        upTime = m.getUpTime,
-                        size = c.size,
-                        lastRead = c.metrics.readTime,
-                        lastWrite = c.metrics.writeTime,
-                        hits = c.metrics.hits,
-                        misses = c.metrics.misses,
-                        reads = c.metrics.reads,
-                        writes = c.metrics.writes,
-                        VisorCacheQueryMetrics(qm.minimumTime(), qm.maximumTime(), qm.averageTime(),
-                            qm.executions(), qm.fails())
-                    )
-            }.toSeq
+                        VisorCacheData(
+                            cacheName = c.name,
+                            nodeId = g.localNode.id,
+                            cpus = m.getTotalCpus,
+                            heapUsed = m.getHeapMemoryUsed / m.getHeapMemoryMaximum * 100,
+                            cpuLoad = m.getCurrentCpuLoad * 100,
+                            upTime = m.getUpTime,
+                            size = c.size,
+                            lastRead = c.metrics.readTime,
+                            lastWrite = c.metrics.writeTime,
+                            hits = c.metrics.hits,
+                            misses = c.metrics.misses,
+                            reads = c.metrics.reads,
+                            writes = c.metrics.writes,
+                            VisorCacheQueryMetrics(qm.minimumTime(), qm.maximumTime(), qm.averageTime(),
+                                qm.executions(), qm.fails())
+                        )
+                }.toSeq
+            else
+                Seq.empty[VisorCacheData]
+
         }
     }
 
@@ -579,7 +577,7 @@ private class VisorCacheDataTask extends VisorConsoleMultiNodeTask[Option[String
 
             val aqm = ad.qryMetrics
 
-            aqm.avgTime = aqm.totalTime / aqm.execs
+            aqm.avgTime = if (aqm.execs > 0) aqm.totalTime / aqm.execs else 0
         })
 
         aggrData.values
