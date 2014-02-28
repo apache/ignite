@@ -391,10 +391,25 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forOthers(GridNode node) {
+    @Override public final GridProjection forOthers(GridNode node, GridNode... nodes) {
         A.notNull(node, "node");
+        A.notNull(node, "nodes");
 
-        return forOthers(node.id());
+        Collection<UUID> ids;
+
+        if (!F.isEmpty(nodes)) {
+            ids = new HashSet<>(nodes.length + 1);
+
+            ids.add(node.id());
+
+            for (GridNode n : nodes)
+                ids.add(n.id());
+        }
+        else
+            ids = Collections.singleton(node.id());
+
+
+        return forOthers(ids);
     }
 
     /** {@inheritDoc} */
@@ -426,15 +441,15 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
 
     /** {@inheritDoc} */
     @Override public final GridProjection forRemotes() {
-        return forOthers(ctx.localNodeId());
+        return forOthers(Collections.singleton(ctx.localNodeId()));
     }
 
     /**
-     * @param nodeId Node ID.
+     * @param excludeIds Node IDs.
      * @return New projection.
      */
-    private GridProjection forOthers(UUID nodeId) {
-        assert nodeId != null;
+    private GridProjection forOthers(Collection<UUID> excludeIds) {
+        assert excludeIds != null;
 
         if (ids != null) {
             guard();
@@ -443,7 +458,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
                 Set<UUID> nodeIds = new HashSet<>(ids.size());
 
                 for (UUID id : ids) {
-                    if (!nodeId.equals(id))
+                    if (!excludeIds.contains(id))
                         nodeIds.add(id);
                 }
 
@@ -454,7 +469,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
             }
         }
         else
-            return forPredicate(new OthersFilter(nodeId));
+            return forPredicate(new OthersFilter(excludeIds));
     }
 
     /** {@inheritDoc} */
@@ -655,18 +670,18 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
      */
     private static class OthersFilter extends GridPredicate<GridNode> {
         /** */
-        private final UUID nodeId;
+        private final Collection<UUID> nodeIds;
 
         /**
-         * @param nodeId Node ID.
+         * @param nodeIds Node IDs.
          */
-        private OthersFilter(UUID nodeId) {
-            this.nodeId = nodeId;
+        private OthersFilter(Collection<UUID> nodeIds) {
+            this.nodeIds = nodeIds;
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(GridNode n) {
-            return !nodeId.equals(n.id());
+            return !nodeIds.contains(n.id());
         }
     }
 }
