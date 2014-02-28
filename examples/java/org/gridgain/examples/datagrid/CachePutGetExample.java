@@ -17,15 +17,12 @@ import java.util.*;
 
 /**
  * This example demonstrates very basic operations on cache, such as 'put' and 'get'.
- * We first populate cache by putting values into it, and then we 'peek' at values on
- * remote nodes, and then we 'get' those values. For replicated cache, values should
- * be everywhere at all times. For partitioned cache, 'peek' on some nodes may return
- * {@code null} due to partitioning, however, 'get' operation should never return {@code null}.
  * <p>
- * When starting remote nodes, make sure to use the same configuration file as follows:
- * <pre>
- *     GRIDGAIN_HOME/bin/ggstart.sh examples/config/example-cache.xml
- * </pre>
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
+ * <p>
+ * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -37,10 +34,10 @@ public class CachePutGetExample {
     //private static final String CACHE_NAME = "local";
 
     /**
-     * Runs basic cache example.
+     * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws Exception If example execution failed.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
@@ -59,7 +56,7 @@ public class CachePutGetExample {
      */
     private static void putGet() throws GridException {
         System.out.println();
-        System.out.println(">>> Starting put-get example.");
+        System.out.println(">>> Cache put-get example started.");
 
         Grid g = GridGain.grid();
 

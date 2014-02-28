@@ -21,14 +21,11 @@ import java.util.*;
  * and co-locates simple closure execution with each key. The goal of this particular
  * example is to provide the simplest code example of this logic.
  * <p>
- * Note that other examples in this package provide more detailed examples
- * of affinity co-location.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
- * Affinity routing is enabled for all caches.
- * <p>
- * Remote nodes should always be started with configuration file which includes
- * cache: {@code 'ggstart.sh examples/config/example-cache.xml'}. Local node should
- * be started with cache.
+ * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -43,16 +40,16 @@ public final class CacheAffinityExample {
     private static final int KEY_CNT = 20;
 
     /**
-     * Executes cache affinity example.
-     * <p>
-     * Note that in case of {@code LOCAL} configuration,
-     * since there is no distribution, values may come back as {@code nulls}.
+     * Executes example.
      *
-     * @param args Command line arguments
-     * @throws GridException If failed.
+     * @param args Command line arguments, none required.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
+            System.out.println();
+            System.out.println(">>> Cache affinity example started.");
+
             GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
             for (int i = 0; i < KEY_CNT; i++)

@@ -25,48 +25,27 @@ import java.util.*;
  * functionality is exposed via {@link GridComputeJobContext#holdcc()} and
  * {@link GridComputeJobContext#callcc()} method calls in {@link FibonacciClosure} class.
  * <p>
- * This is a powerful design pattern which allows for creation of fully distributively recursive
- * (a.k.a. nested) tasks or closures with continuations. This example also shows
- * usage of {@code 'continuations'}, which allows us to wait for results from remote nodes
- * without blocking threads.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Note that because this example utilizes local node storage via {@link GridNodeLocalMap},
- * it gets faster if you execute it multiple times, as the more you execute it,
- * the more values it will be cached on remote nodes.
- * <p>
- * <h1 class="header">Starting Remote Nodes</h1>
- * To try this example you should (but don't have to) start remote grid instances.
- * You can start as many as you like by executing the following script:
- * <pre class="snippet">{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-compute.xml</pre>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-compute.xml} configuration.
- * <p>
- * Once remote instances are started, you can execute this example from
- * Eclipse, IntelliJ IDEA, or NetBeans (and any other Java IDE) by simply hitting run
- * button. You will see that all nodes discover each other and
- * some of the nodes will participate in task execution (check node
- * output).
  *
  * @author @java.author
  * @version @java.version
  */
 public final class ComputeFibonacciContinuationExample {
     /**
-     * This example recursively calculates {@code 'Fibonacci'} numbers on the grid. This is
-     * a powerful design pattern which allows for creation of distributively recursive
-     * tasks or closures with {@code 'continuations'}.
-     * <p>
-     * Note that because this example utilizes local node storage via {@link GridNodeLocalMap},
-     * it gets faster if you execute it multiple times, as the more you execute it,
-     * the more values it will be cached on remote nodes.
+     * Executes example.
      *
-     * @param args Command line arguments, none required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      <tt>"examples/config/"</tt> for configuration file examples.
+     * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
+            System.out.println();
+            System.out.println("Compute Fibonacci continuation example started.");
+
             long N = 100;
 
             final UUID exampleNodeId = g.localNode().id();
@@ -85,14 +64,13 @@ public final class ComputeFibonacciContinuationExample {
 
             long duration = System.currentTimeMillis() - start;
 
-            System.out.println(">>>");
+            System.out.println();
             System.out.println(">>> Finished executing Fibonacci for '" + N + "' in " + duration + " ms.");
             System.out.println(">>> Fibonacci sequence for input number '" + N + "' is '" + fib + "'.");
             System.out.println(">>> If you re-run this example w/o stopping remote nodes - the performance will");
             System.out.println(">>> increase since intermediate results are pre-cache on remote nodes.");
             System.out.println(">>> You should see prints out every recursive Fibonacci execution on grid nodes.");
             System.out.println(">>> Check remote nodes for output.");
-            System.out.println(">>>");
         }
     }
 
@@ -127,6 +105,7 @@ public final class ComputeFibonacciContinuationExample {
         /** {@inheritDoc} */
         @Nullable @Override public BigInteger apply(Long n) {
             if (fut1 == null || fut2 == null) {
+                System.out.println();
                 System.out.println(">>> Starting fibonacci execution for number: " + n);
 
                 // Make sure n is not negative.

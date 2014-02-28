@@ -21,13 +21,9 @@ import java.util.*;
 /**
  * This example shows how to use Memcache client for manipulating GridGain cache.
  * <p>
- * GridGain implements Memcache binary protocol and it's available if
+ * GridGain implements Memcache binary protocol and it is available if
  * REST is enabled on the node.
- * <p>
- * If you want to test this example with remote node, please don't start remote
- * node from command line but start {@link MemcacheRestExampleNodeStartup} from IDE
- * instead because this example requires that some classes are present in classpath
- * on all nodes.
+ * Remote nodes should always be started using {@link MemcacheRestExampleNodeStartup}.
  *
  * @author @java.author
  * @version @java.version
@@ -47,6 +43,9 @@ public class MemcacheRestExample {
         MemcachedClient client = null;
 
         try (Grid g = GridGain.start(MemcacheRestExampleNodeStartup.configuration())) {
+            System.out.println();
+            System.out.println(">>> Memcache REST example started.");
+
             GridCache<String, Object> cache = g.cache(null);
 
             client = startMemcachedClient(host, port);
@@ -67,8 +66,6 @@ public class MemcacheRestExample {
             // Check that cache is empty.
             System.out.println(">>> Current cache size: " + cache.size() + " (expected: 0).");
 
-            System.out.println(">>>");
-
             // Put integer value to cache using Memcache binary protocol.
             if (client.add("intKey", 0, 100).get())
                 System.out.println(">>> Successfully put integer value using Memcache client.");
@@ -84,8 +81,6 @@ public class MemcacheRestExample {
 
             // Check that cache is empty.
             System.out.println(">>> Current cache size: " + cache.size() + " (expected: 0).");
-
-            System.out.println(">>>");
 
             // Create atomic long.
             GridCacheAtomicLong l = cache.dataStructures().atomicLong("atomicLong", 10, true);

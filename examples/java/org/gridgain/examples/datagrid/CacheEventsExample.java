@@ -19,32 +19,32 @@ import java.util.*;
 import static org.gridgain.grid.events.GridEventType.*;
 
 /**
- * This examples demonstrates continuous query API.
+ * This examples demonstrates events API.
  * <p>
- * Remote nodes should always be started with configuration file which includes
- * cache: {@code 'ggstart.sh examples/config/example-cache.xml'}.
- * <h2 class="header">NOTE</h2>
- * Under some concurrent circumstances callback may get several notifications
- * for one cache update.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
+ * <p>
+ * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
  */
-public class CacheContinuousEventsExample {
+public class CacheEventsExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
 
     /**
-     * Executes example on the grid.
+     * Executes example.
      *
-     * @param args Command line arguments. None required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      {@code "examples/config/"} for configuration file examples.
+     * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
-     * @throws InterruptedException If thread was interrupted.
      */
     public static void main(String[] args) throws GridException, InterruptedException {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
+            System.out.println();
+            System.out.println(">>> Cache events example started.");
+
             GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
             // Subscribe to events on every node that has cache running.
