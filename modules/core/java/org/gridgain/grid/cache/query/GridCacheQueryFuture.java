@@ -24,11 +24,15 @@ import java.util.*;
 public interface GridCacheQueryFuture<T> extends GridFuture<Collection<T>> {
     /**
      * @return Number of fetched elements which are available immediately.
+     * @throws GridException In case of error.
      */
     public int available() throws GridException;
 
     /**
-     * Blocking call
+     * Returns next element from result set.
+     * <p>
+     * This is a blocking call which will wait if there are no
+     * elements available immediately.
      *
      * @return Next fetched element or {@code null} if all the elements.
      * @throws GridException If failed.

@@ -16,11 +16,8 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * TODO: Add interface description.
- *  Various {@code 'createXxxQuery(..)'} methods to query cache using either {@link GridCacheQueryType#SQL SQL},
- *  {@link GridCacheQueryType#TEXT TEXT} text search, or
- *  {@link GridCacheQueryType#SCAN SCAN} for filter-based full scan (see {@link GridCacheQuery}
- *   for more information).
+ * Various {@code 'createXxxQuery(..)'} methods to query cache using either {@code SQL},
+ * full text search, or filter-based full scan (see {@link GridCacheQuery} for more information).
  *
  * @author @java.author
  * @version @java.version
@@ -58,6 +55,7 @@ public interface GridCacheQueries<K, V> {
     /**
      * Creates user's predicate based scan query.
      *
+     * @param filter Scan filter.
      * @return Created query.
      */
     public GridCacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable GridBiPredicate<K, V> filter);
@@ -96,7 +94,15 @@ public interface GridCacheQueries<K, V> {
      */
     public GridFuture<?> rebuildAllIndexes();
 
+    /**
+     * Accumulated metrics for all queries executed for this cache.
+     *
+     * @return Cache query metrics.
+     */
     public GridCacheQueryMetrics metrics();
 
+    /**
+     * Resets accumulated metrics.
+     */
     public void resetMetrics();
 }
