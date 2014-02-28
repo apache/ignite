@@ -24,10 +24,9 @@ import java.util.concurrent.*;
 
 /**
  * Defines compute grid functionality for executing tasks and closures over nodes
- * in the {{@link GridProjection}. Instance of {@code GridCompute} is obtained from grid projection
+ * in the {@link GridProjection}. Instance of {@code GridCompute} is obtained from grid projection
  * as follows:
  * <pre name="code" class="java">
- * // Compute instance for the whole grid.
  * GridCompute c = GridGain.grid().compute();
  * </pre>
  * The methods are grouped as follows:

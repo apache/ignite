@@ -109,9 +109,6 @@ public class GridCacheAttributes implements Externalizable {
     /** Flag indicating whether GridGain should use write-behind behaviour for the cache store. */
     private boolean writeBehindEnabled;
 
-    /** Flag indicating whether GridGain should use primary nodes for persistent store update. */
-    private boolean writeBehindPreferPrimary;
-
     /** Maximum size of write-behind cache. */
     private int writeBehindFlushSize;
 
@@ -220,7 +217,6 @@ public class GridCacheAttributes implements Externalizable {
         writeBehindFlushFreq  = cfg.getWriteBehindFlushFrequency();
         writeBehindFlushSize = cfg.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cfg.getWriteBehindFlushThreadCount();
-        writeBehindPreferPrimary = cfg.isWriteBehindPreferPrimary();
         writeSyncMode = cfg.getWriteSynchronizationMode();
 
         affMapperClsName = className(cfg.getAffinityMapper());
@@ -559,13 +555,6 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Flag indicating whether GridGain should use primary nodes for persistent store update.
-     */
-    public boolean writeBehindPreferPrimary() {
-        return writeBehindPreferPrimary;
-    }
-
-    /**
      * @return Maximum size of write-behind cache.
      */
     public int writeBehindFlushSize() {
@@ -654,7 +643,6 @@ public class GridCacheAttributes implements Externalizable {
         out.writeLong(writeBehindFlushFreq);
         out.writeInt(writeBehindFlushSize);
         out.writeInt(writeBehindFlushThreadCnt);
-        out.writeBoolean(writeBehindPreferPrimary);
         U.writeEnum(out, writeSyncMode);
 
         U.writeString(out, affClsName);
@@ -710,7 +698,6 @@ public class GridCacheAttributes implements Externalizable {
         writeBehindFlushFreq = in.readLong();
         writeBehindFlushSize = in.readInt();
         writeBehindFlushThreadCnt = in.readInt();
-        writeBehindPreferPrimary = in.readBoolean();
         writeSyncMode = U.readEnum(in, GridCacheWriteSynchronizationMode.class);
 
         affClsName = U.readString(in);
