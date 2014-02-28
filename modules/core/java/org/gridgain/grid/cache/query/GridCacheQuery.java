@@ -19,39 +19,18 @@ import org.jetbrains.annotations.*;
 /**
  * Main API for configuring and executing cache queries.
  * <p>
- * The queries are executed as follows:
- * <ol>
- * <li>Query is sent to requested grid nodes.</li>
- * <li>
- *  If query is not full scan query, each node will execute the received query
- *  against index tables to retrieve the keys of the values in the result set.
- * </li>
- * <li>
- *  If the requesting node will receive a page of next query results, it will provide it to the ongoing
- *  iterator, which will start returning received key-value pairs to user. If {@link #keepAll(boolean)}
- *  flag is set to false, then the received page will be immediately discarded after it has been
- *  returned to user. In this case, the {@link GridCacheQueryFuture#get()} method will always return
- *  only the last page. If {@link #keepAll(boolean)} flag is {@code true}, then all query result pages
- *  will be accumulated in memory and the full query result will be returned to user.
- * </li>
- * </ol>
  * Cache queries are created from {@link GridCacheQueries} API via any of the available
  * {@code createXXXQuery(...)} methods.
  * <h1 class="header">SQL Queries</h1>
  * {@code SQL} query allows to execute distributed cache
  * queries using standard SQL syntax. All values participating in where clauses
- * or joins must be annotated with {@link GridCacheQuerySqlField} annotation.
- * There are almost no restrictions as to which SQL syntax can be used. All inner, outer, or
- * full joins are supported, as well as rich set of SQL grammar and functions. GridGain relies on
- * {@code H2 SQL Engine} for SQL compilation and indexing. For full set of supported
- * {@code Numeric}, {@code String}, and {@code Date/Time} SQL functions please refer
- * to <a href="http://www.h2database.com/html/functions.html">H2 Functions</a> documentation
- * directly. For full set of supported SQL syntax refer to
- * <a href="http://www.h2database.com/html/grammar.html#select">H2 SQL Select Grammar</a>.
- * <p>
- * Note that whenever using {@code 'group by'} queries, only individual page results will be
- * sorted and not the full result sets. However, if a single node is queried, then the result
- * set will be quite accurate.
+ * or joins must be annotated with {@link GridCacheQuerySqlField} annotation. Query can be created
+ * with {@link GridCacheQueries#createSqlQuery(Class, String)} method.
+ * <h2 class="header">Field Queries</h2>
+ * By default {@code select} clause is ignored as query result contains full objects.
+ * If it is needed to select individual fields, use {@link GridCacheQueries#createSqlFieldsQuery(String)} method.
+ * This type of query replaces full objects with individual fields. Note that selected fields
+ * must be annotated with {@link GridCacheQuerySqlField} annotation.
  * <h2 class="header">Cross-Cache Queries</h2>
  * You are allowed to query data from several caches. Cache that this query was created on is
  * treated as default schema in this case. Other caches can be referenced by their names.
@@ -64,42 +43,20 @@ import org.jetbrains.annotations.*;
  *     Purchase.class,
  *     "from \"replicated\".Store, \"partitioned\".Purchase where Store.id=Purchase.storeId and Store.id=?");
  * </pre>
- * <h2 class="header">Snowflake Schema and Distributed Joins</h2>
- * <a href="http://en.wikipedia.org/wiki/Snowflake_schema">Snowflake Schema</a> is a logical
- * arrangement of data in which data is split into {@code dimensions} and {@code facts}.
- * <i>Dimensions</i> can be referenced or joined by other <i>dimensions</i> or <i>facts</i>,
- * however, <i>facts</i> are generally not referenced by other facts. You can view <i>dimensions</i>
- * as your master or reference data, while <i>facts</i> are usually large data sets of events or
- * other objects that continuously come into the system and may change frequently. In GridGain
- * such architecture is supported via cross-cache queries. By storing <i>dimensions</i> in
- * {@link GridCacheMode#REPLICATED REPLICATED} caches and <i>facts</i> in much larger
- * {@link GridCacheMode#PARTITIONED PARTITIONED} caches you can freely execute distributed joins across
- * your whole in-memory data grid, thus querying your in memory data without any limitations.
- * <p>
- * Note that in addition to joining <i>facts</i> and <i>dimensions</i>,
- * if you properly colocate relevant <i>facts</i> together, you can also cross-reference and
- * execute distributed joins across multiple <i>fact</i> object types within your in-memory data grid as well.
- * <h2 class="header">Field Queries</h2>
- * By default {@code select} clause is ignored as query result contains full objects.
- * If it is needed to select individual fields, use {@link GridCacheQueries#createSqlFieldsQuery(String)} method.
  * <h2 class="header">Custom functions in SQL queries.</h2>
  * It is possible to write custom Java methods and call then form SQL queries. These methods must be public static
  * and annotated with {@link GridCacheQuerySqlFunction}. Classes containing these methods must be registered in
  * {@link GridH2IndexingSpi#setIndexCustomFunctionClasses(Class[])}.
- * <h1 class="header">Text Queries</h1>
- * GridGain supports full text queries using Apache Lucene.
- * All fields that are expected to show up in text query results must be annotated
- * with {@link GridCacheQueryTextField}.
+ * <h1 class="header">Full Text Queries</h1>
+ * GridGain supports full text queries based on Apache Lucene engine. This queries are created by
+ * {@link GridCacheQueries#createFullTextQuery(Class, String)} method. Note that all fields that
+ * are expected to show up in text query results must be annotated with {@link GridCacheQueryTextField}
+ * annotation.
  * <h1 class="header">Scan Queries</h1>
- * Sometimes when it is known in advance that SQL query will cause a full data scan,
- * or whenever data set is relatively small, the full scan
- * query may be used. With this query type GridGain will iterate over all cache
- * entries, skipping over the entries that don't pass the optionally provided key-value filter
+ * Sometimes when it is known in advance that SQL query will cause a full data scan, or whenever data set
+ * is relatively small, the full scan query may be used. This query will iterate over all cache
+ * entries, skipping over entries that don't pass the optionally provided key-value filter
  * (see {@link GridCacheQueries#createScanQuery(GridBiPredicate)} method).
- * <h1 class="header">Query Performance</h1>
- * Note that in case of very frequent cache updates, query index has to be frequently updated which
- * may have negative effect on performance. Generally, it's best to use cache indexes and queries
- * when updates are not too frequent.
  * <h2 class="header">Limitations</h2>
  * Data in GridGain cache is usually distributed across several nodes,
  * so some queries may not work as expected. Keep in mind following limitations
