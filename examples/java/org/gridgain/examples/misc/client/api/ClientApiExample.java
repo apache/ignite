@@ -28,8 +28,8 @@ import java.util.*;
  * to start more than one node on the same physical machine you must provide different
  * configurations for each node. Otherwise, this example would not work.
  * <p>
- * Note that to start the example, {@code GRIDGAIN_HOME} system property or environment variable
- * must be set.
+ * Before running this example you must start at least one remote node using
+ * {@link ClientExampleNodeStartup}.
  *
  * @author @java.author
  * @version @java.version
@@ -39,12 +39,15 @@ public class ClientApiExample {
     private static final String SERVER_ADDRESS = "127.0.0.1";
 
     /**
-     * Runs client compute example.
+     * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridClientException If failed.
+     * @throws GridClientException If example execution failed.
      */
     public static void main(String[] args) throws GridClientException {
+        System.out.println();
+        System.out.println(">>> Client API example started.");
+
         try (GridClient client = createClient()) {
             // Show grid topology.
             System.out.println(">>> Client created, current grid topology: " + client.compute().nodes());
@@ -167,51 +170,6 @@ public class ClientApiExample {
             GridClientFuture<List<GridClientNode>> topFut = prj.refreshTopologyAsync(false, false);
 
             System.out.println(">>> Refreshed topology asynchronously : " + topFut.get());
-
-            try {
-                // Client can be used to query logs.
-                Collection<String> log = prj.log(2, 9);
-
-                System.out.println(">>> First log lines:");
-
-                for (Object o : log.toArray())
-                    System.out.println(o);
-
-                System.out.println("<<< End of log.");
-
-                // Log entries may be fetched asynchronously.
-                GridClientFuture<List<String>> futLog = prj.logAsync(2, 9);
-
-                System.out.println(">>> First log lines fetched asynchronously:");
-
-                for (Object o : futLog.get().toArray())
-                    System.out.println(o);
-
-                System.out.println("<<< End of log.");
-
-                // Log file name can also be specified explicitly.
-                log = prj.log("work/log/gridgain.log", 2, 9);
-
-                System.out.println(">>> First log lines from log file work/log/gridgain.log:");
-
-                for (Object o : log.toArray())
-                    System.out.println(o);
-
-                System.out.println("<<< End of log.");
-
-                // Asynchronous version supported as well.
-                futLog = prj.logAsync("work/log/gridgain.log", 2, 9);
-
-                System.out.println(">>> First log lines fetched asynchronously:");
-
-                for (Object o : futLog.get().toArray())
-                    System.out.println(o);
-
-                System.out.println("<<< End of log.");
-            }
-            catch (GridClientException e) {
-                System.out.println("Log file was not found: " + e);
-            }
         }
     }
 

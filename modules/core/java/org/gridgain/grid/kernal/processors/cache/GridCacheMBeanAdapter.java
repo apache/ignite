@@ -161,11 +161,6 @@ class GridCacheMBeanAdapter implements GridCacheMBean {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isWriteBehindPreferPrimary() {
-        return store != null && cctx.config().isWriteBehindPreferPrimary();
-    }
-
-    /** {@inheritDoc} */
     @Override public int getWriteBehindFlushSize() {
         return store != null ? store.getWriteBehindFlushSize() : -1;
     }

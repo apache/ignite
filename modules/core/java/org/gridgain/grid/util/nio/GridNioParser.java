@@ -36,7 +36,7 @@ public interface GridNioParser {
      * @return Parsed user message or {@code null} if complete message has not been received yet. Note
      *         that in case of returning {@code null} given buffer must be completely read.
      * @throws IOException If exception occurred while reading data.
-     * @throws org.gridgain.grid.GridException If any user-specific error occurred.
+     * @throws GridException If any user-specific error occurred.
      */
     @Nullable public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, GridException;
 
@@ -49,8 +49,8 @@ public interface GridNioParser {
      * @param ses Session on which message is being sent.
      * @param msg Message to encode.
      * @return Buffer containing encoded message.
-     * @throws java.io.IOException If exception occurred while encoding data.
-     * @throws org.gridgain.grid.GridException If any user-specific error occurred while encoding data.
+     * @throws IOException If exception occurred while encoding data.
+     * @throws GridException If any user-specific error occurred while encoding data.
      */
     public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, GridException;
 }

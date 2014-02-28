@@ -15,9 +15,9 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.worker.*;
 import org.jetbrains.annotations.*;
 
@@ -47,7 +47,7 @@ import static org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflow
  * <li>Maximum amount of files files which can be used to store data (see {@link #setMaxFilesCount(int)})</li>
  * <li>Checkpoint creation frequency (see {@link #setCheckpointFrequency(long)})</li>
  * <li>Overflow mode defining how store will behave in case of overflow
- *      (see {@link #setOverflowMode(org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflowMode)})</li>
+ *      (see {@link #setOverflowMode(GridDrSenderHubStoreOverflowMode)})</li>
  * <li>Checksum enabled flag (see {@link #setChecksumEnabled(boolean)})</li>
  * <li>Read buffer size (see {@link #setReadBufferSize(int)})</li>
  * </ul>
@@ -88,7 +88,7 @@ import static org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflow
  *
  * @author @java.author
  * @version @java.version
- * @see org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStore
+ * @see GridDrSenderHubStore
  */
 public class GridDrSenderHubFsStore implements GridDrSenderHubStore, GridLifecycleAware {
     /** Default maximum amount of files which can be used to store data. */

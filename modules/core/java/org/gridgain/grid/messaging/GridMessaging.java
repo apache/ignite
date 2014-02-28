@@ -16,7 +16,32 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * TODO: Add interface description.
+ * Provides functionality for topic-based message exchange among nodes defined by {@link #projection()}.
+ * Users can send ordered and unordered messages to various topics. Note that same topic name
+ * cannot be reused between ordered and unordered messages. Instance of {@code GridMessaging}
+ * is obtained from grid projection as follows:
+ * <pre name="code" class="java">
+ * GridMessaging m = GridGain.grid().message();
+ * </pre>
+ * <p>
+ * There are {@code 2} ways to subscribe to message listening, {@code local} and {@code remote}.
+ * <p>
+ * Local subscription, defined by {@link #localListen(Object, GridBiPredicate)} method, will add
+ * a listener for a given topic on local node only. This listener will be notified whenever any
+ * node within grid projection will send a message for a given topic to this node. Local listen
+ * subscription will happen regardless of whether local node belongs to this grid projection or not.
+ * <p>
+ * Remote subscription, defined by {@link #remoteListen(Object, GridBiPredicate)}, will add a
+ * message listener for a given topic to all nodes in the projection (possibly including this node if
+ * it belongs to the projection as well). This means that any node within this grid projection can send
+ * a message for a given topic and all nodes within projection will receive listener notification.
+ * <h1 class="header">Ordered vs Unordered</h1>
+ * GridGain allows for sending ordered messages (see {@link #sendOrdered(Object, Object, long)}), i.e.
+ * messages will be received in the same order they were sent. Ordered messages have a {@code timeout}
+ * parameter associated with them which specifies how long an out-of-order message will stay in a queue,
+ * waiting for messages that are ordered ahead of it to arrive. If timeout expires, then all ordered
+ * messages for a given topic that have not arrived yet will be skipped. When (and if) expired messages
+ * actually do arrive, they will be ignored.
  *
  * @author @java.author
  * @version @java.version
@@ -32,91 +57,73 @@ public interface GridMessaging {
     /**
      * Sends given message with specified topic to the nodes in this projection.
      *
-     * @param topic Topic of this message. If {@code null} or empty - the message has default topic.
+     * @param topic Topic to send to, {@code null} for default topic.
      * @param msg Message to send.
      * @throws GridException If failed to send a message to any of the nodes.
      * @throws GridEmptyProjectionException Thrown in case when this projection is empty.
-     *      Note that in case of dynamic projection this method will take a snapshot of all the
-     *      nodes at the time of this call, apply all filtering predicates, if any, and if the
-     *      resulting collection of nodes is empty - the exception will be thrown.
      */
     public void send(@Nullable Object topic, Object msg) throws GridException;
 
     /**
      * Sends given messages with specified topic to the nodes in this projection.
      *
-     * @param topic Topic of this message. If {@code null} or empty - the message has default topic.
+     * @param topic Topic to send to, {@code null} for default topic.
      * @param msgs Messages to send. Order of the sending is undefined. If the method produces
      *      the exception none or some messages could have been sent already.
      * @throws GridException If failed to send a message to any of the nodes.
      * @throws GridEmptyProjectionException Thrown in case when this projection is empty.
-     *      Note that in case of dynamic projection this method will take a snapshot of all the
-     *      nodes at the time of this call, apply all filtering predicates, if any, and if the
-     *      resulting collection of nodes is empty - the exception will be thrown.
      */
     public void send(@Nullable Object topic, Collection<?> msgs) throws GridException;
 
     /**
-     * Sends given message with specified topic to the nodes in this projection.
+     * Sends given message with specified topic to the nodes in this projection. Messages sent with
+     * this method will arrive in the same order they were sent. Note that if a topic is used
+     * for ordered messages, then it cannot be reused for non-ordered messages.
      * <p>
-     * Messages, sent with this method, will arrive in the same order they were sent.
+     * The {@code timeout} parameter specifies how long an out-of-order message will stay in a queue,
+     * waiting for messages that are ordered ahead of it to arrive. If timeout expires, then all ordered
+     * messages that have not arrived before this message will be skipped. When (and if) expired messages
+     * actually do arrive, they will be ignored.
      *
-     * @param topic Topic of this message. If {@code null} or empty - the message has default topic.
+     * @param topic Topic to send to, {@code null} for default topic.
      * @param msg Message to send.
-     * @param timeout Timeout in milliseconds, after which the message will be discarded.
+     * @param timeout Message timeout in milliseconds, {@code 0} for default
+     *      which is {@link GridConfiguration#getNetworkTimeout()}.
      * @throws GridException If failed to send a message to any of the nodes.
      * @throws GridEmptyProjectionException Thrown in case when this projection is empty.
-     *      Note that in case of dynamic projection this method will take a snapshot of all the
-     *      nodes at the time of this call, apply all filtering predicates, if any, and if the
-     *      resulting collection of nodes is empty - the exception will be thrown.
      */
     public void sendOrdered(@Nullable Object topic, Object msg, long timeout) throws GridException;
 
     /**
-     * Convenient utility listening method for messages. This method provides a convenient idiom
-     * of protocol-based message exchange with automatic listener management.
-     * <p>
-     * When this method is called it will register message listener for the messages <tt>from all nodes
-     * in the grid</tt> and return immediately without blocking. On the background, for each received
-     * message it will call passed in predicate. If predicate returns {@code true}, it will continue
-     * listening for the new messages. Otherwise, it will unregister the listener and stop receiving
-     * messages.
+     * Adds local listener for given topic on local node only. This listener will be notified whenever any
+     * node within grid projection will send a message for a given topic to this node. Local listen
+     * subscription will happen regardless of whether local node belongs to this grid projection or not.
      *
-     * @param topic Topic to subscribe to. Will only receive messages for that topic. Empty string or
-     *      {@code null} mean default topic (the one, which is used when calling {@link #send(Object, Object)}).
-     * @param p Predicate that is called on each received message. If predicate returns {@code true},
-     *      the implementation will continue listening for the new messages. Otherwise, the implementation
-     *      will unregister the listener and stop receiving messages.
-     * @see GridMessagingListenActor
-     * @see #remoteListen(Object, GridBiPredicate)
+     * @param topic Topic to subscribe to.
+     * @param p Predicate that is called on each received message. If predicate returns {@code false},
+     *      then it will be unsubscribed from any further notifications.
      */
     public void localListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p);
 
     /**
-     * Registers given message listener on <b>all nodes defined by this projection</b> to listen for
-     * messages sent <b>to given topic</b>. Messages can be sent using one of the following
-     * methods:
-     * <ul>
-     *     <li>{@link #send(Object, Object)}</li>
-     *     <li>{@link #send(Object, Collection)}</li>
-     * </ul>
-     * Essentially, this method allows to "wire up" sender and receiver(s) of the messages in a
-     * completely distributed manner.
-     * <p>
-     * Note that returned future will complete when listener is registered on current snapshot of nodes
-     * for this projection. But if projection is dynamic, listener will be registered on all nodes that join it,
-     * even if they join after the future is completed.
+     * Adds a message listener for a given topic to all nodes in the projection (possibly including
+     * this node if it belongs to the projection as well). This means that any node within this grid
+     * projection can send a message for a given topic and all nodes within projection will receive
+     * listener notification.
      *
-     * @param topic Topic to subscribe to. Will only receive messages for that topic. Empty string or
-     *      {@code null} mean default topic (the one, which is used when calling {@link #send(Object, Object)}).
-     * @param p Predicate that is called on each received message. If predicate returns {@code true},
-     *      the implementation will continue listening for the new messages. Otherwise, the implementation
-     *      will unregister the listener and stop receiving messages.
-     * @return Future for this distributed operation.
-     * @see GridMessagingListenActor
-     * @see #localListen(Object, GridBiPredicate)
-     * @see #send(Object, Object)
-     * @see #send(Object, Collection)
+     * @param topic Topic to subscribe to, {@code null} means default topic.
+     * @param p Predicate that is called on each node for each received message. If predicate returns {@code false},
+     *      then it will be unsubscribed from any further notifications.
+     * @return Future that finishes when all listeners are registered. It returns {@code operation ID}
+     *      that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
      */
-    public GridFuture<?> remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p);
+    public GridFuture<UUID> remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p);
+
+    /**
+     * Unregisters all listeners identified with provided operation ID on all nodes in this projection.
+     *
+     * @param opId Listen ID that was returned from {@link #remoteListen(Object, GridBiPredicate)} method.
+     * @return Future that finishes when all listeners are unregistered.
+     */
+    public GridFuture<?> stopRemoteListen(UUID opId);
 }

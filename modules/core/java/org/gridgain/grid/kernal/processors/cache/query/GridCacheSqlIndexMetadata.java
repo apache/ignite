@@ -7,18 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.cache.query;
-
-import org.gridgain.grid.cache.query.*;
+package org.gridgain.grid.kernal.processors.cache.query;
 
 import java.io.*;
 import java.util.*;
 
 /**
  * GridGain index descriptor.
- * <p>
- * Provides information about one of the indexes created by
- * {@link org.gridgain.grid.spi.indexing.GridIndexingSpi}.
  * <p>
  * All index descriptors can be obtained from
  * {@link GridCacheSqlMetadata#indexes(String)} method.

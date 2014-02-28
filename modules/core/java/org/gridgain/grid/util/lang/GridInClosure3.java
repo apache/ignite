@@ -17,7 +17,7 @@ import org.gridgain.grid.util.typedef.*;
  * Since Java 6 doesn't provide a language construct for first-class function the closures are
  * implemented as interfaces.
  * <h2 class="header">Type Alias</h2>
- * To provide for more terse code you can use a typedef {@link org.gridgain.grid.util.typedef.CI3} class or various factory methods in
+ * To provide for more terse code you can use a typedef {@link CI3} class or various factory methods in
  * {@link GridFunc} class. Note, however, that since typedefs in Java rely on inheritance you should
  * not use these type aliases in signatures.
  * <h2 class="header">Thread Safety</h2>

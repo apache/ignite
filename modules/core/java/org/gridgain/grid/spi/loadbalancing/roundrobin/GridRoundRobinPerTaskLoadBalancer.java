@@ -10,6 +10,7 @@
 package org.gridgain.grid.spi.loadbalancing.roundrobin;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 
 import java.util.*;
 
@@ -38,7 +39,7 @@ class GridRoundRobinPerTaskLoadBalancer {
 
     /**
      * Gets balanced node for given topology. This implementation
-     * is to be used only from {@link org.gridgain.grid.compute.GridComputeTask#map(List, Object)} method
+     * is to be used only from {@link GridComputeTask#map(List, Object)} method
      * and, therefore, does not need to be thread-safe.
      *
      * @param top Topology to pick from.

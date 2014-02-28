@@ -23,11 +23,11 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 /**
  * Real time popular numbers counter.
  * <p>
- * Remote nodes should always be started with configuration which includes cache
- * using following command: {@code 'ggstart.sh examples/config/example-cache-popularcounts.xml'}.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
- * The counts are kept in cache on all remote nodes. Top {@code 10} counts from each node are
- * then grabbed to produce an overall top {@code 10} list within the grid.
+ * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -52,15 +52,18 @@ public class CachePopularNumbersExample {
     private static final int CNT = 1000000;
 
     /**
-     * Starts counting numbers.
+     * Executes example.
      *
-     * @param args Command line arguments.
-     * @throws Exception If failed.
+     * @param args Command line arguments, none required.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
 
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
+            System.out.println();
+            System.out.println(">>> Cache popular numbers example started.");
+
             GridProjection prj = g.forCache(CACHE_NAME);
 
             if (prj.nodes().isEmpty()) {
@@ -117,7 +120,7 @@ public class CachePopularNumbersExample {
      */
     private static TimerTask scheduleQuery(final Grid g, Timer timer, final int cnt) {
         TimerTask task = new TimerTask() {
-            private GridCacheFieldsQuery qry;
+            private GridCacheQuery<List<?>> qry;
 
             @Override public void run() {
                 // Get reference to cache.
@@ -125,13 +128,13 @@ public class CachePopularNumbersExample {
 
                 if (qry == null)
                     qry = cache.queries().
-                        createFieldsQuery("select _key, _val from Long order by _val desc limit " + cnt);
+                        createSqlFieldsQuery("select _key, _val from Long order by _val desc limit " + cnt);
 
                 try {
-                    List<List<Object>> results = new ArrayList<>(qry.execute().get());
+                    List<List<?>> results = new ArrayList<>(qry.execute().get());
 
-                    Collections.sort(results, new Comparator<List<Object>>() {
-                        @Override public int compare(List<Object> r1, List<Object> r2) {
+                    Collections.sort(results, new Comparator<List<?>>() {
+                        @Override public int compare(List<?> r1, List<?> r2) {
                             long cnt1 = (Long)r1.get(1);
                             long cnt2 = (Long)r2.get(1);
 
@@ -140,7 +143,7 @@ public class CachePopularNumbersExample {
                     });
 
                     for (int i = 0; i < cnt; i++) {
-                        List<Object> res = results.get(i);
+                        List<?> res = results.get(i);
 
                         System.out.println(res.get(0) + "=" + res.get(1));
                     }

@@ -31,7 +31,7 @@ import java.util.*;
  *     <li>{@link Grid#cache(String)}</li>
  *     <li>{@link Grid#caches()}</li>
  * </ul>
- * <h1 class="header">Rich API</h1>
+ * <h1 class="header">Functionality</h1>
  * This API extends {@link GridCacheProjection} API which contains vast majority of cache functionality
  * and documentation. In addition to {@link GridCacheProjection} functionality this API provides:
  * <ul>
@@ -41,34 +41,23 @@ import java.util.*;
  *  data based on the optionally passed in arguments.
  * </li>
  * <li>
+ *     Method {@link #affinity()} provides {@link GridCacheAffinity} service for information on
+ *     data partitioning and mapping keys to grid nodes responsible for caching those keys.
+ * </li>
+ * <li>
+ *     Method {@link #dataStructures()} provides {@link GridCacheDataStructures} service for
+ *     creating and working with distributed concurrent data structures, such as
+ *     {@link GridCacheAtomicLong}, {@link GridCacheAtomicReference}, {@link GridCacheQueue}, etc.
+ * </li>
+ * <li>
  *  Methods like {@code 'tx{Un}Synchronize(..)'} witch allow to get notifications for transaction state changes.
  *  This feature is very useful when integrating cache transactions with some other in-house transactions.
- * </li>
  * </li>
  * <li>Method {@link #metrics()} to provide metrics for the whole cache.</li>
  * <li>Method {@link #configuration()} to provide cache configuration bean.</li>
  * <li>Method {@link #randomEntry()} to retrieve random entry from cache.</li>
  * <li>Method {@link #overflowSize()} to get the size of the swap storage.</li>
  * </ul>
- * <h1 class="header">Named Data Structures</h1>
- * Cache provides some types of named structures such as {@link GridCacheAtomicLong},
- * {@link GridCacheAtomicReference}, {@link GridCacheAtomicStamped}, and {@link GridCacheAtomicSequence}.
- * All instances of these structures must have unique names in cache regardless of their type.
- * <h1 class="header">Null Keys or Values</h1>
- * Neither {@code null} keys or values are allowed to be stored in cache. If a {@code null} value
- * happens to be in cache (e.g. after invalidation or remove), then cache will treat this case
- * as there is no value at all.
- * <p>
- * All API method with {@link Nullable @Nullable} annotation on method parameters
- * or return values either accept or may return a {@code null} value. Parameters that do not
- * have this annotation cannot be {@code null} and invoking method with a {@code null} parameter
- * in this case will result in {@link NullPointerException}.
- * <h1 class="header">Allowed Discovery SPIs</h1>
- * When working with distributed cache, proper node ordering is required on startup. For that
- * reason cache can be used only with implementations of {@link org.gridgain.grid.spi.discovery.GridDiscoverySpi}
- * that are annotated with {@link org.gridgain.grid.spi.discovery.GridDiscoverySpiOrderSupport} annotation.
- * User can also relax this annotation and can manually ensure that nodes are started sequentially (not concurrently).
- * To do that, {@link GridSystemProperties#GG_NO_DISCO_ORDER} must be provided at startup.
  *
  * @author @java.author
  * @version @java.version
