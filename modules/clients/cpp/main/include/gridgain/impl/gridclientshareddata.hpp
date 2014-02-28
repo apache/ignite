@@ -58,6 +58,11 @@ public:
         return clientId.uuid();
     }
 
+    /**
+     * Returns the unique id of the client.
+     *
+     * @return Client UUID in GridUuid form.
+     */
     GridUuid & clientUniqueUuid() {
         return clientId;
     }

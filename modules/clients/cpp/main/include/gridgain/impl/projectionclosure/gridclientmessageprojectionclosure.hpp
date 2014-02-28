@@ -32,6 +32,11 @@ public:
     ClientMessageProjectionClosure(std::string pClientId) :
         clientId(pClientId) {};
 
+    /**
+     * Generic public constructor.
+     *
+     * @param clientId Client id as uuid.
+     */
     ClientMessageProjectionClosure(GridUuid & clientId) :
         clientId(clientId) {};
 

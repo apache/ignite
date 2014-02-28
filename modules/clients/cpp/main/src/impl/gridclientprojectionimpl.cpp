@@ -23,21 +23,17 @@ using namespace std;
 
 const static size_t RETRY_CNT = 1;
 
-GridClientProjectionImpl::GridClientProjectionImpl(
-        TGridClientSharedDataPtr pData,
-        GridClientProjectionListener& prjLsnr,
-        TGridClientNodePredicatePtr pFilter):
+GridClientProjectionImpl::GridClientProjectionImpl(TGridClientSharedDataPtr pData, GridClientProjectionListener& prjLsnr,
+                TGridClientNodePredicatePtr pFilter) :
                 sharedData(pData), prjLsnr(prjLsnr), filter(pFilter), dfltAffinity(new GridClientPartitionAffinity()) {
+
     vector<GridClientDataConfiguration> dataCfg = pData->clientConfiguration().dataConfiguration();
 
     // Read affinity configuration from vector to affinity map.
-    std::transform(
-            dataCfg.begin(),
-            dataCfg.end(),
-            std::inserter(affinityMap, affinityMap.end()),
-            [] (GridClientDataConfiguration& c) {
-        return std::make_pair(c.name(), c.affinity());
-    });
+    std::transform(dataCfg.begin(), dataCfg.end(), std::inserter(affinityMap, affinityMap.end()),
+                    [] (GridClientDataConfiguration& c) {
+                        return std::make_pair(c.name(), c.affinity());
+                    });
 }
 
 /**

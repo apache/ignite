@@ -59,7 +59,7 @@ inline GridBoolHasheableObject::GridBoolHasheableObject(bool pVal) {
     hashCode_ = pVal ? 1231 : 1237;
 
     bytes.resize(sizeof(hashCode_));
-    memset(&bytes[0],0,sizeof(hashCode_));
+    memset(&bytes[0], 0, sizeof(hashCode_));
 
     GridClientByteUtils::valueToBytes(hashCode_, &bytes[0], sizeof(hashCode_), GridClientByteUtils::LITTLE_ENDIAN_ORDER);
 }

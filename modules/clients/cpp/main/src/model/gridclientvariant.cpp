@@ -211,135 +211,133 @@ GridUuid GridClientVariant::getUuid() const {
 
 string GridClientVariant::toString() const {
 
-    if (Impl::STRING_TYPE == pimpl.var.which())
-    {
+    if (Impl::STRING_TYPE == pimpl.var.which()) {
         return getString();
 
     }
-    else
-    {
-         ostringstream os;
+    else {
+        ostringstream os;
 
-         switch(pimpl.var.which()) {
-             case Impl::BOOL_TYPE:
-                 os << getBool();
+        switch (pimpl.var.which()) {
+            case Impl::BOOL_TYPE:
+                os << getBool();
 
-                 break;
+                break;
 
-             case Impl::SHORT_TYPE:
-                 os << getShort();
+            case Impl::SHORT_TYPE:
+                os << getShort();
 
-                 break;
+                break;
 
-             case Impl::INT_TYPE:
-                 os << getInt();
+            case Impl::INT_TYPE:
+                os << getInt();
 
-                 break;
+                break;
 
-             case Impl::LONG_TYPE:
-                 os << getLong();
+            case Impl::LONG_TYPE:
+                os << getLong();
 
-                 break;
+                break;
 
-             case Impl::DOUBLE_TYPE:
-                 os << getDouble();
+            case Impl::DOUBLE_TYPE:
+                os << getDouble();
 
-                 break;
+                break;
 
-             case Impl::FLOAT_TYPE:
-                 os << getFloat();
+            case Impl::FLOAT_TYPE:
+                os << getFloat();
 
-                 break;
+                break;
 
-             case Impl::STRING_TYPE:
-                 os << getString();
+            case Impl::STRING_TYPE:
+                os << getString();
 
-                 break;
+                break;
 
-             case Impl::WIDE_STRING_TYPE:
-                  os << getWideString();
+            case Impl::WIDE_STRING_TYPE:
+                os << getWideString();
 
-                  break;
+                break;
 
-             case Impl::UUID_TYPE:
-                 os << getUuid().uuid();
+            case Impl::UUID_TYPE:
+                os << getUuid().uuid();
 
-                 break;
-         }
-         return os.str();
+                break;
+        }
+        return os.str();
     }
 }
 
 string GridClientVariant::debugString() const {
-     ostringstream os;
+    ostringstream os;
 
-     os << "GridClientVariant [type=";
+    os << "GridClientVariant [type=";
 
-     switch(pimpl.var.which()) {
-         case Impl::BOOL_TYPE:
-             os << "bool, value=" << getBool();
+    switch (pimpl.var.which()) {
+        case Impl::BOOL_TYPE:
+            os << "bool, value=" << getBool();
 
-             break;
+            break;
 
-         case Impl::SHORT_TYPE:
-             os << "short, value=" << getShort();
+        case Impl::SHORT_TYPE:
+            os << "short, value=" << getShort();
 
-             break;
+            break;
 
-         case Impl::INT_TYPE:
-             os << "int, value=" << getInt();
+        case Impl::INT_TYPE:
+            os << "int, value=" << getInt();
 
-             break;
+            break;
 
-         case Impl::LONG_TYPE:
-             os << "long, value=" << getLong();
+        case Impl::LONG_TYPE:
+            os << "long, value=" << getLong();
 
-             break;
+            break;
 
-         case Impl::DOUBLE_TYPE:
-             os << "double, value=" << getDouble();
+        case Impl::DOUBLE_TYPE:
+            os << "double, value=" << getDouble();
 
-             break;
+            break;
 
-         case Impl::FLOAT_TYPE:
-             os << "float, value=" << getFloat();
+        case Impl::FLOAT_TYPE:
+            os << "float, value=" << getFloat();
 
-             break;
+            break;
 
-         case Impl::STRING_TYPE:
-             os << "string, value=" << getString();
+        case Impl::STRING_TYPE:
+            os << "string, value=" << getString();
 
-             break;
+            break;
 
-         case Impl::WIDE_STRING_TYPE:
-              os << "wstring, value=" << getWideString();
+        case Impl::WIDE_STRING_TYPE:
+            os << "wstring, value=" << getWideString();
 
-              break;
+            break;
 
-         case Impl::BYTE_ARRAY_TYPE:
-             os << "byte[], length=" << getByteArray().size();
+        case Impl::BYTE_ARRAY_TYPE:
+            os << "byte[], length=" << getByteArray().size();
 
-             break;
+            break;
 
-         case Impl::VARIANT_VECTOR_TYPE:
-             os << "variant[], length=" << getVariantVector().size();
+        case Impl::VARIANT_VECTOR_TYPE:
+            os << "variant[], length=" << getVariantVector().size();
 
-             break;
+            break;
 
-         case Impl::UUID_TYPE:
-             os << "GridUuid, value=" << getUuid().uuid();
+        case Impl::UUID_TYPE:
+            os << "GridUuid, value=" << getUuid().uuid();
 
-             break;
+            break;
 
-         default:
-             os << "UNKNOWN";
+        default:
+            os << "UNKNOWN";
 
-             break;
-     }
+            break;
+    }
 
-     os << ']';
+    os << ']';
 
-     return os.str();
+    return os.str();
 }
 
 class VariantVisitorImpl : public boost::static_visitor<> {

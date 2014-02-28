@@ -36,7 +36,6 @@ public:
      */
     static std::ostream& toStream(std::ostream& out, const std::vector<std::string>& v);
 
-
     /**
      * Outputs GridSocketAddress representation of a vector to stream.
      *

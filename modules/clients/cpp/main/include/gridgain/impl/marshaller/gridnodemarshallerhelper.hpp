@@ -41,14 +41,14 @@ public:
      *
      * @param pIntAddrs List of address strings.
      */
-    void setTcpAddresses(std::vector<GridSocketAddress>& pIntAddrs);
+    void setTcpAddresses(std::vector < GridSocketAddress >& pIntAddrs);
 
     /**
      * Sets REST HTTP server addresses.
      *
      * @param pExtAddrs List of address strings.
      */
-    void setJettyAddresses(std::vector<GridSocketAddress>& pExtAddrs);
+    void setJettyAddresses(std::vector < GridSocketAddress >& pExtAddrs);
 
     /**
      * Sets metrics.

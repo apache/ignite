@@ -133,18 +133,14 @@ const std::vector<GridSocketAddress> & GridClientNode::availableAddresses(GridCl
     int port;
 
     switch (proto) {
-    case TCP:
-    {
-        return getTcpAddresses();
-    }
+        case TCP:
+            return getTcpAddresses();
 
-    case HTTP:
-    {
-        return getJettyAddresses();
-    }
+        case HTTP:
+            return getJettyAddresses();
 
-    default:
-        throw std::logic_error("Unknown protocol.");
+        default:
+            throw std::logic_error("Unknown protocol.");
     }
 }
 

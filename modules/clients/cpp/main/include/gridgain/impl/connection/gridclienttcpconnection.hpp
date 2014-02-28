@@ -30,6 +30,9 @@ class GridClientConnectionPool;
 /** Forward declaration. */
 class GridClientSyncTcpConnection;
 
+/** Forward declaration. */
+class GridClientRawSyncTcpConnection;
+
 /**
  * This class represents a data packet used in
  * GridGain binary protocol for data exchange.
@@ -273,7 +276,7 @@ public:
     GridClientRawSyncTcpConnection();
 
     /**
-     * Donstructor.
+     * Destructor.
      *
      */
     ~GridClientRawSyncTcpConnection();
@@ -326,9 +329,24 @@ private:
      */
     virtual void handshake();
 
+    /**
+     * OS socket.
+     */
     int sock;
+
+    /**
+     * Address to connect to.
+     */
     std::string address;
+
+    /**
+     * Port to connect to.
+     */
     int port;
+
+    /**
+     * OS socket address info struct.
+     */
     struct sockaddr_in server;
 };
 

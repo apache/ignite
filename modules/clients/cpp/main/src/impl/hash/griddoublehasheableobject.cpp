@@ -226,7 +226,7 @@ void GridDoubleHasheableObject::convertToBytes(std::vector<int8_t>& bytes) const
     int64_t val = doubleToRawLongBits(doubleVal);
 
     bytes.resize(sizeof(val));
-    memset(&bytes[0],0,sizeof(val));
+    memset(&bytes[0], 0, sizeof(val));
 
     GridClientByteUtils::valueToBytes(val, &bytes[0], sizeof(val), GridClientByteUtils::LITTLE_ENDIAN_ORDER);
 }
