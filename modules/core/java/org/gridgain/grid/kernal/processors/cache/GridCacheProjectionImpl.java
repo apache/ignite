@@ -1209,6 +1209,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         flags = U.readSet(in);
 
         cache = cctx.cache();
+
+        qry = new GridCacheQueriesImpl<>(cctx, this);
     }
 
     /** {@inheritDoc} */
