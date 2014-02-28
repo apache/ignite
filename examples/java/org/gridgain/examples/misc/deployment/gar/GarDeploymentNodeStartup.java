@@ -7,27 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.misc.client.memcache;
+package org.gridgain.examples.misc.deployment.gar;
 
-import org.gridgain.examples.misc.client.interceptor.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.marshaller.optimized.*;
-import org.gridgain.grid.product.*;
+import org.gridgain.grid.spi.deployment.uri.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.spi.indexing.h2.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.GridDeploymentMode.*;
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.product.GridProductEdition.*;
-
 /**
- * Starts up an empty node with cache configuration that contains default cache.
+ * Starts up an empty node with deployment-enabled configuration.
  * <p>
  * The difference is that running this class from IDE adds all example classes to classpath
  * but running from command line doesn't.
@@ -35,20 +26,19 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @author @java.author
  * @version @java.version
  */
-@GridOnlyAvailableIn(DATA_GRID)
-public class MemcacheRestExampleNodeStartup {
+public class GarDeploymentNodeStartup {
     /**
-     * Start up an empty node with specified cache configuration.
+     * Start up an empty node with specified configuration.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws org.gridgain.grid.GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
         GridGain.start(configuration());
     }
 
     /**
-     * Create Grid configuration with GGFS and enabled IPC.
+     * Create Grid configuration with configured checkpoints.
      *
      * @return Grid configuration.
      * @throws GridException If configuration creation failed.
@@ -57,7 +47,6 @@ public class MemcacheRestExampleNodeStartup {
         GridConfiguration cfg = new GridConfiguration();
 
         cfg.setLocalHost("127.0.0.1");
-        cfg.setDeploymentMode(SHARED);
         cfg.setPeerClassLoadingEnabled(true);
 
         GridOptimizedMarshaller marsh = new GridOptimizedMarshaller();
@@ -66,23 +55,7 @@ public class MemcacheRestExampleNodeStartup {
 
         cfg.setMarshaller(marsh);
 
-        GridH2IndexingSpi indexSpi = new GridH2IndexingSpi();
-
-        indexSpi.setDefaultIndexPrimitiveKey(true);
-        indexSpi.setDefaultIndexFixedTyping(false);
-
-        cfg.setIndexingSpi(indexSpi);
-
-        cfg.setClientMessageInterceptor(new ClientBigIntegerMessageInterceptor());
-
-        GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
-
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setPreloadMode(SYNC);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
-
-        cfg.setCacheConfiguration(cacheCfg);
+        cfg.setDeploymentSpi(new GridUriDeploymentSpi());
 
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 

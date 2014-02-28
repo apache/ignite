@@ -25,11 +25,7 @@ import java.util.*;
  * The example tries to compute phrase length. In order to mitigate possible node failures, intermediate
  * result is saved as as checkpoint after each job step.
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
- * <p>
- * Alternatively you can run {@link org.gridgain.examples.compute.ComputeNodeStartup} in another JVM which will start GridGain node
- * with {@code examples/config/example-compute.xml} configuration.
+ * Remote nodes must be started using {@link ComputeFailoverNodeStartup}.
  *
  * @author @java.author
  * @version @java.version

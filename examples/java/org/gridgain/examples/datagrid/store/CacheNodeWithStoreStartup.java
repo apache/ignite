@@ -60,16 +60,7 @@ public class CacheNodeWithStoreStartup {
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryMulticastIpFinder();
 
-        Collection<String> addrs = new ArrayList<>();
-
-        String addr = "127.0.0.1";
-
-        int port = 47500;
-
-        for (int i = 0; i < 10; i++)
-            addrs.add(addr + ':' + port++);
-
-        ipFinder.setAddresses(addrs);
+        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
 
         discoSpi.setIpFinder(ipFinder);
 

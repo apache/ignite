@@ -48,6 +48,11 @@
     -->
     <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
         <!--
+            Explicitly set to local host address.
+        -->
+        <property name="localHost" value="127.0.0.1"/>
+
+        <!--
             Configure optimized marshaller.
         -->
         <property name="marshaller">
@@ -143,11 +148,6 @@
                 <util:constant static-field="org.gridgain.grid.events.GridEventType.EVT_JOB_MAPPED"/>
             </list>
         </property>
-
-        <!--
-            Explicitly set to local host address.
-        -->
-        <property name="localHost" value="127.0.0.1"/>
 
         <!--
             TCP discovery SPI (uses VM-shared IP-finder).

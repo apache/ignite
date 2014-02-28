@@ -52,16 +52,12 @@ import org.gridgain.grid.spi.deployment.uri.*;
  * </li>
  * </ol>
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
- * <p>
- * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * Remote nodes must be started using {@link GarDeploymentNodeStartup}.
  *
  * @author @java.author
  * @version @java.version
  */
-public final class GarHelloWorldExample {
+public final class GarDeploymentExample {
     /**
      * Executes example.
      *
@@ -70,7 +66,7 @@ public final class GarHelloWorldExample {
      */
     public static void main(String[] args) throws GridException {
         try {
-            try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
+            try (Grid g = GridGain.start(GarDeploymentNodeStartup.configuration())) {
                 System.out.println();
                 System.out.println(">>> GAR example started.");
 
