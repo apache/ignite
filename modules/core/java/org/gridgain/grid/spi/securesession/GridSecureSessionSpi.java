@@ -11,6 +11,8 @@ package org.gridgain.grid.spi.securesession;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.spi.securesession.noop.*;
+import org.gridgain.grid.spi.securesession.rememberme.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -19,16 +21,16 @@ import org.jetbrains.annotations.*;
  * authenticated only once and upon successful authentication get issued a secure session token
  * to reuse for consequent requests (very much the same way like HTTP sessions work).
  * <p>
- * The default secure session SPI is {@link org.gridgain.grid.spi.securesession.noop.GridNoopSecureSessionSpi}
+ * The default secure session SPI is {@link GridNoopSecureSessionSpi}
  * which permits any request.
  * <p>
  * Gridgain provides the following {@code GridSecureSessionSpi} implementations:
  * <ul>
  * <li>
- *     {@link org.gridgain.grid.spi.securesession.noop.GridNoopSecureSessionSpi} - permits any request.
+ *     {@link GridNoopSecureSessionSpi} - permits any request.
  * </li>
  * <li>
- *     {@link org.gridgain.grid.spi.securesession.rememberme.GridRememberMeSecureSessionSpi} -
+ *     {@link GridRememberMeSecureSessionSpi} -
  *     validates client session with remember-me session token.
  * </li>
  * </ul>

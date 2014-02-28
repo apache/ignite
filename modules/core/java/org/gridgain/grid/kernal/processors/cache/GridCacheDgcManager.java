@@ -142,7 +142,7 @@ public class GridCacheDgcManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop0(boolean cancel) {
+    @Override public void onKernalStop0(boolean cancel) {
         if (cctx.config().getCacheMode() == GridCacheMode.LOCAL)
             // No-op for local cache.
             return;

@@ -31,7 +31,7 @@ public class HibernateL2CacheExampleNodeStartup {
      * Start up an empty node with specified cache configuration.
      *
      * @param args Command line arguments, none required.
-     * @throws org.gridgain.grid.GridException If example execution failed.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
         GridGain.start(configuration());

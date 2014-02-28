@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.managers.indexing.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;

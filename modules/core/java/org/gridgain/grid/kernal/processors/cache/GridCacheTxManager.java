@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
@@ -24,6 +25,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -1964,7 +1966,7 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
         private GridCacheVersion nearVer;
 
         /**
-         * Empty constructor required by {@link java.io.Externalizable}.
+         * Empty constructor required by {@link Externalizable}.
          */
         public CommittedVersion() {
             // No-op.
