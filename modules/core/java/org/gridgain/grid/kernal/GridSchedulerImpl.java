@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal;
 import org.gridgain.grid.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
 
@@ -34,7 +33,7 @@ public class GridSchedulerImpl implements GridScheduler {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> runLocal(@Nullable Runnable r) {
+    @Override public GridFuture<?> runLocal(Runnable r) {
         A.notNull(r, "r");
 
         guard();
@@ -48,7 +47,7 @@ public class GridSchedulerImpl implements GridScheduler {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridFuture<R> callLocal(@Nullable Callable<R> c) {
+    @Override public <R> GridFuture<R> callLocal(Callable<R> c) {
         A.notNull(c, "c");
 
         guard();
@@ -62,11 +61,13 @@ public class GridSchedulerImpl implements GridScheduler {
     }
 
     /** {@inheritDoc} */
-    @Override public GridSchedulerFuture<?> scheduleLocal(@Nullable Runnable c, String ptrn) throws GridException {
+    @Override public GridSchedulerFuture<?> scheduleLocal(Runnable job, String ptrn) throws GridException {
+        A.notNull(job, "job");
+
         guard();
 
         try {
-            return ctx.schedule().schedule(c, ptrn);
+            return ctx.schedule().schedule(job, ptrn);
         }
         finally {
             unguard();
@@ -74,12 +75,13 @@ public class GridSchedulerImpl implements GridScheduler {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridSchedulerFuture<R> scheduleLocal(@Nullable Callable<R> c, String ptrn)
-        throws GridException {
+    @Override public <R> GridSchedulerFuture<R> scheduleLocal(Callable<R> job, String ptrn) throws GridException {
+        A.notNull(job, "job");
+
         guard();
 
         try {
-            return ctx.schedule().schedule(c, ptrn);
+            return ctx.schedule().schedule(job, ptrn);
         }
         finally {
             unguard();
