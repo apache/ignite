@@ -305,18 +305,22 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     @Override protected void removeQueryIterator(@Nullable UUID sndId, long reqId) {
         super.removeQueryIterator(sndId, reqId);
 
-        Object topic = topic(sndId, reqId);
+        if (sndId != null) {
+            Object topic = topic(sndId, reqId);
 
-        cctx.io().removeMessageId(topic);
+            cctx.io().removeMessageId(topic);
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected void removeFieldsQueryResult(@Nullable UUID sndId, long reqId) {
         super.removeFieldsQueryResult(sndId, reqId);
 
-        Object topic = topic(sndId, reqId);
+        if (sndId != null) {
+            Object topic = topic(sndId, reqId);
 
-        cctx.io().removeMessageId(topic);
+            cctx.io().removeMessageId(topic);
+        }
     }
 
     /**
