@@ -16,33 +16,27 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Defines grid projection interface and monadic set of operations on a set of grid nodes.
+ * Provides functionality for local and remote event notifications on nodes within the grid projection.
+ * There are {@code 2} ways to subscribe to event listening, {@code local} and {@code remote}.
  * <p>
- * All main grid entities such as grid and a node instances can be viewed as
- * collection of grid nodes (in case of the grid node this collection consist of only one
- * element). As such they all share the same set of operations that can be performed on a set
- * grid nodes. These operations are defined in {@link GridEvents} interface and called
- * <tt>monadic</tt> as they are equally defined on any arbitrary set of nodes.
- *
- * <h1 class="header">Nullable and Monads</h1>
- * Many methods in this interface accepts nullable parameters. Although it may seem counter intuitive
- * for some of them - it is done to promote monadic usage of this interface. Java doesn't natively support
- * concepts like <tt>Option</tt> in Scala and returning, accepting, and properly handling
- * {@code null} values is Java's way to support such monadic invocations.
+ * Local subscription, defined by {@link #localListen(GridPredicate, int...)} method, will add
+ * a listener for specified events on local node only. This listener will be notified whenever any
+ * of subscribed events happens on this node regardless of whether this node belongs to underlying
+ * grid projection or not.
  * <p>
- * All methods that accept {@code null} values (for monadic purposes) will gracefully handle it by
- * either returning a finished future, or empty collection, {@code null} value, or combination of the
- * above. Most method calls therefore can be chained without an explicit checks for {@code null}s.
- * <p>
- * The downside of this approach that inadvertent errors of passing {@code null} will not result
- * in {@link NullPointerException} and may be harder to catch.
+ * Remote subscription, defined by {@link #remoteListen(GridBiPredicate, GridPredicate, int...)}, will add an
+ * event listener for specified events on all nodes in the projection (possibly including this node if
+ * it belongs to the projection as well). All projection nodes will then be notified of the subscribed events, and
+ * if they pass event filter, the events will be sent to this node for local listener notification.
  *
  * @author @java.author
  * @version @java.version
  */
 public interface GridEvents {
     /**
-     * @return TODO
+     * Gets grid projection to which this {@code GridMessaging} instance belongs.
+     *
+     * @return Grid projection to which this {@code GridMessaging} instance belongs.
      */
     public GridProjection projection();
 
