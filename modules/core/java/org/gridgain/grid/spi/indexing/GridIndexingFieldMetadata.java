@@ -7,23 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.cache.query;
+package org.gridgain.grid.spi.indexing;
 
 import java.io.*;
 
 /**
- * Query field descriptor. This descriptor is used by {@link GridCacheFieldsQuery}
- * to provide metadata about fields returned in query result. Field metadata is
- * included in query result by default, but can be turned off by setting
- * {@link GridCacheFieldsQuery#includeMetadata(boolean)} to {@code false}.
- * <p>
- * Use {@link GridCacheFieldsQueryFuture#metadata()} to get a handle on query
- * result metadata.
+ * Query field descriptor. This descriptor is used to provide metadata
+ * about fields returned in query result.
  *
  * @author @java.author
  * @version @java.version
  */
-public interface GridCacheSqlFieldMetadata extends Externalizable {
+public interface GridIndexingFieldMetadata extends Externalizable {
     /**
      * Gets schema name.
      *
