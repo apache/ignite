@@ -7,18 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.compute.failover;
+package org.gridgain.examples.misc.deployment.gar;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.optimized.*;
-import org.gridgain.grid.spi.checkpoint.sharedfs.*;
+import org.gridgain.grid.spi.deployment.uri.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 
 import java.util.*;
 
 /**
- * Starts up an empty node with checkpoint-enabled configuration.
+ * Starts up an empty node with deployment-enabled configuration.
  * <p>
  * The difference is that running this class from IDE adds all example classes to classpath
  * but running from command line doesn't.
@@ -26,12 +26,12 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class ComputeFailoverNodeStartup {
+public class GarDeploymentNodeStartup {
     /**
      * Start up an empty node with specified configuration.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws org.gridgain.grid.GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
         GridGain.start(configuration());
@@ -55,22 +55,13 @@ public class ComputeFailoverNodeStartup {
 
         cfg.setMarshaller(marsh);
 
-        GridSharedFsCheckpointSpi checkpointSpi = new GridSharedFsCheckpointSpi();
-
-        checkpointSpi.setDirectoryPaths(Collections.singletonList("/work/checkpoint/sharedfs"));
-
-        cfg.setCheckpointSpi(checkpointSpi);
+        cfg.setDeploymentSpi(new GridUriDeploymentSpi());
 
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
 
-        Collection<String> addrs = new ArrayList<>();
-
-        for (int i = 0; i < 10; i++)
-            addrs.add("127.0.0.1:" + (47500 + i));
-
-        ipFinder.setAddresses(addrs);
+        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
 
         discoSpi.setIpFinder(ipFinder);
 

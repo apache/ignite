@@ -61,19 +61,54 @@
         </property>
 
         <!--
-            URI deployment SPI.
-        -->
-        <property name="deploymentSpi">
-            <bean class="org.gridgain.grid.spi.deployment.uri.GridUriDeploymentSpi">
-                <!-- Default SPI configuration used. -->
-            </bean>
-        </property>
-
-        <!--
             Enable cache events.
         -->
         <property name="includeEventTypes">
             <util:constant static-field="org.gridgain.grid.events.GridEventType.EVTS_CACHE"/>
+        </property>
+
+        <property name="cacheConfiguration">
+            <!--
+                Specify list of cache configurations here. Any property from
+                GridCacheConfiguration interface can be configured here.
+                All properties are optional.
+            -->
+            <list>
+                <!--
+                    Partitioned cache example configuration (Atomic mode).
+                -->
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="ATOMIC"/>
+                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
+                </bean>
+
+                <!--
+                    Partitioned cache example configuration (Transactional mode).
+                -->
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned_tx"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
+                </bean>
+
+                <!--
+                    Replicated cache example configuration.
+                -->
+                <bean parent="cache-replicated-template">
+                    <property name="name" value="replicated"/>
+                </bean>
+
+                <!--
+                    Local cache example configuration.
+                -->
+                <bean parent="cache-template">
+                    <property name="name" value="local"/>
+                    <property name="cacheMode" value="LOCAL"/>
+                </bean>
+            </list>
         </property>
 
         <!--
@@ -138,50 +173,6 @@
                         or through Object Viewer in Visor DevOps Console.
                     -->
                     <!--property name="defaultIndexFixedTyping" value="false"/-->
-                </bean>
-            </list>
-        </property>
-
-        <property name="cacheConfiguration">
-            <!--
-                Specify list of cache configurations here. Any property from
-                GridCacheConfiguration interface can be configured here.
-                All properties are optional.
-            -->
-            <list>
-                <!--
-                    Partitioned cache example configuration (Atomic mode).
-                -->
-                <bean parent="cache-template">
-                    <property name="name" value="partitioned"/>
-                    <property name="cacheMode" value="PARTITIONED"/>
-                    <property name="atomicityMode" value="ATOMIC"/>
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
-                </bean>
-
-                <!--
-                    Partitioned cache example configuration (Transactional mode).
-                -->
-                <bean parent="cache-template">
-                    <property name="name" value="partitioned_tx"/>
-                    <property name="cacheMode" value="PARTITIONED"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
-                </bean>
-
-                <!--
-                    Replicated cache example configuration.
-                -->
-                <bean parent="cache-replicated-template">
-                    <property name="name" value="replicated"/>
-                </bean>
-
-                <!--
-                    Local cache example configuration.
-                -->
-                <bean parent="cache-template">
-                    <property name="name" value="local"/>
-                    <property name="cacheMode" value="LOCAL"/>
                 </bean>
             </list>
         </property>
