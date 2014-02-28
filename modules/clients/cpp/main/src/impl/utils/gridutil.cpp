@@ -66,6 +66,7 @@ std::ostream& GridUtil::toStream(std::ostream &out, const std::vector<std::strin
 
         out << v[i];
     }
+
     return out;
 }
 
@@ -76,6 +77,7 @@ std::ostream& GridUtil::toStream(std::ostream &out, const std::vector<GridSocket
 
         out << v[i].host() << ":" << v[i].port();
     }
+
     return out;
 }
 
@@ -106,7 +108,7 @@ std::vector<int8_t> GridUtil::getVersionNumeric() {
     std::vector<int8_t> ret(4, 0); // Vector of 4 zeros.
 
     GridClientByteUtils::valueToBytes(GridStringHasheableObject(VER_STR).hashCode(), &ret[0], ret.size(),
-                    GridClientByteUtils::BIG_ENDIAN_ORDER);
+        GridClientByteUtils::BIG_ENDIAN_ORDER);
 
     return ret;
 }

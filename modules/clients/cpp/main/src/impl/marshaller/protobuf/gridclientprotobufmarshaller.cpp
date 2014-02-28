@@ -33,7 +33,7 @@ using namespace org::gridgain::grid::kernal::processors::rest::client::message;
 static void unwrap(const ObjectWrapper& obj, GridClientNode& node);
 
 void GridClientProtobufMarshaller::marshalMsg(const ::google::protobuf::Message& msg, int8_t*& pBuffer,
-                unsigned long& bufferLength) {
+    unsigned long& bufferLength) {
     bufferLength = msg.ByteSize();
     pBuffer = new int8_t[bufferLength];
     msg.SerializeToArray(pBuffer, bufferLength);
@@ -46,7 +46,6 @@ static void unmarshalMsg(int8_t* pBuffer, int size, ::google::protobuf::Message&
 }
 
 void GridClientProtobufMarshaller::marshal(const ::google::protobuf::Message& msg, std::vector<int8_t>& bytes) {
-
     int8_t* pBuffer;
     unsigned long bufferSize;
 
@@ -92,7 +91,7 @@ void unwrapCollection(const ::google::protobuf::RepeatedPtrField<ObjectWrapper>&
 }
 
 template<class TS, class TD> void unwrapCollection(const ::google::protobuf::RepeatedPtrField<TS> src,
-                std::vector<TD>& dst) {
+    std::vector<TD>& dst) {
     std::back_insert_iterator<std::vector<TD> > backInsertIter(dst);
 
     dst.clear();
@@ -115,8 +114,8 @@ template<class T> void unwrapCollection(const ObjectWrapper& objWrapper, std::ve
 
 template<class K, class V, class T> class MapInserter {
 public:
-    MapInserter(std::map<K, V>& pMap) :
-                    map(pMap) {
+    MapInserter(std::map<K, V>& pMap) : map(pMap) {
+        // No-op.
     }
 
     void operator()(const T& obj) {
@@ -134,8 +133,8 @@ private:
 
 class ProtobufMapInserter {
 public:
-    ProtobufMapInserter(::Map& pProtoMap) :
-                    protoMap(pProtoMap) {
+    ProtobufMapInserter(::Map& pProtoMap) : protoMap(pProtoMap) {
+        // No-op.
     }
 
     void operator()(std::pair<GridClientVariant, GridClientVariant> pair) {
@@ -196,14 +195,10 @@ static void transformValues(::KeyValue keyValue, std::pair<std::string, GridClie
 }
 
 static void fillRequestHeader(const GridClientMessage& clientMsg, ProtoRequest& protoReq) {
-    //    protoReq.set_requestid(clientMsg.getRequestId());
-    //    protoReq.set_clientid(clientMsg.getClientId());
     protoReq.set_sessiontoken(clientMsg.sessionToken());
 }
 
 static void fillResponseHeader(const ProtoResponse& resp, GridClientMessageResult& clientMsg) {
-    //    clientMsg.setClientId(resp.clientid());
-    //    clientMsg.setRequestId(resp.requestid());
     clientMsg.setStatus((GridClientMessageResult::StatusCode) resp.status());
 
     clientMsg.sessionToken(resp.sessiontoken());
@@ -213,8 +208,7 @@ static void fillResponseHeader(const ProtoResponse& resp, GridClientMessageResul
 }
 
 static void wrapRequest(const GridClientMessageCommand& cmd, const ObjectWrapperType& type,
-                const ::google::protobuf::Message& src, ObjectWrapper& objWrapper) {
-
+    const ::google::protobuf::Message& src, ObjectWrapper& objWrapper) {
     GG_LOG_DEBUG("Wrapping request: %s", src.DebugString().c_str());
 
     ProtoRequest req;
@@ -542,7 +536,7 @@ static void unwrap(const ObjectWrapper& objWrapper, GridClientNode& res) {
             if (!ec)
                 addresses.push_back(newJettyAddress);
             else
-            GG_LOG_ERROR("Error resolving hostname: %s, %s", bean.jettyaddress(i).c_str(), ec.message().c_str());
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", bean.jettyaddress(i).c_str(), ec.message().c_str());
         }
     }
 
@@ -556,7 +550,7 @@ static void unwrap(const ObjectWrapper& objWrapper, GridClientNode& res) {
             if (!ec)
                 addresses.push_back(newJettyAddress);
             else
-            GG_LOG_ERROR("Error resolving hostname: %s, %s", bean.jettyhostname(i).c_str(), ec.message().c_str());
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", bean.jettyhostname(i).c_str(), ec.message().c_str());
         }
 
     }
@@ -567,27 +561,36 @@ static void unwrap(const ObjectWrapper& objWrapper, GridClientNode& res) {
     for (int i = 0; i < bean.tcpaddress_size(); ++i) {
         if (bean.tcpaddress(i).size()) {
             GridSocketAddress newTCPAddress = GridSocketAddress(bean.tcpaddress(i), tcpport);
+
             boost::asio::ip::tcp::resolver::query queryIp(bean.tcpaddress(i),
-                            boost::lexical_cast<std::string>(bean.tcpport()));
+                boost::lexical_cast<std::string>(bean.tcpport()));
+
             boost::system::error_code ec;
+
             boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryIp, ec);
+
             if (!ec)
                 addresses.push_back(newTCPAddress);
             else
-            GG_LOG_ERROR("Error resolving hostname: %s, %s", bean.tcpaddress(i).c_str(), ec.message().c_str());
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", bean.tcpaddress(i).c_str(), ec.message().c_str());
         }
     }
+
     for (int i = 0; i < bean.tcphostname_size(); ++i) {
         if (bean.tcphostname(i).size()) {
             GridSocketAddress newTCPAddress = GridSocketAddress(bean.tcphostname(i), tcpport);
+
             boost::asio::ip::tcp::resolver::query queryHostname(bean.tcphostname(i),
-                            boost::lexical_cast<std::string>(bean.tcpport()));
+                boost::lexical_cast<std::string>(bean.tcpport()));
+
             boost::system::error_code ec;
+
             boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryHostname, ec);
+
             if (!ec)
                 addresses.push_back(newTCPAddress);
             else
-            GG_LOG_ERROR("Error resolving hostname: %s, %s", bean.tcphostname(i).c_str(), ec.message().c_str());
+                GG_LOG_ERROR("Error resolving hostname: %s, %s", bean.tcphostname(i).c_str(), ec.message().c_str());
         }
     }
 
