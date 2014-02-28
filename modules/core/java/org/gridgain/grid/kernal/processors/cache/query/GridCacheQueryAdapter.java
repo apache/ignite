@@ -86,7 +86,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      */
     protected GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridCacheQueryType type,
         @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred, @Nullable Class<?> cls,
-        @Nullable String clause, GridBiPredicate<Object, Object> filter, boolean incMeta) {
+        @Nullable String clause, @Nullable GridBiPredicate<Object, Object> filter, boolean incMeta) {
         assert cctx != null;
         assert type != null;
 
