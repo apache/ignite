@@ -62,6 +62,11 @@ public interface GridCacheAffinity extends Serializable {
      */
     public int partitions();
 
+    /**
+     * Gets number of backup nodes assigned to each partition (essentially, to each key).
+     *
+     * @return Number of backups assigned to each partition/key.
+     */
     public int keyBackups();
 
     /**
