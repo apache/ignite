@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.future.*;
 import org.jetbrains.annotations.*;
 
@@ -27,7 +28,7 @@ public class GridCacheLocalFieldsQueryFuture
     extends GridCacheLocalQueryFuture<Object, Object, List<Object>>
     implements GridCacheQueryMetadataAware {
     /** Meta data future. */
-    private final GridFutureAdapter<List<GridCacheSqlFieldMetadata>> metaFut;
+    private final GridFutureAdapter<List<GridIndexingFieldMetadata>> metaFut;
 
     /**
      * Required by {@link Externalizable}.
@@ -56,7 +57,7 @@ public class GridCacheLocalFieldsQueryFuture
      * @param err Error.
      * @param finished Finished or not.
      */
-    public void onPage(@Nullable UUID nodeId, @Nullable List<GridCacheSqlFieldMetadata> metaData,
+    public void onPage(@Nullable UUID nodeId, @Nullable List<GridIndexingFieldMetadata> metaData,
         @Nullable Collection<?> data, @Nullable Throwable err, boolean finished) {
         onPage(nodeId, data, err, finished);
 
@@ -65,7 +66,7 @@ public class GridCacheLocalFieldsQueryFuture
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<List<GridCacheSqlFieldMetadata>> metadata() {
+    @Override public GridFuture<List<GridIndexingFieldMetadata>> metadata() {
         return metaFut;
     }
 

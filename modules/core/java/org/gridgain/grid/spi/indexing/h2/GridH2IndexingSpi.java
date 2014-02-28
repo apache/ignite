@@ -12,7 +12,6 @@ package org.gridgain.grid.spi.indexing.h2;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;
@@ -753,7 +752,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
             ResultSet rs = res.get2();
 
-            List<GridCacheSqlFieldMetadata> meta;
+            List<GridIndexingFieldMetadata> meta;
 
             try {
                 ResultSetMetaData rsMeta = rs.getMetaData();
@@ -2277,7 +2276,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     /**
      * Field descriptor.
      */
-    private static class SqlFieldMetadata implements GridCacheSqlFieldMetadata {
+    private static class SqlFieldMetadata implements GridIndexingFieldMetadata {
         /** Schema name. */
         private String schemaName;
 

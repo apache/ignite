@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.spi.indexing.*;
 
 import java.util.*;
 
@@ -23,5 +24,5 @@ public interface GridCacheQueryMetadataAware {
     /**
      * @return Future to retrieve metadata.
      */
-    public GridFuture<List<GridCacheSqlFieldMetadata>> metadata();
+    public GridFuture<List<GridIndexingFieldMetadata>> metadata();
 }

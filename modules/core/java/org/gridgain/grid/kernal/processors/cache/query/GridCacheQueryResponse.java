@@ -54,7 +54,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     /** */
     @GridToStringInclude
     @GridDirectTransient
-    private List<GridCacheSqlFieldMetadata> metadata;
+    private List<GridIndexingFieldMetadata> metadata;
 
     /** */
     @GridDirectCollection(byte[].class)
@@ -128,14 +128,14 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     /**
      * @return Metadata.
      */
-    public List<GridCacheSqlFieldMetadata> metadata() {
+    public List<GridIndexingFieldMetadata> metadata() {
         return metadata;
     }
 
     /**
      * @param metadata Metadata.
      */
-    public void metadata(@Nullable List<GridCacheSqlFieldMetadata> metadata) {
+    public void metadata(@Nullable List<GridIndexingFieldMetadata> metadata) {
         this.metadata = metadata;
     }
 

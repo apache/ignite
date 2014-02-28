@@ -517,7 +517,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 fieldsQueryResult(qryInfo);
 
             // If metadata needs to be returned to user and cleaned from internal fields - copy it.
-            List<GridCacheSqlFieldMetadata> meta = qryInfo.includeMetaData() ?
+            List<GridIndexingFieldMetadata> meta = qryInfo.includeMetaData() ?
                 (res.metaData() != null ? new ArrayList<>(res.metaData()) : null) :
                 res.metaData();
 
@@ -525,7 +525,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             // Filter internal fields.
             if (meta != null) {
-                Iterator<GridCacheSqlFieldMetadata> metaIt = meta.iterator();
+                Iterator<GridIndexingFieldMetadata> metaIt = meta.iterator();
 
                 int i = 0;
 
@@ -1043,7 +1043,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return {@code true} if page was processed right.
      */
     protected abstract boolean onFieldsPageReady(boolean loc, GridCacheQueryInfo qryInfo,
-        @Nullable List<GridCacheSqlFieldMetadata> metaData,
+        @Nullable List<GridIndexingFieldMetadata> metaData,
         @Nullable Collection<List<GridIndexingEntity<?>>> entities,
         @Nullable Collection<?> data,
         boolean finished, @Nullable Throwable e);

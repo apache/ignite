@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.spi.indexing;
 
-import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.spi.*;
 
 import java.util.*;
@@ -28,7 +27,7 @@ public interface GridIndexingFieldsResult {
      *
      * @return Meta data for queried fields.
      */
-    List<GridCacheSqlFieldMetadata> metaData();
+    List<GridIndexingFieldMetadata> metaData();
 
     /**
      * Gets iterator over queried fields.

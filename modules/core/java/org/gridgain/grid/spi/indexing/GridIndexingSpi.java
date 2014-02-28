@@ -12,7 +12,6 @@ package org.gridgain.grid.spi.indexing;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.h2.*;
 import org.jetbrains.annotations.*;
@@ -25,12 +24,11 @@ import java.util.*;
  * (see {@link GridCacheConfiguration#getIndexingSpiName()}). Logically storage is organized into separate spaces.
  * Usually cache name will be used as space name, so multiple caches can write to single indexing SPI instance.
  * <p>
- * Functionality of this SPI is exposed to {@link GridCache} interface:
+ * Functionality of this SPI is exposed to {@link GridCacheQueries} interface:
  * <ul>
- *      <li>{@link GridCacheQueries#createFieldsQuery(String)}</li>
- *      <li>{@link GridCacheQueries#createQuery(GridCacheQueryType)}</li>
- *      <li>{@link GridCacheQueries#createQuery(GridCacheQueryType, String, String)}</li>
- *      <li>{@link GridCacheQueries#createQuery(GridCacheQueryType, Class, String)}</li>
+ *      <li>{@link GridCacheQueries#createSqlQuery(Class, String)}</li>
+ *      <li>{@link GridCacheQueries#createSqlFieldsQuery(String)}</li>
+ *      <li>{@link GridCacheQueries#createFullTextQuery(Class, String)}</li>
  * </ul>
  * <p>
  * The default indexing SPI implementation is {@link GridH2IndexingSpi} which uses H2 database engine

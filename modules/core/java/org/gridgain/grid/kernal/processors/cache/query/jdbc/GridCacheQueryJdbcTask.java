@@ -20,6 +20,7 @@ import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -193,7 +194,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
 
                 GridCacheQueryFuture<List<?>> fut = qry.execute(args.toArray());
 
-                Collection<GridCacheSqlFieldMetadata> meta = ((GridCacheQueryMetadataAware)fut).metadata().get();
+                Collection<GridIndexingFieldMetadata> meta = ((GridCacheQueryMetadataAware)fut).metadata().get();
 
                 if (meta == null) {
                     // Try to extract initial SQL exception.
@@ -214,7 +215,7 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
                 cols = new ArrayList<>(meta.size());
                 types = new ArrayList<>(meta.size());
 
-                for (GridCacheSqlFieldMetadata desc : meta) {
+                for (GridIndexingFieldMetadata desc : meta) {
                     tbls.add(desc.typeName());
                     cols.add(desc.fieldName().toUpperCase());
                     types.add(desc.fieldTypeName());

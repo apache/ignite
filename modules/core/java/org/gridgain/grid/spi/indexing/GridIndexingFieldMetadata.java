@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache.query;
+package org.gridgain.grid.spi.indexing;
 
 import java.io.*;
 
@@ -18,7 +18,7 @@ import java.io.*;
  * @author @java.author
  * @version @java.version
  */
-public interface GridCacheSqlFieldMetadata extends Externalizable {
+public interface GridIndexingFieldMetadata extends Externalizable {
     /**
      * Gets schema name.
      *

@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.spi.indexing;
 
-import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -23,7 +22,7 @@ import java.util.*;
  */
 public class GridIndexingFieldsResultAdapter implements GridIndexingFieldsResult {
     /** Meta data. */
-    private final List<GridCacheSqlFieldMetadata> metaData;
+    private final List<GridIndexingFieldMetadata> metaData;
 
     /** Result iterator. */
     private final GridCloseableIterator<List<GridIndexingEntity<?>>> it;
@@ -35,14 +34,14 @@ public class GridIndexingFieldsResultAdapter implements GridIndexingFieldsResult
      * @param metaData Meta data.
      * @param it Result iterator.
      */
-    public GridIndexingFieldsResultAdapter(@Nullable List<GridCacheSqlFieldMetadata> metaData,
+    public GridIndexingFieldsResultAdapter(@Nullable List<GridIndexingFieldMetadata> metaData,
         GridCloseableIterator<List<GridIndexingEntity<?>>> it) {
         this.metaData = metaData != null ? Collections.unmodifiableList(metaData) : null;
         this.it = it;
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridCacheSqlFieldMetadata> metaData() {
+    @Override public List<GridIndexingFieldMetadata> metaData() {
         return metaData;
     }
 

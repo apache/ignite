@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.future.*;
 
 import java.util.*;
@@ -39,7 +40,7 @@ public class GridCacheFieldsQueryErrorFuture extends GridCacheQueryErrorFuture<L
     /**
      * @return Metadata.
      */
-    public GridFuture<List<GridCacheSqlFieldMetadata>> metadata() {
-        return new GridFinishedFuture<>(ctx, incMeta ? Collections.<GridCacheSqlFieldMetadata>emptyList() : null);
+    public GridFuture<List<GridIndexingFieldMetadata>> metadata() {
+        return new GridFinishedFuture<>(ctx, incMeta ? Collections.<GridIndexingFieldMetadata>emptyList() : null);
     }
 }
