@@ -23,30 +23,9 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * This example shows usage of {@link GridGgfsHadoopFileSystem Hadoop FS driver}.
- * To start remote node, you can run {@link GgfsEndpointNodeStartup} class.
  * <p>
- * Note that this example is configured to work with only one node per physical box.
- * <p>
- * You can also start a stand-alone GridGain instance by passing the path
- * to configuration file to {@code 'ggstart.{sh|bat}'} script, like so:
- * {@code 'ggstart.sh examples/config/example-ggfs.xml'}. Before doing this you should
- * uncomment {@code ipcEndpointConfiguration} in this XML file. Note that shared memory
- * IPC is not supported on Windows, so you should use loopback endpoint configuration
- * for this operating system.
- * <p>
- * To use GGFS with your Hadoop instance
- * <ul>
- *     <li>Copy configuration '/config/hadoop/core-site.xml' into your $HADOOP_HOME/conf folder.</li>
- *     <li>Provide GridGain classpath in $HADOOP_HOME/conf/hadoop-env.sh with the following code snippet:</li>
- * </ul>
- * <pre>
- *     export GRIDGAIN_HOME=/path/to/gridgain/installation
- *     export HADOOP_CLASSPATH=$GRIDGAIN_HOME/gridgain-x.x.x.jar
- *
- *     for f in $GRIDGAIN_HOME/libs/*.jar; do
- *         export HADOOP_CLASSPATH=$HADOOP_CLASSPATH:$f;
- *     done
- * </pre>
+ * Before running this example you must start at least one remote node using
+ * {@link GgfsEndpointNodeStartup}.
  *
  * @author @java.author
  * @version @java.version
@@ -63,8 +42,7 @@ public class GgfsHadoopFileSystemExample {
     private static final String DFLT_PATH = "examples/java/org/gridgain/examples";
 
     /**
-     * <tt>Hadoop FS driver</tt> example shows configuration and simple operations
-     * for different Hadoop file systems: local files, GGFS and HDFS.
+     * Executes example.
      *
      * @param args Command line arguments. Expected 1 argument - path to folder to copy relative to GRIDGAIN_HOME).
      *             In case omitted, "examples/java/org/gridgain/examples" will be used.
@@ -73,6 +51,9 @@ public class GgfsHadoopFileSystemExample {
     @SuppressWarnings("TooBroadScope")
     public static void main(String[] args) throws IOException {
         try {
+            System.out.println();
+            System.out.println(">>> GGFS Hadoop file system started.");
+
             String path = args.length > 0 ? args[0] : DFLT_PATH;
 
             /** Local FS home path. */

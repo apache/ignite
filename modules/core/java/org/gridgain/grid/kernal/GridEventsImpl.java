@@ -97,12 +97,12 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> GridFuture<T> waitForLocal(@Nullable GridPredicate<T> p,
+    @Override public <T extends GridEvent> GridFuture<T> waitForLocal(@Nullable GridPredicate<T> filter,
         @Nullable int... types) {
         guard();
 
         try {
-            return ctx.event().waitForEvent(p, types);
+            return ctx.event().waitForEvent(filter, types);
         }
         finally {
             unguard();

@@ -17,28 +17,28 @@ import java.util.concurrent.*;
 /**
  * Simple example to demonstrate usage of grid-enabled executor service provided by GridGain.
  * <p>
- * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-compute.xml} configuration.
- * <p>
+ *
  * @author @java.author
  * @version @java.version
  */
 public final class ComputeExecutorServiceExample {
     /**
-     * Execute {@code Executor} example on the grid.
+     * Executes example.
      *
-     * @param args Command line arguments, none required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      {@code "examples/config/"} for configuration file examples.
-     * @throws Exception If example execution failed.
+     * @param args Command line arguments, none required.
+     * @throws GridException If example execution failed.
      */
     @SuppressWarnings({"TooBroadScope"})
     public static void main(String[] args) throws Exception {
         try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
+            System.out.println();
+            System.out.println(">>> Compute executor service example started.");
+
             // Get grid-enabled executor service.
             ExecutorService exec = g.compute().executorService();
 

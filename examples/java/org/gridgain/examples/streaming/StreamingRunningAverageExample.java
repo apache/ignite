@@ -26,9 +26,11 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * random numbers are being streamed into the system and the streamer
  * continuously maintains a running average over last {@code 500} numbers.
  * <p>
- * Remote nodes should always be started with configuration which includes streamer.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-streaming.xml'}.
  * <p>
- * You should startup remote nodes by starting {@link StreamingNodeStartup} from your IDE.
+ * Alternatively you can run {@link StreamingNodeStartup} in another JVM which will start GridGain node
+ * with {@code examples/config/example-streaming.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -43,6 +45,9 @@ public class StreamingRunningAverageExample {
      */
     public static void main(String[] args) throws Exception {
         Grid grid = GridGain.start("examples/config/example-streamer.xml");
+
+        System.out.println();
+        System.out.println(">>> Streaming running average example started.");
 
         final GridStreamer streamer = grid.streamer("running-average");
 

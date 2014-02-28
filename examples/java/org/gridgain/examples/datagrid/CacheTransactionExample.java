@@ -20,11 +20,13 @@ import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
- * This example demonstrates some examples of how to use cache transactions.
- * You can execute this example with or without remote nodes.
+ * Demonstrates how to use cache transactions.
  * <p>
- * Remote nodes should always be started with configuration file which includes
- * cache: {@code 'ggstart.sh examples/config/example-cache.xml'}.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
+ * <p>
+ * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -39,7 +41,7 @@ public class CacheTransactionExample {
     private static GridCache<UUID, Object> cache;
 
     /**
-     * Puts data to cache and then queries them.
+     * Executes example.
      *
      * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
@@ -67,7 +69,6 @@ public class CacheTransactionExample {
             System.out.println(">>> Accounts after transfer: ");
             System.out.println(">>> " + cache.get(1L));
             System.out.println(">>> " + cache.get(2L));
-            System.out.println();
 
             System.out.println(">>> Cache transaction example finished.");
         }
