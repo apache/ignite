@@ -32,22 +32,23 @@ import java.util.*;
  */
 public class ComputeCallableExample {
     /**
-     * Execute {@code HelloWorld} example with job factory and reducer.
+     * Executes example.
      *
-     * @param args Command line arguments, none required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      {@code "examples/config/"} for configuration file examples.
+     * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
+            System.out.println();
+            System.out.println(">>> Compute callable example started.");
+
             Collection<GridCallable<Integer>> calls = new ArrayList<>();
 
             // Iterate through all words in the sentence and create callable jobs.
             for (final String word : "Count characters using callable".split(" ")) {
                 calls.add(new GridCallable<Integer>() {
                     @Override public Integer call() throws Exception {
-                        System.out.println(">>>");
+                        System.out.println();
                         System.out.println(">>> Printing '" + word + "' on this node from grid job.");
 
                         return word.length();

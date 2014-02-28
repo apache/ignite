@@ -35,24 +35,30 @@ import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
  * one <i>fact</i> - {@link FactPurchase}. Queries are executed by joining dimensions and facts
  * in various ways.
  * <p>
- * Remote nodes should always be started with configuration file which includes
- * cache: {@code 'ggstart.sh examples/config/example-cache.xml'}.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
+ * <p>
+ * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
  */
-public class CacheStartSchemaExample {
+public class CacheStarSchemaExample {
     /** ID generator. */
     private static int idGen = (int)System.currentTimeMillis();
 
     /**
-     * Main method.
+     * Executes example.
      *
-     * @param args Parameters (none for this example).
-     * @throws Exception If failed.
+     * @param args Command line arguments, none required.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         GridGain.start("examples/config/example-cache.xml");
+
+        System.out.println();
+        System.out.println(">>> Cache star schema example started.");
 
         try {
             populateDimensions();

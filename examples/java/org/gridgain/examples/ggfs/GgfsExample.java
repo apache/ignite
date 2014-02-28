@@ -20,16 +20,15 @@ import java.util.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
- * Example that shows usage of {@link GridGgfs} API. It starts a GridGain
- * node with {@code GGFS} configured and performs several file system
- * operations (create, write, append, read and delete files,
- * create, list and delete directories).
+ * Example that shows usage of {@link GridGgfs} API. It starts a GridGain node with {@code GGFS}
+ * configured and performs several file system operations (create, write, append, read and delete
+ * files, create, list and delete directories).
  * <p>
- * To start remote node, you can run {@link GgfsNodeStartup} class.
+ * Remote nodes should always be started with configuration file which includes
+ * GGFS: {@code 'ggstart.sh examples/config/example-ggfs.xml'}.
  * <p>
- * You can also start a stand-alone GridGain instance by passing the path
- * to configuration file to {@code 'ggstart.{sh|bat}'} script, like so:
- * {@code './ggstart.sh examples/config/example-ggfs.xml'}.
+ * Alternatively you can run {@link GgfsNodeStartup} in another JVM which will start
+ * GridGain node with {@code examples/config/example-ggfs.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -37,13 +36,16 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 @GridOnlyAvailableIn(HADOOP)
 public final class GgfsExample {
     /**
-     * Runs example. No arguments required.
+     * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws Exception If failed.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         Grid g = GridGain.start("examples/config/example-ggfs.xml");
+
+        System.out.println();
+        System.out.println(">>> GGFS example started.");
 
         try {
             // Get an instance of GridGain File System.
@@ -114,17 +116,19 @@ public final class GgfsExample {
             try {
                 fs.delete(path, true);
 
+                System.out.println();
                 System.out.println(">>> Deleted " + (isFile ? "file" : "directory") + ": " + path);
             }
             catch (GridGgfsException e) {
-                System.out.println(">>> Failed to delete " + (isFile ? "file" : "directory") + " [path=" + path + ", msg=" +
-                    e.getMessage() + ']');
+                System.out.println();
+                System.out.println(">>> Failed to delete " + (isFile ? "file" : "directory") + " [path=" + path +
+                    ", msg=" + e.getMessage() + ']');
             }
         }
-        else
+        else {
+            System.out.println();
             System.out.println(">>> Won't delete file or directory (doesn't exist): " + path);
-
-        System.out.println();
+        }
     }
 
     /**
@@ -141,9 +145,11 @@ public final class GgfsExample {
         try {
             fs.mkdirs(path);
 
+            System.out.println();
             System.out.println(">>> Created directory: " + path);
         }
         catch (GridGgfsException e) {
+            System.out.println();
             System.out.println(">>> Failed to create a directory [path=" + path + ", msg=" + e.getMessage() + ']');
         }
 
@@ -165,11 +171,13 @@ public final class GgfsExample {
         assert path != null;
 
         try (OutputStream out = fs.create(path, true)) {
+            System.out.println();
             System.out.println(">>> Created file: " + path);
 
             if (data != null) {
                 out.write(data);
 
+                System.out.println();
                 System.out.println(">>> Wrote data to file: " + path);
             }
         }
@@ -193,13 +201,14 @@ public final class GgfsExample {
         assert fs.info(path).isFile();
 
         try (OutputStream out = fs.append(path, true)) {
+            System.out.println();
             System.out.println(">>> Opened file: " + path);
 
             out.write(data);
         }
 
-        System.out.println(">>> Appended data to file: " + path);
         System.out.println();
+        System.out.println(">>> Appended data to file: " + path);
     }
 
     /**
@@ -221,8 +230,8 @@ public final class GgfsExample {
             in.read(data);
         }
 
-        System.out.println(">>> Read data from " + path + ": " + Arrays.toString(data));
         System.out.println();
+        System.out.println(">>> Read data from " + path + ": " + Arrays.toString(data));
     }
 
     /**
@@ -239,9 +248,12 @@ public final class GgfsExample {
 
         Collection<GridGgfsPath> files = fs.listPaths(path);
 
-        if (files.isEmpty())
+        if (files.isEmpty()) {
+            System.out.println();
             System.out.println(">>> No files in directory: " + path);
+        }
         else {
+            System.out.println();
             System.out.println(">>> List of files in directory: " + path);
 
             for (GridGgfsPath f : files)
@@ -259,7 +271,7 @@ public final class GgfsExample {
      * @throws GridException In case of error.
      */
     private static void printInfo(GridGgfs fs, GridGgfsPath path) throws GridException {
-        System.out.println("Information for " + path + ": " + fs.info(path));
         System.out.println();
+        System.out.println("Information for " + path + ": " + fs.info(path));
     }
 }

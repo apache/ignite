@@ -57,6 +57,8 @@ import java.util.*;
  * Note: this example uses {@link AccessType#READ_ONLY} L2 cache access type, but you
  * can experiment with other access types by modifying the Hibernate configuration file
  * {@code GRIDGAIN_HOME/examples/config/hibernate.xml}, used by the example.
+ * <p>
+ * Remote nodes should always be started using {@link HibernateL2CacheExampleNodeStartup}
  *
  * @author @java.author
  * @version @java.version
@@ -65,15 +67,11 @@ public class HibernateL2CacheExample {
     /** JDBC URL for backing database (an H2 in-memory database is used). */
     private static final String JDBC_URL = "jdbc:h2:mem:example;DB_CLOSE_DELAY=-1";
 
-    /** Entity names for stats output. */
-    private static final List<String> ENTITY_NAMES =
-        Arrays.asList(User.class.getName(), Post.class.getName(), User.class.getName() + ".posts");
-
     /**
-     * Main method, that starts this example.
+     * Executes example.
      *
-     * @param args Command line arguments (not used).
-     * @throws GridException If GridGain node startup failed.
+     * @param args Command line arguments, none required.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
         // Start the GridGain node, run the example, and stop the node when finished.
@@ -81,9 +79,13 @@ public class HibernateL2CacheExample {
             // We use a single session factory, but create a dedicated session
             // for each transaction or query. This way we ensure that L1 cache
             // is not used (L1 cache has per-session scope only).
+            System.out.println();
+            System.out.println(">>> Hibernate L2 cache example started.");
+
             SessionFactory sesFactory = createHibernateSessionFactory();
 
-            System.out.println(">>>\n>>> Creating objects.\n>>>");
+            System.out.println();
+            System.out.println(">>> Creating objects.");
 
             final long userId;
 
@@ -126,7 +128,8 @@ public class HibernateL2CacheExample {
             printStats(sesFactory);
             printStats(grid);
 
-            System.out.println(">>>\n>>> Querying object by ID.\n>>>");
+            System.out.println();
+            System.out.println(">>> Querying object by ID.");
 
             // Query user by ID several times. First time we get an L2 cache
             // miss, and the data is queried from DB, but it is then stored
@@ -160,7 +163,8 @@ public class HibernateL2CacheExample {
             printStats(sesFactory);
             printStats(grid);
 
-            System.out.println(">>>\n>>> Querying all User objects.\n>>>");
+            System.out.println();
+            System.out.println(">>> Querying all User objects.");
 
             // From here on, we run several criteria queries repeatedly to
             // demonstrate how query cache works. Again, in each case, the
@@ -177,7 +181,8 @@ public class HibernateL2CacheExample {
             printStats(sesFactory);
             printStats(grid);
 
-            System.out.println(">>>\n>>> Querying User objects by lastName.\n>>>");
+            System.out.println();
+            System.out.println(">>>Querying User objects by lastName.");
 
             // Query users by last name several times.
             for (int i = 0; i < 3; i++) {
@@ -194,7 +199,8 @@ public class HibernateL2CacheExample {
             printStats(sesFactory);
             printStats(grid);
 
-            System.out.println(">>>\n>>> Querying all Post objects.\n>>>");
+            System.out.println();
+            System.out.println(">>> Querying all Post objects.");
 
             // Query all posts several times.
             for (int i = 0; i < 3; i++) {
@@ -207,7 +213,8 @@ public class HibernateL2CacheExample {
             printStats(sesFactory);
             printStats(grid);
 
-            System.out.println(">>>\n>>> Querying Post objects by author ID.\n>>>");
+            System.out.println();
+            System.out.println(">>> Querying Post objects by author ID.");
 
             // Query posts by author ID several times.
             for (int i = 0; i < 3; i++) {
@@ -225,6 +232,10 @@ public class HibernateL2CacheExample {
             printStats(grid);
         }
     }
+
+    /** Entity names for stats output. */
+    private static final List<String> ENTITY_NAMES =
+        Arrays.asList(User.class.getName(), Post.class.getName(), User.class.getName() + ".posts");
 
     /**
      * Creates a new Hibernate {@link SessionFactory} using a programmatic

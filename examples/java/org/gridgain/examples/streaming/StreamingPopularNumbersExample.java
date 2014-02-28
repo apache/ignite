@@ -28,9 +28,11 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * window size in {@code examples/config/example-streamer.xml} configuration file and
  * is set to {@code 10,000}.
  * <p>
- * Remote nodes should always be started with configuration which includes streamer.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-streaming.xml'}.
  * <p>
- * You should startup remote nodes by starting {@link StreamingNodeStartup} from your IDE.
+ * Alternatively you can run {@link StreamingNodeStartup} in another JVM which will start GridGain node
+ * with {@code examples/config/example-streaming.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -79,16 +81,19 @@ public class StreamingPopularNumbersExample {
     }
 
     /**
-     * Starts counting numbers.
+     * Executes example.
      *
-     * @param args Command line arguments.
-     * @throws Exception If failed.
+     * @param args Command line arguments, none required.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
 
         // Start grid.
         final Grid g = GridGain.start("examples/config/example-streamer.xml");
+
+        System.out.println();
+        System.out.println(">>> Streaming popular numbers example started.");
 
         try {
             // Schedule query to find most popular words to run every 3 seconds.
