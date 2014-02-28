@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
-import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
@@ -20,19 +19,11 @@ import java.util.*;
  * Metadata for GridGain cache.
  * <p>
  * Metadata describes objects stored in the cache and
- * and can be used to gather information about what can
- * be queried using GridGain cache queries feature. See
- * {@link GridCacheQuery} and {@link GridCacheFieldsQuery}
- * for more information.
- * <p>
- * Metadata can be obtained via {@link GridCacheFieldsQueryFuture#metadata()} method.
- * Note that metadata is not included into results by default - to include it, set
- * {@link GridCacheFieldsQuery#includeMetadata(boolean)} to {@code true}.
+ * can be used to gather information about what can
+ * be queried using GridGain cache queries feature.
  *
  * @author @java.author
  * @version @java.version
- * @see GridCacheQuery
- * @see GridCacheFieldsQuery
  */
 public interface GridCacheSqlMetadata extends Externalizable {
     /**
@@ -75,14 +66,9 @@ public interface GridCacheSqlMetadata extends Externalizable {
 
     /**
      * Gets fields and their class names for provided type.
-     * Fields listed in returned map can be querying with
-     * {@link GridCacheFieldsQuery}.
-     * <p>
-     * Use {@link #types()} method to get available types.
      *
      * @param type Type name.
      * @return Fields map or {@code null} if type name is unknown.
-     * @see GridCacheFieldsQuery
      */
     @Nullable public Map<String, String> fields(String type);
 

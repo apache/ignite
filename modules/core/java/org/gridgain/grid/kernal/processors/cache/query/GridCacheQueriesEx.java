@@ -15,13 +15,26 @@ import org.gridgain.grid.cache.query.*;
 import java.util.*;
 
 /**
- * TODO
+ * Extended queries interface.
  *
  * @author @java.author
  * @version @java.version
  */
 public interface GridCacheQueriesEx<K, V> extends GridCacheQueries<K, V> {
+    /**
+     * Gets SQL metadata.
+     *
+     * @return SQL metadata.
+     * @throws GridException In case of error.
+     */
     public Collection<GridCacheSqlMetadata> sqlMetadata() throws GridException;
 
+    /**
+     * Creates SQL fields query which will include results metadata if needed.
+     *
+     * @param qry SQL query.
+     * @param incMeta Whether to include results metadata.
+     * @return Created query.
+     */
     public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta);
 }

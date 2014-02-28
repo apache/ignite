@@ -22,7 +22,7 @@ import java.util.*;
 import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 
 /**
- * TODO
+ * {@link GridCacheQueries} implementation.
  *
  * @author @java.author
  * @version @java.version

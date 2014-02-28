@@ -24,7 +24,7 @@ import java.util.*;
 import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 
 /**
- * TODO
+ * Query adapter.
  *
  * @author @java.author
  * @version @java.version

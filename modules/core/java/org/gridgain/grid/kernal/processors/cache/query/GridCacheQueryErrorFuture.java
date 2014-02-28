@@ -18,7 +18,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * TODO
+ * Error future.
  *
  * @author @java.author
  * @version @java.version

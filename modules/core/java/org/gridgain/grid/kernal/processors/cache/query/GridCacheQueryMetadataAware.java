@@ -14,11 +14,14 @@ import org.gridgain.grid.*;
 import java.util.*;
 
 /**
- * TODO
+ * Metadata-aware interface.
  *
  * @author @java.author
  * @version @java.version
  */
 public interface GridCacheQueryMetadataAware {
+    /**
+     * @return Future to retrieve metadata.
+     */
     public GridFuture<List<GridCacheSqlFieldMetadata>> metadata();
 }

@@ -13,7 +13,7 @@ import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
- * TODO
+ * Query execution bean.
  *
  * @author @java.author
  * @version @java.version

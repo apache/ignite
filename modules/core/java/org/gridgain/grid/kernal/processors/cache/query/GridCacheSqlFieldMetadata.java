@@ -12,13 +12,8 @@ package org.gridgain.grid.kernal.processors.cache.query;
 import java.io.*;
 
 /**
- * Query field descriptor. This descriptor is used by {@link GridCacheFieldsQuery}
- * to provide metadata about fields returned in query result. Field metadata is
- * included in query result by default, but can be turned off by setting
- * {@link GridCacheFieldsQuery#includeMetadata(boolean)} to {@code false}.
- * <p>
- * Use {@link GridCacheFieldsQueryFuture#metadata()} to get a handle on query
- * result metadata.
+ * Query field descriptor. This descriptor is used to provide metadata
+ * about fields returned in query result.
  *
  * @author @java.author
  * @version @java.version
