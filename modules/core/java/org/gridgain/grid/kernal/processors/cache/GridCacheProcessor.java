@@ -81,6 +81,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** System cache names. */
     private final Set<String> sysCaches;
 
+    /** Caches stop sequence. */
+    private final List<GridCacheAdapter<?, ?>> stopSeq;
+
     /** MBean server. */
     private final MBeanServer mBeanSrv;
 
@@ -99,6 +102,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         preloadFuts = new TreeMap<>();
 
         sysCaches = new HashSet<>();
+        stopSeq = new LinkedList<>();
 
         mBeanSrv = ctx.config().getMBeanServer();
     }
@@ -815,21 +819,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (ggfsCfgs != null) {
             for (GridGgfsConfiguration ggfsCfg : ggfsCfgs) {
-                addSystemCache(ggfsCfg.getMetaCacheName());
-                addSystemCache(ggfsCfg.getDataCacheName());
+                sysCaches.add(ggfsCfg.getMetaCacheName());
+                   sysCaches.add(ggfsCfg.getDataCacheName());
             }
         }
 
         for (GridCacheConfiguration ccfg : ctx.grid().configuration().getCacheConfiguration()) {
             if (ccfg.getDrSenderConfiguration() != null)
-                addSystemCache(CU.cacheNameForReplicationSystemCache(ccfg.getName()));
+                sysCaches.add(CU.cacheNameForReplicationSystemCache(ccfg.getName()));
         }
 
         GridDrSenderHubConfiguration sndHubCfg = ctx.grid().configuration().getDrSenderHubConfiguration();
 
         if (sndHubCfg != null && sndHubCfg.getCacheNames() != null) {
             for (String cacheName : sndHubCfg.getCacheNames())
-                addSystemCache(CU.cacheNameForReplicationSystemCache(cacheName));
+                sysCaches.add(CU.cacheNameForReplicationSystemCache(cacheName));
         }
 
         for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
@@ -839,24 +843,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 publicProxies.put(e.getKey(), new GridCacheProxyImpl(cache.context(), cache, null));
         }
 
+        // Create stop sequence.
+        for (Map.Entry<String, GridCacheAdapter<?, ?>> cacheEntry : caches.entrySet()) {
+            if (sysCaches.contains(cacheEntry.getKey()))
+                stopSeq.add(cacheEntry.getValue());
+            else
+                stopSeq.add(0, cacheEntry.getValue());
+        }
+
         if (log.isDebugEnabled())
             log.debug("Started cache processor.");
-    }
-
-    /**
-     * Add system cache.
-     *
-     * @param name Cache name.
-     */
-    private void addSystemCache(String name) {
-        GridCacheAdapter<?, ?> cache = caches.remove(name);
-
-        assert cache != null;
-
-        // System caches must be stopped after "normal" caches.
-        caches.put(name, cache);
-
-        sysCaches.add(CU.cacheNameForReplicationSystemCache(name));
     }
 
     /** {@inheritDoc} */
@@ -1255,9 +1251,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
 
-        for (GridCacheAdapter<?, ?> cache : caches.values()) {
-            U.debug("STOPPING CACHE: " + cache.name());
-
+        for (GridCacheAdapter<?, ?> cache : stopSeq) {
             GridCacheContext ctx = cache.context();
 
             if (isNearEnabled(ctx)) {
@@ -1295,7 +1289,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        for (GridCacheAdapter<?, ?> cache : caches.values()) {
+        for (GridCacheAdapter<?, ?> cache : stopSeq) {
             cache.stop();
 
             GridCacheContext ctx = cache.context();
