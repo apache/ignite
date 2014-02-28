@@ -61,7 +61,7 @@ public class GridSchedulerImpl implements GridScheduler {
     }
 
     /** {@inheritDoc} */
-    @Override public GridSchedulerFuture<?> scheduleLocal(Runnable job, String ptrn) throws GridException {
+    @Override public GridSchedulerFuture<?> scheduleLocal(Runnable job, String ptrn) {
         A.notNull(job, "job");
 
         guard();
@@ -75,7 +75,7 @@ public class GridSchedulerImpl implements GridScheduler {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridSchedulerFuture<R> scheduleLocal(Callable<R> job, String ptrn) throws GridException {
+    @Override public <R> GridSchedulerFuture<R> scheduleLocal(Callable<R> job, String ptrn) {
         A.notNull(job, "job");
 
         guard();
