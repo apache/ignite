@@ -677,8 +677,9 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
 
         val q = value.cache().queries().createSqlQuery(cls, clause)
 
-        // TODO: GG-7625: solve issue with varargs
-        (if (grid != null) q.projection(grid) else q).execute(args).get.map(e => (e.getKey, e.getValue))
+        (if (grid != null) q.projection(grid) else q)
+            .execute(args.asInstanceOf[Seq[Object]]: _*)
+            .get.map(e => (e.getKey, e.getValue))
     }
 
     /**
@@ -1004,7 +1005,8 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
 
         val q = value.cache[K, V]().queries().createSqlQuery(cls, clause)
 
-        toScalaItr((if (grid != null) q.projection(grid) else q).execute(toRemoteTransformer[K, V, T](trans), args).get)
+        toScalaItr((if (grid != null) q.projection(grid) else q)
+            .execute(toRemoteTransformer[K, V, T](trans), args.asInstanceOf[Seq[Object]]: _*).get)
     }
 
     /**
@@ -1080,8 +1082,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param args Optional list of query arguments.
      * @return Collection of cache key-value pairs.
      */
-    def sqlTransform[T](cls: Class[_ <: V], clause: String, trans: V => T,
-        args: Any*): Iterable[(K, T)] = {
+    def sqlTransform[T](cls: Class[_ <: V], clause: String, trans: V => T, args: Any*): Iterable[(K, T)] = {
         assert(cls != null)
         assert(clause != null)
         assert(trans != null)
@@ -1366,7 +1367,8 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
 
         val q = value.cache[K, V]().queries().createSqlQuery(cls, clause)
 
-        locRdc((if (grid != null) q.projection(grid) else q).execute(toEntryReducer(rmtRdc), args).get)
+        locRdc((if (grid != null) q.projection(grid) else q)
+            .execute(toEntryReducer(rmtRdc), args.asInstanceOf[Seq[Object]]: _*).get)
     }
 
     /**
@@ -1732,7 +1734,8 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
 
         val q = value.cache[K, V]().queries().createSqlQuery(cls, clause)
 
-        (if (grid != null) q.projection(grid) else q).execute(toEntryReducer(rmtRdc), args).get
+        (if (grid != null) q.projection(grid) else q)
+            .execute(toEntryReducer(rmtRdc), args.asInstanceOf[Seq[Object]]: _*).get
     }
 
     /**
@@ -1836,8 +1839,8 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param args Optional list of query arguments.
      * @return Collection of reduced values.
      */
-    def sqlReduceRemote[R](clause: String, rmtRdc: Iterable[(K, V)] => R,
-        args: Any*)(implicit m: Manifest[V]): Iterable[R] = {
+    def sqlReduceRemote[R](clause: String, rmtRdc: Iterable[(K, V)] => R, args: Any*)
+        (implicit m: Manifest[V]): Iterable[R] = {
         assert(clause != null)
         assert(rmtRdc != null)
         assert(args != null)
@@ -1973,7 +1976,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
 
         val q = value.cache[K, V]().queries().createSqlFieldsQuery(clause)
 
-        (if (grid != null) q.projection(grid) else q).execute(args)
+        (if (grid != null) q.projection(grid) else q).execute(args.asInstanceOf[Seq[Object]]: _*)
             .get.toIndexedSeq.map((s: java.util.List[_]) => s.toIndexedSeq)
     }
 
