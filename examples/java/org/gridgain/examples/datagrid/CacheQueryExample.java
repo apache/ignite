@@ -14,7 +14,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.*;
 
 import java.io.*;
 import java.util.*;
@@ -178,31 +177,6 @@ public class CacheQueryExample {
             .class, "from Person, Organization " + "where Person.orgId = Organization.id and lower(Organization.name)" +
             " = lower(?)");
 
-        GridReducer<GridBiTuple<Double, Integer>, Double> locRdc =
-            new GridReducer<GridBiTuple<Double, Integer>, Double>() {
-                private double sum;
-
-                private int cnt;
-
-                @Override public boolean collect(GridBiTuple<Double, Integer> t) {
-                    sum += t.get1();
-                    cnt += t.get2();
-
-                    // Continue collecting.
-                    return true;
-                }
-
-                @Override public Double reduce() {
-                    double avg = cnt == 0 ? 0 : sum / cnt;
-
-                    // Reset reducer state to correctly execute query several times.
-                    sum = 0;
-                    cnt = 0;
-
-                    return avg;
-                }
-            };
-
         Collection<GridBiTuple<Double, Integer>> res = qry.execute(
             new GridReducer<Map.Entry<GridCacheAffinityKey<UUID>, Person>, GridBiTuple<Double, Integer>>() {
                 private double sum;
@@ -223,8 +197,18 @@ public class CacheQueryExample {
                 }
             }, "GridGain").get();
 
+        double sum = 0.0d;
+        int cnt = 0;
+
+        for (GridBiTuple<Double, Integer> t : res) {
+            sum += t.get1();
+            cnt += t.get2();
+        }
+
+        double avg = sum / cnt;
+
         // Calculate average salary for a specific organization.
-        print("Average salary for 'GridGain' employees: " + F.reduce(res, locRdc));
+        print("Average salary for 'GridGain' employees: " + avg);
     }
 
     /**
@@ -338,7 +322,7 @@ public class CacheQueryExample {
     private static void print(Iterable<?> col) {
         for (Object next : col) {
             if (next instanceof Iterable)
-                print(((Iterable)next).iterator());
+                print((Iterable<?>)next);
             else
                 System.out.println(">>>     " + next);
         }
