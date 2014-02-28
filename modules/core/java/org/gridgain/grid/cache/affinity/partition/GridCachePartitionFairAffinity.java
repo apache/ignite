@@ -123,7 +123,10 @@ public class GridCachePartitionFairAffinity {
                 // Check last tier distribution.
                 // If distribution is uneven, fallback to first tier and try with different shift index.
                 if (!checkDistribution(assignments, tier)) {
-                    shiftIdx++;
+                    if (shiftIdx == 0)
+                        shiftIdx = parts + 1;
+                    else
+                        shiftIdx--;
 
                     U.debug("Distribution check failed, will retry with shift: " + shiftIdx);
 
