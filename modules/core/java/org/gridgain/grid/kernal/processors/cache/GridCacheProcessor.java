@@ -82,7 +82,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final Set<String> sysCaches;
 
     /** Caches stop sequence. */
-    private final List<GridCacheAdapter<?, ?>> stopSeq;
+    private final Deque<GridCacheAdapter<?, ?>> stopSeq;
 
     /** MBean server. */
     private final MBeanServer mBeanSrv;
@@ -820,7 +820,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ggfsCfgs != null) {
             for (GridGgfsConfiguration ggfsCfg : ggfsCfgs) {
                 sysCaches.add(ggfsCfg.getMetaCacheName());
-                   sysCaches.add(ggfsCfg.getDataCacheName());
+                sysCaches.add(ggfsCfg.getDataCacheName());
             }
         }
 
@@ -846,9 +846,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Create stop sequence.
         for (Map.Entry<String, GridCacheAdapter<?, ?>> cacheEntry : caches.entrySet()) {
             if (sysCaches.contains(cacheEntry.getKey()))
-                stopSeq.add(cacheEntry.getValue());
+                stopSeq.addLast(cacheEntry.getValue());
             else
-                stopSeq.add(0, cacheEntry.getValue());
+                stopSeq.addFirst(cacheEntry.getValue());
         }
 
         if (log.isDebugEnabled())
