@@ -62,7 +62,28 @@
 
     <property name="jar.dev" value="gridgain.jar"/>
 
-    <target name="mk.collect.libs">
+    <macrodef name="logo">
+        <sequential>
+            <echo message=""/>
+            <echo message="      _____     _     _______      _     "/>
+            <echo message="     / ___/____(_)___/ / ___/___ _(_)___ "/>
+            <echo message="    / (_ // __/ // _  / (_ // _ `/ // _ \"/>
+            <echo message="    \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/"/>
+            <echo message="             IN-MEMORY COMPUTING"/>
+            <echo message=""/>
+            <echo message="    GRIDGAIN_HOME : ${gridgain.home}"/>
+            <echo message="    JAVA_HOME     : ${jdk.home}"/>
+            <echo message="    TMP_DIR       : ${tmp.dir}"/>
+            <echo message=""/>
+        </sequential>
+    </macrodef>
+
+    <target name="info">
+        <logo/>
+        <echo message="    Run mk.dev.jar target for building development jar."/>
+    </target>
+
+    <target name="mk.collect.libs" depends="info">
         <echo message=""/>
         <echo message="mk.collect.libs"/>
 
@@ -107,7 +128,7 @@
     <!--
         Build GridGain development JAR.
     -->
-    <target name="mk.dev.jar" depends="mk.collect.libs">
+    <target name="mk.dev.jar" depends="info, mk.collect.libs">
         <echo message=""/>
         <echo message="mk.dev.jar"/>
 
