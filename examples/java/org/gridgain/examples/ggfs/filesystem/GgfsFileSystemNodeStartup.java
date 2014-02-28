@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.ggfs;
+package org.gridgain.examples.ggfs.filesystem;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -37,7 +37,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * @version @java.version
  */
 @GridOnlyAvailableIn(HADOOP)
-public class GgfsEndpointNodeStartup {
+public class GgfsFileSystemNodeStartup {
     /**
      * Start up an empty node with specified cache configuration.
      *
