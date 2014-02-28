@@ -752,7 +752,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
             ResultSet rs = res.get2();
 
-            List<GridCacheSqlFieldMetadata> meta;
+            List<GridIndexingFieldMetadata> meta;
 
             try {
                 ResultSetMetaData rsMeta = rs.getMetaData();
@@ -2276,7 +2276,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     /**
      * Field descriptor.
      */
-    private static class SqlFieldMetadata implements GridCacheSqlFieldMetadata {
+    private static class SqlFieldMetadata implements GridIndexingFieldMetadata {
         /** Schema name. */
         private String schemaName;
 
