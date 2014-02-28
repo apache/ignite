@@ -27,17 +27,18 @@ import org.gridgain.grid.lang.*;
  */
 public class ComputeProjectionExample {
     /**
-     * Executes broadcasting message example with closures.
+     * Executes example.
      *
-     * @param args Command line arguments, none required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      {@code "examples/config/"} for configuration file examples.
+     * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Grid grid = GridGain.start("examples/config/example-compute.xml")) {
             if (!ExamplesUtils.checkMinTopologySize(grid, 2))
                 return;
+
+            System.out.println();
+            System.out.println("Compute projection example started.");
 
             // Say hello to all nodes in the grid, including local node.
             // Note, that Grid itself also implements GridProjection.

@@ -23,11 +23,11 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 /**
  * Real time popular numbers counter.
  * <p>
- * Remote nodes should always be started with configuration which includes cache
- * using following command: {@code 'ggstart.sh examples/config/example-cache-popularcounts.xml'}.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
- * The counts are kept in cache on all remote nodes. Top {@code 10} counts from each node are
- * then grabbed to produce an overall top {@code 10} list within the grid.
+ * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -52,15 +52,18 @@ public class CachePopularNumbersExample {
     private static final int CNT = 1000000;
 
     /**
-     * Starts counting numbers.
+     * Executes example.
      *
-     * @param args Command line arguments.
-     * @throws Exception If failed.
+     * @param args Command line arguments, none required.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
 
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
+            System.out.println();
+            System.out.println(">>> Cache popular numbers example started.");
+
             GridProjection prj = g.forCache(CACHE_NAME);
 
             if (prj.nodes().isEmpty()) {
