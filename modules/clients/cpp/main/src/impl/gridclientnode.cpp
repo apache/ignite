@@ -30,9 +30,9 @@ public:
      * @param other Node to copy data from.
      */
     Impl(const Impl& other) : nodeId(other.nodeId), jettyAddrs(other.jettyAddrs), tcpAddrs(other.tcpAddrs),
-            metrics(other.metrics), attrs(other.attrs), routerTcpAddress(other.routerTcpAddress),
-            routerJettyAddress(other.routerJettyAddress), dfltCacheMode(other.dfltCacheMode), caches(other.caches),
-            replicaCount(other.replicaCount), consistentId(other.consistentId) {
+        metrics(other.metrics), attrs(other.attrs), routerTcpAddress(other.routerTcpAddress),
+        routerJettyAddress(other.routerJettyAddress), dfltCacheMode(other.dfltCacheMode), caches(other.caches),
+        replicaCount(other.replicaCount), consistentId(other.consistentId) {
     }
 
     /** Node ID */
@@ -152,7 +152,6 @@ const GridSocketAddress & GridClientNode::getRouterJettyAddress() const {
     return pimpl->routerJettyAddress;
 }
 
-
 int GridClientNode::getReplicaCount() const {
     return pimpl->replicaCount;
 }
@@ -166,7 +165,9 @@ std::ostream& operator<<(std::ostream &out, const GridClientNode &n){
 
         out << n.getTcpAddresses()[i].host() << ":" << n.getTcpAddresses()[i].port();
     }
+
     out << ", jettyAddrs=";
+
     for (size_t i = 1; i < n.getJettyAddresses().size(); ++i) {
         if (i != 0)
             out << ",";

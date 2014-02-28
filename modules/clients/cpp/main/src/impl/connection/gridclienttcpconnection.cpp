@@ -210,6 +210,7 @@ void GridClientSyncTcpConnection::connect(const string& pHost, int pPort) {
 
     try {
         asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(query);
+
         GG_LOG_DEBUG("Establishing connection [host=%s, port=%d]", pHost.c_str(), pPort);
 
         if (sslSock.get() == NULL) {
@@ -320,9 +321,11 @@ void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket,
             totalBytesWritten += asio::write(getSocket(), bufsToSend, ec);
         }
         else {
-            boost::array<boost::asio::const_buffer, 2> bufsToSend = { boost::asio::buffer(
-                            (const void*) &GridClientTcpPacket::SIGNAL_CHAR, sizeof(GridClientTcpPacket::SIGNAL_CHAR)),
-                            boost::asio::buffer((const void*) gridTcpPacket.sizeHeader.data(), sizeof(int32_t)) };
+            boost::array<boost::asio::const_buffer, 2> bufsToSend = {
+                boost::asio::buffer(
+                    (const void*) &GridClientTcpPacket::SIGNAL_CHAR, sizeof(GridClientTcpPacket::SIGNAL_CHAR)),
+                    boost::asio::buffer((const void*) gridTcpPacket.sizeHeader.data(), sizeof(int32_t))
+                    };
 
             totalBytesWritten += asio::write(getSocket(), bufsToSend, ec);
         }
@@ -478,15 +481,15 @@ void GridClientSyncTcpConnection::handshake() {
 
         case HandshakeResultCode::ERR_VERSION_CHECK_FAILED:
             GG_LOG_AND_THROW(GridClientException,
-                            "Handshake failed: bad version number (see server log for details) [host=%s, port=%d]",
-                            host.c_str(), port);
+                "Handshake failed: bad version number (see server log for details) [host=%s, port=%d]",
+                host.c_str(), port);
 
             break;
 
         case HandshakeResultCode::ERR_UNKNOWN_PROTO_ID:
             GG_LOG_AND_THROW(GridClientException,
-                            "Handshake failed: unknown/unsupported protocol ID (see server log for details) [host=%s, port=%d]",
-                            host.c_str(), port);
+                "Handshake failed: unknown/unsupported protocol ID (see server log for details) [host=%s, port=%d]",
+                host.c_str(), port);
 
             break;
 
@@ -690,6 +693,7 @@ void GridClientRawSyncTcpConnection::connect(const string& pHost, int pPort) {
             break;
         }
     }
+
     //plain ip address
     else {
         server.sin_addr.s_addr = inet_addr(address.c_str());
@@ -795,7 +799,7 @@ void GridClientRawSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPack
 
     if (bytesSent != nBytes + gridTcpPacket.getHeaderSize())
         GG_LOG_AND_THROW(GridClientConnectionResetException,
-                        "Failed to send packet: connection was reset by the server [host=%s, port=%d]", host.c_str(), port);
+            "Failed to send packet: connection was reset by the server [host=%s, port=%d]", host.c_str(), port);
 
     GG_LOG_DEBUG("Successfully sent a request [host=%s, port=%d, nbytes=%d]", host.c_str(), port, nBytes);
 
@@ -810,8 +814,8 @@ void GridClientRawSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPack
         // Check error.
         if (!bytesRead) {
             GG_LOG_AND_THROW(GridClientConnectionResetException,
-                            "Failed to read response header: connection was reset by the server [host=%s, port=%d]",
-                            host.c_str(), port);
+                "Failed to read response header: connection was reset by the server [host=%s, port=%d]",
+                host.c_str(), port);
         }
 
         // Get packet size with additional headers
@@ -843,8 +847,8 @@ void GridClientRawSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPack
 
     if (nBytes < 0 || nBytes < packetSize) {
         GG_LOG_AND_THROW(GridClientConnectionResetException,
-                        "Failed to read response data: connection was reset by the server "
-                        "[host=%s, port=%d]", host.c_str(), port);
+            "Failed to read response data: connection was reset by the server "
+            "[host=%s, port=%d]", host.c_str(), port);
     }
 
     GG_LOG_DEBUG("Done reading the response data [nbytes=%d]", nBytes);
@@ -893,7 +897,8 @@ void GridClientRawSyncTcpConnection::sendPing() {
     unsigned char * pBufferToSend = new unsigned char[bytesToSend];
     unsigned char * pBufferToConstruct = pBufferToSend;
 
-    memcpy(pBufferToConstruct, (const void*) &GridClientTcpPacket::SIGNAL_CHAR, sizeof(GridClientTcpPacket::SIGNAL_CHAR));
+    memcpy(pBufferToConstruct, (const void*) &GridClientTcpPacket::SIGNAL_CHAR,
+        sizeof(GridClientTcpPacket::SIGNAL_CHAR));
     pBufferToConstruct += sizeof(GridClientTcpPacket::SIGNAL_CHAR);
     memcpy(pBufferToConstruct, (const void*) pingPacket.sizeHeader.data(), sizeof(int32_t));
 
@@ -903,7 +908,7 @@ void GridClientRawSyncTcpConnection::sendPing() {
 
     if (bytesSent != nBytes + pingPacket.getHeaderSize())
         GG_LOG_AND_THROW(GridClientConnectionResetException,
-                        "Failed to send packet: connection was reset by the server [host=%s, port=%d]", host.c_str(), port);
+            "Failed to send packet: connection was reset by the server [host=%s, port=%d]", host.c_str(), port);
 
     GG_LOG_DEBUG("Successfully sent a ping packet [host=%s, port=%d]", host.c_str(), port);
 }

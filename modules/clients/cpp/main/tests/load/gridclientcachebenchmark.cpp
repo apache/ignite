@@ -117,7 +117,9 @@ public:
             switch (opType) {
                 case PUT: { // block of code to avoid "jump to the case label" compilation error
                         TGridClientVariantMap theMap;
+
                         theMap[randomInt(KEY_COUNT - 1, &seed)] = 42;
+
                         while (!gExit) {
                             data->putAll(theMap);
                             ++gIters;
@@ -145,7 +147,6 @@ public:
 
                     break;
             }
-
         }
         catch (GridClientException& e) {
             std::cerr << "GridClientException: " << e.what() << "\n";
@@ -192,10 +193,10 @@ int main(int argc, const char** argv) {
     // Declare the supported options.
     options_description desc("Allowed options");
     desc.add_options()("help", "produce help message")("host", value<string>(), "Host to connect to")("port", value<int>(),
-                    "Port to connect to")("threads", value<int>(), "Number of threads")("testtype", value<string>(),
-                    "Type of operations to run")("cachename", value<string>(), "Cache name")("warmupseconds", value<int>(),
-                    "Seconds to warm up")("runseconds", value<int>(), "Seconds to run")("usetransactions",
-                    boost::program_options::value<bool>(), "Use transactions (bool)");
+        "Port to connect to")("threads", value<int>(), "Number of threads")("testtype", value<string>(),
+        "Type of operations to run")("cachename", value<string>(), "Cache name")("warmupseconds", value<int>(),
+        "Seconds to warm up")("runseconds", value<int>(), "Seconds to run")("usetransactions",
+        boost::program_options::value<bool>(), "Use transactions (bool)");
 
     store(parse_command_line(argc, argv, desc), vm);
     notify(vm);
@@ -228,6 +229,7 @@ int main(int argc, const char** argv) {
     boost::thread printerThread(StatsPrinterThreadProc);
 
     int numThreads = vm["threads"].as<int>();
+
     for (int i = 0; i < numThreads; i++) {
         workers.push_back(TestThreadPtr(new TestThread(testTypeFromString(vm["testtype"].as<string>()))));
     }

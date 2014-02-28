@@ -230,7 +230,6 @@ static void wrapRequest(const GridClientMessageCommand& cmd, const ObjectWrapper
 }
 
 void GridClientProtobufMarshaller::wrap(const GridTopologyRequestCommand& reqCmd, ObjectWrapper& objWrapper) {
-
     ProtoTopologyRequest topReq;
 
     topReq.set_includeattributes(reqCmd.getIncludeAttributes());
@@ -529,10 +528,14 @@ static void unwrap(const ObjectWrapper& objWrapper, GridClientNode& res) {
     for (int i = 0; i < bean.jettyaddress_size(); ++i) {
         if (bean.jettyaddress(i).size()) {
             GridSocketAddress newJettyAddress = GridSocketAddress(bean.jettyaddress(i), jettyport);
+
             boost::asio::ip::tcp::resolver::query queryIp(bean.jettyaddress(i),
-                            boost::lexical_cast<std::string>(bean.jettyport()));
+                boost::lexical_cast<std::string>(bean.jettyport()));
+
             boost::system::error_code ec;
+
             boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryIp, ec);
+
             if (!ec)
                 addresses.push_back(newJettyAddress);
             else
@@ -543,10 +546,14 @@ static void unwrap(const ObjectWrapper& objWrapper, GridClientNode& res) {
     for (int i = 0; i < bean.jettyhostname_size(); ++i) {
         if (bean.jettyhostname(i).size()) {
             GridSocketAddress newJettyAddress = GridSocketAddress(bean.jettyhostname(i), jettyport);
+
             boost::asio::ip::tcp::resolver::query queryHostname(bean.jettyhostname(i),
-                            boost::lexical_cast<std::string>(bean.jettyport()));
+                boost::lexical_cast<std::string>(bean.jettyport()));
+
             boost::system::error_code ec;
+
             boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryHostname, ec);
+
             if (!ec)
                 addresses.push_back(newJettyAddress);
             else

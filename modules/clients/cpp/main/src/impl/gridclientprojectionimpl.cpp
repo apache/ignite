@@ -24,16 +24,14 @@ using namespace std;
 const static size_t RETRY_CNT = 1;
 
 GridClientProjectionImpl::GridClientProjectionImpl(TGridClientSharedDataPtr pData, GridClientProjectionListener& prjLsnr,
-                TGridClientNodePredicatePtr pFilter) :
-                sharedData(pData), prjLsnr(prjLsnr), filter(pFilter), dfltAffinity(new GridClientPartitionAffinity()) {
+        TGridClientNodePredicatePtr pFilter) : sharedData(pData), prjLsnr(prjLsnr), filter(pFilter),
+        dfltAffinity(new GridClientPartitionAffinity()) {
 
     vector<GridClientDataConfiguration> dataCfg = pData->clientConfiguration().dataConfiguration();
 
     // Read affinity configuration from vector to affinity map.
     std::transform(dataCfg.begin(), dataCfg.end(), std::inserter(affinityMap, affinityMap.end()),
-                    [] (GridClientDataConfiguration& c) {
-                        return std::make_pair(c.name(), c.affinity());
-                    });
+        [] (GridClientDataConfiguration& c) { return std::make_pair(c.name(), c.affinity()); });
 }
 
 /**
@@ -168,6 +166,7 @@ bool GridClientProjectionImpl::processClosure(TGridClientNodePtr node, ClientPro
     }
     else { //no routing
         int numAddrs = addrs.size();
+
         for (size_t addrIdx = 0; addrIdx < numAddrs; ++addrIdx) {
             try {
                 c.apply(node, addrs[addrIdx], *exec); //networking here
@@ -193,7 +192,7 @@ TGridClientNodePtr GridClientProjectionImpl::affinityNode(const string& cacheNam
     subProjectionNodes(nodes, GridCacheNameFilter(cacheName));
 
     std::shared_ptr<GridClientDataAffinity> affinity =
-            affinityMap.count(cacheName) > 0 ? affinityMap[cacheName] : dfltAffinity;
+        affinityMap.count(cacheName) > 0 ? affinityMap[cacheName] : dfltAffinity;
 
     return affinity->getNode(nodes, affKey);
 }

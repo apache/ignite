@@ -23,7 +23,7 @@ using namespace std;
 static boost::uuids::random_generator uuidGen;
 static boost::mutex uuidGenMux;
 
-GridUuid::GridUuid()  {
+GridUuid::GridUuid() {
     memset(pimpl.uuid_.data, 0, pimpl.uuid_.size());
 }
 

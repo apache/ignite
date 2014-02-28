@@ -148,56 +148,72 @@ void GridClientJsonMarshaller::unwrap(const TJson& json, GridClientMessageTopolo
         BOOST_FOREACH(const TJson::value_type &j, pt.get_child("tcpHostNames")) {
             if (j.second.data().size()) {
                 GridSocketAddress newTCPAddress = GridSocketAddress(j.second.data(), tcpport);
+
                 boost::asio::ip::tcp::resolver::query queryHostname(newTCPAddress.host(),
-                                boost::lexical_cast<std::string>(pt.get("tcpPort", -1)));
+                    boost::lexical_cast<std::string>(pt.get("tcpPort", -1)));
+
                 boost::system::error_code ec;
+
                 boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryHostname, ec);
+
                 if (!ec)
                     tcpAddrs.push_back(newTCPAddress);
                 else
-                GG_LOG_ERROR("Error resolving hostname: %s, %s", newTCPAddress.host().c_str(), ec.message().c_str());
+                    GG_LOG_ERROR("Error resolving hostname: %s, %s", newTCPAddress.host().c_str(), ec.message().c_str());
             }
         }
 
         BOOST_FOREACH(const TJson::value_type &j, pt.get_child("tcpAddresses")) {
             if (j.second.data().size()) {
                 GridSocketAddress newTCPAddress = GridSocketAddress(j.second.data(), tcpport);
+
                 boost::asio::ip::tcp::resolver::query queryIp(newTCPAddress.host(),
-                                boost::lexical_cast<std::string>(pt.get("tcpPort", -1)));
+                    boost::lexical_cast<std::string>(pt.get("tcpPort", -1)));
+
                 boost::system::error_code ec;
+
                 boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryIp, ec);
+
                 if (!ec)
                     tcpAddrs.push_back(newTCPAddress);
                 else
-                GG_LOG_ERROR("Error resolving hostname: %s, %s", newTCPAddress.host().c_str(), ec.message().c_str());
+                    GG_LOG_ERROR("Error resolving hostname: %s, %s", newTCPAddress.host().c_str(), ec.message().c_str());
             }
         }
 
         BOOST_FOREACH(const TJson::value_type &j, pt.get_child("jettyHostNames")) {
             if (j.second.data().size()) {
                 GridSocketAddress newJettyAddress = GridSocketAddress(j.second.data(), jettyport);
+
                 boost::asio::ip::tcp::resolver::query queryHostname(newJettyAddress.host(),
-                                boost::lexical_cast<std::string>(pt.get("jettyPort", -1)));
+                    boost::lexical_cast<std::string>(pt.get("jettyPort", -1)));
+
                 boost::system::error_code ec;
+
                 boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryHostname, ec);
+
                 if (!ec)
                     jettyAddrs.push_back(newJettyAddress);
                 else
-                GG_LOG_ERROR("Error resolving hostname: %s, %s", newJettyAddress.host().c_str(), ec.message().c_str());
+                    GG_LOG_ERROR("Error resolving hostname: %s, %s", newJettyAddress.host().c_str(), ec.message().c_str());
             }
         }
 
         BOOST_FOREACH(const TJson::value_type &j, pt.get_child("jettyAddresses")) {
             if (j.second.data().size()) {
                 GridSocketAddress newJettyAddress = GridSocketAddress(j.second.data(), jettyport);
+
                 boost::asio::ip::tcp::resolver::query queryIp(newJettyAddress.host(),
-                                boost::lexical_cast<std::string>(pt.get("jettyPort", -1)));
+                    boost::lexical_cast<std::string>(pt.get("jettyPort", -1)));
+
                 boost::system::error_code ec;
+
                 boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryIp, ec);
+
                 if (!ec)
                     jettyAddrs.push_back(newJettyAddress);
                 else
-                GG_LOG_ERROR("Error resolving hostname: %s, %s", newJettyAddress.host().c_str(), ec.message().c_str());
+                    GG_LOG_ERROR("Error resolving hostname: %s, %s", newJettyAddress.host().c_str(), ec.message().c_str());
             }
         }
 

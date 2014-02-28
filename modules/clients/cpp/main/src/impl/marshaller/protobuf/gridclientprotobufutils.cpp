@@ -165,6 +165,7 @@ static bool doUnwrapSimpleType(const ObjectWrapper& objWrapper, GridClientVarian
             return getTaskTesult(binary, var);
 
         default: // Non-simple type
+
             break;
     }
 
@@ -179,20 +180,21 @@ namespace {
 
     class GridClientVariantVisitorImpl : public GridClientVariantVisitor {
     public:
-        GridClientVariantVisitorImpl(ObjectWrapper& wrapper) :
-                        objWrapper(wrapper) {
+        GridClientVariantVisitorImpl(ObjectWrapper& wrapper) : objWrapper(wrapper) {
         }
 
         typedef vector<int8_t> TByteVector;
 
         virtual void visit(const bool pValue) const {
             TByteVector bytes;
+
             bytes.push_back(pValue ? 1 : 0);
             serialize(BOOL, bytes);
         }
 
         virtual void visit(const int16_t pShort) const {
             int8_t bytes[sizeof(pShort)];
+
             memset(&bytes[0], 0, sizeof(pShort));
             GridClientByteUtils::valueToBytes(pShort, &bytes[0], sizeof(pShort));
             serialize(SHORT, bytes, sizeof(pShort));
@@ -200,6 +202,7 @@ namespace {
 
         virtual void visit(const int32_t pInt) const {
             int8_t bytes[sizeof(pInt)];
+
             memset(&bytes[0], 0, sizeof(pInt));
             GridClientByteUtils::valueToBytes(pInt, &bytes[0], sizeof(pInt));
             serialize(INT32, bytes, sizeof(pInt));
@@ -207,6 +210,7 @@ namespace {
 
         virtual void visit(const int64_t pLong) const {
             int8_t bytes[sizeof(pLong)];
+
             memset(&bytes[0], 0, sizeof(pLong));
             GridClientByteUtils::valueToBytes(pLong, &bytes[0], sizeof(pLong));
             serialize(INT64, bytes, sizeof(pLong));
@@ -215,6 +219,7 @@ namespace {
         virtual void visit(const float pFloat) const {
             int32_t intBits = GridFloatHasheableObject::floatToIntBits(pFloat);
             int8_t bytes[sizeof(intBits)];
+
             memset(&bytes[0], 0, sizeof(intBits));
             GridClientByteUtils::valueToBytes(intBits, &bytes[0], sizeof(intBits));
             serialize(INT32, bytes, sizeof(intBits));
@@ -223,6 +228,7 @@ namespace {
         virtual void visit(const double pDouble) const {
             int64_t longBits = GridDoubleHasheableObject::doubleToLongBits(pDouble);
             int8_t bytes[sizeof(longBits)];
+
             memset(&bytes[0], 0, sizeof(longBits));
             GridClientByteUtils::valueToBytes(longBits, &bytes[0], sizeof(longBits));
             serialize(INT64, bytes, sizeof(longBits));
@@ -230,12 +236,14 @@ namespace {
 
         virtual void visit(const string& pText) const {
             TByteVector bytes(pText.size());
+
             copy(pText.begin(), pText.end(), bytes.begin());
             serialize(STRING, bytes);
         }
 
         virtual void visit(const wstring& pText) const {
             TByteVector bytes;
+
             GridWideStringHasheableObject(pText).convertToBytes(bytes);
             serialize(STRING, bytes);
         }
@@ -262,6 +270,7 @@ namespace {
 
         virtual void visit(const GridUuid& uuid) const {
             TByteVector bytes;
+
             uuid.convertToBytes(bytes);
             serialize(UUID, bytes);
         }

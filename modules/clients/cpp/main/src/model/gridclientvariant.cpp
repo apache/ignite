@@ -210,7 +210,6 @@ GridUuid GridClientVariant::getUuid() const {
 }
 
 string GridClientVariant::toString() const {
-
     if (Impl::STRING_TYPE == pimpl.var.which()) {
         return getString();
 
