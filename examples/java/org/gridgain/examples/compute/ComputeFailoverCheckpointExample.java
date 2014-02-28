@@ -35,9 +35,6 @@ import java.util.*;
  * @version @java.version
  */
 public class ComputeFailoverCheckpointExample {
-    /** Path to configuration file. */
-    private static final String CONFIG = "examples/config/example-checkpoint.xml";
-
     /**
      * Executes example.
      *
@@ -45,7 +42,7 @@ public class ComputeFailoverCheckpointExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = GridGain.start(CONFIG)) {
+        try (Grid g = GridGain.start(ComputeFailoverCheckpointNodeStartup.configuration())) {
             if (!ExamplesUtils.checkMinTopologySize(g, 2))
                 return;
 
