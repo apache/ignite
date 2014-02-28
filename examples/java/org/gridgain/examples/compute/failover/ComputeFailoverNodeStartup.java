@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.examples.compute;
+package org.gridgain.examples.compute.failover;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.optimized.*;
@@ -26,7 +26,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class ComputeFailoverCheckpointNodeStartup {
+public class ComputeFailoverNodeStartup {
     /**
      * Start up an empty node with specified cache configuration.
      *
