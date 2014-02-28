@@ -168,9 +168,6 @@ public class GridCacheConfiguration {
     /** Default value for 'writeBehindEnabled' flag. */
     public static final boolean DFLT_WRITE_BEHIND_ENABLED = false;
 
-    /** Default value for write-behind use dht option. */
-    public static final boolean DFLT_WRITE_BEHIND_PREFER_PRIMARY = true;
-
     /** Default flush size for write-behind cache store. */
     public static final int DFLT_WRITE_BEHIND_FLUSH_SIZE = 10240; // 10K
 
@@ -342,9 +339,6 @@ public class GridCacheConfiguration {
     /** Write-behind feature. */
     private boolean writeBehindEnabled = DFLT_WRITE_BEHIND_ENABLED;
 
-    /** Whether or not cache store will be updated on DHT nodes for write-behind cache. */
-    private boolean writeBehindPreferPrimary = DFLT_WRITE_BEHIND_PREFER_PRIMARY;
-
     /** Maximum size of write-behind cache. */
     private int writeBehindFlushSize = DFLT_WRITE_BEHIND_FLUSH_SIZE;
 
@@ -470,7 +464,6 @@ public class GridCacheConfiguration {
         writeBehindFlushFreq = cc.getWriteBehindFlushFrequency();
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
-        writeBehindPreferPrimary = cc.isWriteBehindPreferPrimary();
         atomicWriteOrderMode = cc.getAtomicWriteOrderMode();
         writeSync = cc.getWriteSynchronizationMode();
     }
@@ -1449,34 +1442,6 @@ public class GridCacheConfiguration {
      */
     public void setWriteBehindEnabled(boolean writeBehindEnabled) {
         this.writeBehindEnabled = writeBehindEnabled;
-    }
-
-    /**
-     * Flag indicating whether GridGain should use primary nodes for persistent store update when write-behind
-     * store is enabled. By default this option is enabled which is defined via
-     * {@link #DFLT_WRITE_BEHIND_PREFER_PRIMARY} constant.
-     * <p>
-     * When enabled, persistent store transaction may be split across multiple primary nodes, but order of updates
-     * will be preserved. When disabled, transaction will be performed on one node, which guarantees that it
-     * will succeed or fail as a whole, but order of updates may not be preserved.
-     * <p>
-     * You should not disable this option unless you are sure that there will be no updates of the same key from
-     * different nodes.
-     *
-     * @return Whether ot not write-behind cache store will be updated on primary nodes.
-     */
-    public boolean isWriteBehindPreferPrimary() {
-        return writeBehindPreferPrimary;
-    }
-
-    /**
-     * Sets whether or not write-behind cache will update cache store on primary nodes.
-     *
-     * @param writeBehindPreferPrimary {@code True} if write-behind cache should update store on DHT primary nodes.
-     * @see #isWriteBehindPreferPrimary()
-     */
-    public void setWriteBehindPreferPrimary(boolean writeBehindPreferPrimary) {
-        this.writeBehindPreferPrimary = writeBehindPreferPrimary;
     }
 
     /**
