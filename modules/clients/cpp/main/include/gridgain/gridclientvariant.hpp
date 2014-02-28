@@ -49,7 +49,7 @@ public:
 private:
     class Impl {
     public:
-            /** Boost typedef for holding multiple types. */
+        /** Boost typedef for holding multiple types. */
         typedef boost::variant<GridClientVariant::NullType, bool, int16_t, int32_t, int64_t, double,
                 float, std::string, std::wstring, std::vector<int8_t>, std::vector<GridClientVariant>, GridUuid> TVariantType;
 

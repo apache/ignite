@@ -871,7 +871,6 @@ void GridClientRawSyncTcpConnection::close() {
 #else
         ::close(sock);
 #endif
-
 }
 
 /**

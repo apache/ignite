@@ -142,6 +142,7 @@ public:
 
                 default:
                     std::cerr << "Invalid test operation.\n";
+
                     break;
             }
 
