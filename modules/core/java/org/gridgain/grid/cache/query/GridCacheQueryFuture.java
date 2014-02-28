@@ -16,13 +16,16 @@ import java.util.*;
 
 /**
  * Cache query future returned by query execution.
- * Refer to corresponding query documentation for more information.
+ * Refer to {@link GridCacheQuery} documentation for more information.
  *
  * @author @java.author
  * @version @java.version
  */
 public interface GridCacheQueryFuture<T> extends GridFuture<Collection<T>> {
     /**
+     * Returns number of elements that are already fetched and can
+     * be returned from {@link #next()} method without blocking.
+     *
      * @return Number of fetched elements which are available immediately.
      * @throws GridException In case of error.
      */

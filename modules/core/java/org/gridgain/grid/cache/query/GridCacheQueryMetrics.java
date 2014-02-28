@@ -10,12 +10,9 @@
 package org.gridgain.grid.cache.query;
 
 /**
- * Cache query metrics used to obtain statistics on query. You can get query metrics via
- * {@link GridCacheQueries#metrics()} method which will provide metrics for all queries
- * executed on cache.
- * <p>
- * Note that in addition to query metrics, you can also enable query tracing by setting
- * {@code "org.gridgain.cache.queries"} logging category to {@code DEBUG} level.
+ * Cache query metrics used to obtain statistics on query. You can get metrics for
+ * particular query via {@link GridCacheQuery#metrics()} method or accumulated metrics
+ * for all queries via {@link GridCacheQueries#metrics()}.
  *
  * @author @java.author
  * @version @java.version
@@ -52,7 +49,7 @@ public interface GridCacheQueryMetrics {
     /**
      * Gets total number of times a query execution failed.
      *
-     * @return total number of times a query execution failed.
+     * @return Total number of times a query execution failed.
      */
     public int fails();
 }

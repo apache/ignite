@@ -16,7 +16,7 @@
  */
 class GridClientDataConfiguration::Impl {
 public:
-    Impl(): aff(new GridClientPartitionedAffinity()) {}
+    Impl(): aff(new GridClientPartitionAffinity()) {}
 
     Impl(const Impl& from): name(from.name), aff(from.aff) {}
 

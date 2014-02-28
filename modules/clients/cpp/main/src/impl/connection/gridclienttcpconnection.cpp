@@ -8,6 +8,14 @@
  */
 #include "gridgain/impl/utils/gridclientdebug.hpp"
 
+#ifdef _MSC_VER
+#include <winsock2.h>
+#else
+#include <sys/socket.h>    //socket
+#include <arpa/inet.h> //inet_addr
+#include <netdb.h> //hostent
+#endif
+
 #include <iostream>
 #include <deque>
 #include <boost/bind.hpp>
@@ -99,7 +107,10 @@ size_t GridClientTcpPacket::getHeaderSize() const {
 }
 
 void GridClientTcpPacket::setPacketSize(int32_t size) {
-    GridClientByteUtils::valueToBytes(size, sizeHeader);
+    sizeHeader.resize(sizeof(size));
+    memset(&sizeHeader[0], 0, sizeof(size));
+
+    GridClientByteUtils::valueToBytes(size, &sizeHeader[0], sizeof(size));
 }
 
 void GridClientTcpPacket::setData(const ObjectWrapper& protoMsg) {
@@ -113,6 +124,7 @@ void GridClientTcpPacket::setData(int8_t* start, int8_t* end) {
 
 ObjectWrapper GridClientTcpPacket::getData() const {
     ObjectWrapper ret;
+
     GridClientProtobufMarshaller::unmarshal(data, ret);
 
     return ret;
@@ -197,12 +209,15 @@ void GridClientSyncTcpConnection::connect(const string& pHost, int pPort) {
     asio::ip::tcp::resolver::query query(pHost, boost::lexical_cast<std::string>(pPort));
 
     try {
-		asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(query);
+        asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(query);
 
-		GG_LOG_DEBUG("Establishing connection [host=%s, port=%d]", pHost.c_str(), pPort);
+        GG_LOG_DEBUG("Establishing connection [host=%s, port=%d]", pHost.c_str(), pPort);
 
-        if (sslSock.get() == NULL)
+        if (sslSock.get() == NULL) {
             asio::connect(getSocket(), endpoint_iter);
+
+            getSocket().set_option(boost::asio::ip::tcp::no_delay(true));
+        }
         else {
             GG_LOG_DEBUG0("SSL connection started.");
             asio::connect(sslSock.get()->lowest_layer(), endpoint_iter);
@@ -217,8 +232,8 @@ void GridClientSyncTcpConnection::connect(const string& pHost, int pPort) {
             pHost.c_str(), pPort, e.code().value());
 
         throw GridServerUnreachableException(
-            fmtstring("Failed to connect (host is unreachable) [host=%s, port=%d, errorcode=%d]",
-        	    pHost.c_str(), pPort, e.code().value()));
+            fmtstring("Failed to connect (host is unreachable) [host=%s, port=%d, errorcode=%d]", pHost.c_str(),
+                pPort, e.code().value()));
     }
 
     handshake();
@@ -248,15 +263,12 @@ void GridClientSyncTcpConnection::authenticate(const string& clientId, const str
     GridClientTcpPacket tcpResponse;
     ProtoRequest req;
 
-    //GridClientProtobufMarshaller::marshal(protoMsg, tcpPacket.data);
     tcpPacket.setData(protoMsg);
     tcpPacket.setAdditionalHeaders(authReq);
 
     send(tcpPacket, tcpResponse);
 
-    //GridClientProtobufMarshaller::unmarshal(tcpResponse.data, respMsg);
     ObjectWrapper respMsg = tcpResponse.getData();
-
     GridClientProtobufMarshaller::unwrap(respMsg, authResult);
 
     sessToken = authResult.sessionToken();
@@ -271,6 +283,14 @@ std::string GridClientSyncTcpConnection::sessionToken() {
     return sessToken;
 }
 
+// This is a wrapper for bytes buffer used for thread local transfer buffer
+namespace {
+    struct DummyBuffer {
+        unsigned char * pBuffer;
+        int bufferLen;
+    };
+}
+
 /**
  * Sends a TCP packet over connection and receives a reply.
  *
@@ -279,43 +299,58 @@ std::string GridClientSyncTcpConnection::sessionToken() {
  */
 void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket, GridClientTcpPacket& result) {
     int nBytes = gridTcpPacket.getDataSize();
-
-    asio::streambuf request;
-    ostream request_stream(&request);
-
-    request_stream << gridTcpPacket;
-
-    assert(request.size() == (size_t) nBytes + gridTcpPacket.getHeaderSize());
-
     system::error_code ec;
 
     {
         boost::lock_guard<boost::mutex> g(pingMux); // Protect from concurrent ping write.
 
-        if (asio::write(getSocket(), request, ec) != nBytes + gridTcpPacket.getHeaderSize()) {
-            GG_LOG_AND_THROW(GridClientConnectionResetException,
-                    "Failed to send packet: connection was reset by the server [host=%s, port=%d, errorcode=%d]",
-                    host.c_str(), port, ec.value());
+        int totalBytesWritten = 0;
+
+        if (!gridTcpPacket.isPingPacket()) {
+            boost::array<boost::asio::const_buffer, 6> bufsToSend = {
+                boost::asio::buffer(
+                    (const void*) &GridClientTcpPacket::SIGNAL_CHAR, sizeof(GridClientTcpPacket::SIGNAL_CHAR)),
+                    boost::asio::buffer((const void*) gridTcpPacket.sizeHeader.data(), sizeof(int32_t)),
+                    boost::asio::buffer(gridTcpPacket.requestIdHeader.data(), sizeof(int64_t)), boost::asio::buffer(
+                        gridTcpPacket.clientIdHeader.data(), gridTcpPacket.clientIdHeader.size()),
+                    boost::asio::buffer(gridTcpPacket.destinationIdHeader.data(),
+                        gridTcpPacket.destinationIdHeader.size()), boost::asio::buffer(
+                        gridTcpPacket.data.data(), gridTcpPacket.data.size())
+            };
+
+            totalBytesWritten += asio::write(getSocket(), bufsToSend, ec);
         }
+        else {
+            boost::array<boost::asio::const_buffer, 2> bufsToSend = {
+                boost::asio::buffer(
+                    (const void*) &GridClientTcpPacket::SIGNAL_CHAR, sizeof(GridClientTcpPacket::SIGNAL_CHAR)),
+                    boost::asio::buffer((const void*) gridTcpPacket.sizeHeader.data(), sizeof(int32_t))
+            };
+
+            totalBytesWritten += asio::write(getSocket(), bufsToSend, ec);
+        }
+
+        if (ec || totalBytesWritten != nBytes + gridTcpPacket.getHeaderSize())
+            GG_LOG_AND_THROW(GridClientConnectionResetException,
+                "Failed to send packet: connection was reset by the server [host=%s, port=%d, errorcode=%d]",
+                host.c_str(), port, ec.value());
     }
 
     GG_LOG_DEBUG("Successfully sent a request [host=%s, port=%d, nbytes=%d]", host.c_str(), port, nBytes);
 
     int8_t headerBuf[GridClientTcpPacket::BASIC_HEADER_SIZE];
-
     int packetSize = 0;
 
     do {
         // Wait for the response from the server.
-        nBytes = asio::read(getSocket(),
-                asio::buffer(headerBuf, GridClientTcpPacket::BASIC_HEADER_SIZE),
-                asio::transfer_exactly(GridClientTcpPacket::BASIC_HEADER_SIZE), ec);
+        nBytes = asio::read(getSocket(), asio::buffer(headerBuf, GridClientTcpPacket::BASIC_HEADER_SIZE),
+            asio::transfer_exactly(GridClientTcpPacket::BASIC_HEADER_SIZE), ec);
 
         // Check error.
         if (ec) {
             GG_LOG_AND_THROW(GridClientConnectionResetException,
-                    "Failed to read response header: connection was reset by the server [host=%s, port=%d, errorcode=%d]",
-                    host.c_str(), port, ec.value());
+                "Failed to read response header: connection was reset by the server [host=%s, port=%d, errorcode=%d]",
+                host.c_str(), port, ec.value());
         }
 
         // Get packet size with additional headers
@@ -326,31 +361,55 @@ void GridClientSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket,
             GG_LOG_DEBUG("Got ping response [host=%s, port=%d]", host.c_str(), port);
         }
     }
-    while(packetSize == 0);
+    while (packetSize == 0);
 
     GG_LOG_DEBUG("Done reading the response header [nbytes=%d]", nBytes);
 
-    asio::streambuf responseBuf(packetSize);
+    static boost::thread_specific_ptr<DummyBuffer> recvBuffer;
+    int8_t pBuffer[512];
 
-    nBytes = asio::read(
-            getSocket(),
-            responseBuf,
-            asio::transfer_exactly(packetSize),
-            ec);
+    if (packetSize < 512) {
+        nBytes = asio::read(getSocket(), boost::asio::buffer(pBuffer, 512), asio::transfer_exactly(packetSize), ec);
 
-    if (ec) {
-        GG_LOG_AND_THROW(GridClientConnectionResetException,
+        if (ec) {
+            GG_LOG_AND_THROW(GridClientConnectionResetException,
                 "Failed to read response data: connection was reset by the server "
-                "[host=%s, port=%d, errorcode=%d]",
-                host.c_str(), port, ec.value());
+                "[host=%s, port=%d, errorcode=%d]", host.c_str(), port, ec.value());
+        }
+
+        GG_LOG_DEBUG("Done reading the response data [nbytes=%d]", nBytes);
+
+        //read headers from header buffer
+        result.setAdditionalHeadersAndData((int8_t*) pBuffer, nBytes);
     }
+    else {
+        if (!recvBuffer.get()) {
+            DummyBuffer * pDummyBuffer = new DummyBuffer;
+            pDummyBuffer->pBuffer = new unsigned char[packetSize];
+            pDummyBuffer->bufferLen = packetSize;
+            recvBuffer.reset(pDummyBuffer);
+        }
 
-    GG_LOG_DEBUG("Done reading the response data [nbytes=%d]", nBytes);
+        if (recvBuffer->bufferLen < packetSize) {
+            delete[] recvBuffer->pBuffer;
+            recvBuffer->pBuffer = new unsigned char[packetSize];
+            recvBuffer->bufferLen = packetSize;
+        }
 
-    const unsigned char* charbuf = asio::buffer_cast<const unsigned char*>(responseBuf.data());
+        nBytes = asio::read(getSocket(), boost::asio::buffer(recvBuffer->pBuffer, recvBuffer->bufferLen),
+            asio::transfer_exactly(packetSize), ec);
 
-    //read headers from header buffer
-    result.setAdditionalHeadersAndData((int8_t*)charbuf, responseBuf.size());
+        if (ec) {
+            GG_LOG_AND_THROW(GridClientConnectionResetException,
+                "Failed to read response data: connection was reset by the server "
+                "[host=%s, port=%d, errorcode=%d]", host.c_str(), port, ec.value());
+        }
+
+        GG_LOG_DEBUG("Done reading the response data [nbytes=%d]", nBytes);
+
+        //read headers from header buffer
+        result.setAdditionalHeadersAndData((int8_t*) recvBuffer->pBuffer, nBytes);
+    }
 }
 
 void GridClientSyncTcpConnection::sendPing() {
@@ -415,31 +474,28 @@ void GridClientSyncTcpConnection::handshake() {
                 host.c_str(), port, ec.value());
 
     switch (buf[0]) {
-    case HandshakeResultCode::OK:
-        GG_LOG_DEBUG("Received OK for handshake [host=%s, port=%d]", host.c_str(), port);
+        case HandshakeResultCode::OK:
+            GG_LOG_DEBUG("Received OK for handshake [host=%s, port=%d]", host.c_str(), port);
 
-        break;
+            break;
 
-    case HandshakeResultCode::ERR_VERSION_CHECK_FAILED:
-        GG_LOG_AND_THROW(GridClientException,
+        case HandshakeResultCode::ERR_VERSION_CHECK_FAILED:
+            GG_LOG_AND_THROW(GridClientException,
                 "Handshake failed: bad version number (see server log for details) [host=%s, port=%d]",
                 host.c_str(), port);
 
-        break;
+            break;
 
-    case HandshakeResultCode::ERR_UNKNOWN_PROTO_ID:
-        GG_LOG_AND_THROW(GridClientException,
+        case HandshakeResultCode::ERR_UNKNOWN_PROTO_ID:
+            GG_LOG_AND_THROW(GridClientException,
                 "Handshake failed: unknown/unsupported protocol ID (see server log for details) [host=%s, port=%d]",
                 host.c_str(), port);
 
-        break;
+            break;
 
-    default:
-        GG_LOG_AND_THROW(GridClientException,
-                "Handshake failed (see server log for details) [host=%s, port=%d]",
+        default:
+            GG_LOG_AND_THROW(GridClientException, "Handshake failed (see server log for details) [host=%s, port=%d]",
                 host.c_str(), port);
-
-        break;
     }
 }
 
@@ -465,15 +521,15 @@ void GridClientAsyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket
     pingMux.lock(); // Protect from concurrent ping write.
 
     boost::asio::async_write(
-        getSocket(),
-        request,
-        boost::bind(
-            &GridClientAsyncTcpConnection::handleAsyncWrite,
-            this,
-            dataPtr,
-            boost::asio::placeholders::error,
-            boost::asio::placeholders::bytes_transferred,
-            nBytes + gridTcpPacket.getHeaderSize()));
+            getSocket(),
+            request,
+            boost::bind(
+                &GridClientAsyncTcpConnection::handleAsyncWrite,
+                this,
+                dataPtr,
+                boost::asio::placeholders::error,
+                boost::asio::placeholders::bytes_transferred,
+                nBytes + gridTcpPacket.getHeaderSize()));
 
     try {
         /* Runs the event loop for asynchronous operations.
@@ -596,4 +652,313 @@ void GridClientAsyncTcpConnection::handleAsyncReadBody(TGridAsyncIoDataPtr dataP
     const unsigned char* charbuf = asio::buffer_cast<const unsigned char*>(dataPtr->respBodyBuf.data());
 
     dataPtr->result.setAdditionalHeadersAndData((int8_t*)charbuf, dataPtr->respBodyBuf.size());
+}
+
+/**
+ * Connect to a host/port.
+ *
+ * @param pHost Host name.
+ * @param pPort Port to connect to.
+ */
+void GridClientRawSyncTcpConnection::connect(const string& pHost, int pPort) {
+    port = pPort;
+    address = pHost;
+
+    //create socket if it is not already created
+    if (sock == -1) {
+        //Create socket
+        sock = socket(AF_INET, SOCK_STREAM, 0);
+        if (sock == -1) {
+            std::cout << "Could not create socket" << std::endl;
+            exit(1);
+        }
+    }
+
+    //setup address structure
+    if (inet_addr(address.c_str()) == (uint32_t) -1) {
+        struct hostent *he;
+        struct in_addr **addr_list;
+
+        //resolve the hostname, its not an ip address
+        if ((he = gethostbyname(address.c_str())) == NULL) {
+            std::cout << "Failed to resolve hostname" << std::endl;
+            return;
+        }
+
+        //Cast the h_addr_list to in_addr , since h_addr_list also has the ip address in long format only
+        addr_list = (struct in_addr **) he->h_addr_list;
+
+        for (int i = 0; addr_list[i] != NULL; i++) {
+            server.sin_addr = *addr_list[i];
+            break;
+        }
+    }
+
+    //plain ip address
+    else {
+        server.sin_addr.s_addr = inet_addr(address.c_str());
+    }
+
+    server.sin_family = AF_INET;
+    server.sin_port = htons(pPort);
+
+    //Connect to remote server
+    if (::connect(sock, (struct sockaddr *) &server, sizeof(server)) < 0) {
+        std::cout << "Connect failed." << std::endl;
+
+        return;
+    }
+
+    handshake();
+}
+
+/**
+ * Authenticate client and store session token for later use.
+ *
+ * @param clientId Client ID to authenticate.
+ * @param creds Credentials to use.
+ */
+void GridClientRawSyncTcpConnection::authenticate(const string& clientId, const string& creds) {
+    ObjectWrapper protoMsg;
+
+    GridAuthenticationRequestCommand authReq;
+    GridClientMessageAuthenticationResult authResult;
+
+    authReq.setClientId(clientId);
+    authReq.credentials(creds);
+    authReq.setRequestId(1);
+
+    GridClientProtobufMarshaller::wrap(authReq, protoMsg);
+
+    GridClientTcpPacket tcpPacket;
+    GridClientTcpPacket tcpResponse;
+    ProtoRequest req;
+
+    tcpPacket.setData(protoMsg);
+    tcpPacket.setAdditionalHeaders(authReq);
+
+    send(tcpPacket, tcpResponse);
+
+    ObjectWrapper respMsg = tcpResponse.getData();
+
+    GridClientProtobufMarshaller::unwrap(respMsg, authResult);
+
+    sessToken = authResult.sessionToken();
+}
+
+/**
+ * Returns session token associated with this connection.
+ *
+ * @return Session token or empty string if this is not a secure session.
+ */
+std::string GridClientRawSyncTcpConnection::sessionToken() {
+    return sessToken;
+}
+
+/**
+ * Sends a TCP packet over connection and receives a reply.
+ *
+ * @param gridTcpPacket Binary data to send.
+ * @param result Binary response.
+ */
+void GridClientRawSyncTcpConnection::send(const GridClientTcpPacket& gridTcpPacket, GridClientTcpPacket& result) {
+    if (gridTcpPacket.isPingPacket()) {
+        // pings are sent directly in ::sendPing
+        assert(false);
+
+        return;
+    }
+
+    int nBytes = gridTcpPacket.getDataSize();
+
+    int bytesToSend = sizeof(GridClientTcpPacket::SIGNAL_CHAR);
+    bytesToSend += sizeof(int32_t);
+    bytesToSend += sizeof(int64_t);
+    bytesToSend += gridTcpPacket.clientIdHeader.size();
+    bytesToSend += gridTcpPacket.destinationIdHeader.size();
+    bytesToSend += gridTcpPacket.data.size();
+
+    unsigned char * pBufferToSend = new unsigned char[bytesToSend];
+    unsigned char * pBufferToConstruct = pBufferToSend;
+
+    memcpy(pBufferToConstruct, (const void*) &GridClientTcpPacket::SIGNAL_CHAR, sizeof(GridClientTcpPacket::SIGNAL_CHAR));
+    pBufferToConstruct += sizeof(GridClientTcpPacket::SIGNAL_CHAR);
+    memcpy(pBufferToConstruct, (const void*) gridTcpPacket.sizeHeader.data(), sizeof(int32_t));
+    pBufferToConstruct += sizeof(int32_t);
+    memcpy(pBufferToConstruct, gridTcpPacket.requestIdHeader.data(), sizeof(int64_t));
+    pBufferToConstruct += sizeof(int64_t);
+    memcpy(pBufferToConstruct, gridTcpPacket.clientIdHeader.data(), gridTcpPacket.clientIdHeader.size());
+    pBufferToConstruct += gridTcpPacket.clientIdHeader.size();
+    memcpy(pBufferToConstruct, gridTcpPacket.destinationIdHeader.data(), gridTcpPacket.destinationIdHeader.size());
+    pBufferToConstruct += gridTcpPacket.destinationIdHeader.size();
+    memcpy(pBufferToConstruct, gridTcpPacket.data.data(), gridTcpPacket.data.size());
+
+    int bytesSent = ::send(sock, (const char *) pBufferToSend, bytesToSend, 0);
+
+    delete[] pBufferToSend;
+
+    if (bytesSent != nBytes + gridTcpPacket.getHeaderSize())
+        GG_LOG_AND_THROW(GridClientConnectionResetException,
+            "Failed to send packet: connection was reset by the server [host=%s, port=%d]", host.c_str(), port);
+
+    GG_LOG_DEBUG("Successfully sent a request [host=%s, port=%d, nbytes=%d]", host.c_str(), port, nBytes);
+
+    int packetSize = 0;
+
+    do {
+        int8_t headerBuffer[GridClientTcpPacket::BASIC_HEADER_SIZE];
+        memset(headerBuffer, 0, GridClientTcpPacket::BASIC_HEADER_SIZE);
+
+        int bytesRead = ::recv(sock, (char *) headerBuffer, GridClientTcpPacket::BASIC_HEADER_SIZE, 0);
+
+        // Check error.
+        if (!bytesRead) {
+            GG_LOG_AND_THROW(GridClientConnectionResetException,
+                "Failed to read response header: connection was reset by the server [host=%s, port=%d]",
+                host.c_str(), port);
+        }
+
+        // Get packet size with additional headers
+        // (0 means we got ping packet and need to iterate again).
+        packetSize = getPacketSize(headerBuffer);
+
+        if (packetSize == 0) {
+            GG_LOG_DEBUG("Got ping response [host=%s, port=%d]", host.c_str(), port);
+        }
+    }
+    while (packetSize == 0);
+
+    static boost::thread_specific_ptr<DummyBuffer> recvBuffer;
+
+    if (!recvBuffer.get()) {
+        DummyBuffer * pDummyBuffer = new DummyBuffer;
+        pDummyBuffer->pBuffer = new unsigned char[packetSize];
+        pDummyBuffer->bufferLen = packetSize;
+        recvBuffer.reset(pDummyBuffer);
+    }
+
+    if (recvBuffer->bufferLen < packetSize) {
+        delete[] recvBuffer->pBuffer;
+        recvBuffer->pBuffer = new unsigned char[packetSize];
+        recvBuffer->bufferLen = packetSize;
+    }
+
+    nBytes = ::recv(sock, (char *) recvBuffer->pBuffer, packetSize, 0);
+
+    if (nBytes < 0 || nBytes < packetSize) {
+        GG_LOG_AND_THROW(GridClientConnectionResetException,
+            "Failed to read response data: connection was reset by the server "
+            "[host=%s, port=%d]", host.c_str(), port);
+    }
+
+    GG_LOG_DEBUG("Done reading the response data [nbytes=%d]", nBytes);
+
+    //read headers from header buffer
+    result.setAdditionalHeadersAndData((int8_t*) recvBuffer->pBuffer, nBytes);
+}
+
+/**
+ * Non-SSL TCP connection constructor.
+ */
+GridClientRawSyncTcpConnection::GridClientRawSyncTcpConnection() : sock(-1) {
+}
+
+/**
+ * Destructor.
+ */
+GridClientRawSyncTcpConnection::~GridClientRawSyncTcpConnection() {
+    close();
+}
+
+/**
+ * Closes connection.
+ */
+void GridClientRawSyncTcpConnection::close() {
+    if (sock != -1)
+#ifdef _MSC_VER
+        ::closesocket(sock);
+#else
+        ::close(sock);
+#endif
+}
+
+/**
+ * Sends a TCP ping packet over connection.
+ */
+void GridClientRawSyncTcpConnection::sendPing() {
+    GridClientTcpPacket pingPacket;
+    GridClientTcpPacket::createPingPacket(pingPacket);
+
+    int nBytes = pingPacket.getDataSize();
+
+    int bytesToSend = sizeof(GridClientTcpPacket::SIGNAL_CHAR);
+    bytesToSend += sizeof(int32_t);
+
+    unsigned char * pBufferToSend = new unsigned char[bytesToSend];
+    unsigned char * pBufferToConstruct = pBufferToSend;
+
+    memcpy(pBufferToConstruct, (const void*) &GridClientTcpPacket::SIGNAL_CHAR,
+        sizeof(GridClientTcpPacket::SIGNAL_CHAR));
+    pBufferToConstruct += sizeof(GridClientTcpPacket::SIGNAL_CHAR);
+    memcpy(pBufferToConstruct, (const void*) pingPacket.sizeHeader.data(), sizeof(int32_t));
+
+    int bytesSent = ::send(sock, (const char *) pBufferToSend, bytesToSend, 0);
+
+    delete[] pBufferToSend;
+
+    if (bytesSent != nBytes + pingPacket.getHeaderSize())
+        GG_LOG_AND_THROW(GridClientConnectionResetException,
+            "Failed to send packet: connection was reset by the server [host=%s, port=%d]", host.c_str(), port);
+
+    GG_LOG_DEBUG("Successfully sent a ping packet [host=%s, port=%d]", host.c_str(), port);
+}
+
+/**
+ * Perfroms handshake with grid node.
+ */
+void GridClientRawSyncTcpConnection::handshake() {
+    unsigned char handshakeBuffer[sizeof(HANDSHAKE_PACKET)];
+
+    memcpy(handshakeBuffer, (const char*) HANDSHAKE_PACKET, sizeof(HANDSHAKE_PACKET));
+
+    int bytesSent = ::send(sock, (const char *) handshakeBuffer, sizeof(HANDSHAKE_PACKET), 0);
+
+    if (bytesSent != sizeof(HANDSHAKE_PACKET))
+        GG_LOG_AND_THROW(GridClientConnectionResetException,
+                        "Failed to send handshake packet: connection was reset by the server "
+                        "[host=%s, port=%d, rc=%d]", host.c_str(), port, bytesSent);
+
+    GG_LOG_DEBUG("Successfully sent a handshake packet [host=%s, port=%d]", host.c_str(), port);
+
+    int bytesRead = ::recv(sock, (char *) handshakeBuffer, 1, 0);
+
+    if (bytesRead < 1)
+        GG_LOG_AND_THROW(GridClientConnectionResetException,
+                        "Failed to read response data: connection was reset by the server "
+                        "[host=%s, port=%d]", host.c_str(), port);
+
+    switch (handshakeBuffer[0]) {
+        case HandshakeResultCode::OK:
+            GG_LOG_DEBUG("Received OK for handshake [host=%s, port=%d]", host.c_str(), port);
+
+            break;
+
+        case HandshakeResultCode::ERR_VERSION_CHECK_FAILED:
+            GG_LOG_AND_THROW(GridClientException,
+                "Handshake failed: bad version number (see server log for details) [host=%s, port=%d]",
+                host.c_str(), port);
+
+            break;
+
+        case HandshakeResultCode::ERR_UNKNOWN_PROTO_ID:
+            GG_LOG_AND_THROW(GridClientException,
+                "Handshake failed: unknown/unsupported protocol ID (see server log for details) [host=%s, port=%d]",
+                host.c_str(), port);
+
+            break;
+
+        default:
+            GG_LOG_AND_THROW(GridClientException, "Handshake failed (see server log for details) [host=%s, port=%d]",
+                host.c_str(), port);
+    }
 }

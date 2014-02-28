@@ -81,6 +81,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** System cache names. */
     private final Set<String> sysCaches;
 
+    /** Caches stop sequence. */
+    private final Deque<GridCacheAdapter<?, ?>> stopSeq;
+
     /** MBean server. */
     private final MBeanServer mBeanSrv;
 
@@ -99,6 +102,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         preloadFuts = new TreeMap<>();
 
         sysCaches = new HashSet<>();
+        stopSeq = new LinkedList<>();
 
         mBeanSrv = ctx.config().getMBeanServer();
     }
@@ -814,9 +818,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridGgfsConfiguration[] ggfsCfgs = ctx.grid().configuration().getGgfsConfiguration();
 
         if (ggfsCfgs != null) {
-            for (GridGgfsConfiguration ggfsC : ggfsCfgs) {
-                sysCaches.add(ggfsC.getMetaCacheName());
-                sysCaches.add(ggfsC.getDataCacheName());
+            for (GridGgfsConfiguration ggfsCfg : ggfsCfgs) {
+                sysCaches.add(ggfsCfg.getMetaCacheName());
+                sysCaches.add(ggfsCfg.getDataCacheName());
             }
         }
 
@@ -837,6 +841,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (!sysCaches.contains(e.getKey()))
                 publicProxies.put(e.getKey(), new GridCacheProxyImpl(cache.context(), cache, null));
+        }
+
+        // Create stop sequence.
+        for (Map.Entry<String, GridCacheAdapter<?, ?>> cacheEntry : caches.entrySet()) {
+            if (sysCaches.contains(cacheEntry.getKey()))
+                stopSeq.addLast(cacheEntry.getValue());
+            else
+                stopSeq.addFirst(cacheEntry.getValue());
         }
 
         if (log.isDebugEnabled())
@@ -1239,7 +1251,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
 
-        for (GridCacheAdapter<?, ?> cache : caches.values()) {
+        for (GridCacheAdapter<?, ?> cache : stopSeq) {
             GridCacheContext ctx = cache.context();
 
             if (isNearEnabled(ctx)) {
@@ -1277,7 +1289,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        for (GridCacheAdapter<?, ?> cache : caches.values()) {
+        for (GridCacheAdapter<?, ?> cache : stopSeq) {
             cache.stop();
 
             GridCacheContext ctx = cache.context();
