@@ -67,7 +67,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public boolean register(UUID nodeId, UUID routineId, final GridKernalContext ctx) throws GridException {
-        ctx.io().listenAsync(topic, pred);
+        ctx.io().addUserMessageListener(topic, pred);
 
         return true;
     }
@@ -79,7 +79,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public void unregister(UUID routineId, GridKernalContext ctx) {
-        ctx.io().stopListen(topic, pred);
+        ctx.io().removeUserMessageListener(topic, pred);
     }
 
     /** {@inheritDoc} */

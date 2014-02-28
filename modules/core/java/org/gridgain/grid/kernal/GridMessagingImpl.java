@@ -117,7 +117,7 @@ public class GridMessagingImpl implements GridMessaging {
         guard();
 
         try {
-            ctx.io().listenAsync(topic, p);
+            ctx.io().addUserMessageListener(topic, p);
         }
         finally {
             unguard();
@@ -131,7 +131,7 @@ public class GridMessagingImpl implements GridMessaging {
         guard();
 
         try {
-            ctx.io().stopListen(topic, p);
+            ctx.io().removeUserMessageListener(topic, p);
         }
         finally {
             unguard();
