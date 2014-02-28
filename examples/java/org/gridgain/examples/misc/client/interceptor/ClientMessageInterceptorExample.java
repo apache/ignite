@@ -73,7 +73,7 @@ public class ClientMessageInterceptorExample {
      * configured in grid.
      *
      * @return Client instance.
-     * @throws org.gridgain.client.GridClientException If client could not be created.
+     * @throws GridClientException If client could not be created.
      */
     private static GridClient createClient() throws GridClientException {
         GridClientConfiguration cfg = new GridClientConfiguration();

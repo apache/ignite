@@ -10,14 +10,16 @@
 package org.gridgain.examples.messaging;
 
 import org.gridgain.examples.*;
+import org.gridgain.examples.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.examples.compute.*;
 
 import java.util.*;
 
 /**
- * Example that demonstrates how to exchange messages between nodes.
+ * Example that demonstrates how to exchange messages between nodes. Use such
+ * functionality for cases when you need to communicate to other nodes outside
+ * of grid task.
  * <p>
  * To run this example you must have at least one remote node started.
  * <p>
@@ -31,9 +33,6 @@ import java.util.*;
  * @version @java.version
  */
 public final class MessagingExample {
-    /** An ordered message timeout. */
-    private static final long MSG_TIMEOUT = 15000;
-
     /** Message topics. */
     private enum TOPIC { ORDERED, UNORDERED }
 
@@ -61,14 +60,12 @@ public final class MessagingExample {
             for (int i = 0; i < 10; i++)
                 rmtPrj.message().send(TOPIC.UNORDERED, Integer.toString(i));
 
-            System.out.println();
             System.out.println(">>> Finished sending unordered messages.");
 
-            // Send unordered messages to all remote nodes.
+            // Send ordered messages to all remote nodes.
             for (int i = 0; i < 10; i++)
-                rmtPrj.message().send(TOPIC.ORDERED, Integer.toString(i));
+                rmtPrj.message().sendOrdered(TOPIC.ORDERED, Integer.toString(i), 0);
 
-            System.out.println();
             System.out.println(">>> Finished sending ordered messages.");
             System.out.println(">>> Check output on all nodes for message printouts.");
         }

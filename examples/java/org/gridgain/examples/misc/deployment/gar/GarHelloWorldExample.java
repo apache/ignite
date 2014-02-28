@@ -10,6 +10,7 @@
 package org.gridgain.examples.misc.deployment.gar;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.spi.deployment.uri.*;
 
 /**
@@ -27,7 +28,7 @@ import org.gridgain.grid.spi.deployment.uri.*;
  * <p>
  * Grid task {@code GridGarHelloWorldTask} handles actual splitting
  * into sub-jobs, remote execution, and result aggregation
- * (see {@link org.gridgain.grid.compute.GridComputeTask}).
+ * (see {@link GridComputeTask}).
  * <p>
  * Before running example, make the following steps.
  * <ol>

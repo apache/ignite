@@ -132,7 +132,7 @@ public class StreamingPopularNumbersExample {
      * Streams random numbers into the system.
      *
      * @param g Grid.
-     * @throws org.gridgain.grid.GridException If failed.
+     * @throws GridException If failed.
      */
     private static void streamData(final Grid g) throws GridException {
         final GridStreamer streamer = g.streamer("popular-numbers");

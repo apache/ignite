@@ -17,7 +17,7 @@ import java.io.*;
 import java.util.concurrent.*;
 
 /**
- * Reduced variant of {@link org.gridgain.grid.GridFuture} interface. Removed asynchronous
+ * Reduced variant of {@link GridFuture} interface. Removed asynchronous
  * listen methods which require a valid grid kernal context.
  *
  * @author @java.author

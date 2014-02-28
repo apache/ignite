@@ -19,10 +19,11 @@ import java.math.*;
 import java.util.*;
 
 /**
- * This example demonstrates how to use continuation feature performing the distributed recursive
- * calculation of {@code 'Fibonacci'} numbers on the grid. Continuations
- * functionality is exposed via {@link org.gridgain.grid.compute.GridComputeJobContext#holdcc()} and
- * {@link org.gridgain.grid.compute.GridComputeJobContext#callcc()} method calls in {@link FibonacciClosure} class.
+ * This example demonstrates how to use continuation feature of GridGain by
+ * performing the distributed recursive calculation of {@code 'Fibonacci'}
+ * numbers on the grid. Continuations
+ * functionality is exposed via {@link GridComputeJobContext#holdcc()} and
+ * {@link GridComputeJobContext#callcc()} method calls in {@link FibonacciClosure} class.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.

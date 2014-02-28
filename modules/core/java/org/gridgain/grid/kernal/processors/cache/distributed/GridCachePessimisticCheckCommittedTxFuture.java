@@ -15,10 +15,11 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -273,7 +274,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
         private UUID nodeId;
 
         /**
-         * Empty constructor required by {@link java.io.Externalizable}
+         * Empty constructor required by {@link Externalizable}
          */
         public MiniFuture() {
             // No-op.

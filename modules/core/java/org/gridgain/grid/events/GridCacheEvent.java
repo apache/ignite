@@ -12,8 +12,8 @@ package org.gridgain.grid.events;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -26,19 +26,19 @@ import java.util.*;
  * APIs for performing a distributed queries across multiple nodes:
  * <ul>
  *      <li>
- *          {@link GridEvents#queryRemote(GridPredicate, long)} -
+ *          {@link GridEvents#remoteQuery(GridPredicate, long)} -
  *          asynchronously querying events occurred on the nodes specified, including remote nodes.
  *      </li>
  *      <li>
- *          {@link GridEvents#queryLocal(GridPredicate)} -
+ *          {@link GridEvents#localQuery(GridPredicate)} -
  *          querying only local events stored on this local node.
  *      </li>
  *      <li>
- *          {@link GridEvents#addLocalListener(GridLocalEventListener, int...)} -
+ *          {@link GridEvents#localListen(GridPredicate, int...)} -
  *          listening to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>
- * User can also wait for events using method {@link GridEvents#waitForLocal(org.gridgain.grid.lang.GridPredicate, int...)}.
+ * User can also wait for events using method {@link GridEvents#waitForLocal(GridPredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
  * Note that by default all events in GridGain are enabled and therefore generated and stored
  * by whatever event storage SPI is configured. GridGain can and often does generate thousands events per seconds

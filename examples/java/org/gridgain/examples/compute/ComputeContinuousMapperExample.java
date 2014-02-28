@@ -18,9 +18,9 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Demonstrates usage of continuous mapper. With continuous mapper it is possible to continue
- * mapping jobs asynchronously even after initial
- * {@link org.gridgain.grid.compute.GridComputeTask#map(List, Object)} method completes.
+ * Demonstrates usage of continuous mapper. With continuous mapper
+ * it is possible to continue mapping jobs asynchronously even after
+ * initial {@link GridComputeTask#map(List, Object)} method completes.
  * <p>
  * String "Hello Continuous Mapper" is passed as an argument for execution
  * of {@link GridContinuousMapperTask}. As an outcome, participating
@@ -79,9 +79,9 @@ public class ComputeContinuousMapperExample {
      * is split into multiple words and next word is sent out for processing only
      * when the result for the previous word was received.
      * <p>
-     * Note that annotation {@link org.gridgain.grid.compute.GridComputeTaskNoResultCache} is optional and tells GridGain
+     * Note that annotation {@link GridComputeTaskNoResultCache} is optional and tells GridGain
      * not to accumulate results from individual jobs. In this example we increment
-     * total character count directly in {@link #result(org.gridgain.grid.compute.GridComputeJobResult, List)} method,
+     * total character count directly in {@link #result(GridComputeJobResult, List)} method,
      * and therefore don't need to accumulate them be be processed at reduction step.
      *
      * @author @java.author

@@ -7,22 +7,26 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.events;
+package org.gridgain.grid.kernal.managers.eventstorage;
+
+import org.gridgain.grid.events.*;
+import org.gridgain.grid.lang.*;
 
 import java.io.*;
 import java.util.*;
 
 /**
  * Listener for asynchronous local node grid events. You can subscribe for local node grid
- * event notifications via {@link GridEvents#addLocalListener(GridLocalEventListener, int...)}.
+ * event notifications via {@link GridEventStorageManager#addLocalEventListener(GridLocalEventListener, int...)}.
  * <p>
- * Use {@link GridEvents#addLocalListener(GridLocalEventListener, int...)} to register
+ * Use {@link GridEventStorageManager#addLocalEventListener(GridPredicate, int...)} to register
  * this listener with grid.
  *
  * @author @java.author
  * @version @java.version
+ * @see GridEvents#localListen(GridPredicate, int...)
  */
-public interface GridLocalEventListener extends EventListener, Serializable {
+public interface GridLocalEventListener extends EventListener {
     /**
      * Local event callback.
      *

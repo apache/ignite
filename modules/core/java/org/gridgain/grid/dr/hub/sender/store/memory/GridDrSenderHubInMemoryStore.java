@@ -12,9 +12,9 @@ package org.gridgain.grid.dr.hub.sender.store.memory;
 import org.gridgain.grid.*;
 import org.gridgain.grid.dr.hub.sender.store.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.atomic.*;
@@ -31,7 +31,7 @@ import static org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflow
  * <ul>
  * <li>Maximum number of entries can be stored (see {@link #setMaxSize(int)})</li>
  * <li>Overflow mode defining how store will behave in case of overflow
- *      (see {@link #setOverflowMode(org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflowMode)})</li>
+ *      (see {@link #setOverflowMode(GridDrSenderHubStoreOverflowMode)})</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
  * <pre name="code" class="java">
@@ -70,7 +70,7 @@ import static org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflow
  *
  * @author @java.author
  * @version @java.version
- * @see org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStore
+ * @see GridDrSenderHubStore
  */
 public class GridDrSenderHubInMemoryStore implements GridDrSenderHubStore, GridLifecycleAware {
     /** */

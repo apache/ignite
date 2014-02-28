@@ -8,7 +8,7 @@ import java.util.*;
 
 /**
  * Demonstrates a simple use of GridGain grid with
- * {@link org.gridgain.grid.compute.GridComputeTaskAdapter}.
+ * {@link GridComputeTaskAdapter}.
  * <p>
  * Phrase passed as task argument is split into words on map stage and distributed among grid nodes.
  * Each node computes word length and returns result to master node where total phrase length is

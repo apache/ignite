@@ -48,7 +48,7 @@ public class CacheEventsExample {
             GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
             // Subscribe to events on every node that has cache running.
-            GridFuture<UUID> fut = GridGain.grid().forCache(CACHE_NAME).events().consumeRemote(
+            GridFuture<UUID> fut = GridGain.grid().forCache(CACHE_NAME).events().remoteListen(
                 new GridBiPredicate<UUID, GridCacheEvent>() {
                     @Override public boolean apply(UUID uuid, GridCacheEvent evt) {
                         System.out.println("Received event [evt=" + evt.name() + ", key=" + evt.key() +

@@ -16,6 +16,7 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
@@ -902,11 +903,11 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
                 if (ctx.deploy().enabled()) {
                     try {
-                        dep = ctx.deploy().deploy(jobPda0.deployClass(), jobPda0.classLoader());
-
                         jobPda0 = jobPda;
 
                         assert jobPda0 != null;
+
+                        dep = ctx.deploy().deploy(jobPda0.deployClass(), jobPda0.classLoader());
                     }
                     catch (GridException e) {
                         U.error(log, "Failed to deploy class (request will not be sent): " + jobPda0.deployClass(), e);

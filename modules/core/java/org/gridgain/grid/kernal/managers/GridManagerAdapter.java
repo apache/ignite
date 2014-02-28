@@ -15,6 +15,7 @@ import org.gridgain.grid.cache.affinity.partition.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.spi.*;

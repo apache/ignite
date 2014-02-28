@@ -265,7 +265,7 @@ class VisorDiscoveryCommand {
         assert(f != null)
         assert(!node.isDaemon)
 
-        var evts = grid.forNode(node).events().queryRemote((e: GridEvent) =>
+        var evts = grid.forNode(node).events().remoteQuery((e: GridEvent) =>
              EVTS_DISCOVERY.contains(e.`type`) && // Only discovery events.
              !e.asInstanceOf[GridDiscoveryEvent].shadow().isDaemon && // Filter out daemons.
              f.apply(e) // Apply timeframe.

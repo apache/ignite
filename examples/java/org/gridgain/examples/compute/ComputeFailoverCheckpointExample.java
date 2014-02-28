@@ -66,8 +66,7 @@ public class ComputeFailoverCheckpointExample {
     }
 
     @GridComputeTaskSessionFullSupport
-    private static final class CheckPointJob extends GridClosure<String, Integer>
-        implements GridComputeJobMasterLeaveAware {
+    private static final class CheckPointJob extends GridClosure<String, Integer> {
         /** Injected distributed task session. */
         @GridTaskSessionResource
         private GridComputeTaskSession jobSes;
@@ -134,22 +133,6 @@ public class ComputeFailoverCheckpointExample {
             }
             catch (GridException e) {
                 throw new GridClosureException(e);
-            }
-        }
-
-        /**
-         * Callback for when master node fails or leaves.
-         *
-         * @param ses Task session, can be used for checkpoint saving.
-         * @throws GridException If failed.
-         */
-        @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
-            if (state != null) {
-                System.out.println();
-                System.out.println(">>> Executing callback due to master node failure.");
-
-                // Save checkpoint with global scope, so another task execution can pick it up.
-                ses.saveCheckpoint(checkpointKey(), state, GridComputeTaskSessionScope.GLOBAL_SCOPE, 0);
             }
         }
 

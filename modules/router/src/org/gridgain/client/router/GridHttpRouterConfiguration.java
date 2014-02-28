@@ -95,7 +95,7 @@ public class GridHttpRouterConfiguration {
      * Gets SSL context factory that will be used for creating a secure socket layer for out coming connections.
      *
      * @return SslContextFactory instance.
-     * @see org.gridgain.client.ssl.GridSslContextFactory
+     * @see GridSslContextFactory
      */
     @Nullable public GridSslContextFactory getClientSslContextFactory() {
         return clientSslCtxFactory;
