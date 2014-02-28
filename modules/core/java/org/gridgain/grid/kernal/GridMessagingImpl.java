@@ -108,7 +108,6 @@ public class GridMessagingImpl implements GridMessaging {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void localListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) {
         A.notNull(p, "p");
 
@@ -116,6 +115,20 @@ public class GridMessagingImpl implements GridMessaging {
 
         try {
             ctx.io().listenAsync(topic, p);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stopLocalListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) {
+        A.notNull(p, "p");
+
+        guard();
+
+        try {
+            ctx.io().stopListen(topic, p);
         }
         finally {
             unguard();

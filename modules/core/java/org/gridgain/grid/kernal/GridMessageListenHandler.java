@@ -79,7 +79,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public void unregister(UUID routineId, GridKernalContext ctx) {
-        // No-op.
+        ctx.io().stopListen(topic, pred);
     }
 
     /** {@inheritDoc} */

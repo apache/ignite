@@ -1159,11 +1159,26 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
     public void listenAsync(@Nullable final Object topic, @Nullable final GridBiPredicate<UUID, ?> p) {
         if (p != null) {
             try {
-                addMessageListener(TOPIC_COMM_USER, new GridUserMessageListener(topic, (GridBiPredicate<UUID, Object>)p));
+                addMessageListener(TOPIC_COMM_USER,
+                    new GridUserMessageListener(topic, (GridBiPredicate<UUID, Object>)p));
             }
             catch (GridException e) {
                 throw new GridRuntimeException(e);
             }
+        }
+    }
+
+    /**
+     * @param topic Topic to unsubscribe from.
+     * @param p Message predicate.
+     */
+    public void stopListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) {
+        try {
+            removeMessageListener(TOPIC_COMM_USER,
+                new GridUserMessageListener(topic, (GridBiPredicate<UUID, Object>)p));
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
         }
     }
 
