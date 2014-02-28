@@ -65,6 +65,7 @@ public class ClientMessageInterceptorExampleNodeStartup {
 
         marsh.setRequireSerializable(false);
 
+        cfg.setMarshaller(marsh);
 
         GridH2IndexingSpi indexSpi = new GridH2IndexingSpi();
 
@@ -93,7 +94,7 @@ public class ClientMessageInterceptorExampleNodeStartup {
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
 
-        ipFinder.setAddresses(Collections.singletonList("127.0.01:47500..47509"));
+        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
 
         discoSpi.setIpFinder(ipFinder);
 

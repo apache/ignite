@@ -54,7 +54,7 @@ public class HibernateL2CacheExampleNodeStartup {
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
 
-        ipFinder.setAddresses(Collections.singletonList("127.0.0.0:47500..47509"));
+        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
 
         discoSpi.setIpFinder(ipFinder);
 

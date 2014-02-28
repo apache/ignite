@@ -10,16 +10,12 @@
 package org.gridgain.examples.datagrid.hibernate;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.hibernate.*;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.*;
-import org.hibernate.criterion.*;
 import org.hibernate.service.*;
 import org.hibernate.stat.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -100,18 +96,6 @@ public class HibernateL2CacheExample {
 
                 ses.save(user);
 
-                user = new User("tdurden", "Tyler", "Durden");
-
-                user.getPosts().add(new Post(user, "The things you own end up owning you."));
-
-                ses.save(user);
-
-                user = new User("jsmith", "John", "Smith");
-
-                user.getPosts().add(new Post(user, "Never send a human to do a machine's job."));
-
-                ses.save(user);
-
                 tx.commit();
 
                 // Create a user object, store it in DB, and save the database-generated
@@ -126,7 +110,6 @@ public class HibernateL2CacheExample {
             // at this point the object is not yet stored in L2 cache, because
             // the read was not yet performed.
             printStats(sesFactory);
-            printStats(grid);
 
             System.out.println();
             System.out.println(">>> Querying object by ID.");
@@ -139,7 +122,6 @@ public class HibernateL2CacheExample {
                 ses = sesFactory.openSession();
 
                 try {
-
                     Transaction tx = ses.beginTransaction();
 
                     User user = (User)ses.get(User.class, userId);
@@ -161,75 +143,6 @@ public class HibernateL2CacheExample {
             // The Post is loaded with the collection, so it won't imply
             // a miss.
             printStats(sesFactory);
-            printStats(grid);
-
-            System.out.println();
-            System.out.println(">>> Querying all User objects.");
-
-            // From here on, we run several criteria queries repeatedly to
-            // demonstrate how query cache works. Again, in each case, the
-            // first query will go to the database, but the successive
-            // queries will only fetch data from L2 cache, leaving the
-            // database intact.
-            for (int i = 0; i < 3; i++) {
-                List<User> users = runQuery(sesFactory, User.class, null);
-
-                System.out.println("Users: " + users);
-            }
-
-            // Output the stats.
-            printStats(sesFactory);
-            printStats(grid);
-
-            System.out.println();
-            System.out.println(">>>Querying User objects by lastName.");
-
-            // Query users by last name several times.
-            for (int i = 0; i < 3; i++) {
-                List<User> users = runQuery(sesFactory, User.class, new GridClosure<Criteria, Criteria>() {
-                    @Override public Criteria apply(Criteria c) {
-                        return c.add(Restrictions.eq("lastName", "Smith"));
-                    }
-                });
-
-                System.out.println("Users by last name: " + users);
-            }
-
-            // Output the stats.
-            printStats(sesFactory);
-            printStats(grid);
-
-            System.out.println();
-            System.out.println(">>> Querying all Post objects.");
-
-            // Query all posts several times.
-            for (int i = 0; i < 3; i++) {
-                List<Post> posts = runQuery(sesFactory, Post.class, null);
-
-                System.out.println("Posts: " + posts);
-            }
-
-            // Output the stats.
-            printStats(sesFactory);
-            printStats(grid);
-
-            System.out.println();
-            System.out.println(">>> Querying Post objects by author ID.");
-
-            // Query posts by author ID several times.
-            for (int i = 0; i < 3; i++) {
-                List<Post> posts = runQuery(sesFactory, Post.class, new GridClosure<Criteria, Criteria>() {
-                    @Override public Criteria apply(Criteria c) {
-                        return c.createCriteria("author").add(Restrictions.eq("id", userId));
-                    }
-                });
-
-                System.out.println("Posts by author ID: " + posts);
-            }
-
-            // Output the stats.
-            printStats(sesFactory);
-            printStats(grid);
         }
     }
 
@@ -254,41 +167,6 @@ public class HibernateL2CacheExample {
     }
 
     /**
-     * Runs a Hibernate {@link Criteria} multi-result query for the
-     * specified entity class.
-     *
-     * @param sesFactory Hibernate {@link SessionFactory}.
-     * @param cls Target entity class.
-     * @param critClo Optional closure for specifying criteria. If {@code null} - all objects of
-     *      the specified entity class will be fetched.
-     * @return List of queried objects.
-     */
-    @SuppressWarnings("unchecked")
-    private static <T> List<T> runQuery(SessionFactory sesFactory, Class<T> cls,
-        @Nullable GridClosure<Criteria, Criteria> critClo) {
-        Session ses = sesFactory.openSession();
-
-        try {
-            Criteria crit = ses.createCriteria(cls);
-
-            // Modify criteria with closure if specified.
-            if (critClo != null)
-                crit = critClo.apply(crit);
-
-            // Enable caching for this query. This way, if a query result for
-            // a given criteria is already present in cache, it will be immediately
-            // returned, and no database query will be run (see Hibernate SQL output in
-            // console).
-            crit.setCacheable(true);
-
-            return crit.list();
-        }
-        finally {
-            ses.close();
-        }
-    }
-
-    /**
      * Prints Hibernate L2 cache statistics to standard output.
      *
      * @param sesFactory Hibernate {@link SessionFactory}, for which to print
@@ -309,32 +187,5 @@ public class HibernateL2CacheExample {
         }
 
         System.out.println("=====================================");
-    }
-
-    /**
-     * Prints GridGain cache metrics.
-     *
-     * @param grid {@link Grid} instance, for which to print statistics.
-     */
-    private static void printStats(Grid grid) {
-        System.out.println("=== GridGain cache metrics ===");
-
-        for (String entityName : ENTITY_NAMES) {
-            System.out.println("\tEntity: " + entityName);
-
-            GridCache<?, ?> cache = grid.cache(entityName);
-
-            assert cache != null;
-
-            GridCacheMetrics metrics = cache.metrics();
-
-            System.out.println("\t\tReads: " + metrics.reads());
-            System.out.println("\t\tWrites: " + metrics.writes());
-            System.out.println("\t\tHits: " + metrics.hits());
-            System.out.println("\t\tMisses: " + metrics.misses());
-            System.out.println("\t\tCommits: " + metrics.txCommits());
-        }
-
-        System.out.println("==============================");
     }
 }
