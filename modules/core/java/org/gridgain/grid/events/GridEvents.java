@@ -17,8 +17,11 @@ import java.util.*;
 
 /**
  * Provides functionality for local and remote event notifications on nodes defined by {@link #projection()}.
- * There are {@code 2} ways to subscribe to event listening, {@code local} and {@code remote}.
- * <p>
+ * There are {@code 2} ways to subscribe to event listening, {@code local} and {@code remote}. Instance
+ * of {@code GridMessaging} is obtained from grid projection as follows:
+ * <pre name="code" class="java">
+ * GridEvents evts = GridGain.grid().events();
+ * </pre> * <p>
  * Local subscription, defined by {@link #localListen(GridPredicate, int...)} method, will add
  * a listener for specified events on local node only. This listener will be notified whenever any
  * of subscribed events happen on local node regardless of whether local node belongs to underlying
