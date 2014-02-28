@@ -393,23 +393,8 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public final GridProjection forOthers(GridNode node, GridNode... nodes) {
         A.notNull(node, "node");
-        A.notNull(node, "nodes");
 
-        Collection<UUID> ids;
-
-        if (!F.isEmpty(nodes)) {
-            ids = new HashSet<>(nodes.length + 1);
-
-            ids.add(node.id());
-
-            for (GridNode n : nodes)
-                ids.add(n.id());
-        }
-        else
-            ids = Collections.singleton(node.id());
-
-
-        return forOthers(ids);
+        return forOthers(F.concat(false, node.id(), F.nodeIds(Arrays.asList(nodes))));
     }
 
     /** {@inheritDoc} */
