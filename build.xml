@@ -60,7 +60,7 @@
     <property name="dir.libs" value="${gridgain.home}/libs"/>
     <property name="dir.libs.rel" value="target/libs"/>
 
-    <property name="jar.dev" value="%ANT_AUGMENTED_GGJAR%"/>
+    <property name="jar.dev" value="gridgain.jar"/>
 
     <target name="mk.collect.libs">
         <echo message=""/>
