@@ -100,6 +100,9 @@ public class GridMessagingImpl implements GridMessaging {
             if (snapshot.isEmpty())
                 throw U.emptyTopologyException();
 
+            if (timeout == 0)
+                timeout = ctx.config().getNetworkTimeout();
+
             ctx.io().sendUserMessage(snapshot, msg, topic, true, timeout);
         }
         finally {
