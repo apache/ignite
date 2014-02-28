@@ -59,7 +59,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     private GridCacheDataStructures dataStructures;
 
     /** Affinity. */
-    private GridCacheAffinity0<K> aff;
+    private GridCacheAffinity<K> aff;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -125,7 +125,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheAffinity0<K> affinity() {
+    @Override public GridCacheAffinity<K> affinity() {
         return aff;
     }
 

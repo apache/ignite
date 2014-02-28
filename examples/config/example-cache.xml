@@ -205,7 +205,7 @@
             The below configuration sets the number of backups to 1 (which is default).
         -->
         <property name="affinity">
-            <bean class="org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinity">
+            <bean class="org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinityFunction">
                 <property name="keyBackups" value="1"/>
             </bean>
         </property>

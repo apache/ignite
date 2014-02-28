@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridCachePartitionAffinity implements GridCacheAffinity {
+public class GridCachePartitionAffinityFunction implements GridCacheAffinityFunction {
     /** Flag to enable/disable consistency check (for internal use only). */
     private static final boolean AFFINITY_CONSISTENCY_CHECK = Boolean.getBoolean("GRIDGAIN_AFFINITY_CONSISTENCY_CHECK");
 
@@ -127,7 +127,7 @@ public class GridCachePartitionAffinity implements GridCacheAffinity {
     /**
      * Empty constructor with all defaults.
      */
-    public GridCachePartitionAffinity() {
+    public GridCachePartitionAffinityFunction() {
         // No-op.
     }
 
@@ -136,7 +136,7 @@ public class GridCachePartitionAffinity implements GridCacheAffinity {
      *
      * @param backups Number of back up servers per key.
      */
-    public GridCachePartitionAffinity(int backups) {
+    public GridCachePartitionAffinityFunction(int backups) {
         this.backups = backups;
     }
 
@@ -150,7 +150,7 @@ public class GridCachePartitionAffinity implements GridCacheAffinity {
      *      of each other.
      * @param backups Number of back up servers per key.
      */
-    public GridCachePartitionAffinity(boolean exclNeighbors, int backups) {
+    public GridCachePartitionAffinityFunction(boolean exclNeighbors, int backups) {
         this.exclNeighbors = exclNeighbors;
         this.backups = backups;
     }
@@ -166,7 +166,7 @@ public class GridCachePartitionAffinity implements GridCacheAffinity {
      * @param backups Number of back up servers per key.
      * @param parts Total number of partitions.
      */
-    public GridCachePartitionAffinity(boolean exclNeighbors, int backups, int parts) {
+    public GridCachePartitionAffinityFunction(boolean exclNeighbors, int backups, int parts) {
         this.exclNeighbors = exclNeighbors;
         this.backups = backups;
         this.parts = parts;
@@ -185,8 +185,8 @@ public class GridCachePartitionAffinity implements GridCacheAffinity {
      * <p>
      * Note that {@code excludeNeighbors} parameter is ignored if {@code backupFilter} is set.
      */
-    public GridCachePartitionAffinity(int backups, int parts,
-        @Nullable GridBiPredicate<GridNode,GridNode> backupFilter) {
+    public GridCachePartitionAffinityFunction(int backups, int parts,
+        @Nullable GridBiPredicate<GridNode, GridNode> backupFilter) {
         this.backups = backups;
         this.parts = parts;
         this.backupFilter = backupFilter;
@@ -593,7 +593,7 @@ public class GridCachePartitionAffinity implements GridCacheAffinity {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCachePartitionAffinity.class, this);
+        return S.toString(GridCachePartitionAffinityFunction.class, this);
     }
 
     /**

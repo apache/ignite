@@ -41,7 +41,7 @@ import java.util.*;
  *  data based on the optionally passed in arguments.
  * </li>
  * <li>
- *     Method {@link #affinity()} provides {@link GridCacheAffinity} service for information on
+ *     Method {@link #affinity()} provides {@link GridCacheAffinityFunction} service for information on
  *     data partitioning and mapping keys to grid nodes responsible for caching those keys.
  * </li>
  * <li>
@@ -101,7 +101,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
     /**
      * @return // TODO
      */
-    public GridCacheAffinity0<K> affinity();
+    public GridCacheAffinity<K> affinity();
 
     /**
      * @return // TODO
@@ -286,7 +286,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * the left nodes, and that nodes are restarted before
      * {@link GridCacheConfiguration#getPreloadPartitionedDelay() preloadDelay} expires. To place nodes
      * on the same place in consistent hash ring, use
-     * {@link GridCachePartitionAffinity#setHashIdResolver(GridCachePartitionHashResolver)} to make sure that
+     * {@link GridCachePartitionAffinityFunction#setHashIdResolver(GridCachePartitionHashResolver)} to make sure that
      * a node maps to the same hash ID if re-started.
      * <p>
      * See {@link GridCacheConfiguration#getPreloadPartitionedDelay()} for more information on how to configure

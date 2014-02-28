@@ -17,7 +17,6 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.spi.indexing.h2.*;
 
-import javax.swing.*;
 import java.util.*;
 
 import static org.gridgain.grid.GridDeploymentMode.*;
@@ -83,7 +82,7 @@ public class ClientMessageInterceptorExampleNodeStartup {
         cacheCfg.setAtomicityMode(ATOMIC);
         cacheCfg.setWriteSynchronizationMode(PRIMARY_SYNC);
         cacheCfg.setDistributionMode(PARTITIONED_ONLY);
-        cacheCfg.setAffinity(new GridCachePartitionAffinity(1));
+        cacheCfg.setAffinity(new GridCachePartitionAffinityFunction(1));
         cacheCfg.setStartSize(1500000);
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setPreloadMode(SYNC);

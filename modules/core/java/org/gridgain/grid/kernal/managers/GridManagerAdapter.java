@@ -453,8 +453,8 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         for (GridCacheAdapter cache : ctx.cache().internalCaches()) {
                             GridCacheConfiguration cfg = cache.configuration();
 
-                            if (cfg.getAffinity() instanceof GridCachePartitionAffinity) {
-                                GridCachePartitionAffinity aff = (GridCachePartitionAffinity)cfg.getAffinity();
+                            if (cfg.getAffinity() instanceof GridCachePartitionAffinityFunction) {
+                                GridCachePartitionAffinityFunction aff = (GridCachePartitionAffinityFunction)cfg.getAffinity();
 
                                 GridCachePartitionHashResolver hashIdRslvr = aff.getHashIdResolver();
 

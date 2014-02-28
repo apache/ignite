@@ -134,26 +134,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (cfg.getAffinity() == null) {
             if (cfg.getCacheMode() == PARTITIONED) {
-                GridCachePartitionAffinity aff = new GridCachePartitionAffinity();
+                GridCachePartitionAffinityFunction aff = new GridCachePartitionAffinityFunction();
 
                 aff.setHashIdResolver(new GridCachePartitionConsistentIdHashResolver());
 
                 cfg.setAffinity(aff);
             }
             else if (cfg.getCacheMode() == REPLICATED) {
-                GridCachePartitionAffinity aff = new GridCachePartitionAffinity(false, Integer.MAX_VALUE, 512);
+                GridCachePartitionAffinityFunction aff = new GridCachePartitionAffinityFunction(false, Integer.MAX_VALUE, 512);
 
                 aff.setHashIdResolver(new GridCachePartitionConsistentIdHashResolver());
 
                 cfg.setAffinity(aff);
             }
             else
-                cfg.setAffinity(new LocalAffinity());
+                cfg.setAffinity(new LocalAffinityFunction());
         }
         else {
             if (cfg.getCacheMode() == PARTITIONED) {
-                if (cfg.getAffinity() instanceof GridCachePartitionAffinity) {
-                    GridCachePartitionAffinity aff = (GridCachePartitionAffinity)cfg.getAffinity();
+                if (cfg.getAffinity() instanceof GridCachePartitionAffinityFunction) {
+                    GridCachePartitionAffinityFunction aff = (GridCachePartitionAffinityFunction)cfg.getAffinity();
 
                     if (aff.getHashIdResolver() == null)
                         aff.setHashIdResolver(new GridCachePartitionConsistentIdHashResolver());
@@ -162,7 +162,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (cfg.getAffinityMapper() == null)
-            cfg.setAffinityMapper(new GridCacheDefaultAffinityMapper());
+            cfg.setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
 
         GridCacheEvictionPolicy evictPlc = cfg.getEvictionPolicy();
 
@@ -269,19 +269,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void validate(GridConfiguration c, GridCacheConfiguration cc) throws GridException {
         if (cc.getCacheMode() == REPLICATED) {
-            if (!(cc.getAffinity() instanceof GridCachePartitionAffinity))
-                throw new GridException("REPLICATED cache can be started only with GridCachePartitionAffinity" +
+            if (!(cc.getAffinity() instanceof GridCachePartitionAffinityFunction))
+                throw new GridException("REPLICATED cache can be started only with GridCachePartitionAffinityFunction" +
                     " [cacheName=" + cc.getName() + ", affinity=" + cc.getAffinity().getClass().getName() + ']');
 
-            GridCachePartitionAffinity aff = (GridCachePartitionAffinity)cc.getAffinity();
+            GridCachePartitionAffinityFunction aff = (GridCachePartitionAffinityFunction)cc.getAffinity();
 
             if (aff.getKeyBackups() != Integer.MAX_VALUE)
-                throw new GridException("For REPLICATED cache number of backups in GridCachePartitionAffinity must " +
+                throw new GridException("For REPLICATED cache number of backups in GridCachePartitionAffinityFunction must " +
                     "be set to Integer.MAX_VALUE [cacheName=" + cc.getName() +
                     ", backups=" + aff.getKeyBackups() + ']');
 
             if (aff.isExcludeNeighbors())
-                throw new GridException("For REPLICATED cache flag 'excludeNeighbors' in GridCachePartitionAffinity " +
+                throw new GridException("For REPLICATED cache flag 'excludeNeighbors' in GridCachePartitionAffinityFunction " +
                     "cannot be set [cacheName=" + cc.getName() + ']');
 
             if (cc.getWriteSynchronizationMode() == PRIMARY_SYNC)
@@ -296,8 +296,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (cc.getCacheMode() == LOCAL && !cc.getAffinity().getClass().equals(LocalAffinity.class))
-            U.warn(log, "GridCacheAffinity configuration parameter will be ignored for local cache [cacheName=" +
+        if (cc.getCacheMode() == LOCAL && !cc.getAffinity().getClass().equals(LocalAffinityFunction.class))
+            U.warn(log, "GridCacheAffinityFunction configuration parameter will be ignored for local cache [cacheName=" +
                 cc.getName() + ']');
 
         if (cc.getPreloadMode() != GridCachePreloadMode.NONE) {
@@ -1725,7 +1725,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class LocalAffinity implements GridCacheAffinity {
+    private static class LocalAffinityFunction implements GridCacheAffinityFunction {
         /** {@inheritDoc} */
         @Override public Collection<GridNode> nodes(int part, Collection<GridNode> nodes) {
             for (GridNode n : nodes)

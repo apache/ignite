@@ -24,7 +24,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity0<K> {
+public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     /** Cache context. */
     private GridCacheContext<K, V> cctx;
 

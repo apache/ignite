@@ -31,13 +31,13 @@ public class GridAffinityCache {
     private final String cacheName;
 
     /** Affinity function. */
-    private final GridCacheAffinity aff;
+    private final GridCacheAffinityFunction aff;
 
     /** Partitions count. */
     private final int partsCnt;
 
     /** Affinity mapper function. */
-    private final GridCacheAffinityMapper affMapper;
+    private final GridCacheAffinityKeyMapper affMapper;
 
     /** Affinity calculation results cache: topology version => partition => nodes. */
     private final ConcurrentMap<Long, CachedAffinity> affCache;
@@ -56,8 +56,8 @@ public class GridAffinityCache {
      * @param aff Affinity function.
      * @param affMapper Affinity key mapper.
      */
-    public GridAffinityCache(GridKernalContext ctx, String cacheName, GridCacheAffinity aff,
-        GridCacheAffinityMapper affMapper) {
+    public GridAffinityCache(GridKernalContext ctx, String cacheName, GridCacheAffinityFunction aff,
+        GridCacheAffinityKeyMapper affMapper) {
         this.ctx = ctx;
         this.aff = aff;
         this.affMapper = affMapper;

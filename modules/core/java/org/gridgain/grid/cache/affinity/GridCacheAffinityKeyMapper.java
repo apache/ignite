@@ -17,11 +17,11 @@ import java.io.*;
  * Affinity mapper which maps cache key to an affinity key. Affinity key is a key which will be
  * used to determine a node on which this key will be cached. Every cache key will first be passed
  * through {@link #affinityKey(Object)} method, and the returned value of this method
- * will be given to {@link GridCacheAffinity} implementation to find out key-to-node affinity.
+ * will be given to {@link GridCacheAffinityFunction} implementation to find out key-to-node affinity.
  * <p>
  * The default implementation, which will be used if no explicit affinity mapper is specified
  * in cache configuration, will first look for any field or method annotated with
- * {@link GridCacheAffinityMapped @GridCacheAffinityMapped} annotation. If such field or method
+ * {@link GridCacheAffinityKeyMapped @GridCacheAffinityKeyMapped} annotation. If such field or method
  * is not found, then the cache key itself will be returned from {@link #affinityKey(Object) affinityKey(Object)}
  * method (this means that all objects with the same cache key will always be routed to the same node).
  * If such field or method is found, then the value of this field or method will be returned from
@@ -31,15 +31,15 @@ import java.io.*;
  * A custom (other than default) affinity mapper can be provided
  * via {@link GridCacheConfiguration#getAffinityMapper()} configuration property.
  * <p>
- * For more information on affinity mapping and examples refer to {@link GridCacheAffinity} and
- * {@link GridCacheAffinityMapped @GridCacheAffinityMapped} documentation.
+ * For more information on affinity mapping and examples refer to {@link GridCacheAffinityFunction} and
+ * {@link GridCacheAffinityKeyMapped @GridCacheAffinityKeyMapped} documentation.
  *
  * @author @java.author
  * @version @java.version
- * @see GridCacheAffinity
- * @see GridCacheAffinityMapped
+ * @see GridCacheAffinityFunction
+ * @see GridCacheAffinityKeyMapped
  */
-public interface GridCacheAffinityMapper extends Serializable {
+public interface GridCacheAffinityKeyMapper extends Serializable {
     /**
      * Maps passed in key to a key which will be used for node affinity.
      * <p>

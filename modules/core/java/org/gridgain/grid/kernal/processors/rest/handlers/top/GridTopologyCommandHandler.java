@@ -184,10 +184,10 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         nodeBean.setJettyAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_JETTY_ADDRS)));
         nodeBean.setJettyHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_JETTY_HOST_NAMES)));
 
-        Integer dfltReplicaCnt = node.attribute(GridCachePartitionAffinity.DFLT_REPLICA_COUNT_ATTR_NAME);
+        Integer dfltReplicaCnt = node.attribute(GridCachePartitionAffinityFunction.DFLT_REPLICA_COUNT_ATTR_NAME);
 
         if (dfltReplicaCnt == null)
-            dfltReplicaCnt = GridCachePartitionAffinity.DFLT_REPLICA_COUNT;
+            dfltReplicaCnt = GridCachePartitionAffinityFunction.DFLT_REPLICA_COUNT;
 
         nodeBean.setReplicaCount(dfltReplicaCnt);
 

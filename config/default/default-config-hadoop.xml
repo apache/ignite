@@ -101,7 +101,7 @@
                         is achieved with 0 backup copies.
                     -->
                     <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinity">
+                        <bean class="org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinityFunction">
                             <constructor-arg value="0"/>
                         </bean>
                     </property>
@@ -110,7 +110,7 @@
                         This shows how to configure number of blocks in row will be stored on the same node.
                     -->
                     <property name="affinityMapper">
-                        <bean class="org.gridgain.grid.ggfs.GridGgfsGroupDataBlocksMapper">
+                        <bean class="org.gridgain.grid.ggfs.GridGgfsGroupDataBlocksKeyMapper">
                             <constructor-arg value="512"/>
                         </bean>
                     </property>

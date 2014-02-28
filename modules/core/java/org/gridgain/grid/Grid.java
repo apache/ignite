@@ -430,7 +430,7 @@ public interface Grid extends GridProjection, AutoCloseable {
      * <ul>
      * <li>For local caches it returns only local node mapped to all keys.</li>
      * <li>
-     *      For fully replicated caches, {@link GridCacheAffinity} is
+     *      For fully replicated caches, {@link GridCacheAffinityFunction} is
      *      used to determine which keys are mapped to which groups of nodes.
      * </li>
      * <li>For partitioned caches, the returned map represents node-to-key affinity.</li>
@@ -453,7 +453,7 @@ public interface Grid extends GridProjection, AutoCloseable {
      * <ul>
      * <li>For local caches it returns only local node ID.</li>
      * <li>
-     *      For fully replicated caches first node ID returned by {@link GridCacheAffinity}
+     *      For fully replicated caches first node ID returned by {@link GridCacheAffinityFunction}
      *      is returned.
      * </li>
      * <li>For partitioned caches, the returned node ID is the primary node for the key.</li>

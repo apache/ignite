@@ -35,7 +35,7 @@ public enum GridCacheMode {
     /**
      * Specifies fully replicated cache behavior. In this mode all the keys are distributed
      * to all participating nodes. User still has affinity control
-     * over subset of nodes for any given key via {@link GridCacheAffinity}
+     * over subset of nodes for any given key via {@link GridCacheAffinityFunction}
      * configuration.
      */
     REPLICATED,
@@ -44,7 +44,7 @@ public enum GridCacheMode {
      * Specifies partitioned cache behaviour. In this mode the overall
      * key set will be divided into partitions and all partitions will be split
      * equally between participating nodes. User has affinity
-     * control over key assignment via {@link GridCacheAffinity}
+     * control over key assignment via {@link GridCacheAffinityFunction}
      * configuration.
      * <p>
      * Note that partitioned cache is always fronted by local
