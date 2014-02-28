@@ -11,8 +11,8 @@ package org.gridgain.grid.util;
 
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -72,7 +72,7 @@ public final class GridJavaProcess {
      * @param printC Optional closure to be called each time wrapped process prints line to system.out or system.err.
      * @param procKilledC Optional closure to be called when process termination is detected.
      * @param log Log to use.
-     * @return Wrapper around {@link java.lang.Process}
+     * @return Wrapper around {@link Process}
      * @throws Exception If any problem occurred.
      */
     public static GridJavaProcess exec(Class cls, String params, @Nullable GridLogger log,
@@ -89,7 +89,7 @@ public final class GridJavaProcess {
      * @param procKilledC Optional closure to be called when process termination is detected.
      * @param log Log to use.
      * @param jvmArgs JVM arguments to use.
-     * @return Wrapper around {@link java.lang.Process}
+     * @return Wrapper around {@link Process}
      * @throws Exception If any problem occurred.
      */
     public static GridJavaProcess exec(Class cls, String params, @Nullable GridLogger log,

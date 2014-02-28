@@ -14,7 +14,7 @@ import org.gridgain.grid.ggfs.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Internal API extension for {@link org.gridgain.grid.ggfs.GridGgfs}.
+ * Internal API extension for {@link GridGgfs}.
  *
  * @author @java.author
  * @version @java.version

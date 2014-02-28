@@ -13,7 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
- * Hash ID resolver which uses {@link org.gridgain.grid.GridNode#consistentId()} as alterante hash ID.
+ * Hash ID resolver which uses {@link GridNode#consistentId()} as alterante hash ID.
  *
  * @author @java.author
  * @version @java.version

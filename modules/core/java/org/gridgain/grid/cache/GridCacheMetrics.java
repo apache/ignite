@@ -45,7 +45,7 @@ public interface GridCacheMetrics extends Serializable {
     public long readTime();
 
     /**
-     * Gets last time transaction was commited.
+     * Gets last time transaction was committed.
      *
      * @return Last commit time.
      */

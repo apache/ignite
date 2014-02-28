@@ -13,6 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.future.*;
 
+import java.io.*;
+
 /**
  * Future for locally executed closure that defines cancellation logic.
  *
@@ -31,7 +33,7 @@ public class GridWorkerFuture<T> extends GridFutureAdapter<T> {
     }
 
     /**
-     * Empty constructor required for {@link java.io.Externalizable}.
+     * Empty constructor required for {@link Externalizable}.
      */
     public GridWorkerFuture() {
         // No-op.

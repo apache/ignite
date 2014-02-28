@@ -11,6 +11,7 @@ package org.gridgain.grid.cache.query;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.indexing.h2.*;
 import org.jetbrains.annotations.*;
@@ -163,8 +164,7 @@ import java.util.*;
  *         Joins will work correctly only if joined objects are stored in
  *         collocated mode or at least one side of the join is stored in
  *         {@link GridCacheMode#REPLICATED} cache. Refer to
- *         {@link org.gridgain.grid.cache.affinity.GridCacheAffinityKey}
- *         javadoc for more information about colocation.
+ *         {@link GridCacheAffinityKey} javadoc for more information about colocation.
  *     </li>
  * </ul>
  * <h1 class="header">Query usage</h1>

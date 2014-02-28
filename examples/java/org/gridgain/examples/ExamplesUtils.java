@@ -9,6 +9,8 @@
 
 package org.gridgain.examples;
 
+import org.gridgain.grid.*;
+
 /**
  * @author @java.author
  * @version @java.version
@@ -28,6 +30,27 @@ public class ExamplesUtils {
 
             System.exit(-1);
         }
+    }
+
+    /**
+     * Checks minimum topology size for running a certain example.
+     *
+     * @param prj Projection to check size for.
+     * @param size Minimum number of nodes required to run a certain example.
+     * @return {@code True} if check passed, {@code false} otherwise.
+     */
+    public static boolean checkMinTopologySize(GridProjection prj, int size) {
+        int prjSize = prj.nodes().size();
+
+        if (prjSize < size) {
+            System.out.println();
+            System.out.println(">>> Please start at least '" + size + "' grid nodes to run example.");
+            System.out.println();
+
+            return false;
+        }
+
+        return true;
     }
 
     /**

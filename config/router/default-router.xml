@@ -104,7 +104,7 @@
         <!--
         <property name="sslContextFactory">
             <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
-                <property name="keyStoreFilePath" value="examples/keystore/client.jks"/>
+                <property name="keyStoreFilePath" value="PATH_TO_KEYSTORE/client.jks"/>
                 <property name="keyStorePassword" value="123456"/>
             </bean>
         </property>
@@ -153,7 +153,7 @@
         <!--
         <property name="clientSslContextFactory">
             <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
-                <property name="keyStoreFilePath" value="examples/keystore/client.jks"/>
+                <property name="keyStoreFilePath" value="PATH_TO_KEYSTORE/client.jks"/>
                 <property name="keyStorePassword" value="123456"/>
             </bean>
         </property>

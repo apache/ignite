@@ -27,11 +27,12 @@ import java.util.*;
  * takes place:
  * <ol>
  * <li>
- *      Job gets put on waiting list which is passed to underlying
- *      {@link GridCollisionSpi} SPI.
+ *      If collision SPI is defined, then job gets put on waiting list which is passed to underlying
+ *      {@link GridCollisionSpi} SPI. Otherwise job will be submitted to the executor
+ *      service responsible for job execution immediately upon arrival.
  * </li>
  * <li>
- *      The Collision SPI will decide one of the following scheduling policies:
+ *      If collision SPI is configured, then it will decide one of the following scheduling policies:
  *      <ul>
  *      <li>
  *          Job will be kept on waiting list. In this case, job will not get a
@@ -153,10 +154,10 @@ public interface GridComputeJob extends Serializable {
      *
      * @return Job execution result (possibly {@code null}). This result will be returned
      *      in {@link GridComputeJobResult#getData()} method passed into
-     *      {@link GridComputeTask#result(GridComputeJobResult, List)} method into task on caller node.
+     *      {@link GridComputeTask#result(GridComputeJobResult, List)} task method on caller node.
      * @throws GridException If job execution caused an exception. This exception will be
      *      returned in {@link GridComputeJobResult#getException()} method passed into
-     *      {@link GridComputeTask#result(GridComputeJobResult, List)} method into task on caller node.
+     *      {@link GridComputeTask#result(GridComputeJobResult, List)} task method on caller node.
      *      If execution produces a {@link RuntimeException} or {@link Error}, then
      *      it will be wrapped into {@link GridException}.
      */
