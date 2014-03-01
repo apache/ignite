@@ -17,8 +17,8 @@
     When starting a standalone GridGain node, you need to execute the following command:
     {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-cache.xml
 
-    When starting GridGain from Java IDE, pass path to this file into GridFactory:
-    GridFactory.start("examples/config/example-cache.xml");
+    When starting GridGain from Java IDE, pass path to this file to GridGain:
+    GridGain.start("examples/config/example-cache.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -32,78 +32,50 @@
         <!-- Set to local host address just for examples. -->
         <property name="localHost" value="127.0.0.1"/>
 
-        <!-- Set deployment mode to be able to deploy jobs and tasks on that node. -->
-        <property name="deploymentMode" value="SHARED"/>
-
-        <!--
-            For better performance set this property to false in case
-            peer deployment is not used.
-            Default value is false.
-        -->
+        <!-- Set to true to enable grid-aware class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
 
-        <!--
-            Configure optimized marshaller.
-        -->
         <property name="marshaller">
             <bean class="org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller">
-                <!--
-                    For better performance set this property to true in case
-                    all marshalled classes implement java.io.Serializable.
-                    Default value is true.
-
-                    Note, that it is recommended to implement java.io.Externalizable
-                    instead of java.io.Serializable for smaller network footprint
-                    and even better performance.
-                -->
+                <!-- Set to false to allow non-serializable objects in examples, default is true. -->
                 <property name="requireSerializable" value="false"/>
             </bean>
         </property>
 
-        <!--
-            Enable cache events.
-        -->
+        <!-- Enable cache events for examples. -->
         <property name="includeEventTypes">
             <util:constant static-field="org.gridgain.grid.events.GridEventType.EVTS_CACHE"/>
         </property>
 
+        <!-- Cache configurations (all properties are optional). -->
         <property name="cacheConfiguration">
-            <!--
-                Specify list of cache configurations here. Any property from
-                GridCacheConfiguration interface can be configured here.
-                All properties are optional.
-            -->
             <list>
-                <!--
-                    Partitioned cache example configuration (Atomic mode).
-                -->
+                <!-- Partitioned cache example configuration (Atomic mode). -->
                 <bean parent="cache-template">
                     <property name="name" value="partitioned"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="ATOMIC"/>
                     <property name="distributionMode" value="PARTITIONED_ONLY"/>
+                    <property name="backups" value="1"/>
                 </bean>
 
-                <!--
-                    Partitioned cache example configuration (Transactional mode).
-                -->
+                <!-- Partitioned cache example configuration (Transactional mode). -->
                 <bean parent="cache-template">
                     <property name="name" value="partitioned_tx"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="distributionMode" value="NEAR_PARTITIONED"/>
+                    <property name="backups" value="1"/>
                 </bean>
 
-                <!--
-                    Replicated cache example configuration.
-                -->
-                <bean parent="cache-replicated-template">
+                <!-- Replicated cache example configuration (Transactional mode). -->
+                <bean parent="cache-template">
                     <property name="name" value="replicated"/>
+                    <property name="cacheMode" value="REPLICATED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
                 </bean>
 
-                <!--
-                    Local cache example configuration.
-                -->
+                <!-- Local cache example configuration. -->
                 <bean parent="cache-template">
                     <property name="name" value="local"/>
                     <property name="cacheMode" value="LOCAL"/>
@@ -111,76 +83,35 @@
             </list>
         </property>
 
-        <!--
-            TCP discovery SPI configuration with predefined addresses.
-            Use the addresses list to provide IP addresses of initial nodes in the grid
-            (at least one address must be provided).
-
-            Note:
-            =====
-            If running in distributed environment, you should change IP addresses to the actual IP addresses
-            of the servers on your network. Not all addresses need to be specified, only the addresses
-            of one or more servers which will always be started first.
-        -->
+        <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
         <property name="discoverySpi">
             <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
                 <property name="ipFinder">
+                    <!-- Uncomment multicast IP finder to enable multicast-based discovery of initial nodes. -->
+                    <!--<bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.GridTcpDiscoveryMulticastIpFinder">-->
                     <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
-                                <!--
-                                    List all IP/port configurations that potentially
-                                    can be started first in examples. We are assuming
-                                    grid of size 10 or less.
-                                -->
+                                <!-- In distributed environment, replace with actual host IP address. -->
                                 <value>127.0.0.1:47500..47509</value>
                             </list>
                         </property>
                     </bean>
-                    <!--
-                    Uncomment this to provide IP finder using multicast for nodes discovery.
-                    In addition to addresses received via multicast this finder can work with pre-configured
-                    list of addresses.
-                    -->
-                    <!--
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.GridTcpDiscoveryMulticastIpFinder">
-                        <property name="addresses">
-                            <list>
-                                <value>host1:port1</value>
-                                <value>host2:port2</value>
-                            </list>
-                        </property>
-                    </bean>
-                    -->
                 </property>
             </bean>
         </property>
 
-        <!--
-            Allow indexing SPI to index primitive values.
-        -->
+        <!-- Allow indexing SPI to index primitive values (required for CachePopularNumbersExample). -->
         <property name="indexingSpi">
             <list>
                 <bean class="org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi">
-                    <!-- Index primitives. -->
                     <property name="defaultIndexPrimitiveKey" value="true"/>
-
-                    <!--
-                        Set to false to allow different key types for one value type.
-
-                        Note that this also means that '_key' column cannot participate in
-                        where clause queries either directly through API, through JDBC driver,
-                        or through Object Viewer in Visor DevOps Console.
-                    -->
-                    <!--property name="defaultIndexFixedTyping" value="false"/-->
                 </bean>
             </list>
         </property>
     </bean>
 
-    <!--
-        Template for all cache configurations.
-    -->
+    <!-- Template for all example cache configurations. -->
     <bean id="cache-template" abstract="true" class="org.gridgain.grid.cache.GridCacheConfiguration">
         <!-- Initial cache size. -->
         <property name="startSize" value="3000000"/>
@@ -188,33 +119,10 @@
         <!-- Set synchronous preloading (default is asynchronous). -->
         <property name="preloadMode" value="SYNC"/>
 
-        <!--
-            Setting this value will cause local node to wait for remote commits.
-            However, it's important to set it this way in the examples as we assert on
-            conditions that usually assume full completion of transactions on all nodes.
-        -->
+        <!-- Set to FULL_SYNC for examples, default is PRIMARY_SYNC. -->
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
-        <!--
-            For better performance set this property to false in case
-            cache queries are not used. Default value is false.
-        -->
-        <property name="queryIndexEnabled" value="true"/>
-
-        <!--
-            The below configuration sets the number of backups to 1.
-        -->
-        <property name="backups" value="1"/>
-    </bean>
-
-    <!--
-        Template for all cache configurations.
-    -->
-    <bean id="cache-replicated-template" abstract="true" class="org.gridgain.grid.cache.GridCacheConfiguration">
-        <property name="cacheMode" value="REPLICATED"/>
-        <property name="startSize" value="3000000"/>
-        <property name="preloadMode" value="SYNC"/>
-        <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+        <!-- Set to true to enable indexing for query examples, default value is false. -->
         <property name="queryIndexEnabled" value="true"/>
     </bean>
 </beans>

@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 
 import java.io.*;
-import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
@@ -36,9 +35,6 @@ public class CacheTransactionExample {
     private static final String CACHE_NAME = "partitioned_tx";
     //private static final String CACHE_NAME = "replicated";
     //private static final String CACHE_NAME = "local";
-
-    /** Cache. */
-    private static GridCache<UUID, Object> cache;
 
     /**
      * Executes example.
