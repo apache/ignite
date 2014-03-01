@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.dr.messages.external;
 
-import org.gridgain.grid.util.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

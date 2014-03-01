@@ -9,9 +9,8 @@
 
 package org.gridgain.grid.kernal.managers.checkpoint;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.spi.communication.tcp.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;

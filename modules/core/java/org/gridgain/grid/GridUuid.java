@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.util;
+package org.gridgain.grid;
 
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.typedef.*;
