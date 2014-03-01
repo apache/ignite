@@ -24,9 +24,10 @@ import java.util.*;
  * {@link GridCacheAffinityKeyMapper} which may potentially map this key to an alternate
  * key which should be used for affinity. The key returned from
  * {@link GridCacheAffinityKeyMapper#affinityKey(Object)} method is then passed to
- * {@link #partition(Object) partition(Object)} method to find out the partition for the key. Then
- * this partition together with all participating nodes are passed
- * to {@link #nodes(int, Collection) nodes(int, Collection)} method which returns a collection of nodes.
+ * {@link #partition(Object) partition(Object)} method to find out the partition for the key.
+ * Independently, on each topology change partition-to-node mapping is calculated using
+ * {@link #assignPartitions(GridCacheAffinityFunctionContext)} method, which assigns a collection
+ * of nodes to each partition.
  * This collection of nodes is used for node affinity. In {@link GridCacheMode#REPLICATED REPLICATED}
  * cache mode the key will be cached on all returned nodes; generally, all caching nodes
  * participate in caching every key in replicated mode. In {@link GridCacheMode#PARTITIONED PARTITIONED}
@@ -95,11 +96,12 @@ public interface GridCacheAffinityFunction extends Serializable {
      * <code>N</code> is primary for some key <code>K</code>, if any other node(s) leave
      * grid and no node joins grid, node <code>N</code> will remain primary for key <code>K</code>.
      *
-     * @param part Partition to get nodes for.
-     * @param nodes Nodes to choose from.
-     * @return Affinity nodes for the given partition.
+     * @param affCtx Affinity function context. Will provide all required information to calculate
+     *      new partition assignments.
+     * @return Unmodifiable list indexed by partition number. Each element of array is a collection in which
+     *      first node is a primary node and other nodes are backup nodes.
      */
-    public Collection<GridNode> nodes(int part, Collection<GridNode> nodes);
+    public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx);
 
     /**
      * Removes node from affinity. This method is called when it is safe to remove left node from

@@ -11,7 +11,7 @@ package org.gridgain.grid.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.partition.*;
+import org.gridgain.grid.cache.affinity.consistent.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.lang.*;
@@ -286,7 +286,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * the left nodes, and that nodes are restarted before
      * {@link GridCacheConfiguration#getPreloadPartitionedDelay() preloadDelay} expires. To place nodes
      * on the same place in consistent hash ring, use
-     * {@link GridCachePartitionAffinityFunction#setHashIdResolver(GridCachePartitionHashResolver)} to make sure that
+     * {@link GridCacheConsistentHashAffinityFunction#setHashIdResolver(GridCacheAffinityNodeHashResolver)} to make sure that
      * a node maps to the same hash ID if re-started.
      * <p>
      * See {@link GridCacheConfiguration#getPreloadPartitionedDelay()} for more information on how to configure

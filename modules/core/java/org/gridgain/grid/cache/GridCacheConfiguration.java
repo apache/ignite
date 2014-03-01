@@ -11,7 +11,7 @@ package org.gridgain.grid.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.partition.*;
+import org.gridgain.grid.cache.affinity.consistent.*;
 import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.eviction.*;
@@ -44,9 +44,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
  */
 @SuppressWarnings("RedundantFieldInitialization")
 public class GridCacheConfiguration {
-    /** Default query log name. */
-    public static final String DFLT_QUERY_LOGGER_NAME = "org.gridgain.cache.queries";
-
     /** DGC tracing logger name. */
     public static final String DGC_TRACE_LOGGER_NAME =
         "org.gridgain.grid.kernal.processors.cache.GridCacheDgcManager.trace";
@@ -1649,7 +1646,7 @@ public class GridCacheConfiguration {
      * For better efficiency user should usually make sure that new nodes get placed on
      * the same place of consistent hash ring as the left nodes, and that nodes are
      * restarted before this delay expires. To place nodes on the same place in consistent hash ring,
-     * use {@link GridCachePartitionAffinityFunction#setHashIdResolver(GridCachePartitionHashResolver)}
+     * use {@link GridCacheConsistentHashAffinityFunction#setHashIdResolver(GridCacheAffinityNodeHashResolver)}
      * to make sure that a node maps to the same hash ID event if restarted. As an example,
      * node IP address and port combination may be used in this case.
      * <p>

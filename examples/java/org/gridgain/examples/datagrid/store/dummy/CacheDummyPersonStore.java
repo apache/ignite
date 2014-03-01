@@ -18,6 +18,7 @@ import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Dummy cache store implementation.
@@ -35,7 +36,7 @@ public class CacheDummyPersonStore extends GridCacheStoreAdapter<Long, Person> {
     private String cacheName;
 
     /** Dummy database. */
-    private Map<Long, Person> dummyDB = new HashMap<>();
+    private Map<Long, Person> dummyDB = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public Person load(@Nullable GridCacheTx tx, Long key) throws GridException {
