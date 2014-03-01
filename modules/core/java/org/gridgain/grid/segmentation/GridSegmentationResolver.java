@@ -10,9 +10,6 @@
 package org.gridgain.grid.segmentation;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.segmentation.reachability.*;
-import org.gridgain.grid.segmentation.sharedfs.*;
-import org.gridgain.grid.segmentation.tcp.*;
 
 import java.io.*;
 
@@ -30,13 +27,6 @@ import java.io.*;
  * mark the topology as segmented in case it is not available. In other words
  * you can equate the service outage with network outage via segmentation resolution
  * and employ the unified approach in dealing with these types of problems.
- * <p>
- * The following implementations are built-in:
- * <ul>
- *     <li>{@link GridReachabilitySegmentationResolver}</li>
- *     <li>{@link GridSharedFsSegmentationResolver}</li>
- *     <li>{@link GridTcpSegmentationResolver}</li>
- * </ul>
  *
  * @author @java.author
  * @version @java.version
