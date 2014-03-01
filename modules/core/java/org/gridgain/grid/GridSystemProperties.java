@@ -95,6 +95,11 @@ public final class GridSystemProperties {
     public static final String GG_JETTY_PORT = "GRIDGAIN_JETTY_PORT";
 
     /**
+     * This property does not allow GridGain to override Jetty log configuration for REST processor.
+     */
+    public static final String GG_JETTY_LOG_NO_OVERRIDE = "GRIDGAIN_JETTY_LOG_NO_OVERRIDE";
+
+    /**
      * This property allows to override maximum count of task results stored on one node
      * in REST processor.
      */
