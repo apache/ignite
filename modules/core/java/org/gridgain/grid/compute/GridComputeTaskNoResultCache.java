@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.compute;
 
-import org.gridgain.grid.util.*;
+import org.gridgain.grid.*;
 
 import java.lang.annotation.*;
 import java.util.*;

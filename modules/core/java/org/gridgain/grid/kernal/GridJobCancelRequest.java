@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

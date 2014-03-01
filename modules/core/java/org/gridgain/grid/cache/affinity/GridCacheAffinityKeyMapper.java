@@ -41,11 +41,7 @@ import java.io.*;
  */
 public interface GridCacheAffinityKeyMapper extends Serializable {
     /**
-     * Maps passed in key to a key which will be used for node affinity.
-     * <p>
-     * Note that cache may also create internal keys which also be passed here.
-     * User should check for type of the key and return the key as is if it is not
-     * a cache key created by user.
+     * Maps passed in key to an alternate key which will be used for node affinity.
      *
      * @param key Key to map.
      * @return Key to be used for node-to-affinity mapping (may be the same

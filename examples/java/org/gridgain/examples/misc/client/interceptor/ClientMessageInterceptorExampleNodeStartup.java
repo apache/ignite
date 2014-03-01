@@ -82,7 +82,7 @@ public class ClientMessageInterceptorExampleNodeStartup {
         cacheCfg.setAtomicityMode(ATOMIC);
         cacheCfg.setWriteSynchronizationMode(PRIMARY_SYNC);
         cacheCfg.setDistributionMode(PARTITIONED_ONLY);
-        cacheCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(1));
+        cacheCfg.setBackups(1);
         cacheCfg.setStartSize(1500000);
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setPreloadMode(SYNC);

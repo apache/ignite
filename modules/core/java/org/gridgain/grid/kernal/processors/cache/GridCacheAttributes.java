@@ -221,6 +221,8 @@ public class GridCacheAttributes implements Externalizable {
 
         affMapperClsName = className(cfg.getAffinityMapper());
 
+        affKeyBackups = cfg.getBackups();
+
         GridCacheAffinityFunction aff = cfg.getAffinity();
 
         if (aff != null) {
@@ -228,7 +230,6 @@ public class GridCacheAttributes implements Externalizable {
                 GridCacheConsistentHashAffinityFunction aff0 = (GridCacheConsistentHashAffinityFunction) aff;
 
                 affInclNeighbors = aff0.isExcludeNeighbors();
-                affKeyBackups = aff0.getKeyBackups();
                 affReplicas = aff0.getDefaultReplicas();
                 affReplicaCntAttrName = aff0.getReplicaCountAttributeName();
                 affHashIdRslvrClsName = className(aff0.getHashIdResolver());

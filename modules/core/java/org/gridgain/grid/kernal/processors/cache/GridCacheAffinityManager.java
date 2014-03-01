@@ -36,7 +36,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
     /** {@inheritDoc} */
     @Override public void start0() throws GridException {
         aff = new GridAffinityCache(cctx.kernalContext(), cctx.namex(), cctx.config().getAffinity(),
-            cctx.config().getAffinityMapper());
+            cctx.config().getAffinityMapper(), cctx.config().getBackups());
 
         // Generate internal keys for partitions.
         int partCnt = partitions();

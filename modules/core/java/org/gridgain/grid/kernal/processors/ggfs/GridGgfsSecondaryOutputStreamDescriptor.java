@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.hadoop.fs.*;
-import org.gridgain.grid.util.*;
+import org.gridgain.grid.*;
 
 /**
  * Descriptor of an output stream opened to the secondary file system.

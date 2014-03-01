@@ -60,9 +60,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
  * @version @java.version
  */
 public class GridCacheProcessor extends GridProcessorAdapter {
-    /** Null cache name. */
-    private static final String NULL_NAME = UUID.randomUUID().toString();
-
     /** */
     private final Map<String, GridCacheAdapter<?, ?>> caches;
 
@@ -108,14 +105,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param name Cache name.
-     * @return Masked name accounting for {@code nulls}.
-     */
-    private String maskName(String name) {
-        return name == null ? NULL_NAME : name;
-    }
-
-    /**
      * @param cfg Initializes cache configuration with proper defaults.
      */
     @SuppressWarnings("unchecked")
@@ -141,11 +130,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cfg.setAffinity(aff);
             }
             else if (cfg.getCacheMode() == REPLICATED) {
-                GridCacheConsistentHashAffinityFunction aff = new GridCacheConsistentHashAffinityFunction(false, Integer.MAX_VALUE, 512);
+                GridCacheConsistentHashAffinityFunction aff = new GridCacheConsistentHashAffinityFunction(false, 512);
 
                 aff.setHashIdResolver(new GridCacheAffinityNodeAddressHashResolver());
 
                 cfg.setAffinity(aff);
+
+                cfg.setBackups(Integer.MAX_VALUE);
             }
             else
                 cfg.setAffinity(new LocalAffinityFunction());
@@ -238,7 +229,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cfg.getDistributionMode() != NEAR_ONLY);
 
             if (cfg.getAffinity() != null)
-                perf.add("Decrease number of backups (set 'keyBackups' to 0)", cfg.getAffinity().keyBackups() == 0);
+                perf.add("Decrease number of backups (set 'keyBackups' to 0)", cfg.getBackups() == 0);
         }
 
         // Suppress warning if at least one ATOMIC cache found.
@@ -275,10 +266,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             GridCacheConsistentHashAffinityFunction aff = (GridCacheConsistentHashAffinityFunction)cc.getAffinity();
 
-            if (aff.getKeyBackups() != Integer.MAX_VALUE)
-                throw new GridException("For REPLICATED cache number of backups in GridCacheConsistentHashAffinityFunction must " +
-                    "be set to Integer.MAX_VALUE [cacheName=" + cc.getName() +
-                    ", backups=" + aff.getKeyBackups() + ']');
+            if (cc.getBackups() != Integer.MAX_VALUE)
+                throw new GridException("For REPLICATED cache number of backups in GridCacheCconfiguration must " +
+                    "be set to Integer.MAX_VALUE [cacheName=" + cc.getName() + ", backups=" + cc.getBackups() + ']');
 
             if (aff.isExcludeNeighbors())
                 throw new GridException("For REPLICATED cache flag 'excludeNeighbors' in GridCacheConsistentHashAffinityFunction " +
@@ -590,6 +580,28 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         maxPreloadOrder = validatePreloadOrder(ctx.config().getCacheConfiguration());
 
+        // Internal caches which should not be returned to user.
+        GridGgfsConfiguration[] ggfsCfgs = ctx.grid().configuration().getGgfsConfiguration();
+
+        if (ggfsCfgs != null) {
+            for (GridGgfsConfiguration ggfsCfg : ggfsCfgs) {
+                sysCaches.add(ggfsCfg.getMetaCacheName());
+                sysCaches.add(ggfsCfg.getDataCacheName());
+            }
+        }
+
+        for (GridCacheConfiguration ccfg : ctx.grid().configuration().getCacheConfiguration()) {
+            if (ccfg.getDrSenderConfiguration() != null)
+                sysCaches.add(CU.cacheNameForReplicationSystemCache(ccfg.getName()));
+        }
+
+        GridDrSenderHubConfiguration sndHubCfg = ctx.grid().configuration().getDrSenderHubConfiguration();
+
+        if (sndHubCfg != null && sndHubCfg.getCacheNames() != null) {
+            for (String cacheName : sndHubCfg.getCacheNames())
+                sysCaches.add(CU.cacheNameForReplicationSystemCache(cacheName));
+        }
+
         GridCacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
         for (int i = 0; i < cfgs.length; i++) {
@@ -708,6 +720,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             caches.put(cfg.getName(), cache);
 
+            if (sysCaches.contains(cfg.getName()))
+                stopSeq.addLast(cache);
+            else
+                stopSeq.addFirst(cache);
+
             // Start managers.
             for (GridCacheManager mgr : F.view(cacheCtx.managers(), F.notContains(dhtExcludes(cacheCtx))))
                 mgr.start(cacheCtx);
@@ -815,40 +832,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         // Internal caches which should not be returned to user.
-        GridGgfsConfiguration[] ggfsCfgs = ctx.grid().configuration().getGgfsConfiguration();
-
-        if (ggfsCfgs != null) {
-            for (GridGgfsConfiguration ggfsCfg : ggfsCfgs) {
-                sysCaches.add(ggfsCfg.getMetaCacheName());
-                sysCaches.add(ggfsCfg.getDataCacheName());
-            }
-        }
-
-        for (GridCacheConfiguration ccfg : ctx.grid().configuration().getCacheConfiguration()) {
-            if (ccfg.getDrSenderConfiguration() != null)
-                sysCaches.add(CU.cacheNameForReplicationSystemCache(ccfg.getName()));
-        }
-
-        GridDrSenderHubConfiguration sndHubCfg = ctx.grid().configuration().getDrSenderHubConfiguration();
-
-        if (sndHubCfg != null && sndHubCfg.getCacheNames() != null) {
-            for (String cacheName : sndHubCfg.getCacheNames())
-                sysCaches.add(CU.cacheNameForReplicationSystemCache(cacheName));
-        }
-
         for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
             GridCacheAdapter cache = e.getValue();
 
             if (!sysCaches.contains(e.getKey()))
                 publicProxies.put(e.getKey(), new GridCacheProxyImpl(cache.context(), cache, null));
-        }
-
-        // Create stop sequence.
-        for (Map.Entry<String, GridCacheAdapter<?, ?>> cacheEntry : caches.entrySet()) {
-            if (sysCaches.contains(cacheEntry.getKey()))
-                stopSeq.addLast(cacheEntry.getValue());
-            else
-                stopSeq.addFirst(cacheEntry.getValue());
         }
 
         if (log.isDebugEnabled())
@@ -1766,11 +1754,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public void removeNode(UUID nodeId) {
             // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public int keyBackups() {
-            return 0;
         }
     }
 }

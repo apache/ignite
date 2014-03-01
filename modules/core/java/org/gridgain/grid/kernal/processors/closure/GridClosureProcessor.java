@@ -130,7 +130,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 return new GridFinishedFuture(ctx);
 
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture(ctx, makeException());
+                return new GridFinishedFuture(ctx, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
@@ -235,7 +235,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 return new GridFinishedFuture(ctx);
 
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture(ctx, makeException());
+                return new GridFinishedFuture(ctx, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
@@ -410,7 +410,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 return new GridFinishedFuture<>(ctx);
 
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, makeException());
+                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
@@ -492,15 +492,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Creates appropriate empty projection exception.
-     *
-     * @return Empty projection exception.
-     */
-    private GridEmptyProjectionException makeException() {
-        return new GridEmptyProjectionException("Topology projection is empty.");
-    }
-
-    /**
      * @param mode Distribution mode.
      * @param jobs Closures to execute.
      * @param nodes Grid nodes.
@@ -534,7 +525,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 return new GridFinishedFuture<>(ctx);
 
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, makeException());
+                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
@@ -624,7 +615,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 return new GridFinishedFuture<>(ctx);
 
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, makeException());
+                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
@@ -656,7 +647,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 return new GridFinishedFuture<>(ctx);
 
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, makeException());
+                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
@@ -687,7 +678,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 return new GridFinishedFuture<>(ctx);
 
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, makeException());
+                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 

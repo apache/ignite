@@ -29,13 +29,17 @@ public class GridCacheAffinityFunctionContextImpl implements GridCacheAffinityFu
     /** Topology version. */
     private long topVer;
 
+    /** Number of backups to assign. */
+    private int backups;
+
     /**
      * @param topSnapshot Topology snapshot.
      * @param topVer Topology version.
      */
-    public GridCacheAffinityFunctionContextImpl(List<GridNode> topSnapshot, long topVer) {
+    public GridCacheAffinityFunctionContextImpl(List<GridNode> topSnapshot, long topVer, int backups) {
         this.topSnapshot = topSnapshot;
         this.topVer = topVer;
+        this.backups = backups;
     }
 
     /** {@inheritDoc} */
@@ -56,5 +60,10 @@ public class GridCacheAffinityFunctionContextImpl implements GridCacheAffinityFu
     /** {@inheritDoc} */
     @Nullable @Override public GridDiscoveryEvent discoveryEvent() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int backups() {
+        return backups;
     }
 }
