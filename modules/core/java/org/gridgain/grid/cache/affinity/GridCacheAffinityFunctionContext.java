@@ -16,7 +16,8 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Affinity function context. Passed during each partition reassignment on topology change event.
+ * Affinity function context. This context is passed to {@link GridCacheAffinityFunction} for
+ * partition reassignment on every topology change event.
  *
  * @author @java.author
  * @version @java.version
