@@ -11,8 +11,6 @@ package org.gridgain.grid.cache.affinity;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.events.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -26,9 +24,10 @@ import java.util.*;
  * {@link GridCacheAffinityKeyMapper} which may potentially map this key to an alternate
  * key which should be used for affinity. The key returned from
  * {@link GridCacheAffinityKeyMapper#affinityKey(Object)} method is then passed to
- * {@link #partition(Object) partition(Object)} method to find out the partition for the key. Then
- * this partition together with all participating nodes are passed
- * to {@link #nodes(int, Collection) nodes(int, Collection)} method which returns a collection of nodes.
+ * {@link #partition(Object) partition(Object)} method to find out the partition for the key.
+ * Independently, on each topology change partition-to-node mapping is calculated using
+ * {@link #assignPartitions(GridCacheAffinityFunctionContext)} method, which assigns a collection
+ * of nodes to each partition.
  * This collection of nodes is used for node affinity. In {@link GridCacheMode#REPLICATED REPLICATED}
  * cache mode the key will be cached on all returned nodes; generally, all caching nodes
  * participate in caching every key in replicated mode. In {@link GridCacheMode#PARTITIONED PARTITIONED}
