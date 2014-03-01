@@ -13,8 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
- * Hash ID resolver which uses generated node ID as alternate node ID. As new node ID generated on each node start
- * this resolver do not provide ability to put restarted node into the same place on the hash ring.
+ * Node hash resolver which uses generated node ID as node hash value. As new node ID is generated
+ * on each node start, this resolver do not provide ability to map keys to the same nodes after restart.
  *
  * @author @java.author
  * @version @java.version

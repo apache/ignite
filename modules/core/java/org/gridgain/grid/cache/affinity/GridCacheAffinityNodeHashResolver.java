@@ -14,18 +14,18 @@ import org.gridgain.grid.*;
 import java.io.*;
 
 /**
- * Resolver which is used to provide alternate hash ID, other than node ID.
+ * Resolver which is used to provide node hash value for affinity function.
  * <p>
- * Node IDs constantly change when nodes get restarted, which causes them to be placed on different locations in the
- * hash ring, and hence causing repartitioning. Providing an alternate hash ID, which survives node restarts, puts
- * node on the same location on the hash ring, hence minimizing required repartitioning.
+ * Node IDs constantly change when nodes get restarted, which causes affinity mapping to change between restarts,
+ * and hence causing redundant repartitioning. Providing an alternate node hash value, which survives node restarts,
+ * will help to map keys to the same nodes whenever possible.
  *
  * @author @java.author
  * @version @java.version
  */
 public interface GridCacheAffinityNodeHashResolver extends Serializable {
     /**
-     * Resolve alternate hash ID for the given Grid node.
+     * Resolve alternate hash value for the given Grid node.
      *
      * @param node Grid node.
      * @return Resolved hash ID.
