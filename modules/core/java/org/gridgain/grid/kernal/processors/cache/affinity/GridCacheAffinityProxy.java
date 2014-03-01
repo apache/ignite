@@ -22,18 +22,18 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity0<K> {
+public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K> {
     /** Cache gateway. */
     private GridCacheGateway<K, V> gate;
 
     /** Affinity delegate. */
-    private GridCacheAffinity0<K> delegate;
+    private GridCacheAffinity<K> delegate;
 
     /**
      * @param cctx Context.
      * @param delegate Delegate object.
      */
-    public GridCacheAffinityProxy(GridCacheContext<K, V> cctx, GridCacheAffinity0<K> delegate) {
+    public GridCacheAffinityProxy(GridCacheContext<K, V> cctx, GridCacheAffinity<K> delegate) {
         gate = cctx.gate();
         this.delegate = delegate;
     }

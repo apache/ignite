@@ -11,10 +11,12 @@ package org.gridgain.grid.kernal.managers;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.partition.*;
+import org.gridgain.grid.cache.affinity.*;
+import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.spi.*;
@@ -452,10 +454,10 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         for (GridCacheAdapter cache : ctx.cache().internalCaches()) {
                             GridCacheConfiguration cfg = cache.configuration();
 
-                            if (cfg.getAffinity() instanceof GridCachePartitionAffinity) {
-                                GridCachePartitionAffinity aff = (GridCachePartitionAffinity)cfg.getAffinity();
+                            if (cfg.getAffinity() instanceof GridCacheConsistentHashAffinityFunction) {
+                                GridCacheConsistentHashAffinityFunction aff = (GridCacheConsistentHashAffinityFunction)cfg.getAffinity();
 
-                                GridCachePartitionHashResolver hashIdRslvr = aff.getHashIdResolver();
+                                GridCacheAffinityNodeHashResolver hashIdRslvr = aff.getHashIdResolver();
 
                                 assert hashIdRslvr != null;
 

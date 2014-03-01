@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.events;
 
+import org.gridgain.examples.datagrid.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
@@ -20,13 +21,12 @@ import java.util.*;
 import static org.gridgain.grid.events.GridEventType.*;
 
 /**
- * This examples demonstrates event consume API that allows to register
- * event listeners on remote nodes.
+ * Demonstrates event consume API that allows to register event listeners on remote nodes.
  * <p>
  * Remote nodes should always be started with configuration file which includes
  * cache: {@code 'ggstart.sh examples/config/example-cache.xml'}.
  * <p>
- * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will start
+ * Alternatively you can run {@link CacheNodeStartup} in another JVM which will start
  * GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author
@@ -37,15 +37,16 @@ public class EventsApiExample {
     private static final String CACHE_NAME = "partitioned";
 
     /**
-     * Executes example on the grid.
+     * Executes example.
      *
-     * @param args Command line arguments. None required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      {@code "examples/config/"} for configuration file examples.
-     * @throws Exception If example execution failed.
+     * @param args Command line arguments, none required.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Grid grid = GridGain.start(args.length == 0 ? "examples/config/example-cache.xml" : args[0])) {
+        try (Grid grid = GridGain.start("examples/config/example-cache.xml")) {
+            System.out.println();
+            System.out.println(">>> Events API example started.");
+
             // Listen to events happening on local node.
             localListen();
 
@@ -66,17 +67,21 @@ public class EventsApiExample {
         Grid g = GridGain.grid();
 
         // Register event listener for all local task execution events.
-        g.events().addLocalListener(new GridLocalEventListener() {
-            @Override public void onEvent(GridEvent evt) {
-                GridTaskEvent taskEvt = (GridTaskEvent)evt;
+        g.events().localListen(new GridPredicate<GridEvent>() {
+            @Override public boolean apply(GridEvent evt) {
+                GridTaskEvent taskEvt = (GridTaskEvent) evt;
 
+                System.out.println();
                 System.out.println("Git event notification [evt=" + evt.name() + ", taskName=" + taskEvt.taskName() + ']');
+
+                return true;
             }
         }, EVTS_TASK_EXECUTION);
 
         // Generate task events.
         g.compute().withName("example-event-task").run(new GridRunnable() {
             @Override public void run() {
+                System.out.println();
                 System.out.println("Executing sample job.");
             }
         }).get();
@@ -93,11 +98,12 @@ public class EventsApiExample {
         GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
         // Register remote event listeners on all nodes running cache.
-        GridFuture<?> fut = g.forCache(CACHE_NAME).events().consumeRemote(
+        GridFuture<?> fut = g.forCache(CACHE_NAME).events().remoteListen(
             // This optional local callback is called for each event notification
             // that passed remote predicate filter.
             new GridBiPredicate<UUID, GridCacheEvent>() {
                 @Override public boolean apply(UUID nodeId, GridCacheEvent evt) {
+                    System.out.println();
                     System.out.println("Received event [evt=" + evt.name() + ", key=" + evt.key() +
                         ", oldVal=" + evt.oldValue() + ", newVal=" + evt.newValue());
 

@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Demonstrates usage of continuous mapper. With continuous mapper
  * it is possible to continue mapping jobs asynchronously even after
- * initial {@link org.gridgain.grid.compute.GridComputeTask#map(List, Object)} method completes.
+ * initial {@link GridComputeTask#map(List, Object)} method completes.
  * <p>
  * String "Hello Continuous Mapper" is passed as an argument for execution
  * of {@link GridContinuousMapperTask}. As an outcome, participating
@@ -29,45 +29,26 @@ import java.util.concurrent.atomic.*;
  * mapping, next word will be mapped to a node only after the result from
  * previous word has been received.
  * <p>
- * Grid task {@link GridContinuousMapperTask} handles actual splitting
- * into sub-jobs, their continuous mapping and remote execution, as well
- * as calculation of the total character count.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * <h1 class="header">Starting Remote Nodes</h1>
- * To try this example you should (but don't have to) start remote grid instances.
- * You can start as many as you like by executing the following script:
- * <pre class="snippet">{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-compute.xml</pre>
- * Once remote instances are started, you can execute this example from
- * Eclipse, IntelliJ IDEA, or NetBeans (and any other Java IDE) by simply hitting run
- * button. You will see that all nodes discover each other and
- * some of the nodes will participate in task execution (check node
- * output).
- * <p>
- * <h1 class="header">XML Configuration</h1>
- * If no specific configuration is provided, GridGain will start with
- * all defaults. For information about GridGain default configuration
- * refer to {@link GridGain} documentation. If you would like to
- * try out different configurations you should pass a path to Spring
- * configuration file as 1st command line argument into this example.
- * The path can be relative to {@code GRIDGAIN_HOME} environment variable.
- * You should also pass the same configuration file to all other
- * grid nodes by executing startup script as follows (you will need
- * to change the actual file name):
- * <pre class="snippet">{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/specific-config-file.xml</pre>
- * <p>
- * GridGain examples come with multiple configuration files you can try.
- * All configuration files are located under {@code GRIDGAIN_HOME/examples/config}
- * folder.
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * with {@code examples/config/example-compute.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
  */
 public class ComputeContinuousMapperExample {
     /**
-     * @param args Command line arguments (none required).
-     * @throws GridException If failed.
+     * Executes example.
+     *
+     * @param args Command line arguments, none required.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
+        System.out.println();
+        System.out.println(">>> Compute continuous mapper example started.");
+
         try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
             GridComputeTaskFuture<Integer> fut = g.compute().execute(
                 GridContinuousMapperTask.class, "Hello Continuous Mapper");
@@ -98,9 +79,9 @@ public class ComputeContinuousMapperExample {
      * is split into multiple words and next word is sent out for processing only
      * when the result for the previous word was received.
      * <p>
-     * Note that annotation {@link org.gridgain.grid.compute.GridComputeTaskNoResultCache} is optional and tells GridGain
+     * Note that annotation {@link GridComputeTaskNoResultCache} is optional and tells GridGain
      * not to accumulate results from individual jobs. In this example we increment
-     * total character count directly in {@link #result(org.gridgain.grid.compute.GridComputeJobResult, List)} method,
+     * total character count directly in {@link #result(GridComputeJobResult, List)} method,
      * and therefore don't need to accumulate them be be processed at reduction step.
      *
      * @author @java.author

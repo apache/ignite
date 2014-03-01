@@ -1256,9 +1256,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             if (cacheCfg == null)
                 continue; // No cache for the given GGFS configuration.
 
-            GridCacheAffinityMapper affMapper = cacheCfg.getAffinityMapper();
+            GridCacheAffinityKeyMapper affMapper = cacheCfg.getAffinityMapper();
 
-            if (!(affMapper instanceof GridGgfsGroupDataBlocksMapper))
+            if (!(affMapper instanceof GridGgfsGroupDataBlocksKeyMapper))
                 // Do not create GGFS attributes for such a node nor throw error about invalid configuration.
                 // Configuration will be validated later, while starting GridGgfsProcessor.
                 continue;
@@ -1266,7 +1266,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             attrVals.add(new GridGgfsAttributes(
                 ggfsCfg.getName(),
                 ggfsCfg.getBlockSize(),
-                ((GridGgfsGroupDataBlocksMapper)affMapper).groupSize(),
+                ((GridGgfsGroupDataBlocksKeyMapper)affMapper).groupSize(),
                 ggfsCfg.getMetaCacheName(),
                 ggfsCfg.getDataCacheName(),
                 ggfsCfg.getDefaultMode(),

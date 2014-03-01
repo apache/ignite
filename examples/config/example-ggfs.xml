@@ -48,6 +48,11 @@
     -->
     <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
         <!--
+            Explicitly set to local host address.
+        -->
+        <property name="localHost" value="127.0.0.1"/>
+
+        <!--
             Configure optimized marshaller.
         -->
         <property name="marshaller">
@@ -110,13 +115,13 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinity">
+                        <bean class="org.gridgain.grid.cache.affinity.consistenthash.GridCacheConsistentHashAffinityFunction">
                             <!-- Setup number of backup servers per key. -->
                             <constructor-arg value="0"/>
                         </bean>
                     </property>
                     <property name="affinityMapper">
-                        <bean class="org.gridgain.grid.ggfs.GridGgfsGroupDataBlocksMapper">
+                        <bean class="org.gridgain.grid.ggfs.GridGgfsGroupDataBlocksKeyMapper">
                             <!-- Haw many blocks in row will be stored on the same node. -->
                             <constructor-arg value="512"/>
                         </bean>
@@ -143,11 +148,6 @@
                 <util:constant static-field="org.gridgain.grid.events.GridEventType.EVT_JOB_MAPPED"/>
             </list>
         </property>
-
-        <!--
-            Explicitly set to local host address.
-        -->
-        <property name="localHost" value="127.0.0.1"/>
 
         <!--
             TCP discovery SPI (uses VM-shared IP-finder).

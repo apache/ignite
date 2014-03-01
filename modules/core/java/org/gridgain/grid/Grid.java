@@ -18,9 +18,10 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.spi.discovery.*;
+import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.streamer.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -398,7 +399,7 @@ public interface Grid extends GridProjection, AutoCloseable {
 
     /**
      * Gets current topology version. In case of TCP discovery
-     * (see {@link org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi}) topology versions
+     * (see {@link GridTcpDiscoverySpi}) topology versions
      * are sequential - they start from {@code '1'} and get incremented every time whenever a
      * node joins or leaves. For other discovery SPIs topology versions may not be (and likely are
      * not) sequential.
@@ -415,7 +416,7 @@ public interface Grid extends GridProjection, AutoCloseable {
      * @return Collection of grid nodes which represented by specified topology version,
      * if it is present in history storage, {@code null} otherwise.
      * @throws UnsupportedOperationException If underlying SPI implementation does not support
-     *      topology history. Currently only {@link org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi}
+     *      topology history. Currently only {@link GridTcpDiscoverySpi}
      *      supports topology history.
      */
     @Nullable public Collection<GridNode> topology(long topVer) throws UnsupportedOperationException;
@@ -429,7 +430,7 @@ public interface Grid extends GridProjection, AutoCloseable {
      * <ul>
      * <li>For local caches it returns only local node mapped to all keys.</li>
      * <li>
-     *      For fully replicated caches, {@link GridCacheAffinity} is
+     *      For fully replicated caches, {@link GridCacheAffinityFunction} is
      *      used to determine which keys are mapped to which groups of nodes.
      * </li>
      * <li>For partitioned caches, the returned map represents node-to-key affinity.</li>
@@ -452,7 +453,7 @@ public interface Grid extends GridProjection, AutoCloseable {
      * <ul>
      * <li>For local caches it returns only local node ID.</li>
      * <li>
-     *      For fully replicated caches first node ID returned by {@link GridCacheAffinity}
+     *      For fully replicated caches first node ID returned by {@link GridCacheAffinityFunction}
      *      is returned.
      * </li>
      * <li>For partitioned caches, the returned node ID is the primary node for the key.</li>

@@ -11,68 +11,26 @@ package org.gridgain.grid.cache.query;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.indexing.h2.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
 /**
  * Main API for configuring and executing cache queries.
  * <p>
- * The queries are executed as follows:
- * <ol>
- * <li>Query is sent to requested grid nodes.</li>
- * <li>
- *  If query is not of {@link GridCacheQueryType#SCAN} query type, each node will execute the received query
- *  against index tables to retrieve the keys of the values in the result set. In {@code SCAN} mode this
- *  step is redundant.
- * <li>
- *  If there is a key filter provided via {@link #remoteKeyFilter(GridPredicate)}
- *  method, then each returned key will be evaluated against the provided key filter.
- * </li>
- * <li>
- *  All the keys that still remain will be used to retrieve corresponding values from cache.
- *  If {@code read-through} flag is enabled, then all values that are {@code null}
- *  (possible if {@code 'invalidation'} mode is set to {@code true}) will be loaded
- *  from the persistent store, otherwise only values that are available in memory will
- *  be returned.
- * </li>
- * <li>
- *  If there is a value filter provided via {@link #remoteValueFilter(GridPredicate)} method,
- *  all retrieved values will be evaluated against the provided value filter.
- * </li>
- * <li>
- *  If query was executed via {@link #visit(GridPredicate)} method, then
- *  a small acknowledgement message is sent back, otherwise the resulting key-value pairs
- *  will be sent back to requesting node one page at a time.
- * </li>
- * <li>
- *  If the requesting node will receive a page of next query results, it will provide it to the ongoing
- *  iterator, which will start returning received key-value pairs to user. If {@link #keepAll(boolean)}
- *  flag is set to false, then the received page will be immediately discarded after it has been
- *  returned to user. In this case, the {@link GridCacheQueryFuture#get()} method will always return
- *  only the last page. If {@link #keepAll(boolean)} flag is {@code true}, then all query result pages
- *  will be accumulated in memory and the full query result will be returned to user.
- * </li>
- * </ol>
- * Cache queries are created from {@link GridCacheProjection} API via any of the available
- * {@code createQuery(...)} methods.
+ * Cache queries are created from {@link GridCacheQueries} API via any of the available
+ * {@code createXXXQuery(...)} methods.
  * <h1 class="header">SQL Queries</h1>
- * {@link GridCacheQueryType#SQL} query type allows to execute distributed cache
+ * {@code SQL} query allows to execute distributed cache
  * queries using standard SQL syntax. All values participating in where clauses
- * or joins must be annotated with {@link GridCacheQuerySqlField} annotation.
- * There are almost no restrictions as to which SQL syntax can be used. All inner, outer, or
- * full joins are supported, as well as rich set of SQL grammar and functions. GridGain relies on
- * {@code H2 SQL Engine} for SQL compilation and indexing. For full set of supported
- * {@code Numeric}, {@code String}, and {@code Date/Time} SQL functions please refer
- * to <a href="http://www.h2database.com/html/functions.html">H2 Functions</a> documentation
- * directly. For full set of supported SQL syntax refer to
- * <a href="http://www.h2database.com/html/grammar.html#select">H2 SQL Select Grammar</a>.
- * <p>
- * Note that whenever using {@code 'group by'} queries, only individual page results will be
- * sorted and not the full result sets. However, if a single node is queried, then the result
- * set will be quite accurate.
+ * or joins must be annotated with {@link GridCacheQuerySqlField} annotation. Query can be created
+ * with {@link GridCacheQueries#createSqlQuery(Class, String)} method.
+ * <h2 class="header">Field Queries</h2>
+ * By default {@code select} clause is ignored as query result contains full objects.
+ * If it is needed to select individual fields, use {@link GridCacheQueries#createSqlFieldsQuery(String)} method.
+ * This type of query replaces full objects with individual fields. Note that selected fields
+ * must be annotated with {@link GridCacheQuerySqlField} annotation.
  * <h2 class="header">Cross-Cache Queries</h2>
  * You are allowed to query data from several caches. Cache that this query was created on is
  * treated as default schema in this case. Other caches can be referenced by their names.
@@ -81,69 +39,24 @@ import java.util.*;
  * Here is an example of cross cache query (note that 'replicated' and 'partitioned' are
  * cache names for replicated and partitioned caches accordingly):
  * <pre name="code" class="java">
- * GridCacheQuery&lt;Integer, FactPurchase&gt; storePurchases = cache.createQuery(
- *     SQL,
+ * GridCacheQuery&lt;Map.Entry&lt;Integer, FactPurchase&gt;&gt; storePurchases = cache.queries().createSqlQuery(
  *     Purchase.class,
  *     "from \"replicated\".Store, \"partitioned\".Purchase where Store.id=Purchase.storeId and Store.id=?");
  * </pre>
- * <h2 class="header">Snowflake Schema and Distributed Joins</h2>
- * <a href="http://en.wikipedia.org/wiki/Snowflake_schema">Snowflake Schema</a> is a logical
- * arrangement of data in which data is split into {@code dimensions} and {@code facts}.
- * <i>Dimensions</i> can be referenced or joined by other <i>dimensions</i> or <i>facts</i>,
- * however, <i>facts</i> are generally not referenced by other facts. You can view <i>dimensions</i>
- * as your master or reference data, while <i>facts</i> are usually large data sets of events or
- * other objects that continuously come into the system and may change frequently. In GridGain
- * such architecture is supported via cross-cache queries. By storing <i>dimensions</i> in
- * {@link GridCacheMode#REPLICATED REPLICATED} caches and <i>facts</i> in much larger
- * {@link GridCacheMode#PARTITIONED PARTITIONED} caches you can freely execute distributed joins across
- * your whole in-memory data grid, thus querying your in memory data without any limitations.
- * <p>
- * Note that in addition to joining <i>facts</i> and <i>dimensions</i>,
- * if you properly colocate relevant <i>facts</i> together, you can also cross-reference and
- * execute distributed joins across multiple <i>fact</i> object types within your in-memory data grid as well.
- * <h2 class="header">Field Queries</h2>
- * By default {@code select} clause is ignored as query result contains full objects.
- * If it is needed to select individual fields, then refer to {@link GridCacheFieldsQuery}
- * documentation.
  * <h2 class="header">Custom functions in SQL queries.</h2>
  * It is possible to write custom Java methods and call then form SQL queries. These methods must be public static
  * and annotated with {@link GridCacheQuerySqlFunction}. Classes containing these methods must be registered in
  * {@link GridH2IndexingSpi#setIndexCustomFunctionClasses(Class[])}.
- * <h1 class="header">Text Queries</h1>
- * GridGain supports full text queries using Apache Lucene.
- * All fields that are expected to show up in text query results must be annotated
- * with {@link GridCacheQueryTextField}.
+ * <h1 class="header">Full Text Queries</h1>
+ * GridGain supports full text queries based on Apache Lucene engine. This queries are created by
+ * {@link GridCacheQueries#createFullTextQuery(Class, String)} method. Note that all fields that
+ * are expected to show up in text query results must be annotated with {@link GridCacheQueryTextField}
+ * annotation.
  * <h1 class="header">Scan Queries</h1>
- * Sometimes when it is known in advance that SQL query will cause a full data scan,
- * or whenever data set is relatively small, the {@link GridCacheQueryType#SCAN}
- * query type may be used. With this query type GridGain will iterate over all cache
- * entries, skipping over the entries that don't pass the optionally provided key or value filters
- * (see {@link #remoteKeyFilter(GridPredicate)} or {@link #remoteValueFilter(GridPredicate)} methods).
- * In this mode the query clause should not be provided.
- * <h1 class="header">Execute vs. Visit</h1>
- * If there is no need to return result to the caller node, you can save on a potentially significant
- * network overhead by visiting all query results directly on remote nodes by calling
- * {@link #visit(GridPredicate)} method. With this method, all the logic is performed
- * inside of query predicate directly on the queried nodes. If the predicate will return {@code false}
- * while visiting, then visiting will finish immediately.
- * <h1 class="header">Optional Key and Value filters</h1>
- * Note that all query results may be additionally filtered by specifying
- * predicates for key and value filtering via {@link #remoteKeyFilter(GridPredicate)}
- * and {@link #remoteValueFilter(GridPredicate)} methods. These additional filters
- * are useful whenever filtering is based on logic or methods not available in {@code SQL}
- * or {@code TEXT} queries. For {@code 'SCAN'} queries this filters should be usually provided
- * as they are used directly to filter the query results during full scan.
- * <h1 class="header">Query Future Iterators</h1>
- * Note that {@link GridCacheQueryFuture} implements {@link Iterable} interface directly and
- * therefore can be used in regular iterator or {@code foreach} loops. The iterator will
- * immediately return all query results that are currently available and will block on page
- * boundaries, whenever the next page is not available yet. Whenever the full result set is
- * needed as a collection, then {@link #keepAll(boolean)} flag should be set to {@code true}
- * and any of the future's {@code get(..)} methods should be called.
- * <h1 class="header">Query Performance</h1>
- * Note that in case of very frequent cache updates, query index has to be frequently updated which
- * may have negative effect on performance. Generally, it's best to use cache indexes and queries
- * when updates are not too frequent.
+ * Sometimes when it is known in advance that SQL query will cause a full data scan, or whenever data set
+ * is relatively small, the full scan query may be used. This query will iterate over all cache
+ * entries, skipping over entries that don't pass the optionally provided key-value filter
+ * (see {@link GridCacheQueries#createScanQuery(GridBiPredicate)} method).
  * <h2 class="header">Limitations</h2>
  * Data in GridGain cache is usually distributed across several nodes,
  * so some queries may not work as expected. Keep in mind following limitations
@@ -163,8 +76,7 @@ import java.util.*;
  *         Joins will work correctly only if joined objects are stored in
  *         collocated mode or at least one side of the join is stored in
  *         {@link GridCacheMode#REPLICATED} cache. Refer to
- *         {@link org.gridgain.grid.cache.affinity.GridCacheAffinityKey}
- *         javadoc for more information about colocation.
+ *         {@link GridCacheAffinityKey} javadoc for more information about colocation.
  *     </li>
  * </ul>
  * <h1 class="header">Query usage</h1>
@@ -207,56 +119,88 @@ import java.util.*;
  * ...
  * // Create query which selects salaries based on range for all employees
  * // that work for a certain company.
- * GridCacheQuery&lt;Long, Person&gt; qry = cache.createQuery(SQL, Person.class,
+ * GridCacheQuery&lt;Map.Entry&lt;Long, Person&gt;&gt; qry = cache.queries().createSqlQuery(Person.class,
  *     "from Person, Organization where Person.orgId = Organization.id " +
  *         "and Organization.name = ? and Person.salary &gt; ? and Person.salary &lt;= ?");
  *
  * // Query all nodes to find all cached GridGain employees
  * // with salaries less than 1000.
- * qry.queryArguments("GridGain", 0, 1000).execute(grid);
+ * qry.execute("GridGain", 0, 1000);
  *
  * // Query only remote nodes to find all remotely cached GridGain employees
  * // with salaries greater than 1000 and less than 2000.
- * qry.queryArguments("GridGain", 1000, 2000).execute(grid.remoteProjection());
- *
- * // Query local node only to find all locally cached GridGain employees
- * // with salaries greater than 2000.
- * qry.queryArguments(2000, Integer.MAX_VALUE).execute(grid.localNode());
+ * qry.projection(grid.remoteProjection()).execute("GridGain", 1000, 2000);
  * </pre>
  * Here is a possible query that will use Lucene text search to scan all resumes to
  * check if employees have {@code Master} degree:
  * <pre name="code" class="java">
- * GridCacheQuery&lt;Long, Person&gt; mastersQry = cache.createQuery(LUCENE, Person.class, "Master");
+ * GridCacheQuery&lt;Map.Entry&lt;Long, Person&gt;&gt; mastersQry =
+ *     cache.queries().createFullTextQuery(Person.class, "Master");
  *
  * // Query all cache nodes.
- * mastersQry.execute(grid.localNode()));
+ * mastersQry.execute();
  * </pre>
  *
  * @author @java.author
  * @version @java.version
  */
-public interface GridCacheQuery<K, V> extends GridCacheQueryBase<K, V, GridCacheQuery<K, V>> {
-    /**
-     * Optional query arguments that get passed into query SQL.
-     *
-     * @param args Optional query arguments.
-     * @return This query with the passed in arguments preset.
-     */
-    public GridCacheQuery<K, V> queryArguments(@Nullable Object... args);
+public interface GridCacheQuery<T> {
+    /** Default query page size. */
+    public static final int DFLT_PAGE_SIZE = 1024;
 
     /**
-     * Executes the query and returns the first result in the result set. If more
-     * than one key-value pair are returned they will be ignored.
-     * <p>
-     * Note that if the passed in grid projection is a local node, then query
-     * will be executed locally without distribution to other nodes.
-     * <p>
-     * Also note that query state cannot be changed (clause, timeout etc.) if this
-     * method was called at least once.
+     * Sets result page size. If not provided, {@link #DFLT_PAGE_SIZE} will be used.
+     * Results are returned from queried nodes one page at a tme.
      *
-     * @return Future for the single query result.
+     * @param pageSize Page size.
+     * @return {@code this} query instance for chaining.
      */
-    public GridFuture<Map.Entry<K, V>> executeSingle();
+    public GridCacheQuery<T> pageSize(int pageSize);
+
+    /**
+     * Sets query timeout. {@code 0} means there is no timeout (this
+     * is a default value).
+     *
+     * @param timeout Query timeout.
+     * @return {@code this} query instance for chaining.
+     */
+    public GridCacheQuery<T> timeout(long timeout);
+
+    /**
+     * Sets whether or not to keep all query results local. If not - only the current page
+     * is kept locally. Default value is {@code true}.
+     *
+     * @param keepAll Keep results or not.
+     * @return {@code this} query instance for chaining.
+     */
+    public GridCacheQuery<T> keepAll(boolean keepAll);
+
+    /**
+     * Sets whether or not to include backup entries into query result. This flag
+     * is {@code false} by default.
+     *
+     * @param incBackups Query {@code includeBackups} flag.
+     * @return {@code this} query instance for chaining.
+     */
+    public GridCacheQuery<T> includeBackups(boolean incBackups);
+
+    /**
+     * Sets whether or not to deduplicate query result set. If this flag is {@code true}
+     * then query result will not contain some key more than once even if several nodes
+     * returned entries with the same keys. Default value is {@code false}.
+     *
+     * @param dedup Query {@code enableDedup} flag.
+     * @return {@code this} query instance for chaining.
+     */
+    public GridCacheQuery<T> enableDedup(boolean dedup);
+
+    /**
+     * Sets optional grid projection to execute this query on.
+     *
+     * @param prj Projection.
+     * @return {@code this} query instance for chaining.
+     */
+    public GridCacheQuery<T> projection(GridProjection prj);
 
     /**
      * Executes the query and returns the query future. Caller may decide to iterate
@@ -273,23 +217,38 @@ public interface GridCacheQuery<K, V> extends GridCacheQueryBase<K, V, GridCache
      * Also note that query state cannot be changed (clause, timeout etc.), except
      * arguments, if this method was called at least once.
      *
+     * @param args Optional arguments.
      * @return Future for the query result.
      */
-    public GridCacheQueryFuture<Map.Entry<K, V>> execute();
+    public GridCacheQueryFuture<T> execute(@Nullable Object... args);
 
     /**
-     * Visits every entry from query result on every queried node for as long as
-     * the visitor predicate returns {@code true}. Once the predicate returns false
-     * or all entries in query result have been visited, the visiting process stops.
-     * <p>
-     * Note that if the passed in grid projection is a local node, then query
-     * will be executed locally without distribution to other nodes.
-     * <p>
-     * Also note that query state cannot be changed (clause, timeout etc.), except
-     * arguments, if this method was called at least once.
+     * Executes the query the same way as {@link #execute(Object...)} method but reduces result remotely.
      *
-     * @param vis Visitor predicate.
-     * @return Future which will complete whenever visiting on all remote nodes completes or fails.
+     * @param rmtReducer Remote reducer.
+     * @param args Optional arguments.
+     * @return Future for the query result.
      */
-    public GridFuture<?> visit(GridPredicate<Map.Entry<K, V>> vis);
+    public <R> GridCacheQueryFuture<R> execute(GridReducer<T, R> rmtReducer, @Nullable Object... args);
+
+    /**
+     * Executes the query the same way as {@link #execute(Object...)} method but transforms result remotely.
+     *
+     * @param rmtTransform Remote transformer.
+     * @param args Optional arguments.
+     * @return Future for the query result.
+     */
+    public <R> GridCacheQueryFuture<R> execute(GridClosure<T, R> rmtTransform, @Nullable Object... args);
+
+    /**
+     * Gets metrics for this query.
+     *
+     * @return Query metrics.
+     */
+    public GridCacheQueryMetrics metrics();
+
+    /**
+     * Resets metrics for this query.
+     */
+    public void resetMetrics();
 }

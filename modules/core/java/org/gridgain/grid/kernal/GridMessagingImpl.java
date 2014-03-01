@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.messaging.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -101,6 +100,9 @@ public class GridMessagingImpl implements GridMessaging {
             if (snapshot.isEmpty())
                 throw U.emptyTopologyException();
 
+            if (timeout == 0)
+                timeout = ctx.config().getNetworkTimeout();
+
             ctx.io().sendUserMessage(snapshot, msg, topic, true, timeout);
         }
         finally {
@@ -109,14 +111,13 @@ public class GridMessagingImpl implements GridMessaging {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void localListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) {
         A.notNull(p, "p");
 
         guard();
 
         try {
-            ctx.io().listenAsync(topic, p);
+            ctx.io().addUserMessageListener(topic, p);
         }
         finally {
             unguard();
@@ -124,7 +125,21 @@ public class GridMessagingImpl implements GridMessaging {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) {
+    @Override public void stopLocalListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) {
+        A.notNull(p, "p");
+
+        guard();
+
+        try {
+            ctx.io().removeUserMessageListener(topic, p);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<UUID> remoteListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p) {
         A.notNull(p, "p");
 
         guard();
@@ -132,18 +147,18 @@ public class GridMessagingImpl implements GridMessaging {
         try {
             GridContinuousHandler hnd = new GridMessageListenHandler(topic, (GridBiPredicate<UUID, Object>)p);
 
-            return ctx.continuous().startRoutine(hnd, 1, 0, false, prj.predicate()).chain(
-                new CX1<GridFuture<UUID>, Object>() {
-                    @Override public Object applyx(GridFuture<UUID> f) throws GridException {
-                        f.get();
-
-                        return null;
-                    }
-                });
+            return ctx.continuous().startRoutine(hnd, 1, 0, false, prj.predicate());
         }
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> stopRemoteListen(UUID opId) {
+        A.notNull(opId, "opId");
+
+        return ctx.continuous().stopRoutine(opId);
     }
 
     /**

@@ -11,6 +11,9 @@ package org.gridgain.examples.compute;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.scheduler.*;
+
+import java.util.concurrent.*;
 
 /**
  * Demonstrates a cron-based {@link Runnable} execution scheduling.
@@ -28,38 +31,50 @@ import org.gridgain.grid.lang.*;
  */
 public class ComputeScheduleExample {
     /**
-     * Executes scheduling example.
+     * Executes example.
      *
-     * @param args Command line arguments, none required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      {@code "examples/config/"} for configuration file examples.
+     * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
      */
-    public static void main(String[] args) throws GridException, InterruptedException {
-        try (Grid g = args.length == 0 ? GridGain.start("examples/config/example-compute.xml") : GridGain.start(args[0])) {
+    public static void main(String[] args) throws GridException {
+        try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
+            System.out.println();
+            System.out.println("Compute schedule example started.");
+
             // Schedule output message every minute.
-            g.scheduler().scheduleLocal(
-                new Runnable() {
-                    @Override public void run() {
+            GridSchedulerFuture<?> fut = g.scheduler().scheduleLocal(
+                new Callable<Integer>() {
+                    private int invocations;
+
+                    @Override public Integer call() {
+                        invocations++;
+
                         try {
-                            g.compute().broadcast(new GridRunnable() {
-                                @Override public void run() {
-                                    System.out.println("Howdy! :)");
+                            g.compute().broadcast(
+                                new GridRunnable() {
+                                    @Override public void run() {
+                                        System.out.println();
+                                        System.out.println("Howdy! :) ");
+                                    }
                                 }
-                            }).get();
+                            ).get();
                         }
                         catch (GridException e) {
                             throw new GridRuntimeException(e);
                         }
+
+                        return invocations;
                     }
                 },
                 "{5, 3} * * * * *" // Cron expression.
             );
 
-            // Sleep.
-            Thread.sleep(1000 * 60 * 3);
+            while (!fut.isDone())
+                System.out.println(">>> Invocation #: " + fut.get());
 
             // Prints.
+            System.out.println();
+            System.out.println(">>> Schedule future is done and has been unscheduled.");
             System.out.println(">>> Check all nodes for hello message output.");
         }
     }

@@ -154,10 +154,10 @@ public interface GridComputeJob extends Serializable {
      *
      * @return Job execution result (possibly {@code null}). This result will be returned
      *      in {@link GridComputeJobResult#getData()} method passed into
-     *      {@link GridComputeTask#result(GridComputeJobResult, List)} method into task on caller node.
+     *      {@link GridComputeTask#result(GridComputeJobResult, List)} task method on caller node.
      * @throws GridException If job execution caused an exception. This exception will be
      *      returned in {@link GridComputeJobResult#getException()} method passed into
-     *      {@link GridComputeTask#result(GridComputeJobResult, List)} method into task on caller node.
+     *      {@link GridComputeTask#result(GridComputeJobResult, List)} task method on caller node.
      *      If execution produces a {@link RuntimeException} or {@link Error}, then
      *      it will be wrapped into {@link GridException}.
      */

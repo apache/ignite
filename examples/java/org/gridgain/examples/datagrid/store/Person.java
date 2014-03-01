@@ -93,11 +93,11 @@ public class Person implements Serializable {
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Person ");
-        sb.append("[firstName=").append(firstName);
-        sb.append(", id=").append(id);
-        sb.append(", lastName=").append(lastName);
-        sb.append(']');
+        sb.
+            append("Person [id=").append(id).
+            append(", firstName=").append(firstName).
+            append(", lastName=").append(lastName).
+            append(']');
 
         return sb.toString();
     }

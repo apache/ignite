@@ -11,13 +11,12 @@ package org.gridgain.examples.misc.client.interceptor;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.partition.*;
+import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.spi.indexing.h2.*;
 
-import javax.swing.*;
 import java.util.*;
 
 import static org.gridgain.grid.GridDeploymentMode.*;
@@ -45,18 +44,7 @@ public class ClientMessageInterceptorExampleNodeStartup {
      * @throws GridException If failed.
      */
     public static void main(String[] args) throws GridException {
-        try (Grid g = GridGain.start(configuration())) {
-            // Wait until Ok is pressed.
-            JOptionPane.showMessageDialog(
-                null,
-                new JComponent[]{
-                    new JLabel("GridGain started."),
-                    new JLabel("Press OK to stop GridGain.")
-                },
-                "GridGain",
-                JOptionPane.INFORMATION_MESSAGE
-            );
-        }
+        GridGain.start(configuration());
     }
 
     /**
@@ -76,6 +64,7 @@ public class ClientMessageInterceptorExampleNodeStartup {
 
         marsh.setRequireSerializable(false);
 
+        cfg.setMarshaller(marsh);
 
         GridH2IndexingSpi indexSpi = new GridH2IndexingSpi();
 
@@ -93,7 +82,7 @@ public class ClientMessageInterceptorExampleNodeStartup {
         cacheCfg.setAtomicityMode(ATOMIC);
         cacheCfg.setWriteSynchronizationMode(PRIMARY_SYNC);
         cacheCfg.setDistributionMode(PARTITIONED_ONLY);
-        cacheCfg.setAffinity(new GridCachePartitionAffinity(1));
+        cacheCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(1));
         cacheCfg.setStartSize(1500000);
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setPreloadMode(SYNC);
@@ -104,12 +93,7 @@ public class ClientMessageInterceptorExampleNodeStartup {
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
 
-        Collection<String> addrs = new ArrayList<>();
-
-        for (int i = 0; i < 10; i++)
-            addrs.add("127.0.0.1:" + (47500 + i));
-
-        ipFinder.setAddresses(addrs);
+        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
 
         discoSpi.setIpFinder(ipFinder);
 

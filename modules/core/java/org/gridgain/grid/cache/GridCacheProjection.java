@@ -66,8 +66,6 @@ import java.util.concurrent.*;
  *  global cache memory.
  * </li>
  * <li>
- *  Various {@code 'invalidate(..)'} methods to set cached values to {@code null}.
- * <li>
  *  Various {@code 'lock(..)'}, {@code 'unlock(..)'}, and {@code 'isLocked(..)'} methods to acquire, release,
  *  and check on distributed locks on a single or multiple keys in cache. All locking methods
  *  are not transactional and will not enlist keys into ongoing transaction, if any.
@@ -83,19 +81,12 @@ import java.util.concurrent.*;
  *  transactional and will not enlist evicted keys into ongoing transaction, if any.
  * </li>
  * <li>
- *  Various {@code 'txStart(..)'} and {@code 'inTx(..)'} methods to perform various cache
+ *  Various {@code 'txStart(..)'} methods to perform various cache
  *  operations within a transaction (see {@link GridCacheTx} for more information).
  * </li>
  * <li>
- *  Various {@code 'createXxxQuery(..)'} methods to query cache using either {@link GridCacheQueryType#SQL SQL},
- *  {@link GridCacheQueryType#TEXT TEXT} text search, or
- *  {@link GridCacheQueryType#SCAN SCAN} for filter-based full scan (see {@link GridCacheQuery}
- *   for more information).
- * </li>
- * <li>
- *  Various {@code 'mapKeysToNodes(..)'} methods which provide node affinity mapping for
- *  given keys. All {@code 'mapKeysToNodes(..)'} methods are not transactional and will not enlist
- *  keys into ongoing transaction.
+ *  {@link #queries()} method to get an instance of {@link GridCacheQueries} service for working
+ *  with distributed cache queries.
  * </li>
  * <li>
  *  Various {@code 'gridProjection(..)'} methods which provide {@link GridProjection} only
@@ -128,13 +119,13 @@ import java.util.concurrent.*;
  * <i>affinity-based</i>, and <i>partitioned-based</i>.
  * <p>
  * With {@code affinity-based HyperLocking} the keys are grouped by <i>affinity-key</i>. This means that
- * only keys with identical affinity-key (see {@link GridCacheAffinityMapped}) can participate in the
+ * only keys with identical affinity-key (see {@link GridCacheAffinityKeyMapped}) can participate in the
  * transaction, and only one lock on the <i>affinity-key</i> will be acquired for the whole transaction.
  * {@code Affinity-hyper-locked} transactions are started via
  * {@link #txStartAffinity(Object, GridCacheTxConcurrency, GridCacheTxIsolation, long, int)} method.
  * <p>
  * With {@code partition-based HyperLocking} the keys are grouped by partition ID. This means that
- * only keys belonging to identical partition (see {@link GridCacheAffinity0#partition(Object)}) can participate in the
+ * only keys belonging to identical partition (see {@link GridCacheAffinity#partition(Object)}) can participate in the
  * transaction, and only one lock on the whole partition will be acquired for the whole transaction.
  * {@code Partition-hyper-locked} transactions are started via
  * {@link #txStartPartition(int, GridCacheTxConcurrency, GridCacheTxIsolation, long, int)} method.
@@ -146,14 +137,11 @@ import java.util.concurrent.*;
  * Neither {@code null} keys or values are allowed to be stored in cache. If a {@code null} value
  * happens to be in cache (e.g. after invalidation or remove), then cache will treat this case
  * as there is no value at all.
- * <p>
- * All API methods with {@link Nullable @Nullable} annotation on method parameters
- * or return values either accept or may return a {@code null} value. Parameters that do not
- * have this annotation cannot be {@code null} and invoking method with a {@code null} parameter
- * in this case will result in {@link NullPointerException}.
  * <h1 class="header">Peer Class Loading</h1>
- * All classes passed into cache API will be automatically deployed to any participating grid nodes.
- * No explicit deployment step is required.
+ * If peer-class-loading is enabled, all classes passed into cache API will be automatically deployed
+ * to any participating grid nodes. However, in case of redeployment, caches will be cleared and
+ * all entries will be removed. This behavior is useful during development, but should not be
+ * used in production.
  *
  * @author @java.author
  * @version @java.version

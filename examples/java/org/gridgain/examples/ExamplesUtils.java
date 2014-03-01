@@ -44,7 +44,8 @@ public class ExamplesUtils {
 
         if (prjSize < size) {
             System.out.println();
-            System.out.println(">>> Please start at least '" + size + "' number of grid nodes to run example.");
+            System.out.println(">>> Please start at least " + size + " grid nodes to run example.");
+            System.out.println();
 
             return false;
         }

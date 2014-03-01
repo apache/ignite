@@ -14,6 +14,7 @@ import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.Map.*;
 
 /**
  * This interface provides a rich API for working with individual cache entries. It
@@ -212,7 +213,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
     /**
      * This method has the same semantic as {@link #get()} method, however it
      * wraps {@link GridException} into {@link GridRuntimeException} if failed in order to
-     * comply with {@link java.util.Map.Entry} interface.
+     * comply with {@link Entry} interface.
      *
      * @return See {@link #get()}
      */
@@ -238,7 +239,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
     /**
      * This method has the same semantic as {@link #set(Object, GridPredicate[])} method, however it
      * wraps {@link GridException} into {@link GridRuntimeException} if failed in order to
-     * comply with {@link java.util.Map.Entry} interface.
+     * comply with {@link Entry} interface.
      *
      * @return See {@link #set(Object, GridPredicate[])}
      */

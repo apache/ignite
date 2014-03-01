@@ -11,17 +11,14 @@ package org.gridgain.examples.misc.client.router;
 
 import org.gridgain.client.*;
 import org.gridgain.client.router.*;
-import org.gridgain.client.ssl.*;
-import org.gridgain.examples.*;
 import org.gridgain.examples.misc.client.api.*;
 
-import javax.net.ssl.*;
 import java.util.*;
 
 /**
  * This example demonstrates use of Java client, connected to Grid through router.
  * To execute this example you should start an instance of
- * {@link org.gridgain.examples.misc.client.api.ClientExampleNodeStartup} class which will start up a GridGain node.
+ * {@link ClientExampleNodeStartup} class which will start up a GridGain node.
  * And an instance of {@link RouterStartup} which will start up
  * a GridGain router.
  * <p>
@@ -41,11 +38,9 @@ import java.util.*;
  * <p>
  * Another option for routing is to use one of node as a router itself. You can
  * transparently pass node address in {@link GridClientConfiguration#getRouters()}
- * an it will be routing incoming requests, To run the example in this mode just
- * uncomment alternative port number constants below and run few Grid nodes.
+ * an it will be routing incoming requests.
  * <p>
- * Note that to start the example, {@code GRIDGAIN_HOME} system property or environment variable
- * must be set.
+ * Before running this example you must run {@link RouterStartup}.
  *
  * @author @java.author
  * @version @java.version
@@ -67,12 +62,15 @@ public class RouterExample {
     // private static final int ROUTER_HTTP_PORT = 8080;
 
     /**
-     * Runs router example using both TCP and HTTP protocols.
+     * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridClientException If failed.
+     * @throws GridClientException If example execution failed.
      */
     public static void main(String[] args) throws GridClientException {
+        System.out.println();
+        System.out.println(">>> Router example started.");
+
         try (GridClient tcpClient = createTcpClient()) {
             System.out.println(">>> TCP client created, current grid topology: " + tcpClient.compute().nodes());
 

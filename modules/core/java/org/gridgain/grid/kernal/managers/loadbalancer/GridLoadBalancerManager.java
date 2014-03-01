@@ -124,7 +124,7 @@ public class GridLoadBalancerManager extends GridManagerAdapter<GridLoadBalancin
         if (log.isDebugEnabled())
             log.debug("Looking for cache affinity node [job=" + job + "]");
 
-        Object key = dep.annotatedValue(job, GridCacheAffinityMapped.class);
+        Object key = dep.annotatedValue(job, GridCacheAffinityKeyMapped.class);
 
         if (key == null)
             return null;

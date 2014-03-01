@@ -9,11 +9,16 @@ noinst_PROGRAMS = gridgain-tests gridgain-router-tests gridgain-threadpool-load-
     gridgain-cache-benchmark \
     router-example \
     gridgain-leak-test \
-    gridgain-nio-echo-benchmark
+    gridgain-nio-echo-benchmark \
+    gridgain-marshalling-benchmark
 
 gridgain_nio_echo_benchmark_SOURCES = NIOEchoBenchmark.cpp
 gridgain_nio_echo_benchmark_LDADD = -lboost_system -lboost_thread -lboost_program_options
 gridgain_nio_echo_benchmark_LDFLAGS = -static-libtool-libs -L/usr/local/lib
+
+gridgain_marshalling_benchmark_SOURCES = load/gridclientmarshallingbenchmark.cpp gridtestcommon.cpp
+gridgain_marshalling_benchmark_LDADD = $(PARENT_DIR)/libgridgain-client.la -lboost_system -lboost_thread -lboost_program_options -lcrypto -lprotobuf -lssl
+gridgain_marshalling_benchmark_LDFLAGS = -static-libtool-libs -L/usr/local/lib
 
 gridgain_tests_SOURCES = gridtestcommon.cpp gridclientaffinityselftest.cpp gridclientabstractselftest.cpp gridclientconsistenthashtest.cpp gridclientexampletest.cpp gridclientfactoryfixture.hpp gridclientfactoryselfttest.cpp gridclientprotobufserializationsimpletest.cpp gridthreadpoolselftest.cpp gridclientconnectionpoolselftest.cpp \
     teamcity_messages.cpp teamcity_boost.cpp

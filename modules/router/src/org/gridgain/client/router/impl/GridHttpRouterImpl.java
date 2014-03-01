@@ -236,7 +236,7 @@ public class GridHttpRouterImpl implements GridHttpRouter, GridHttpRouterMBean {
      *
      * @param routerCfg Router configuration..
      * @return Client instance.
-     * @throws org.gridgain.client.GridClientException If client creation failed.
+     * @throws GridClientException If client creation failed.
      */
     private GridRouterClientImpl createClient(GridHttpRouterConfiguration routerCfg) throws GridClientException {
         UUID clientId = UUID.randomUUID();

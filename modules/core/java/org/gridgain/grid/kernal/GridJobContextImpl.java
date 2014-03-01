@@ -231,7 +231,7 @@ public class GridJobContextImpl extends GridMetadataAwareAdapter implements Grid
     /** {@inheritDoc} */
     @Override public <T> T affinityKey() {
         try {
-            return (T)job.getDeployment().annotatedValue(job.getJob(), GridCacheAffinityMapped.class);
+            return (T)job.getDeployment().annotatedValue(job.getJob(), GridCacheAffinityKeyMapped.class);
         }
         catch (GridException e) {
             throw F.wrap(e);

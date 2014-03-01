@@ -10,7 +10,10 @@
 package org.gridgain.grid.resources;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.spi.*;
+
+import java.io.*;
 import java.lang.annotation.*;
 
 /**
@@ -21,8 +24,8 @@ import java.lang.annotation.*;
  * <p>
  * Logger can be injected into instances of following classes:
  * <ul>
- * <li>{@link org.gridgain.grid.compute.GridComputeTask}</li>
- * <li>{@link org.gridgain.grid.compute.GridComputeJob}</li>
+ * <li>{@link GridComputeTask}</li>
+ * <li>{@link GridComputeJob}</li>
  * <li>{@link GridSpi}</li>
  * <li>{@link GridLifecycleBean}</li>
  * <li>{@link GridUserResource @GridUserResource}</li>
@@ -34,7 +37,7 @@ import java.lang.annotation.*;
  * <p>
  * Note that Spring resources cannot be peer-class-loaded. They must be available in
  * every {@code ApplicationContext} or Spring XML configuration on every grid node.
- * For this reason, if injected into a {@link java.io.Serializable} class, they must
+ * For this reason, if injected into a {@link Serializable} class, they must
  * be declared as {@code transient}.
  * <p>
  * The lifecycle of Spring resources is controlled by Spring container.

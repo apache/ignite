@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.partition.*;
+import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -108,9 +108,6 @@ public class GridCacheAttributes implements Externalizable {
 
     /** Flag indicating whether GridGain should use write-behind behaviour for the cache store. */
     private boolean writeBehindEnabled;
-
-    /** Flag indicating whether GridGain should use primary nodes for persistent store update. */
-    private boolean writeBehindPreferPrimary;
 
     /** Maximum size of write-behind cache. */
     private int writeBehindFlushSize;
@@ -220,16 +217,15 @@ public class GridCacheAttributes implements Externalizable {
         writeBehindFlushFreq  = cfg.getWriteBehindFlushFrequency();
         writeBehindFlushSize = cfg.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cfg.getWriteBehindFlushThreadCount();
-        writeBehindPreferPrimary = cfg.isWriteBehindPreferPrimary();
         writeSyncMode = cfg.getWriteSynchronizationMode();
 
         affMapperClsName = className(cfg.getAffinityMapper());
 
-        GridCacheAffinity aff = cfg.getAffinity();
+        GridCacheAffinityFunction aff = cfg.getAffinity();
 
         if (aff != null) {
-            if (aff instanceof GridCachePartitionAffinity) {
-                GridCachePartitionAffinity aff0 = (GridCachePartitionAffinity) aff;
+            if (aff instanceof GridCacheConsistentHashAffinityFunction) {
+                GridCacheConsistentHashAffinityFunction aff0 = (GridCacheConsistentHashAffinityFunction) aff;
 
                 affInclNeighbors = aff0.isExcludeNeighbors();
                 affKeyBackups = aff0.getKeyBackups();
@@ -559,13 +555,6 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Flag indicating whether GridGain should use primary nodes for persistent store update.
-     */
-    public boolean writeBehindPreferPrimary() {
-        return writeBehindPreferPrimary;
-    }
-
-    /**
      * @return Maximum size of write-behind cache.
      */
     public int writeBehindFlushSize() {
@@ -654,7 +643,6 @@ public class GridCacheAttributes implements Externalizable {
         out.writeLong(writeBehindFlushFreq);
         out.writeInt(writeBehindFlushSize);
         out.writeInt(writeBehindFlushThreadCnt);
-        out.writeBoolean(writeBehindPreferPrimary);
         U.writeEnum(out, writeSyncMode);
 
         U.writeString(out, affClsName);
@@ -710,7 +698,6 @@ public class GridCacheAttributes implements Externalizable {
         writeBehindFlushFreq = in.readLong();
         writeBehindFlushSize = in.readInt();
         writeBehindFlushThreadCnt = in.readInt();
-        writeBehindPreferPrimary = in.readBoolean();
         writeSyncMode = U.readEnum(in, GridCacheWriteSynchronizationMode.class);
 
         affClsName = U.readString(in);
