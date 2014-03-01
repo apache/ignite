@@ -916,6 +916,11 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             recordTaskEvent(EVT_TASK_REDUCED, "Task reduced.");
         }
+        catch (GridTopologyException e) {
+            U.warn(log, "Failed to reduce job results for task (any nodes from task topology left grid?): " + task);
+
+            userE = e;
+        }
         catch (GridException e) {
             U.error(log, "Failed to reduce job results for task: " + task, e);
 
