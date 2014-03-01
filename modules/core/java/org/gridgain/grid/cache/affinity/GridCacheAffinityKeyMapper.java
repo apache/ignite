@@ -41,7 +41,7 @@ import java.io.*;
  */
 public interface GridCacheAffinityKeyMapper extends Serializable {
     /**
-     * Maps passed in key to a key which will be used for node affinity.
+     * Maps passed in key to an alternate key which will be used for node affinity.
      *
      * @param key Key to map.
      * @return Key to be used for node-to-affinity mapping (may be the same
