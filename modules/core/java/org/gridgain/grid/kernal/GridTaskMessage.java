@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.util.*;
+import org.gridgain.grid.*;
 
 /**
  * Grid task related message.
