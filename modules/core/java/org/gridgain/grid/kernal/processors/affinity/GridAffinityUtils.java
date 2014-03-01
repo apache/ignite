@@ -44,7 +44,7 @@ class GridAffinityUtils {
      * @param cacheName Cache name.
      * @return Affinity job.
      */
-    static Callable<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridException>> affinityJob(
+    static Callable<GridTuple4<GridAffinityMessage, GridAffinityMessage, Integer, GridException>> affinityJob(
         String cacheName) {
         return new AffinityJob(cacheName);
     }
@@ -115,7 +115,7 @@ class GridAffinityUtils {
      */
     @GridInternal
     private static class AffinityJob implements
-        Callable<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridException>>, Externalizable {
+        Callable<GridTuple4<GridAffinityMessage, GridAffinityMessage, Integer, GridException>>, Externalizable {
         /** */
         @GridInstanceResource
         private Grid grid;
@@ -142,7 +142,8 @@ class GridAffinityUtils {
         }
 
         /** {@inheritDoc} */
-        @Override public GridTuple3<GridAffinityMessage, GridAffinityMessage, GridException> call() throws Exception {
+        @Override public GridTuple4<GridAffinityMessage, GridAffinityMessage, Integer, GridException> call()
+            throws Exception {
             assert grid != null;
             assert log != null;
 
@@ -154,15 +155,16 @@ class GridAffinityUtils {
 
             GridKernalContext ctx = kernal.context();
 
-            GridTuple3<GridAffinityMessage, GridAffinityMessage, GridException> res =
-                new GridTuple3<>();
+            GridTuple4<GridAffinityMessage, GridAffinityMessage, Integer, GridException> res =
+                new GridTuple4<>();
 
             try {
                 res.set1(affinityMessage(ctx, cache.configuration().getAffinityMapper()));
                 res.set2(affinityMessage(ctx, cache.configuration().getAffinity()));
+                res.set3(cache.configuration().getBackups());
             }
             catch (GridException e) {
-                res.set3(e);
+                res.set4(e);
 
                 U.error(log, "Failed to transfer affinity.", e);
             }

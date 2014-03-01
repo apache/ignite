@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.managers.deployment.protocol.gg;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
-import org.gridgain.grid.util.*;
 
 import java.io.*;
 import java.net.*;

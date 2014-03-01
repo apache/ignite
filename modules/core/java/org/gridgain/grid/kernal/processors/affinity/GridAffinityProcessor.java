@@ -240,7 +240,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
             GridCacheAffinityFunction a = cache.configuration().getAffinity();
             GridCacheAffinityKeyMapper m = cache.configuration().getAffinityMapper();
-            GridAffinityCache affCache = new GridAffinityCache(ctx, cacheName, a, m);
+            GridAffinityCache affCache = new GridAffinityCache(ctx, cacheName, a, m,
+                cache.configuration().getBackups());
 
             GridFuture<GridAffinityCache> old = affMap.putIfAbsent(maskNull(cacheName),
                 new GridFinishedFuture<>(ctx, affCache));
@@ -344,11 +345,11 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     private GridAffinityCache affinityFromNode(@Nullable String cacheName, GridNode n)
         throws GridException {
-        GridTuple3<GridAffinityMessage, GridAffinityMessage, GridException> t = ctx.closure()
+        GridTuple4<GridAffinityMessage, GridAffinityMessage, Integer, GridException> t = ctx.closure()
             .callAsyncNoFailover(BALANCE, affinityJob(cacheName), F.asList(n), true/*system pool*/).get();
 
         // Throw exception if remote node failed to deploy result.
-        GridException err = t.get3();
+        GridException err = t.get4();
 
         if (err != null)
             throw err;
@@ -363,7 +364,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         a.reset();
         m.reset();
 
-        return new GridAffinityCache(ctx, cacheName, a, m);
+        return new GridAffinityCache(ctx, cacheName, a, m, t.get3());
     }
 
     /**

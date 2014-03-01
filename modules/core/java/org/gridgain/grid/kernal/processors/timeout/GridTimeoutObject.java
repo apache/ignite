@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.timeout;
 
-import org.gridgain.grid.util.*;
+import org.gridgain.grid.*;
 
 /**
  * All objects that can timeout should implement this interface.

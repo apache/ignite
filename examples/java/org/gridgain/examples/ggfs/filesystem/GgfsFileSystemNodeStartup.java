@@ -91,7 +91,7 @@ public class GgfsFileSystemNodeStartup {
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         dataCacheCfg.setDistributionMode(PARTITIONED_ONLY);
-        dataCacheCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(0));
+        dataCacheCfg.setBackups(0);
         dataCacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(512));
 
         cfg.setCacheConfiguration(metaCacheCfg, dataCacheCfg);

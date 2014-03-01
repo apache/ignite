@@ -77,7 +77,7 @@ public class GridDrSenderHubInMemoryStore implements GridDrSenderHubStore, GridL
     private static final int MAX_DATA_CENTERS = 32;
 
     /** */
-    public static final int DFLT_MAX_SIZE = 65536;
+    public static final int DFLT_MAX_SIZE = 8192;
 
     /** */
     public static final GridDrSenderHubStoreOverflowMode DFLT_OVERFLOW_MODE = STOP;

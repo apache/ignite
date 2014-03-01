@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.marshaller.optimized;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;

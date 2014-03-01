@@ -11,7 +11,6 @@ package org.gridgain.grid.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.jta.*;
-import org.gridgain.grid.util.*;
 
 import java.util.*;
 
