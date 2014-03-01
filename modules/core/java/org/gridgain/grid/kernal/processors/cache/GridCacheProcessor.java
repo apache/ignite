@@ -60,9 +60,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
  * @version @java.version
  */
 public class GridCacheProcessor extends GridProcessorAdapter {
-    /** Null cache name. */
-    private static final String NULL_NAME = UUID.randomUUID().toString();
-
     /** */
     private final Map<String, GridCacheAdapter<?, ?>> caches;
 
@@ -105,14 +102,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         stopSeq = new LinkedList<>();
 
         mBeanSrv = ctx.config().getMBeanServer();
-    }
-
-    /**
-     * @param name Cache name.
-     * @return Masked name accounting for {@code nulls}.
-     */
-    private String maskName(String name) {
-        return name == null ? NULL_NAME : name;
     }
 
     /**
@@ -590,6 +579,28 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         maxPreloadOrder = validatePreloadOrder(ctx.config().getCacheConfiguration());
 
+        // Internal caches which should not be returned to user.
+        GridGgfsConfiguration[] ggfsCfgs = ctx.grid().configuration().getGgfsConfiguration();
+
+        if (ggfsCfgs != null) {
+            for (GridGgfsConfiguration ggfsCfg : ggfsCfgs) {
+                sysCaches.add(ggfsCfg.getMetaCacheName());
+                sysCaches.add(ggfsCfg.getDataCacheName());
+            }
+        }
+
+        for (GridCacheConfiguration ccfg : ctx.grid().configuration().getCacheConfiguration()) {
+            if (ccfg.getDrSenderConfiguration() != null)
+                sysCaches.add(CU.cacheNameForReplicationSystemCache(ccfg.getName()));
+        }
+
+        GridDrSenderHubConfiguration sndHubCfg = ctx.grid().configuration().getDrSenderHubConfiguration();
+
+        if (sndHubCfg != null && sndHubCfg.getCacheNames() != null) {
+            for (String cacheName : sndHubCfg.getCacheNames())
+                sysCaches.add(CU.cacheNameForReplicationSystemCache(cacheName));
+        }
+
         GridCacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
         for (int i = 0; i < cfgs.length; i++) {
@@ -708,6 +719,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             caches.put(cfg.getName(), cache);
 
+            if (sysCaches.contains(cfg.getName()))
+                stopSeq.addLast(cache);
+            else
+                stopSeq.addFirst(cache);
+
             // Start managers.
             for (GridCacheManager mgr : F.view(cacheCtx.managers(), F.notContains(dhtExcludes(cacheCtx))))
                 mgr.start(cacheCtx);
@@ -815,40 +831,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         // Internal caches which should not be returned to user.
-        GridGgfsConfiguration[] ggfsCfgs = ctx.grid().configuration().getGgfsConfiguration();
-
-        if (ggfsCfgs != null) {
-            for (GridGgfsConfiguration ggfsCfg : ggfsCfgs) {
-                sysCaches.add(ggfsCfg.getMetaCacheName());
-                sysCaches.add(ggfsCfg.getDataCacheName());
-            }
-        }
-
-        for (GridCacheConfiguration ccfg : ctx.grid().configuration().getCacheConfiguration()) {
-            if (ccfg.getDrSenderConfiguration() != null)
-                sysCaches.add(CU.cacheNameForReplicationSystemCache(ccfg.getName()));
-        }
-
-        GridDrSenderHubConfiguration sndHubCfg = ctx.grid().configuration().getDrSenderHubConfiguration();
-
-        if (sndHubCfg != null && sndHubCfg.getCacheNames() != null) {
-            for (String cacheName : sndHubCfg.getCacheNames())
-                sysCaches.add(CU.cacheNameForReplicationSystemCache(cacheName));
-        }
-
         for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
             GridCacheAdapter cache = e.getValue();
 
             if (!sysCaches.contains(e.getKey()))
                 publicProxies.put(e.getKey(), new GridCacheProxyImpl(cache.context(), cache, null));
-        }
-
-        // Create stop sequence.
-        for (Map.Entry<String, GridCacheAdapter<?, ?>> cacheEntry : caches.entrySet()) {
-            if (sysCaches.contains(cacheEntry.getKey()))
-                stopSeq.addLast(cacheEntry.getValue());
-            else
-                stopSeq.addFirst(cacheEntry.getValue());
         }
 
         if (log.isDebugEnabled())

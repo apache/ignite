@@ -18,7 +18,7 @@ import org.jetbrains.annotations.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridEmptyProjectionException extends GridException {
+public class GridEmptyProjectionException extends GridTopologyException {
     /**
      * Creates new exception with default error message.
      */
