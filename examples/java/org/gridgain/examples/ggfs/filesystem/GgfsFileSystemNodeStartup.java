@@ -11,7 +11,7 @@ package org.gridgain.examples.ggfs.filesystem;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.partition.*;
+import org.gridgain.grid.cache.affinity.consistent.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.product.*;
@@ -91,7 +91,7 @@ public class GgfsFileSystemNodeStartup {
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         dataCacheCfg.setDistributionMode(PARTITIONED_ONLY);
-        dataCacheCfg.setAffinity(new GridCachePartitionAffinityFunction(0));
+        dataCacheCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(0));
         dataCacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(512));
 
         cfg.setCacheConfiguration(metaCacheCfg, dataCacheCfg);

@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.partition.*;
+import org.gridgain.grid.cache.affinity.consistent.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.eviction.ggfs.*;
 import org.gridgain.grid.cache.store.*;
@@ -134,16 +134,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (cfg.getAffinity() == null) {
             if (cfg.getCacheMode() == PARTITIONED) {
-                GridCachePartitionAffinityFunction aff = new GridCachePartitionAffinityFunction();
+                GridCacheConsistentHashAffinityFunction aff = new GridCacheConsistentHashAffinityFunction();
 
-                aff.setHashIdResolver(new GridCachePartitionConsistentIdHashResolver());
+                aff.setHashIdResolver(new GridCacheAffinityNodeAddressHashResolver());
 
                 cfg.setAffinity(aff);
             }
             else if (cfg.getCacheMode() == REPLICATED) {
-                GridCachePartitionAffinityFunction aff = new GridCachePartitionAffinityFunction(false, Integer.MAX_VALUE, 512);
+                GridCacheConsistentHashAffinityFunction aff = new GridCacheConsistentHashAffinityFunction(false, Integer.MAX_VALUE, 512);
 
-                aff.setHashIdResolver(new GridCachePartitionConsistentIdHashResolver());
+                aff.setHashIdResolver(new GridCacheAffinityNodeAddressHashResolver());
 
                 cfg.setAffinity(aff);
             }
@@ -152,11 +152,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
         else {
             if (cfg.getCacheMode() == PARTITIONED) {
-                if (cfg.getAffinity() instanceof GridCachePartitionAffinityFunction) {
-                    GridCachePartitionAffinityFunction aff = (GridCachePartitionAffinityFunction)cfg.getAffinity();
+                if (cfg.getAffinity() instanceof GridCacheConsistentHashAffinityFunction) {
+                    GridCacheConsistentHashAffinityFunction aff = (GridCacheConsistentHashAffinityFunction)cfg.getAffinity();
 
                     if (aff.getHashIdResolver() == null)
-                        aff.setHashIdResolver(new GridCachePartitionConsistentIdHashResolver());
+                        aff.setHashIdResolver(new GridCacheAffinityNodeAddressHashResolver());
                 }
             }
         }
@@ -269,19 +269,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void validate(GridConfiguration c, GridCacheConfiguration cc) throws GridException {
         if (cc.getCacheMode() == REPLICATED) {
-            if (!(cc.getAffinity() instanceof GridCachePartitionAffinityFunction))
-                throw new GridException("REPLICATED cache can be started only with GridCachePartitionAffinityFunction" +
+            if (!(cc.getAffinity() instanceof GridCacheConsistentHashAffinityFunction))
+                throw new GridException("REPLICATED cache can be started only with GridCacheConsistentHashAffinityFunction" +
                     " [cacheName=" + cc.getName() + ", affinity=" + cc.getAffinity().getClass().getName() + ']');
 
-            GridCachePartitionAffinityFunction aff = (GridCachePartitionAffinityFunction)cc.getAffinity();
+            GridCacheConsistentHashAffinityFunction aff = (GridCacheConsistentHashAffinityFunction)cc.getAffinity();
 
             if (aff.getKeyBackups() != Integer.MAX_VALUE)
-                throw new GridException("For REPLICATED cache number of backups in GridCachePartitionAffinityFunction must " +
+                throw new GridException("For REPLICATED cache number of backups in GridCacheConsistentHashAffinityFunction must " +
                     "be set to Integer.MAX_VALUE [cacheName=" + cc.getName() +
                     ", backups=" + aff.getKeyBackups() + ']');
 
             if (aff.isExcludeNeighbors())
-                throw new GridException("For REPLICATED cache flag 'excludeNeighbors' in GridCachePartitionAffinityFunction " +
+                throw new GridException("For REPLICATED cache flag 'excludeNeighbors' in GridCacheConsistentHashAffinityFunction " +
                     "cannot be set [cacheName=" + cc.getName() + ']');
 
             if (cc.getWriteSynchronizationMode() == PRIMARY_SYNC)

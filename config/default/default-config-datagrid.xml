@@ -122,7 +122,7 @@
                         is achieved with 0 backup copies.
                     -->
                     <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinityFunction">
+                        <bean class="org.gridgain.grid.cache.affinity.consistent.GridCacheConsistentHashAffinityFunction">
                             <property name="keyBackups" value="0"/>
                         </bean>
                     </property>
@@ -173,7 +173,7 @@
                         is achieved with 0 backup copies.
                     -->
                     <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinityFunction">
+                        <bean class="org.gridgain.grid.cache.affinity.consistent.GridCacheConsistentHashAffinityFunction">
                             <property name="keyBackups" value="0"/>
                         </bean>
                     </property>

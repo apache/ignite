@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.partition.*;
+import org.gridgain.grid.cache.affinity.consistent.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -224,8 +224,8 @@ public class GridCacheAttributes implements Externalizable {
         GridCacheAffinityFunction aff = cfg.getAffinity();
 
         if (aff != null) {
-            if (aff instanceof GridCachePartitionAffinityFunction) {
-                GridCachePartitionAffinityFunction aff0 = (GridCachePartitionAffinityFunction) aff;
+            if (aff instanceof GridCacheConsistentHashAffinityFunction) {
+                GridCacheConsistentHashAffinityFunction aff0 = (GridCacheConsistentHashAffinityFunction) aff;
 
                 affInclNeighbors = aff0.isExcludeNeighbors();
                 affKeyBackups = aff0.getKeyBackups();

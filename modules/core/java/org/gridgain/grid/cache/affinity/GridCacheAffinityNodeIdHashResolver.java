@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.cache.affinity.partition;
+package org.gridgain.grid.cache.affinity;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -19,7 +19,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridCachePartitionNodeIdHashResolver implements GridCachePartitionHashResolver {
+public class GridCacheAffinityNodeIdHashResolver implements GridCacheAffinityNodeHashResolver {
     /** {@inheritDoc} */
     @Override public Object resolve(GridNode node) {
         return node.id();
@@ -27,6 +27,6 @@ public class GridCachePartitionNodeIdHashResolver implements GridCachePartitionH
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCachePartitionNodeIdHashResolver.class, this);
+        return S.toString(GridCacheAffinityNodeIdHashResolver.class, this);
     }
 }

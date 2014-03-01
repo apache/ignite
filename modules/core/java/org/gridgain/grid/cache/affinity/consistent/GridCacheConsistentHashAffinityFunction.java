@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.cache.affinity.partition;
+package org.gridgain.grid.cache.affinity.consistent;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridCachePartitionAffinityFunction implements GridCacheAffinityFunction {
+public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinityFunction {
     /** Flag to enable/disable consistency check (for internal use only). */
     private static final boolean AFFINITY_CONSISTENCY_CHECK = Boolean.getBoolean("GRIDGAIN_AFFINITY_CONSISTENCY_CHECK");
 
@@ -92,7 +92,7 @@ public class GridCachePartitionAffinityFunction implements GridCacheAffinityFunc
     private GridBiPredicate<GridNode, GridNode> backupFilter;
 
     /** */
-    private GridCachePartitionHashResolver hashIdRslvr = new GridCachePartitionConsistentIdHashResolver();
+    private GridCacheAffinityNodeHashResolver hashIdRslvr = new GridCacheAffinityNodeAddressHashResolver();
 
     /** Injected grid. */
     @GridInstanceResource
@@ -127,7 +127,7 @@ public class GridCachePartitionAffinityFunction implements GridCacheAffinityFunc
     /**
      * Empty constructor with all defaults.
      */
-    public GridCachePartitionAffinityFunction() {
+    public GridCacheConsistentHashAffinityFunction() {
         // No-op.
     }
 
@@ -136,7 +136,7 @@ public class GridCachePartitionAffinityFunction implements GridCacheAffinityFunc
      *
      * @param backups Number of back up servers per key.
      */
-    public GridCachePartitionAffinityFunction(int backups) {
+    public GridCacheConsistentHashAffinityFunction(int backups) {
         this.backups = backups;
     }
 
@@ -150,7 +150,7 @@ public class GridCachePartitionAffinityFunction implements GridCacheAffinityFunc
      *      of each other.
      * @param backups Number of back up servers per key.
      */
-    public GridCachePartitionAffinityFunction(boolean exclNeighbors, int backups) {
+    public GridCacheConsistentHashAffinityFunction(boolean exclNeighbors, int backups) {
         this.exclNeighbors = exclNeighbors;
         this.backups = backups;
     }
@@ -166,7 +166,7 @@ public class GridCachePartitionAffinityFunction implements GridCacheAffinityFunc
      * @param backups Number of back up servers per key.
      * @param parts Total number of partitions.
      */
-    public GridCachePartitionAffinityFunction(boolean exclNeighbors, int backups, int parts) {
+    public GridCacheConsistentHashAffinityFunction(boolean exclNeighbors, int backups, int parts) {
         this.exclNeighbors = exclNeighbors;
         this.backups = backups;
         this.parts = parts;
@@ -185,7 +185,7 @@ public class GridCachePartitionAffinityFunction implements GridCacheAffinityFunc
      * <p>
      * Note that {@code excludeNeighbors} parameter is ignored if {@code backupFilter} is set.
      */
-    public GridCachePartitionAffinityFunction(int backups, int parts,
+    public GridCacheConsistentHashAffinityFunction(int backups, int parts,
         @Nullable GridBiPredicate<GridNode, GridNode> backupFilter) {
         this.backups = backups;
         this.parts = parts;
@@ -271,7 +271,7 @@ public class GridCachePartitionAffinityFunction implements GridCacheAffinityFunc
      *
      * @return Hash ID resolver.
      */
-    public GridCachePartitionHashResolver getHashIdResolver() {
+    public GridCacheAffinityNodeHashResolver getHashIdResolver() {
         return hashIdRslvr;
     }
 
@@ -287,7 +287,7 @@ public class GridCachePartitionAffinityFunction implements GridCacheAffinityFunc
      *
      * @param hashIdRslvr Hash ID resolver.
      */
-    public void setHashIdResolver(GridCachePartitionHashResolver hashIdRslvr) {
+    public void setHashIdResolver(GridCacheAffinityNodeHashResolver hashIdRslvr) {
         this.hashIdRslvr = hashIdRslvr;
     }
 
@@ -617,7 +617,7 @@ public class GridCachePartitionAffinityFunction implements GridCacheAffinityFunc
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCachePartitionAffinityFunction.class, this);
+        return S.toString(GridCacheConsistentHashAffinityFunction.class, this);
     }
 
     /**

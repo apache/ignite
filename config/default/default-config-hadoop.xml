@@ -101,7 +101,7 @@
                         is achieved with 0 backup copies.
                     -->
                     <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinityFunction">
+                        <bean class="org.gridgain.grid.cache.affinity.consistent.GridCacheConsistentHashAffinityFunction">
                             <constructor-arg value="0"/>
                         </bean>
                     </property>

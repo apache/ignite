@@ -115,7 +115,7 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinityFunction">
+                        <bean class="org.gridgain.grid.cache.affinity.consistent.GridCacheConsistentHashAffinityFunction">
                             <!-- Setup number of backup servers per key. -->
                             <constructor-arg value="0"/>
                         </bean>
