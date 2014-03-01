@@ -90,5 +90,5 @@ public interface GridScheduler {
      *      parameters are optional.
      * @return Scheduled execution future.
      */
-    public <R> GridSchedulerFuture<R> scheduleLocal(Callable<R> c, String ptrn) throws GridException;
+    public <R> GridSchedulerFuture<R> scheduleLocal(Callable<R> c, String ptrn);
 }

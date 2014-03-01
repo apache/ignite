@@ -11,7 +11,7 @@ package org.gridgain.grid.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.consistent.*;
+import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.lang.*;
@@ -99,12 +99,18 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
     public Collection<GridCacheTxSynchronization> txSynchronizations();
 
     /**
-     * @return // TODO
+     * Gets affinity service to provide information about data partitioning
+     * and distribution.
+     *
+     * @return Cache data affinity service.
      */
     public GridCacheAffinity<K> affinity();
 
     /**
-     * @return // TODO
+     * Gets data structures service to provide a gateway for creating various
+     * distributed data structures similar in APIs to {@code java.util.concurrent} package.
+     *
+     * @return Cache data structures service.
      */
     public GridCacheDataStructures dataStructures();
 
@@ -121,7 +127,6 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * @return Size (in bytes) of all entries swapped to disk.
      * @throws GridException In case of error.
      */
-    // TODO: think about moving to metrics.
     public long overflowSize() throws GridException;
 
     /**

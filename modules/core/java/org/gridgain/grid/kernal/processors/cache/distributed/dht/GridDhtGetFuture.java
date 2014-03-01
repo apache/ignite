@@ -104,7 +104,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         super(cctx.kernalContext(), CU.<GridCacheEntryInfo<K, V>>collectionsReducer());
 
         assert reader != null;
-        assert cctx != null;
         assert !F.isEmpty(keys);
 
         this.reader = reader;

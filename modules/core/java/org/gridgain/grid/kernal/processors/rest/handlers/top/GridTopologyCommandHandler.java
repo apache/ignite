@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.rest.handlers.top;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.affinity.consistent.*;
+import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.port.*;

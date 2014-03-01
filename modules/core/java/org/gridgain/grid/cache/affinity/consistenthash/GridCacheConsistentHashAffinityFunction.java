@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.cache.affinity.consistent;
+package org.gridgain.grid.cache.affinity.consistenthash;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
