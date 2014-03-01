@@ -1135,7 +1135,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         if (ordered) {
             long msgId = nextMessageId(TOPIC_COMM_USER, locNodeId);
 
-            sendOrderedMessage(nodes, TOPIC_COMM_USER, msgId, ioMsg, PUBLIC_POOL, timeout, false);
+            sendOrderedMessage(nodes, TOPIC_COMM_USER, msgId, ioMsg, PUBLIC_POOL, timeout, true);
         }
         else if (loc)
             send(F.first(nodes), TOPIC_COMM_USER, ioMsg, PUBLIC_POOL);
@@ -1790,7 +1790,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
             this.plc = plc;
             this.nodeId = nodeId;
             this.topic = topic;
-            this.timeout = skipOnTimeout ? ctx.config().getNetworkTimeout() : timeout;
+            this.timeout = timeout == 0 ? ctx.config().getNetworkTimeout() : timeout;
             this.skipOnTimeout = skipOnTimeout;
 
             endTime = endTime(timeout);
