@@ -541,6 +541,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public GridDhtFuture<Boolean> lockAllAsyncInternal(@Nullable Collection<? extends K> keys, long timeout,
+        GridCacheTxLocalEx<K, V> txx, boolean isInvalidate, boolean isRead, boolean retval,
+        GridCacheTxIsolation isolation, GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        return new FinishedLockFuture(new UnsupportedOperationException("Locks are not supported for " +
+            "GridCacheAtomicityMode.ATOMIC mode (use GridCacheAtomicityMode.TRANSACTIONAL instead)"));
+    }
+
     /**
      * Entry point for all public API put/transform methods.
      *
@@ -1749,6 +1757,30 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtAtomicCache.class, this, super.toString());
+    }
+
+    /**
+     *
+     */
+    private class FinishedLockFuture extends GridFinishedFutureEx<Boolean> implements GridDhtFuture<Boolean> {
+        /**
+         * Empty constructor required by {@link Externalizable}.
+         */
+        public FinishedLockFuture() {
+            // No-op.
+        }
+
+        /**
+         * @param err Error.
+         */
+        private FinishedLockFuture(Throwable err) {
+            super(err);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<Integer> invalidPartitions() {
+            return Collections.emptyList();
+        }
     }
 
     /**
