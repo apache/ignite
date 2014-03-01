@@ -23,6 +23,7 @@
     <condition property="gridgain.home" value="${GG_HOME}">
         <isset property="GG_HOME"/>
     </condition>
+
     <condition property="gridgain.home" value="${env.GRIDGAIN_HOME}">
         <and>
             <not>
@@ -32,12 +33,35 @@
         </and>
     </condition>
 
+    <condition property="m2.home" value="${M2_HOME}">
+        <isset property="M2_HOME"/>
+    </condition>
+
+    <condition property="m2.home" value="${env.M2_HOME}">
+        <and>
+            <not>
+                <isset property="m2.home"/>
+            </not>
+            <isset property="env.M2_HOME"/>
+        </and>
+    </condition>
+
+    <condition property="jdk.home" value="${JAVA_HOME}">
+        <isset property="JAVA_HOME"/>
+    </condition>
+
     <condition property="jdk.home" value="${env.JAVA_HOME}">
-        <isset property="env.JAVA_HOME"/>
+        <and>
+            <not>
+                <isset property="jdk.home"/>
+            </not>
+            <isset property="env.JAVA_HOME"/>
+        </and>
     </condition>
 
     <fail unless="gridgain.home"
           message="Please specify Ant property GG_HOME (environment variable GRIDGAIN_HOME will also work)."/>
+    <fail unless="m2.home" message="Please specify M2_HOME environment variable."/>
     <fail unless="jdk.home" message="Please specify JAVA_HOME environment variable."/>
 
     <property name="tmp.src" value="${tmp.dir}/src"/>
@@ -93,7 +117,7 @@
         <echo message=""/>
         <echo message="mk.collect.libs"/>
 
-        <exec executable="mvn" dir="${gridgain.home}" failonerror="yes" >
+        <exec executable="${m2.home}/bin/mvn" dir="${gridgain.home}" failonerror="yes" >
             <arg line="clean install"/>
         </exec>
 
