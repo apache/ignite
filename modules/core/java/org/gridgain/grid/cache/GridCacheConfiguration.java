@@ -78,6 +78,9 @@ public class GridCacheConfiguration {
     /** Default value for write ordering mode. */
     public static final GridCacheAtomicWriteOrderMode DFLT_ATOMIC_WRITE_ORDER_MODE = GridCacheAtomicWriteOrderMode.CLOCK;
 
+    /** Default value for cache distribution mode. */
+    public static final GridCacheDistributionMode  DFLT_DISTRIBUTION_MODE = GridCacheDistributionMode.PARTITIONED_ONLY;
+
     /** Default transaction timeout. */
     public static final long DFLT_TRANSACTION_TIMEOUT = 0;
 
@@ -265,7 +268,7 @@ public class GridCacheConfiguration {
     private int nearStartSize = DFLT_NEAR_START_SIZE;
 
     /** Cache distribution mode. */
-    private GridCacheDistributionMode distro;
+    private GridCacheDistributionMode distro = DFLT_DISTRIBUTION_MODE;
 
     /** Write synchronization mode. */
     private GridCacheWriteSynchronizationMode writeSync;
@@ -536,6 +539,8 @@ public class GridCacheConfiguration {
     /**
      * Gets cache distribution mode. This parameter is taken into account only if
      * {@link #getCacheMode()} is set to {@link GridCacheMode#PARTITIONED} or {@link GridCacheMode#REPLICATED} mode.
+     * <p>
+     * If not set, default value is {@link #DFLT_DISTRIBUTION_MODE}.
      *
      * @return Cache distribution mode.
      */

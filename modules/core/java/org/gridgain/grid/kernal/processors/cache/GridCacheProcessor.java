@@ -168,7 +168,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cfg.setAtomicityMode(ATOMIC);
 
             if (cfg.getDistributionMode() == null)
-                cfg.setDistributionMode(CU.distributionMode(cfg));
+                cfg.setDistributionMode(PARTITIONED_ONLY);
 
             if (cfg.getDistributionMode() == PARTITIONED_ONLY ||
                 cfg.getDistributionMode() == CLIENT_ONLY) {
