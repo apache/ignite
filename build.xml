@@ -59,10 +59,9 @@
         </and>
     </condition>
 
-    <fail unless="gridgain.home"
-          message="Please specify Ant property GG_HOME (environment variable GRIDGAIN_HOME will also work)."/>
-    <fail unless="m2.home" message="Please specify M2_HOME environment variable."/>
-    <fail unless="jdk.home" message="Please specify JAVA_HOME environment variable."/>
+    <fail unless="gridgain.home" message="Please specify GG_HOME ant property or environment variable."/>
+    <fail unless="m2.home" message="Please specify M2_HOME ant property or environment variable."/>
+    <fail unless="jdk.home" message="Please specify JAVA_HOME ant property or environment variable."/>
 
     <property name="tmp.src" value="${tmp.dir}/src"/>
     <property name="tmp.dist" value="${tmp.dir}/dist"/>
