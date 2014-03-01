@@ -11,7 +11,7 @@ package org.gridgain.examples.ggfs.filesystem;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistent.*;
+import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.product.*;

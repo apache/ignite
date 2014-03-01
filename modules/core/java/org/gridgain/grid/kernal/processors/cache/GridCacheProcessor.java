@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.consistent.*;
+import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.eviction.ggfs.*;
 import org.gridgain.grid.cache.store.*;

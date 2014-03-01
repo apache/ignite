@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.managers;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.consistent.*;
+import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
