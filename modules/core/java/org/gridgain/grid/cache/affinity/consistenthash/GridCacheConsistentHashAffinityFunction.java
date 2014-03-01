@@ -146,9 +146,10 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
      *      of each other.
      * @param parts Total number of partitions.
-     * TODO
      */
     public GridCacheConsistentHashAffinityFunction(boolean exclNeighbors, int parts) {
+        A.ensure(parts != 0, "parts != 0");
+
         this.exclNeighbors = exclNeighbors;
         this.parts = parts;
     }
@@ -167,6 +168,8 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      */
     public GridCacheConsistentHashAffinityFunction(int parts,
         @Nullable GridBiPredicate<GridNode, GridNode> backupFilter) {
+        A.ensure(parts != 0, "parts != 0");
+
         this.parts = parts;
         this.backupFilter = backupFilter;
     }
