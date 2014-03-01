@@ -100,11 +100,7 @@
                         This shows how to configure number of backups. The best performance
                         is achieved with 0 backup copies.
                     -->
-                    <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.consistent.GridCacheConsistentHashAffinityFunction">
-                            <constructor-arg value="0"/>
-                        </bean>
-                    </property>
+                    <property name="backups" value="0"/>
 
                     <!--
                         This shows how to configure number of blocks in row will be stored on the same node.

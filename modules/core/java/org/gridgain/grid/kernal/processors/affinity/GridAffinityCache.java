@@ -32,6 +32,9 @@ public class GridAffinityCache {
     /** Cache name. */
     private final String cacheName;
 
+    /** Number of backups. */
+    private int backups;
+
     /** Affinity function. */
     private final GridCacheAffinityFunction aff;
 
@@ -59,11 +62,12 @@ public class GridAffinityCache {
      * @param affMapper Affinity key mapper.
      */
     public GridAffinityCache(GridKernalContext ctx, String cacheName, GridCacheAffinityFunction aff,
-        GridCacheAffinityKeyMapper affMapper) {
+        GridCacheAffinityKeyMapper affMapper, int backups) {
         this.ctx = ctx;
         this.aff = aff;
         this.affMapper = affMapper;
         this.cacheName = cacheName;
+        this.backups = backups;
 
         partsCnt = aff.partitions();
         affCache = new ConcurrentLinkedHashMap<>();
@@ -302,7 +306,8 @@ public class GridAffinityCache {
                     // Resolve nodes snapshot for specified topology version.
                     Collection<GridNode> nodes = ctx.discovery().cacheAffinityNodes(cacheName, topVer);
 
-                    arr = aff.assignPartitions(new GridCacheAffinityFunctionContextImpl(sort(nodes), topVer));
+                    arr = aff.assignPartitions(
+                        new GridCacheAffinityFunctionContextImpl(sort(nodes), topVer, backups));
 
                     for (int partsCnt = arr.size(), p = 0; p < partsCnt; p++) {
                         // Use the first node as primary, other - backups.

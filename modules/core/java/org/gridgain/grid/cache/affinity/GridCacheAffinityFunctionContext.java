@@ -33,6 +33,13 @@ public interface GridCacheAffinityFunctionContext {
     @Nullable public List<GridNode> previousAssignment(int part);
 
     /**
+     * Gets number of backups for new assignment.
+     *
+     * @return Number of backups for new assignment.
+     */
+    public int backups();
+
+    /**
      * Gets current topology snapshot. Snapshot will contain only nodes on which particular cache is configured.
      * List of passed nodes is guaranteed to be sorted in a same order on all nodes on which partition assignment
      * is performed.

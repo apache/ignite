@@ -202,13 +202,9 @@
         <property name="queryIndexEnabled" value="true"/>
 
         <!--
-            The below configuration sets the number of backups to 1 (which is default).
+            The below configuration sets the number of backups to 1.
         -->
-        <property name="affinity">
-            <bean class="org.gridgain.grid.cache.affinity.consistent.GridCacheConsistentHashAffinityFunction">
-                <property name="keyBackups" value="1"/>
-            </bean>
-        </property>
+        <property name="backups" value="1"/>
     </bean>
 
     <!--

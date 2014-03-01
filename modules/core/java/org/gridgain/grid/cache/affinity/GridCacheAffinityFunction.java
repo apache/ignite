@@ -64,13 +64,6 @@ public interface GridCacheAffinityFunction extends Serializable {
     public int partitions();
 
     /**
-     * Gets number of key backups for each partition (essentially, for each key).
-     *
-     * @return Number of key backups.
-     */
-    public int keyBackups();
-
-    /**
      * Gets partition number for a given key starting from {@code 0}. Partitioned caches
      * should make sure that keys are about evenly distributed across all partitions
      * from {@code 0} to {@link #partitions() partition count} for best performance.

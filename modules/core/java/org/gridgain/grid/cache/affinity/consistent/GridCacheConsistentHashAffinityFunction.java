@@ -54,9 +54,6 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
     /** Default number of partitions. */
     public static final int DFLT_PARTITION_COUNT = 10000;
 
-    /** Default number of backups. */
-    public static final int DFLT_BACKUP_COUNT = 0;
-
     /** Default replica count for partitioned caches. */
     public static final int DFLT_REPLICA_COUNT = 128;
 
@@ -74,10 +71,6 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
 
     /** */
     private int replicas = DFLT_REPLICA_COUNT;
-
-    /** */
-    @SuppressWarnings("RedundantFieldInitialization")
-    private int backups = DFLT_BACKUP_COUNT;
 
     /** */
     private String attrName = DFLT_REPLICA_COUNT_ATTR_NAME;
@@ -132,15 +125,6 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
     }
 
     /**
-     * Initializes affinity with specified number of backups.
-     *
-     * @param backups Number of back up servers per key.
-     */
-    public GridCacheConsistentHashAffinityFunction(int backups) {
-        this.backups = backups;
-    }
-
-    /**
      * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other
      * and specified number of backups.
      * <p>
@@ -148,11 +132,9 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      *
      * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
      *      of each other.
-     * @param backups Number of back up servers per key.
      */
-    public GridCacheConsistentHashAffinityFunction(boolean exclNeighbors, int backups) {
+    public GridCacheConsistentHashAffinityFunction(boolean exclNeighbors) {
         this.exclNeighbors = exclNeighbors;
-        this.backups = backups;
     }
 
     /**
@@ -163,12 +145,11 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      *
      * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
      *      of each other.
-     * @param backups Number of back up servers per key.
      * @param parts Total number of partitions.
+     * TODO
      */
-    public GridCacheConsistentHashAffinityFunction(boolean exclNeighbors, int backups, int parts) {
+    public GridCacheConsistentHashAffinityFunction(boolean exclNeighbors, int parts) {
         this.exclNeighbors = exclNeighbors;
-        this.backups = backups;
         this.parts = parts;
     }
 
@@ -177,7 +158,6 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      * <p>
      * Note that {@code excludeNeighbors} parameter is ignored if {@code backupFilter} is set.
      *
-     * @param backups Backups count.
      * @param parts Total number of partitions.
      * @param backupFilter Optional back up filter for nodes. If provided, backups will be selected
      *      from all nodes that pass this filter. First argument for this filter is primary node, and second
@@ -185,9 +165,8 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      * <p>
      * Note that {@code excludeNeighbors} parameter is ignored if {@code backupFilter} is set.
      */
-    public GridCacheConsistentHashAffinityFunction(int backups, int parts,
+    public GridCacheConsistentHashAffinityFunction(int parts,
         @Nullable GridBiPredicate<GridNode, GridNode> backupFilter) {
-        this.backups = backups;
         this.parts = parts;
         this.backupFilter = backupFilter;
     }
@@ -214,24 +193,6 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      */
     public void setDefaultReplicas(int replicas) {
         this.replicas = replicas;
-    }
-
-    /**
-     * Gets count of key backups for redundancy.
-     *
-     * @return Key backup count.
-     */
-    public int getKeyBackups() {
-        return backups;
-    }
-
-    /**
-     * Sets count of key backups for redundancy.
-     *
-     * @param backups Key backup count.
-     */
-    public void setKeyBackups(int backups) {
-        this.backups = backups;
     }
 
     /**
@@ -378,11 +339,6 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
     }
 
     /** {@inheritDoc} */
-    @Override public int keyBackups() {
-        return backups;
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext ctx) {
         List<List<GridNode>> res = new ArrayList<>(parts);
@@ -394,7 +350,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
                 Collections.<GridNode>emptyList() :
                 // Wrap affinity nodes with unmodifiable list since unmodifiable generic collection
                 // doesn't provide equals and hashCode implementations.
-                U.sealList(nodes(part, topSnapshot)));
+                U.sealList(nodes(part, topSnapshot, ctx.backups())));
         }
 
         return res;
@@ -407,7 +363,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      * @param nodes Cache topology nodes.
      * @return Assigned nodes, first node is primary, others are backups.
      */
-    public Collection<GridNode> nodes(int part, Collection<GridNode> nodes) {
+    public Collection<GridNode> nodes(int part, Collection<GridNode> nodes, int backups) {
         if (nodes == null)
             return Collections.emptyList();
 

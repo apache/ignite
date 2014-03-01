@@ -66,6 +66,9 @@ public class GridCacheConfiguration {
      */
     public static final long DFLT_TIME_TO_LIVE = 0;
 
+    /** Default number of backups. */
+    public static final int DFLT_BACKUPS = 0;
+
     /** Default caching mode. */
     public static final GridCacheMode DFLT_CACHE_MODE = GridCacheMode.REPLICATED;
 
@@ -282,6 +285,9 @@ public class GridCacheConfiguration {
     /** Write ordering mode. */
     private GridCacheAtomicWriteOrderMode atomicWriteOrderMode = DFLT_ATOMIC_WRITE_ORDER_MODE;
 
+    /** */
+    private int backups = DFLT_BACKUPS;
+
     /** Flag to enable transactional batch update. */
     private boolean txBatchUpdate = DFLT_TX_BATCH_UPDATE;
 
@@ -401,6 +407,7 @@ public class GridCacheConfiguration {
         aff = cc.getAffinity();
         affMapper = cc.getAffinityMapper();
         atomicityMode = cc.getAtomicityMode();
+        backups = cc.getBackups();
         cacheMode = cc.getCacheMode();
         cloner = cc.getCloner();
         contQryMaxBufSize = cc.getContinuousQueryMaximumBufferSize();
@@ -996,6 +1003,28 @@ public class GridCacheConfiguration {
      */
     public void setAtomicWriteOrderMode(GridCacheAtomicWriteOrderMode atomicWriteOrderMode) {
         this.atomicWriteOrderMode = atomicWriteOrderMode;
+    }
+
+    /**
+     * Gets number of nodes used to back up single partition for {@link GridCacheMode#PARTITIONED} cache.
+     * <p>
+     * If not set, default value is {@link #DFLT_BACKUPS}.
+     *
+     * @return Number of backup nodes for one partition.
+     */
+    public int getBackups() {
+        return backups;
+    }
+
+    /**
+     * Sets number of nodes used to back up single partition for {@link GridCacheMode#PARTITIONED} cache.
+     * <p>
+     * If not set, default value is {@link #DFLT_BACKUPS}.
+     *
+     * @param backups Number of backup nodes for one partition.
+     */
+    public void setBackups(int backups) {
+        this.backups = backups;
     }
 
     /**
