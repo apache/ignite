@@ -238,8 +238,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         if (U.hasCache(loc, cacheName)) {
             GridCache<K, ?> cache = ctx.cache().cache(cacheName);
 
-            GridCacheAffinity a = cache.configuration().getAffinity();
-            GridCacheAffinityMapper m = cache.configuration().getAffinityMapper();
+            GridCacheAffinityFunction a = cache.configuration().getAffinity();
+            GridCacheAffinityKeyMapper m = cache.configuration().getAffinityMapper();
             GridAffinityCache affCache = new GridAffinityCache(ctx, cacheName, a, m);
 
             GridFuture<GridAffinityCache> old = affMap.putIfAbsent(maskNull(cacheName),
@@ -335,7 +335,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Requests {@link GridCacheAffinity} and {@link GridCacheAffinityMapper} from remote node.
+     * Requests {@link GridCacheAffinityFunction} and {@link GridCacheAffinityKeyMapper} from remote node.
      *
      * @param cacheName Name of cache on which affinity is requested.
      * @param n Node from which affinity is requested.
@@ -353,8 +353,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         if (err != null)
             throw err;
 
-        GridCacheAffinityMapper m = (GridCacheAffinityMapper)unmarshall(ctx, n.id(), t.get1());
-        GridCacheAffinity a = (GridCacheAffinity)unmarshall(ctx, n.id(), t.get2());
+        GridCacheAffinityKeyMapper m = (GridCacheAffinityKeyMapper)unmarshall(ctx, n.id(), t.get1());
+        GridCacheAffinityFunction a = (GridCacheAffinityFunction)unmarshall(ctx, n.id(), t.get2());
 
         assert a != null;
         assert m != null;

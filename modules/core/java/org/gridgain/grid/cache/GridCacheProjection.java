@@ -119,13 +119,13 @@ import java.util.concurrent.*;
  * <i>affinity-based</i>, and <i>partitioned-based</i>.
  * <p>
  * With {@code affinity-based HyperLocking} the keys are grouped by <i>affinity-key</i>. This means that
- * only keys with identical affinity-key (see {@link GridCacheAffinityMapped}) can participate in the
+ * only keys with identical affinity-key (see {@link GridCacheAffinityKeyMapped}) can participate in the
  * transaction, and only one lock on the <i>affinity-key</i> will be acquired for the whole transaction.
  * {@code Affinity-hyper-locked} transactions are started via
  * {@link #txStartAffinity(Object, GridCacheTxConcurrency, GridCacheTxIsolation, long, int)} method.
  * <p>
  * With {@code partition-based HyperLocking} the keys are grouped by partition ID. This means that
- * only keys belonging to identical partition (see {@link GridCacheAffinity0#partition(Object)}) can participate in the
+ * only keys belonging to identical partition (see {@link GridCacheAffinity#partition(Object)}) can participate in the
  * transaction, and only one lock on the whole partition will be acquired for the whole transaction.
  * {@code Partition-hyper-locked} transactions are started via
  * {@link #txStartPartition(int, GridCacheTxConcurrency, GridCacheTxIsolation, long, int)} method.

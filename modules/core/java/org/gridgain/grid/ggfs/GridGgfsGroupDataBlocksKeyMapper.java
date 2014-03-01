@@ -36,7 +36,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * &lt;bean id="cacheCfgBase" class="org.gridgain.grid.cache.GridCacheConfiguration" abstract="true"&gt;
  *     ...
  *     &lt;property name="affinityMapper"&gt;
- *         &lt;bean class="org.gridgain.grid.ggfs.GridGgfsGroupDataBlocksMapper"&gt;
+ *         &lt;bean class="org.gridgain.grid.ggfs.GridGgfsGroupDataBlocksKeyMapper"&gt;
  *             &lt;!-- How many sequential blocks will be stored on the same node. --&gt;
  *             &lt;constructor-arg value="512"/&gt;
  *         &lt;/bean&gt;
@@ -48,7 +48,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridGgfsGroupDataBlocksMapper extends GridCacheDefaultAffinityMapper {
+public class GridGgfsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKeyMapper {
     /** Size of the group. */
     private final int grpSize;
 
@@ -57,7 +57,7 @@ public class GridGgfsGroupDataBlocksMapper extends GridCacheDefaultAffinityMappe
      *
      * @param grpSize Size of the group in blocks.
      */
-    public GridGgfsGroupDataBlocksMapper(int grpSize) {
+    public GridGgfsGroupDataBlocksKeyMapper(int grpSize) {
         A.ensure(grpSize >= 1, "grpSize >= 1");
 
         this.grpSize = grpSize;
@@ -88,6 +88,6 @@ public class GridGgfsGroupDataBlocksMapper extends GridCacheDefaultAffinityMappe
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsGroupDataBlocksMapper.class, this);
+        return S.toString(GridGgfsGroupDataBlocksKeyMapper.class, this);
     }
 }

@@ -31,7 +31,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     protected final GridLogger log;
 
     /** Affinity. */
-    protected final GridCacheAffinity aff;
+    protected final GridCacheAffinityFunction aff;
 
     /** Start future (always completed by default). */
     private final GridFuture finFut;

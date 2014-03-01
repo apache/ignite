@@ -11,7 +11,7 @@ package org.gridgain.grid.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.partition.*;
+import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.eviction.*;
@@ -44,9 +44,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
  */
 @SuppressWarnings("RedundantFieldInitialization")
 public class GridCacheConfiguration {
-    /** Default query log name. */
-    public static final String DFLT_QUERY_LOGGER_NAME = "org.gridgain.cache.queries";
-
     /** DGC tracing logger name. */
     public static final String DGC_TRACE_LOGGER_NAME =
         "org.gridgain.grid.kernal.processors.cache.GridCacheDgcManager.trace";
@@ -274,7 +271,7 @@ public class GridCacheConfiguration {
     private GridCacheStore<?, ?> store;
 
     /** Node group resolver. */
-    private GridCacheAffinity aff;
+    private GridCacheAffinityFunction aff;
 
     /** Cache mode. */
     private GridCacheMode cacheMode = DFLT_CACHE_MODE;
@@ -367,7 +364,7 @@ public class GridCacheConfiguration {
     private GridCacheCloner cloner;
 
     /** */
-    private GridCacheAffinityMapper affMapper;
+    private GridCacheAffinityKeyMapper affMapper;
 
     /** */
     private String indexingSpiName;
@@ -928,7 +925,7 @@ public class GridCacheConfiguration {
      *
      * @return Key topology resolver to provide mapping from keys to nodes.
      */
-    public GridCacheAffinity getAffinity() {
+    public GridCacheAffinityFunction getAffinity() {
         return aff;
     }
 
@@ -937,7 +934,7 @@ public class GridCacheConfiguration {
      *
      * @param aff Cache key affinity.
      */
-    public void setAffinity(GridCacheAffinity aff) {
+    public void setAffinity(GridCacheAffinityFunction aff) {
         this.aff = aff;
     }
 
@@ -1649,7 +1646,7 @@ public class GridCacheConfiguration {
      * For better efficiency user should usually make sure that new nodes get placed on
      * the same place of consistent hash ring as the left nodes, and that nodes are
      * restarted before this delay expires. To place nodes on the same place in consistent hash ring,
-     * use {@link GridCachePartitionAffinity#setHashIdResolver(GridCachePartitionHashResolver)}
+     * use {@link GridCacheConsistentHashAffinityFunction#setHashIdResolver(GridCacheAffinityNodeHashResolver)}
      * to make sure that a node maps to the same hash ID event if restarted. As an example,
      * node IP address and port combination may be used in this case.
      * <p>
@@ -1714,21 +1711,21 @@ public class GridCacheConfiguration {
      * on the same node (they will also be backed up on the same nodes as well).
      * <p>
      * If not provided, then default implementation will be used. The default behavior
-     * is described in {@link GridCacheAffinityMapper} documentation.
+     * is described in {@link GridCacheAffinityKeyMapper} documentation.
      *
      * @return Mapper to use for affinity key mapping.
      */
-    public GridCacheAffinityMapper getAffinityMapper() {
+    public GridCacheAffinityKeyMapper getAffinityMapper() {
         return affMapper;
     }
 
     /**
      * Sets custom affinity mapper. If not provided, then default implementation will be used. The default behavior is
-     * described in {@link GridCacheAffinityMapper} documentation.
+     * described in {@link GridCacheAffinityKeyMapper} documentation.
      *
      * @param affMapper Affinity mapper.
      */
-    public void setAffinityMapper(GridCacheAffinityMapper affMapper) {
+    public void setAffinityMapper(GridCacheAffinityKeyMapper affMapper) {
         this.affMapper = affMapper;
     }
 

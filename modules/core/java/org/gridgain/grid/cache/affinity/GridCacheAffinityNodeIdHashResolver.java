@@ -7,19 +7,19 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.cache.affinity.partition;
+package org.gridgain.grid.cache.affinity;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
- * Hash ID resolver which uses generated node ID as alternate node ID. As new node ID generated on each node start
- * this resolver do not provide ability to put restarted node into the same place on the hash ring.
+ * Node hash resolver which uses generated node ID as node hash value. As new node ID is generated
+ * on each node start, this resolver do not provide ability to map keys to the same nodes after restart.
  *
  * @author @java.author
  * @version @java.version
  */
-public class GridCachePartitionNodeIdHashResolver implements GridCachePartitionHashResolver {
+public class GridCacheAffinityNodeIdHashResolver implements GridCacheAffinityNodeHashResolver {
     /** {@inheritDoc} */
     @Override public Object resolve(GridNode node) {
         return node.id();
@@ -27,6 +27,6 @@ public class GridCachePartitionNodeIdHashResolver implements GridCachePartitionH
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCachePartitionNodeIdHashResolver.class, this);
+        return S.toString(GridCacheAffinityNodeIdHashResolver.class, this);
     }
 }

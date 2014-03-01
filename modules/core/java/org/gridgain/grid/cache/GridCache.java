@@ -11,7 +11,7 @@ package org.gridgain.grid.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.partition.*;
+import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.lang.*;
@@ -41,7 +41,7 @@ import java.util.*;
  *  data based on the optionally passed in arguments.
  * </li>
  * <li>
- *     Method {@link #affinity()} provides {@link GridCacheAffinity} service for information on
+ *     Method {@link #affinity()} provides {@link GridCacheAffinityFunction} service for information on
  *     data partitioning and mapping keys to grid nodes responsible for caching those keys.
  * </li>
  * <li>
@@ -99,12 +99,18 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
     public Collection<GridCacheTxSynchronization> txSynchronizations();
 
     /**
-     * @return // TODO
+     * Gets affinity service to provide information about data partitioning
+     * and distribution.
+     *
+     * @return Cache data affinity service.
      */
-    public GridCacheAffinity0<K> affinity();
+    public GridCacheAffinity<K> affinity();
 
     /**
-     * @return // TODO
+     * Gets data structures service to provide a gateway for creating various
+     * distributed data structures similar in APIs to {@code java.util.concurrent} package.
+     *
+     * @return Cache data structures service.
      */
     public GridCacheDataStructures dataStructures();
 
@@ -121,7 +127,6 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * @return Size (in bytes) of all entries swapped to disk.
      * @throws GridException In case of error.
      */
-    // TODO: think about moving to metrics.
     public long overflowSize() throws GridException;
 
     /**
@@ -286,7 +291,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * the left nodes, and that nodes are restarted before
      * {@link GridCacheConfiguration#getPreloadPartitionedDelay() preloadDelay} expires. To place nodes
      * on the same place in consistent hash ring, use
-     * {@link GridCachePartitionAffinity#setHashIdResolver(GridCachePartitionHashResolver)} to make sure that
+     * {@link GridCacheConsistentHashAffinityFunction#setHashIdResolver(GridCacheAffinityNodeHashResolver)} to make sure that
      * a node maps to the same hash ID if re-started.
      * <p>
      * See {@link GridCacheConfiguration#getPreloadPartitionedDelay()} for more information on how to configure

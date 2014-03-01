@@ -33,11 +33,11 @@ import java.util.concurrent.*;
  */
 class GridAffinityUtils {
     /**
-     * Creates a job that will look up {@link GridCacheAffinityMapper} and {@link GridCacheAffinity} on a cache with
+     * Creates a job that will look up {@link GridCacheAffinityKeyMapper} and {@link GridCacheAffinityFunction} on a cache with
      * given name. If they exist, this job will serialize and transfer them together with all deployment information
      * needed to unmarshal objects on remote node. Result is returned as a {@link GridTuple3}, where first object is
-     * {@link GridAffinityMessage} for {@link GridCacheAffinity}, second object is {@link GridAffinityMessage} for
-     * {@link GridCacheAffinityMapper} and third object is optional {@link GridException} representing deployment
+     * {@link GridAffinityMessage} for {@link GridCacheAffinityFunction}, second object is {@link GridAffinityMessage} for
+     * {@link GridCacheAffinityKeyMapper} and third object is optional {@link GridException} representing deployment
      * exception. If exception field is not null, first two objects must be discarded. If cache with name {@code
      * cacheName} does not exist on a node, the job will return {@code null}.
      *

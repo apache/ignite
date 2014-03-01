@@ -498,7 +498,7 @@ public class GridComputeImpl implements GridCompute {
             @GridCacheName
             private final String cn = cacheName;
 
-            @GridCacheAffinityMapped
+            @GridCacheAffinityKeyMapped
             private final Object ak = affKey0;
 
             @Override public void run() {
@@ -526,7 +526,7 @@ public class GridComputeImpl implements GridCompute {
             @GridCacheName
             private final String cn = cacheName;
 
-            @GridCacheAffinityMapped
+            @GridCacheAffinityKeyMapped
             private final Object ak = affKey0;
 
             @Override public R call() {

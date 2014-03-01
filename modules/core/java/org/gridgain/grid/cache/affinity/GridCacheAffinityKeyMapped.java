@@ -23,16 +23,16 @@ import java.util.concurrent.*;
  * annotation allows to mark a field or a method in the cache key object that will be
  * used as an affinity key (instead of the entire cache key object that is used for
  * affinity by default). Note that a class can have only one field or method annotated
- * with {@code @GridCacheAffinityMapped} annotation.
+ * with {@code @GridCacheAffinityKeyMapped} annotation.
  * <p>
  * One of the major use cases for this annotation is the routing of grid computations
  * to the nodes where the data for this computation is cached, the concept
  * otherwise known as {@code Collocation Of Computations And Data}.
  * <p>
  * <h1 class="header">Mapping Cache Keys</h1>
- * The default implementation of {@link GridCacheAffinityMapper}, which will be used
+ * The default implementation of {@link GridCacheAffinityKeyMapper}, which will be used
  * if no explicit affinity mapper is specified in cache configuration, will first look
- * for any field or method annotated with {@code @GridCacheAffinityMapped} annotation.
+ * for any field or method annotated with {@code @GridCacheAffinityKeyMapped} annotation.
  * If such field or method is not found, then the cache key itself will be used for
  * key-to-node affinity (this means that all objects with the same cache key will always
  * be routed to the same node). If such field or method is found, then the value of this
@@ -43,7 +43,7 @@ import java.util.concurrent.*;
  * for which this person is an employee, then for better performance and scalability it makes sense to
  * collocate {@code Person} objects together with their {@code Company} object when storing them in
  * cache. To achieve that, cache key used to cache {@code Person} objects should have a field or method
- * annotated with {@code @GridCacheAffinityMapped} annotation, which will provide the value of
+ * annotated with {@code @GridCacheAffinityKeyMapped} annotation, which will provide the value of
  * the company key for which that person works, like so:
  * <pre name="code" class="java">
  * public class PersonKey {
@@ -51,7 +51,7 @@ import java.util.concurrent.*;
  *     private String personId;
  *
  *     // Company ID which will be used for affinity.
- *     &#64;GridCacheAffinityMapped
+ *     &#64;GridCacheAffinityKeyMapped
  *     private String companyId;
  *     ...
  * }
@@ -82,7 +82,7 @@ import java.util.concurrent.*;
  * <h1 class="header">Collocating Computations And Data</h1>
  * It is also possible to route computations to the nodes where the data is cached. This concept
  * is otherwise known as {@code Collocation Of Computations And Data}. In this case,
- * {@code @GridCacheAffinityMapped} annotation allows to specify a routing affinity key for a
+ * {@code @GridCacheAffinityKeyMapped} annotation allows to specify a routing affinity key for a
  * {@link GridComputeJob} or any other grid computation, such as {@link Runnable}, {@link Callable}, or
  * {@link GridClosure}. It should be attached to a method or field that provides affinity key
  * for the computation. Only one annotation per class is allowed. Whenever such annotation is detected,
@@ -101,7 +101,7 @@ import java.util.concurrent.*;
  *
  *     // This annotation specifies that computation should be routed
  *     // precisely to the node where key '1234' is cached.
- *     &#64;GridCacheAffinityMapped
+ *     &#64;GridCacheAffinityKeyMapped
  *     private String personKey = "1234";
  *
  *     &#64;Override public void run() {
@@ -127,15 +127,15 @@ import java.util.concurrent.*;
  *
  *     // This annotation specifies that computation should be routed
  *     // precisely to the node where key '1234' is cached.
- *     &#64;GridCacheAffinityMapped
+ *     &#64;GridCacheAffinityKeyMapped
  *     public String personKey() {
  *         return "1234";
  *     }
  * };
  * </pre>
  * <p>
- * For more information about cache affinity also see {@link GridCacheAffinityMapper} and
- * {@link GridCacheAffinity} documentation.
+ * For more information about cache affinity also see {@link GridCacheAffinityKeyMapper} and
+ * {@link GridCacheAffinityFunction} documentation.
  * Affinity for a key can be found from any node, regardless of whether it has cache started
  * or not. If cache is not started, affinity function will be fetched from the remote node
  * which does have the cache running.
@@ -144,13 +144,13 @@ import java.util.concurrent.*;
  * @author @java.author
  * @version @java.version
  * @see GridCacheName
- * @see GridCacheAffinity
- * @see GridCacheAffinityMapper
+ * @see GridCacheAffinityFunction
+ * @see GridCacheAffinityKeyMapper
  * @see GridCacheAffinityKey
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD, ElementType.METHOD})
-public @interface GridCacheAffinityMapped {
+public @interface GridCacheAffinityKeyMapped {
     // No-op.
 }

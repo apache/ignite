@@ -22,7 +22,7 @@ import java.lang.annotation.*;
 import java.lang.reflect.*;
 
 /**
- * Default key affinity mapper. If key class has annotation {@link GridCacheAffinityMapped},
+ * Default key affinity mapper. If key class has annotation {@link GridCacheAffinityKeyMapped},
  * then the value of annotated method or field will be used to get affinity value instead
  * of the key itself. If there is no annotation, then the key is used as is.
  * <p>
@@ -35,19 +35,19 @@ import java.lang.reflect.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridCacheDefaultAffinityMapper implements GridCacheAffinityMapper {
+public class GridCacheDefaultAffinityKeyMapper implements GridCacheAffinityKeyMapper {
     /** Reflection cache. */
     private GridReflectionCache reflectCache = new GridReflectionCache(
         new P1<Field>() {
             @Override public boolean apply(Field f) {
                 // Account for anonymous inner classes.
-                return f.getAnnotation(GridCacheAffinityMapped.class) != null;
+                return f.getAnnotation(GridCacheAffinityKeyMapped.class) != null;
             }
         },
         new P1<Method>() {
             @Override public boolean apply(Method m) {
                 // Account for anonymous inner classes.
-                Annotation ann = m.getAnnotation(GridCacheAffinityMapped.class);
+                Annotation ann = m.getAnnotation(GridCacheAffinityKeyMapped.class);
 
                 if (ann != null) {
                     if (!F.isEmpty(m.getParameterTypes()))
@@ -67,7 +67,7 @@ public class GridCacheDefaultAffinityMapper implements GridCacheAffinityMapper {
     private transient GridLogger log;
 
     /**
-     * If key class has annotation {@link GridCacheAffinityMapped},
+     * If key class has annotation {@link GridCacheAffinityKeyMapped},
      * then the value of annotated method or field will be used to get affinity value instead
      * of the key itself. If there is no annotation, then the key is returned as is.
      *

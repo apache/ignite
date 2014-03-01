@@ -133,7 +133,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     private GridCacheDataStructures dataStructures;
 
     /** Affinity impl. */
-    private GridCacheAffinity0<K> aff;
+    private GridCacheAffinity<K> aff;
 
     /** Whether this cache is GGFS data cache. */
     private boolean ggfsDataCache;
@@ -354,7 +354,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheAffinity0<K> affinity() {
+    @Override public GridCacheAffinity<K> affinity() {
         return aff;
     }
 
