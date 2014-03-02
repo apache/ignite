@@ -9,7 +9,7 @@
     \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
 -->
 
-<project name="GridGain Development Build" basedir="." default="info">
+<project name="GridGain Development Build" basedir="." default="mk.dev.jar">
     <description>
         GridGain build script.
     </description>
@@ -98,15 +98,9 @@
         <echo message=""/>
         <echo message="    GRIDGAIN_HOME : ${gridgain.home}"/>
         <echo message="    JAVA_HOME     : ${jdk.home}"/>
+        <echo message="    M2_HOME       : ${m2.home}"/>
         <echo message="    TMP_DIR       : ${tmp.dir}"/>
         <echo message=""/>
-    </target>
-
-    <!--
-        Prints info.
-    -->
-    <target name="info" depends="init.build">
-        <echo message="    Run mk.dev.jar target for building development jar."/>
     </target>
 
     <!--
