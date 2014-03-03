@@ -12,7 +12,7 @@
 
 #include <string>
 
-#include <gridgain/gridgain.hpp>
+#include "../../../../../os/modules/clients/cpp/main/include/gridgain/gridgain.hpp"
 
 /** Remote nodes host name. */
 const std::string SERVER_ADDRESS = "127.0.0.1";
