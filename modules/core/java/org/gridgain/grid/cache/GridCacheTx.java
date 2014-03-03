@@ -86,7 +86,7 @@ import java.util.*;
  * <h1 class="header">Usage</h1>
  * You can use cache transactions as follows:
  * <pre name="code" class="java">
- * GridCache&lt;String, Integer&gt; cache = G.grid().cache();
+ * GridCache&lt;String, Integer&gt; cache = GridGain.grid().cache();
  *
  * try (GridCacheTx tx = cache.txStart()) {
  *     // Perform transactional operations.
