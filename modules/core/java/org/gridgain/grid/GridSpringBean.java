@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -263,7 +263,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forOthers(GridNode node) {
+    @Override public GridProjection forOthers(GridNode node, GridNode... nodes) {
         assert g != null;
 
         return g.forOthers(node);

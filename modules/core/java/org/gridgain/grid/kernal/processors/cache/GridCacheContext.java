@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -721,7 +721,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      *      are set to {@code true} or the store is local.
      */
     public boolean writeToStoreFromDht() {
-        return store().isLocalStore() || (cacheCfg.isWriteBehindEnabled() && cacheCfg.isWriteBehindPreferPrimary());
+        return store().isLocalStore() || cacheCfg.isWriteBehindEnabled();
     }
 
     /**

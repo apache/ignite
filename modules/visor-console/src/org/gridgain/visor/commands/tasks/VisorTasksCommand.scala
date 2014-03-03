@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -19,7 +19,7 @@ import events._
 import org.gridgain.grid.util.typedef.X
 import org.gridgain.grid.lang.GridPredicate
 import org.gridgain.grid.kernal.processors.task.GridInternal
-import org.gridgain.grid.util.{GridUtils => U, GridUuid}
+import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor._
 import visor._

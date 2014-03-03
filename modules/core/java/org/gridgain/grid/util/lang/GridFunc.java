@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -7511,21 +7511,6 @@ public class GridFunc {
     }
 
     /**
-     * Special version of {@link #t(Object, Object)} method that is tailored for
-     * {@code with(...)} method in JEXL-based predicates to set up the external context for JEXL evaluation.
-     *
-     * @param var Name of variable in JEXL context.
-     * @param val Variable value in JEXL context.
-     * @return Newly created tuple.
-     * @see GridJexlPredicate
-     * @see GridBiJexlPredicate
-     * @see GridJexlPredicate3
-     */
-    public static GridBiTuple<String, Object> jexl(String var, @Nullable Object val) {
-        return new GridBiTuple<>(var, val);
-    }
-
-    /**
      * Factory method returning new empty tuple.
      *
      * @param <V1> Type of the 1st tuple parameter.
@@ -7675,90 +7660,6 @@ public class GridFunc {
      */
     public static <V1, V2, V3, V4, V5, V6> GridTuple6<V1, V2, V3, V4, V5, V6> t6() {
         return new GridTuple6<>();
-    }
-
-    /**
-     * Utility shortcut for creating JEXL predicate.
-     *
-     * @param expr JEXL boolean expression. Note that non-boolean return value will
-     *      evaluate this predicate to {@code false}.
-     * @param <T> Type of the free variable, i.e. the element the closure is called on.
-     * @return Newly created JEXL predicate.
-     */
-    public static <T> GridJexlPredicate<T> x1(String expr) {
-        return new GridJexlPredicate<>(expr);
-    }
-
-    /**
-     * Utility shortcut for creating JEXL predicate.
-     *
-     * @param expr JEXL boolean expression. Note that non-boolean return value will evaluate
-     *      this predicate to {@code false}.
-     * @param var1 Name of the 1st bound variable in JEXL expression.
-     * @param var2 Name of the 2nd bound variable in JEXL expression.
-     * @param <T1> Type of the 1st free variable, i.e. the element the closure is called on.
-     * @param <T2> Type of the 2nd free variable, i.e. the element the closure is called on.
-     * @return Newly created JEXL predicate.
-     */
-    public static <T1, T2> GridBiJexlPredicate<T1, T2> x2(String expr, String var1, String var2) {
-        return new GridBiJexlPredicate<>(expr, var1, var2);
-    }
-
-    /**
-     * Utility shortcut for creating JEXL predicate.
-     *
-     * @param expr JEXL boolean expression. Note that non-boolean return value will evaluate
-     *      this predicate to {@code false}.
-     * @param var1 Name of the 1st bound variable in JEXL expression.
-     * @param var2 Name of the 2nd bound variable in JEXL expression.
-     * @param var3 Name of the 3rd bound variable in JEXL expression.
-     * @param <T1> Type of the 1st free variable, i.e. the element the closure is called on.
-     * @param <T2> Type of the 2nd free variable, i.e. the element the closure is called on.
-     * @param <T3> Type of the 3rd free variable, i.e. the element the closure is called on.
-     * @return Newly created JEXL predicate.
-     */
-    public static <T1, T2, T3> GridJexlPredicate3<T1, T2, T3> x3(String expr, String var1, String var2, String var3) {
-        return new GridJexlPredicate3<>(expr, var1, var2, var3);
-    }
-
-    /**
-     * Utility shortcut for creating JEXL predicate.
-     *
-     * @param expr JEXL boolean expression. Note that non-boolean return value will evaluate
-     *      this predicate to {@code false}.
-     * @param <T1> Type of the 1st free variable, i.e. the element the closure is called on.
-     * @param <T2> Type of the 2nd free variable, i.e. the element the closure is called on.
-     * @return Newly created JEXL predicate.
-     */
-    public static <T1, T2> GridBiJexlPredicate<T1, T2> x2(String expr) {
-        return new GridBiJexlPredicate<>(expr);
-    }
-
-    /**
-     * Utility shortcut for creating JEXL predicate.
-     *
-     * @param expr JEXL boolean expression. Note that non-boolean return value will evaluate
-     *      this predicate to {@code false}.
-     * @param <T1> Type of the 1st free variable, i.e. the element the closure is called on.
-     * @param <T2> Type of the 2nd free variable, i.e. the element the closure is called on.
-     * @param <T3> Type of the 3rd free variable, i.e. the element the closure is called on.
-     * @return Newly created JEXL predicate.
-     */
-    public static <T1, T2, T3> GridJexlPredicate3<T1, T2, T3> x3(String expr) {
-        return new GridJexlPredicate3<>(expr);
-    }
-
-    /**
-     * Utility shortcut for creating JEXL predicate.
-     *
-     * @param expr JEXL boolean expression. Note that non-boolean return value
-     *      will evaluate this predicate to {@code false}.
-     * @param var Name of the bound variable in JEXL expression.
-     * @param <T> Type of the free variable, i.e. the element the closure is called on.
-     * @return Newly created JEXL predicate.
-     */
-    public static <T> GridJexlPredicate<T> x1(String expr, String var) {
-        return new GridJexlPredicate<>(expr, var);
     }
 
     /**

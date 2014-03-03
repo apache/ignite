@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -29,45 +29,26 @@ import java.util.concurrent.atomic.*;
  * mapping, next word will be mapped to a node only after the result from
  * previous word has been received.
  * <p>
- * Grid task {@link GridContinuousMapperTask} handles actual splitting
- * into sub-jobs, their continuous mapping and remote execution, as well
- * as calculation of the total character count.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * <h1 class="header">Starting Remote Nodes</h1>
- * To try this example you should (but don't have to) start remote grid instances.
- * You can start as many as you like by executing the following script:
- * <pre class="snippet">{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-compute.xml</pre>
- * Once remote instances are started, you can execute this example from
- * Eclipse, IntelliJ IDEA, or NetBeans (and any other Java IDE) by simply hitting run
- * button. You will see that all nodes discover each other and
- * some of the nodes will participate in task execution (check node
- * output).
- * <p>
- * <h1 class="header">XML Configuration</h1>
- * If no specific configuration is provided, GridGain will start with
- * all defaults. For information about GridGain default configuration
- * refer to {@link GridGain} documentation. If you would like to
- * try out different configurations you should pass a path to Spring
- * configuration file as 1st command line argument into this example.
- * The path can be relative to {@code GRIDGAIN_HOME} environment variable.
- * You should also pass the same configuration file to all other
- * grid nodes by executing startup script as follows (you will need
- * to change the actual file name):
- * <pre class="snippet">{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/specific-config-file.xml</pre>
- * <p>
- * GridGain examples come with multiple configuration files you can try.
- * All configuration files are located under {@code GRIDGAIN_HOME/examples/config}
- * folder.
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * with {@code examples/config/example-compute.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
  */
 public class ComputeContinuousMapperExample {
     /**
-     * @param args Command line arguments (none required).
-     * @throws GridException If failed.
+     * Executes example.
+     *
+     * @param args Command line arguments, none required.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
+        System.out.println();
+        System.out.println(">>> Compute continuous mapper example started.");
+
         try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
             GridComputeTaskFuture<Integer> fut = g.compute().execute(
                 GridContinuousMapperTask.class, "Hello Continuous Mapper");

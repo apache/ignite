@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,7 +15,6 @@ import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.failover.*;
 import org.gridgain.grid.spi.loadbalancing.*;
-import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -24,10 +23,9 @@ import java.util.concurrent.*;
 
 /**
  * Defines compute grid functionality for executing tasks and closures over nodes
- * in the {{@link GridProjection}. Instance of {@code GridCompute} is obtained from grid projection
+ * in the {@link GridProjection}. Instance of {@code GridCompute} is obtained from grid projection
  * as follows:
  * <pre name="code" class="java">
- * // Compute instance for the whole grid.
  * GridCompute c = GridGain.grid().compute();
  * </pre>
  * The methods are grouped as follows:

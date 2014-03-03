@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -142,7 +142,7 @@ public class GridCacheDgcManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop0(boolean cancel) {
+    @Override public void onKernalStop0(boolean cancel) {
         if (cctx.config().getCacheMode() == GridCacheMode.LOCAL)
             // No-op for local cache.
             return;

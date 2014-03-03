@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,8 +19,11 @@ import java.util.*;
  * Grid cache distributed queue example. This example demonstrates {@code FIFO} unbounded
  * cache queue.
  * <p>
- * Remote nodes should always be started with configuration file which includes
- * cache: {@code 'ggstart.sh examples/config/example-cache.xml'}.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
+ * <p>
+ * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -37,14 +40,15 @@ public class CacheQueueExample {
     private static GridCacheQueue<String> queue;
 
     /**
-     * Executes this example on the grid.
+     * Executes example.
      *
      * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
-            print("FIFO queue example started on nodes: " + g.nodes().size());
+            System.out.println();
+            System.out.println(">>> Cache queue example started.");
 
             // Make queue name.
             String queueName = UUID.randomUUID().toString();
@@ -58,7 +62,7 @@ public class CacheQueueExample {
             clearAndRemoveQueue(g);
         }
 
-        print("FIFO queue example finished.");
+        System.out.println("FIFO queue example finished.");
     }
 
     /**
@@ -78,7 +82,7 @@ public class CacheQueueExample {
         for (int i = 0; i < g.nodes().size() * RETRIES * 2; i++)
             queue.put(Integer.toString(i));
 
-        print("Queue size after initializing: " + queue.size());
+        System.out.println("Queue size after initializing: " + queue.size());
 
         return queue;
     }
@@ -95,7 +99,7 @@ public class CacheQueueExample {
         // Read queue items on each node.
         g.compute().run(new QueueClosure(CACHE_NAME, queueName, false)).get();
 
-        print("Queue size after reading [expected=0, actual=" + queue.size() + ']');
+        System.out.println("Queue size after reading [expected=0, actual=" + queue.size() + ']');
     }
 
     /**
@@ -110,14 +114,14 @@ public class CacheQueueExample {
         // Write queue items on each node.
         g.compute().run(new QueueClosure(CACHE_NAME, queueName, true)).get();
 
-        print("Queue size after writing [expected=" + g.nodes().size() * RETRIES +
+        System.out.println("Queue size after writing [expected=" + g.nodes().size() * RETRIES +
             ", actual=" + queue.size() + ']');
 
-        print("Iterate over queue.");
+        System.out.println("Iterate over queue.");
 
         // Iterate over queue.
         for (String item : queue)
-            print("Queue item: " + item);
+            System.out.println("Queue item: " + item);
     }
 
     /**
@@ -127,12 +131,12 @@ public class CacheQueueExample {
      * @throws GridException If execution failed.
      */
     private static void clearAndRemoveQueue(Grid g) throws GridException {
-        print("Queue size before clearing: " + queue.size());
+        System.out.println("Queue size before clearing: " + queue.size());
 
         // Clear queue.
         queue.clear();
 
-        print("Queue size after clearing: " + queue.size());
+        System.out.println("Queue size after clearing: " + queue.size());
 
         // Remove queue from cache.
         g.cache(CACHE_NAME).dataStructures().removeQueue(queue.name());
@@ -142,17 +146,8 @@ public class CacheQueueExample {
             queue.poll();
         }
         catch (GridRuntimeException expected) {
-            print("Expected exception - " + expected.getMessage());
+            System.out.println("Expected exception - " + expected.getMessage());
         }
-    }
-
-    /**
-     * Prints out given object to standard out.
-     *
-     * @param o Object to print.
-     */
-    private static void print(Object o) {
-        System.out.println(">>> " + o);
     }
 
     /**
@@ -193,17 +188,17 @@ public class CacheQueueExample {
 
                         queue.put(item);
 
-                        print("Queue item has been added: " + item);
+                        System.out.println("Queue item has been added: " + item);
                     }
                 }
                 else {
                     // Take items from queue head.
                     for (int i = 0; i < RETRIES; i++)
-                        print("Queue item has been read from queue head: " + queue.take());
+                        System.out.println("Queue item has been read from queue head: " + queue.take());
 
                     // Take items from queue head once again.
                     for (int i = 0; i < RETRIES; i++)
-                        print("Queue item has been read from queue head: " + queue.poll());
+                        System.out.println("Queue item has been read from queue head: " + queue.poll());
                 }
             }
             catch (GridException e) {

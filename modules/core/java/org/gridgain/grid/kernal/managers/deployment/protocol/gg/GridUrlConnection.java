@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.managers.deployment.protocol.gg;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
-import org.gridgain.grid.util.*;
 
 import java.io.*;
 import java.net.*;

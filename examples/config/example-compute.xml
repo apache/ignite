@@ -26,114 +26,37 @@
         <!-- Set to local host address just for examples. -->
         <property name="localHost" value="127.0.0.1"/>
 
-        <!-- Set deployment mode to be able to deploy jobs and tasks on that node. -->
-        <property name="deploymentMode" value="SHARED"/>
-
-        <!--
-            For better performance set this property to false in case
-            peer deployment is not used.
-            Default value is false.
-        -->
+        <!-- Set to true to enable grid-aware class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
 
-        <!--
-            Configure optimized marshaller.
-        -->
         <property name="marshaller">
             <bean class="org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller">
-                <!--
-                    For better performance set this property to true in case
-                    all marshalled classes implement java.io.Serializable.
-                    Default value is true.
-
-                    Note, that it is recommended to implement java.io.Externalizable
-                    instead of java.io.Serializable for smaller network footprint
-                    and even better performance.
-                -->
+                <!-- Set to false to allow non-serializable objects in examples, default is true. -->
                 <property name="requireSerializable" value="false"/>
             </bean>
         </property>
 
-        <!--
-            URI deployment SPI.
-        -->
-        <property name="deploymentSpi">
-            <bean class="org.gridgain.grid.spi.deployment.uri.GridUriDeploymentSpi">
-                <!-- Default SPI configuration used. -->
-            </bean>
-        </property>
-
-        <!--
-            Enable cache events.
-        -->
+        <!-- Enable cache events for examples. -->
         <property name="includeEventTypes">
             <util:constant static-field="org.gridgain.grid.events.GridEventType.EVTS_CACHE"/>
         </property>
 
-        <!--
-            TCP discovery SPI configuration with predefined addresses.
-            Use the addresses list to provide IP addresses of initial nodes in the grid
-            (at least one address must be provided).
-
-            Note:
-            =====
-            If running in distributed environment, you should change IP addresses to the actual IP addresses
-            of the servers on your network. Not all addresses need to be specified, only the addresses
-            of one or more servers which will always be started first.
-        -->
+        <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
         <property name="discoverySpi">
             <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
                 <property name="ipFinder">
+                    <!-- Uncomment multicast IP finder to enable multicast-based discovery of initial nodes. -->
+                    <!--<bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.GridTcpDiscoveryMulticastIpFinder">-->
                     <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
-                                <!--
-                                    List all IP/port configurations that potentially
-                                    can be started first in examples. We are assuming
-                                    grid of size 10 or less.
-                                -->
+                                <!-- In distributed environment, replace with actual host IP address. -->
                                 <value>127.0.0.1:47500..47509</value>
                             </list>
                         </property>
                     </bean>
-                    <!--
-                    Uncomment this to provide IP finder using multicast for nodes discovery.
-                    In addition to addresses received via multicast this finder can work with pre-configured
-                    list of addresses.
-                    -->
-                    <!--
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.GridTcpDiscoveryMulticastIpFinder">
-                        <property name="addresses">
-                            <list>
-                                <value>host1:port1</value>
-                                <value>host2:port2</value>
-                            </list>
-                        </property>
-                    </bean>
-                    -->
                 </property>
             </bean>
-        </property>
-
-        <!--
-            Allow indexing SPI to index primitive values.
-        -->
-        <property name="indexingSpi">
-            <list>
-                <bean class="org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi">
-                    <!-- Index primitives. -->
-                    <property name="defaultIndexPrimitiveKey" value="true"/>
-
-                    <!--
-                        Set to false to allow different key types for one value type.
-
-                        Note that this also means that '_key' column cannot participate in
-                        where clause queries either directly through API, through JDBC driver,
-                        or through Object Viewer in Visor DevOps Console.
-                    -->
-                    <!--property name="defaultIndexFixedTyping" value="false"/-->
-                </bean>
-            </list>
         </property>
     </bean>
 </beans>

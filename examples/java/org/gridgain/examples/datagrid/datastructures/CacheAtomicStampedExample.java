@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,8 +18,11 @@ import java.util.*;
 /**
  * Demonstrates a simple usage of distributed atomic stamped.
  * <p>
- * Remote nodes should always be started with configuration file which includes
- * cache configuration, e.g. {@code 'ggstart.sh examples/config/example-cache.xml'}.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
+ * <p>
+ * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -30,16 +33,15 @@ public final class CacheAtomicStampedExample {
     private static final String CACHE_NAME = "partitioned_tx";
 
     /**
-     * Executes this example on the grid.
+     * Executes example.
      *
-     * @param args Command line arguments, none required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      {@code "examples/config/"} for configuration file examples.
+     * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
-            print("Starting atomic stamped example on nodes: " + g.nodes().size());
+            System.out.println();
+            System.out.println(">>> Cache atomic stamped example started.");
 
             // Make name of atomic stamped.
             String stampedName = UUID.randomUUID().toString();
@@ -54,7 +56,7 @@ public final class CacheAtomicStampedExample {
             GridCacheAtomicStamped<String, String> stamped = g.cache(CACHE_NAME).dataStructures().
                 atomicStamped(stampedName, val, stamp, true);
 
-            print("Atomic stamped initial [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');
+            System.out.println("Atomic stamped initial [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');
 
             // Make closure for checking atomic stamped on grid.
             Runnable c = new StampedUpdateClosure(CACHE_NAME, stampedName);
@@ -68,7 +70,7 @@ public final class CacheAtomicStampedExample {
             // Make new stamp of atomic stamped.
             String newStamp = UUID.randomUUID().toString();
 
-            print("Try to change value and stamp of atomic stamped with wrong expected value and stamp.");
+            System.out.println("Try to change value and stamp of atomic stamped with wrong expected value and stamp.");
 
             stamped.compareAndSet("WRONG EXPECTED VALUE", newVal, "WRONG EXPECTED STAMP", newStamp);
 
@@ -76,7 +78,7 @@ public final class CacheAtomicStampedExample {
             // Atomic stamped value and stamp shouldn't be changed.
             g.compute().run(c).get();
 
-            print("Try to change value and stamp of atomic stamped with correct value and stamp.");
+            System.out.println("Try to change value and stamp of atomic stamped with correct value and stamp.");
 
             stamped.compareAndSet(val, newVal, stamp, newStamp);
 
@@ -85,19 +87,9 @@ public final class CacheAtomicStampedExample {
             g.compute().run(c).get();
         }
 
-        print("");
-        print("Finished atomic stamped example...");
-        print("Check all nodes for output (this node is also part of the grid).");
-        print("");
-    }
-
-    /**
-     * Prints out given object to standard out.
-     *
-     * @param o Object to print.
-     */
-    private static void print(Object o) {
-        System.out.println(">>> " + o);
+        System.out.println();
+        System.out.println("Finished atomic stamped example...");
+        System.out.println("Check all nodes for output (this node is also part of the grid).");
     }
 
     /**
@@ -125,7 +117,7 @@ public final class CacheAtomicStampedExample {
                 GridCacheAtomicStamped<String, String> stamped = GridGain.grid().cache(cacheName).dataStructures().
                     atomicStamped(stampedName, null, null, true);
 
-                print("Atomic stamped [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');
+                System.out.println("Atomic stamped [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');
             }
             catch (GridException e) {
                 throw new GridRuntimeException(e);

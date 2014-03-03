@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,7 +11,7 @@ package org.gridgain.grid.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.partition.*;
+import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.eviction.*;
@@ -44,9 +44,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
  */
 @SuppressWarnings("RedundantFieldInitialization")
 public class GridCacheConfiguration {
-    /** Default query log name. */
-    public static final String DFLT_QUERY_LOGGER_NAME = "org.gridgain.cache.queries";
-
     /** DGC tracing logger name. */
     public static final String DGC_TRACE_LOGGER_NAME =
         "org.gridgain.grid.kernal.processors.cache.GridCacheDgcManager.trace";
@@ -69,6 +66,9 @@ public class GridCacheConfiguration {
      */
     public static final long DFLT_TIME_TO_LIVE = 0;
 
+    /** Default number of backups. */
+    public static final int DFLT_BACKUPS = 0;
+
     /** Default caching mode. */
     public static final GridCacheMode DFLT_CACHE_MODE = GridCacheMode.REPLICATED;
 
@@ -77,6 +77,9 @@ public class GridCacheConfiguration {
 
     /** Default value for write ordering mode. */
     public static final GridCacheAtomicWriteOrderMode DFLT_ATOMIC_WRITE_ORDER_MODE = GridCacheAtomicWriteOrderMode.CLOCK;
+
+    /** Default value for cache distribution mode. */
+    public static final GridCacheDistributionMode  DFLT_DISTRIBUTION_MODE = GridCacheDistributionMode.PARTITIONED_ONLY;
 
     /** Default transaction timeout. */
     public static final long DFLT_TRANSACTION_TIMEOUT = 0;
@@ -167,9 +170,6 @@ public class GridCacheConfiguration {
 
     /** Default value for 'writeBehindEnabled' flag. */
     public static final boolean DFLT_WRITE_BEHIND_ENABLED = false;
-
-    /** Default value for write-behind use dht option. */
-    public static final boolean DFLT_WRITE_BEHIND_PREFER_PRIMARY = true;
 
     /** Default flush size for write-behind cache store. */
     public static final int DFLT_WRITE_BEHIND_FLUSH_SIZE = 10240; // 10K
@@ -268,7 +268,7 @@ public class GridCacheConfiguration {
     private int nearStartSize = DFLT_NEAR_START_SIZE;
 
     /** Cache distribution mode. */
-    private GridCacheDistributionMode distro;
+    private GridCacheDistributionMode distro = DFLT_DISTRIBUTION_MODE;
 
     /** Write synchronization mode. */
     private GridCacheWriteSynchronizationMode writeSync;
@@ -277,7 +277,7 @@ public class GridCacheConfiguration {
     private GridCacheStore<?, ?> store;
 
     /** Node group resolver. */
-    private GridCacheAffinity aff;
+    private GridCacheAffinityFunction aff;
 
     /** Cache mode. */
     private GridCacheMode cacheMode = DFLT_CACHE_MODE;
@@ -287,6 +287,9 @@ public class GridCacheConfiguration {
 
     /** Write ordering mode. */
     private GridCacheAtomicWriteOrderMode atomicWriteOrderMode = DFLT_ATOMIC_WRITE_ORDER_MODE;
+
+    /** */
+    private int backups = DFLT_BACKUPS;
 
     /** Flag to enable transactional batch update. */
     private boolean txBatchUpdate = DFLT_TX_BATCH_UPDATE;
@@ -342,9 +345,6 @@ public class GridCacheConfiguration {
     /** Write-behind feature. */
     private boolean writeBehindEnabled = DFLT_WRITE_BEHIND_ENABLED;
 
-    /** Whether or not cache store will be updated on DHT nodes for write-behind cache. */
-    private boolean writeBehindPreferPrimary = DFLT_WRITE_BEHIND_PREFER_PRIMARY;
-
     /** Maximum size of write-behind cache. */
     private int writeBehindFlushSize = DFLT_WRITE_BEHIND_FLUSH_SIZE;
 
@@ -373,7 +373,7 @@ public class GridCacheConfiguration {
     private GridCacheCloner cloner;
 
     /** */
-    private GridCacheAffinityMapper affMapper;
+    private GridCacheAffinityKeyMapper affMapper;
 
     /** */
     private String indexingSpiName;
@@ -410,6 +410,7 @@ public class GridCacheConfiguration {
         aff = cc.getAffinity();
         affMapper = cc.getAffinityMapper();
         atomicityMode = cc.getAtomicityMode();
+        backups = cc.getBackups();
         cacheMode = cc.getCacheMode();
         cloner = cc.getCloner();
         contQryMaxBufSize = cc.getContinuousQueryMaximumBufferSize();
@@ -470,7 +471,6 @@ public class GridCacheConfiguration {
         writeBehindFlushFreq = cc.getWriteBehindFlushFrequency();
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
-        writeBehindPreferPrimary = cc.isWriteBehindPreferPrimary();
         atomicWriteOrderMode = cc.getAtomicWriteOrderMode();
         writeSync = cc.getWriteSynchronizationMode();
     }
@@ -539,6 +539,8 @@ public class GridCacheConfiguration {
     /**
      * Gets cache distribution mode. This parameter is taken into account only if
      * {@link #getCacheMode()} is set to {@link GridCacheMode#PARTITIONED} or {@link GridCacheMode#REPLICATED} mode.
+     * <p>
+     * If not set, default value is {@link #DFLT_DISTRIBUTION_MODE}.
      *
      * @return Cache distribution mode.
      */
@@ -935,7 +937,7 @@ public class GridCacheConfiguration {
      *
      * @return Key topology resolver to provide mapping from keys to nodes.
      */
-    public GridCacheAffinity getAffinity() {
+    public GridCacheAffinityFunction getAffinity() {
         return aff;
     }
 
@@ -944,7 +946,7 @@ public class GridCacheConfiguration {
      *
      * @param aff Cache key affinity.
      */
-    public void setAffinity(GridCacheAffinity aff) {
+    public void setAffinity(GridCacheAffinityFunction aff) {
         this.aff = aff;
     }
 
@@ -1006,6 +1008,28 @@ public class GridCacheConfiguration {
      */
     public void setAtomicWriteOrderMode(GridCacheAtomicWriteOrderMode atomicWriteOrderMode) {
         this.atomicWriteOrderMode = atomicWriteOrderMode;
+    }
+
+    /**
+     * Gets number of nodes used to back up single partition for {@link GridCacheMode#PARTITIONED} cache.
+     * <p>
+     * If not set, default value is {@link #DFLT_BACKUPS}.
+     *
+     * @return Number of backup nodes for one partition.
+     */
+    public int getBackups() {
+        return backups;
+    }
+
+    /**
+     * Sets number of nodes used to back up single partition for {@link GridCacheMode#PARTITIONED} cache.
+     * <p>
+     * If not set, default value is {@link #DFLT_BACKUPS}.
+     *
+     * @param backups Number of backup nodes for one partition.
+     */
+    public void setBackups(int backups) {
+        this.backups = backups;
     }
 
     /**
@@ -1452,34 +1476,6 @@ public class GridCacheConfiguration {
     }
 
     /**
-     * Flag indicating whether GridGain should use primary nodes for persistent store update when write-behind
-     * store is enabled. By default this option is enabled which is defined via
-     * {@link #DFLT_WRITE_BEHIND_PREFER_PRIMARY} constant.
-     * <p>
-     * When enabled, persistent store transaction may be split across multiple primary nodes, but order of updates
-     * will be preserved. When disabled, transaction will be performed on one node, which guarantees that it
-     * will succeed or fail as a whole, but order of updates may not be preserved.
-     * <p>
-     * You should not disable this option unless you are sure that there will be no updates of the same key from
-     * different nodes.
-     *
-     * @return Whether ot not write-behind cache store will be updated on primary nodes.
-     */
-    public boolean isWriteBehindPreferPrimary() {
-        return writeBehindPreferPrimary;
-    }
-
-    /**
-     * Sets whether or not write-behind cache will update cache store on primary nodes.
-     *
-     * @param writeBehindPreferPrimary {@code True} if write-behind cache should update store on DHT primary nodes.
-     * @see #isWriteBehindPreferPrimary()
-     */
-    public void setWriteBehindPreferPrimary(boolean writeBehindPreferPrimary) {
-        this.writeBehindPreferPrimary = writeBehindPreferPrimary;
-    }
-
-    /**
      * Maximum size of the write-behind cache. If cache size exceeds this value,
      * all cached items are flushed to the cache store and write cache is cleared.
      * <p/>
@@ -1684,7 +1680,7 @@ public class GridCacheConfiguration {
      * For better efficiency user should usually make sure that new nodes get placed on
      * the same place of consistent hash ring as the left nodes, and that nodes are
      * restarted before this delay expires. To place nodes on the same place in consistent hash ring,
-     * use {@link GridCachePartitionAffinity#setHashIdResolver(GridCachePartitionHashResolver)}
+     * use {@link GridCacheConsistentHashAffinityFunction#setHashIdResolver(GridCacheAffinityNodeHashResolver)}
      * to make sure that a node maps to the same hash ID event if restarted. As an example,
      * node IP address and port combination may be used in this case.
      * <p>
@@ -1749,21 +1745,21 @@ public class GridCacheConfiguration {
      * on the same node (they will also be backed up on the same nodes as well).
      * <p>
      * If not provided, then default implementation will be used. The default behavior
-     * is described in {@link GridCacheAffinityMapper} documentation.
+     * is described in {@link GridCacheAffinityKeyMapper} documentation.
      *
      * @return Mapper to use for affinity key mapping.
      */
-    public GridCacheAffinityMapper getAffinityMapper() {
+    public GridCacheAffinityKeyMapper getAffinityMapper() {
         return affMapper;
     }
 
     /**
      * Sets custom affinity mapper. If not provided, then default implementation will be used. The default behavior is
-     * described in {@link GridCacheAffinityMapper} documentation.
+     * described in {@link GridCacheAffinityKeyMapper} documentation.
      *
      * @param affMapper Affinity mapper.
      */
-    public void setAffinityMapper(GridCacheAffinityMapper affMapper) {
+    public void setAffinityMapper(GridCacheAffinityKeyMapper affMapper) {
         this.affMapper = affMapper;
     }
 

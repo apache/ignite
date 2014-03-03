@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -16,7 +16,8 @@ import matchers._
 import org.gridgain.visor._
 import VisorCacheCommand._
 import org.gridgain.grid.{GridGain => G}
-import org.gridgain.grid.cache.query.GridCacheQueryType._
+import org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
+import GridCacheQueryType._
 import org.gridgain.grid.cache.query.GridCacheQuerySqlField
 
 /**
@@ -73,11 +74,11 @@ class VisorCacheCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndA
         c.put(3, Foo(150))
 
         // Create two queries
-        val q1 = c.queries().createQuery(SQL, classOf[Foo], "_key > ?")
-        c.queries().createQuery(SQL, classOf[Foo], "_key = ?")
+        val q1 = c.queries().createSqlQuery(classOf[Foo], "_key > ?")
+        c.queries().createSqlQuery(classOf[Foo], "_key = ?")
 
         // Execute only one query
-        q1.queryArguments(100.asInstanceOf[java.lang.Integer]).execute().get
+        q1.execute(100.asInstanceOf[java.lang.Integer]).get
 
         visor cache "-a"
     }

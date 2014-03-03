@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,7 +14,11 @@ import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Convenient facade for cache data structures.
+ * Facade for working with distributed cache data structures. All cache data structures are similar
+ * in APIs to {@code 'java.util.concurrent'} package, but all operations on them are grid-aware.
+ * For example, if you increment {@link GridCacheAtomicLong} on one node, another node will
+ * know about the change. Or if you add an element to {@link GridCacheQueue} on one node,
+ * you can poll it on another node.
  *
  * @author @java.author
  * @version @java.version

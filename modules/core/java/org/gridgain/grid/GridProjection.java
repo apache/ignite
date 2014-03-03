@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -96,13 +96,14 @@ public interface GridProjection {
     public GridProjection forNode(GridNode node, GridNode... nodes);
 
     /**
-     * Creates a grid projection for nodes other than given node.
+     * Creates a grid projection for nodes other than given nodes.
      *
      * @param node Node to exclude from new grid projection.
+     * @param nodes Optional additional nodes to exclude from projection.
      * @return Projection that will contain all nodes that original projection contained excluding
-     *      given node.
+     *      given nodes.
      */
-    public GridProjection forOthers(GridNode node);
+    public GridProjection forOthers(GridNode node, GridNode... nodes);
 
     /**
      * Creates a grid projection for nodes not included into given projection.

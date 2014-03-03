@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,7 +11,6 @@ package org.gridgain.grid.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.jta.*;
-import org.gridgain.grid.util.*;
 
 import java.util.*;
 
@@ -87,11 +86,9 @@ import java.util.*;
  * <h1 class="header">Usage</h1>
  * You can use cache transactions as follows:
  * <pre name="code" class="java">
- * GridCache&lt;String, Integer&gt; cache = G.grid().cache();
- * ...
- * GridCacheTx tx = cache.txStart();
+ * GridCache&lt;String, Integer&gt; cache = GridGain.grid().cache();
  *
- * try {
+ * try (GridCacheTx tx = cache.txStart()) {
  *     // Perform transactional operations.
  *     Integer v1 = cache.get("k1");
  *     Integer old1 = cache.put("k2", 2);
@@ -100,24 +97,6 @@ import java.util.*;
  *
  *     // Commit the transaction.
  *     tx.commit();
- * }
- * finally {
- *     tx.close(); // Rollback, if was not committed.
- * }
- * </pre>
- * Or, the same logic as above can be executed by passing one or more closures to any of
- * the {@code 'GridCache.inTx(..)'} methods as follows:
- * <pre name="code" class="java">
- * GridCache&lt;String, Integer&gt; cache = G.grid().cache();
- * ...
- * cache.inTx(new CI1&lt;GridCacheProjection&lt;String, Integer&gt;&gt;() {
- *    &#64;Override public void apply(GridCacheProjection&lt;String, Integer&gt; cache) {
- *       // Perform transactional operations.
- *       Integer v1 = cache.get("k1");
- *       Integer old1 = cache.put("k2", 2);
- *
- *       cache.removex("k3");
- *    }
  * }
  * </pre>
  *

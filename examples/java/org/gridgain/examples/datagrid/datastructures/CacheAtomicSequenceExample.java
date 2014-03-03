@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,8 +18,11 @@ import java.util.*;
 /**
  * Demonstrates a simple usage of distributed atomic sequence.
  * <p>
- * Remote nodes should always be started with configuration file which includes
- * cache configuration, e.g. {@code 'ggstart.sh examples/config/example-cache.xml'}.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
+ * <p>
+ * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -33,18 +36,15 @@ public final class CacheAtomicSequenceExample {
     private static final int RETRIES = 20;
 
     /**
-     * Executes this example on the grid.
-     * <p>
-     * Note that atomic sequence reserves on each node region of ids for best performance.
+     * Executes example.
      *
-     * @param args Command line arguments, none required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      {@code "examples/config/"} for configuration file examples.
+     * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
-            print("Starting atomic sequence example on nodes: " + g.nodes().size());
+            System.out.println();
+            System.out.println(">>> Cache atomic sequence example started.");
 
             // Make name of sequence.
             final String seqName = UUID.randomUUID().toString();
@@ -55,27 +55,18 @@ public final class CacheAtomicSequenceExample {
             // First value of atomic sequence on this node.
             long firstVal = seq.get();
 
-            print("Sequence initial value: " + firstVal);
+            System.out.println("Sequence initial value: " + firstVal);
 
             // Try increment atomic sequence on all grid nodes. Note that this node is also part of the grid.
             g.compute().run(new SequenceClosure(CACHE_NAME, seqName)).get();
 
-            print("Sequence after incrementing [expected=" + (firstVal + RETRIES) + ", actual=" + seq.get() + ']');
+            System.out.println("Sequence after incrementing [expected=" + (firstVal + RETRIES) + ", actual=" +
+                seq.get() + ']');
         }
 
-        print("");
-        print("Finished atomic sequence example...");
-        print("Check all nodes for output (this node is also part of the grid).");
-        print("");
-    }
-
-    /**
-     * Prints out given object to standard out.
-     *
-     * @param o Object to print.
-     */
-    private static void print(Object o) {
-        System.out.println(">>> " + o);
+        System.out.println();
+        System.out.println("Finished atomic sequence example...");
+        System.out.println("Check all nodes for output (this node is also part of the grid).");
     }
 
     /**
@@ -104,7 +95,8 @@ public final class CacheAtomicSequenceExample {
                     atomicSequence(seqName, 0, true);
 
                 for (int i = 0; i < RETRIES; i++)
-                    print("Sequence [currentValue=" + seq.get() + ", afterIncrement=" + seq.incrementAndGet() + ']');
+                    System.out.println("Sequence [currentValue=" + seq.get() + ", afterIncrement=" +
+                        seq.incrementAndGet() + ']');
 
             }
             catch (GridException e) {

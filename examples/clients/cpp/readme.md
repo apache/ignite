@@ -11,11 +11,11 @@
 
 ## Building the Client Library
 
-To build the C++ Client library, please follow the instructions in `GRIDGAIN_HOME/modules/clients/cpp/readme.md` file.
+To build the C++ Client library, please follow the instructions in `GRIDGAIN_HOME/examples/clients/cpp/readme.md` file.
 
 ## Running the Client Examples
 
-First, build the examples by going into the `GRIDGAIN_HOME/examples/cpp` directory and executing the following commands:
+First, build the examples by going into the `GRIDGAIN_HOME/examples/clients/cpp` directory and executing the following commands:
 
     ./configure
     make

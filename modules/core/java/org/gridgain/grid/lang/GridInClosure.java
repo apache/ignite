@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,15 +14,13 @@ import org.gridgain.grid.util.lang.*;
 /**
  * Closure with one in-parameter and void return type.
  *
- * @param <T> Type of closure argument.
- * @author @java.author
- * @version @java.version
+ * @param <E> Type of closure argument.
  */
-public abstract class GridInClosure<T> extends GridLambdaAdapter {
+public abstract class GridInClosure<E> extends GridLambdaAdapter {
     /**
-     * In-closure body.
+     * Closure body.
      *
      * @param e Closure argument.
      */
-    public abstract void apply(T e);
+    public abstract void apply(E e);
 }

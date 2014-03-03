@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -12,7 +12,7 @@ package org.gridgain.examples.compute;
 import org.gridgain.grid.*;
 
 /**
- * Starts up an empty node with example default configuration.
+ * Starts up an empty node with example compute configuration.
  *
  * @author @java.author
  * @version @java.version

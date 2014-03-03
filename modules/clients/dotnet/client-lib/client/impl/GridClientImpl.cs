@@ -1,4 +1,4 @@
-// @csharp.file.header
+/* @csharp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -140,8 +140,8 @@ namespace GridGain.Client.Impl {
                     overallCaches[pair.Key] = pair.Value;
 
             foreach (KeyValuePair<String, GridClientCacheMode> entry in overallCaches)
-                if (Affinity(entry.Key) is GridClientPartitionedAffinity && entry.Value != GridClientCacheMode.Partitioned)
-                    Dbg.WriteLine(typeof(GridClientPartitionedAffinity) + " is used for a cache configured " +
+                if (Affinity(entry.Key) is GridClientPartitionAffinity && entry.Value != GridClientCacheMode.Partitioned)
+                    Dbg.WriteLine(typeof(GridClientPartitionAffinity) + " is used for a cache configured " +
                         "for non-partitioned mode [cacheName=" + entry.Key + ", cacheMode=" + entry.Value + ']');
 
             idleCheckThread = new Thread(checkIdle);

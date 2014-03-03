@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,7 +16,6 @@ import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
@@ -231,7 +230,7 @@ public class GridJobContextImpl extends GridMetadataAwareAdapter implements Grid
     /** {@inheritDoc} */
     @Override public <T> T affinityKey() {
         try {
-            return (T)job.getDeployment().annotatedValue(job.getJob(), GridCacheAffinityMapped.class);
+            return (T)job.getDeployment().annotatedValue(job.getJob(), GridCacheAffinityKeyMapped.class);
         }
         catch (GridException e) {
             throw F.wrap(e);

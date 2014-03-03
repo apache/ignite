@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -97,12 +97,12 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> GridFuture<T> waitForLocal(@Nullable GridPredicate<T> p,
+    @Override public <T extends GridEvent> GridFuture<T> waitForLocal(@Nullable GridPredicate<T> filter,
         @Nullable int... types) {
         guard();
 
         try {
-            return ctx.event().waitForEvent(p, types);
+            return ctx.event().waitForEvent(filter, types);
         }
         finally {
             unguard();

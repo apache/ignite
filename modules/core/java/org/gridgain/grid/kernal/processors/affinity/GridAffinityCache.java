@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,9 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -27,17 +26,23 @@ import java.util.concurrent.atomic.*;
  * @version @java.version
  */
 public class GridAffinityCache {
+    /** Node order comparator. */
+    private static final Comparator<GridNode> nodeCmp = new NodeOrderComparator();
+
     /** Cache name. */
     private final String cacheName;
 
+    /** Number of backups. */
+    private int backups;
+
     /** Affinity function. */
-    private final GridCacheAffinity aff;
+    private final GridCacheAffinityFunction aff;
 
     /** Partitions count. */
     private final int partsCnt;
 
     /** Affinity mapper function. */
-    private final GridCacheAffinityMapper affMapper;
+    private final GridCacheAffinityKeyMapper affMapper;
 
     /** Affinity calculation results cache: topology version => partition => nodes. */
     private final ConcurrentMap<Long, CachedAffinity> affCache;
@@ -56,16 +61,17 @@ public class GridAffinityCache {
      * @param aff Affinity function.
      * @param affMapper Affinity key mapper.
      */
-    public GridAffinityCache(GridKernalContext ctx, String cacheName, GridCacheAffinity aff,
-        GridCacheAffinityMapper affMapper) {
+    public GridAffinityCache(GridKernalContext ctx, String cacheName, GridCacheAffinityFunction aff,
+        GridCacheAffinityKeyMapper affMapper, int backups) {
         this.ctx = ctx;
         this.aff = aff;
         this.affMapper = affMapper;
         this.cacheName = cacheName;
+        this.backups = backups;
 
         partsCnt = aff.partitions();
         affCache = new ConcurrentLinkedHashMap<>();
-        head = new AtomicReference<>(new CachedAffinity(-1, 0));
+        head = new AtomicReference<>(new CachedAffinity(-1));
     }
 
     /**
@@ -160,7 +166,7 @@ public class GridAffinityCache {
             cache = affCache.get(topVer);
 
             if (cache == null) {
-                CachedAffinity old = affCache.putIfAbsent(topVer, cache = new CachedAffinity(topVer, partitions()));
+                CachedAffinity old = affCache.putIfAbsent(topVer, cache = new CachedAffinity(topVer));
 
                 if (old == null) {
                     cache.calculate(); // Calculate cached affinity.
@@ -190,27 +196,19 @@ public class GridAffinityCache {
     }
 
     /**
-     * @param part Partition.
-     * @param topVer Topology version or {@code -1} for last topology.
-     * @return Affinity nodes.
+     * Sorts nodes according to order.
+     *
+     * @param nodes Nodes to sort.
+     * @return Sorted list of nodes.
      */
-    private Collection<GridNode> affinity(int part, long topVer) {
-        // Resolve nodes snapshot for specified topology version.
-        Collection<GridNode> nodes = ctx.discovery().cacheAffinityNodes(cacheName, topVer);
+    private List<GridNode> sort(Collection<GridNode> nodes) {
+        List<GridNode> sorted = new ArrayList<>(nodes.size());
 
-        if (F.isEmpty(nodes))
-            return Collections.emptyList();
+        sorted.addAll(nodes);
 
-        // Re-calculate affinity nodes.
-        Collection<GridNode> affNodes = aff.nodes(part, nodes);
+        Collections.sort(sorted, nodeCmp);
 
-        if (F.isEmpty(affNodes))
-            throw new GridRuntimeException("Grid cache affinity returned empty nodes collection " +
-                "[aff=" + aff + ", affinityCache=" + this + ']');
-
-        // Wrap affinity nodes with unmodifiable list due to unmodifiable generic collection
-        // doesn't provide equals and hashCode implementations.
-        return U.sealList(affNodes);
+        return sorted;
     }
 
     /**
@@ -221,7 +219,7 @@ public class GridAffinityCache {
         private final long topVer;
 
         /** Collection of calculated affinity nodes. */
-        private final Collection<GridNode>[] arr;
+        private List<List<GridNode>> arr;
 
         /** Map of primary node partitions. */
         private final Map<UUID, Set<Integer>> primary;
@@ -242,11 +240,9 @@ public class GridAffinityCache {
          * Constructs cached affinity calculations item.
          *
          * @param topVer Topology version.
-         * @param parts Partitions count.
          */
-        private CachedAffinity(long topVer, int parts) {
+        private CachedAffinity(long topVer) {
             this.topVer = topVer;
-            arr = (Collection<GridNode>[])new Collection[parts];
             primary = new HashMap<>();
             backup = new HashMap<>();
         }
@@ -265,12 +261,12 @@ public class GridAffinityCache {
          * @return Affinity nodes.
          */
         public Collection<GridNode> get(int part) {
-            assert part >= 0 && part < arr.length : "Affinity partition is out of range" +
-                " [part=" + part + ", partitions=" + arr.length + ']';
-
             assert latch.getCount() == 0 && calculated.get() : "Affinity cache is not calculated yet.";
 
-            return arr[part];
+            assert part >= 0 && part < arr.size() : "Affinity partition is out of range" +
+                " [part=" + part + ", partitions=" + arr.size() + ']';
+
+            return arr.get(part);
         }
 
         /**
@@ -303,18 +299,22 @@ public class GridAffinityCache {
         public void calculate() {
             if (calculated.compareAndSet(false, true)) {
                 try {
-                    // Temporary mirrows with modifiable partition's collections.
+                    // Temporary mirrors with modifiable partition's collections.
                     Map<UUID, Set<Integer>> tmpPrm = new HashMap<>();
                     Map<UUID, Set<Integer>> tmpBkp = new HashMap<>();
 
-                    for (int partsCnt = arr.length, p = 0; p < partsCnt; p++) {
-                        arr[p] = affinity(p, topVer);
+                    // Resolve nodes snapshot for specified topology version.
+                    Collection<GridNode> nodes = ctx.discovery().cacheAffinityNodes(cacheName, topVer);
 
+                    arr = aff.assignPartitions(
+                        new GridCacheAffinityFunctionContextImpl(sort(nodes), topVer, backups));
+
+                    for (int partsCnt = arr.size(), p = 0; p < partsCnt; p++) {
                         // Use the first node as primary, other - backups.
                         Map<UUID, Set<Integer>> tmp = tmpPrm;
                         Map<UUID, Set<Integer>> map = primary;
 
-                        for (GridNode node : arr[p]) {
+                        for (GridNode node : arr.get(p)) {
                             UUID id = node.id();
 
                             Set<Integer> set = tmp.get(id);
@@ -378,6 +378,16 @@ public class GridAffinityCache {
                 return false;
 
             return topVer == ((CachedAffinity)o).topVer;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class NodeOrderComparator implements Comparator<GridNode>, Serializable {
+        /** {@inheritDoc} */
+        @Override public int compare(GridNode n1, GridNode n2) {
+            return n1.order() < n2.order() ? -1 : n1.order() > n2.order() ? 1 : 0;
         }
     }
 }

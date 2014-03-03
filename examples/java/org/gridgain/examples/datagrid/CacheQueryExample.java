@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,8 +17,6 @@ import org.gridgain.grid.lang.*;
 
 import java.io.*;
 import java.util.*;
-
-import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
 
 /**
  * Grid cache queries example. This example demonstrates SQL, TEXT, and FULL SCAN
@@ -52,8 +50,11 @@ import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
  *     </li>
  * </ul>
  * <p>
- * Remote nodes should always be started with configuration file which includes
- * cache: {@code 'ggstart.sh examples/config/example-cache.xml'}.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
+ * <p>
+ * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -66,14 +67,15 @@ public class CacheQueryExample {
     // private static final String CACHE_NAME = "local";
 
     /**
-     * Put data to cache and then queries them.
+     * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws Exception If example execution failed.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
-            print("Query example started.");
+            System.out.println();
+            System.out.println(">>> Cache query example started.");
 
             // Populate cache.
             initialize();
@@ -105,62 +107,60 @@ public class CacheQueryExample {
 
     /**
      * Example for SQL queries based on salary ranges.
+     *
+     * @throws GridException In case of error.
      */
-    private static void sqlQuery() {
+    private static void sqlQuery() throws GridException {
         GridCache<GridCacheAffinityKey<UUID>, Person> cache = GridGain.grid().cache(CACHE_NAME);
 
         // Create query which selects salaries based on range.
-        GridCacheQuery<GridCacheAffinityKey<UUID>, Person> qry =
-            cache.queries().createQuery(SQL, Person.class, "salary > ? and salary <= ?");
+        GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> qry =
+            cache.queries().createSqlQuery(Person.class, "salary > ? and salary <= ?");
 
         // Execute queries for salary ranges.
-        print("People with salaries between 0 and 1000: ",
-            qry.queryArguments(0, 1000).execute());
+        print("People with salaries between 0 and 1000: ", qry.execute(0, 1000).get());
 
-        print("People with salaries between 1000 and 2000: ",
-            qry.queryArguments(1000, 2000).execute());
+        print("People with salaries between 1000 and 2000: ", qry.execute(1000, 2000).get());
 
-        print("People with salaries greater than 2000: ",
-            qry.queryArguments(2000, Integer.MAX_VALUE).execute());
+        print("People with salaries greater than 2000: ", qry.execute(2000, Integer.MAX_VALUE).get());
     }
 
     /**
      * Example for SQL queries based on all employees working for a specific organization.
+     *
+     * @throws GridException In case of error.
      */
-    private static void sqlQueryWithJoin() {
+    private static void sqlQueryWithJoin() throws GridException {
         GridCache<GridCacheAffinityKey<UUID>, Person> cache = GridGain.grid().cache(CACHE_NAME);
 
         // Create query which joins on 2 types to select people for a specific organization.
-        GridCacheQuery<GridCacheAffinityKey<UUID>, Person> qry =
-            cache.queries().createQuery(SQL, Person.class,
-                "from Person, Organization " +
-                    "where Person.orgId = Organization.id and lower(Organization.name) = lower(?)");
+        GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> qry =
+            cache.queries().createSqlQuery(Person.class, "from Person, Organization " + "where Person.orgId = " +
+                "Organization.id and lower(Organization.name) = lower(?)");
 
         // Execute queries for find employees for different organizations.
-        print("Following people are 'GridGain' employees: ",
-            qry.queryArguments("GridGain").execute());
-
-        print("Following people are 'Other' employees: ",
-            qry.queryArguments("Other").execute());
+        print("Following people are 'GridGain' employees: ", qry.execute("GridGain").get());
+        print("Following people are 'Other' employees: ", qry.execute("Other").get());
     }
 
     /**
      * Example for TEXT queries using LUCENE-based indexing of people's resumes.
+     *
+     * @throws GridException In case of error.
      */
-    private static void textQuery() {
+    private static void textQuery() throws GridException {
         GridCache<GridCacheAffinityKey<UUID>, Person> cache = GridGain.grid().cache(CACHE_NAME);
 
         //  Query for all people with "Master Degree" in their resumes.
-        GridCacheQuery<GridCacheAffinityKey<UUID>, Person> masters =
-            cache.queries().createQuery(TEXT, Person.class, "Master");
+        GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> masters =
+            cache.queries().createFullTextQuery(Person.class, "Master");
 
         // Query for all people with "Bachelor Degree"in their resumes.
-        GridCacheQuery<GridCacheAffinityKey<UUID>, Person> bachelors =
-            cache.queries().createQuery(TEXT, Person.class, "Bachelor");
+        GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> bachelors =
+            cache.queries().createFullTextQuery(Person.class, "Bachelor");
 
-        print("Following people have 'Master Degree' in their resumes: ", masters.execute());
-
-        print("Following people have 'Bachelor Degree' in their resumes: ", bachelors.execute());
+        print("Following people have 'Master Degree' in their resumes: ", masters.execute().get());
+        print("Following people have 'Bachelor Degree' in their resumes: ", bachelors.execute().get());
     }
 
     /**
@@ -173,13 +173,11 @@ public class CacheQueryExample {
         GridCacheProjection<GridCacheAffinityKey<UUID>, Person> cache = GridGain.grid().cache(CACHE_NAME);
 
         // Calculate average of salary of all persons in GridGain.
-        GridCacheReduceQuery<GridCacheAffinityKey<UUID>, Person, GridBiTuple<Double, Integer>, Double> qry =
-            cache.queries().createReduceQuery(SQL, Person.class,
-                "from Person, Organization " +
-                    "where Person.orgId = Organization.id and lower(Organization.name) = lower(?)");
+        GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> qry = cache.queries().createSqlQuery(Person
+            .class, "from Person, Organization " + "where Person.orgId = Organization.id and lower(Organization.name)" +
+            " = lower(?)");
 
-        // Calculate sum of salaries and employee count on remote nodes.
-        qry = qry.remoteReducer(
+        Collection<GridBiTuple<Double, Integer>> res = qry.execute(
             new GridReducer<Map.Entry<GridCacheAffinityKey<UUID>, Person>, GridBiTuple<Double, Integer>>() {
                 private double sum;
 
@@ -197,39 +195,20 @@ public class CacheQueryExample {
                 @Override public GridBiTuple<Double, Integer> reduce() {
                     return new GridBiTuple<>(sum, cnt);
                 }
-            }
-        ).localReducer(
-            new GridReducer<GridBiTuple<Double, Integer>, Double>() {
-                private double sum;
+            }, "GridGain").get();
 
-                private int cnt;
+        double sum = 0.0d;
+        int cnt = 0;
 
-                @Override public boolean collect(GridBiTuple<Double, Integer> t) {
-                    sum += t.get1();
-                    cnt += t.get2();
+        for (GridBiTuple<Double, Integer> t : res) {
+            sum += t.get1();
+            cnt += t.get2();
+        }
 
-                    // Continue collecting.
-                    return true;
-                }
-
-                @Override public Double reduce() {
-                    double avg = cnt == 0 ? 0 : sum / cnt;
-
-                    // Reset reducer state to correctly execute query several times.
-                    sum = 0;
-                    cnt = 0;
-
-                    return avg;
-                }
-            }
-        );
+        double avg = sum / cnt;
 
         // Calculate average salary for a specific organization.
-        print("Average salary for 'GridGain' employees: " +
-            qry.queryArguments("GridGain").reduce().get());
-
-        print("Average salary for 'Other' employees: " +
-            qry.queryArguments("Other").reduce().get());
+        print("Average salary for 'GridGain' employees: " + avg);
     }
 
     /**
@@ -242,24 +221,23 @@ public class CacheQueryExample {
         GridCache<GridCacheAffinityKey<UUID>, Person> cache = GridGain.grid().cache(CACHE_NAME);
 
         // Create query to get names of all employees working for some company.
-        GridCacheTransformQuery<GridCacheAffinityKey<UUID>, Person, String> qry =
-            cache.queries().createTransformQuery(SQL, Person.class,
+        GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> qry =
+            cache.queries().createSqlQuery(Person.class,
                 "from Person, Organization " +
                     "where Person.orgId = Organization.id and lower(Organization.name) = lower(?)");
 
         // Transformer to convert Person objects to String.
         // Since caller only needs employee names, we only
         // send names back.
-        qry = qry.remoteTransformer(
-            new GridClosure<Person, String>() {
-                @Override public String apply(Person p) {
-                    return p.lastName;
+        GridClosure<Map.Entry<GridCacheAffinityKey<UUID>, Person>, String> trans =
+            new GridClosure<Map.Entry<GridCacheAffinityKey<UUID>, Person>, String>() {
+                @Override public String apply(Map.Entry<GridCacheAffinityKey<UUID>, Person> e) {
+                    return e.getValue().lastName;
                 }
-            });
+            };
 
         // Query all nodes for names of all GridGain employees.
-        print("Names of all 'GridGain' employees: " +
-            qry.queryArguments("GridGain").execute().get());
+        print("Names of all 'GridGain' employees: " + qry.execute(trans, "GridGain").get());
     }
 
     /**
@@ -272,24 +250,15 @@ public class CacheQueryExample {
         GridCache<?, ?> cache = GridGain.grid().cache(CACHE_NAME);
 
         // Create query to get names of all employees.
-        GridCacheFieldsQuery qry1 = cache.queries().createFieldsQuery(
+        GridCacheQuery<List<?>> qry1 = cache.queries().createSqlFieldsQuery(
             "select concat(firstName, ' ', lastName) from Person");
 
         // Execute query to get collection of rows. In this particular
         // case each row will have one element with full name of an employees.
-        Collection<List<Object>> res = qry1.execute().get();
+        Collection<List<?>> res = qry1.execute().get();
 
         // Print names.
-        print("Names of all employees:", res.iterator());
-
-        // Create query that gets employee by name and returns his salary.
-        GridCacheFieldsQuery qry2 = cache.queries().createFieldsQuery(
-            "select salary from Person where concat(firstName, ' ', lastName) = ?");
-
-        // Only one row with one field is expected in result of this query,
-        // so you can use convenient 'executeSingleField' method here.
-        print("Salary of John Doe: " + qry2.queryArguments("John Doe").executeSingleField().get());
-        print("Salary of John Smith: " + qry2.queryArguments("John Smith").executeSingleField().get());
+        print("Names of all employees:", res);
     }
 
     /**
@@ -336,26 +305,24 @@ public class CacheQueryExample {
      * Prints collection of objects to standard out.
      *
      * @param msg Message to print before all objects are printed.
-     * @param it Iterator over query results.
+     * @param col Query results.
      */
-    private static void print(String msg, Iterator<?> it) {
+    private static void print(String msg, Iterable<?> col) {
         if (msg != null)
             System.out.println(">>> " + msg);
 
-        print(it);
+        print(col);
     }
 
     /**
-     * Prints iterator items.
+     * Prints collection items.
      *
-     * @param it Iterator.
+     * @param col Collection.
      */
-    private static void print(Iterator<?> it) {
-        while (it.hasNext()) {
-            Object next = it.next();
-
+    private static void print(Iterable<?> col) {
+        for (Object next : col) {
             if (next instanceof Iterable)
-                print(((Iterable)next).iterator());
+                print((Iterable<?>)next);
             else
                 System.out.println(">>>     " + next);
         }

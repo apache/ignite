@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -1052,7 +1052,7 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
         if (getGridGainHome() != null && !getGridGainHome().isEmpty()) {
             File dir = new File(getGridGainHome(), DFLT_DEPLOY_DIR);
 
-            if (!dir.exists())
+            if (!dir.exists() && !dir.mkdirs())
                 throw new GridSpiException("Failed to initialize default file scanner (folder doesn't exist): " + dir);
 
             uri = dir.toURI();

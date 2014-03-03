@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,8 +18,11 @@ import java.util.*;
 /**
  * Demonstrates a simple usage of distributed atomic reference.
  * <p>
- * Remote nodes should always be started with configuration file which includes
- * cache configuration, e.g. {@code 'ggstart.sh examples/config/example-cache.xml'}.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
+ * <p>
+ * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -30,16 +33,15 @@ public final class CacheAtomicReferenceExample {
     private static final String CACHE_NAME = "partitioned_tx";
 
     /**
-     * Executes this example on the grid.
+     * Executes example.
      *
-     * @param args Command line arguments, none required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      {@code "examples/config/"} for configuration file examples.
+     * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
-            print("Starting atomic reference example on nodes: " + g.nodes().size());
+            System.out.println();
+            System.out.println(">>> Cache atomic reference example started.");
 
             // Make name of atomic reference.
             final String refName = UUID.randomUUID().toString();
@@ -51,7 +53,7 @@ public final class CacheAtomicReferenceExample {
             GridCacheAtomicReference<String> ref = g.cache(CACHE_NAME).dataStructures().
                 atomicReference(refName, val, true);
 
-            print("Atomic reference initial value : " + ref.get() + '.');
+            System.out.println("Atomic reference initial value : " + ref.get() + '.');
 
             // Make closure for checking atomic reference value on grid.
             Runnable c = new ReferenceClosure(CACHE_NAME, refName);
@@ -62,7 +64,7 @@ public final class CacheAtomicReferenceExample {
             // Make new value of atomic reference.
             String newVal = UUID.randomUUID().toString();
 
-            print("Try to change value of atomic reference with wrong expected value.");
+            System.out.println("Try to change value of atomic reference with wrong expected value.");
 
             ref.compareAndSet("WRONG EXPECTED VALUE", newVal); // Won't change.
 
@@ -70,7 +72,7 @@ public final class CacheAtomicReferenceExample {
             // Atomic reference value shouldn't be changed.
             g.compute().run(c).get();
 
-            print("Try to change value of atomic reference with correct expected value.");
+            System.out.println("Try to change value of atomic reference with correct expected value.");
 
             ref.compareAndSet(val, newVal);
 
@@ -79,19 +81,9 @@ public final class CacheAtomicReferenceExample {
             g.compute().run(c).get();
         }
 
-        print("");
-        print("Finished atomic reference example...");
-        print("Check all nodes for output (this node is also part of the grid).");
-        print("");
-    }
-
-    /**
-     * Prints out given object to standard out.
-     *
-     * @param o Object to print.
-     */
-    private static void print(Object o) {
-        System.out.println(">>> " + o);
+        System.out.println();
+        System.out.println("Finished atomic reference example...");
+        System.out.println("Check all nodes for output (this node is also part of the grid).");
     }
 
     /**
@@ -119,7 +111,7 @@ public final class CacheAtomicReferenceExample {
                 GridCacheAtomicReference<String> ref = GridGain.grid().cache(cacheName).dataStructures().
                     atomicReference(refName, null, true);
 
-                print("Atomic reference value is " + ref.get() + '.');
+                System.out.println("Atomic reference value is " + ref.get() + '.');
             }
             catch (GridException e) {
                 throw new GridRuntimeException(e);

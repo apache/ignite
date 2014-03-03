@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,7 +16,6 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.executor.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -486,7 +485,7 @@ public class GridComputeImpl implements GridCompute {
             @GridCacheName
             private final String cn = cacheName;
 
-            @GridCacheAffinityMapped
+            @GridCacheAffinityKeyMapped
             private final Object ak = affKey0;
 
             @Override public void run() {
@@ -514,7 +513,7 @@ public class GridComputeImpl implements GridCompute {
             @GridCacheName
             private final String cn = cacheName;
 
-            @GridCacheAffinityMapped
+            @GridCacheAffinityKeyMapped
             private final Object ak = affKey0;
 
             @Override public R call() {

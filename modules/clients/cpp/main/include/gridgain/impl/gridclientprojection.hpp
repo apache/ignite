@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -84,6 +84,11 @@ protected:
     /** Returns the unique ID of the client. */
     std::string clientUniqueId() const {
         return sharedData->clientUniqueId();
+    }
+
+    /** Returns the unique ID of the client. */
+    GridUuid& clientUniqueUuid() {
+        return sharedData->clientUniqueUuid();
     }
 
     /** Returns the actual list of the nodes in the current topology. */

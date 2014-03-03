@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,8 +18,11 @@ import java.util.*;
 /**
  * Demonstrates a simple usage of distributed count down latch.
  * <p>
- * Remote nodes should always be started with configuration file which includes
- * cache configuration, e.g. {@code 'ggstart.sh examples/config/example-cache.xml'}.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
+ * <p>
+ * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -33,16 +36,15 @@ public class CacheCountDownLatchExample {
     private static final int INITIAL_COUNT = 10;
 
     /**
-     * Executes this example on the grid.
+     * Executes example.
      *
-     * @param args Command line arguments, none required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      {@code "examples/config/"} for configuration file examples.
-     * @throws Exception If example execution failed.
+     * @param args Command line arguments, none required.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
-            print("Starting count down latch example on grid of size: " + g.nodes().size());
+            System.out.println();
+            System.out.println(">>> Cache atomic countdown latch example started.");
 
             // Make name of count down latch.
             final String latchName = UUID.randomUUID().toString();
@@ -51,7 +53,7 @@ public class CacheCountDownLatchExample {
             GridCacheCountDownLatch latch = g.cache(CACHE_NAME).dataStructures().
                 countDownLatch(latchName, INITIAL_COUNT, false, true);
 
-            print("Latch initial value: " + latch.count());
+            System.out.println("Latch initial value: " + latch.count());
 
             // Start waiting on the latch on all grid nodes.
             for (int i = 0; i < INITIAL_COUNT; i++)
@@ -60,22 +62,12 @@ public class CacheCountDownLatchExample {
             // Wait for latch to go down which essentially means that all remote closures completed.
             latch.await();
 
-            print("All latch closures have completed.");
+            System.out.println("All latch closures have completed.");
         }
 
-        print("");
-        print("Finished count down latch example...");
-        print("Check all nodes for output (this node is also part of the grid).");
-        print("");
-    }
-
-    /**
-     * Prints out given object to standard out.
-     *
-     * @param o Object to print.
-     */
-    private static void print(Object o) {
-        System.out.println(">>> " + o);
+        System.out.println();
+        System.out.println("Finished count down latch example...");
+        System.out.println("Check all nodes for output (this node is also part of the grid).");
     }
 
     /**
@@ -105,7 +97,7 @@ public class CacheCountDownLatchExample {
 
                 int newCnt = latch.countDown();
 
-                print("Counted down [newCnt=" + newCnt + ", nodeId=" + GridGain.grid().localNode().id() + ']');
+                System.out.println("Counted down [newCnt=" + newCnt + ", nodeId=" + GridGain.grid().localNode().id() + ']');
             }
             catch (GridException e) {
                 throw new RuntimeException(e);

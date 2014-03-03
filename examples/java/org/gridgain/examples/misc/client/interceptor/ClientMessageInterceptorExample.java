@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -24,15 +24,8 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * {@link ClientBigIntegerMessageInterceptor}. Check remote node output
  * for transformation reports.
  * <p>
- * For this example you should startup remote nodes only by calling
- * {@link ClientMessageInterceptorExampleNodeStartup} class.
- * <p>
- * You should not be using stand-alone nodes because GridGain nodes do not
- * know about the {@link ClientBigIntegerMessageInterceptor} we define in this example.
- * <p>
- * Note that different nodes cannot share the same port for rest services. If you want
- * to start more than one node on the same physical machine you must provide different
- * configurations for each node. Otherwise, this example would not work.
+ * Before running this example you must start at least one remote node using
+ * {@link ClientMessageInterceptorExampleNodeStartup}.
  *
  * @author @java.author
  * @version @java.version
@@ -46,19 +39,20 @@ public class ClientMessageInterceptorExample {
     private static final BigInteger BIG_VALUE = new BigInteger("1234567890000000000");
 
     /**
-     * Starts up a client instance and executes few cache operations to show
-     * {@link GridClientMessageInterceptor} intercepting and transforming objects.
+     * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws Exception If failed.
+     * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
+        System.out.println();
+        System.out.println(">>> Client message interceptor example started.");
+
         try (GridClient client = createClient()) {
             GridClientData rmtCache = client.data("partitioned");
 
             System.out.println(">>>");
             System.out.println(">>> Sending BigInteger value over REST as byte array: " + BIG_VALUE);
-            System.out.println(">>>");
 
             rmtCache.put("key", BIG_VALUE.toByteArray());
 
@@ -70,7 +64,6 @@ public class ClientMessageInterceptorExample {
 
             System.out.println(">>>");
             System.out.println(">>> Received BigInteger value over REST as byte array: " + obj);
-            System.out.println(">>>");
         }
     }
 
@@ -91,7 +84,7 @@ public class ClientMessageInterceptorExample {
         cacheCfg.setName("partitioned");
 
         // Set client partitioned affinity for this cache.
-        cacheCfg.setAffinity(new GridClientPartitionedAffinity());
+        cacheCfg.setAffinity(new GridClientPartitionAffinity());
 
         cfg.setDataConfigurations(Collections.singletonList(cacheCfg));
 

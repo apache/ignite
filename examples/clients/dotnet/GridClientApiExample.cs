@@ -1,4 +1,4 @@
-﻿// @csharp.file.header
+﻿/* @csharp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -45,8 +45,8 @@ namespace GridGain.Client {
         public static void Main() {
             /* Enable debug messages. */
             //Debug.Listeners.Add(new TextWriterTraceListener(System.Console.Out));
-            
-            String taskName = "org.gridgain.examples.client.api.GridClientExampleTask";
+
+            String taskName = "org.gridgain.examples.misc.client.api.ClientExampleTask";
             String taskArg = ".NET client - ";
 
             IGridClient client = CreateClient();
@@ -162,31 +162,6 @@ namespace GridGain.Client {
                 IGridClientFuture<IList<IGridClientNode>> topFut = prj.RefreshTopologyAsync(false, false);
 
                 X.WriteLine(">>> Refreshed topology asynchronously : " + ToString(topFut.Result));
-
-                try {
-                    // Client can be used to query logs.
-                    ICollection<String> log = prj.Log(0, 1);
-
-                    X.WriteLine(">>> First log lines : " + ToString(log));
-
-                    // Log entries may be fetched asynchronously.
-                    IGridClientFuture<IList<String>> futLog = prj.LogAsync(1, 2);
-
-                    X.WriteLine(">>> First log lines fetched asynchronously : " + ToString(futLog.Result));
-
-                    // Log file name can also be specified explicitly.
-                    log = prj.Log("work/log/gridgain.log", 0, 1);
-
-                    X.WriteLine(">>> First log lines from log file work/log/gridgain.log : " + ToString(log));
-
-                    // Asynchronous version supported as well.
-                    futLog = prj.LogAsync("work/log/gridgain.log", 1, 2);
-
-                    X.WriteLine(">>> First log lines fetched asynchronously : " + ToString(futLog.Result));
-                }
-                catch (GridClientException e) {
-                    X.WriteLine("Log file was not found: " + e.Message);
-                }
             }
             catch (GridClientException e) {
                 Console.WriteLine("Unexpected grid client exception happens: {0}", e);
@@ -212,7 +187,7 @@ namespace GridGain.Client {
             cacheCfg.Name = "partitioned";
 
             // Set client partitioned affinity for this cache.
-            cacheCfg.Affinity = new GridClientPartitionedAffinity();
+            cacheCfg.Affinity = new GridClientPartitionAffinity();
 
             var cfg = new GridClientConfiguration();
 
