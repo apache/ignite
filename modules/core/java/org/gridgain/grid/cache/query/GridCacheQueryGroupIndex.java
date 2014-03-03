@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -37,6 +37,7 @@ public @interface GridCacheQueryGroupIndex {
     /**
      * List of group indexes for type.
      */
+    @SuppressWarnings("PublicInnerClass")
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.TYPE})
     public static @interface List {

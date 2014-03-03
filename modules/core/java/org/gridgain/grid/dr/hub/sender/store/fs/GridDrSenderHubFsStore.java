@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -55,7 +55,7 @@ import static org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflow
  * <pre name="code" class="java">
  * GridDrSenderHubConfiguration cfg = new GridDrSenderHubConfiguration();
  *
- * GridDrFsStore store = new GridDrFsStore();
+ * GridDrSenderHubFsStore store = new GridDrSenderHubFsStore();
  *
  * // Set directory path.
  * store.setDirectoryPath("/my/directory/path");
@@ -64,14 +64,14 @@ import static org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflow
  * cfg.setStore(store);
  * </pre>
  * <h2 class="header">Spring Example</h2>
- * GridDrFsStore can be configured from Spring XML configuration file:
+ * GridDrSenderHubFsStore can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="drSenderHubConfiguration"&gt;
  *              &lt;bean class="org.gridgain.grid.dr.hub.sender.GridDrSenderHubConfiguration"&gt;
  *                  &lt;property name="store"&gt;
- *                      &lt;bean class="org.gridgain.grid.dr.hub.sender.store.fs.GridDrFsStore"&gt;
+ *                      &lt;bean class="org.gridgain.grid.dr.hub.sender.store.fs.GridDrSenderHubFsStore"&gt;
  *                          &lt;property name="directoryPath" value="/my/directory/path"/&gt;
  *                      &lt;/bean&gt;
  *                  &lt;/property&gt;

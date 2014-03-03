@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -26,6 +26,10 @@ using namespace std;
 class CacheRequestProjectionClosure: public ClientMessageProjectionClosure {
 public:
     CacheRequestProjectionClosure(const char* clientId, GridCacheRequestCommand& cacheCmd)
+            : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
+    }
+
+    CacheRequestProjectionClosure(GridUuid & clientId, GridCacheRequestCommand& cacheCmd)
             : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
     }
 
@@ -143,14 +147,13 @@ bool GridClientDataProjectionImpl::put(const GridClientVariant& key, const GridC
     if (invalidated) throw GridClientClosedException();
 
     GridCacheRequestCommand cmd(GridCacheRequestCommand::PUT);
-    GridCacheRequestCommand::TKeyValueMap keyValues;
 
     cmd.setKey(key);
     cmd.setValue(val);
     cmd.setCacheName(prjCacheName);
     cmd.setFlags(prjFlags);
 
-    CacheRequestProjectionClosure c(clientUniqueId(), cmd);
+    CacheRequestProjectionClosure c(clientUniqueUuid(), cmd);
 
     this->withReconnectHandling(c, prjCacheName, GridClientVariantHasheableObject(key));
 

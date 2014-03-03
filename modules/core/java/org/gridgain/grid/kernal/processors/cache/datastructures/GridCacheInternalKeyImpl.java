@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
-import org.gridgain.grid.cache.affinity.GridCacheAffinityMapped;
+import org.gridgain.grid.cache.affinity.GridCacheAffinityKeyMapped;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -44,7 +44,7 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     }
 
     /** {@inheritDoc} */
-    @GridCacheAffinityMapped
+    @GridCacheAffinityKeyMapped
     @Override public String name() {
         return name;
     }

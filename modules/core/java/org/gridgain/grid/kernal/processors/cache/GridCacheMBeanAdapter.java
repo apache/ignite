@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -158,11 +158,6 @@ class GridCacheMBeanAdapter implements GridCacheMBean {
     /** {@inheritDoc} */
     @Override public boolean isWriteBehindEnabled() {
         return store != null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isWriteBehindPreferPrimary() {
-        return store != null && cctx.config().isWriteBehindPreferPrimary();
     }
 
     /** {@inheritDoc} */

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,13 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Provides functionality for topic-based message exchange between nodes in the projection.
+ * Provides functionality for topic-based message exchange among nodes defined by {@link #projection()}.
  * Users can send ordered and unordered messages to various topics. Note that same topic name
- * cannot be reused between ordered and unordered messages.
+ * cannot be reused between ordered and unordered messages. Instance of {@code GridMessaging}
+ * is obtained from grid projection as follows:
+ * <pre name="code" class="java">
+ * GridMessaging m = GridGain.grid().message();
+ * </pre>
  * <p>
  * There are {@code 2} ways to subscribe to message listening, {@code local} and {@code remote}.
  * <p>
@@ -100,6 +104,14 @@ public interface GridMessaging {
      *      then it will be unsubscribed from any further notifications.
      */
     public void localListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p);
+
+    /**
+     * Unregisters local listener for given topic on local node only.
+     *
+     * @param topic Topic to unsubscribe from.
+     * @param p Listener predicate.
+     */
+    public void stopLocalListen(@Nullable Object topic, GridBiPredicate<UUID, ?> p);
 
     /**
      * Adds a message listener for a given topic to all nodes in the projection (possibly including

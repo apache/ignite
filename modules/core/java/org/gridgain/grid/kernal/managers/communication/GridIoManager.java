@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -1135,7 +1135,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         if (ordered) {
             long msgId = nextMessageId(TOPIC_COMM_USER, locNodeId);
 
-            sendOrderedMessage(nodes, TOPIC_COMM_USER, msgId, ioMsg, PUBLIC_POOL, timeout, false);
+            sendOrderedMessage(nodes, TOPIC_COMM_USER, msgId, ioMsg, PUBLIC_POOL, timeout, true);
         }
         else if (loc)
             send(F.first(nodes), TOPIC_COMM_USER, ioMsg, PUBLIC_POOL);
@@ -1156,14 +1156,29 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      * @param topic Topic to subscribe to.
      * @param p Message predicate.
      */
-    public void listenAsync(@Nullable final Object topic, @Nullable final GridBiPredicate<UUID, ?> p) {
+    public void addUserMessageListener(@Nullable final Object topic, @Nullable final GridBiPredicate<UUID, ?> p) {
         if (p != null) {
             try {
-                addMessageListener(TOPIC_COMM_USER, new GridUserMessageListener(topic, (GridBiPredicate<UUID, Object>)p));
+                addMessageListener(TOPIC_COMM_USER,
+                    new GridUserMessageListener(topic, (GridBiPredicate<UUID, Object>)p));
             }
             catch (GridException e) {
                 throw new GridRuntimeException(e);
             }
+        }
+    }
+
+    /**
+     * @param topic Topic to unsubscribe from.
+     * @param p Message predicate.
+     */
+    public void removeUserMessageListener(@Nullable Object topic, GridBiPredicate<UUID, ?> p) {
+        try {
+            removeMessageListener(TOPIC_COMM_USER,
+                new GridUserMessageListener(topic, (GridBiPredicate<UUID, Object>)p));
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
         }
     }
 
@@ -1775,7 +1790,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
             this.plc = plc;
             this.nodeId = nodeId;
             this.topic = topic;
-            this.timeout = skipOnTimeout ? ctx.config().getNetworkTimeout() : timeout;
+            this.timeout = timeout == 0 ? ctx.config().getNetworkTimeout() : timeout;
             this.skipOnTimeout = skipOnTimeout;
 
             endTime = endTime(timeout);

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,7 +11,6 @@ package org.gridgain.grid.ggfs;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
-import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -115,9 +114,11 @@ public interface GridGgfs {
      * <p>
      * When working in {@code DUAL_SYNC} or {@code DUAL_ASYNC} modes only the following properties will be propagated
      * to the secondary file system:
+     * <ul>
      * <li>{@code usrName} - file owner name;</li>
      * <li>{@code grpName} - file owner group;</li>
      * <li>{@code permission} - Unix-style string representing file permissions.</li>
+     * </ul>
      *
      * @param path File path to set properties for.
      * @param props Properties to update.

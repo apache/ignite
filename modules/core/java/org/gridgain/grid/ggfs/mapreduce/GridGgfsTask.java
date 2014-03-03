@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -25,7 +25,7 @@ import java.util.*;
  * {@link GridGgfsTask#createJob(GridGgfsPath, GridGgfsFileRange, GridGgfsTaskArgs)} method.
  * <p>
  * Each file participating in GGFS task is split into {@link GridGgfsFileRange}s first. Normally range is a number of
- * consequent bytes located on a single node (see {@link GridGgfsGroupDataBlocksMapper}). In case maximum range size
+ * consequent bytes located on a single node (see {@link GridGgfsGroupDataBlocksKeyMapper}). In case maximum range size
  * is provided (either through {@link GridGgfsConfiguration#getMaximumTaskRangeLength()} or {@code GridGgfs.execute()}
  * argument), then ranges could be further divided into smaller chunks.
  * <p>

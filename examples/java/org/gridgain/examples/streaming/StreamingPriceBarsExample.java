@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -39,7 +39,11 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * Note, the bars in the example are not real charting bars, but rather a simplification
  * with purpose to demonstrate multi-stage streaming processing.
  * <p>
- * You should startup remote nodes only by starting {@link StreamingNodeStartup} from your IDE.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-streaming.xml'}.
+ * <p>
+ * Alternatively you can run {@link StreamingNodeStartup} in another JVM which will start GridGain node
+ * with {@code examples/config/example-streaming.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -59,16 +63,19 @@ public class StreamingPriceBarsExample {
     private static final double[] INITIAL_PRICES = {194.9, 893.49, 34.21, 23.24};
 
     /**
-     * Starts the example.
+     * Executes example.
      *
-     * @param args Command line arguments.
-     * @throws Exception If failed.
+     * @param args Command line arguments, none required.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         Timer timer = new Timer("priceBars");
 
         // Start grid.
         final Grid g = GridGain.start("examples/config/example-streamer.xml");
+
+        System.out.println();
+        System.out.println(">>> Streaming price bars example started.");
 
         try {
             TimerTask task = scheduleQuery(g, timer);

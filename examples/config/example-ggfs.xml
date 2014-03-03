@@ -47,20 +47,12 @@
         Configuration below demonstrates how to setup a GGFS node with file data.
     -->
     <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
-        <!--
-            Configure optimized marshaller.
-        -->
+        <!-- Explicitly set to local host address. -->
+        <property name="localHost" value="127.0.0.1"/>
+
         <property name="marshaller">
             <bean class="org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller">
-                <!--
-                    For better performance set this property to true in case
-                    all marshalled classes implement java.io.Serializable.
-                    Default value is true.
-
-                    Note, that it is recommended to implement java.io.Externalizable
-                    instead of java.io.Serializable for smaller network footprint
-                    and even better performance.
-                -->
+                <!-- Set to false to allow non-serializable objects in examples, default is true. -->
                 <property name="requireSerializable" value="false"/>
             </bean>
         </property>
@@ -109,14 +101,9 @@
                     <property name="queryIndexEnabled" value="false"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="distributionMode" value="PARTITIONED_ONLY"/>
-                    <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.partition.GridCachePartitionAffinity">
-                            <!-- Setup number of backup servers per key. -->
-                            <constructor-arg value="0"/>
-                        </bean>
-                    </property>
+                    <property name="backups" value="0"/>
                     <property name="affinityMapper">
-                        <bean class="org.gridgain.grid.ggfs.GridGgfsGroupDataBlocksMapper">
+                        <bean class="org.gridgain.grid.ggfs.GridGgfsGroupDataBlocksKeyMapper">
                             <!-- Haw many blocks in row will be stored on the same node. -->
                             <constructor-arg value="512"/>
                         </bean>
@@ -133,9 +120,7 @@
             </list>
         </property>
 
-        <!--
-            Disable events.
-        -->
+        <!-- Enable specific task events. -->
         <property name="includeEventTypes">
             <list>
                 <util:constant static-field="org.gridgain.grid.events.GridEventType.EVT_TASK_FAILED"/>
@@ -144,46 +129,20 @@
             </list>
         </property>
 
-        <!--
-            Explicitly set to local host address.
-        -->
-        <property name="localHost" value="127.0.0.1"/>
-
-        <!--
-            TCP discovery SPI (uses VM-shared IP-finder).
-        -->
+        <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
         <property name="discoverySpi">
             <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
-                <!-- Override default IP-finder.-->
                 <property name="ipFinder">
+                    <!-- Uncomment multicast IP finder to enable multicast-based discovery of initial nodes. -->
+                    <!--<bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.GridTcpDiscoveryMulticastIpFinder">-->
                     <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
-                                <!--
-                                    List all IP/port configurations that potentially
-                                    can be started first in examples. We are assuming
-                                    grid of size 10 or less.
-                                -->
+                                <!-- In distributed environment, replace with actual host IP address. -->
                                 <value>127.0.0.1:47500..47509</value>
                             </list>
                         </property>
                     </bean>
-
-                    <!--
-                    Uncomment this to provide IP finder using multicast for nodes discovery.
-                    In addition to addresses received via multicast this finder can work with pre-configured
-                    list of addresses.
-                    -->
-                    <!--
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.GridTcpDiscoveryMulticastIpFinder">
-                        <property name="addresses">
-                            <list>
-                                <value>host1:port1</value>
-                                <value>host2:port2</value>
-                            </list>
-                        </property>
-                    </bean>
-                    -->
                 </property>
             </bean>
         </property>

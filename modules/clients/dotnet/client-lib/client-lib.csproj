@@ -9,7 +9,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>GridGain</RootNamespace>
-    <AssemblyName>GridGainClient</AssemblyName>
+    <AssemblyName>GridGainClient-6.0.1</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -93,7 +93,7 @@
     <Compile Include="client\IGridClientNode.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="client\GridClientPartitionedAffinity.cs">
+    <Compile Include="client\GridClientPartitionAffinity.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="client\GridClientProtocol.cs" />

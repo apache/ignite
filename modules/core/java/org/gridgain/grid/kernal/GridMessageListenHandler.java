@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -67,7 +67,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public boolean register(UUID nodeId, UUID routineId, final GridKernalContext ctx) throws GridException {
-        ctx.io().listenAsync(topic, pred);
+        ctx.io().addUserMessageListener(topic, pred);
 
         return true;
     }
@@ -79,7 +79,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public void unregister(UUID routineId, GridKernalContext ctx) {
-        // No-op.
+        ctx.io().removeUserMessageListener(topic, pred);
     }
 
     /** {@inheritDoc} */

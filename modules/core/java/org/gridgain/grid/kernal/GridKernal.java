@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -98,6 +98,25 @@ import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
  * @version @java.version
  */
 public class GridKernal extends GridProjectionAdapter implements GridEx, GridKernalMBean {
+    /** Enterprise release flag. */
+    private static final boolean ent;
+
+    /**
+     *
+     */
+    static {
+        boolean ent0;
+
+        try {
+            ent0 = Class.forName("org.gridgain.grid.entbreadcrumb") != null;
+        }
+        catch (ClassNotFoundException ignored) {
+            ent0 = false;
+        }
+
+        ent = ent0;
+    }
+
     /** Ant-augmented compatible versions. */
     private static final String COMPATIBLE_VERS = /*@java.compatible.vers*/"";
 
@@ -593,7 +612,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // Spin out SPIs & managers.
         try {
-            GridKernalContextImpl ctx = new GridKernalContextImpl(this, cfg, gw, VER.contains("ent"));
+            GridKernalContextImpl ctx = new GridKernalContextImpl(this, cfg, gw, ent);
 
             nodeLoc = new GridNodeLocalMapImpl(ctx);
 
@@ -1257,9 +1276,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             if (cacheCfg == null)
                 continue; // No cache for the given GGFS configuration.
 
-            GridCacheAffinityMapper affMapper = cacheCfg.getAffinityMapper();
+            GridCacheAffinityKeyMapper affMapper = cacheCfg.getAffinityMapper();
 
-            if (!(affMapper instanceof GridGgfsGroupDataBlocksMapper))
+            if (!(affMapper instanceof GridGgfsGroupDataBlocksKeyMapper))
                 // Do not create GGFS attributes for such a node nor throw error about invalid configuration.
                 // Configuration will be validated later, while starting GridGgfsProcessor.
                 continue;
@@ -1267,7 +1286,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             attrVals.add(new GridGgfsAttributes(
                 ggfsCfg.getName(),
                 ggfsCfg.getBlockSize(),
-                ((GridGgfsGroupDataBlocksMapper)affMapper).groupSize(),
+                ((GridGgfsGroupDataBlocksKeyMapper)affMapper).groupSize(),
                 ggfsCfg.getMetaCacheName(),
                 ggfsCfg.getDataCacheName(),
                 ggfsCfg.getDefaultMode(),

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.messaging;
 
+import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
@@ -19,17 +20,12 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Demonstrates various messaging APIs.
+ * Demonstrates simple message exchange between local and remote nodes.
  * <p>
- * <h1 class="header">Starting Remote Nodes</h1>
- * To try this example you need to start at least one remote grid instance.
- * You can start as many as you like by executing the following script:
- * <pre class="snippet">{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-compute.xml</pre>
- * Once remote instances are started, you can execute this example from
- * Eclipse, IntelliJ IDEA, or NetBeans (and any other Java IDE) by simply hitting run
- * button. You will see that all nodes discover each other and
- * some of the nodes will participate in task execution (check node
- * output).
+ * To run this example you must have at least one remote node started.
+ * <p>
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-compute.xml} configuration.
@@ -39,20 +35,19 @@ import java.util.concurrent.*;
  */
 public class MessagingPingPongExample {
     /**
-     * This example demonstrates simple protocol-based exchange in playing a ping-pong between
-     * two nodes.
+     * Executes example.
      *
-     * @param args Command line arguments (none required).
-     * @throws GridException Thrown in case of any errors.
+     * @param args Command line arguments, none required.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
         // Game is played over the default grid.
         try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
-            if (g.forRemotes().nodes().size() < 1) {
-                System.err.println("I need a partner to play a ping pong!");
-
+            if (!ExamplesUtils.checkMinTopologySize(g, 2))
                 return;
-            }
+
+            System.out.println();
+            System.out.println(">>> Messaging ping-pong example started.");
 
             // Pick random remote node as a partner.
             GridProjection nodeB = g.forRemotes().forRandom();

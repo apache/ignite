@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -56,6 +56,15 @@ public:
      */
     std::string clientUniqueId() const {
         return clientId.uuid();
+    }
+
+    /**
+     * Returns the unique id of the client.
+     *
+     * @return Client UUID in GridUuid form.
+     */
+    GridUuid & clientUniqueUuid() {
+        return clientId;
     }
 
     /**

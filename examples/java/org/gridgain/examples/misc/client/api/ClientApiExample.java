@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -28,8 +28,8 @@ import java.util.*;
  * to start more than one node on the same physical machine you must provide different
  * configurations for each node. Otherwise, this example would not work.
  * <p>
- * Note that to start the example, {@code GRIDGAIN_HOME} system property or environment variable
- * must be set.
+ * Before running this example you must start at least one remote node using
+ * {@link ClientExampleNodeStartup}.
  *
  * @author @java.author
  * @version @java.version
@@ -39,12 +39,15 @@ public class ClientApiExample {
     private static final String SERVER_ADDRESS = "127.0.0.1";
 
     /**
-     * Runs client compute example.
+     * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridClientException If failed.
+     * @throws GridClientException If example execution failed.
      */
     public static void main(String[] args) throws GridClientException {
+        System.out.println();
+        System.out.println(">>> Client API example started.");
+
         try (GridClient client = createClient()) {
             // Show grid topology.
             System.out.println(">>> Client created, current grid topology: " + client.compute().nodes());

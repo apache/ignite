@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
 *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,7 +19,7 @@ import org.jetbrains.annotations.*;
  * explicitly, then {@link GridCacheConfiguration#DFLT_PRELOAD_MODE} is used.
  * <p>
  * Replicated caches will try to load the full set of cache entries from other nodes (or as defined by
- * pluggable {@link GridCacheAffinity}), while partitioned caches will only load the entries for which
+ * pluggable {@link GridCacheAffinityFunction}), while partitioned caches will only load the entries for which
  * current node is primary or back up.
  * <p>
  * Note that preload mode only makes sense for {@link GridCacheMode#REPLICATED} and {@link GridCacheMode#PARTITIONED}

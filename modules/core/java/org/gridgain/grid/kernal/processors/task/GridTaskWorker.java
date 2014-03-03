@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -915,6 +915,11 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 log.debug("Reduced job responses [reduceRes=" + reduceRes + ", ses=" + ses + ']');
 
             recordTaskEvent(EVT_TASK_REDUCED, "Task reduced.");
+        }
+        catch (GridTopologyException e) {
+            U.warn(log, "Failed to reduce job results for task (any nodes from task topology left grid?): " + task);
+
+            userE = e;
         }
         catch (GridException e) {
             U.error(log, "Failed to reduce job results for task: " + task, e);

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -37,23 +37,23 @@ import static org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflow
  * <pre name="code" class="java">
  * GridDrSenderHubConfiguration cfg = new GridDrSenderHubConfiguration();
  *
- * GridDrFsStore store = new GridDrInMemoryStore();
+ * GridDrSenderHubInMemoryStore store = new GridDrSenderHubInMemoryStore();
  *
  * // Override default overflow mode.
- * store.setOverflowMode(GridDrStoreOverflowMode.REMOVE_OLDEST);
+ * store.setOverflowMode(GridDrSenderHubStoreOverflowMode.REMOVE_OLDEST);
  *
  * // Set in-memory store for sender hub.
  * cfg.setStore(store);
  * </pre>
  * <h2 class="header">Spring Example</h2>
- * GridDrInMemoryStore can be configured from Spring XML configuration file:
+ * GridDrSenderHubInMemoryStore can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="drSenderHubConfiguration"&gt;
  *              &lt;bean class="org.gridgain.grid.dr.hub.sender.GridDrSenderHubConfiguration"&gt;
  *                  &lt;property name="store"&gt;
- *                      &lt;bean class="org.gridgain.grid.dr.hub.sender.store.memory.GridDrInMemoryStore"&gt;
+ *                      &lt;bean class="org.gridgain.grid.dr.hub.sender.store.memory.GridDrSenderHubInMemoryStore"&gt;
  *                          &lt;property name="overflowMode" value="REMOVE_OLDEST"/&gt;
  *                      &lt;/bean&gt;
  *                  &lt;/property&gt;
@@ -77,7 +77,7 @@ public class GridDrSenderHubInMemoryStore implements GridDrSenderHubStore, GridL
     private static final int MAX_DATA_CENTERS = 32;
 
     /** */
-    public static final int DFLT_MAX_SIZE = 65536;
+    public static final int DFLT_MAX_SIZE = 8192;
 
     /** */
     public static final GridDrSenderHubStoreOverflowMode DFLT_OVERFLOW_MODE = STOP;

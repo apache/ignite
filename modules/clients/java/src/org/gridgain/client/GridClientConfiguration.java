@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -776,7 +776,7 @@ public class GridClientConfiguration {
             return null;
 
         if ("partitioned".equals(affinity))
-            return new GridClientPartitionedAffinity();
+            return new GridClientPartitionAffinity();
 
         return newInstance(GridClientDataAffinity.class, affinity);
     }
