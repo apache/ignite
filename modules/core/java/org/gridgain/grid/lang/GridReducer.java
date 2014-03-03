@@ -9,43 +9,34 @@
 
 package org.gridgain.grid.lang;
 
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
- * Defines generic {@code for-all} or {@code reduce} type of closure. Unlike {@code for-each} type of closure
- * that returns optional value on each execution of the closure - the reducer returns a single
- * value for one or more collected values.
- * <p>
- * Closures are a first-class functions that are defined with
- * (or closed over) their free variables that are bound to the closure scope at execution. Since
- * Java 6 doesn't provide a language construct for first-class function the closures are implemented
- * as abstract classes.
- * <h2 class="header">Thread Safety</h2>
- * Note that this interface does not impose or assume any specific thread-safety by its
- * implementations. Each implementation can elect what type of thread-safety it provides,
- * if any.
+ * Defines generic reducer that collects multiple values and reduces them into one.
+ * Reducers are useful in computations when results from multiple remote jobs need
+ * to be reduced into one, e.g. {@link GridCompute#call(Collection, GridReducer)} method.
  *
- * @author @java.author
- * @version @java.version
- * @param <E1> Type of the free variable, i.e. the element the closure is called on.
- * @param <R> Type of the closure's return value.
+ * @param <E> Type of collected values.
+ * @param <R> Type of reduced value.
  */
-public abstract class GridReducer<E1, R> extends GridLambdaAdapter {
+public abstract class GridReducer<E, R> extends GridLambdaAdapter {
     /**
-     * Collects given value. All values will be reduced by {@link #reduce()} method.
-     * <p>
-     * The {@code null}s could be passed if the data being collected is indeed {@code null}.
-     * If execution failed this method will not be called.
+     * Collects given value. If this method returns {@code false} then {@link #reduce()}
+     * will be called right away. Otherwise caller will continue collecting until all
+     * values are processed.
      *
      * @param e Value to collect.
      * @return {@code true} to continue collecting, {@code false} to instruct caller to stop
      *      collecting and call {@link #reduce()} method.
      */
-    public abstract boolean collect(@Nullable E1 e);
+    public abstract boolean collect(@Nullable E e);
 
     /**
-     * Reduces collected values.
+     * Reduces collected values into one.
      *
      * @return Reduced value.
      */

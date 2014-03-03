@@ -17,28 +17,12 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Grid-aware adapter for {@link Runnable} implementations. It makes the
- * runnable object {@link Serializable} and also adds peer deployment hooks to make sure that
- * deployment information is not lost.
- * <p>
- * Note that this class implements {@link GridComputeJob} interface for convenience and can be
- * used in {@link GridComputeTask} implementations directly, if needed, as an alternative to
- * {@link GridComputeJobAdapter}.
- *
- * @author @java.author
- * @version @java.version
+ * Grid-aware adapter for {@link Runnable} implementations. It adds {@link Serializable} interface
+ * to {@link Runnable} object. Use this class for executing distributed computations on the grid,
+ * like in {@link GridCompute#run(Runnable)} method.
  */
 public abstract class GridRunnable extends GridLambdaAdapter implements Runnable, GridComputeJob {
-    /**
-     * Does nothing by default. Child classes may override this method
-     * to provide implementation-specific cancellation logic.
-     * <p>
-     * Note that this method is here only to support {@link GridComputeJob} interface
-     * and only makes sense whenever this class is used as grid job or is
-     * executed via any of {@link GridProjection} methods.
-     * <p>
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public void cancel() {
         // No-op.
     }

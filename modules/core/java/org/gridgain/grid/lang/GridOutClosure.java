@@ -17,30 +17,15 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.util.concurrent.*;
 
 /**
- * Defines a convenient {@code side-effect only} factory closure. This closure takes no parameters
- * and returns instance of given type every time its {@link #apply()} method is called. Most
- * implementations will return a new instance every time, however, there's no requirement for that.
- * Note also that factory closure doesn't have free variables (i.e. it has {@code void} as its
- * fre variable).
- * <h2 class="header">Thread Safety</h2>
- * Note that this interface does not impose or assume any specific thread-safety by its
- * implementations. Each implementation can elect what type of thread-safety it provides,
- * if any.
- * <p>
- * Note that this class implements {@link GridComputeJob} interface for convenience and can be
- * used in {@link GridComputeTask} implementations directly, if needed, as an alternative to
- * {@link GridComputeJobAdapter}.
+ * Closure that does not take any parameters and returns a value.
  *
- * @author @java.author
- * @version @java.version
  * @param <T> Type of return value from this closure.
- * @see GridFunc
  */
 public abstract class GridOutClosure<T> extends GridLambdaAdapter implements Callable<T>, GridComputeJob {
     /**
-     * Factory closure body.
+     * Closure body.
      *
-     * @return Element.
+     * @return Return value.
      */
     public abstract T apply();
 
