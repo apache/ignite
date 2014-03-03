@@ -2783,21 +2783,6 @@ public class GridFunc {
     }
 
     /**
-     * Converts collection of out closures to the read only collection of grid jobs.
-     *
-     * @param c Closure collection to convert.
-     * @return Read only collection of grid job where each job wraps corresponding closure
-     *      from input collection.
-     */
-    public static <T extends Callable<?>> Collection<GridComputeJob> outJobs(@Nullable Collection<? extends T> c) {
-        return isEmpty(c) ? Collections.<GridComputeJob>emptyList() : viewReadOnly(c, new C1<T, GridComputeJob>() {
-            @Override public GridComputeJob apply(T e) {
-                return job(e);
-            }
-        });
-    }
-
-    /**
      * Converts collection of absolute closures to the read only collection of grid jobs.
      *
      * @param c Closure collection to convert.
@@ -2819,79 +2804,12 @@ public class GridFunc {
      * @param c Closure array to convert.
      * @return Collection of grid job where each job wraps corresponding closure from input array.
      */
-    public static Collection<GridComputeJob> outJobs(@Nullable Callable<?>... c) {
-        return isEmpty(c) ? Collections.<GridComputeJob>emptyList() : transform(c, new C1<Callable<?>, GridComputeJob>() {
-            @Override
-            public GridComputeJob apply(Callable<?> e) {
-                return job(e);
-            }
-        });
-    }
-
-    /**
-     * Converts array of out closures to the collection of grid jobs.
-     *
-     * @param c Closure array to convert.
-     * @return Collection of grid job where each job wraps corresponding closure from input array.
-     */
     public static Collection<GridComputeJob> absJobs(@Nullable Runnable... c) {
         return isEmpty(c) ? Collections.<GridComputeJob>emptyList() : transform(c, new C1<Runnable, GridComputeJob>() {
             @Override public GridComputeJob apply(Runnable e) {
                 return job(e);
             }
         });
-    }
-
-    /**
-     * Converts given closure to a grid job.
-     *
-     * @param c Closure to convert to grid job.
-     * @return Grid job made out of closure.
-     */
-    @SuppressWarnings("IfMayBeConditional")
-    public static GridComputeJob job(final Callable<?> c) {
-        A.notNull(c, "job");
-
-        if (c instanceof GridComputeJob) {
-            return (GridComputeJob) c;
-        }
-
-        if (c instanceof GridComputeJobMasterLeaveAware) {
-            return new GridMasterLeaveAwareComputeJobAdapter() {
-                {
-                    setPeerDeployAware(U.peerDeployAware(c));
-                }
-
-                @Override public Object execute() {
-                    try {
-                        return c.call();
-                    }
-                    catch (Exception e) {
-                        throw new GridRuntimeException(e);
-                    }
-                }
-
-                @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
-                    ((GridComputeJobMasterLeaveAware)c).onMasterNodeLeft(ses);
-                }
-            };
-        }
-        else {
-            return new GridComputeJobAdapter() {
-                {
-                    setPeerDeployAware(U.peerDeployAware(c));
-                }
-
-                @Override public Object execute() {
-                    try {
-                        return c.call();
-                    }
-                    catch (Exception e) {
-                        throw new GridRuntimeException(e);
-                    }
-                }
-            };
-        }
     }
 
     /**
@@ -2934,44 +2852,6 @@ public class GridFunc {
                     r.run();
 
                     return null;
-                }
-            };
-        }
-    }
-
-    /**
-     * Converts given closure with arguments to grid job.
-     * @param job Job.
-     * @param arg Optional argument.
-     * @return Job.
-     */
-    @SuppressWarnings("IfMayBeConditional")
-    public static <T, R> GridComputeJob job(final GridClosure<T, R> job, @Nullable final T arg) {
-        A.notNull(job, "job");
-
-        if (job instanceof GridComputeJobMasterLeaveAware) {
-            return new GridMasterLeaveAwareComputeJobAdapter() {
-                {
-                    peerDeployLike(U.peerDeployAware(job));
-                }
-
-                @Nullable @Override public Object execute() {
-                    return job.apply(arg);
-                }
-
-                @Override public void onMasterNodeLeft(GridComputeTaskSession ses) throws GridException {
-                    ((GridComputeJobMasterLeaveAware)job).onMasterNodeLeft(ses);
-                }
-            };
-        }
-        else {
-            return new GridComputeJobAdapter() {
-                {
-                    peerDeployLike(U.peerDeployAware(job));
-                }
-
-                @Nullable @Override public Object execute() {
-                    return job.apply(arg);
                 }
             };
         }

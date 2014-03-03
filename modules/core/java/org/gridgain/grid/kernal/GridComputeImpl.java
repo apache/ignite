@@ -10,13 +10,10 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.executor.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -64,10 +61,7 @@ public class GridComputeImpl implements GridCompute {
         guard();
 
         try {
-            return ctx.closure().runAsync(BALANCE, wrapRun(cacheName, affKey, job), prj.nodes());
-        }
-        catch (GridException e) {
-            return new GridFinishedFuture<>(ctx, e);
+            return ctx.closure().affinityRun(cacheName, affKey, job, prj.nodes());
         }
         finally {
             unguard();
@@ -82,10 +76,7 @@ public class GridComputeImpl implements GridCompute {
         guard();
 
         try {
-            return ctx.closure().callAsync(BALANCE, wrapCall(cacheName, affKey, job), prj.nodes());
-        }
-        catch (GridException e) {
-            return new GridFinishedFuture<>(ctx, e);
+            return ctx.closure().affinityCall(cacheName, affKey, job, prj.nodes());
         }
         finally {
             unguard();
@@ -176,7 +167,7 @@ public class GridComputeImpl implements GridCompute {
         guard();
 
         try {
-            return ctx.closure().callAsync(BALANCE, Arrays.asList(F.curry(job, arg)), prj.nodes());
+            return ctx.closure().broadcast(job, arg, prj.nodes());
         }
         finally {
             unguard();
@@ -466,65 +457,6 @@ public class GridComputeImpl implements GridCompute {
         finally {
             unguard();
         }
-    }
-
-    /**
-     *
-     * @param cacheName Cache name.
-     * @param affKey Affinity key.
-     * @param run Run to wrap.
-     * @return Wrapped call.
-     * @throws GridException In case of error.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    private Runnable wrapRun(@Nullable final String cacheName, Object affKey, final Runnable run) throws GridException {
-        // In case cache key is passed instead of affinity key.
-        final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
-
-        return new GridRunnable() {
-            @GridCacheName
-            private final String cn = cacheName;
-
-            @GridCacheAffinityKeyMapped
-            private final Object ak = affKey0;
-
-            @Override public void run() {
-                run.run();
-            }
-        };
-    }
-
-    /**
-     *
-     * @param cacheName Cache name.
-     * @param affKey Affinity key.
-     * @param call Call to wrap.
-     * @param <R> Type of the {@code call} return value.
-     * @return Wrapped call.
-     * @throws GridException In case of error.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    private <R> Callable<R> wrapCall(@Nullable final String cacheName, Object affKey, final Callable<R> call)
-        throws GridException {
-        // In case cache key is passed instead of affinity key.
-        final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
-
-        return new GridCallable<R>() {
-            @GridCacheName
-            private final String cn = cacheName;
-
-            @GridCacheAffinityKeyMapped
-            private final Object ak = affKey0;
-
-            @Override public R call() {
-                try {
-                    return call.call();
-                }
-                catch (Exception e) {
-                    throw F.wrap(e);
-                }
-            }
-        };
     }
 
     /**
