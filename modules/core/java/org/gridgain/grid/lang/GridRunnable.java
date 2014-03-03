@@ -22,6 +22,11 @@ import java.io.*;
  * like in {@link GridCompute#run(Runnable)} method.
  */
 public abstract class GridRunnable extends GridLambdaAdapter implements Runnable, GridComputeJob {
+    /**
+     * Runnable body mainly used for distributed executions on grid nodes.
+     */
+    @Override public abstract void run();
+
     /** {@inheritDoc} */
     @Override public void cancel() {
         // No-op.
