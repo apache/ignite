@@ -79,61 +79,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
 
 /**
- * This class defines a factory for the main GridGain API. It controls Grid life cycle
- * and allows listening for grid events.
- * <h1 class="header">Grid Loaders</h1>
- * Although user can apply grid factory directly to start and stop grid, grid is
- * often started and stopped by grid loaders. Grid loaders can be found in
- * {@link org.gridgain.grid.startup} package, for example:
- * <ul>
- * <li>{@link org.gridgain.grid.startup.cmdline.GridCommandLineStartup}</li>
- * <li>{@link org.gridgain.grid.startup.tomcat.GridTomcatStartup}</li>
- * <li>{@link org.gridgain.grid.startup.servlet.GridServletStartup}</li>
- * </ul>
- * <h1 class="header">Examples</h1>
- * Use {@link #start()} method to start grid with default configuration. You can also use
- * {@link GridConfiguration} to override some default configuration. Below is an
- * example on how to start grid with <strong>URI deployment</strong>.
- * <pre name="code" class="java">
- * GridConfiguration cfg = new GridConfiguration();
- *
- * GridUriDeployment deploySpi = new GridUriDeployment();
- *
- * deploySpi.setUriList(Collections.singletonList("classes://tmp/output/classes"));
- *
- * cfg.setDeploymentSpi(deploySpi);
- *
- * GridFactory.start(cfg);
- * </pre>
- * Here is how a grid instance can be configured from Spring XML configuration file. The
- * example below configures a grid instance with additional user attributes
- * (see {@link GridNode#attributes()}) and specifies a grid name:
- * <pre name="code" class="xml">
- * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton"&gt;
- *     ...
- *     &lt;property name="gridName" value="grid"/&gt;
- *     &lt;property name="userAttributes"&gt;
- *         &lt;map&gt;
- *             &lt;entry key="group" value="worker"/&gt;
- *             &lt;entry key="grid.node.benchmark"&gt;
- *                 &lt;bean class="org.gridgain.grid.benchmarks.GridLocalNodeBenchmark" init-method="start"/&gt;
- *             &lt;/entry&gt;
- *         &lt;/map&gt;
- *     &lt;/property&gt;
- *     ...
- * &lt;/bean&gt;
- * </pre>
- * A grid instance with Spring configuration above can be started as following. Note that
- * you do not need to pass path to Spring XML file if you are using
- * {@code GRIDGAIN_HOME/config/default-config.xml}. Also note, that the path can be
- * absolute or relative to GRIDGAIN_HOME.
- * <pre name="code" class="java">
- * ...
- * G.start("/path/to/spring/xml/file.xml");
- * ...
- * </pre>
- * You can also instantiate grid directly from Spring without using {@code GridFactory}.
- * For more information refer to {@link GridSpringBean} documentation.
+ * GridGain factory implementation.
  *
  * @author @java.author
  * @version @java.version
