@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
 *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
@@ -144,8 +145,13 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 if (e.detached() || e.isInternal())
                     continue;
 
-                if (e.markObsoleteIfEmpty(null) || e.obsolete())
-                    e.context().cache().removeEntry(e);
+                try {
+                    if (e.markObsoleteIfEmpty(null) || e.obsolete())
+                        e.context().cache().removeEntry(e);
+                }
+                catch (GridException ex) {
+                    U.error(log, "Failed to evict entry from cache: " + e, ex);
+                }
 
                 if (memoryMode == OFFHEAP_TIERED) {
                     try {
@@ -751,8 +757,13 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         if (e.detached() || e.isInternal())
             return;
 
-        if (e.markObsoleteIfEmpty(null) || e.obsolete())
-            e.context().cache().removeEntry(e);
+        try {
+            if (e.markObsoleteIfEmpty(null) || e.obsolete())
+                e.context().cache().removeEntry(e);
+        }
+        catch (GridException ex) {
+            U.error(log, "Failed to evict entry from cache: " + e, ex);
+        }
 
         if (memoryMode == OFFHEAP_TIERED) {
             try {

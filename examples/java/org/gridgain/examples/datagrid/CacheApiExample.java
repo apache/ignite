@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,10 +21,12 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * This example demonstrates some of the cache rich API capabilities.
- * You can execute this example with or without remote nodes.
  * <p>
- * Remote nodes should always be started with configuration file which includes
- * cache: {@code 'ggstart.sh examples/config/example-cache.xml'}.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
+ * <p>
+ * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -37,13 +39,16 @@ public class CacheApiExample {
     //private static final String CACHE_NAME = "local";
 
     /**
-     * Put data to cache and then query it.
+     * Executes example.
      *
      * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-cache.xml")) {
+            System.out.println();
+            System.out.println(">>> Cache API example started.");
+
             // Demonstrate atomic map operations.
             atomicMapOperations();
 

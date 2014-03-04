@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -43,7 +43,7 @@ public abstract class GridClientBalancerAdapter implements GridClientLoadBalance
      * <p>
      * Default value is {@code false}.
      *
-     * @see org.gridgain.client.GridClientNode#connectable()
+     * @see GridClientNode#connectable()
      * @return Prefer direct nodes.
      */
     public boolean isPreferDirectNodes() {

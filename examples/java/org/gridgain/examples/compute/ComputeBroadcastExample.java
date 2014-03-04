@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,7 +16,7 @@ import org.gridgain.grid.resources.*;
 import java.util.*;
 
 /**
- * Demonstrates new functional APIs.
+ * Demonstrates broadcasting computations within grid projection.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
@@ -29,15 +29,16 @@ import java.util.*;
  */
 public class ComputeBroadcastExample {
     /**
-     * Executes broadcasting message example with closures.
+     * Executes example.
      *
-     * @param args Command line arguments, none required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      {@code "examples/config/"} for configuration file examples.
+     * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Grid grid = GridGain.start("examples/config/example-compute.xml")) {
+            System.out.println();
+            System.out.println(">>> Compute broadcast example started.");
+
             // Print hello message on all nodes.
             hello(grid);
 
@@ -63,6 +64,7 @@ public class ComputeBroadcastExample {
             }
         ).get();
 
+        System.out.println();
         System.out.println(">>> Check all nodes for hello message output.");
     }
 
@@ -81,6 +83,7 @@ public class ComputeBroadcastExample {
                 private Grid grid;
 
                 public String call() {
+                    System.out.println();
                     System.out.println("Executing task on node: " + grid.localNode().id());
 
                     return "Node ID: " + grid.localNode().id() + "\n" +
@@ -93,6 +96,7 @@ public class ComputeBroadcastExample {
         }).get();
 
         // Print result.
+        System.out.println();
         System.out.println("Nodes system information:");
         System.out.println();
 

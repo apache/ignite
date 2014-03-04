@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -114,14 +114,6 @@ public interface GridDrReceiverHubMBean {
      */
     @GridMBeanDescription("DR data loader per node buffer size.")
     public int getPerNodeBufferSize();
-
-    /**
-     * Gets data center replication data loader per operation keys count.
-     *
-     * @return Per operation keys count.
-     */
-    @GridMBeanDescription("DR data loader per operation keys count.")
-    public int getPerOperationKeysCount();
 
     /**
      * Gets per node parallel load operations.

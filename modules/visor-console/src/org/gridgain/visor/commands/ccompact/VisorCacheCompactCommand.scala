@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -119,13 +119,13 @@ class VisorCacheCompactCommand {
             val res = prj.compute()
                 .withName("visor-ccompact-task")
                 .withNoFailover()
-                .call(new CompactClosure(caches)).get
+                .broadcast(new CompactClosure(caches)).get
 
             val t = VisorTextTable()
 
             t #= ("Node ID8(@)", "Entries Compacted", "Cache Size Before", "Cache Size After")
 
-            t += (nodeId8(res._1), res._2, res._3, res._4)
+            res.foreach(r => t += (nodeId8(r._1), r._2, r._3, r._4))
 
             t.render()
         }

@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,7 +16,7 @@
  */
 class GridClientDataConfiguration::Impl {
 public:
-    Impl(): aff(new GridClientPartitionedAffinity()) {}
+    Impl(): aff(new GridClientPartitionAffinity()) {}
 
     Impl(const Impl& from): name(from.name), aff(from.aff) {}
 

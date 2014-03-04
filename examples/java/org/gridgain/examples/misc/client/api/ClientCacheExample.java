@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -29,8 +29,8 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * to start more than one node on the same physical machine you must provide different
  * configurations for each node. Otherwise, this example would not work.
  * <p>
- * Note that to start the example, {@code GRIDGAIN_HOME} system property or environment variable
- * must be set.
+ * Before running this example you must start at least one remote node using
+ * {@link ClientCacheExampleNodeStartup}.
  *
  * @author @java.author
  * @version @java.version
@@ -44,12 +44,15 @@ public class ClientCacheExample {
     public static final int KEYS_CNT = 10;
 
     /**
-     * Runs client cache example example.
+     * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridClientException If failed.
+     * @throws GridClientException If example execution failed.
      */
     public static void main(String[] args) throws GridClientException {
+        System.out.println();
+        System.out.println(">>> Client cache example started.");
+
         try (GridClient client = createClient()) {
             // Show grid topology.
             System.out.println(">>> Client created, current grid topology: " + client.compute().nodes());
@@ -230,7 +233,7 @@ public class ClientCacheExample {
         cacheCfg.setName("partitioned");
 
         // Set client partitioned affinity for this cache.
-        cacheCfg.setAffinity(new GridClientPartitionedAffinity());
+        cacheCfg.setAffinity(new GridClientPartitionAffinity());
 
         cfg.setDataConfigurations(Collections.singletonList(cacheCfg));
 

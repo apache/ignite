@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -132,7 +132,10 @@ public abstract class GridComputeTaskAdapter<T, R> implements GridComputeTask<T,
         // Try to failover if result is failed.
         if (e != null) {
             // Don't failover user's code errors.
-            if (e instanceof GridComputeExecutionRejectedException || e instanceof GridTopologyException)
+            if (e instanceof GridComputeExecutionRejectedException ||
+                e instanceof GridTopologyException ||
+                // Failover exception is always wrapped.
+                e.hasCause(GridComputeJobFailoverException.class))
                 return FAILOVER;
 
             throw new GridException("Remote job threw user exception (override or implement GridComputeTask.result(..) " +

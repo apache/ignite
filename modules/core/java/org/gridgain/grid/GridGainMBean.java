@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,6 +9,7 @@
 
 package org.gridgain.grid;
 
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.mbean.*;
 
 /**
@@ -48,7 +49,7 @@ public interface GridGainMBean {
      * Stops default grid instance.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      default grid will be cancelled by calling {@link org.gridgain.grid.compute.GridComputeJob#cancel()}
+     *      default grid will be cancelled by calling {@link GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution.
      * @return {@code true} if default grid instance was indeed stopped,
@@ -74,7 +75,7 @@ public interface GridGainMBean {
      * @param name Grid name. If {@code null}, then default no-name grid will
      *      be stopped.
      * @param cancel If {@code true} then all jobs currently will be cancelled
-     *      by calling {@link org.gridgain.grid.compute.GridComputeJob#cancel()} method. Note that just like with
+     *      by calling {@link GridComputeJob#cancel()} method. Note that just like with
      *      {@link Thread#interrupt()}, it is up to the actual job to exit from
      *      execution. If {@code false}, then jobs currently running will not be
      *      canceled. In either case, grid node will wait for completion of all
@@ -109,7 +110,7 @@ public interface GridGainMBean {
      * should be responsible for stopping it.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      all grids will be cancelled by calling {@link org.gridgain.grid.compute.GridComputeJob#cancel()}
+     *      all grids will be cancelled by calling {@link GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution
      * @see GridGain#stopAll(boolean)
@@ -127,7 +128,7 @@ public interface GridGainMBean {
      * Restart JVM.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      all grids will be cancelled by calling {@link org.gridgain.grid.compute.GridComputeJob#cancel()}
+     *      all grids will be cancelled by calling {@link GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution
      * @see GridGain#stopAll(boolean)

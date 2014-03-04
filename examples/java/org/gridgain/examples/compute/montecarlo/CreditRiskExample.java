@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,31 +16,29 @@ import org.gridgain.examples.compute.*;
 import java.util.*;
 
 /**
- * Monte-Carlo example based on GridGain 3.0 API.
+ * Monte-Carlo example. Demonstrates distributed credit risk calculation.
  * <p>
- * <h1 class="header">Starting Remote Nodes</h1>
- * To try this example you should (but don't have to) start remote grid instances.
- * You can start as many as you like by executing the following script:
- * <pre class="snippet">{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-compute.xml</pre>
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
+ * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-compute.xml} configuration.
- * <p>
- * Once remote instances are started, you can execute this example from
- * Eclipse, IntelliJ IDEA, or NetBeans (and any other Java IDE) by simply hitting run
- * button. You will see that all nodes discover each other and
- * all of the nodes will participate in task execution (check node
- * output).
  *
  * @author @java.author
  * @version @java.version
  */
 public final class CreditRiskExample {
     /**
-     * @param args Command arguments.
-     * @throws GridException If failed.
+     * Executes example.
+     *
+     * @param args Command line arguments, none required.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
         try (Grid g = GridGain.start("examples/config/example-compute.xml")) {
+            System.out.println();
+            System.out.println("Credit risk example started.");
+
             // Create portfolio.
             Credit[] portfolio = new Credit[5000];
 
@@ -97,6 +95,7 @@ public final class CreditRiskExample {
                     }
                 }).get();
 
+            System.out.println();
             System.out.println("Credit risk [crdRisk=" + crdRisk + ", duration=" +
                 (System.currentTimeMillis() - start) + "ms]");
         }

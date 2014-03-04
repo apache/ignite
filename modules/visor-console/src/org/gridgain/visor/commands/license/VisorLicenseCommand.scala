@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -358,7 +358,7 @@ class VisorLicenseCommand {
             try {
                 grid.compute()
                     .withNoFailover()
-                    .run(new LicenseUpdater(UUID.fromString(licId), Source.fromFile(licPath).getLines().toList))
+                    .broadcast(new LicenseUpdater(UUID.fromString(licId), Source.fromFile(licPath).getLines().toList))
 
                 println("All licenses have been updated.")
 

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,10 +9,11 @@
 
 package org.gridgain.grid.compute.gridify;
 
-import org.gridgain.grid.GridGain;
-import org.gridgain.grid.compute.GridComputeTask;
-import org.gridgain.grid.compute.gridify.aop.GridifyDefaultTask;
+import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
+import org.gridgain.grid.compute.gridify.aop.*;
 
+import java.io.*;
 import java.lang.annotation.*;
 
 /**
@@ -33,13 +34,13 @@ import java.lang.annotation.*;
  * Note that when using {@code @Gridify} annotation with default task (without
  * specifying explicit grid task), the state of the whole instance will be
  * serialized and sent out to remote node. Therefore the class must implement
- * {@link java.io.Serializable} interface. If you cannot make the class {@code Serializable},
+ * {@link Serializable} interface. If you cannot make the class {@code Serializable},
  * then you must implement custom grid task which will take care of proper state
  * initialization (see
  * <a target="github" href="https://github.com/gridgain/gridgain/tree/master/examples/java/org/gridgain/examples/helloworld/gridify/session">HelloWorld - Gridify With State</a>
  * example). In either case, GridGain must be able to serialize the state passed to remote node.
  * <p>
- * Refer to {@link org.gridgain.grid.compute.GridComputeTask} documentation for more information on how a task
+ * Refer to {@link GridComputeTask} documentation for more information on how a task
  * can be split into multiple sub-jobs.
  * <p>
  * <h1 class="header">Java Example</h1>

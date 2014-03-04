@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -134,10 +134,10 @@ public class GridJdbcUtils {
     }
 
     /**
-     * Converts Java class name to type from {@link java.sql.Types}.
+     * Converts Java class name to type from {@link Types}.
      *
      * @param cls Java class name.
-     * @return Type from {@link java.sql.Types}.
+     * @return Type from {@link Types}.
      */
     @SuppressWarnings("IfMayBeConditional")
     public static int type(String cls) {

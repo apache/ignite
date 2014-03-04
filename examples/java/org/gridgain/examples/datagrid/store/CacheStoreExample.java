@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,21 +17,16 @@ import java.util.*;
 /**
  * Demonstrates usage of cache with underlying persistent store configured.
  * <p>
- * You should not be using stand-alone nodes (started with {@code 'ggstart.sh})
- * because GridGain nodes do not know about the cache stores
- * we define in this example. However, users can always add JAR-files with their classes to
- * {@code GRIDGAIN_HOME/libs/ext} folder to make them available to GridGain.
- * If this was done here (i.e. we had JAR-file containing custom cache store built
- * and put to {@code GRIDGAIN_HOME/libs/ext} folder), we could easily startup
- * remote nodes with {@code 'ggstart.sh examples/config/example-cache.xml'}
- * command.
+ * Remote nodes should always be started using {@link CacheNodeWithStoreStartup}.
+ * Also you can change type of underlying store modifying configuration in the
+ * {@link CacheNodeWithStoreStartup#configure()} method.
  *
  * @author @java.author
  * @version @java.version
  */
 public class CacheStoreExample {
     /** Global person ID to use across entire example. */
-    private static final Long id = UUID.randomUUID().getLeastSignificantBits();
+    private static final Long id = Math.abs(UUID.randomUUID().getLeastSignificantBits());
 
     /**
      * Executes example.
@@ -45,7 +40,7 @@ public class CacheStoreExample {
         // To start grid with desired configuration uncomment the appropriate line.
         try (Grid g = GridGain.start(cfg)) {
             System.out.println();
-            System.out.println(">>> Started store example.");
+            System.out.println(">>> Cache store example started.");
 
             GridCache<Long, Person> cache = GridGain.grid().cache(null);
 
@@ -54,7 +49,7 @@ public class CacheStoreExample {
 
                 System.out.println("Read value: " + val);
 
-                val = cache.put(id, person(1, "Isaac", "Newton"));
+                val = cache.put(id, person(id, "Isaac", "Newton"));
 
                 System.out.println("Overwrote old value: " + val);
 

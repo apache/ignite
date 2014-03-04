@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -1139,6 +1139,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          * @param valType Value type.
          */
         private TypeId(String space, Class<?> valType) {
+            assert valType != null;
+
             this.space = space;
             this.valType = valType;
         }

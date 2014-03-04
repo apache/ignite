@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.compute;
 
+import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 
@@ -26,15 +27,19 @@ import org.gridgain.grid.lang.*;
  */
 public class ComputeProjectionExample {
     /**
-     * Executes broadcasting message example with closures.
+     * Executes example.
      *
-     * @param args Command line arguments, none required but if provided
-     *      first one should point to the Spring XML configuration file. See
-     *      {@code "examples/config/"} for configuration file examples.
+     * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Grid grid = GridGain.start("examples/config/example-compute.xml")) {
+            if (!ExamplesUtils.checkMinTopologySize(grid, 2))
+                return;
+
+            System.out.println();
+            System.out.println("Compute projection example started.");
+
             // Say hello to all nodes in the grid, including local node.
             // Note, that Grid itself also implements GridProjection.
             sayHello(grid);
@@ -51,11 +56,10 @@ public class ComputeProjectionExample {
             // Say hello to all nodes residing on the same host with random node.
             sayHello(grid.forHost(randomNode.node()));
 
-            // Say hello to all nodes that have "worker" attribute define and
-            // have current CPU load less than 50%.
+            // Say hello to all nodes that have current CPU load less than 50%.
             sayHello(grid.forPredicate(new GridPredicate<GridNode>() {
                 @Override public boolean apply(GridNode n) {
-                    return n.attribute("worker") != null && n.metrics().getCurrentCpuLoad() < 0.5;
+                    return n.metrics().getCurrentCpuLoad() < 0.5;
                 }
             }));
         }
@@ -68,7 +72,7 @@ public class ComputeProjectionExample {
      * @throws GridException If failed.
      */
     private static void sayHello(final GridProjection g) throws GridException {
-        // Print out hello message on all projection nodes.
+        // Print out hello message on all remote projection nodes.
         g.forRemotes().compute().broadcast(
             new GridRunnable() {
                 @Override public void run() {

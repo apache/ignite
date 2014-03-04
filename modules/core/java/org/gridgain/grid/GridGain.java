@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,6 +11,7 @@ package org.gridgain.grid;
 
 import org.apache.commons.logging.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
@@ -48,6 +49,8 @@ import org.gridgain.grid.spi.securesession.*;
 import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.spi.swapspace.file.*;
+import org.gridgain.grid.startup.cmdline.*;
+import org.gridgain.grid.startup.servlet.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
@@ -82,14 +85,11 @@ import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
  * and allows listening for grid events.
  * <h1 class="header">Grid Loaders</h1>
  * Although user can apply grid factory directly to start and stop grid, grid is
- * often started and stopped by grid loaders. Some examples
- * of Grid loaders are:
+ * often started and stopped by grid loaders. Grid loaders can be found in
+ * {@link org.gridgain.grid.startup} package, for example:
  * <ul>
  * <li>{@link org.gridgain.grid.startup.cmdline.GridCommandLineStartup}</li>
- * <li>{@link org.gridgain.grid.startup.jboss.GridJbossStartup}</li>
- * <li>{@link org.gridgain.grid.startup.weblogic.GridWeblogicStartup} and {@link org.gridgain.grid.startup.weblogic.GridWeblogicShutdown}</li>
- * <li>{@link org.gridgain.grid.startup.websphere.GridWebsphereStartup}</li>
- * <li>{@link org.gridgain.grid.startup.glassfish.GridGlassfishStartup}</li>
+ * <li>{@link org.gridgain.grid.startup.tomcat.GridTomcatStartup}</li>
  * <li>{@link org.gridgain.grid.startup.servlet.GridServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>
@@ -282,7 +282,7 @@ public class GridGain {
      * Note that method does not wait for all tasks to be completed.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      default grid will be cancelled by calling {@link org.gridgain.grid.compute.GridComputeJob#cancel()}
+     *      default grid will be cancelled by calling {@link GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution
      * @return {@code true} if default grid instance was indeed stopped,
@@ -302,7 +302,7 @@ public class GridGain {
      * @param name Grid name. If {@code null}, then default no-name grid will
      *      be stopped.
      * @param cancel If {@code true} then all jobs currently will be cancelled
-     *      by calling {@link org.gridgain.grid.compute.GridComputeJob#cancel()} method. Note that just like with
+     *      by calling {@link GridComputeJob#cancel()} method. Note that just like with
      *      {@link Thread#interrupt()}, it is up to the actual job to exit from
      *      execution. If {@code false}, then jobs currently running will not be
      *      canceled. In either case, grid node will wait for completion of all
@@ -353,7 +353,7 @@ public class GridGain {
      * should be responsible for stopping it.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      all grids will be cancelled by calling {@link org.gridgain.grid.compute.GridComputeJob#cancel()}
+     *      all grids will be cancelled by calling {@link GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution
      */
@@ -402,7 +402,7 @@ public class GridGain {
      * scripts support restarting of JVM GridGain's process.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      all grids will be cancelled by calling {@link org.gridgain.grid.compute.GridComputeJob#cancel()}
+     *      all grids will be cancelled by calling {@link GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution.
      * @see #RESTART_EXIT_CODE
@@ -449,7 +449,7 @@ public class GridGain {
      * exit code {@link #KILL_EXIT_CODE}.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      all grids will be cancelled by calling {@link org.gridgain.grid.compute.GridComputeJob#cancel()}
+     *      all grids will be cancelled by calling {@link GridComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution.
      * @see #KILL_EXIT_CODE

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -364,7 +364,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
      *
      * @param key Key.
      * @param sync Sync.
-     * @throws org.gridgain.grid.GridException If failed.
+     * @throws GridException If failed.
      */
     protected void lockIndexKey(IndexKey<V> key, GridStreamerIndexUpdateSync sync) throws GridException {
         assert key != null;

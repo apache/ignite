@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -168,7 +168,7 @@ class VisorGcCommand {
                 else
                     grid.compute()
                         .withNoFailover()
-                        .run(f)
+                        .broadcast(f)
             }
         }
     }

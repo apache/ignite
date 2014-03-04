@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -1209,6 +1209,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         flags = U.readSet(in);
 
         cache = cctx.cache();
+
+        qry = new GridCacheQueriesImpl<>(cctx, this);
     }
 
     /** {@inheritDoc} */

@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -28,7 +28,7 @@ import org.gridgain.grid.events.GridEventType._
 import org.gridgain.grid.events.GridDiscoveryEvent
 import org.gridgain.grid.kernal.GridEx
 import org.gridgain.grid.kernal.GridNodeAttributes._
-import org.gridgain.grid.lang.{GridBiTuple}
+import org.gridgain.grid.lang.{GridPredicate, GridBiTuple}
 import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi
 import org.gridgain.grid.thread._
 import org.gridgain.grid.util.typedef._
@@ -36,6 +36,9 @@ import org.gridgain.grid.util.{GridUtils => U, GridConfigurationFinder}
 import org.gridgain.scalar._
 import org.gridgain.scalar.scalar._
 import org.gridgain.visor.commands.{VisorTextTable, VisorConsoleCommand}
+import org.gridgain.grid.resources.GridInstanceResource
+import org.gridgain.grid.kernal.processors.task.GridInternal
+import org.gridgain.grid.util.scala.impl
 
 /**
  * Holder for command help information.
@@ -140,13 +143,13 @@ object visor extends VisorTag {
     private var cmdLst: Seq[VisorConsoleCommandHolder] = Nil
 
     /** Node left listener. */
-    private var nodeLeftLsnr: GridLocalEventListener = null
+    private var nodeLeftLsnr: GridPredicate[GridEvent] = null
 
     /** Node join listener. */
-    private var nodeJoinLsnr: GridLocalEventListener = null
+    private var nodeJoinLsnr: GridPredicate[GridEvent] = null
 
     /** Node segmentation listener. */
-    private var nodeSegLsnr: GridLocalEventListener = null
+    private var nodeSegLsnr: GridPredicate[GridEvent] = null
 
     /** Node stop listener.  */
     private var nodeStopLsnr: GridGainListener = null
@@ -1563,8 +1566,8 @@ object visor extends VisorTag {
                     setVarIfAbsent(ip.get, "h")
             })
 
-            nodeJoinLsnr = new GridLocalEventListener() {
-                def onEvent(e: GridEvent) {
+            nodeJoinLsnr = new GridPredicate[GridEvent]() {
+                override def apply(e: GridEvent): Boolean = {
                     e match {
                         case de: GridDiscoveryEvent =>
                             setVarIfAbsent(U.id8(de.eventNodeId), "n")
@@ -1586,13 +1589,15 @@ object visor extends VisorTag {
                                     )
                             }
                     }
+
+                    true
                 }
             }
 
-            grid.events().addLocalListener(nodeJoinLsnr, EVT_NODE_JOINED)
+            grid.events().localListen(nodeJoinLsnr, EVT_NODE_JOINED)
 
-            nodeLeftLsnr = new GridLocalEventListener() {
-                def onEvent(e: GridEvent) {
+            nodeLeftLsnr = new GridPredicate[GridEvent]() {
+                override def apply(e: GridEvent): Boolean = {
                     e match {
                         case (de: GridDiscoveryEvent) =>
                             val nv = mfind(U.id8(de.eventNodeId))
@@ -1615,13 +1620,15 @@ object visor extends VisorTag {
                                 }
                             }
                     }
+
+                    true
                 }
             }
 
-            grid.events().addLocalListener(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
+            grid.events().localListen(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
 
-            nodeSegLsnr = new GridLocalEventListener {
-                def onEvent(e: GridEvent) {
+            nodeSegLsnr = new GridPredicate[GridEvent] {
+                override def apply(e: GridEvent): Boolean = {
                     e match {
                         case de: GridDiscoveryEvent =>
                             if (de.eventNodeId == grid.localNode.id) {
@@ -1635,10 +1642,12 @@ object visor extends VisorTag {
                                 close()
                             }
                     }
+
+                    true
                 }
             }
 
-            grid.events().addLocalListener(nodeSegLsnr, EVT_NODE_SEGMENTED)
+            grid.events().localListen(nodeSegLsnr, EVT_NODE_SEGMENTED)
 
             nodeStopLsnr = new GridGainListener {
                 def onStateChange(name: String, state: GridGainState) {
@@ -2096,13 +2105,13 @@ object visor extends VisorTag {
 
             if (grid != null && G.state(grid.name) == GridGainState.STARTED) {
                 if (nodeJoinLsnr != null)
-                    grid.events().removeLocalListener(nodeJoinLsnr)
+                    grid.events().stopLocalListen(nodeJoinLsnr)
 
                 if (nodeLeftLsnr != null)
-                    grid.events().removeLocalListener(nodeLeftLsnr)
+                    grid.events().stopLocalListen(nodeLeftLsnr)
 
                 if (nodeSegLsnr != null)
-                    grid.events().removeLocalListener(nodeSegLsnr)
+                    grid.events().stopLocalListen(nodeSegLsnr)
             }
 
             if (nodeStopLsnr != null)
@@ -2346,8 +2355,9 @@ object visor extends VisorTag {
                                 .compute()
                                 .withName("visor-log-collector")
                                 .withNoFailover()
-                                .call(() => Collector.collect(LOG_EVTS, g, key))
+                                .broadcast(new CollectorClosure(LOG_EVTS, key))
                                 .get
+                                .flatten
                         }
                         catch {
                             case _: GridEmptyProjectionException => // Ignore.
@@ -2557,7 +2567,7 @@ object Collector {
 
         val tenMinAgo = System.currentTimeMillis() - 10 * 60 * 1000
 
-        val evts = g.events().queryLocal((evt: GridEvent) =>
+        val evts = g.events().localQuery((evt: GridEvent) =>
             types.contains(evt.`type`) && evt.localOrder > last && evt.timestamp() > tenMinAgo)
 
         // Update latest order in node local, if not empty.
@@ -2567,3 +2577,20 @@ object Collector {
         evts.toList.sortBy(_.timestamp)
     }
 }
+
+/**
+ * Remote events collector closure.
+ *
+ * @author @java.author
+ * @version @java.version
+ */
+@GridInternal
+class CollectorClosure(types: Seq[Int], key: String) extends CO[Seq[GridEvent]] {
+    @GridInstanceResource
+    private val g: Grid = null
+
+    @impl def apply(): Seq[GridEvent] = {
+        Collector.collect(types, g, key)
+    }
+}
+

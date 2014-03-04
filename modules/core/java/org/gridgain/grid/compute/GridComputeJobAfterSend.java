@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,18 +9,15 @@
 
 package org.gridgain.grid.compute;
 
-import org.gridgain.grid.*;
-
 import java.lang.annotation.*;
 
 /**
  * This annotation allows to call a method right after the job has been
  * successfully sent for execution. It is useful to clean up the internal
- * state of the job when it is not immediately needed while maintaining
- * effective memory management.
+ * state of the job when it is not immediately needed.
  * <p>
- * This annotation can be applied to {@link GridComputeJob} instance only. It is invoked
- * on the caller node after the job has been sent to remote node for execution.
+ * This annotation can be applied to methods of {@link GridComputeJob} instance only.
+ * It is invoked on the caller node after the job has been sent to remote node for execution.
  * <p>
  * Example:
  * <pre name="code" class="java">
@@ -33,11 +30,6 @@ import java.lang.annotation.*;
  *     ...
  * }
  * </pre>
- * <p>
- * Note that by default jobs sent to local node are not marshalled and the same
- * instance of job is reused for execution. In this case methods annotated with
- * {@code GridComputeJobAfterSend} annotation will be invoked after completion of the job.
- * To alter this behavior, set {@link GridConfiguration#isMarshalLocalJobs()} to {@code true}.
  *
  * @author @java.author
  * @version @java.version

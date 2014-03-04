@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -416,9 +416,9 @@ public class GridClientImpl implements GridClient {
         for (Map.Entry<String, GridClientCacheMode> entry : overallCaches.entrySet()) {
             GridClientDataAffinity affinity = affinity(entry.getKey());
 
-            if (affinity instanceof GridClientPartitionedAffinity && entry.getValue() !=
+            if (affinity instanceof GridClientPartitionAffinity && entry.getValue() !=
                 GridClientCacheMode.PARTITIONED)
-                log.warning(GridClientPartitionedAffinity.class.getSimpleName() + " is used for a cache configured " +
+                log.warning(GridClientPartitionAffinity.class.getSimpleName() + " is used for a cache configured " +
                     "for non-partitioned mode [cacheName=" + entry.getKey() + ", cacheMode=" + entry.getValue() + ']');
         }
     }

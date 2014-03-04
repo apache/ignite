@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.ggfs.mapreduce;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.resources.*;
@@ -20,12 +20,12 @@ import java.util.*;
 
 /**
  * GGFS task which can be executed on the grid using one of {@code GridGgfs.execute()} methods. Essentially GGFS task
- * is regular {@link org.gridgain.grid.compute.GridComputeTask} with different map logic. Instead of implementing
- * {@link org.gridgain.grid.compute.GridComputeTask#map(java.util.List, Object)} method to split task into jobs, you must implement
+ * is regular {@link GridComputeTask} with different map logic. Instead of implementing
+ * {@link GridComputeTask#map(List, Object)} method to split task into jobs, you must implement
  * {@link GridGgfsTask#createJob(GridGgfsPath, GridGgfsFileRange, GridGgfsTaskArgs)} method.
  * <p>
  * Each file participating in GGFS task is split into {@link GridGgfsFileRange}s first. Normally range is a number of
- * consequent bytes located on a single node (see {@link GridGgfsGroupDataBlocksMapper}). In case maximum range size
+ * consequent bytes located on a single node (see {@link GridGgfsGroupDataBlocksKeyMapper}). In case maximum range size
  * is provided (either through {@link GridGgfsConfiguration#getMaximumTaskRangeLength()} or {@code GridGgfs.execute()}
  * argument), then ranges could be further divided into smaller chunks.
  * <p>

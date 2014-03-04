@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,6 +18,7 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.task.*;
@@ -136,11 +137,11 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
         assert dataCachePrj != null;
 
-        GridCacheAffinityMapper mapper = ggfsCtx.kernalContext().cache()
+        GridCacheAffinityKeyMapper mapper = ggfsCtx.kernalContext().cache()
             .internalCache(ggfsCtx.configuration().getDataCacheName()).configuration().getAffinityMapper();
 
-        grpSize = mapper instanceof GridGgfsGroupDataBlocksMapper ?
-            ((GridGgfsGroupDataBlocksMapper)mapper).groupSize() : 1;
+        grpSize = mapper instanceof GridGgfsGroupDataBlocksKeyMapper ?
+            ((GridGgfsGroupDataBlocksKeyMapper)mapper).groupSize() : 1;
 
         grpBlockSize = ggfsCtx.configuration().getBlockSize() * grpSize;
 

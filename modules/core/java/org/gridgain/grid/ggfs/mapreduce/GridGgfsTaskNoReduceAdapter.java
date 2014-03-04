@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -25,7 +25,7 @@ public abstract class GridGgfsTaskNoReduceAdapter<T, R> extends GridGgfsTask<T, 
      * Default implementation which will ignore all results sent from execution nodes.
      *
      * @param results Received results of broadcasted remote executions. Note that if task class has
-     *      {@link org.gridgain.grid.compute.GridComputeTaskNoResultCache} annotation, then this list will be empty.
+     *      {@link GridComputeTaskNoResultCache} annotation, then this list will be empty.
      * @return Will always return {@code null}.
      */
     @Override public R reduce(List<GridComputeJobResult> results) {

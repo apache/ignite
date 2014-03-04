@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,15 +9,17 @@
 
 package org.gridgain.grid.resources;
 
+import org.gridgain.grid.compute.*;
+
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of {@link org.gridgain.grid.compute.GridComputeJobContext} instance.
+ * Annotates a field or a setter method for injection of {@link GridComputeJobContext} instance.
  * It can be injected into grid jobs only.
  * <p>
  * Job context can be injected into instances of following classes:
  * <ul>
- * <li>{@link org.gridgain.grid.compute.GridComputeJob}</li>
+ * <li>{@link GridComputeJob}</li>
  * </ul>
  * <p>
  * Here is how injection would typically happen:

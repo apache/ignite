@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,6 +17,8 @@
 #include <gridgain/gridconf.hpp>
 #include <gridgain/gridclientuuid.hpp>
 
+#include <boost/variant.hpp>
+
 /** Forward declaration of class. */
 class GridClientVariantVisitor;
 
@@ -28,6 +30,7 @@ class GridClientVariantVisitor;
  * @version @cpp.version
  */
 class GRIDGAIN_API GridClientVariant {
+
 public:
     /** No-value type. */
     class NullType {
@@ -42,6 +45,34 @@ public:
             return true;
         }
     };
+
+private:
+    class Impl {
+    public:
+        /** Boost typedef for holding multiple types. */
+        typedef boost::variant<GridClientVariant::NullType, bool, int16_t, int32_t, int64_t, double,
+                float, std::string, std::wstring, std::vector<int8_t>, std::vector<GridClientVariant>, GridUuid> TVariantType;
+
+        /** Boost variable. */
+        TVariantType var;
+
+        /** Enum for possible types of values. */
+        enum TypeEnum {
+            BOOL_TYPE = 1,
+            SHORT_TYPE,
+            INT_TYPE,
+            LONG_TYPE,
+            DOUBLE_TYPE,
+            FLOAT_TYPE,
+            STRING_TYPE,
+            WIDE_STRING_TYPE,
+            BYTE_ARRAY_TYPE,
+            VARIANT_VECTOR_TYPE,
+            UUID_TYPE
+        };
+    };
+
+public:
 
     /** No-arg constructor - variant with null value is created. */
     GridClientVariant();
@@ -418,8 +449,7 @@ public:
     bool hasAnyValue() const;
 
 private:
-    class Impl;
-    Impl* pimpl;
+    Impl pimpl;
 };
 
 /**

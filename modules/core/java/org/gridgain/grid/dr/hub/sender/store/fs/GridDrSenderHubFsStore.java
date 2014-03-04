@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,9 +15,9 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.worker.*;
 import org.jetbrains.annotations.*;
 
@@ -47,7 +47,7 @@ import static org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflow
  * <li>Maximum amount of files files which can be used to store data (see {@link #setMaxFilesCount(int)})</li>
  * <li>Checkpoint creation frequency (see {@link #setCheckpointFrequency(long)})</li>
  * <li>Overflow mode defining how store will behave in case of overflow
- *      (see {@link #setOverflowMode(org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflowMode)})</li>
+ *      (see {@link #setOverflowMode(GridDrSenderHubStoreOverflowMode)})</li>
  * <li>Checksum enabled flag (see {@link #setChecksumEnabled(boolean)})</li>
  * <li>Read buffer size (see {@link #setReadBufferSize(int)})</li>
  * </ul>
@@ -55,7 +55,7 @@ import static org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflow
  * <pre name="code" class="java">
  * GridDrSenderHubConfiguration cfg = new GridDrSenderHubConfiguration();
  *
- * GridDrFsStore store = new GridDrFsStore();
+ * GridDrSenderHubFsStore store = new GridDrSenderHubFsStore();
  *
  * // Set directory path.
  * store.setDirectoryPath("/my/directory/path");
@@ -64,14 +64,14 @@ import static org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflow
  * cfg.setStore(store);
  * </pre>
  * <h2 class="header">Spring Example</h2>
- * GridDrFsStore can be configured from Spring XML configuration file:
+ * GridDrSenderHubFsStore can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="drSenderHubConfiguration"&gt;
  *              &lt;bean class="org.gridgain.grid.dr.hub.sender.GridDrSenderHubConfiguration"&gt;
  *                  &lt;property name="store"&gt;
- *                      &lt;bean class="org.gridgain.grid.dr.hub.sender.store.fs.GridDrFsStore"&gt;
+ *                      &lt;bean class="org.gridgain.grid.dr.hub.sender.store.fs.GridDrSenderHubFsStore"&gt;
  *                          &lt;property name="directoryPath" value="/my/directory/path"/&gt;
  *                      &lt;/bean&gt;
  *                  &lt;/property&gt;
@@ -88,7 +88,7 @@ import static org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflow
  *
  * @author @java.author
  * @version @java.version
- * @see org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStore
+ * @see GridDrSenderHubStore
  */
 public class GridDrSenderHubFsStore implements GridDrSenderHubStore, GridLifecycleAware {
     /** Default maximum amount of files which can be used to store data. */

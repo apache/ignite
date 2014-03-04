@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.rest.handlers.top;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.affinity.partition.*;
+import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.port.*;
@@ -184,10 +184,10 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         nodeBean.setJettyAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_JETTY_ADDRS)));
         nodeBean.setJettyHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_JETTY_HOST_NAMES)));
 
-        Integer dfltReplicaCnt = node.attribute(GridCachePartitionAffinity.DFLT_REPLICA_COUNT_ATTR_NAME);
+        Integer dfltReplicaCnt = node.attribute(GridCacheConsistentHashAffinityFunction.DFLT_REPLICA_COUNT_ATTR_NAME);
 
         if (dfltReplicaCnt == null)
-            dfltReplicaCnt = GridCachePartitionAffinity.DFLT_REPLICA_COUNT;
+            dfltReplicaCnt = GridCacheConsistentHashAffinityFunction.DFLT_REPLICA_COUNT;
 
         nodeBean.setReplicaCount(dfltReplicaCnt);
 
