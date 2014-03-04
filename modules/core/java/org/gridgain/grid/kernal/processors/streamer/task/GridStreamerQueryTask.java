@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.streamer.task;
 
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.streamer.*;
@@ -26,7 +27,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridStreamerQueryTask<R> extends GridComputeTaskAdapter<Void, Collection<R>> {
+public class GridStreamerQueryTask<R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>> {
     /** Query closure. */
     private GridClosure<GridStreamerContext, R> qryClos;
 

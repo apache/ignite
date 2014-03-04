@@ -35,7 +35,7 @@ import org.gridgain.grid.util.typedef.*;
  * @see C3
  * @see GridFunc
  */
-public abstract class GridClosure3<E1, E2, E3, R> extends GridLambdaAdapter {
+public abstract class GridClosure3<E1, E2, E3, R> {
     /**
      * Closure body.
      *
@@ -45,66 +45,6 @@ public abstract class GridClosure3<E1, E2, E3, R> extends GridLambdaAdapter {
      * @return Optional return value.
      */
     public abstract R apply(E1 e1, E2 e2, E3 e3);
-
-    /**
-     * Curries this closure with given value. When result closure is called it will
-     * be executed with given value.
-     *
-     * @param e1 Value to curry with.
-     * @return Curried or partially applied closure with given value.
-     */
-    public GridBiClosure<E2, E3, R> curry(final E1 e1) {
-        return new C2<E2, E3, R>() {
-            {
-                peerDeployLike(GridClosure3.this);
-            }
-
-            @Override public R apply(E2 e2, E3 e3) {
-                return GridClosure3.this.apply(e1, e2, e3);
-            }
-        };
-    }
-
-    /**
-     * Curries this closure with given value. When result closure is called it will
-     * be executed with given value.
-     *
-     * @param e1 Value to curry with.
-     * @param e2 Value to curry with.
-     * @return Curried or partially applied closure with given value.
-     */
-    public GridClosure<E3, R> curry(final E1 e1, final E2 e2) {
-        return new C1<E3, R>() {
-            {
-                peerDeployLike(GridClosure3.this);
-            }
-
-            @Override public R apply(E3 e3) {
-                return GridClosure3.this.apply(e1, e2, e3);
-            }
-        };
-    }
-
-    /**
-     * Curries this closure with given values. When result closure is called it will
-     * be executed with given values.
-     *
-     * @param e1 Value to curry with.
-     * @param e2 Value to curry with.
-     * @param e3 Value to curry with.
-     * @return Curried or partially applied closure with given values.
-     */
-    public GridOutClosure<R> curry(final E1 e1, final E2 e2, final E3 e3) {
-        return new CO<R>() {
-            {
-                peerDeployLike(GridClosure3.this);
-            }
-
-            @Override public R apply() {
-                return GridClosure3.this.apply(e1, e2, e3);
-            }
-        };
-    }
 
     /**
      * Gets closure that applies given closure over the result of {@code this} closure.

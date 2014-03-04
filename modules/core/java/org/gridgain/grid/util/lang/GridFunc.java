@@ -710,15 +710,7 @@ public class GridFunc {
         A.notNull(o, "o", mtdName, "mtdName");
 
         return new CA() {
-            {
-                if (o != null && args != null)
-                    peerDeployLike(U.peerDeployAware0(flat0(o, args)));
-                else if (o != null && args == null)
-                    peerDeployLike(o);
-                else if (o == null && args != null)
-                    peerDeployLike(U.peerDeployAware0(args));
-            }
-
+            /** */
             private Method mtd;
 
             @SuppressWarnings("unchecked")
@@ -758,6 +750,7 @@ public class GridFunc {
         A.notNull(cls, "cls", mtdName, "mtdName");
 
         return new CO<R>() {
+            /** */
             private Method mtd;
 
             @SuppressWarnings("unchecked")
@@ -794,15 +787,7 @@ public class GridFunc {
         A.notNull(cls, "cls", mtdName, "mtdName");
 
         return new CA() {
-            {
-                if (cls != null && args != null)
-                    peerDeployLike(U.peerDeployAware0(flat0(cls, args)));
-                else if (cls != null && args == null)
-                    peerDeployLike(cls);
-                else if (cls == null && args != null)
-                    peerDeployLike(U.peerDeployAware0(args));
-            }
-
+            /** */
             private Method mtd;
 
             @SuppressWarnings("unchecked")
@@ -2916,10 +2901,6 @@ public class GridFunc {
      */
     public static <T> GridAbsPredicate curry(final GridPredicate<? super T> f, final T e) {
         return new GridAbsPredicate() {
-            {
-                peerDeployLike(f);
-            }
-
             @Override public boolean apply() {
                 return f.apply(e);
             }
@@ -2936,10 +2917,6 @@ public class GridFunc {
      */
     public static <T> GridAbsClosure curry(final GridInClosure<? super T> f, final T e) {
         return new GridAbsClosure() {
-            {
-                peerDeployLike(f);
-            }
-
             @Override public void apply() {
                 f.apply(e);
             }
@@ -3274,10 +3251,6 @@ public class GridFunc {
      */
     public static GridAbsClosure as(@Nullable final Runnable r) {
         return new CA() {
-            {
-                peerDeployLike(U.peerDeployAware(r));
-            }
-
             @Override public void apply() {
                 if (r != null)
                     r.run();
@@ -5145,10 +5118,6 @@ public class GridFunc {
      */
     public static <T1, T2, T3, R> GridClosure3<T1, T2, T3, R> constant3(@Nullable final R val) {
         return new C3<T1, T2, T3, R>() {
-            {
-                peerDeployLike(U.peerDeployAware(val));
-            }
-
             @Nullable @Override public R apply(T1 t1, T2 t2, T3 t3) {
                 return val;
             }
@@ -5222,10 +5191,6 @@ public class GridFunc {
         A.notNull(c, "c");
 
         return new GridAbsPredicate() {
-            {
-                peerDeployLike(U.peerDeployAware(c));
-            }
-
             @Override public boolean apply() {
                 try {
                     return c.call();
@@ -5280,10 +5245,6 @@ public class GridFunc {
         A.notNull(c, "c");
 
         return new P3<T1, T2, T3>() {
-            {
-                peerDeployLike(U.peerDeployAware(c));
-            }
-
             @Override public boolean apply(T1 t1, T2 t2, T3 t3) {
                 return c.apply(t1, t2, t3);
             }
@@ -5355,10 +5316,6 @@ public class GridFunc {
         A.notNull(p, "p");
 
         return new C3<X1, X2, X3, Boolean>() {
-            {
-                peerDeployLike(U.peerDeployAware(p));
-            }
-
             @Override public Boolean apply(X1 x1, X2 x2, X3 x3) {
                 return p.apply(x1, x2, x3);
             }
@@ -7841,28 +7798,6 @@ public class GridFunc {
         return viewReadOnly(iter, new C1<GridBiClosure<? super T1, T2, R>, GridClosure<T2, R>>() {
             @Override public GridClosure<T2, R> apply(GridBiClosure<? super T1, T2, R> c) {
                 return curry(c, arg);
-            }
-        });
-    }
-
-    /**
-     * Curries collection of closures with given argument.
-     *
-     * @param iter Collection to curry.
-     * @param arg Argument to curry with.
-     * @param <T1> Type of 1st closure argument.
-     * @param <T2> Type of 2nd closure argument.
-     * @param <T3> Type of 3rd closure argument.
-     * @param <R> Type of closure return value.
-     * @return Read only collection of curried closures.
-     */
-    public static <T1, T2, T3, R> Collection<GridBiClosure<T2, T3, R>> curry3(
-        Collection<? extends GridClosure3<? super T1, T2, T3, R>> iter, final T1 arg) {
-        A.notNull(iter, "iter", arg, "arg");
-
-        return viewReadOnly(iter, new C1<GridClosure3<? super T1, T2, T3, R>, GridBiClosure<T2, T3, R>>() {
-            @Override public GridBiClosure<T2, T3, R> apply(GridClosure3<? super T1, T2, T3, R> c) {
-                return c.curry(arg);
             }
         });
     }

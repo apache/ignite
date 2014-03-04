@@ -11,7 +11,7 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.util.lang.{GridLambdaAdapter, GridInClosure3X}
+import org.gridgain.grid.util.lang.{GridInClosure3X}
 
 /**
  * Wrapping Scala function for `GridInClosure3X`.
@@ -19,11 +19,8 @@ import org.gridgain.grid.util.lang.{GridLambdaAdapter, GridInClosure3X}
  * @author @java.author
  * @version @java.version
  */
-class ScalarInClosure3XFunction[T1, T2, T3](val inner: GridInClosure3X[T1, T2, T3]) extends GridLambdaAdapter
-    with ((T1, T2, T3) => Unit) {
+class ScalarInClosure3XFunction[T1, T2, T3](val inner: GridInClosure3X[T1, T2, T3]) extends ((T1, T2, T3) => Unit) {
     assert(inner != null)
-
-    peerDeployLike(inner)
 
     /**
      * Delegates to passed in grid closure.

@@ -1203,7 +1203,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Metadata job.
      */
     @GridInternal
-    private static class MetadataJob implements Callable<Collection<CacheSqlMetadata>> {
+    private static class MetadataJob implements GridCallable<Collection<CacheSqlMetadata>> {
         /** Grid */
         @GridInstanceResource
         private Grid grid;

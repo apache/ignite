@@ -30,7 +30,7 @@ import org.gridgain.grid.util.typedef.*;
  * @see P1
  * @see GridFunc
  */
-public abstract class GridAbsPredicate extends GridLambdaAdapter {
+public abstract class GridAbsPredicate {
     /**
      * Predicate body.
      *

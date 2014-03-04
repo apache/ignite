@@ -11,18 +11,14 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.util.lang.GridLambdaAdapter
-
 /**
  * Wrapping Scala function for `GridAbsClosure`.
  *
  * @author @java.author
  * @version @java.version
  */
-class ScalarAbsClosureFunction(val inner: Runnable) extends GridLambdaAdapter with (() => Unit) {
+class ScalarAbsClosureFunction(val inner: Runnable) extends (() => Unit) {
     assert(inner != null)
-
-    peerDeployLike(inner)
 
     /**
      * Delegates to passed in grid closure.

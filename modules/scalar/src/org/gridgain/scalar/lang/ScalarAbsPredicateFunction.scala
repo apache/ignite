@@ -11,7 +11,7 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.util.lang.{GridLambdaAdapter, GridAbsPredicate}
+import org.gridgain.grid.util.lang.{GridAbsPredicate}
 
 /**
  * Wrapping Scala function for `GridAbsPredicate`.
@@ -19,10 +19,8 @@ import org.gridgain.grid.util.lang.{GridLambdaAdapter, GridAbsPredicate}
  * @author @java.author
  * @version @java.version
  */
-class ScalarAbsPredicateFunction(val inner: GridAbsPredicate) extends GridLambdaAdapter with (() => Boolean) {
+class ScalarAbsPredicateFunction(val inner: GridAbsPredicate) extends (() => Boolean) {
     assert(inner != null)
-
-    peerDeployLike(inner)
 
     /**
      * Delegates to passed in grid predicate.

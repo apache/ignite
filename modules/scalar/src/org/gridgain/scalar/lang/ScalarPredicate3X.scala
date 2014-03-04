@@ -24,8 +24,6 @@ import org.gridgain.grid.util.lang.GridPredicate3X
 class ScalarPredicate3X[T1, T2, T3](private val p: (T1, T2, T3) => Boolean) extends GridPredicate3X[T1, T2, T3] {
     assert(p != null)
 
-    peerDeployLike(p)
-
     /**
      * Delegates to passed in function.
      */

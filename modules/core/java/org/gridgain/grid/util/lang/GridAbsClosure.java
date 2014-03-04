@@ -29,7 +29,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * @version @java.version
  * @see GridFunc
  */
-public abstract class GridAbsClosure extends GridLambdaAdapter implements Runnable, GridComputeJob {
+public abstract class GridAbsClosure implements Runnable, GridComputeJob {
     /**
      * Absolute closure body.
      */

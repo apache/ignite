@@ -40,7 +40,7 @@ import org.gridgain.grid.util.typedef.*;
  * @see P3
  * @see GridFunc
  */
-public abstract class GridPredicate3<E1, E2, E3> extends GridLambdaAdapter {
+public abstract class GridPredicate3<E1, E2, E3> {
     /**
      * Predicate body.
      *
@@ -50,66 +50,6 @@ public abstract class GridPredicate3<E1, E2, E3> extends GridLambdaAdapter {
      * @return Return value.
      */
     public abstract boolean apply(E1 e1, E2 e2, E3 e3);
-
-    /**
-     * Curries this predicate with given values. When result predicate is called it will
-     * be executed with given values.
-     *
-     * @param e1 Value to curry with.
-     * @return Curried or partially applied predicate with given values.
-     */
-    public GridBiPredicate<E2, E3> curry(final E1 e1) {
-        return new P2<E2, E3>() {
-            {
-                peerDeployLike(GridPredicate3.this);
-            }
-
-            @Override public boolean apply(E2 e2, E3 e3) {
-                return GridPredicate3.this.apply(e1, e2, e3);
-            }
-        };
-    }
-
-    /**
-     * Curries this predicate with given values. When result predicate is called it will
-     * be executed with given values.
-     *
-     * @param e1 Value to curry with.
-     * @param e2 Value to curry with.
-     * @return Curried or partially applied predicate with given values.
-     */
-    public GridPredicate<E3> curry(final E1 e1, final E2 e2) {
-        return new P1<E3>() {
-            {
-                peerDeployLike(GridPredicate3.this);
-            }
-
-            @Override public boolean apply(E3 e3) {
-                return GridPredicate3.this.apply(e1, e2, e3);
-            }
-        };
-    }
-
-    /**
-     * Curries this predicate with given values. When result predicate is called it will
-     * be executed with given values.
-     *
-     * @param e1 Value to curry with.
-     * @param e2 Value to curry with.
-     * @param e3 Value to curry with.
-     * @return Curried or partially applied predicate with given values.
-     */
-    public GridAbsPredicate curry(final E1 e1, final E2 e2, final E3 e3) {
-        return new GridAbsPredicate() {
-            {
-                peerDeployLike(GridPredicate3.this);
-            }
-
-            @Override public boolean apply() {
-                return GridPredicate3.this.apply(e1, e2, e3);
-            }
-        };
-    }
 
     /**
      * Gets closure that applies given closure over the result of {@code this} predicate.

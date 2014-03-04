@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -7,15 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.compute;
+package org.gridgain.grid.kernal.processors.closure;
 
-import org.jetbrains.annotations.*;
+import org.gridgain.grid.compute.*;
 
 /**
  * Job adapter implementing {@link GridComputeJobMasterLeaveAware}.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridMasterLeaveAwareComputeJobAdapter extends GridComputeJobAdapter
     implements GridComputeJobMasterLeaveAware {
@@ -24,19 +21,5 @@ public abstract class GridMasterLeaveAwareComputeJobAdapter extends GridComputeJ
      */
     protected GridMasterLeaveAwareComputeJobAdapter() {
         // No-op.
-    }
-
-    /**
-     * @param arg Job argument.
-     */
-    protected GridMasterLeaveAwareComputeJobAdapter(@Nullable Object arg) {
-        super(arg);
-    }
-
-    /**
-     * @param args Job arguments.
-     */
-    protected GridMasterLeaveAwareComputeJobAdapter(@Nullable Object... args) {
-        super(args);
     }
 }
