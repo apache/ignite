@@ -464,10 +464,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                 entry.op(e.op()); // Absolutely must set operation, as default is DELETE.
                 entry.value(e.value(), e.hasWriteValue(), e.hasReadValue());
                 entry.transformClosures(e.transformClosures());
-
-                if (cctx.sendValueBytes())
-                    entry.valueBytes(e.valueBytes());
-
+                entry.valueBytes(e.valueBytes());
                 entry.ttl(e.ttl());
                 entry.filters(e.filters());
                 entry.drExpireTime(e.drExpireTime());

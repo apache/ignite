@@ -13,6 +13,9 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.startup.cmdline.*;
+import org.gridgain.grid.startup.servlet.*;
+import org.gridgain.grid.startup.tomcat.*;
 import org.jetbrains.annotations.*;
 import org.springframework.context.*;
 
@@ -27,9 +30,9 @@ import java.util.*;
  * often started and stopped by grid loaders. Grid loaders can be found in
  * {@link org.gridgain.grid.startup} package, for example:
  * <ul>
- * <li>{@link org.gridgain.grid.startup.cmdline.GridCommandLineStartup}</li>
- * <li>{@link org.gridgain.grid.startup.tomcat.GridTomcatStartup}</li>
- * <li>{@link org.gridgain.grid.startup.servlet.GridServletStartup}</li>
+ * <li>{@link GridCommandLineStartup}</li>
+ * <li>{@link GridTomcatStartup}</li>
+ * <li>{@link GridServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use

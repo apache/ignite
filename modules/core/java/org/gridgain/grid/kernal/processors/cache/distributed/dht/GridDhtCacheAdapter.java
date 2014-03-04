@@ -2287,7 +2287,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                     // calls and won't be serialized. We are also including DHT version.
                                     res.addValueBytes(
                                         val,
-                                        ret && ctx.sendValueBytes() ? e.valueBytes(null).getIfMarshaled() : null,
+                                        ret ? e.valueBytes(null).getIfMarshaled() : null,
                                         filterPassed,
                                         ver,
                                         mappedVer,
@@ -2512,7 +2512,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         Collection<GridNode> nearNodes = null;
 
         if (!F.isEmpty(readers)) {
-            nearNodes = ctx.discovery().nodes(readers, F0.<UUID>not(F.idForNodeId(nodeId)));
+            nearNodes = ctx.discovery().nodes(readers, F0.not(F.idForNodeId(nodeId)));
 
             if (log.isDebugEnabled())
                 log.debug("Mapping entry to near nodes [nodes=" + U.toShortString(nearNodes) + ", entry=" + cached +
