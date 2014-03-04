@@ -1307,8 +1307,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         boolean res = pingNode(node);
 
-        if (!res)
+        if (!res) {
+            LT.warn(log, null, "Failed to ping node (status check will be initiated): " + nodeId);
+
             msgWorker.addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, node.id(), node.internalOrder()));
+        }
 
         return res;
     }
