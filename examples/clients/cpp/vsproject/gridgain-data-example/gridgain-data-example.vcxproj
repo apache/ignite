@@ -69,10 +69,12 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../../../../../modules/clients/cpp/main/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OPENSSL_HOME)\include;$(BOOST_HOME)\include\boost-1_55;$(BOOST_HOME)\include\boost-1_49;$(PROTOBUF_DEBUG_HOME)\include;.\..\..\..\..\..\modules\clients\cpp\main\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC\static;$(PROTOBUF_DEBUG_HOME)\lib;$(BOOST_HOME)\lib;../../../../../modules\clients\cpp\vsproject\x64\$(TargetName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AddModuleNamesToAssembly>libprotobuf.lib;ssleay32MD.lib;libeay32MD.lib;libgridgain-client.lib;%(AddModuleNamesToAssembly)</AddModuleNamesToAssembly>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
