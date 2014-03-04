@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -40,11 +40,11 @@ import java.util.concurrent.*;
  *  if there is one.
  * </li>
  * <li>
- *  Various {@code 'contains(..)'} method to check if cache contains certain keys or values.
+ *  Various {@code 'contains(..)'} method to check if cache contains certain keys or values locally.
  * </li>
  * <li>
  *  Various {@code 'forEach(..)'}, {@code 'forAny(..)'}, and {@code 'reduce(..)'} methods to visit
- *  every cache entry within this projection.
+ *  every local cache entry within this projection.
  * </li>
  * <li>
  *  Various {@code flagsOn(..)'}, {@code 'flagsOff(..)'}, and {@code 'projection(..)'} methods to
@@ -113,25 +113,25 @@ import java.util.concurrent.*;
  * be transaction-aware, i.e. check in-transaction entries first, but will not affect the current
  * state of transaction. See {@link GridCacheTx} documentation for more information
  * about transactions.
- * <h1 class="header">HyperLocking</h1>
- * <i>HyperLocking</i> is a feature where instead of acquiring individual locks, GridGain will lock
- * multiple keys with one lock to save on locking overhead. There are 2 types of <i>HyperLocking</i>:
+ * <h1 class="header">Group Locking</h1>
+ * <i>Group Locking</i> is a feature where instead of acquiring individual locks, GridGain will lock
+ * multiple keys with one lock to save on locking overhead. There are 2 types of <i>Group Locking</i>:
  * <i>affinity-based</i>, and <i>partitioned-based</i>.
  * <p>
- * With {@code affinity-based HyperLocking} the keys are grouped by <i>affinity-key</i>. This means that
+ * With {@code affinity-based-group-locking} the keys are grouped by <i>affinity-key</i>. This means that
  * only keys with identical affinity-key (see {@link GridCacheAffinityKeyMapped}) can participate in the
  * transaction, and only one lock on the <i>affinity-key</i> will be acquired for the whole transaction.
- * {@code Affinity-hyper-locked} transactions are started via
+ * {@code Affinity-group-locked} transactions are started via
  * {@link #txStartAffinity(Object, GridCacheTxConcurrency, GridCacheTxIsolation, long, int)} method.
  * <p>
- * With {@code partition-based HyperLocking} the keys are grouped by partition ID. This means that
+ * With {@code partition-based-group-locking} the keys are grouped by partition ID. This means that
  * only keys belonging to identical partition (see {@link GridCacheAffinity#partition(Object)}) can participate in the
  * transaction, and only one lock on the whole partition will be acquired for the whole transaction.
- * {@code Partition-hyper-locked} transactions are started via
+ * {@code Partition-group-locked} transactions are started via
  * {@link #txStartPartition(int, GridCacheTxConcurrency, GridCacheTxIsolation, long, int)} method.
  * <p>
- * <i>HyperLocking</i> should always be used whenever possible. If your requirements fit either
- * <i>affinity-based</i> or <i>partition-based</i> scenarios outlined above then <i>HyperLocking</i>
+ * <i>Group locking</i> should always be used for transactions whenever possible. If your requirements fit either
+ * <i>affinity-based</i> or <i>partition-based</i> scenarios outlined above then <i>group-locking</i>
  * can significantly improve performance of your application, often by an order of magnitude.
  * <h1 class="header">Null Keys or Values</h1>
  * Neither {@code null} keys or values are allowed to be stored in cache. If a {@code null} value
@@ -1260,14 +1260,14 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
         int txSize);
 
     /**
-     * Starts {@code affinity-hyper-locked} transaction based on affinity key. In this mode only affinity key
+     * Starts {@code affinity-group-locked} transaction based on affinity key. In this mode only affinity key
      * is locked and all other entries in transaction are written without locking. However,
      * all keys in such transaction must have the same affinity key. Node on which transaction
      * is started must be primary for the given affinity key (an exception is thrown otherwise).
      * <p>
      * Since only affinity key is locked, and no individual keys, it is user's responsibility to make sure
      * there are no other concurrent explicit updates directly on individual keys participating in the
-     * transaction. All updates to the keys involved should always go through {@code affinity-hyper-locked}
+     * transaction. All updates to the keys involved should always go through {@code affinity-group-locked}
      * transaction, otherwise cache may be left in inconsistent state.
      * <p>
      * If cache sanity check is enabled ({@link GridConfiguration#isCacheSanityCheckEnabled()}),
@@ -1296,14 +1296,14 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, GridException;
 
     /**
-     * Starts {@code partition-hyper-locked} transaction based on partition ID. In this mode the whole partition
+     * Starts {@code partition-group-locked} transaction based on partition ID. In this mode the whole partition
      * is locked and all other entries in transaction are written without locking. However,
      * all keys in such transaction must belong to the same partition. Node on which transaction
      * is started must be primary for the given partition (an exception is thrown otherwise).
      * <p>
      * Since only partition is locked, and no individual keys, it is user's responsibility to make sure
      * there are no other concurrent explicit updates directly on individual keys participating in the
-     * transaction. All updates to the keys involved should always go through {@code partition-hyper-locked}
+     * transaction. All updates to the keys involved should always go through {@code partition-group-locked}
      * transaction, otherwise, cache may be left in inconsistent state.
      * <p>
      * If cache sanity check is enabled ({@link GridConfiguration#isCacheSanityCheckEnabled()}),

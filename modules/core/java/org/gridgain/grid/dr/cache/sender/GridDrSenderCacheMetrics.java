@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -8,6 +8,8 @@
  */
 
 package org.gridgain.grid.dr.cache.sender;
+
+import org.jetbrains.annotations.*;
 
 /**
  * Metrics for data center replication sender cache.
@@ -64,7 +66,14 @@ public interface GridDrSenderCacheMetrics {
     /**
      * Gets current amount of cache entries in backup queue.
      *
-     * @return current amount of cache entries in backup queue.
+     * @return Current amount of cache entries in backup queue.
      */
     public long backupQueueSize();
+
+    /**
+     * Gets reason of data center replication pause or {@code null} if replication is not paused.
+     *
+     * @return Gets reason of data center replication pause or {@code null} if replication is not paused.
+     */
+    @Nullable public GridDrPauseReason pauseReason();
 }

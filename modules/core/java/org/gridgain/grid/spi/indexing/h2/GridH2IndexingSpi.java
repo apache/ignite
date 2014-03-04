@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
 *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -594,7 +594,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             log.debug("Context has been initialized.");
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected GridSpiContext getSpiContext() {
         if (ctxInitLatch.getCount() != 0) {
             try {

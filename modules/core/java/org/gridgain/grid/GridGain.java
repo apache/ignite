@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -85,15 +85,12 @@ import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
  * and allows listening for grid events.
  * <h1 class="header">Grid Loaders</h1>
  * Although user can apply grid factory directly to start and stop grid, grid is
- * often started and stopped by grid loaders. Some examples
- * of Grid loaders are:
+ * often started and stopped by grid loaders. Grid loaders can be found in
+ * {@link org.gridgain.grid.startup} package, for example:
  * <ul>
- * <li>{@link GridCommandLineStartup}</li>
- * <li>{@link org.gridgain.grid.startup.jboss.GridJbossStartup}</li>
- * <li>{@link org.gridgain.grid.startup.weblogic.GridWeblogicStartup} and {@link org.gridgain.grid.startup.weblogic.GridWeblogicShutdown}</li>
- * <li>{@link org.gridgain.grid.startup.websphere.GridWebsphereStartup}</li>
- * <li>{@link org.gridgain.grid.startup.glassfish.GridGlassfishStartup}</li>
- * <li>{@link GridServletStartup}</li>
+ * <li>{@link org.gridgain.grid.startup.cmdline.GridCommandLineStartup}</li>
+ * <li>{@link org.gridgain.grid.startup.tomcat.GridTomcatStartup}</li>
+ * <li>{@link org.gridgain.grid.startup.servlet.GridServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use

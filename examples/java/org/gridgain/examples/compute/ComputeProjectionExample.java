@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -72,7 +72,7 @@ public class ComputeProjectionExample {
      * @throws GridException If failed.
      */
     private static void sayHello(final GridProjection g) throws GridException {
-        // Print out hello message on all projection nodes.
+        // Print out hello message on all remote projection nodes.
         g.forRemotes().compute().broadcast(
             new GridRunnable() {
                 @Override public void run() {

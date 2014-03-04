@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,18 +18,14 @@ import java.io.*;
 import java.util.concurrent.*;
 
 /**
- * Grid-aware adapter for {@link Callable} implementations. It makes the callable object
- * {@link Serializable} and also adds peer deployment hooks to make sure that
- * deployment information is not lost.
- * <p>
- * Note that this class implements {@link GridComputeJob} interface for convenience and can be
- * used in {@link GridComputeTask} implementations directly, if needed, as an alternative to
- * {@link GridComputeJobAdapter}.
- *
- * @author @java.author
- * @version @java.version
+ * Grid-aware adapter for {@link Callable} implementations. It adds {@link Serializable} interface
+ * to {@link Callable} object. Use this class for executing distributed computations on the grid,
+ * like in {@link GridCompute#call(Callable)} method.
  */
 public abstract class GridCallable<V> extends GridLambdaAdapter implements Callable<V>, GridComputeJob {
+    /** {@inheritDoc} */
+    @Override public abstract V call() throws Exception;
+
     /**
      * Does nothing by default. Child classes may override this method
      * to provide implementation-specific cancellation logic.

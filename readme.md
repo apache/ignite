@@ -17,10 +17,17 @@ Natively distributed, ACID transactional, MVCC-based, SQL+NoSQL, in-memory objec
 Massively distributed processing meets Complex Event Processing (CEP) and Streaming Processing with advanced workflow support, windowing, user-defined indexes and more.
 
 ### In-Memory Accelerator for Hadoop
-Combination of In-Memory File System 100% compatible with Hadoop HDFS and In-Memory MapReduce delivering 100x performance increase. Minimal integration, plug-n-play acceleration with any Hadoop distro. 
+Combination of In-Memory File System 100% compatible with Hadoop HDFS and In-Memory MapReduce delivering 100x performance increase. Minimal integration, plug-n-play acceleration with any Hadoop distro.
 
 ## Maven Install
-The easiest way to get started with GridGain in your project is to use Maven 2 dependency management:
+The easiest way to get started with GridGain in your project is to use Maven dependency management:
+
+```xml
+<repository>
+    <id>GridGain External Repository</id>
+    <url>http://www.gridgainsystems.com:8085/nexus/content/repositories/external</url>
+</repository>
+```
 
 ```xml
 <dependency>
@@ -30,7 +37,8 @@ The easiest way to get started with GridGain in your project is to use Maven 2 d
 </dependency>
 ```
 
-You can copy and paste this snippet into your Maven 2 POM file. Make sure to replace version with the one you need.
+You can copy and paste this snippet into your Maven POM file. Make sure to replace version with the one you need.
+
 
 ## Binary Downloads & Documentation
 

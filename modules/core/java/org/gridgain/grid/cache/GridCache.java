@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -20,17 +20,8 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Main <b>Data Grid APIs.</b>
- * <h1 class="header">Getting Cache Instance</h1>
- * Although this interface defines the main entity in in-memory data grid, the {@link Grid} interface historically
- * provides the standard way to get an instance of the configured cache (NOTE: for historical reasons the {@link Grid}
- * interfaces provides global entry point to GridGain functionality as well as container for specific compute
- * grid functionality). You can can get a named cache or a list of all via
- * the following methods:
- * <ul>
- *     <li>{@link Grid#cache(String)}</li>
- *     <li>{@link Grid#caches()}</li>
- * </ul>
+ * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Grid#cache(String)}
+ * method.
  * <h1 class="header">Functionality</h1>
  * This API extends {@link GridCacheProjection} API which contains vast majority of cache functionality
  * and documentation. In addition to {@link GridCacheProjection} functionality this API provides:
@@ -55,12 +46,8 @@ import java.util.*;
  * </li>
  * <li>Method {@link #metrics()} to provide metrics for the whole cache.</li>
  * <li>Method {@link #configuration()} to provide cache configuration bean.</li>
- * <li>Method {@link #randomEntry()} to retrieve random entry from cache.</li>
- * <li>Method {@link #overflowSize()} to get the size of the swap storage.</li>
  * </ul>
  *
- * @author @java.author
- * @version @java.version
  * @param <K> Cache key type.
  * @param <V> Cache value type.
  */

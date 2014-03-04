@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -290,6 +290,18 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
 
         if (delegate != null)
             delegate.onSenderCacheBackupQueueSizeChanged(newSize);
+    }
+
+    /**
+     * Callback for replication pause state changed.
+     *
+     * @param pauseReason Pause reason or {@code null} if replication is not paused.
+     */
+    public void onPauseStateChanged(@Nullable GridDrPauseReason pauseReason) {
+        drSndMetrics.onPauseStateChanged(pauseReason);
+
+        if (delegate != null)
+            delegate.onPauseStateChanged(pauseReason);
     }
 
     /**
