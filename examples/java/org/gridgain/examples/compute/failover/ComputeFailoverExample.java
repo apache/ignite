@@ -59,7 +59,7 @@ public class ComputeFailoverExample {
     }
 
     @GridComputeTaskSessionFullSupport
-    private static final class CheckPointJob extends GridClosure<String, Integer> {
+    private static final class CheckPointJob implements GridClosure<String, Integer> {
         /** Injected distributed task session. */
         @GridTaskSessionResource
         private GridComputeTaskSession jobSes;

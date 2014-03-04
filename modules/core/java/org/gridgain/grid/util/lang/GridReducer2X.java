@@ -21,7 +21,7 @@ import org.gridgain.grid.util.typedef.*;
  * @version @java.version
  * @see RX2
  */
-public abstract class GridReducer2X<E1, E2, R> extends GridReducer2<E1, E2, R> {
+public abstract class GridReducer2X<E1, E2, R> implements GridReducer2<E1, E2, R> {
     /** {@inheritDoc} */
     @Override public R apply() {
         try {

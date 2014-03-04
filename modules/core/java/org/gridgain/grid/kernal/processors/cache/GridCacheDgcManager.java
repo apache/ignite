@@ -737,7 +737,7 @@ public class GridCacheDgcManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      *
      */
-    private static class DgcCallable extends GridCallable<Object> {
+    private static class DgcCallable implements GridCallable<Object> {
         /** */
         private final String cacheName;
 

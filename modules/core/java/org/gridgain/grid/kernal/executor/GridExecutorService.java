@@ -24,10 +24,10 @@ import java.util.concurrent.*;
 /**
  * An {@link ExecutorService} that executes each submitted task in grid
  * through {@link Grid} instance, normally configured using
- * {@link GridProjection#executor(GridPredicate[])} ()} method.
+ * {@link GridCompute#executorService()} method.
  * {@code GridExecutorService} delegates commands execution to already
  * started {@link Grid} instance. Every submitted task will be serialized and
- * transfered to any node in grid.
+ * transferred to any node in grid.
  * <p>
  * All submitted tasks must implement {@link Serializable} interface.
  * <p>
@@ -441,11 +441,11 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         checkShutdown();
 
-        Collection<GridComputeTaskFuture<T>> taskFuts = new ArrayList<>();
+        Collection<GridFuture<T>> taskFuts = new ArrayList<>();
 
         for (Callable<T> cmd : tasks) {
             // Execute task with predefined timeout.
-            GridComputeTaskFuture<T> fut = prj.compute().execute(new GridExecutorCallableTask<T>(cmd.getClass()), cmd);
+            GridFuture<T> fut = prj.compute().call(cmd);
 
             taskFuts.add(fut);
         }
@@ -457,7 +457,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         int errCnt = 0;
 
-        for (GridComputeTaskFuture<T> fut : taskFuts) {
+        for (GridFuture<T> fut : taskFuts) {
             now = U.currentTimeMillis();
 
             boolean cancel = false;
@@ -551,9 +551,9 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
      *
      * @author @java.author
      */
-    private class TaskTerminateListener<T> extends GridInClosure<GridComputeTaskFuture<T>> {
+    private class TaskTerminateListener<T> implements GridInClosure<GridFuture<T>> {
         /** {@inheritDoc} */
-        @Override public void apply(GridComputeTaskFuture<T> taskFut) {
+        @Override public void apply(GridFuture<T> taskFut) {
             synchronized (mux) {
                 futs.remove(taskFut);
             }
@@ -561,7 +561,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     }
 
     /**
-     * Wrapper for {@link GridComputeTaskFuture}.
+     * Wrapper for {@link GridFuture}.
      * Used for compatibility {@link Future} interface.
      *
      * @author @java.author

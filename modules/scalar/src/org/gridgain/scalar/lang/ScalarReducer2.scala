@@ -23,8 +23,6 @@ import org.gridgain.grid.util.lang.GridReducer2
 class ScalarReducer2[E1, E2, R](private val r: (Seq[E1], Seq[E2]) => R) extends GridReducer2[E1, E2, R] {
     assert(r != null)
 
-    peerDeployLike(r)
-
     private val buf1 = new mutable.ListBuffer[E1]
     private val buf2 = new mutable.ListBuffer[E2]
 

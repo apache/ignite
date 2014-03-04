@@ -21,7 +21,7 @@ import org.gridgain.grid.util.lang.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridFutureChainListener<T, R> extends GridInClosure<GridFuture<T>> {
+public class GridFutureChainListener<T, R> implements GridInClosure<GridFuture<T>> {
     /** Context. */
     private final GridKernalContext ctx;
 

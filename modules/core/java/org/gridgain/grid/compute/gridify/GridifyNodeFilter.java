@@ -19,6 +19,6 @@ import org.gridgain.grid.lang.*;
  * @author @java.author
  * @version @java.version
  */
-public abstract class GridifyNodeFilter extends GridBiPredicate<GridNode, GridComputeTaskSession> {
+public interface GridifyNodeFilter extends GridBiPredicate<GridNode, GridComputeTaskSession> {
     // No-op.
 }

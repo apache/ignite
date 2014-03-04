@@ -25,7 +25,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridNodePredicate extends GridPredicate<GridNode> implements Iterable<UUID> {
+public class GridNodePredicate implements GridPredicate<GridNode>, Iterable<UUID> {
     /** */
     @GridToStringInclude
     private final Set<UUID> ids;

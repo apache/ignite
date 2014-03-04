@@ -13,6 +13,7 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -23,7 +24,7 @@ import java.util.*;
  * @param <E> Type of collected values.
  * @param <R> Type of reduced value.
  */
-public abstract class GridReducer<E, R> extends GridLambdaAdapter {
+public interface GridReducer<E, R> extends Serializable {
     /**
      * Collects given value. If this method returns {@code false} then {@link #reduce()}
      * will be called right away. Otherwise caller will continue collecting until all
@@ -33,12 +34,12 @@ public abstract class GridReducer<E, R> extends GridLambdaAdapter {
      * @return {@code true} to continue collecting, {@code false} to instruct caller to stop
      *      collecting and call {@link #reduce()} method.
      */
-    public abstract boolean collect(@Nullable E e);
+    public boolean collect(@Nullable E e);
 
     /**
      * Reduces collected values into one.
      *
      * @return Reduced value.
      */
-    public abstract R reduce();
+    public R reduce();
 }

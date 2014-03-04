@@ -24,4 +24,4 @@ import org.gridgain.grid.util.lang.*;
  * @see GridFunc
  * @see GridBiInClosure
  */
-public abstract class CI2<E1, E2> extends GridBiInClosure<E1, E2> { /* No-op. */ }
+public interface CI2<E1, E2> extends GridBiInClosure<E1, E2> { /* No-op. */ }

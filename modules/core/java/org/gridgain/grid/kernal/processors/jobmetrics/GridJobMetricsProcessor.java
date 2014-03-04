@@ -273,7 +273,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class SnapshotReducer extends GridReducer<GridJobMetricsSnapshot, GridJobMetrics> {
+    private static class SnapshotReducer implements GridReducer<GridJobMetricsSnapshot, GridJobMetrics> {
         /** */
         private final GridJobMetrics m = new GridJobMetrics();
 

@@ -22,7 +22,7 @@ import java.util.concurrent.locks.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridNioMessageTracker extends GridRunnable {
+public class GridNioMessageTracker implements GridRunnable {
     /** */
     private final GridNioSession ses;
 

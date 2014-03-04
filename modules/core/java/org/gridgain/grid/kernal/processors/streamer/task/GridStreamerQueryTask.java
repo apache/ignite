@@ -38,7 +38,7 @@ public class GridStreamerQueryTask<R> extends GridComputeTaskAdapter<Void, Colle
      * @param streamer Streamer.
      */
     public GridStreamerQueryTask(GridClosure<GridStreamerContext, R> qryClos, @Nullable String streamer) {
-        super(qryClos);
+        super(U.peerDeployAware(qryClos));
 
         this.qryClos = qryClos;
         this.streamer = streamer;
@@ -115,12 +115,12 @@ public class GridStreamerQueryTask<R> extends GridComputeTaskAdapter<Void, Colle
 
         /** {@inheritDoc} */
         @Override public Class<?> deployClass() {
-            return qryClos.deployClass();
+            return null;//FIXME qryClos.deployClass();
         }
 
         /** {@inheritDoc} */
         @Override public ClassLoader classLoader() {
-            return qryClos.classLoader();
+            return null;//FIXME  qryClos.classLoader();
         }
 
         /** {@inheritDoc} */

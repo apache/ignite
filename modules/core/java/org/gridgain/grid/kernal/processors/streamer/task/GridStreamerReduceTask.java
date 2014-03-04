@@ -44,7 +44,7 @@ public class GridStreamerReduceTask<R1, R2> extends GridComputeTaskAdapter<Void,
      */
     public GridStreamerReduceTask(GridClosure<GridStreamerContext, R1> clos, GridReducer<R1, R2> rdc,
         @Nullable String streamer) {
-        super(clos);
+        super(U.peerDeployAware(clos));
 
         this.clos = clos;
         this.rdc = rdc;
@@ -119,12 +119,12 @@ public class GridStreamerReduceTask<R1, R2> extends GridComputeTaskAdapter<Void,
 
         /** {@inheritDoc} */
         @Override public Class<?> deployClass() {
-            return qryClos.deployClass();
+            return null; //FIXME qryClos.deployClass();
         }
 
         /** {@inheritDoc} */
         @Override public ClassLoader classLoader() {
-            return qryClos.classLoader();
+            return null; //FIXME  qryClos.classLoader();
         }
 
         /** {@inheritDoc} */

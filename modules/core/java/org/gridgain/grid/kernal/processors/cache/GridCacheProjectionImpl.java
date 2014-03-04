@@ -1222,7 +1222,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
      * @param <K> Key type.
      * @param <V> Value type.
      */
-    private static class FullFilter<K, V> extends GridPredicate<GridCacheEntry<K, V>> {
+    private static class FullFilter<K, V> implements GridPredicate<GridCacheEntry<K, V>> {
         /** Key filter. */
         private GridBiPredicate<K, V> kvFilter;
 
@@ -1253,7 +1253,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
      * @param <K> Key type.
      * @param <V> Value type.
      */
-    private static class KeyValueFilter<K, V> extends GridBiPredicate<K, V> {
+    private static class KeyValueFilter<K, V> implements GridBiPredicate<K, V> {
         /** Key filter. */
         private GridBiPredicate<K, V> kvFilter;
 

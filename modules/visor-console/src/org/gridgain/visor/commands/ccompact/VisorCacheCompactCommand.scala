@@ -26,6 +26,7 @@ import org.jetbrains.annotations.Nullable
 import org.gridgain.grid.util.typedef._
 import util.scala.impl
 import org.gridgain.grid.kernal.processors.task.GridInternal
+import org.gridgain.grid.lang.GridCallable
 
 /**
  * ==Overview==
@@ -149,11 +150,11 @@ class VisorCacheCompactCommand {
  * @version @java.version
  */
 @GridInternal
-class CompactClosure(val cacheName: String) extends CO[(UUID, Int, Int, Int)] {
+class CompactClosure(val cacheName: String) extends GridCallable[(UUID, Int, Int, Int)] {
     @GridInstanceResource
     private val g: Grid = null
 
-    @impl def apply(): (UUID, Int, Int, Int) = {
+    @impl def call(): (UUID, Int, Int, Int) = {
         val c = g.asInstanceOf[GridEx].cachex[AnyRef, AnyRef](cacheName)
 
         val oldSize = c.size

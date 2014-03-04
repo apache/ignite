@@ -22,7 +22,7 @@ import org.gridgain.grid.util.typedef.*;
  * @version @java.version
  * @see PX1
  */
-public abstract class GridPredicateX<E1> extends GridPredicate<E1> {
+public abstract class GridPredicateX<E1> implements GridPredicate<E1> {
     /** {@inheritDoc} */
     @Override public boolean apply(E1 e) {
         try {

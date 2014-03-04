@@ -28,7 +28,7 @@ import org.gridgain.grid.events.GridEventType._
 import org.gridgain.grid.events.GridDiscoveryEvent
 import org.gridgain.grid.kernal.GridEx
 import org.gridgain.grid.kernal.GridNodeAttributes._
-import org.gridgain.grid.lang.{GridPredicate, GridBiTuple}
+import org.gridgain.grid.lang.{GridCallable, GridPredicate, GridBiTuple}
 import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi
 import org.gridgain.grid.thread._
 import org.gridgain.grid.util.typedef._
@@ -2585,11 +2585,11 @@ object Collector {
  * @version @java.version
  */
 @GridInternal
-class CollectorClosure(types: Seq[Int], key: String) extends CO[Seq[GridEvent]] {
+class CollectorClosure(types: Seq[Int], key: String) extends GridCallable[Seq[GridEvent]] {
     @GridInstanceResource
     private val g: Grid = null
 
-    @impl def apply(): Seq[GridEvent] = {
+    @impl def call(): Seq[GridEvent] = {
         Collector.collect(types, g, key)
     }
 }

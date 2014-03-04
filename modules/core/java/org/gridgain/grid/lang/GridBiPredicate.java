@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.lang;
 
-import org.gridgain.grid.util.lang.*;
+import java.io.*;
 
 /**
  * Defines a predicate which accepts two parameters and returns {@code true} or {@code false}.
@@ -17,7 +17,7 @@ import org.gridgain.grid.util.lang.*;
  * @param <E1> Type of the first parameter.
  * @param <E2> Type of the second parameter.
  */
-public abstract class GridBiPredicate<E1, E2> extends GridLambdaAdapter {
+public interface GridBiPredicate<E1, E2> extends Serializable {
     /**
      * Predicate body.
      *
@@ -25,5 +25,5 @@ public abstract class GridBiPredicate<E1, E2> extends GridLambdaAdapter {
      * @param e2 Second parameter.
      * @return Return value.
      */
-    public abstract boolean apply(E1 e1, E2 e2);
+    public boolean apply(E1 e1, E2 e2);
 }

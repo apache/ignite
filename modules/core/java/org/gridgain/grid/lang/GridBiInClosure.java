@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.lang;
 
-import org.gridgain.grid.util.lang.*;
+import java.io.*;
 
 /**
  * Closure with two in-parameters and void return type.
@@ -17,12 +17,12 @@ import org.gridgain.grid.util.lang.*;
  * @param <E1> Type of the first parameter.
  * @param <E2> Type of the second parameter.
  */
-public abstract class GridBiInClosure<E1, E2> extends GridLambdaAdapter {
+public interface GridBiInClosure<E1, E2> extends Serializable {
     /**
      * Closure body.
      *
      * @param e1 First parameter.
      * @param e2 Second parameter.
      */
-    public abstract void apply(E1 e1, E2 e2);
+    public void apply(E1 e1, E2 e2);
 }

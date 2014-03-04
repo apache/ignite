@@ -22,7 +22,7 @@ import org.gridgain.grid.util.typedef.*;
  * @version @java.version
  * @see CIX2
  */
-public abstract class GridInClosure2X<E1, E2> extends GridBiInClosure<E1, E2> {
+public abstract class GridInClosure2X<E1, E2> implements GridBiInClosure<E1, E2> {
     /** {@inheritDoc} */
     @Override public void apply(E1 e1, E2 e2) {
         try {

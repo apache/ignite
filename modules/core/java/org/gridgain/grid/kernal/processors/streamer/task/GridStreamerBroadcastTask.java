@@ -38,7 +38,7 @@ public class GridStreamerBroadcastTask extends GridComputeTaskAdapter<Void, Void
      * @param streamer Streamer.
      */
     public GridStreamerBroadcastTask(GridInClosure<GridStreamerContext> clo, @Nullable String streamer) {
-        super(clo);
+        super(U.peerDeployAware(clo));
 
         this.clo = clo;
         this.streamer = streamer;

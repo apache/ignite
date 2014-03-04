@@ -2455,8 +2455,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     /**
      * Updates file length information in parent listing.
      */
-    private static final class UpdateListingEntry extends GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>
-        implements Externalizable {
+    private static final class UpdateListingEntry implements GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
+        Externalizable {
         /** File name. */
         private String fileName;
 
@@ -2540,8 +2540,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * Update directory listing closure.
      */
     @GridInternal
-    private static final class UpdateListing extends GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>
-        implements Externalizable {
+    private static final class UpdateListing implements GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
+        Externalizable {
         /** File name to add into parent listing. */
         private String fileName;
 
@@ -2632,8 +2632,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * Update path closure.
      */
     @GridInternal
-    private static final class UpdatePath extends GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>
-        implements Externalizable {
+    private static final class UpdatePath implements GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
+        Externalizable {
         /** New path. */
         private GridGgfsPath path;
 

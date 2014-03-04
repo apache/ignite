@@ -21,7 +21,7 @@ import org.gridgain.grid.util.typedef.*;
  * @author @java.author
  * @version @java.version
  */
-public abstract class GridOutClosureX<T> extends GridOutClosure<T> {
+public abstract class GridOutClosureX<T> implements GridOutClosure<T> {
     /** {@inheritDoc} */
     @Override public T apply() {
         try {

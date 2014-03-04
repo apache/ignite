@@ -24,8 +24,6 @@ class ScalarReducer3[E1, E2, E3, R](private val r: (Seq[E1], Seq[E2], Seq[E3]) =
     extends GridReducer3[E1, E2, E3, R] {
     assert(r != null)
 
-    peerDeployLike(r)
-
     private val buf1 = new mutable.ListBuffer[E1]
     private val buf2 = new mutable.ListBuffer[E2]
     private val buf3 = new mutable.ListBuffer[E3]

@@ -39,69 +39,6 @@ public abstract class GridAbsPredicate extends GridLambdaAdapter {
     public abstract boolean apply();
 
     /**
-     * Gets predicate that ignores its argument and returns the same value as this
-     * predicate.
-     *
-     * @param <E> Type of ignore argument.
-     * @return Predicate that ignores its argument and returns the same value as this
-     *      predicate.
-     */
-    public <E> GridPredicate<E> uncurry() {
-        GridPredicate<E> p = new P1<E>() {
-            @Override public boolean apply(E e) {
-                return GridAbsPredicate.this.apply();
-            }
-        };
-
-        p.peerDeployLike(this);
-
-        return p;
-    }
-
-    /**
-     * Gets predicate that ignores its arguments and returns the same value as this
-     * predicate.
-     *
-     * @param <E1> Type of 1st ignore argument.
-     * @param <E2> Type of 2nd ignore argument.
-     * @return Predicate that ignores its arguments and returns the same value as this
-     *      predicate.
-     */
-    public <E1, E2> GridBiPredicate<E1, E2> uncurry2() {
-        GridBiPredicate<E1, E2> p = new P2<E1, E2>() {
-            @Override public boolean apply(E1 e1, E2 e2) {
-                return GridAbsPredicate.this.apply();
-            }
-        };
-
-        p.peerDeployLike(this);
-
-        return p;
-    }
-
-    /**
-     * Gets predicate that ignores its arguments and returns the same value as this
-     * predicate.
-     *
-     * @param <E1> Type of 1st ignore argument.
-     * @param <E2> Type of 2nd ignore argument.
-     * @param <E3> Type of 3d ignore argument.
-     * @return Predicate that ignores its arguments and returns the same value as this
-     *      predicate.
-     */
-    public <E1, E2, E3> GridPredicate3<E1, E2, E3> uncurry3() {
-        GridPredicate3<E1, E2, E3> p = new P3<E1, E2, E3>() {
-            @Override public boolean apply(E1 e1, E2 e2, E3 e3) {
-                return GridAbsPredicate.this.apply();
-            }
-        };
-
-        p.peerDeployLike(this);
-
-        return p;
-    }
-
-    /**
      * Gets closure that applies given closure over the result of {@code this} predicate.
      *
      * @param c Closure.
