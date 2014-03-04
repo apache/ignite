@@ -3739,7 +3739,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         try {
             GridBiTuple<String, String> t = stash.get();
 
-            return GridFactoryEx.gridx(t.get1()).cachex(t.get2());
+            return GridGainEx.gridx(t.get1()).cachex(t.get2());
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

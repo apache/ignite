@@ -1719,7 +1719,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         try {
             GridBiTuple<String, String> t = stash.get();
 
-            GridKernal grid = GridFactoryEx.gridx(t.get1());
+            GridKernal grid = GridGainEx.gridx(t.get1());
 
             if (grid == null)
                 throw new IllegalStateException("Failed to find grid for name: " + t.get1());
