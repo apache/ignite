@@ -15,6 +15,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.gridify.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;

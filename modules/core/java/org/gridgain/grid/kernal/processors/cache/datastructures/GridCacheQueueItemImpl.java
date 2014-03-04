@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
