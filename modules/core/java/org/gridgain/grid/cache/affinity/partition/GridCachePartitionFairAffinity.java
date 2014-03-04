@@ -11,9 +11,11 @@ package org.gridgain.grid.cache.affinity.partition;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -23,8 +25,16 @@ import java.util.*;
  * @version @java.version
  */
 public class GridCachePartitionFairAffinity {
+    /** Ascending comparator. */
+    private static final Comparator<PartitionSet> ASC_CMP = new PartitionSetComparator(false);
+
+    /** Descending comparator. */
+    private static final Comparator<PartitionSet> DESC_CMP = new PartitionSetComparator(true);
+
+    /** */
     private int parts;
 
+    /** */
     private int keyBackups;
 
     public GridCachePartitionFairAffinity(int parts, int keyBackups) {
@@ -37,7 +47,9 @@ public class GridCachePartitionFairAffinity {
         assert prevAssignment != null || topSnapshot.size() == 1;
         assert prevAssignment == null || prevAssignment.length == parts;
 
-        List<GridNode>[] assignments = createEmpty();
+        int affNodes = Math.min(keyBackups + 1, topSnapshot.size());
+
+        List<GridNode>[] assignments = createEmpty(affNodes);
 
         if (prevAssignment == null) {
             GridNode n = F.first(topSnapshot);
@@ -55,17 +67,15 @@ public class GridCachePartitionFairAffinity {
 
             assert evtNode != null : "Added node is not present in topology";
 
-            int actualBackups = Math.min(keyBackups, topSnapshot.size());
-
             int shiftIdx = 0;
 
-            for (int tier = 0; tier < actualBackups; tier++) {
+            for (int tier = 0; tier < affNodes; tier++) {
                 // Must be linked hash map since order is important.
                 LinkedHashMap<UUID, PartitionSet> perNodeAssignments = assignments(tier, prevAssignment, shiftIdx,
-                    topSnapshot.size(), actualBackups);
+                    topSnapshot.size(), affNodes);
 
                 if (perNodeAssignments == null) {
-                    assert tier == actualBackups - 1;
+                    assert tier == affNodes - 1;
 
                     // Special case, node adds tier to the assignment table.
                     // There is only one node that can be assigned as a backup.
@@ -128,21 +138,96 @@ public class GridCachePartitionFairAffinity {
                     else
                         shiftIdx--;
 
-                    U.debug("Distribution check failed, will retry with shift: " + shiftIdx);
+//                    U.debug("Distribution check failed, will retry with shift: " + shiftIdx);
 
-                    assignments = createEmpty();
+                    // Re-create empty assignments for next iteration.
+                    assignments = createEmpty(affNodes);
 
                     tier = -1;
                 }
             }
-
         }
         else {
-            // TODO
-            return null;
+            // Create assignments based on previous ones.
+            GridBiTuple<List<GridNode>[], List<PartitionSet>> tup = createCopy(prevAssignment, evt.eventNodeId());
+
+            assignments = tup.get1();
+
+            if (topSnapshot.size() <= keyBackups + 1)
+                return assignments;
+
+            // Now we need to balance the last tier based on current assignments.
+            Map<UUID, GridNode> nodesMap = groupByNodeId(topSnapshot);
+
+            List<PartitionSet> sets = tup.get2();
+
+            for (int part = 0; part < parts; part++) {
+                if (assignments[part].size() < affNodes) {
+                    assert assignments[part].size() == keyBackups : "Assignment size: " + assignments[part].size() +
+                        ", keyBackups: " + keyBackups; // Can miss only one node.
+
+                    boolean assigned = false;
+
+                    for (PartitionSet set : sets) {
+                        GridNode node = nodesMap.get(set.nodeId());
+
+                        assert node != null;
+
+                        if (!assignments[part].contains(node)) {
+                            assignments[part].add(node);
+
+                            set.add(part);
+
+                            assigned = true;
+
+                            break;
+                        }
+                    }
+
+                    assert assigned : "Failed to find node to assign additional backup.";
+
+                    // Re-sort collection in ascending order.
+                    if (sets.size() > 1 && Math.abs(sets.get(0).size() - sets.get(1).size()) > 2)
+                        Collections.sort(sets, ASC_CMP);
+                }
+            }
         }
 
         return assignments;
+    }
+
+    @SuppressWarnings("unchecked")
+    private GridBiTuple<List<GridNode>[], List<PartitionSet>> createCopy(List<GridNode>[] prevAssignment,
+        UUID leftNodeId) {
+        List<GridNode>[] cp = new List[prevAssignment.length];
+
+        Map<UUID, PartitionSet> parts = new HashMap<>();
+
+        for (int part = 0; part < prevAssignment.length; part++) {
+            List<GridNode> partNodes = prevAssignment[part];
+
+            List<GridNode> partNodesCp = new ArrayList<>(partNodes.size());
+
+            for (GridNode affNode : partNodes) {
+                if (!leftNodeId.equals(affNode.id())) {
+                    partNodesCp.add(affNode);
+
+                    PartitionSet partSet = parts.get(affNode.id());
+
+                    if (partSet == null) {
+                        partSet = new PartitionSet(affNode.id());
+
+                        parts.put(affNode.id(), partSet);
+                    }
+
+                    partSet.add(part);
+                }
+            }
+
+            cp[part] = partNodesCp;
+        }
+
+        return F.t(cp, sortedSets(parts, ASC_CMP));
     }
 
     private boolean checkDistribution(List<GridNode>[] assignments, int tier) {
@@ -278,11 +363,7 @@ public class GridCachePartitionFairAffinity {
         }
 
         // Sort partition sets by size in descending order.
-        List<PartitionSet> cp = new ArrayList<>(tmp.size());
-
-        cp.addAll(tmp.values());
-
-        Collections.sort(cp);
+        List<PartitionSet> cp = sortedSets(tmp, DESC_CMP);
 
 //        U.debug("Sorted partition sets: " + cp);
 
@@ -317,18 +398,50 @@ public class GridCachePartitionFairAffinity {
         return res;
     }
 
+    private List<PartitionSet> sortedSets(Map<UUID, PartitionSet> tmp, Comparator<PartitionSet> cmp) {
+        List<PartitionSet> cp = new ArrayList<>(tmp.size());
+
+        cp.addAll(tmp.values());
+
+        Collections.sort(cp, cmp);
+
+        return cp;
+    }
+
     @SuppressWarnings("unchecked")
-    private List<GridNode>[] createEmpty() {
+    private List<GridNode>[] createEmpty(int affNodes) {
         List<GridNode>[] assigns = new List[parts];
 
         for (int i = 0; i < assigns.length; i++)
-            assigns[i] = new ArrayList<>(); // TODO size.
+            assigns[i] = new ArrayList<>(affNodes);
 
         return assigns;
     }
 
+    /**
+     *
+     */
+    private static class PartitionSetComparator implements Comparator<PartitionSet>, Serializable {
+        /** */
+        private boolean descending;
+
+        /**
+         * @param descending {@code True} if comparator should be descending.
+         */
+        private PartitionSetComparator(boolean descending) {
+            this.descending = descending;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compare(PartitionSet o1, PartitionSet o2) {
+            int res = o1.parts.size() < o2.parts.size() ? -1 : o1.parts.size() > o2.parts.size() ? 1 : 0;
+
+            return descending ? -res : res;
+        }
+    }
+
     @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
-    private static class PartitionSet implements Comparable<PartitionSet> {
+    private static class PartitionSet {
         /** */
         private UUID nodeId;
 
@@ -381,11 +494,6 @@ public class GridCachePartitionFairAffinity {
 
         public Collection<Integer> partitions() {
             return parts;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int compareTo(PartitionSet o) {
-            return o.parts.size() < parts.size() ? -1 : o.parts.size() > parts.size() ? 1 : 0;
         }
 
         /** {@inheritDoc} */
