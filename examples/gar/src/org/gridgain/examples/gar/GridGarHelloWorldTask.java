@@ -24,9 +24,6 @@ import java.util.*;
  * string into individual words and creates grid jobs for each word.
  * Task class in that example should be placed in GAR file.
  * See {@code GridGarHelloWorldExample} for more details.
- *
- * @author link
- * @version 1.5
  */
 @GridComputeTaskName("GridGarHelloWorldTask")
 public class GridGarHelloWorldTask  extends GridComputeTaskSplitAdapter<String, Object> {

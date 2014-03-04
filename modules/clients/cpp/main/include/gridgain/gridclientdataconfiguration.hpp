@@ -18,9 +18,6 @@
 
 /**
  * Client cache configuration class.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientDataConfiguration {
 public:

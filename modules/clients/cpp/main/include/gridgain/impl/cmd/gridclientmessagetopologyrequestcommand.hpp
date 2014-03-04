@@ -16,9 +16,6 @@
 
 /**
  * Topology request command.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridTopologyRequestCommand : public GridClientMessageCommand {
 public:

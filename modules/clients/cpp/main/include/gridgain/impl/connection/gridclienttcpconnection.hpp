@@ -132,9 +132,6 @@ private:
 
 /**
  * TCP connection class used for sending data and storing session token associated with it in case of secure connection.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientTcpConnection : public GridClientConnection {
 public:

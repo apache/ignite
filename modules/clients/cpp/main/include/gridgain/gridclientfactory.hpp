@@ -17,9 +17,6 @@ class GridUuid;
 
 /**
  * Factory implementation.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientFactory {
 public:

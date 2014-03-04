@@ -18,9 +18,6 @@ typedef std::vector<GridClientNode> TNodesList;
 
 /**
  * Topology result message.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientMessageTopologyResult : public GridClientMessageResult {
 private:

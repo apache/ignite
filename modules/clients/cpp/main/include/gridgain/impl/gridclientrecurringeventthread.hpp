@@ -17,9 +17,6 @@
 
 /**
  * Service class for threads with periodic actions.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientRecurringEventThread {
 public:
