@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
  * Random router. Routes event to random node.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerRandomEventRouter extends GridStreamerEventRouterAdapter {
     /** Optional predicates to exclude nodes from routing. */

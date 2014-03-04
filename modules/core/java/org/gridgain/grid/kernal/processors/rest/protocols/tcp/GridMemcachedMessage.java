@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Memcached protocol request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridMemcachedMessage implements GridClientMessage {
     /** Random UUID used for memcached clients authentication. */

@@ -17,9 +17,6 @@ import java.util.*;
 /**
  * Descriptor of remote grid node. Use {@link GridClientCompute#nodes()} to
  * get a full view over remote grid nodes.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridClientNode {
     /**

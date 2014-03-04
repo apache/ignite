@@ -13,9 +13,6 @@ import java.lang.annotation.*;
 
 /**
  * Annotates transient fields.
- *
- * @author @java.author
- * @version @java.version
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

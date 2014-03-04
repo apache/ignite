@@ -21,9 +21,6 @@ import java.net.*;
 
 /**
  * Server loopback IPC endpoint.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIpcServerTcpEndpoint implements GridIpcServerEndpoint {
     /** Default endpoint port number. */

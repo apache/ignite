@@ -41,9 +41,6 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 /**
  * Thread pool for requesting partitions from other nodes
  * and populating local cache.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings( {"NonConstantFieldWithUpperCaseName"})
 public class GridDhtPartitionDemandPool<K, V> {

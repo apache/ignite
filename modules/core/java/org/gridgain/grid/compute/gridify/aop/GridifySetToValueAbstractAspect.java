@@ -23,9 +23,6 @@ import static org.gridgain.grid.util.gridify.GridifyUtils.*;
  * Convenience adapter with common methods for different aspect implementations
  * (AspectJ, JBoss AOP, Spring AOP).
  * This adapter used in grid task for {@link GridifySetToValue} annotation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridifySetToValueAbstractAspect {
     /**

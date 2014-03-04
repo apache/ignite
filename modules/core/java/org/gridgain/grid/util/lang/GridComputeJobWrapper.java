@@ -19,9 +19,6 @@ import java.util.concurrent.*;
 /**
  * Convenient wrapper for grid job. It allows to create a job clone in cases when the same
  * job needs to be cloned to multiple grid nodes during mapping phase of task execution.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridComputeJobWrapper extends GridMetadataAwareAdapter implements GridComputeJob, Callable<Object>,
     GridPeerDeployAware {

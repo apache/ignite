@@ -32,9 +32,6 @@ import static org.gridgain.grid.kernal.GridTopic.*;
 /**
  * Communication helper class. Provides request and response sending methods.
  * It uses communication manager as a way of sending and receiving requests.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridToStringExclude
 class GridDeploymentCommunication {

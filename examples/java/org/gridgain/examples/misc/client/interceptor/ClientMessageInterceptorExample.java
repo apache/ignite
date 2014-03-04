@@ -26,9 +26,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * <p>
  * Before running this example you must start at least one remote node using
  * {@link ClientMessageInterceptorExampleNodeStartup}.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
 public class ClientMessageInterceptorExample {

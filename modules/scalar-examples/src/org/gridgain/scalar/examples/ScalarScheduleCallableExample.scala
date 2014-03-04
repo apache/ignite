@@ -23,9 +23,6 @@ import java.util.Date
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
- *
- * @author @java.author
- * @version @java.version
  */
 object ScalarScheduleCallableExample extends App {
     scalar("examples/config/example-compute.xml") {

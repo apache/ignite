@@ -15,9 +15,6 @@ import java.util.*;
 
 /**
  * Supported commands.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridRestCommand {
     /*

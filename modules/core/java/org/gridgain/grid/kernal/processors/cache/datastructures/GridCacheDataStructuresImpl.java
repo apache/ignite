@@ -16,9 +16,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Data structures implementation object.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDataStructuresImpl<K, V> implements GridCacheDataStructures {
     /** Data structures manager. */

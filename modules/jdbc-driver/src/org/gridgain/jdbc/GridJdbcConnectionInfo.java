@@ -11,9 +11,6 @@ package org.gridgain.jdbc;
 
 /**
  * Connection properties.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridJdbcConnectionInfo {
     /** URL. */

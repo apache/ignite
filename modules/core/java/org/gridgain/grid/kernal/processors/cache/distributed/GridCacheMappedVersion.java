@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Interface mostly for Near to DHT version mapping.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheMappedVersion {
     /**

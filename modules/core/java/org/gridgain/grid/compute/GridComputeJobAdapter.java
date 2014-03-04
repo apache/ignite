@@ -29,9 +29,6 @@ import java.util.concurrent.*;
  *      and {@link #argument(int)} methods.
  * </li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridComputeJobAdapter extends GridLambdaAdapter implements GridComputeJob, Callable<Object> {
     /** Job argument. */

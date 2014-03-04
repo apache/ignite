@@ -20,9 +20,6 @@ import java.util.concurrent.*;
 
 /**
  * Future that is completed at creation time.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridFinishedFuture<T> implements GridFuture<T>, Externalizable {
     /** Synchronous notification flag. */

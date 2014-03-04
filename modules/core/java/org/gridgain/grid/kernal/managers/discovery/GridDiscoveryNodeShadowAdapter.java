@@ -20,9 +20,6 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
  * Convenient adapter for {@link GridNodeShadow}.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridDiscoveryNodeShadowAdapter extends GridMetadataAwareAdapter implements GridNodeShadow {
     /** Node ID. */

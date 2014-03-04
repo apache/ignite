@@ -32,9 +32,6 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
 /**
  * Transaction created by system implicitly on remote nodes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, V>
     implements GridCacheTxRemoteEx<K, V> {

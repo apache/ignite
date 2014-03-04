@@ -22,9 +22,6 @@ import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsIpcCommand.*;
 
 /**
  * Implementation of GGFS client message marshaller.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsMarshaller {
     /** Packet header size. */

@@ -13,9 +13,6 @@ import org.gridgain.grid.*;
 
 /**
  * Starts up an empty node with example compute configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class ComputeNodeStartup {
     /**

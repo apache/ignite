@@ -19,9 +19,6 @@ import java.io.*;
 
 /**
  * Entry information that gets passed over wire.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheEntryInfo<K, V> implements Externalizable {
     /** Cache key. */

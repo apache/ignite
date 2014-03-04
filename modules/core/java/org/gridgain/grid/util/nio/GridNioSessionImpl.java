@@ -19,8 +19,7 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridNioSessionImpl implements GridNioSession {
     /** Metadata "map". */

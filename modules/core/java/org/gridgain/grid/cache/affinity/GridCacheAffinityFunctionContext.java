@@ -18,9 +18,6 @@ import java.util.*;
 /**
  * Affinity function context. This context is passed to {@link GridCacheAffinityFunction} for
  * partition reassignment on every topology change event.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheAffinityFunctionContext {
     /**

@@ -20,9 +20,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * Convenient way to represent topology for {@link GridTcpDiscoverySpi}
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryNodesRing {
     /** Local node. */

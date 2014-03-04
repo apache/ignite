@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * This exception indicates that grid task was cancelled.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridComputeTaskCancelledException extends GridException {
     /**

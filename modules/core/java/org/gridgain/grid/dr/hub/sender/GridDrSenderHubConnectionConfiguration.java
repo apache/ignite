@@ -17,9 +17,6 @@ import static org.gridgain.grid.dr.hub.receiver.GridDrReceiverHubLoadBalancingMo
 
 /**
  * Data center replication sender hub connection configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrSenderHubConnectionConfiguration {
     /** Default receiver hub load balancing policy. */

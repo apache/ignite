@@ -21,9 +21,6 @@ import java.nio.*;
  * <p>
  * First {@code U.GG_HEADER.length} bytes are consumed by this filter
  * and all other bytes are forwarded through chain without any modification.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridConnectionBytesVerifyFilter extends GridNioFilterAdapter {
     /** */

@@ -21,9 +21,6 @@ import java.util.*;
  * Convenient node predicate as a separate class. It allows to avoid "dragging" enclosing
  * class's state when predicates are created as anonymous classes in stateful enclosing context.
  * This class is also optimized for evaluation of large number of nodes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNodePredicate extends GridPredicate<GridNode> implements Iterable<UUID> {
     /** */

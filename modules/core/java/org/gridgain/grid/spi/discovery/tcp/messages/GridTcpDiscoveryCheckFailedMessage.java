@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Message telling joining node that it failed coordinator's validation check.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryCheckFailedMessage extends GridTcpDiscoveryAbstractMessage {
     /** Coordinator version. */

@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Time server message.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClockMessage {
     /** Packet size. */

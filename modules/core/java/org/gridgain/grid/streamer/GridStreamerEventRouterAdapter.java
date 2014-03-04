@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Streamer adapter for event routers.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridStreamerEventRouterAdapter implements GridStreamerEventRouter {
     /** {@inheritDoc} */

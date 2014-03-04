@@ -13,9 +13,6 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 
 /**
  * State of local node {@link GridTcpDiscoverySpi}.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridTcpDiscoverySpiState {
     /** */

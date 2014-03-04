@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Kernal life cycle states.
- *
- * @author @java.author
- * @version @java.version
  */
 enum GridKernalState {
     /** Kernal is started. */

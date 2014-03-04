@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
 /**
  * Exception indicating that index update failed during cache entry update. If this exception is thrown, entry
  * is kept in it's original state (no updates performed).
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheIndexUpdateException extends GridException {
     /**

@@ -20,9 +20,6 @@ import java.io.*;
 
 /**
  * Adapter for cache metrics.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable {
     /** Create time. */

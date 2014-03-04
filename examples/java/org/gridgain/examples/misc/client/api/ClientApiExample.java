@@ -30,9 +30,6 @@ import java.util.*;
  * <p>
  * Before running this example you must start at least one remote node using
  * {@link ClientExampleNodeStartup}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class ClientApiExample {
     /** Grid node address to connect to. */

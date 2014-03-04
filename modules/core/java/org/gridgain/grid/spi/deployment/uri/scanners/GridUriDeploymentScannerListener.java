@@ -20,9 +20,6 @@ import java.util.*;
  * <li>{@code onDeletedFiles} - happens when file(s) has been removed.</li>
  * <li>{@code onFirstScanFinished} - happens when scanner completed its first scan.</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridUriDeploymentScannerListener extends EventListener {
     /**

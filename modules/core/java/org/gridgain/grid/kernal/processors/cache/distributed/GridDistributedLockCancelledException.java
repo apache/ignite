@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 
 /**
  * Exception thrown whenever an attempt is made to acquire a cancelled lock.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDistributedLockCancelledException extends Exception {
     /**

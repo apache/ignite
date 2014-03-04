@@ -30,9 +30,6 @@ import java.util.concurrent.*;
  * Note also that this connectivity is not necessary to successfully start the system as it will
  * gracefully ignore any errors occurred during notification and verification process.
  * See {@link #HTTP_URL} for specific access URL used.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridUpdateNotifier {
     /*
@@ -202,8 +199,6 @@ class GridUpdateNotifier {
 
     /**
      * Asynchronous checker of the latest version available.
-     *
-     * @author @java.author
      */
     private class UpdateChecker extends GridWorker {
         /** Logger. */

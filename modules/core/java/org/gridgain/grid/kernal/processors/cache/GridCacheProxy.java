@@ -13,9 +13,6 @@ import org.gridgain.grid.cache.*;
 
 /**
  * Cache proxy marker interface.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheProxy<K, V> extends GridCache<K, V>, GridCacheProjectionEx<K, V> {
     // No-op.

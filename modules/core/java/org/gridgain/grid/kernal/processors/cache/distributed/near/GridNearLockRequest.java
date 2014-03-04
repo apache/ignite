@@ -26,9 +26,6 @@ import java.util.*;
 
 /**
  * Near cache lock request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     /** Topology version. */

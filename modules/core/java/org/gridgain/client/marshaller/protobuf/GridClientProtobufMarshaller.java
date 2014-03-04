@@ -24,9 +24,6 @@ import static org.gridgain.grid.kernal.processors.rest.client.message.protobuf.C
 
 /**
  * Client messages marshaller based on protocol buffers compiled code.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"unchecked", "UnnecessaryFullyQualifiedName"})
 public class GridClientProtobufMarshaller implements GridClientMarshaller {

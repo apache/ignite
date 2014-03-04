@@ -36,9 +36,6 @@ import java.lang.annotation.*;
  * <p>
  * For more information about H2 custom functions please refer to
  * <a href="http://www.h2database.com/html/features.html#user_defined_functions">H2 documentation</a>.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

@@ -13,9 +13,6 @@ import java.util.*;
 
 /**
  * Result of hash id resolvers validation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridHashIdResolversValidationResult {
     /** Offending cache name. */

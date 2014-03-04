@@ -18,9 +18,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * DHT atomic cache entry..
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtAtomicCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
     /**

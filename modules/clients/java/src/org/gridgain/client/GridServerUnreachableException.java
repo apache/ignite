@@ -10,9 +10,6 @@ package org.gridgain.client;
 
 /**
  * Thrown when none of the servers from configuration can be connected within a timeout.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridServerUnreachableException extends GridClientException {
     /**

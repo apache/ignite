@@ -18,9 +18,6 @@ import java.util.concurrent.atomic.*;
  * <p>
  * In addition to operations provided in java atomic data structures, this class
  * also adds greater than and less than atomic set operations.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridAtomicInteger extends AtomicInteger {
     /**

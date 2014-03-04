@@ -17,9 +17,6 @@ import java.io.*;
 
 /**
  * Immutable query metrics key used to group metrics.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridCacheQueryMetricsKey implements Externalizable {
     /** */

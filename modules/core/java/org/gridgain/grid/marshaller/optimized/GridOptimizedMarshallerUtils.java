@@ -25,9 +25,6 @@ import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallable.*
 
 /**
  * Miscellaneous utility methods to facilitate {@link GridOptimizedMarshaller}.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridOptimizedMarshallerUtils {
     /** Unsafe. */

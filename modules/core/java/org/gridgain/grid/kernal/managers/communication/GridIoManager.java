@@ -43,9 +43,6 @@ import static org.gridgain.grid.util.nio.GridNioBackPressureControl.*;
 
 /**
  * Grid communication manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Serializable>> {
     /** Max closed topics to store. */

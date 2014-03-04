@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Converter from one byte format to another.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridRememberMeConverter {
     /**

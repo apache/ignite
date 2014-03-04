@@ -17,9 +17,6 @@ import org.gridgain.grid.util.ipc.shmem.*;
 
 /**
  * Ggfs endpoint factory for inter-process communication.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIpcEndpointFactory {
     /**

@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * DHT cache unlock request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, V> {
     /** Near keys. */

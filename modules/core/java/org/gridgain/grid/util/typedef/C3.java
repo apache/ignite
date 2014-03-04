@@ -22,7 +22,6 @@ import org.gridgain.grid.util.lang.*;
  * @param <R> Type of the closure's return value.
  * @see GridFunc
  * @see GridClosure3
- * @author @java.author
- * @version @java.version
+ *
  */
 public abstract class C3<E1, E2, E3, R> extends GridClosure3<E1, E2, E3, R> { /* No-op. */ }

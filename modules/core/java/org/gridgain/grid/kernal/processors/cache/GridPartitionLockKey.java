@@ -17,9 +17,6 @@ import java.io.*;
 /**
  * Internal key that is guaranteed to be mapped on particular partition.
  * This class is used for group-locking transactions that lock the whole partition.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridPartitionLockKey implements GridCacheInternal, Externalizable {
     /** Partition ID. */

@@ -24,9 +24,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Streamer context implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerContextImpl implements GridStreamerContext {
     /** Kernal context. */

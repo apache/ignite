@@ -50,9 +50,6 @@ import org.jetbrains.annotations.*;
  * via {@link Grid#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridSpiConsistencyChecked(optional = true)
 public interface GridAuthenticationSpi extends GridSpi, GridSpiJsonConfigurable {

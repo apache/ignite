@@ -58,9 +58,6 @@ import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
  * }
  * </pre>
  * For more information refer to {@link GridComputeTask} documentation.
- *
- * @author @java.author
- * @version @java.version
  * @param <T> Type of the task argument.
  * @param <R> Type of the task result returning from {@link GridComputeTask#reduce(List)} method.
  */

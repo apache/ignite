@@ -22,9 +22,6 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
  * GGFS context holding all required components for GGFS instance.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsContext {
     /** Kernal context. */

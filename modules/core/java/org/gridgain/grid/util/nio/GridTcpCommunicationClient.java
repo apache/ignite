@@ -23,9 +23,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * Grid client for NIO server.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpCommunicationClient extends GridAbstractCommunicationClient {
     /** Socket. */

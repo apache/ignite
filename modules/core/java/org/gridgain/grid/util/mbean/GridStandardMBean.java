@@ -17,9 +17,6 @@ import java.util.*;
 /**
  * Extension of standard Java MBean. Overrides some hooks to return
  * annotation based descriptions.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStandardMBean extends StandardMBean {
     /**

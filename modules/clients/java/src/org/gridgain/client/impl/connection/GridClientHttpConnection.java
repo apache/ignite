@@ -26,9 +26,6 @@ import java.util.logging.*;
 
 /**
  * Java client implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientHttpConnection extends GridClientConnection {
     /** Logger. */

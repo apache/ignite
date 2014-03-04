@@ -117,9 +117,6 @@ private case class Result(
  *     start "-f=start-nodes.ini -r"
  *         Starts topology defined in 'start-nodes.ini' file. Existing nodes are stopped.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorStartCommand {
     /** Default maximum number of parallel connections. */
@@ -335,9 +332,6 @@ class VisorStartCommand {
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorStartCommand {
     addHelp(

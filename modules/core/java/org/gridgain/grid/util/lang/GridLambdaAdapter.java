@@ -14,9 +14,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Adapter for common interfaces in closures, reducers and predicates.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridLambdaAdapter implements GridLambda {
     /** Peer deploy aware class. */

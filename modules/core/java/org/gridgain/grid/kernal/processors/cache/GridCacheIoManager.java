@@ -30,9 +30,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheMessage.*;
 
 /**
  * Cache communication manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Message ID generator. */

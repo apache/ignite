@@ -51,9 +51,6 @@ import java.util.*;
  *     this.mapper = mapper;
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridComputeTaskContinuousMapper {
     /**

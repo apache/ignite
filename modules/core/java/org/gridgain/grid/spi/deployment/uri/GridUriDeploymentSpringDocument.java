@@ -19,9 +19,6 @@ import java.util.*;
 /**
  * Helper class which helps to read deployer and tasks information from
  * {@code Spring} configuration file.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridUriDeploymentSpringDocument {
     /** Initialized springs beans factory. */

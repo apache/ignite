@@ -18,9 +18,6 @@ import java.util.concurrent.*;
 
 /**
  * Wrapper to represent cache as {@link ConcurrentMap}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheMapAdapter<K, V> implements ConcurrentMap<K, V> {
     /** */

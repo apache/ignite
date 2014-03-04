@@ -16,8 +16,7 @@ import sun.misc.*;
 import java.util.concurrent.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 @GridToStringExclude
 public class GridSpinReadWriteLock {

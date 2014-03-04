@@ -43,8 +43,7 @@ import org.jetbrains.annotations.*;
  * public class Entity { ... }
  * </pre>
 
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridHibernateReadOnlyAccessStrategy extends GridHibernateAccessStrategyAdapter {
     /**

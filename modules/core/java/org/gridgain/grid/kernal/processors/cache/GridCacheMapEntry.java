@@ -43,9 +43,6 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
 /**
  * Adapter for cache entry.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({
     "NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope", "FieldAccessedSynchronizedAndUnsynchronized"})

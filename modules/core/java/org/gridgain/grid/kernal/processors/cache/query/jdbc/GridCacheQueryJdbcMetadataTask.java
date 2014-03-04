@@ -28,9 +28,6 @@ import java.util.*;
 
 /**
  * Task that gets metadata for JDBC adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<String, byte[]> {
     /** Marshaller. */
@@ -58,9 +55,6 @@ public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<Strin
 
     /**
      * Job for JDBC adapter.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private static class JdbcDriverMetadataJob extends GridComputeJobAdapter implements GridOptimizedMarshallable {
         /** */

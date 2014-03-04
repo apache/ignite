@@ -13,9 +13,6 @@ import org.gridgain.grid.*;
 
 /**
  * Interface for cache managers.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheManager<K, V> {
     /**

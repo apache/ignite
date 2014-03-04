@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Extended grid factory.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("ExtendsUtilityClass")
 public class GridFactoryEx extends GridGain {

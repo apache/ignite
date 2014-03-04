@@ -136,9 +136,6 @@ import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
  * </pre>
  * You can also instantiate grid directly from Spring without using {@code GridFactory}.
  * For more information refer to {@link GridSpringBean} documentation.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
 public class GridGain {
@@ -1026,9 +1023,6 @@ public class GridGain {
 
     /**
      * Start context encapsulates all starting parameters.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private static final class GridStartContext {
         /** User-defined configuration. */
@@ -1116,9 +1110,6 @@ public class GridGain {
 
     /**
      * Grid data container.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     protected static final class GridNamedInstance {
         /** Map of registered MBeans. */
@@ -2186,9 +2177,6 @@ public class GridGain {
         /**
          * Grid factory MBean data container.
          * Contains necessary data for selected MBeanServer.
-         *
-         * @author @java.author
-         * @version @java.version
          */
         private static class GridMBeanServerData {
             /** Set of grid names for selected MBeanServer. */

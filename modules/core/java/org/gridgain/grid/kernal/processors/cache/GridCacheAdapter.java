@@ -58,9 +58,6 @@ import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.
 
 /**
  * Adapter for different cache implementations.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter implements GridCache<K, V>,
     GridCacheProjectionEx<K, V>, Externalizable {

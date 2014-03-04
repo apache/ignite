@@ -34,9 +34,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Manages cache indexing.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     /** */

@@ -136,9 +136,6 @@ import java.lang.annotation.*;
  * recommended over it. Spring AOP can be used in situation when code augmentation is
  * undesired and cannot be used. It also allows for very fine grained control of what gets
  * weaved.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"JavaDoc"})
 @Documented

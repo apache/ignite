@@ -17,9 +17,6 @@ import java.util.*;
 /**
  * Cache query future returned by query execution.
  * Refer to {@link GridCacheQuery} documentation for more information.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheQueryFuture<T> extends GridFuture<Collection<T>> {
     /**

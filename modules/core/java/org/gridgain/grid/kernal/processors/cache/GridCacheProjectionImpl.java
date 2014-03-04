@@ -32,9 +32,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
  * Cache projection.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter implements GridCacheProjectionEx<K, V>,
     Externalizable {

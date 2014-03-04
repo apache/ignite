@@ -16,9 +16,6 @@ import java.io.*;
 
 /**
  * Sequence value.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridCacheAtomicSequenceValue implements GridCacheInternal, Externalizable, Cloneable {
     /** Counter. */

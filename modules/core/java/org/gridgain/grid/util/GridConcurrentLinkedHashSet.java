@@ -19,9 +19,6 @@ import static org.gridgain.grid.util.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * Concurrent linked set implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridConcurrentLinkedHashSet<E> extends GridSetWrapper<E> {
     /**

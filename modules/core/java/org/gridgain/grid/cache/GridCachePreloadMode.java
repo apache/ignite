@@ -25,9 +25,6 @@ import org.jetbrains.annotations.*;
  * Note that preload mode only makes sense for {@link GridCacheMode#REPLICATED} and {@link GridCacheMode#PARTITIONED}
  * caches. Caches with {@link GridCacheMode#LOCAL} mode are local by definition and therefore cannot preload
  * any values from neighboring nodes.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridCachePreloadMode {
     /**

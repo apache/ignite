@@ -15,9 +15,6 @@ import java.lang.annotation.*;
  * Annotation for SPI main interface implementation. Every SPI implementation should be
  * annotated with this annotations. Kernel will not load SPI implementation without this
  * annotation.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"JavaDoc"})
 @Documented

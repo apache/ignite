@@ -29,9 +29,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Remote job context implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJobContextImpl extends GridMetadataAwareAdapter implements GridComputeJobContext, Externalizable {
     /** */

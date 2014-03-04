@@ -16,9 +16,6 @@ import java.io.IOException;
 
 /**
  * A memory-resident {@link IndexOutput} implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLuceneOutputStream extends IndexOutput {
     /** Off-heap page size. */

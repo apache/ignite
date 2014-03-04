@@ -16,9 +16,6 @@ import org.gridgain.grid.cache.query.*;
  * Represents a product available for purchase. In our {@code snowflake} schema a {@code product}
  * is a {@code 'dimension'} and will be cached in {@link GridCacheMode#REPLICATED}
  * cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public class DimProduct {
     /** Primary key. */

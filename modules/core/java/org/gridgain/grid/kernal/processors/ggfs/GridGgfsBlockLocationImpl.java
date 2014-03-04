@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * File block location in the grid.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsBlockLocationImpl implements GridGgfsBlockLocation, Externalizable {
     /** */

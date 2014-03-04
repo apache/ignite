@@ -52,8 +52,5 @@ package org.gridgain.visor.commands
  *     visor cclear "cache"
  *         Clears cache with name 'cache'.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 package object cclear

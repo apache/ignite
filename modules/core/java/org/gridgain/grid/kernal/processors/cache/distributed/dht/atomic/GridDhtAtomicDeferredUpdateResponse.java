@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
  * Deferred dht atomic update response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
     /** Message index. */

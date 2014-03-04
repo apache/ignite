@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Client exception is a common super class of all client exceptions.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientException extends Exception {
     /**

@@ -22,9 +22,6 @@ import java.util.concurrent.*;
  * Pool of runnable workers. This class automatically takes care of
  * error handling that has to do with executing a runnable task and
  * ensures that all tasks are finished when stop occurs.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridWorkerPool {
     /** */

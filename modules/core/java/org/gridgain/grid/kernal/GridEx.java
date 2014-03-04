@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * Extended Grid interface which provides some additional methods required for kernal and Visor.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridEx extends Grid {
     /**

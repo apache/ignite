@@ -14,9 +14,6 @@ import org.gridgain.grid.*;
 /**
  * Plain closure that does not accept any arguments, returns nothing and do not implement
  * peer deploy aware.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridPlainAbsClosure {
     /**
