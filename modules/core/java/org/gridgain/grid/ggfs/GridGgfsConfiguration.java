@@ -192,6 +192,7 @@ public class GridGgfsConfiguration {
         dualModePutExec = cfg.getDualModePutExecutorService();
         dualModePutExecShutdown = cfg.getDualModePutExecutorServiceShutdown();
         fragmentizerConcurrentFiles = cfg.getFragmentizerConcurrentFiles();
+        fragmentizerLocWritesRatio = cfg.getFragmentizerLocalWritesRatio();
         fragmentizerEnabled = cfg.isFragmentizerEnabled();
         fragmentizerThrottlingBlockLen = cfg.getFragmentizerThrottlingBlockLength();
         fragmentizerThrottlingDelay = cfg.getFragmentizerThrottlingDelay();
