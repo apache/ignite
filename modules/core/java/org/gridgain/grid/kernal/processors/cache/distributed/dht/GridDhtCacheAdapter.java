@@ -1583,20 +1583,28 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param req Request.
      */
     protected final void processDhtLockRequest(final UUID nodeId, final GridDhtLockRequest<K, V> req) {
-        if (beforePessimisticLock == null)
+        GridFuture<Object> keyFut = F.isEmpty(req.keys()) ? null :
+            ctx.dht().dhtPreloader().request(req.keys(), req.topologyVersion());
+
+        if (beforePessimisticLock != null) {
+            keyFut = keyFut == null ?
+                beforePessimisticLock.apply(req.keys(), req.inTx()) :
+                new GridEmbeddedFuture<>(true, keyFut,
+                    new C2<Object, Exception, GridFuture<Object>>() {
+                        @Override public GridFuture<Object> apply(Object o, Exception e) {
+                            return beforePessimisticLock.apply(req.keys(), req.inTx());
+                        }
+                    }, ctx.kernalContext());
+        }
+
+        if (keyFut == null || keyFut.isDone())
             processDhtLockRequest0(nodeId, req);
         else {
-            GridFuture<Object> fut = beforePessimisticLock.apply(req.keys(), req.inTx());
-
-            if (fut != null) {
-                fut.listenAsync(new CI1<GridFuture<Object>>() {
-                    @Override public void apply(GridFuture<Object> t) {
-                        processDhtLockRequest0(nodeId, req);
-                    }
-                });
-            }
-            else
-                processDhtLockRequest0(nodeId, req);
+            keyFut.listenAsync(new CI1<GridFuture<Object>>() {
+                @Override public void apply(GridFuture<Object> t) {
+                    processDhtLockRequest0(nodeId, req);
+                }
+            });
         }
     }
 
@@ -2509,7 +2517,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         Collection<GridNode> nearNodes = null;
 
         if (!F.isEmpty(readers)) {
-            nearNodes = ctx.discovery().nodes(readers, F0.<UUID>not(F.idForNodeId(nodeId)));
+            nearNodes = ctx.discovery().nodes(readers, F0.not(F.idForNodeId(nodeId)));
 
             if (log.isDebugEnabled())
                 log.debug("Mapping entry to near nodes [nodes=" + U.toShortString(nearNodes) + ", entry=" + cached +

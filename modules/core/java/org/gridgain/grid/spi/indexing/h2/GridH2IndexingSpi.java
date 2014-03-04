@@ -591,7 +591,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             log.debug("Context has been initialized.");
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected GridSpiContext getSpiContext() {
         if (ctxInitLatch.getCount() != 0) {
             try {

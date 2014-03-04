@@ -447,7 +447,7 @@ public class GridConfiguration {
     private int restTcpSndQueueLimit;
 
     /** REST TCP selector count. */
-    private int restTcpSelectorCnt = Runtime.getRuntime().availableProcessors();
+    private int restTcpSelectorCnt = Math.min(4, Runtime.getRuntime().availableProcessors());
 
     /** Idle timeout. */
     private long restIdleTimeout = DFLT_REST_IDLE_TIMEOUT;
