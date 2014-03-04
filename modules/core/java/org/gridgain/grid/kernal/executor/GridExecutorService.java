@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.executor;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -23,7 +23,7 @@ import java.util.concurrent.*;
 /**
  * An {@link ExecutorService} that executes each submitted task in grid
  * through {@link Grid} instance, normally configured using
- * {@link GridProjection#executor(org.gridgain.grid.lang.GridPredicate[])} ()} method.
+ * {@link GridProjection#executor(GridPredicate[])} ()} method.
  * {@code GridExecutorService} delegates commands execution to already
  * started {@link Grid} instance. Every submitted task will be serialized and
  * transfered to any node in grid.
@@ -577,7 +577,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     }
 
     /**
-     * Wrapper for {@link org.gridgain.grid.compute.GridComputeTaskFuture}.
+     * Wrapper for {@link GridComputeTaskFuture}.
      * Used for compatibility {@link Future} interface.
      *
      * @author @java.author

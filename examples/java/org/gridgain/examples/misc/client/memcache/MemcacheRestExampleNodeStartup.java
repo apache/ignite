@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -88,12 +88,7 @@ public class MemcacheRestExampleNodeStartup {
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
 
-        Collection<String> addrs = new ArrayList<>();
-
-        for (int i = 0; i < 10; i++)
-            addrs.add("127.0.0.1:" + (47500 + i));
-
-        ipFinder.setAddresses(addrs);
+        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
 
         discoSpi.setIpFinder(ipFinder);
 

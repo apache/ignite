@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -158,7 +158,7 @@ void GridClientTcpCommandExecutor::stop() {
  * @param respMsg Protobuf ObjectWrapper response to fill.
  */
 void GridClientTcpCommandExecutor::sendPacket(std::shared_ptr<GridClientTcpConnection> conn,
-	const GridClientTcpPacket& tcpPacket, GridClientTcpPacket& tcpResponse) {
+    const GridClientTcpPacket& tcpPacket, GridClientTcpPacket& tcpResponse) {
     try {
         conn->send(tcpPacket, tcpResponse);
     }

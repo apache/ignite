@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,8 +10,10 @@
 package org.gridgain.grid.resources;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.spi.*;
 import org.springframework.context.*;
+
 import java.lang.annotation.*;
 
 /**
@@ -23,8 +25,8 @@ import java.lang.annotation.*;
  * <p>
  * Spring Application Context can be injected into instances of following classes:
  * <ul>
- * <li>{@link org.gridgain.grid.compute.GridComputeTask}</li>
- * <li>{@link org.gridgain.grid.compute.GridComputeJob}</li>
+ * <li>{@link GridComputeTask}</li>
+ * <li>{@link GridComputeJob}</li>
  * <li>{@link GridSpi}</li>
  * <li>{@link GridLifecycleBean}</li>
  * <li>{@link GridUserResource @GridUserResource}</li>

@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -58,7 +58,10 @@ protected:
 inline GridBoolHasheableObject::GridBoolHasheableObject(bool pVal) {
     hashCode_ = pVal ? 1231 : 1237;
 
-    GridClientByteUtils::valueToBytes(hashCode_, bytes, GridClientByteUtils::LITTLE_ENDIAN_ORDER);
+    bytes.resize(sizeof(hashCode_));
+    memset(&bytes[0], 0, sizeof(hashCode_));
+
+    GridClientByteUtils::valueToBytes(hashCode_, &bytes[0], sizeof(hashCode_), GridClientByteUtils::LITTLE_ENDIAN_ORDER);
 }
 
 #endif

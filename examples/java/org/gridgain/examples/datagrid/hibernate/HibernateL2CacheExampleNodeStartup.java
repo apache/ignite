@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -31,7 +31,7 @@ public class HibernateL2CacheExampleNodeStartup {
      * Start up an empty node with specified cache configuration.
      *
      * @param args Command line arguments, none required.
-     * @throws org.gridgain.grid.GridException If example execution failed.
+     * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
         GridGain.start(configuration());
@@ -54,12 +54,7 @@ public class HibernateL2CacheExampleNodeStartup {
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
 
-        Collection<String> addrs = new ArrayList<>();
-
-        for (int i = 0; i < 10; i++)
-            addrs.add("127.0.0.1:" + (47500 + i));
-
-        ipFinder.setAddresses(addrs);
+        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
 
         discoSpi.setIpFinder(ipFinder);
 

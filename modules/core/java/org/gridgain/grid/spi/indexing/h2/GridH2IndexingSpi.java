@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
 *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -594,7 +594,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             log.debug("Context has been initialized.");
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected GridSpiContext getSpiContext() {
         if (ctxInitLatch.getCount() != 0) {
             try {
@@ -752,7 +752,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
             ResultSet rs = res.get2();
 
-            List<GridCacheSqlFieldMetadata> meta;
+            List<GridIndexingFieldMetadata> meta;
 
             try {
                 ResultSetMetaData rsMeta = rs.getMetaData();
@@ -2276,7 +2276,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     /**
      * Field descriptor.
      */
-    private static class SqlFieldMetadata implements GridCacheSqlFieldMetadata {
+    private static class SqlFieldMetadata implements GridIndexingFieldMetadata {
         /** Schema name. */
         private String schemaName;
 

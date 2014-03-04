@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -38,14 +38,14 @@ import java.io.*;
  * </pre>
  * <p>
  * For more information and examples of cache affinity refer to
- * {@link GridCacheAffinityMapper} and {@link GridCacheAffinityMapped @GridCacheAffinityMapped}
+ * {@link GridCacheAffinityKeyMapper} and {@link GridCacheAffinityKeyMapped @GridCacheAffinityKeyMapped}
  * documentation.
  *
  * @author @java.author
  * @version @java.version
- * @see GridCacheAffinityMapped
- * @see GridCacheAffinityMapper
- * @see GridCacheAffinity
+ * @see GridCacheAffinityKeyMapped
+ * @see GridCacheAffinityKeyMapper
+ * @see GridCacheAffinityFunction
  */
 public class GridCacheAffinityKey<K> implements Externalizable {
     /** Key. */
@@ -110,12 +110,12 @@ public class GridCacheAffinityKey<K> implements Externalizable {
      * Gets affinity key to use for affinity mapping. If affinity key is not provided,
      * then {@code key} value will be returned.
      * <p>
-     * This method is annotated with {@link GridCacheAffinityMapped} and will be picked up
-     * by {@link GridCacheDefaultAffinityMapper} automatically.
+     * This method is annotated with {@link GridCacheAffinityKeyMapped} and will be picked up
+     * by {@link GridCacheDefaultAffinityKeyMapper} automatically.
      *
      * @return Affinity key to use for affinity mapping.
      */
-    @GridCacheAffinityMapped
+    @GridCacheAffinityKeyMapped
     @SuppressWarnings({"unchecked"})
     public <T> T affinityKey() {
         A.notNull(key, "key");

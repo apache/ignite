@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -45,7 +45,7 @@ public interface GridCacheMetrics extends Serializable {
     public long readTime();
 
     /**
-     * Gets last time transaction was commited.
+     * Gets last time transaction was committed.
      *
      * @return Last commit time.
      */

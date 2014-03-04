@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,16 +11,20 @@ package org.gridgain.grid;
 
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.*;
+import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.messaging.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
 import org.gridgain.grid.spi.discovery.*;
+import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.streamer.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -30,20 +34,32 @@ import java.util.concurrent.*;
 import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
- * Main entry-point <b>GridGain & HPC APIs.</b>
- * <p>
+ * Main entry-point for all GridGain APIs.
  * You can obtain an instance of {@code Grid} through {@link GridGain#grid()},
  * or for named grids you can use {@link GridGain#grid(String)}. Note that you
- * can have multiple instances of {@code Grid} running in the same VM. For
- * information on how to start or stop Grid please refer to {@link GridGain} class.
+ * can have multiple instances of {@code Grid} running in the same VM by giving
+ * each instance a different name.
  * <p>
- * {@code Grid} interface allows you to perform all the main operations on the grid. Note also that
- * this interface extends {@link GridProjection} and defined as a global monad over all
- * nodes in the grid, i.e. set of all nodes across all clouds and the nodes outside of any clouds.
+ * Note that {@code Grid} extends {@link GridProjection} which means that it provides grid projection
+ * functionality over the whole grid (instead os a subgroup of nodes).
  * <p>
- * Following short video provides quick overview of basic Compute Grid capabilities:
- * <p>
- * <a href="http://vimeo.com/39157798" target="vimeo"><img src="http://www.gridgain.com/images/mr_in_5min_video_thumb.png"></a>
+ * In addition to {@link GridProjection} functionality, from here you can get the following:
+ * <ul>
+ * <li>{@link GridCache} - functionality for in-memory distributed cache.</li>
+ * <li>{@link GridDataLoader} - functionality for loading data large amounts of data into cache.</li>
+ * <li>{@link GridDr} - functionality for WAN-based Data Center Replication of in-memory cache.</li>
+ * <li>{@link GridGgfs} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
+ * <li>{@link GridStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
+ * <li>{@link GridScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
+ * <li>{@link GridProduct} - functionality for licence management and update and product related information.</li>
+ * <li>{@link GridCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link GridProjection}).</li>
+ * <li>{@link GridMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link GridProjection}).</li>
+ * <li>{@link GridEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link GridProjection}).</li>
+ * </ul>
+ * {@code Grid} also provides a handle on {@link #nodeLocalMap()} which provides map-like functionality
+ * linked to current grid node. Node-local map is useful for saving shared state between job executions
+ * on the grid. Additionally you can also ping, start, and restart remote nodes, map keys to caching nodes,
+ * and get other useful information about topology.
  *
  * @author @java.author
  * @version @java.version
@@ -108,21 +124,23 @@ public interface Grid extends GridProjection, AutoCloseable {
     public GridProjection forLocal();
 
     /**
+     * Gets information about product as well as license management capabilities.
      *
-     * @return TODO
+     * @return Instance of product.
      */
     public GridProduct product();
 
     /**
+     * Gets an instance of cron-based scheduler.
      *
-     * @return TODO
+     * @return Instance of scheduler.
      */
     public GridScheduler scheduler();
 
     /**
-     * Gets an instance of DR.
+     * Gets an instance of Data Center Replication.
      *
-     * @return DR.
+     * @return Instance of Data Center Replication.
      */
     @GridOnlyAvailableIn(DATA_GRID)
     @Nullable public GridDr dr();
@@ -197,7 +215,9 @@ public interface Grid extends GridProjection, AutoCloseable {
     @Nullable public GridStreamer streamer(@Nullable String name);
 
     /**
-     * @return TODO
+     * Gets all instances of streamers.
+     *
+     * @return Collection of all streamer instances.
      */
     @GridOnlyAvailableIn(STREAMING)
     public Collection<GridStreamer> streamers();
@@ -398,7 +418,7 @@ public interface Grid extends GridProjection, AutoCloseable {
 
     /**
      * Gets current topology version. In case of TCP discovery
-     * (see {@link org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi}) topology versions
+     * (see {@link GridTcpDiscoverySpi}) topology versions
      * are sequential - they start from {@code '1'} and get incremented every time whenever a
      * node joins or leaves. For other discovery SPIs topology versions may not be (and likely are
      * not) sequential.
@@ -415,7 +435,7 @@ public interface Grid extends GridProjection, AutoCloseable {
      * @return Collection of grid nodes which represented by specified topology version,
      * if it is present in history storage, {@code null} otherwise.
      * @throws UnsupportedOperationException If underlying SPI implementation does not support
-     *      topology history. Currently only {@link org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi}
+     *      topology history. Currently only {@link GridTcpDiscoverySpi}
      *      supports topology history.
      */
     @Nullable public Collection<GridNode> topology(long topVer) throws UnsupportedOperationException;
@@ -429,7 +449,7 @@ public interface Grid extends GridProjection, AutoCloseable {
      * <ul>
      * <li>For local caches it returns only local node mapped to all keys.</li>
      * <li>
-     *      For fully replicated caches, {@link GridCacheAffinity} is
+     *      For fully replicated caches, {@link GridCacheAffinityFunction} is
      *      used to determine which keys are mapped to which groups of nodes.
      * </li>
      * <li>For partitioned caches, the returned map represents node-to-key affinity.</li>
@@ -452,7 +472,7 @@ public interface Grid extends GridProjection, AutoCloseable {
      * <ul>
      * <li>For local caches it returns only local node ID.</li>
      * <li>
-     *      For fully replicated caches first node ID returned by {@link GridCacheAffinity}
+     *      For fully replicated caches first node ID returned by {@link GridCacheAffinityFunction}
      *      is returned.
      * </li>
      * <li>For partitioned caches, the returned node ID is the primary node for the key.</li>

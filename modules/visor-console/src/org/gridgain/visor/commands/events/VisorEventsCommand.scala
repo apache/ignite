@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -11,18 +11,21 @@
 
 package org.gridgain.visor.commands.events
 
-import org.gridgain.scalar.scalar._
-import org.gridgain.visor._
-import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor._
-import org.gridgain.grid._
-import events._
-import GridEventType._
-import util.{GridUtils => U}
+import java.util.UUID
 import collection.immutable._
 import collection.JavaConversions._
-import java.util.UUID
-import scala.util.control.Breaks._
+import org.gridgain.grid._
+import org.gridgain.grid.events._
+import org.gridgain.grid.events.GridEventType._
+import org.gridgain.grid.kernal.GridEx
+import org.gridgain.grid.kernal.processors.task.GridInternal
+import org.gridgain.grid.util.{GridUtils => U}
+import org.gridgain.grid.util.scala.impl
+import org.gridgain.visor._
+import org.gridgain.visor.commands._
+import org.gridgain.visor.commands.{VisorConsoleUtils => CU}
+import org.gridgain.scalar.scalar._
+import visor._
 
 /**
  * ==Overview==
@@ -163,50 +166,51 @@ class VisorEventsCommand {
      *
      * @param args Command parameters.
      */
-    def events(args: String) = breakable {
+    def events(args: String) {
         if (!isConnected)
             adviseToConnect()
         else {
             val argLst = parseArgs(args)
 
-            val typeF = typeFilter(argValue("e", argLst))
-            val timeF = timeFilter(argValue("t", argLst))
-
-            if (!typeF.isDefined || !timeF.isDefined)
-                break()
-
-            val filter = (e: GridEvent) => typeF.get.apply(e) && timeF.get.apply(e) && (e match {
-                case evt: GridTaskEvent => !evt.taskName().toLowerCase.contains("visor")
-                case evt: GridJobEvent => !evt.taskName().toLowerCase.contains("visor")
-                case evt: GridDeploymentEvent => !evt.alias().toLowerCase.contains("visor")
-                case _ => true
-            })
+            val typeArg = argValue("e", argLst)
+            val timeArg = argValue("t", argLst)
 
             val id8 = argValue("id8", argLst)
             val id = argValue("id", argLst)
 
-            var evts: collection.Iterable[GridEvent] = null
+            var evts: Array[VisorEventData] = null
 
             var nid: UUID = null
 
             try
                 if (!id8.isDefined && !id.isDefined)
-                    scold("Either '-id8' or '-id' must be provided.").^^
+                    scold("Either '-id8' or '-id' must be provided.")
                 else if (id8.isDefined && id.isDefined)
-                    scold("Only one of '-id8' or '-id' is allowed.").^^
+                    scold("Only one of '-id8' or '-id' is allowed.")
                 else if (id8.isDefined) {
                     val ns = nodeById8(id8.get)
 
                     if (ns.isEmpty)
-                        scold("Unknown 'id8' value: " + id8.get).^^
+                        scold("Unknown 'id8' value: " + id8.get)
                     else if (ns.size != 1)
-                        scold("'id8' resolves to more than one node (use full 'id' instead): " + id8.get).^^
+                        scold("'id8' resolves to more than one node (use full 'id' instead): " + id8.get)
                     else {
                         val head = ns.head
 
                         nid = head.id
 
-                        evts = grid.forNode(head).events().queryRemote(filter, 0).get
+                        grid.forNode(head).compute()
+                            .execute(classOf[VisorConsoleCollectEventsTask], VisorConsoleCollectEventsTaskArgument(nid, typeArg, timeArg))
+                            .get match {
+                                case Left(res) => evts = res
+
+                                case Right(msg) =>
+                                    scold(msg)
+
+                                    return
+                            }
+
+                        assert(evts != null)
                     }
                 }
                 else {
@@ -215,22 +219,38 @@ class VisorEventsCommand {
                     try {
                         val node = grid.node(UUID.fromString(id.get))
 
-                        if (node == null)
-                            scold("'id' does not match any node: " + id.get).^^
+                        if (node == null) {
+                            scold("'id' does not match any node: " + id.get)
+
+                            return
+                        }
 
                         nid = node.id
 
-                        evts = grid.forNode(node).events().queryRemote(filter, 0).get
+                        grid.forNode(node).compute()
+                            .execute(classOf[VisorConsoleCollectEventsTask], VisorConsoleCollectEventsTaskArgument(nid, typeArg, timeArg))
+                            .get match {
+                                case Left(res) => evts = res
+
+                                case Right(msg) =>
+                                    scold(msg)
+
+                                    return
+                            }
+
+                        assert(evts != null)
                     }
                     catch {
-                        case e: IllegalArgumentException => scold("Invalid node 'id': " + id.get).^^
+                        case e: IllegalArgumentException => scold("Invalid node 'id': " + id.get)
                     }
                 }
             catch {
-                case e: GridException => scold(e.getMessage).^^
+                case e: GridException => scold(e.getMessage)
             }
 
-            assert(evts != null)
+            if (evts == null)
+                return
+
             assert(nid != null)
 
             if (evts.isEmpty)
@@ -239,7 +259,7 @@ class VisorEventsCommand {
                 val sortedOpt = sort(evts, argValue("s", argLst), hasArgName("r", argLst))
 
                 if (!sortedOpt.isDefined)
-                    break()
+                    return
 
                 val sorted = sortedOpt.get
 
@@ -251,7 +271,10 @@ class VisorEventsCommand {
                     try
                         cnt = cntOpt.get.toInt
                     catch {
-                        case e: NumberFormatException => scold("Invalid count: " + cntOpt.get).^^
+                        case e: NumberFormatException =>
+                            scold("Invalid count: " + cntOpt.get)
+
+                            return
                     }
 
                 println("Summary:")
@@ -260,10 +283,8 @@ class VisorEventsCommand {
 
                 st += ("Node ID8(@ID)", nodeId8Addr(nid))
                 st += ("Total", sorted.size)
-                st += ("Earliest timestamp",
-                    formatDateTime(evts.max(Ordering.by[GridEvent, Long](_.timestamp)).timestamp))
-                st += ("Oldest timestamp",
-                    formatDateTime(evts.min(Ordering.by[GridEvent, Long](_.timestamp)).timestamp))
+                st += ("Earliest timestamp", formatDateTime(evts.maxBy(_.timestamp).timestamp))
+                st += ("Oldest timestamp", formatDateTime(evts.minBy(_.timestamp).timestamp))
 
                 st.render()
 
@@ -277,7 +298,7 @@ class VisorEventsCommand {
                     val info = sum.getOrElse(evt.`type`, (null, 0, Long.MinValue, Long.MaxValue))
 
                     sum += (evt.`type` -> (
-                        "(" + mnemonic(evt) + ") " + evt.name,
+                        "(" + evt.mnemonic + ") " + evt.name,
                         info._2 + 1,
                         if (evt.timestamp > info._3) evt.timestamp else info._3,
                         if (evt.timestamp < info._4) evt.timestamp else info._4)
@@ -289,14 +310,8 @@ class VisorEventsCommand {
                 et #= (
                     "Event",
                     "Total",
-                    (
-                        "Earliest/Oldest",
-                        "Timestamp"
-                    ),
-                    (
-                        "Rate",
-                        "events/sec"
-                    )
+                    ("Earliest/Oldest", "Timestamp"),
+                    ("Rate", "events/sec")
                 )
 
                 sum.values.toList.sortBy(_._2).reverse.foreach(v => {
@@ -305,10 +320,7 @@ class VisorEventsCommand {
                     et += (
                         v._1,
                         v._2,
-                        (
-                            formatDateTime(v._3),
-                            formatDateTime(v._4)
-                        ),
+                        (formatDateTime(v._3), formatDateTime(v._4)),
                         formatDouble(if (range != 0) (v._2.toDouble * 1000) / range else v._2)
                     )
                 })
@@ -338,6 +350,135 @@ class VisorEventsCommand {
     }
 
     /**
+     * Sort events.
+     *
+     * @param evts Events to sort.
+     * @param arg Command argument.
+     * @param reverse If `true` sorting is reversed.
+     * @return Sorted events.
+     */
+    private def sort(evts: Array[VisorEventData], arg: Option[String], reverse: Boolean):
+        Option[List[VisorEventData]] = {
+        assert(evts != null)
+
+        val list = evts.toList
+
+        if (arg.isEmpty)
+            Some(list)
+        else
+            arg.get.trim match {
+                case "e" => Some(if (reverse) list.sortBy(_.name).reverse else list.sortBy(_.name))
+                case "t" => Some(if (reverse) list.sortBy(_.timestamp).reverse else list.sortBy(_.timestamp))
+                case a: String =>
+                    scold("Invalid sorting argument: " + a)
+
+                    None
+            }
+    }
+}
+
+/** Descriptor for `GridEvent`. */
+private case class VisorEventData(
+    `type`: Int,
+    timestamp: Long,
+    name: String,
+    shortDisplay: String,
+    mnemonic: String
+)
+
+/**
+ * Arguments for `VisorConsoleCollectEventsTask`.
+ *
+ * @param nodeId Node Id where events should be collected.
+ * @param typeArg Arguments for type filter.
+ * @param timeArg Arguments for time filter.
+ */
+private case class VisorConsoleCollectEventsTaskArgument(
+    @impl nodeId: UUID,
+    typeArg: Option[String],
+    timeArg: Option[String]
+) extends VisorConsoleOneNodeArgument
+
+/**
+ * Task that runs on specified node and returns events data.
+ *
+ * @author @java.author
+ * @version @java.version
+ */
+@GridInternal
+private class VisorConsoleCollectEventsTask
+    extends VisorConsoleOneNodeTask[VisorConsoleCollectEventsTaskArgument, Either[Array[VisorEventData], String]] {
+    /**
+     * Creates predicate that filters events by type.
+     *
+     * @param types Comma separate list of event type mnemonics.
+     * @return Event type filter.
+     */
+    private def typeFilter(types: Option[String]): Either[EventFilter, String] = {
+        if (types.isEmpty)
+            Left(_ => true)
+        else {
+            var arr: List[Int] = Nil
+
+            types.get split "," foreach {
+                case "ch" => arr ++= EVTS_CHECKPOINT.toList
+                case "de" => arr ++= EVTS_DEPLOYMENT.toList
+                case "jo" => arr ++= EVTS_JOB_EXECUTION.toList
+                case "ta" => arr ++= EVTS_TASK_EXECUTION.toList
+                case "ca" => arr ++= EVTS_CACHE.toList
+                case "cp" => arr ++= EVTS_CACHE_PRELOAD.toList
+                case "sw" => arr ++= EVTS_SWAPSPACE.toList
+                case "di" => arr ++= EVTS_DISCOVERY.toList
+                case "au" => arr ++= EVTS_AUTHENTICATION.toList
+                case t => return Right("Unknown event type: " + t)
+            }
+
+            Left(if (!arr.isEmpty) (e: GridEvent) => arr.contains(e.`type`) else _ => true)
+        }
+    }
+
+    /**
+     * Creates predicate that filters events by timestamp.
+     *
+     * @param arg Command argument.
+     * @return Predicate.
+     */
+    private def timeFilter(arg: Option[String]): Either[EventFilter, String] = {
+        if (arg.isEmpty)
+            Left(_ => true)
+        else {
+            var n = 0
+
+            val s = arg.get
+
+            try
+                n = s.substring(0, s.length - 1).toInt
+            catch {
+                case e: NumberFormatException =>
+                    return Right("Time frame size is not numeric in: " + s)
+            }
+
+            if (n <= 0) {
+                Right("Time frame size is not positive in: " + s)
+            }
+            else {
+                val m = s.last match {
+                    case 's' => 1000
+                    case 'm' => 1000 * 60
+                    case 'h' => 1000 * 60 * 60
+                    case 'd' => 1000 * 60 * 60 * 24
+                    case _ => 0
+
+                }
+                if (m > 0)
+                    Left(_.timestamp >= System.currentTimeMillis - n * m)
+                else
+                    Right("Invalid time frame suffix in: " + s)
+            }
+        }
+    }
+
+    /**
      * Gets command's mnemonic for given event.
      *
      * @param e Event to get mnemonic for.
@@ -361,111 +502,29 @@ class VisorEventsCommand {
         }
     }
 
-    /**
-     * Creates predicate that filters events by type.
-     *
-     * @param types Comma separate list of event type mnemonics.
-     * @return Event type filter.
-     */
-    private def typeFilter(types: Option[String]): Option[EventFilter] = {
-        if (types.isEmpty)
-            Some(_ => true)
-        else {
-            var arr: List[Int] = Nil
+    protected def run(g: GridEx, arg: VisorConsoleCollectEventsTaskArgument): Either[Array[VisorEventData], String] = {
+        typeFilter(arg.typeArg) match {
+            case Right(msg) => Right(msg)
 
-            types.get split "," foreach {
-                case "ch" => arr ++= EVTS_CHECKPOINT.toList
-                case "de" => arr ++= EVTS_DEPLOYMENT.toList
-                case "jo" => arr ++= EVTS_JOB_EXECUTION.toList
-                case "ta" => arr ++= EVTS_TASK_EXECUTION.toList
-                case "ca" => arr ++= EVTS_CACHE.toList
-                case "cp" => arr ++= EVTS_CACHE_PRELOAD.toList
-                case "sw" => arr ++= EVTS_SWAPSPACE.toList
-                case "di" => arr ++= EVTS_DISCOVERY.toList
-                case "au" => arr ++= EVTS_AUTHENTICATION.toList
+            case Left(typeF) => timeFilter(arg.timeArg) match {
+                case Right(msg) => Right(msg)
+                case Left(timeF) =>
+                    val filter = (e: GridEvent) => typeF.apply(e) && timeF.apply(e) && (e match {
+                        case te: GridTaskEvent => !CU.containsInTaskName(te.taskName(), te.taskClassName(), "visor")
+                        case je: GridJobEvent => !CU.containsInTaskName(je.taskName(), je.taskName(), "visor")
+                        case de: GridDeploymentEvent => !de.alias().toLowerCase.contains("visor")
+                        case _ => true
+                    })
 
-                case t =>
-                    scold("Unknown event type: " + t)
+                    Left(g.events().localQuery(filter)
+                        .map(e => VisorEventData(e.`type`, e.timestamp(), e.name(), e.shortDisplay(), mnemonic(e)))
+                        .toArray)
 
-                    return None
-            }
-
-            Some(if (!arr.isEmpty) (e: GridEvent) => arr.contains(e.`type`) else _ => true)
-        }
-    }
-
-    /**
-     * Creates predicate that filters events by timestamp.
-     *
-     * @param arg Command argument.
-     * @return Predicate.
-     */
-    private def timeFilter(arg: Option[String]): Option[EventFilter] = {
-        if (arg.isEmpty)
-            Some(_ => true)
-        else {
-            var n = 0
-
-            val s = arg.get
-
-            try
-                n = s.substring(0, s.length - 1).toInt
-            catch {
-                case e: NumberFormatException =>
-                    scold("Time frame size is not numeric in: " + s)
-
-                    return None
-            }
-
-            if (n <= 0) {
-                scold("Time frame size is not positive in: " + s)
-
-                None
-            }
-            else {
-                val m = s.last match {
-                    case 's' => 1000
-                    case 'm' => 1000 * 60
-                    case 'h' => 1000 * 60 * 60
-                    case 'd' => 1000 * 60 * 60 * 24
-                    case _ =>
-                        scold("Invalid time frame suffix in: " + s)
-
-                        return None
-                }
-
-                Some(_.timestamp >= System.currentTimeMillis - n * m)
             }
         }
-    }
-
-    /**
-     * Sort events.
-     *
-     * @param evts Events to sort.
-     * @param arg Command argument.
-     * @param reverse If `true` sorting is reversed.
-     * @return Sorted events.
-     */
-    private def sort(evts: collection.Iterable[GridEvent], arg: Option[String], reverse: Boolean):
-        Option[List[GridEvent]] = {
-        assert(evts != null)
-
-        val list = evts.toList
-
-        if (arg.isEmpty)
-            Some(list)
-        else
-            arg.get.trim match {
-                case "e" => Some(if (reverse) list.sortBy(_.name).reverse else list.sortBy(_.name))
-                case "t" => Some(if (reverse) list.sortBy(_.timestamp).reverse else list.sortBy(_.timestamp))
-                case a: String =>
-                    scold("Invalid sorting argument: " + a)
-
-                    None
-            }
     }
 }
+
 
 /**
  * Companion object that does initialization of the command.

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,7 +10,10 @@
 package org.gridgain.grid.spi.deployment;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.spi.deployment.local.*;
+import org.gridgain.grid.spi.deployment.uri.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -40,8 +43,8 @@ import org.jetbrains.annotations.*;
  * <p>
  * Gridgain provides the following {@code GridDeploymentSpi} implementations:
  * <ul>
- * <li>{@link org.gridgain.grid.spi.deployment.local.GridLocalDeploymentSpi}</li>
- * <li>{@link org.gridgain.grid.spi.deployment.uri.GridUriDeploymentSpi}</li>
+ * <li>{@link GridLocalDeploymentSpi}</li>
+ * <li>{@link GridUriDeploymentSpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
  * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
@@ -70,12 +73,12 @@ public interface GridDeploymentSpi extends GridSpi, GridSpiJsonConfigurable {
      * with a separate class loader maintained internally by the SPI.
      * <p>
      * The array of classes passed in should be checked for presence of
-     * {@link org.gridgain.grid.compute.GridComputeTaskName} annotations. The classes that have this annotation
+     * {@link GridComputeTaskName} annotations. The classes that have this annotation
      * should be accessible by this name from {@link #findResource(String)} method.
      *
      * @param ldr Class loader to register.
      * @param rsrc Class that should be checked for aliases.
-     *      Currently the only alias in the system is {@link org.gridgain.grid.compute.GridComputeTaskName} for
+     *      Currently the only alias in the system is {@link GridComputeTaskName} for
      *      task classes; in future, there may be others.
      * @return {@code True} if resource was registered.
      * @throws GridSpiException If registration failed.
@@ -84,9 +87,9 @@ public interface GridDeploymentSpi extends GridSpi, GridSpiJsonConfigurable {
 
     /**
      * Unregisters all class loaders that have a class with given name or have
-     * a class with give {@link org.gridgain.grid.compute.GridComputeTaskName} value.
+     * a class with give {@link GridComputeTaskName} value.
      *
-     * @param rsrcName Either class name or {@link org.gridgain.grid.compute.GridComputeTaskName} value for a class
+     * @param rsrcName Either class name or {@link GridComputeTaskName} value for a class
      *      whose class loader needs to be unregistered.
      * @return {@code True} if resource was unregistered.
      */

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,96 +11,246 @@ package org.gridgain.grid.cache.affinity;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
- * Cache key affinity which maps keys to nodes. This interface is utilized for
- * both, replicated and partitioned caches. Cache affinity can be configured
- * for individual caches via {@link GridCacheConfiguration#getAffinity()} method.
+ * This interface provides functionality to get information which node is primary and which nodes are
+ * backups for partitioned cache.
  * <p>
- * Whenever a key is given to cache, it is first passed to a pluggable
- * {@link GridCacheAffinityMapper} which may potentially map this key to an alternate
- * key which should be used for affinity. The key returned from
- * {@link GridCacheAffinityMapper#affinityKey(Object)} method is then passed to
- * {@link #partition(Object) partition(Object)} method to find out the partition for the key. Then
- * this partition together with all participating nodes are passed
- * to {@link #nodes(int, Collection) nodes(int, Collection)} method which returns a collection of nodes.
- * This collection of nodes is used for node affinity. In {@link GridCacheMode#REPLICATED REPLICATED}
- * cache mode the key will be cached on all returned nodes; generally, all caching nodes
- * participate in caching every key in replicated mode. In {@link GridCacheMode#PARTITIONED PARTITIONED}
- * mode, only primary and backup nodes are returned with primary node always in the
- * first position. So if there is {@code 1} backup node, then the returned collection will
- * have {@code 2} nodes in it - {@code primary} node in first position, and {@code backup}
- * node in second.
+ * Mapping of a key to a node is a three-step operation. First step will get an affinity key for given key
+ * using {@link GridCacheAffinityKeyMapper}. If mapper is not specified, the original key will be used. Second step
+ * will map affinity key to partition using {@link GridCacheAffinityFunction#partition(Object)} method. Third step
+ * will map obtained partition to nodes for current grid topology version.
  * <p>
- * For more information about cache affinity and examples refer to {@link GridCacheAffinityMapper} and
- * {@link GridCacheAffinityMapped @GridCacheAffinityMapped} documentation.
+ * Interface provides various {@code 'mapKeysToNodes(..)'} methods which provide node affinity mapping for
+ * given keys. All {@code 'mapKeysToNodes(..)'} methods are not transactional and will not enlist
+ * keys into ongoing transaction.
  *
  * @author @java.author
  * @version @java.version
- * @see GridCacheAffinityMapped
- * @see GridCacheAffinityMapper
  */
-public interface GridCacheAffinity extends Serializable {
+public interface GridCacheAffinity<K> {
     /**
-     * Resets cache affinity to its initial state. This method will be called by
-     * the system any time the affinity has been sent to remote node where
-     * it has to be reinitialized. If your implementation of affinity function
-     * has no initialization logic, leave this method empty.
-     */
-    public void reset();
-
-    /**
-     * Gets total number of partitions available. All caches should always provide
-     * correct partition count which should be the same on all participating nodes.
-     * Note that partitions should always be numbered from {@code 0} inclusively to
-     * {@code N} exclusively without any gaps.
+     * Gets number of partitions in cache according to configured affinity function.
      *
-     * @return Total partition count.
+     * @return Number of cache partitions.
+     * @see GridCacheAffinityFunction
+     * @see GridCacheConfiguration#getAffinity()
+     * @see GridCacheConfiguration#setAffinity(GridCacheAffinityFunction)
      */
     public int partitions();
 
-    public int keyBackups();
+    /**
+     * Gets partition id for the given key.
+     *
+     * @param key Key to get partition id for.
+     * @return Partition id.
+     * @see GridCacheAffinityFunction
+     * @see GridCacheConfiguration#getAffinity()
+     * @see GridCacheConfiguration#setAffinity(GridCacheAffinityFunction)
+     */
+    public int partition(K key);
 
     /**
-     * Gets partition number for a given key starting from {@code 0}. Partitioned caches
-     * should make sure that keys are about evenly distributed across all partitions
-     * from {@code 0} to {@link #partitions() partition count} for best performance.
+     * Returns {@code true} if given node is the primary node for given key.
+     * To check if local node is primary for given key, pass
+     * {@link Grid#localNode()} as first parameter.
+     *
+     * @param n Node to check.
+     * @param key Key to check.
+     * @return {@code True} if local node is the primary node for given key.
+     */
+    public boolean isPrimary(GridNode n, K key);
+
+    /**
+     * Returns {@code true} if local node is one of the backup nodes for given key.
+     * To check if local node is primary for given key, pass {@link Grid#localNode()}
+     * as first parameter.
+     *
+     * @param n Node to check.
+     * @param key Key to check.
+     * @return {@code True} if local node is one of the backup nodes for given key.
+     */
+    public boolean isBackup(GridNode n, K key);
+
+    /**
+     * Returns {@code true} if local node is primary or one of the backup nodes
+     * for given key. To check if local node is primary or backup for given key, pass
+     * {@link Grid#localNode()} as first parameter.
      * <p>
-     * Note that for fully replicated caches it is possible to segment key sets among different
-     * grid node groups. In that case each node group should return a unique partition
-     * number. However, unlike partitioned cache, mappings of keys to nodes in
-     * replicated caches are constant and a node cannot migrate from one partition
-     * to another.
+     * This method is essentially equivalent to calling
+     * <i>"{@link #isPrimary(GridNode, Object)} || {@link #isBackup(GridNode, Object)})"</i>,
+     * however it is more efficient as it makes both checks at once.
      *
-     * @param key Key to get partition for.
-     * @return Partition number for a given key.
+     * @param n Node to check.
+     * @param key Key to check.
+     * @return {@code True} if local node is primary or backup for given key.
      */
-    public int partition(Object key);
+    public boolean isPrimaryOrBackup(GridNode n, K key);
 
     /**
-     * Gets affinity nodes for a partition. In case of replicated cache, all returned
-     * nodes are updated in the same manner. In case of partitioned cache, the returned
-     * list should contain only the primary and back up nodes with primary node being
-     * always first.
+     * Gets partition ids for which nodes of the given projection has primary
+     * ownership.
      * <p>
-     * Note that partitioned affinity must obey the following contract: given that node
-     * <code>N</code> is primary for some key <code>K</code>, if any other node(s) leave
-     * grid and no node joins grid, node <code>N</code> will remain primary for key <code>K</code>.
+     * Note that since {@link GridNode} implements {@link GridProjection},
+     * to find out primary partitions for a single node just pass
+     * a single node into this method.
+     * <p>
+     * This method may return an empty array if none of nodes in the projection
+     * have nearOnly disabled.
      *
-     * @param part Partition to get nodes for.
-     * @param nodes Nodes to choose from.
-     * @return Affinity nodes for the given partition.
+     * @param n Grid node.
+     * @return Partition ids for which given projection has primary ownership.
+     * @see GridCacheAffinityFunction
+     * @see GridCacheConfiguration#getAffinity()
+     * @see GridCacheConfiguration#setAffinity(GridCacheAffinityFunction)
      */
-    public Collection<GridNode> nodes(int part, Collection<GridNode> nodes);
+    public int[] primaryPartitions(GridNode n);
 
     /**
-     * Removes node from affinity. This method is called when it is safe to remove left node from
-     * affinity mapping.
+     * Gets partition ids for which nodes of the given projection has backup
+     * ownership. Note that you can find a back up at a certain level, e.g.
+     * {@code first} backup or {@code third} backup by specifying the
+     * {@code 'levels} parameter. If no {@code 'level'} is specified then
+     * all backup partitions are returned.
+     * <p>
+     * Note that since {@link GridNode} implements {@link GridProjection},
+     * to find out backup partitions for a single node, just pass that single
+     * node into this method.
+     * <p>
+     * This method may return an empty array if none of nodes in the projection
+     * have nearOnly disabled.
      *
-     * @param nodeId ID of node to remove.
+     * @param n Grid node.
+     * @return Partition ids for which given projection has backup ownership.
+     * @see GridCacheAffinityFunction
+     * @see GridCacheConfiguration#getAffinity()
+     * @see GridCacheConfiguration#setAffinity(GridCacheAffinityFunction)
      */
-    public void removeNode(UUID nodeId);
+    public int[] backupPartitions(GridNode n);
+
+    /**
+     * Gets partition ids for which nodes of the given projection has ownership
+     * (either primary or backup).
+     * <p>
+     * Note that since {@link GridNode} implements {@link GridProjection},
+     * to find out all partitions for a single node, just pass that single
+     * node into this method.
+     * <p>
+     * This method may return an empty array if none of nodes in the projection
+     * have nearOnly disabled.
+     *
+     * @param n Grid node.
+     * @return Partition ids for which given projection has ownership.
+     * @see GridCacheAffinityFunction
+     * @see GridCacheConfiguration#getAffinity()
+     * @see GridCacheConfiguration#setAffinity(GridCacheAffinityFunction)
+     */
+    public int[] allPartitions(GridNode n);
+
+    /**
+     * Maps passed in key to a key which will be used for node affinity. The affinity
+     * key may be different from actual key if some field in the actual key was
+     * designated for affinity mapping via {@link GridCacheAffinityKeyMapped} annotation
+     * or if a custom {@link GridCacheAffinityKeyMapper} was configured.
+     *
+     * @param key Key to map.
+     * @return Key to be used for node-to-affinity mapping (may be the same
+     *      key as passed in).
+     */
+    public Object affinityKey(K key);
+
+    /**
+     * This method provides ability to detect which keys are mapped to which nodes.
+     * Use it to determine which nodes are storing which keys prior to sending
+     * jobs that access these keys.
+     * <p>
+     * This method works as following:
+     * <ul>
+     * <li>For local caches it returns only local node mapped to all keys.</li>
+     * <li>
+     *      For fully replicated caches {@link GridCacheAffinityFunction} is
+     *      used to determine which keys are mapped to which nodes.
+     * </li>
+     * <li>For partitioned caches, the returned map represents node-to-key affinity.</li>
+     * </ul>
+     *
+     * @param keys Keys to map to nodes.
+     * @return Map of nodes to keys or empty map if there are no alive nodes for this cache.
+     */
+    public Map<GridNode, Collection<K>> mapKeysToNodes(@Nullable Collection<? extends K> keys);
+
+    /**
+     * This method provides ability to detect to which primary node the given key
+     * is mapped. Use it to determine which nodes are storing which keys prior to sending
+     * jobs that access these keys.
+     * <p>
+     * This method works as following:
+     * <ul>
+     * <li>For local caches it returns only local node ID.</li>
+     * <li>
+     *      For fully replicated caches first node ID returned by {@link GridCacheAffinityFunction}
+     *      is returned.
+     * </li>
+     * <li>For partitioned caches, primary node for the given key is returned.</li>
+     * </ul>
+     *
+     * @param key Keys to map to a node.
+     * @return Primary node for the key or {@code null} if there are no alive nodes for this cache.
+     */
+    @Nullable public GridNode mapKeyToNode(K key);
+
+    /**
+     * Gets primary and backup nodes for the key. Note that primary node is always
+     * first in the returned collection.
+     * <p>
+     * If there are only cache nodes in the projection with
+     * {@link GridCacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}, then this
+     * method will return an empty collection.
+     *
+     * @param key Key to get affinity nodes for.
+     * @return Collection of primary and backup nodes for the key with primary node
+     *      always first, or an empty collection if this projection contains only nodes with
+     *      {@link GridCacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}.
+     */
+    public Collection<GridNode> mapKeyToPrimaryAndBackups(K key);
+
+    /**
+     * Gets primary node for the given partition.
+     *
+     * @param part Partition id.
+     * @return Primary node for the given partition.
+     * @see GridCacheAffinityFunction
+     * @see GridCacheConfiguration#getAffinity()
+     * @see GridCacheConfiguration#setAffinity(GridCacheAffinityFunction)
+     */
+    public GridNode mapPartitionToNode(int part);
+
+    /**
+     * Gets primary nodes for the given partitions.
+     *
+     * @param parts Partition ids.
+     * @return Mapping of given partitions to their primary nodes.
+     * @see GridCacheAffinityFunction
+     * @see GridCacheConfiguration#getAffinity()
+     * @see GridCacheConfiguration#setAffinity(GridCacheAffinityFunction)
+     */
+    public Map<Integer, GridNode> mapPartitionsToNodes(Collection<Integer> parts);
+
+    /**
+     * Gets primary and backup nodes for partition. Note that primary node is always
+     * first in the returned collection.
+     * <p>
+     * If there are only cache nodes in the projection with
+     * {@link GridCacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}, then this
+     * method will return an empty collection.
+     *
+     * @param part Partition to get affinity nodes for.
+     * @return Collection of primary and backup nodes for partition with primary node
+     *      always first, or an empty collection if this projection contains only nodes with
+     *      {@link GridCacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}.
+     */
+    public Collection<GridNode> mapPartitionToPrimaryAndBackups(int part);
 }

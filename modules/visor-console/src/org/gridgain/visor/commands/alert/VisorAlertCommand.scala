@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -22,6 +22,7 @@ import collection.immutable._
 import scala.util.control.Breaks._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import visor._
+import org.gridgain.grid.lang.GridPredicate
 
 /**
  * ==Overview==
@@ -144,7 +145,7 @@ class VisorAlertCommand {
     private val guard = new AtomicBoolean(false)
 
     /** Node metric update listener. */
-    private var lsnr: GridLocalEventListener = null
+    private var lsnr: GridPredicate[GridEvent] = null
 
     /**
      * Prints error message and advise.
@@ -351,8 +352,8 @@ class VisorAlertCommand {
         if (guard.compareAndSet(false, true)) {
             assert(lsnr == null)
 
-            lsnr = new GridLocalEventListener {
-                def onEvent(evt: GridEvent) {
+            lsnr = new GridPredicate[GridEvent] {
+                override def apply(evt: GridEvent): Boolean = {
                     val discoEvt = evt.asInstanceOf[GridDiscoveryEvent]
 
                     val node = grid.node(discoEvt.eventNodeId)
@@ -370,7 +371,7 @@ class VisorAlertCommand {
                             }
                             catch {
                                 // In case of exception (like an empty projection) - simply return.
-                                case _: Throwable => return
+                                case _: Throwable => return true
                             }
 
                             if (nb && gb) {
@@ -432,10 +433,12 @@ class VisorAlertCommand {
                                 }
                             }
                         })
+
+                    true
                 }
             }
 
-            grid.events().addLocalListener(lsnr, EVT_NODE_METRICS_UPDATED)
+            grid.events().localListen(lsnr, EVT_NODE_METRICS_UPDATED)
         }
     }
 
@@ -446,7 +449,7 @@ class VisorAlertCommand {
         if (guard.compareAndSet(true, false)) {
             assert(lsnr != null)
 
-            assert(grid.events().removeLocalListener(lsnr))
+            assert(grid.events().stopLocalListen(lsnr))
 
             lsnr = null
         }

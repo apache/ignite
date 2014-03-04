@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.loadbalancing;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.loadbalancing.adaptive.*;
 import org.gridgain.grid.spi.loadbalancing.roundrobin.*;
@@ -21,10 +21,10 @@ import java.util.*;
 /**
  * Load balancing SPI provides the next best balanced node for job
  * execution. This SPI is used either implicitly or explicitly whenever
- * a job gets mapped to a node during {@link org.gridgain.grid.compute.GridComputeTask#map(List, Object)}
+ * a job gets mapped to a node during {@link GridComputeTask#map(List, Object)}
  * invocation.
  * <h1 class="header">Coding Examples</h1>
- * If you are using {@link org.gridgain.grid.compute.GridComputeTaskSplitAdapter} then load balancing logic
+ * If you are using {@link GridComputeTaskSplitAdapter} then load balancing logic
  * is transparent to your code and is handled automatically by the adapter.
  * Here is an example of how your task could look:
  * <pre name="code" class="java">
@@ -46,7 +46,7 @@ import java.util.*;
  * </pre>
  * If you need more fine-grained control over how some jobs within task get mapped to a node
  * <i>and</i> use, for example, affinity load balancing for some other jobs within task, then you should use
- * {@link org.gridgain.grid.compute.GridComputeTaskAdapter}. Here is an example of how your task could look. Note that in this
+ * {@link GridComputeTaskAdapter}. Here is an example of how your task could look. Note that in this
  * case we manually inject load balancer and use it to pick the best node. Doing it in
  * such way would allow user to map some jobs manually and for others use load balancer.
  * <pre name="code" class="java">

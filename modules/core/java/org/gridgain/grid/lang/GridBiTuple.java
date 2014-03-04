@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,10 +10,9 @@
 package org.gridgain.grid.lang;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -21,15 +20,6 @@ import java.util.*;
 
 /**
  * Convenience class representing mutable tuple of two values.
- * <h2 class="header">Thread Safety</h2>
- * This class doesn't provide any synchronization for multi-threaded access
- * and it is responsibility of the user of this class to provide outside
- * synchronization, if needed.
- *
- * @author @java.author
- * @version @java.version
- * @see GridFunc#t2()
- * @see GridFunc#t(Object, Object)
  */
 public class GridBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     Iterable<Object>, GridPeerDeployAware, Externalizable, Cloneable {

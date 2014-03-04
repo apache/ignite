@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -47,9 +47,8 @@ public class GridScheduleProcessor extends GridProcessorAdapter {
      * @param pattern Scheduling pattern in UNIX cron format with prefix "{n1, n2} " where n1 is delay of scheduling
      *      and n2 is the number of task calls.
      * @return Descriptor of the scheduled execution.
-     * @throws GridException Thrown in case of any errors.
      */
-    public GridSchedulerFuture<?> schedule(final Runnable c, String pattern) throws GridException {
+    public GridSchedulerFuture<?> schedule(final Runnable c, String pattern) {
         assert c != null;
         assert pattern != null;
 
@@ -71,9 +70,8 @@ public class GridScheduleProcessor extends GridProcessorAdapter {
      * @param pattern Scheduling pattern in UNIX cron format with prefix "{n1, n2} " where n1 is delay of scheduling
      *      and n2 is the number of task calls.
      * @return Descriptor of the scheduled execution.
-     * @throws GridException Thrown in case of any errors.
      */
-    public <R> GridSchedulerFuture<R> schedule(Callable<R> c, String pattern) throws GridException {
+    public <R> GridSchedulerFuture<R> schedule(Callable<R> c, String pattern) {
         assert c != null;
         assert pattern != null;
 

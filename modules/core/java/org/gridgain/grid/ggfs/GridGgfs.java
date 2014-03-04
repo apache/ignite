@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,7 +11,6 @@ package org.gridgain.grid.ggfs;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
-import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -115,9 +114,11 @@ public interface GridGgfs {
      * <p>
      * When working in {@code DUAL_SYNC} or {@code DUAL_ASYNC} modes only the following properties will be propagated
      * to the secondary file system:
+     * <ul>
      * <li>{@code usrName} - file owner name;</li>
      * <li>{@code grpName} - file owner group;</li>
      * <li>{@code permission} - Unix-style string representing file permissions.</li>
+     * </ul>
      *
      * @param path File path to set properties for.
      * @param props Properties to update.
@@ -340,75 +341,17 @@ public interface GridGgfs {
     public GridFuture<?> format() throws GridException;
 
     /**
-     * Gets input stream for all local data blocks of the specified file.
-     *
-     * @param path Path.
-     * @param delims Delimiters.
-     * @return Input stream for all local blocks.
-     * @throws GridException If stream creation failed.
-     */
-    @Nullable public GridGgfsMapReduceInputStream streamAllLocalBlocks(GridGgfsPath path, byte[]... delims)
-        throws GridException;
-
-    /**
-     * Gets collection of input streams for all consecutive local data blocks of the
-     * specified file.
-     *
-     * @param path Path.
-     * @param delims Delimiter.
-     * @return Collection of input streams for all consecutive local blocks.
-     * @throws GridException If streams creation failed.
-     */
-    public Collection<GridGgfsMapReduceInputStream> streamConsecutiveLocalBlocks(GridGgfsPath path, byte[]... delims)
-        throws GridException;
-
-    /**
-     * Executes GGFS task synchronously.
-     *
-     * @param task Task to execute.
-     * @param rslvr Optional resolver to control split boundaries.
-     * @param paths Collection of paths to be processed within this task.
-     * @param skipNonExistentFiles Whether to skip non existent files. If set to {@code true} non-existent files will
-     *     be ignored. Otherwise an exception will be thrown.
-     * @param arg Optional task argument.
-     * @return Execution result.
-     * @throws GridException If execution failed.
-     */
-    public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
-        Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, @Nullable T arg) throws GridException;
-
-    /**
-     * Executes GGFS task synchronously with overridden maximum range length (see
-     * {@link GridGgfsConfiguration#getMaximumTaskRangeLength()} for more information).
-     *
-     * @param task Task to execute.
-     * @param rslvr Optional resolver to control split boundaries.
-     * @param paths Collection of paths to be processed within this task.
-     * @param skipNonExistentFiles Whether to skip non existent files. If set to {@code true} non-existent files will
-     *     be ignored. Otherwise an exception will be thrown.
-     * @param maxRangeLen Maximum range length.
-     * @param arg Optional task argument.
-     * @return Execution result.
-     * @throws GridException If execution failed.
-     */
-    public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
-        Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
-        throws GridException;
-
-    /**
      * Executes GGFS task asynchronously.
      *
      * @param task Task to execute.
      * @param rslvr Optional resolver to control split boundaries.
      * @param paths Collection of paths to be processed within this task.
-     * @param skipNonExistentFiles Whether to skip non existent files. If set to {@code true} non-existent files will
-     *     be ignored. Otherwise an exception will be thrown.
      * @param arg Optional task argument.
      * @return Execution future.
      * @throws GridException If execution failed.
      */
-    public <T, R> GridFuture<R> executeAsync(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
-        Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, @Nullable T arg) throws GridException;
+    public <T, R> GridFuture<R> execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
+        Collection<GridGgfsPath> paths, @Nullable T arg) throws GridException;
 
     /**
      * Executes GGFS task asynchronously with overridden maximum range length (see
@@ -425,40 +368,7 @@ public interface GridGgfs {
      * @return Execution future.
      * @throws GridException If execution failed.
      */
-    public <T, R> GridFuture<R> executeAsync(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
-        Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
-        throws GridException;
-
-    /**
-     * Executes GGFS task synchronously.
-     *
-     * @param taskCls Task class to execute.
-     * @param rslvr Optional resolver to control split boundaries.
-     * @param paths Collection of paths to be processed within this task.
-     * @param skipNonExistentFiles Whether to skip non existent files. If set to {@code true} non-existent files will
-     *     be ignored. Otherwise an exception will be thrown.
-     * @param arg Optional task argument.
-     * @return Execution result.
-     * @throws GridException If execution failed.
-     */
-    public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls, @Nullable GridGgfsRecordResolver rslvr,
-        Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, @Nullable T arg) throws GridException;
-
-    /**
-     * Executes GGFS task synchronously with overridden maximum range length (see
-     * {@link GridGgfsConfiguration#getMaximumTaskRangeLength()} for more information).
-     *
-     * @param taskCls Task class to execute.
-     * @param rslvr Optional resolver to control split boundaries.
-     * @param paths Collection of paths to be processed within this task.
-     * @param skipNonExistentFiles Whether to skip non existent files. If set to {@code true} non-existent files will
-     *     be ignored. Otherwise an exception will be thrown.
-     * @param maxRangeLen Maximum range length.
-     * @param arg Optional task argument.
-     * @return Execution result.
-     * @throws GridException If execution failed.
-     */
-    public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls, @Nullable GridGgfsRecordResolver rslvr,
+    public <T, R> GridFuture<R> execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
         Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
         throws GridException;
 
@@ -468,15 +378,12 @@ public interface GridGgfs {
      * @param taskCls Task class to execute.
      * @param rslvr Optional resolver to control split boundaries.
      * @param paths Collection of paths to be processed within this task.
-     * @param skipNonExistentFiles Whether to skip non existent files. If set to {@code true} non-existent files will
-     *     be ignored. Otherwise an exception will be thrown.
      * @param arg Optional task argument.
      * @return Execution future.
      * @throws GridException If execution failed.
      */
-    public <T, R> GridFuture<R> executeAsync(Class<? extends GridGgfsTask<T, R>> taskCls,
-        @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
-        @Nullable T arg) throws GridException;
+    public <T, R> GridFuture<R> execute(Class<? extends GridGgfsTask<T, R>> taskCls,
+        @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, @Nullable T arg) throws GridException;
 
     /**
      * Executes GGFS task asynchronously with overridden maximum range length (see
@@ -492,7 +399,7 @@ public interface GridGgfs {
      * @return Execution future.
      * @throws GridException If execution failed.
      */
-    public <T, R> GridFuture<R> executeAsync(Class<? extends GridGgfsTask<T, R>> taskCls,
+    public <T, R> GridFuture<R> execute(Class<? extends GridGgfsTask<T, R>> taskCls,
         @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) throws GridException;
 }

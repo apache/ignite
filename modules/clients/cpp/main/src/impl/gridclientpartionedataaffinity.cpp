@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -20,9 +20,9 @@
 
 using namespace std;
 
-const char* GridClientPartitionedAffinity::DFLT_REPLICA_CNT_ATTR_NAME = "gg:affinity:node:replicas";
+const char* GridClientPartitionAffinity::DFLT_REPLICA_CNT_ATTR_NAME = "gg:affinity:node:replicas";
 
-GridClientPartitionedAffinity::GridClientPartitionedAffinity() {
+GridClientPartitionAffinity::GridClientPartitionAffinity() {
     parts = DFLT_PARTITION_CNT;
     replicas = DFLT_REPLICA_CNT;
     backups = DFLT_BACKUP_CNT;
@@ -33,58 +33,58 @@ GridClientPartitionedAffinity::GridClientPartitionedAffinity() {
     };
 }
 
-GridClientPartitionedAffinity::~GridClientPartitionedAffinity() {
+GridClientPartitionAffinity::~GridClientPartitionAffinity() {
 }
 
-int GridClientPartitionedAffinity::getDefaultReplicas() const {
+int GridClientPartitionAffinity::getDefaultReplicas() const {
     return replicas;
 }
 
-void GridClientPartitionedAffinity::setDefaultReplicas(int pReplicas) {
+void GridClientPartitionAffinity::setDefaultReplicas(int pReplicas) {
     replicas = pReplicas;
 }
 
-int GridClientPartitionedAffinity::getKeyBackups() const {
+int GridClientPartitionAffinity::getKeyBackups() const {
     return backups;
 }
 
-void GridClientPartitionedAffinity::setKeyBackups(int pBackups) {
+void GridClientPartitionAffinity::setKeyBackups(int pBackups) {
     backups = pBackups;
 }
 
-int GridClientPartitionedAffinity::getPartitions() const {
+int GridClientPartitionAffinity::getPartitions() const {
     return parts;
 }
 
-void GridClientPartitionedAffinity::setPartitions(int pParts) {
+void GridClientPartitionAffinity::setPartitions(int pParts) {
     parts = pParts;
 }
 
-const TGridClientNodePredicatePtr GridClientPartitionedAffinity::getBackupFilter() {
+const TGridClientNodePredicatePtr GridClientPartitionAffinity::getBackupFilter() {
     return backupFilter;
 }
 
-void GridClientPartitionedAffinity::setBackupFilter(const TGridClientNodePredicatePtr pBackupFilter) {
+void GridClientPartitionAffinity::setBackupFilter(const TGridClientNodePredicatePtr pBackupFilter) {
     backupFilter = pBackupFilter;
 }
 
-std::string GridClientPartitionedAffinity::getReplicaCountAttributeName() const {
+std::string GridClientPartitionAffinity::getReplicaCountAttributeName() const {
     return attrName;
 }
 
-void GridClientPartitionedAffinity::setReplicaCountAttributeName(const string& pAttrName) {
+void GridClientPartitionAffinity::setReplicaCountAttributeName(const string& pAttrName) {
     attrName = pAttrName;
 }
 
-GridHashIdResolver GridClientPartitionedAffinity::getHashIdResolver() const {
+GridHashIdResolver GridClientPartitionAffinity::getHashIdResolver() const {
     return hashIdResolver;
 }
 
-void GridClientPartitionedAffinity::setHashIdResolver(GridHashIdResolver& pHashIdResolver) {
+void GridClientPartitionAffinity::setHashIdResolver(GridHashIdResolver& pHashIdResolver) {
     hashIdResolver = pHashIdResolver;
 }
 
-int GridClientPartitionedAffinity::getReplicas(const GridClientNode& n) {
+int GridClientPartitionAffinity::getReplicas(const GridClientNode& n) {
     if (n.getReplicaCount() > 0)
         return n.getReplicaCount();
 
@@ -96,7 +96,7 @@ int GridClientPartitionedAffinity::getReplicas(const GridClientNode& n) {
     return replicas;
 }
 
-void GridClientPartitionedAffinity::add(const GridClientNode& node, int replicas) {
+void GridClientPartitionAffinity::add(const GridClientNode& node, int replicas) {
     nodeHash.addNode(
         NodeInfo(
             node.getNodeId(),
@@ -106,7 +106,7 @@ void GridClientPartitionedAffinity::add(const GridClientNode& node, int replicas
     addedNodes.insert(node.getNodeId());
 }
 
-TGridClientNodePtr GridClientPartitionedAffinity::getNode(const TNodesSet& nodes, const GridHasheableObject& key) {
+TGridClientNodePtr GridClientPartitionAffinity::getNode(const TNodesSet& nodes, const GridHasheableObject& key) {
     set<GridUuid> newNodes;
 
     for (auto iter = nodes.begin(); iter != nodes.end(); ++iter)
@@ -143,7 +143,7 @@ TGridClientNodePtr GridClientPartitionedAffinity::getNode(const TNodesSet& nodes
     return findNode(nodeId, nodes);
 }
 
-TGridClientNodePtr GridClientPartitionedAffinity::findNode(const GridUuid& id, const TNodesSet& nodes) const {
+TGridClientNodePtr GridClientPartitionAffinity::findNode(const GridUuid& id, const TNodesSet& nodes) const {
     TNodesSet::const_iterator iter = find_if(nodes.begin(), nodes.end(), [&id] (const GridClientNode& node) {
         return node.getNodeId() == id;
     });
@@ -153,7 +153,7 @@ TGridClientNodePtr GridClientPartitionedAffinity::findNode(const GridUuid& id, c
     return TGridClientNodePtr(new GridClientNode(*iter));
 }
 
-void GridClientPartitionedAffinity::checkRemoved(const GridClientNode& node) {
+void GridClientPartitionAffinity::checkRemoved(const GridClientNode& node) {
     boost::lock_guard<boost::mutex> lock(mux);
 
     addedNodes.erase(find_if(addedNodes.begin(), addedNodes.end(), [&node] (const GridUuid& id) {

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,12 +10,14 @@
 package org.gridgain.grid.spi.failover.always;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.failover.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+
 import java.util.*;
 
 /**
@@ -87,7 +89,7 @@ public class GridAlwaysFailoverSpi extends GridSpiAdapter implements GridFailove
     /**
      * Name of job context attribute containing all nodes a job failed on.
      *
-     * @see org.gridgain.grid.compute.GridComputeJobContext
+     * @see GridComputeJobContext
      */
     public static final String FAILED_NODE_LIST_ATTR = "gg:failover:failednodelist";
 

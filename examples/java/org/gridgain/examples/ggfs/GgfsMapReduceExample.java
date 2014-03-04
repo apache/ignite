@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -26,11 +26,11 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * Example that shows how to use {@link GridGgfsTask} to find lines matching particular pattern in the file in pretty
  * the same way as {@code grep} command does.
  * <p>
- * To start remote node, you can run {@link GgfsNodeStartup} class.
+ * Remote nodes should always be started with configuration file which includes
+ * GGFS: {@code 'ggstart.sh examples/config/example-ggfs.xml'}.
  * <p>
- * You can also start a stand-alone GridGain instance by passing the path
- * to configuration file to {@code 'ggstart.{sh|bat}'} script, like so:
- * {@code './ggstart.sh examples/config/example-ggfs.xml'}.
+ * Alternatively you can run {@link GgfsNodeStartup} in another JVM which will start
+ * GridGain node with {@code examples/config/example-ggfs.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -38,18 +38,21 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 @GridOnlyAvailableIn(HADOOP)
 public class GgfsMapReduceExample {
     /**
-     * Runs example.
+     * Executes example.
      *
      * @param args Command line arguments. First argument is file name, second argument is regex to look for.
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
         if (args.length == 0)
-            print("Please provide file name and regular expression.");
+            System.out.println("Please provide file name and regular expression.");
         else if (args.length == 1)
-            print("Please provide regular expression.");
+            System.out.println("Please provide regular expression.");
         else {
             Grid g = GridGain.start("examples/config/example-ggfs.xml");
+
+            System.out.println();
+            System.out.println(">>> GGFS map reduce example started.");
 
             try {
                 // Prepare arguments.
@@ -71,10 +74,12 @@ public class GgfsMapReduceExample {
                 writeFile(fs, fsPath, file);
 
                 Collection<Line> lines = fs.execute(new GrepTask(), GridGgfsNewLineRecordResolver.NEW_LINE,
-                    Collections.singleton(fsPath), false, regexStr);
+                    Collections.singleton(fsPath), regexStr).get();
 
-                if (lines.isEmpty())
-                    print("No lines were found.");
+                if (lines.isEmpty()) {
+                    System.out.println();
+                    System.out.println("No lines were found.");
+                }
                 else {
                     for (Line line : lines)
                         print(line.fileLine());
@@ -96,7 +101,8 @@ public class GgfsMapReduceExample {
      * @throws Exception In case of exception.
      */
     private static void writeFile(GridGgfs fs, GridGgfsPath fsPath, File file) throws Exception {
-        print("Copying file to GGFS: " + file);
+        System.out.println();
+        System.out.println("Copying file to GGFS: " + file);
 
         GridGgfsOutputStream os = null;
         FileInputStream fis = null;

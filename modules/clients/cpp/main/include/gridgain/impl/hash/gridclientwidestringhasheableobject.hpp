@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,7 +10,7 @@
 #ifndef GRIDCLIENTWIDESTRINGHASHEABLEOBJECT_HPP_
 #define GRIDCLIENTWIDESTRINGHASHEABLEOBJECT_HPP_
 
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______

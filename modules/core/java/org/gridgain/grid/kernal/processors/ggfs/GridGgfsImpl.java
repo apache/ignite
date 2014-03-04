@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -229,7 +229,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 secondaryFs = FileSystem.get(hadoopUri, hadoopCfg);
             }
             catch (IOException e) {
-                handleSecondaryFsError(e, "Failed to connect to the secondary Hadoop file system [uri=" +
+                throw handleSecondaryFsError(e, "Failed to connect to the secondary Hadoop file system [uri=" +
                     secUri + ", configPath=" +
                     ggfsCtx.configuration().getSecondaryHadoopFileSystemConfigPath() + ']');
             }
@@ -1649,146 +1649,26 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsMapReduceInputStream streamAllLocalBlocks(GridGgfsPath path, byte[]... delims)
-        throws GridException {
-        assert path != null;
-
-        GridGgfsMode mode = modeRslvr.resolveMode(path);
-
-        if (mode == PROXY)
-            throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
-
-        GridGgfsFileInfo info = resolveFileInfo(path, mode);
-
-        if (info == null)
-            throw new GridGgfsFileNotFoundException("Failed to create input stream because the file is not found: "
-                + path);
-        else if (info.isDirectory())
-            throw new GridGgfsInvalidPathException("Failed to create input stream because path points to a " +
-                "directory: " + path);
-        else {
-            GridGgfsSecondaryInputStreamWrapper inWrapper = mode != PRIMARY ?
-                meta.openDual(secondaryFs, path, cfg.getStreamBufferSize()).wrapper() : null;
-
-            List<Long> locBlocks = data.listLocalDataBlocks(info);
-
-            return new GridGgfsMapReduceInputStreamImpl(ggfsCtx, path, delims, info, inWrapper, locBlocks);
-        }
+    @Override public <T, R> GridFuture<R> execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
+        Collection<GridGgfsPath> paths, @Nullable T arg) {
+        return execute(task, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridGgfsMapReduceInputStream> streamConsecutiveLocalBlocks(GridGgfsPath path,
-        byte[]... delims) throws GridException {
-        assert path != null;
-
-        GridGgfsMode mode = modeRslvr.resolveMode(path);
-
-        if (mode == PROXY)
-            throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
-
-        GridGgfsFileInfo info = resolveFileInfo(path, mode);
-
-        if (info == null)
-            throw new GridGgfsFileNotFoundException("Failed to create input streams because the file is not found: "
-                + path);
-        else if (info.isDirectory())
-            throw new GridGgfsInvalidPathException("Failed to create input streams because path points to a " +
-                "directory: " + path);
-        else {
-            Collection<GridGgfsMapReduceInputStream> res = new LinkedList<>();
-
-            List<Long> locBlocks = data.listLocalDataBlocks(info);
-
-            if (!locBlocks.isEmpty()) {
-                List<Long> curLocBlocks = new ArrayList<>();
-
-                long prevIdx = -1;
-
-                for (long idx : locBlocks) {
-                    if (prevIdx == -1 || prevIdx + 1 == idx)
-                        // This is consecutive block.
-                        curLocBlocks.add(idx);
-                    else {
-                        // Non consecutive block.
-                        GridGgfsSecondaryInputStreamWrapper inWrapper = mode != PRIMARY ?
-                            meta.openDual(secondaryFs, path, cfg.getStreamBufferSize()).wrapper() : null;
-
-                        res.add(new GridGgfsMapReduceInputStreamImpl(ggfsCtx, path, delims, info, inWrapper,
-                            curLocBlocks));
-
-                        curLocBlocks = new ArrayList<>();
-
-                        curLocBlocks.add(idx);
-                    }
-
-                    prevIdx = idx;
-                }
-
-                // Remainder.
-                if (!curLocBlocks.isEmpty()) {
-                    GridGgfsSecondaryInputStreamWrapper inWrapper = mode != PRIMARY ?
-                        meta.openDual(secondaryFs, path, cfg.getStreamBufferSize()).wrapper() : null;
-
-                    res.add(new GridGgfsMapReduceInputStreamImpl(ggfsCtx, path, delims, info, inWrapper,
-                        curLocBlocks));
-                }
-            }
-
-            return res;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
-        Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, @Nullable T arg) throws GridException {
-        return execute(task, rslvr, paths, skipNonExistentFiles, cfg.getMaximumTaskRangeLength(), arg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
-        Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
-        throws GridException {
-        return ggfsCtx.kernalContext().task().execute(task, new GridGgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr,
-            skipNonExistentFiles, maxRangeLen, arg)).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T, R> GridFuture<R> executeAsync(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
-        Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, @Nullable T arg) {
-        return executeAsync(task, rslvr, paths, skipNonExistentFiles, cfg.getMaximumTaskRangeLength(), arg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T, R> GridFuture<R> executeAsync(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
+    @Override public <T, R> GridFuture<R> execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
         Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
         return ggfsCtx.kernalContext().task().execute(task, new GridGgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr,
             skipNonExistentFiles, maxRangeLen, arg));
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
-        @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
-        @Nullable T arg) throws GridException {
-        return execute(taskCls, rslvr, paths, skipNonExistentFiles, cfg.getMaximumTaskRangeLength(), arg);
+    @Override public <T, R> GridFuture<R> execute(Class<? extends GridGgfsTask<T, R>> taskCls,
+        @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, @Nullable T arg) {
+        return execute(taskCls, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
-        @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
-        long maxRangeLen, @Nullable T arg) throws GridException {
-        return ggfsCtx.kernalContext().task().execute((Class<GridGgfsTask<T, R>>)taskCls,
-            new GridGgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr,  skipNonExistentFiles,maxRangeLen, arg)).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T, R> GridFuture<R> executeAsync(Class<? extends GridGgfsTask<T, R>> taskCls,
-        @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
-        @Nullable T arg) {
-        return executeAsync(taskCls, rslvr, paths, skipNonExistentFiles, cfg.getMaximumTaskRangeLength(), arg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T, R> GridFuture<R> executeAsync(Class<? extends GridGgfsTask<T, R>> taskCls,
+    @Override public <T, R> GridFuture<R> execute(Class<? extends GridGgfsTask<T, R>> taskCls,
         @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeSize, @Nullable T arg) {
         return ggfsCtx.kernalContext().task().execute((Class<GridGgfsTask<T, R>>)taskCls,

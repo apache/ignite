@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -24,12 +24,15 @@ import static org.gridgain.grid.GridLifecycleEventType.*;
  */
 public final class LifecycleExample {
     /**
-     * Starts grid with configured lifecycle bean and then stop grid.
+     * Executes example.
      *
      * @param args Command line arguments, none required.
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
+        System.out.println();
+        System.out.println(">>> Lifecycle example started.");
+
         // Create new configuration.
         GridConfiguration cfg = new GridConfiguration();
 
@@ -60,12 +63,9 @@ public final class LifecycleExample {
 
         /** {@inheritDoc} */
         @Override public void onLifecycleEvent(GridLifecycleEventType evt) {
-            System.out.println("");
-            System.out.println(">>>");
+            System.out.println();
             System.out.println(">>> Grid lifecycle event occurred: " + evt);
             System.out.println(">>> Grid name: " + grid.name());
-            System.out.println(">>>");
-            System.out.println("");
 
             if (evt == AFTER_GRID_START) {
                 isStarted = true;

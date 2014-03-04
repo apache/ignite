@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,16 +9,18 @@
 
 package org.gridgain.grid.util;
 
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.worker.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
  * Thread local that auto resets upon leaving thread context. This thread local is
- * integrated with {@link org.gridgain.grid.kernal.GridKernalGateway} and
- * with {@link org.gridgain.grid.util.worker.GridWorker} threads.
+ * integrated with {@link GridKernalGateway} and
+ * with {@link GridWorker} threads.
  *
  * @author @java.author
  * @version @java.version

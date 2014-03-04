@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -59,7 +59,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     private GridCacheDataStructures dataStructures;
 
     /** Affinity. */
-    private GridCacheAffinity0<K> aff;
+    private GridCacheAffinity<K> aff;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -85,7 +85,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         gate = ctx.gate();
         cache = ctx.cache();
 
-        qry = new GridCacheQueriesProxy<>(ctx, prj, delegate.queries());
+        qry = new GridCacheQueriesProxy<>(ctx, prj, (GridCacheQueriesEx<K, V>)delegate.queries());
         dataStructures = new GridCacheDataStructuresProxy<>(ctx, ctx.cache().dataStructures());
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }
@@ -125,7 +125,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheAffinity0<K> affinity() {
+    @Override public GridCacheAffinity<K> affinity() {
         return aff;
     }
 
@@ -1899,7 +1899,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings( {"unchecked"})
+    @SuppressWarnings({"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ctx = (GridCacheContext<K, V>)in.readObject();
         delegate = (GridCacheProjectionEx<K, V>)in.readObject();
@@ -1911,7 +1911,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         gate = ctx.gate();
         cache = ctx.cache();
 
-        qry = new GridCacheQueriesProxy<>(ctx, prj, delegate.queries());
+        qry = new GridCacheQueriesProxy<>(ctx, prj, (GridCacheQueriesEx<K, V>)delegate.queries());
         dataStructures = new GridCacheDataStructuresProxy<>(ctx, ctx.cache().dataStructures());
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }

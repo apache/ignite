@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,6 +11,7 @@ package org.gridgain.grid;
 
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dr.hub.receiver.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.events.*;
@@ -52,6 +53,7 @@ import org.jetbrains.annotations.*;
 
 import javax.management.*;
 import java.lang.management.*;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -1040,7 +1042,7 @@ public class GridConfiguration {
 
     /**
      * Should return an instance of fully configured thread pool to be used in grid.
-     * This executor service will be in charge of processing {@link org.gridgain.grid.compute.GridComputeJob GridJobs}
+     * This executor service will be in charge of processing {@link GridComputeJob GridJobs}
      * and user messages sent to node.
      * <p>
      * If not provided, new executor service will be created using the following configuration:
@@ -1075,7 +1077,7 @@ public class GridConfiguration {
 
     /**
      * Executor service that is in charge of processing internal and Visor
-     * {@link org.gridgain.grid.compute.GridComputeJob GridJobs}.
+     * {@link GridComputeJob GridJobs}.
      * <p>
      * If not provided, new executor service will be created using the following configuration:
      * <ul>
@@ -1388,7 +1390,7 @@ public class GridConfiguration {
      * execution. This way, a task can be physically deployed only on one node
      * and then internally penetrate to all other nodes.
      * <p>
-     * See {@link org.gridgain.grid.compute.GridComputeTask} documentation for more information about task deployment.
+     * See {@link GridComputeTask} documentation for more information about task deployment.
      *
      * @return {@code true} if peer class loading is enabled, {@code false}
      *      otherwise.
@@ -2317,7 +2319,7 @@ public class GridConfiguration {
     /**
      * Gets flag indicating whether {@code TCP_NODELAY} option should be set for accepted client connections.
      * Setting this option reduces network latency and should be set to {@code true} in majority of cases.
-     * For more information, see {@link java.net.Socket#setTcpNoDelay(boolean)}
+     * For more information, see {@link Socket#setTcpNoDelay(boolean)}
      * <p/>
      * If not specified, default value is {@link #DFLT_TCP_NODELAY}.
      *

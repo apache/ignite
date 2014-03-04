@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
+import org.gridgain.grid.compute.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -17,7 +18,7 @@ import org.jetbrains.annotations.*;
  * three simple modes of how these jobs will be mapped to the nodes.
  * <p>
  * <b>Note</b> that if you need to provide custom distribution logic you need to
- * implement {@link org.gridgain.grid.compute.GridComputeTask} interface that allows you to customize every aspect of a
+ * implement {@link GridComputeTask} interface that allows you to customize every aspect of a
  * distributed Java code execution such as  mapping, load balancing, failover, collision
  * resolution, continuations, etc.
  *
