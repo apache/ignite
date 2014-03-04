@@ -1810,7 +1810,7 @@ public class GridGainEx {
                 ensureMultiInstanceSupport(swapspaceSpi);
             }
 
-            // Register GridFactory MBean for current grid instance.
+            // Register GridGain MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
 
             boolean started = false;
@@ -1942,7 +1942,7 @@ public class GridGainEx {
                         log.debug("Shutdown is in progress (ignoring): " + e.getMessage());
                 }
 
-            // Unregister GridFactory MBean.
+            // Unregister GridGain MBean.
             unregisterFactoryMBean();
 
             try {
@@ -2038,7 +2038,7 @@ public class GridGainEx {
 
                 if (data == null) {
                     try {
-                        GridGainMBean mbean = new GridFactoryMBeanAdapter();
+                        GridGainMBean mbean = new GridGainMBeanAdapter();
 
                         ObjectName objName = U.makeMBeanName(
                             null,
