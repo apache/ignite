@@ -113,7 +113,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>..\..\..\..\..\os\modules\clients\cpp\vsproject\$(Platform)\$(Configuration);..\..\..\..\clients\cpp\vsproject\$(Platform)\$(Configuration);$(BOOST_HOME)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>c:\BuildAgent\work\6bdd422ad7ee533a\os\modules\clients\cpp\vsproject\x64\Release;..\..\..\..\..\os\modules\clients\cpp\vsproject\$(Platform)\$(Configuration);..\..\..\..\clients\cpp\vsproject\$(Platform)\$(Configuration);$(BOOST_HOME)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>gridgain-client.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <LinkTimeCodeGeneration>
