@@ -393,11 +393,6 @@ public final class GridSystemProperties {
      */
     public static final String GG_OFFHEAP_SAFE_RELEASE = "GRIDGAIN_OFFHEAP_SAFE_RELEASE";
 
-    /**
-     * Maximum buffer size for continuous queries.
-     */
-    public static final String GG_CONT_QUERY_MAX_BUF_SIZE = "GRIDGAIN_CONTINUOUS_QUERY_MAX_BUF_SIZE";
-
     /** Maximum size for atomic cache queue delete history. */
     public static final String GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE = "GRIDGAIN_ATOMIC_CACHE_DELETE_HISTORY_SIZE";
 

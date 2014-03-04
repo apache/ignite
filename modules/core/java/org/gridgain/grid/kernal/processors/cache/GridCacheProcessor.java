@@ -408,8 +408,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cc.getName());
         }
 
-        assertParameter(cc.getContinuousQueryQueueSize() > 0, "cfg.getContinuousQueryQueueSize() > 0");
-
         // Validate DR send configuration.
         boolean ggfsCache = CU.isGgfsCache(c, cc.getName());
         boolean mongoCache = false; // CU.isMongoCache(c, cc.getName());

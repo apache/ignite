@@ -1,4 +1,4 @@
-/* @java.file.header */
+// @java.file.header
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,16 +14,12 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.worker.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
-import java.util.concurrent.locks.*;
 
 import static org.gridgain.grid.kernal.GridTopic.*;
 
@@ -37,12 +33,6 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
     /** Ordered topic prefix. */
     private static final String TOPIC_PREFIX = "CONTINUOUS_QUERY";
 
-    /** Force unwind interval. */
-    private static final long FORCE_UNWIND_INTERVAL = 1000;
-
-    /** Maximum buffer size. */
-    private int maxBufSize;
-
     /** Listeners. */
     private final ConcurrentMap<UUID, ListenerInfo<K, V>> lsnrs = new ConcurrentHashMap8<>();
 
@@ -51,73 +41,6 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
 
     /** Query sequence number for message topic. */
     private final AtomicLong seq = new AtomicLong();
-
-    /** Lock. */
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-
-    /** Threads. */
-    private final Collection<GridThread> threads = new HashSet<>();
-
-    /** Buffer. */
-    private volatile ConcurrentLinkedDeque8<GridCacheContinuousQueryEntry<K, V>> buf =
-        new ConcurrentLinkedDeque8<>();
-
-    /** Queue. */
-    private BlockingQueue<Queue<GridCacheContinuousQueryEntry<K, V>>> queue;
-
-    /** {@inheritDoc} */
-    @Override protected void start0() throws GridException {
-        GridCacheConfiguration cfg = cctx.config();
-
-        maxBufSize = cfg.getContinuousQueryMaximumBufferSize();
-
-        queue = new LinkedBlockingQueue<>(cfg.getContinuousQueryQueueSize() / maxBufSize);
-
-        threads.add(new GridThread(new GridWorker(cctx.gridName(), "continuous-query-notifier", log) {
-            @Override protected void body() {
-                while (!isCancelled()) {
-                    Queue<GridCacheContinuousQueryEntry<K, V>> q;
-
-                    try {
-                        q = queue.take();
-                    }
-                    catch (InterruptedException ignored) {
-                        break;
-                    }
-
-                    GridCacheContinuousQueryEntry<K, V> e;
-
-                    while ((e = q.poll()) != null) {
-                        for (ListenerInfo<K, V> lsnr : lsnrs.values())
-                            lsnr.onEntryUpdate(e);
-                    }
-                }
-            }
-        }));
-
-        threads.add(new GridThread(new GridWorker(cctx.gridName(), "continuous-query-unwinder", log) {
-            @Override protected void body() {
-                while (!isCancelled()) {
-                    try {
-                        U.sleep(FORCE_UNWIND_INTERVAL);
-                    }
-                    catch (GridInterruptedException ignored) {
-                        break;
-                    }
-
-                    unwind(true);
-                }
-            }
-        }));
-
-        U.startThreads(threads);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void onKernalStop0(boolean cancel) {
-        U.interrupt(threads);
-        U.joinThreads(threads, log);
-    }
 
     /**
      * @param prjPred Projection predicate.
@@ -146,75 +69,14 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
             if (e.isInternal())
                 return;
 
-            GridCacheContinuousQueryEntry<K, V> e0 =
-                new GridCacheContinuousQueryEntry<>(cctx, e.wrap(false), key, val, valBytes);
+            GridCacheContinuousQueryEntry<K, V> e0 = new GridCacheContinuousQueryEntry<>(
+                cctx, e.wrap(false), key, val, valBytes);
 
             e0.initValue(cctx.marshaller(), cctx.deploy().globalLoader());
 
-            if (unwind && buf.size() >= maxBufSize - 1) {
-                lock.writeLock().lock();
-
-                try {
-                    buf.add(e0);
-
-                    unwind0();
-                }
-                finally {
-                    lock.writeLock().unlock();
-                }
-            }
-            else {
-                lock.readLock().lock();
-
-                try {
-                    buf.add(e0);
-                }
-                finally {
-                    lock.readLock().unlock();
-                }
-            }
+            for (ListenerInfo<K, V> lsnr : lsnrs.values())
+                lsnr.onEntryUpdate(e0);
         }
-    }
-
-    /**
-     * Unwinds entries buffer.
-     *
-     * @param force Whether to unwind regardless of current buffer size.
-     */
-    public void unwind(boolean force) {
-        if (force || buf.sizex() >= maxBufSize) {
-            lock.writeLock().lock();
-
-            try {
-                unwind0();
-            }
-            finally {
-                lock.writeLock().unlock();
-            }
-        }
-    }
-
-    /**
-     * Unwinds entries buffer.
-     */
-    private void unwind0() {
-        assert lock.isWriteLockedByCurrentThread();
-
-        try {
-            queue.put(buf);
-        }
-        catch (InterruptedException ignored) {
-            Thread.currentThread().interrupt();
-        }
-
-        buf = new ConcurrentLinkedDeque8<>();
-    }
-
-    /**
-     * @return Current buffer size.
-     */
-    public int currentQueueSize() {
-        return maxBufSize * queue.size() + buf.sizex();
     }
 
     /**
@@ -234,6 +96,14 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
     }
 
     /**
+     * @param id Listener ID.
+     */
+    void unregisterListener(UUID id) {
+        if (lsnrs.remove(id) != null)
+            lsnrCnt.decrementAndGet();
+    }
+
+    /**
      * Iterates through existing data.
      *
      * @param id Listener ID.
@@ -247,14 +117,6 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
             info.onIterate(new GridCacheContinuousQueryEntry<>(cctx, e, e.getKey(), e.getValue(), null));
 
         info.flushPending();
-    }
-
-    /**
-     * @param id Listener ID.
-     */
-    void unregisterListener(UUID id) {
-        if (lsnrs.remove(id) != null)
-            lsnrCnt.decrementAndGet();
     }
 
     /**
