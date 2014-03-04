@@ -899,10 +899,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         if (job instanceof GridComputeJobMasterLeaveAware) {
             return new GridMasterLeaveAwareComputeJobAdapter() {
-                {
-                    peerDeployLike(U.peerDeployAware(job));
-                }
-
                 @Nullable @Override public Object execute() {
                     return job.apply(arg);
                 }
@@ -914,10 +910,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
         else {
             return new GridComputeJobAdapter() {
-                {
-                    peerDeployLike(U.peerDeployAware(job));
-                }
-
                 @Nullable @Override public Object execute() {
                     return job.apply(arg);
                 }
@@ -937,10 +929,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         if (c instanceof GridComputeJobMasterLeaveAware) {
             return new GridMasterLeaveAwareComputeJobAdapter() {
-                {
-                    setPeerDeployAware(U.peerDeployAware(c));
-                }
-
                 @Override public Object execute() {
                     try {
                         return c.call();
@@ -957,10 +945,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
         else {
             return new GridComputeJobAdapter() {
-                {
-                    setPeerDeployAware(U.peerDeployAware(c));
-                }
-
                 @Override public Object execute() {
                     try {
                         return c.call();
@@ -1039,10 +1023,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         if (r instanceof GridComputeJobMasterLeaveAware) {
             return new GridMasterLeaveAwareComputeJobAdapter() {
-                {
-                    peerDeployLike(U.peerDeployAware(r));
-                }
-
                 @Nullable @Override public Object execute() {
                     r.run();
 
@@ -1056,10 +1036,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
         else {
             return new GridComputeJobAdapter() {
-                {
-                    peerDeployLike(U.peerDeployAware(r));
-                }
-
                 @Nullable @Override public Object execute() {
                     r.run();
 

@@ -114,16 +114,6 @@ public class GridStreamerQueryTask<R> extends GridComputeTaskAdapter<Void, Colle
         }
 
         /** {@inheritDoc} */
-        @Override public Class<?> deployClass() {
-            return null;//FIXME qryClos.deployClass();
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClassLoader classLoader() {
-            return null;//FIXME  qryClos.classLoader();
-        }
-
-        /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(qryClos);
             U.writeString(out, streamer);
