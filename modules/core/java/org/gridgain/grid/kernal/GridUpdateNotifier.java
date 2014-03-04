@@ -241,6 +241,9 @@ class GridUpdateNotifier {
 
                     Document dom = null;
 
+                    // gridgain.org analyzes User-Agent header and default value "Java/1.7.0_XX" does not work.
+                    conn.setRequestProperty("User-Agent", "");
+
                     try {
                         in = conn.getInputStream();
 
