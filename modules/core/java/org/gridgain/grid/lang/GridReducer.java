@@ -10,7 +10,6 @@
 package org.gridgain.grid.lang;
 
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

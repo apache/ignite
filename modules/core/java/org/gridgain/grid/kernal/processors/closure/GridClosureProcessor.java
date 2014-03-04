@@ -384,11 +384,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         enterBusy();
 
         try {
-            // In case cache key is passed instead of affinity key.
-            final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
-
             if (F.isEmpty(nodes))
                 return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
+
+            // In case cache key is passed instead of affinity key.
+            final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
@@ -414,11 +414,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         enterBusy();
 
         try {
-            // In case cache key is passed instead of affinity key.
-            final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
-
             if (F.isEmpty(nodes))
                 return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
+
+            // In case cache key is passed instead of affinity key.
+            final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
@@ -932,9 +932,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         if (c instanceof GridComputeJobMasterLeaveAware) {
             return new GridMasterLeaveAwareComputeJobAdapter() {
+                /** */
                 @GridCacheName
                 private final String cn = cacheName;
 
+                /** */
                 @GridCacheAffinityKeyMapped
                 private final Object ak = affKey;
 
@@ -954,9 +956,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
         else {
             return new GridComputeJobAdapter() {
+                /** */
                 @GridCacheName
                 private final String cn = cacheName;
 
+                /** */
                 @GridCacheAffinityKeyMapped
                 private final Object ak = affKey;
 
@@ -1020,9 +1024,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         if (r instanceof GridComputeJobMasterLeaveAware) {
             return new GridMasterLeaveAwareComputeJobAdapter() {
+                /** */
                 @GridCacheName
                 private final String cn = cacheName;
 
+                /** */
                 @GridCacheAffinityKeyMapped
                 private final Object ak = affKey;
 
@@ -1039,9 +1045,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
         else {
             return new GridComputeJobAdapter() {
+                /** */
                 @GridCacheName
                 private final String cn = cacheName;
 
+                /** */
                 @GridCacheAffinityKeyMapped
                 private final Object ak = affKey;
 
@@ -1122,18 +1130,13 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private GridComputeLoadBalancer lb;
 
         /** */
-        private GridBiTuple<
-            GridClosureCallMode,
-            Collection<? extends Runnable>
-            > t;
+        private GridBiTuple<GridClosureCallMode, Collection<? extends Runnable>> t;
 
         /**
          * @param mode Call mode.
          * @param jobs Collection of jobs.
          */
-        private T1(
-            GridClosureCallMode mode,
-            Collection<? extends Runnable> jobs) {
+        private T1(GridClosureCallMode mode, Collection<? extends Runnable> jobs) {
             super(U.peerDeployAware0(jobs));
 
             t = F.<
@@ -1159,18 +1162,13 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private GridComputeLoadBalancer lb;
 
         /** */
-        private GridBiTuple<
-            GridClosureCallMode,
-            Runnable
-            > t;
+        private GridBiTuple<GridClosureCallMode, Runnable> t;
 
         /**
          * @param mode Call mode.
          * @param job Job.
          */
-        private T2(
-            GridClosureCallMode mode,
-            Runnable job) {
+        private T2(GridClosureCallMode mode, Runnable job) {
             super(U.peerDeployAware(job));
 
             t = F.t(mode, job);
@@ -1193,8 +1191,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private GridComputeLoadBalancer lb;
 
         /** */
-        private GridTuple3<
-            GridClosureCallMode,
+        private GridTuple3<GridClosureCallMode,
             Collection<? extends Callable<R1>>,
             GridReducer<R1, R2>
             > t;
@@ -1205,10 +1202,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param jobs Collection of jobs.
          * @param rdc Reducer.
          */
-        private T3(
-            GridClosureCallMode mode,
-            Collection<? extends Callable<R1>> jobs,
-            GridReducer<R1, R2> rdc) {
+        private T3(GridClosureCallMode mode, Collection<? extends Callable<R1>> jobs, GridReducer<R1, R2> rdc) {
             super(U.peerDeployAware0(jobs));
 
             t = F.<
@@ -1318,9 +1312,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public R reduce(List<GridComputeJobResult> res) throws GridException {
-            for (GridComputeJobResult r : res)
+            for (GridComputeJobResult r : res) {
                 if (r.getException() == null)
                     return r.getData();
+            }
 
             throw new GridException("Failed to find successful job result: " + res);
         }
@@ -1337,6 +1332,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** */
         private final Collection<? extends Callable<R>> jobs;
 
+        /** */
+        @GridLoadBalancerResource
+        private GridComputeLoadBalancer lb;
+
         /**
          *
          * @param mode Call mode.
@@ -1350,10 +1349,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             this.mode = mode;
             this.jobs = jobs;
         }
-
-        /** */
-        @GridLoadBalancerResource
-        private GridComputeLoadBalancer lb;
 
         /** {@inheritDoc} */
         @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
@@ -1373,27 +1368,21 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     private class T7<R> extends GridPeerDeployAwareTaskAdapter<Void, R> {
         /** */
-        private GridBiTuple<
-            GridClosureCallMode,
-            Callable<R>
-            > t;
-
-        /**
-         *
-         * @param mode Call mode.
-         * @param job Job.
-         */
-        private T7(
-            GridClosureCallMode mode,
-            Callable<R> job) {
-            super(U.peerDeployAware(job));
-
-            t = F.t(mode, job);
-        }
+        private GridBiTuple<GridClosureCallMode, Callable<R>> t;
 
         /** */
         @GridLoadBalancerResource
         private GridComputeLoadBalancer lb;
+
+        /**
+         * @param mode Call mode.
+         * @param job Job.
+         */
+        private T7(GridClosureCallMode mode, Callable<R> job) {
+            super(U.peerDeployAware(job));
+
+            t = F.t(mode, job);
+        }
 
         /** {@inheritDoc} */
         @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
@@ -1428,9 +1417,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param job Job.
          * @param arg Optional job argument.
          */
-        private T8(
-            GridClosure<T, R> job,
-            @Nullable T arg) {
+        private T8(GridClosure<T, R> job, @Nullable T arg) {
             super(U.peerDeployAware(job));
 
             this.job = job;
@@ -1440,15 +1427,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, @Nullable Void arg)
             throws GridException {
-            Map<GridComputeJob, GridNode> map = new HashMap<>(1, 1);
-
-            JobMapper mapper = new JobMapper(map);
-
             GridComputeJob job = job(this.job, this.arg);
 
-            mapper.map(job, lb.getBalancedNode(job, null));
-
-            return map;
+            return Collections.singletonMap(job, lb.getBalancedNode(job, null));
         }
 
         /** {@inheritDoc} */
