@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Streamer window index provider MBean.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridStreamerIndexProviderMBean {
     /**

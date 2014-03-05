@@ -15,9 +15,6 @@ import org.gridgain.grid.lang.GridBiInClosure
 
 /**
  * Wrapping Scala function for `GridInClosure2`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarInClosure2Function[T1, T2](val inner: GridBiInClosure[T1, T2]) extends ((T1, T2) => Unit) {
     assert(inner != null)

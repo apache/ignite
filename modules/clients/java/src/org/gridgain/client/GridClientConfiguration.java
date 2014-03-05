@@ -24,9 +24,6 @@ import static org.apache.commons.lang.StringUtils.*;
 
 /**
  * Java client configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientConfiguration {
     /** Default client protocol. */

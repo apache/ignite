@@ -15,9 +15,6 @@ import org.gridgain.grid.lang.{GridPredicate}
 
 /**
  * Wrapping Scala function for `GridPredicate`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarPredicateFunction[T](val inner: GridPredicate[T]) extends (T => Boolean) {
     assert(inner != null)

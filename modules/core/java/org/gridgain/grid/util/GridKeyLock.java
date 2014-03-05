@@ -20,9 +20,6 @@ import java.util.concurrent.*;
  * <p>
  * Map resources values to some number of locks,
  * and supply convenience methods to obtain and release these locks using key values.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridKeyLock {
     /** Underlying locks. */

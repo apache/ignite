@@ -19,9 +19,6 @@ import java.util.*;
 /**
  * Committed transaction information. Contains recovery writes that will be used to set commit values
  * in case if originating node crashes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheCommittedTxInfo<K, V> implements Externalizable {
     /** Originating transaction ID. */

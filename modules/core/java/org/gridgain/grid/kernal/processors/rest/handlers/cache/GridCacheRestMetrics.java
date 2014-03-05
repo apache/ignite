@@ -15,9 +15,6 @@ import java.util.*;
 
 /**
  * Grid cache metrics for rest.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheRestMetrics {
     /** Create time. */

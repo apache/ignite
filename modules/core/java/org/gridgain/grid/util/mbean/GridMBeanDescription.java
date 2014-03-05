@@ -13,9 +13,6 @@ import java.lang.annotation.*;
 
 /**
  * Provides description for MBean classes and methods.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

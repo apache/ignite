@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Cache data center replication sender cache mode.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridDrSenderCacheMode {
     /**

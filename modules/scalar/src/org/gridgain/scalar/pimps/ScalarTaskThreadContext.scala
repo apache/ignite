@@ -21,9 +21,6 @@ import org.jetbrains.annotations._
  * Method on `GridProjection` always returns an instance of type `GridProjection` even when
  * called on a sub-class. This trait's methods return the instance of the same type
  * it was called on.
- *
- * @author @java.author
- * @version @java.version
  */
 trait ScalarTaskThreadContext[T <: GridProjection] extends ScalarConversions { this: PimpedType[T] =>
     /**

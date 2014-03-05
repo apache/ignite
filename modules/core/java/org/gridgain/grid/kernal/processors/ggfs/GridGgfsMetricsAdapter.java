@@ -16,9 +16,6 @@ import java.io.*;
 
 /**
  * GGFS metrics adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsMetricsAdapter implements GridGgfsMetrics, Externalizable {
     /** Used space on local node. */

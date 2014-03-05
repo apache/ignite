@@ -32,9 +32,6 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
  * Query factory responsible for providing all queries utilized by queue service.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("PackageVisibleInnerClass")
 class GridCacheQueueQueryFactory<T> implements Externalizable {

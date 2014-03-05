@@ -29,9 +29,6 @@ import java.util.*;
 
 /**
  * Loader class for router.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridRouterCommandLineStartup {
     /** Ant-augmented version number. */

@@ -24,9 +24,6 @@ import java.util.*;
 
 /**
  * DHT prepare request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequest<K, V> {
     /** Max order. */

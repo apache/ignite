@@ -14,9 +14,6 @@ import org.gridgain.grid.util.tostring.*;
 
 /**
  * URI FTP deployment configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridUriDeploymentFtpConfiguration {
     /** */

@@ -11,9 +11,6 @@ package org.gridgain.client;
 
 /**
  * This exception is thrown when a client handshake has failed.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientHandshakeException extends GridClientException {
     /** Status code for handshake error. */

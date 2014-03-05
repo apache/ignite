@@ -11,9 +11,6 @@ package org.gridgain.grid.marshaller.optimized;
 
 /**
  * Field type used to calculate {@code Unsafe} offsets into objects.
- *
- * @author @java.author
- * @version @java.version
  */
 enum GridOptimizedFieldType {
     /** */

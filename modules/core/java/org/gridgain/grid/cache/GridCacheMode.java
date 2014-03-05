@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
 /**
  * Enumeration of all supported caching modes. Cache mode is specified in {@link GridCacheConfiguration}
  * and cannot be changed after cache has started.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridCacheMode {
     /**

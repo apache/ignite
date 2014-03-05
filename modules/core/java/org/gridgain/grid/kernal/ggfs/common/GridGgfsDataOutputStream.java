@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * Data output stream implementing ObjectOutput but throwing exceptions on methods working with objects.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsDataOutputStream extends DataOutputStream implements ObjectOutput {
     /**

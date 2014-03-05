@@ -16,9 +16,6 @@ import org.jetbrains.annotations.*;
  * <p>
  * Partitioned distribution mode can be configured via {@link GridCacheConfiguration#getDistributionMode()}
  * configuration property.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridCacheDistributionMode {
     /**

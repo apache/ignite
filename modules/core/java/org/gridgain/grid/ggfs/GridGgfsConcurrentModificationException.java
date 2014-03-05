@@ -12,9 +12,6 @@ package org.gridgain.grid.ggfs;
 /**
  * {@code GGFS} exception indicating that file system structure was modified concurrently. This error
  * indicates that an operation performed in DUAL mode cannot proceed due to these changes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsConcurrentModificationException extends GridGgfsException {
     /**

@@ -16,9 +16,6 @@ import java.io.*;
 
 /**
  * Response which is sent by receiving hub as result of {@link GridDrExternalHandshakeRequest} processing.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrExternalHandshakeResponse implements GridDrExternalProtocolVersionAware, Externalizable {
     /** */

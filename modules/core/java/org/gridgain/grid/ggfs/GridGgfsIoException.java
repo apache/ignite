@@ -15,9 +15,6 @@ import java.io.*;
 
 /**
  * This exception is used to wrap standard {@link IOException} into {@link GridException}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsIoException extends GridException {
     /**

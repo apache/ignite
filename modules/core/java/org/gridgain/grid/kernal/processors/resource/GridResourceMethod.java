@@ -16,9 +16,6 @@ import java.lang.reflect.*;
 /**
  * Wrapper for data where resource should be injected.
  * Bean contains {@link Method} and {@link Annotation} for that method.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridResourceMethod {
     /** Method which used to inject resource. */

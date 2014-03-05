@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Empty iterator.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridEmptyIterator<T> extends GridIteratorAdapter<T> {
     /** {@inheritDoc} */

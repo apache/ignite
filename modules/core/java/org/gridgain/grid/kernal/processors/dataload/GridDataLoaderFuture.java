@@ -20,9 +20,6 @@ import java.io.*;
 
 /**
  * Data loader future.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridDataLoaderFuture extends GridFutureAdapter<Object> {
     /** Data loader. */

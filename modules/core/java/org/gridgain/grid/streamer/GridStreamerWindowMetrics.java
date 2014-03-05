@@ -11,9 +11,6 @@ package org.gridgain.grid.streamer;
 
 /**
  * Streamer window metrics.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridStreamerWindowMetrics {
     /**

@@ -37,9 +37,6 @@ import java.util.*;
 
 /**
  * Communication message factory.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpCommunicationMessageFactory {
     /**

@@ -21,9 +21,6 @@ import java.io.*;
  * Note that fields annotated with {@link GridCacheQuerySqlField}
  * annotation will be indexed and can be used in cache queries. Also note that
  * arbitrary {@link #userObject()} put into the queue can also be indexed the same way.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("AbbreviationUsage")
 public class GridCacheQueueItemImpl<T> implements GridCacheQueueItem<T>, GridPeerDeployAware, Externalizable,

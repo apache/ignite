@@ -11,9 +11,6 @@ package org.gridgain.client;
 
 /**
  * Cache projection flags that specify projection behaviour.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridClientCacheFlag {
     /** Skips store, i.e. no read-through and no write-through behavior. */

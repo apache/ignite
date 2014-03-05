@@ -12,9 +12,6 @@ package org.gridgain.grid.dr.hub.receiver;
 /**
  * Data center replication receiver hub metrics for incoming data, i.e. data transferred from remote sender hubs to
  * receiver hub.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDrReceiverHubInMetrics {
     /**

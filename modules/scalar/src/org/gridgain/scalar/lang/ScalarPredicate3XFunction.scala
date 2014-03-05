@@ -15,9 +15,6 @@ import org.gridgain.grid.util.lang.{GridPredicate3X}
 
 /**
  * Wrapping Scala function for `GridPredicate3X`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarPredicate3XFunction[T1, T2, T3](val inner: GridPredicate3X[T1, T2, T3]) extends ((T1, T2, T3) => Boolean) {
     assert(inner != null)

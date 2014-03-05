@@ -36,9 +36,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
  *      <li>Addresses for initialization (see {@link #setAddresses(Collection)})</li>
  *      <li>Shared flag (see {@link #setShared(boolean)})</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter {
     /** Grid logger. */

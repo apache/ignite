@@ -13,9 +13,6 @@ import java.util.*;
 
 /**
  * This interface defines worker listener.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridWorkerListener extends EventListener {
     /**

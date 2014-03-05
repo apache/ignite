@@ -19,9 +19,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Client node implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientNodeImpl implements GridClientNode {
     /** Node id. */

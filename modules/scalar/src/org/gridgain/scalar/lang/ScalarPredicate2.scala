@@ -15,9 +15,6 @@ import org.gridgain.grid.lang.GridBiPredicate
 
 /**
  * Peer deploy aware adapter for Java's `GridPredicate2`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarPredicate2[T1, T2](private val p: (T1, T2) => Boolean) extends GridBiPredicate[T1, T2] {
     assert(p != null)

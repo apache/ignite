@@ -47,9 +47,6 @@ import java.util.*;
  * by using {@link GridConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- *
- * @author @java.author
- * @version @java.version
  * @see GridEventType#EVT_CACHE_PRELOAD_PART_LOADED
  * @see GridEventType#EVT_CACHE_PRELOAD_PART_UNLOADED
  * @see GridEventType#EVT_CACHE_PRELOAD_STARTED

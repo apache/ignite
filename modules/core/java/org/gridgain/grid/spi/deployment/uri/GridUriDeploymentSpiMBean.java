@@ -15,9 +15,6 @@ import java.util.*;
 
 /**
  * Management bean for {@link GridUriDeploymentSpi}.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean that provides access to URI deployment SPI configuration.")
 public interface GridUriDeploymentSpiMBean extends GridSpiManagementMBean {

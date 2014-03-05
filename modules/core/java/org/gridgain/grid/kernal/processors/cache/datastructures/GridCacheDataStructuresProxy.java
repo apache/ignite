@@ -16,9 +16,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Data structures proxy object.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructures {
     /** Delegate object. */

@@ -18,9 +18,6 @@ import java.lang.reflect.*;
 /**
  * Implementation of {@link GridCacheTmLookup} interface that attempts to obtain
  * JTA manager by calling static method on the class.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheReflectionTmLookup implements GridCacheTmLookup {
     /** */

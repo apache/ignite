@@ -38,8 +38,7 @@ import org.jetbrains.annotations.*;
  * @see GridCacheDeepCloner
  * @see GridCacheConfiguration#getCloner()
  * @see GridCacheConfiguration#setCloner(GridCacheCloner)
- * @author @java.author
- * @version @java.version
+ *
  */
 public interface GridCacheCloner {
     /**

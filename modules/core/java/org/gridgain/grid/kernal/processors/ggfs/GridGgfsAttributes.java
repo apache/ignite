@@ -19,9 +19,6 @@ import java.util.*;
  * GGFS attributes.
  * <p>
  * This class contains information on a single GGFS configured on some node.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsAttributes implements Externalizable {
     /** GGFS name. */

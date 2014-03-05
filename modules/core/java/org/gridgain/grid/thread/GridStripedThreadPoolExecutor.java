@@ -16,9 +16,6 @@ import java.util.concurrent.*;
 
 /**
  * An {@link ExecutorService} that executes submitted tasks using pooled grid threads.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStripedThreadPoolExecutor implements ExecutorService {
     /** */

@@ -78,9 +78,6 @@ import java.util.*;
  * </pre>
  * You can also instantiate grid directly from Spring without using {@code GridGain}.
  * For more information refer to {@link GridSpringBean} documentation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGain {
     /**

@@ -11,9 +11,6 @@ package org.gridgain.grid.util.offheap;
 
 /**
  * Off-heap event listener.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridOffHeapEventListener {
     /** Event notification. */

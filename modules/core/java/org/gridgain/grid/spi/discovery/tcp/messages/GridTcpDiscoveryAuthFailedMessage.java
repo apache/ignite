@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Message telling joining node that its authentication failed on coordinator.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryAuthFailedMessage extends GridTcpDiscoveryAbstractMessage {
     /** Coordinator address. */

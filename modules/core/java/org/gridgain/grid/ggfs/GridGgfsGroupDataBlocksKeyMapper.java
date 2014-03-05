@@ -44,9 +44,6 @@ import org.gridgain.grid.util.typedef.internal.*;
  *     ...
  * &lt;/bean&gt;
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKeyMapper {
     /** Size of the group. */

@@ -15,9 +15,6 @@ import org.gridgain.grid.util.lang.{GridInClosure3}
 
 /**
  * Wrapping Scala function for `GridInClosure3`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarInClosure3Function[T1, T2, T3](val inner: GridInClosure3[T1, T2, T3]) extends ((T1, T2, T3) => Unit) {
     assert(inner != null)

@@ -14,9 +14,6 @@
 
 /**
  * Generic cache message result.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientMessageCacheResult : public GridClientMessageResult {
 };

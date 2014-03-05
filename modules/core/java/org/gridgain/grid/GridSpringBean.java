@@ -68,9 +68,6 @@ import java.util.*;
  * Grid grid = (Grid)ctx.getBean("mySpringBean");
  * </pre>
  * <p>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, DisposableBean, InitializingBean,
     ApplicationContextAware, Externalizable {

@@ -18,8 +18,7 @@ import java.util.*;
  * Lean set implementation. Internally this set is based on {@link GridLeanMap}.
  *
  * @see GridLeanMap
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridLeanSet<E> extends GridSetWrapper<E> implements Cloneable {
     /**

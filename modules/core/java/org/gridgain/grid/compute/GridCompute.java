@@ -96,9 +96,6 @@ import java.util.concurrent.*;
  * configured for this grid instance will be used (i.e. failover, load balancing, collision resolution,
  * checkpoints, etc.). If you need to override configured defaults, you should use compute task together with
  * {@link GridComputeTaskSpis} annotation. Refer to {@link GridComputeTask} documentation for more information.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCompute {
     /**

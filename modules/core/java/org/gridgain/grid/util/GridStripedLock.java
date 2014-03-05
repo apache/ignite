@@ -11,9 +11,6 @@ import java.util.concurrent.locks.*;
  *
  * Map {@code int} and {@code long} values to some number of locks,
  * and supply convenience methods to obtain and release these locks using key values.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStripedLock {
     /** Array of underlying locks. */

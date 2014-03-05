@@ -48,9 +48,6 @@ import java.util.*;
  * {@link #affinityExecuteAsync(String, String, Object, Object)} to synchronously
  * or asynchronously execute remote tasks on affinity nodes based on provided
  * affinity keys.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridClientCompute {
     /**

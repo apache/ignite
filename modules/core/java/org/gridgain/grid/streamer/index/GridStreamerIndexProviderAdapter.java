@@ -26,9 +26,6 @@ import static org.gridgain.grid.streamer.index.GridStreamerIndexPolicy.*;
 
 /**
  * Convenient {@link GridStreamerIndexProvider} adapter implementing base configuration methods.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridStreamerIndexProvider<E, K, V> {
     /** */

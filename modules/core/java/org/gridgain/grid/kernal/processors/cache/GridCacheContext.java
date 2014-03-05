@@ -56,9 +56,6 @@ import static org.gridgain.grid.dr.cache.receiver.GridDrReceiverCacheConflictRes
 
 /**
  * Cache context.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridToStringExclude
 public class GridCacheContext<K, V> implements Externalizable {

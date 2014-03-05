@@ -27,8 +27,7 @@ import java.util.concurrent.atomic.*;
  * Query future adapter.
  *
  * @param <R> Result type.
- * @author @java.author
- * @version @java.version
+ *
  */
 public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAdapter<Collection<R>>
     implements GridCacheQueryFuture<R>, GridTimeoutObject {

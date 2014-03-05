@@ -22,9 +22,6 @@ import java.io.*;
  * <p>
  * The class is expected to be used only from synchronized context (e.g. {@link GridGgfsInputStreamImpl}) and therefore
  * is not tread-safe.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsSecondaryInputStreamWrapper {
     /** Secondary file system. */

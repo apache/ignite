@@ -65,9 +65,6 @@ import visor._
  *     ack
  *         Prints local node ID on all nodes in the topology.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorAckCommand {
     /**
@@ -172,9 +169,6 @@ class VisorAckCommand {
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorAckCommand {
     // Adds command's help to visor.

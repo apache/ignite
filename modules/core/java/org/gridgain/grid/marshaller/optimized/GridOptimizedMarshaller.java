@@ -92,9 +92,6 @@ import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallerUtil
  *     ...
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridOptimizedMarshaller extends GridAbstractMarshaller {
     /** Whether or not to require an object to be serializable in order to be marshalled. */

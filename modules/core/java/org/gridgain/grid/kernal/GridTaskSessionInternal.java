@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Internal task session interface.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridTaskSessionInternal extends GridComputeTaskSession {
     /**

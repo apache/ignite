@@ -99,9 +99,6 @@ import java.util.*;
  *     tx.commit();
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheTx extends GridMetadataAware, AutoCloseable {
     /**

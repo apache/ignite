@@ -39,9 +39,6 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
  * Data loader implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     /** Cache updater. */

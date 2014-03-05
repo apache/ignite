@@ -23,9 +23,6 @@ import java.util.*;
 
 /**
  * Streamer broadcast task.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerBroadcastTask extends GridPeerDeployAwareTaskAdapter<Void, Void> {
     /** Closure. */

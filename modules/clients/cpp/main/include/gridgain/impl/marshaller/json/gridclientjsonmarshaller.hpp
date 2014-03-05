@@ -37,9 +37,6 @@ typedef boost::property_tree::ptree TJson;
 
 /**
  * Grid JSON marshaler.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientJsonMarshaller {
 private:

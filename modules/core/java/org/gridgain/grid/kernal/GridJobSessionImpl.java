@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * Job session implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJobSessionImpl implements GridTaskSessionInternal {
     /** Wrapped task session. */

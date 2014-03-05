@@ -32,9 +32,6 @@ import org.gridgain.grid.util.typedef.internal.*;
  *     &lt;/bean&gt;
  * &lt;/property&gt;
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridAdaptiveProcessingTimeLoadProbe implements GridAdaptiveLoadProbe {
     /** Flag indicating whether to use average execution time vs. current. */

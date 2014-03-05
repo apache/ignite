@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Set counterpart for {@link IdentityHashMap}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIdentityHashSet<E> extends GridSetWrapper<E> {
     /**

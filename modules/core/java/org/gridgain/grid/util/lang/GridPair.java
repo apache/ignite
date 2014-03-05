@@ -15,9 +15,6 @@ import java.io.*;
 
 /**
  * Simple extension over {@link GridBiTuple} for pair of objects of the same type.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridPair<T> extends GridBiTuple<T, T> {
     /**

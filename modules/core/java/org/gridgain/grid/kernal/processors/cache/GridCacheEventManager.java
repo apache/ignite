@@ -23,9 +23,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Cache event manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Local node ID. */

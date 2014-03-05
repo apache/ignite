@@ -17,9 +17,6 @@ import org.jetbrains.annotations._
 
 /**
  * Companion object.
- *
- * @author @java.author
- * @version @java.version
  */
 object ScalarProjectionPimp {
     /**
@@ -57,9 +54,6 @@ object ScalarProjectionPimp {
  * that Scala pimp is shadowing or with Java package name that your Scala code is importing.
  * Instead of giving two different names to the same function we've decided to simply mark
  * Scala's side method with `$` suffix.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarProjectionPimp[A <: GridProjection] extends PimpedType[A] with Iterable[GridNode]
     with ScalarTaskThreadContext[A] {

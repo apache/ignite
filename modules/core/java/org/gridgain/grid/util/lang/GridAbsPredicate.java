@@ -24,9 +24,6 @@ import org.gridgain.grid.util.typedef.*;
  * Note that this interface does not impose or assume any specific thread-safety by its
  * implementations. Each implementation can elect what type of thread-safety it provides,
  * if any.
- *
- * @author @java.author
- * @version @java.version
  * @see P1
  * @see GridFunc
  */

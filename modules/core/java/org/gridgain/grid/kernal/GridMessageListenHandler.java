@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * Continuous handler for message subscription.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridMessageListenHandler implements GridContinuousHandler {
     /** */

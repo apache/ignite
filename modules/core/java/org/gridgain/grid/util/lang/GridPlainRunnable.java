@@ -11,9 +11,6 @@ package org.gridgain.grid.util.lang;
 
 /**
  * Runnable instance that should never be deployed or injected.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridPlainRunnable extends Runnable {
     // No-op.

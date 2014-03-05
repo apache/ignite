@@ -18,9 +18,6 @@ import VisorDeployCommand._
 
 /**
  * Unit test for 'deploy' command.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorDeployCommandSpec extends FlatSpec with ShouldMatchers {
     behavior of "A 'deploy' visor command"

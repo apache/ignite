@@ -13,9 +13,6 @@ import java.util.*;
 
 /**
  * Grid file system commands to call remotely.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridGgfsIpcCommand {
     /** Handshake command which will send information necessary for client to handle requests correctly. */

@@ -18,9 +18,6 @@ import java.nio.charset.*;
 /**
  * Record resolver based on delimiters represented as strings. Works in the same way as
  * {@link GridGgfsByteDelimiterRecordResolver}, but uses strings as delimiters instead of byte arrays.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsStringDelimiterRecordResolver extends GridGgfsByteDelimiterRecordResolver {
     /**

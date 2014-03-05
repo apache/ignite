@@ -20,9 +20,6 @@ class GridUuid;
 
 /**
  * Topology holder class.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientTopology {
 public:

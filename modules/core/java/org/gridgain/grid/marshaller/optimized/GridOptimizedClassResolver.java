@@ -28,9 +28,6 @@ import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallerUtil
 
 /**
  * Resolves class names by serialVersionUID.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "unchecked"})
 class GridOptimizedClassResolver {

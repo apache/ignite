@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * Continuous routine handler.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridContinuousHandler extends Externalizable {
     /**

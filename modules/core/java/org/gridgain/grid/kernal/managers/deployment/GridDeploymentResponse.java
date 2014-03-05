@@ -19,9 +19,6 @@ import java.nio.*;
 
 /**
  * Grid deployment response containing requested resource bytes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
     /** Result state. */

@@ -25,9 +25,6 @@ import java.util.*;
  * certain directory or file and scanner is in charge of watching all changes
  * (file deletion, creation and so on) and sending notification to the listener
  * about every change.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridUriDeploymentFileScanner extends GridUriDeploymentScanner {
     /** Scanning directory or file. */

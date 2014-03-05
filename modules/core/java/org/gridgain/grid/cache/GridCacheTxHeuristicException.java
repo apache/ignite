@@ -17,9 +17,6 @@ import org.gridgain.grid.*;
  * Cache will still resolve this situation automatically to ensure data
  * integrity, by invalidating all values participating in this transaction
  * on remote nodes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheTxHeuristicException extends GridException {
     /**

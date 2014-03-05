@@ -20,9 +20,6 @@ import java.io.*;
 /**
  * Future which waits for embedded future to complete and then asynchronously executes
  * provided closure with embedded future result.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"NullableProblems"})
 public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {

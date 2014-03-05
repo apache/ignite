@@ -21,9 +21,6 @@ import java.io.*;
 
 /**
  * Logger which automatically attaches {@code [cacheName]} to every log statement.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridToStringExclude
 class GridCacheLogger extends GridMetadataAwareAdapter implements GridLogger, Externalizable {

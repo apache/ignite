@@ -14,9 +14,6 @@ import org.gridgain.grid.*;
 /**
  * Exception thrown when router did not return route map. In this case pipeline execution is stopped
  * and corresponding callback is executed on originating node.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerRouteFailedException extends GridException {
     /**

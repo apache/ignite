@@ -50,9 +50,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
  * Cache based file's data container.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsDataManager extends GridGgfsManager {
     /** GGFS. */

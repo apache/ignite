@@ -61,9 +61,6 @@ import java.util.concurrent.*;
  *     ...
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridExecutorService extends GridMetadataAwareAdapter implements ExecutorService, Externalizable {
     /** */
@@ -548,8 +545,6 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
     /**
      * Listener to track tasks.
-     *
-     * @author @java.author
      */
     private class TaskTerminateListener<T> implements GridInClosure<GridFuture<T>> {
         /** {@inheritDoc} */
@@ -563,8 +558,6 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     /**
      * Wrapper for {@link GridFuture}.
      * Used for compatibility {@link Future} interface.
-     *
-     * @author @java.author
      * @param <T> The result type of the {@link Future} argument.
      */
     private class TaskFutureWrapper<T> implements Future<T> {

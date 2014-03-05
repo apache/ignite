@@ -25,9 +25,6 @@ import static org.gridgain.grid.cache.GridCachePeekMode.*;
 
 /**
  * Colocated cache entry public API.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V> {
     /**

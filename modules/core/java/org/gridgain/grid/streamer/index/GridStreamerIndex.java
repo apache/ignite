@@ -26,9 +26,6 @@ import java.util.*;
  * <p>
  * Indexes are created and provided for streamer windows by {@link GridStreamerIndexProvider} which is
  * specified in streamer configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridStreamerIndex<E, K, V> extends Iterable<GridStreamerIndexEntry<E, K, V>> {
     /**

@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Partition states.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridDhtPartitionState {
     /** Partition is being loaded from another node. */

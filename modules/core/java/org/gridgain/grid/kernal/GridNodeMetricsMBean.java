@@ -14,9 +14,6 @@ import org.gridgain.grid.util.mbean.*;
 
 /**
  * MBean for local node metrics.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean that provides access to all local node metrics.")
 public interface GridNodeMetricsMBean extends GridNodeMetrics {

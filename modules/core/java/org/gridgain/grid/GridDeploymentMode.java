@@ -74,9 +74,6 @@ import org.jetbrains.annotations.*;
  *      any need for explicit deployment.
  *  </li>
  * </ol>
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridDeploymentMode {
     /**

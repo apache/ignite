@@ -30,9 +30,6 @@ import java.lang.annotation.*;
  *     ...
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

@@ -22,9 +22,6 @@ import java.util.concurrent.atomic.*;
  * readjust back to allowed size.
  * <p>
  * Note that {@link #remove(Object)} method is not supported for this kind of set.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridBoundedConcurrentOrderedSet<E> extends GridConcurrentSkipListSet<E> {
     /** Element count. */

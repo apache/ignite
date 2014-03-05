@@ -53,9 +53,6 @@ import java.util.*;
  *     }
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  * @param <T> Type of the task execution argument.
  * @param <R> Type of the task result returning from {@link GridComputeTask#reduce(List)} method.
  */

@@ -24,8 +24,7 @@ import collection.JavaConversions._
 import org.jetbrains.annotations.Nullable
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 class VisorCacheClearCommandSpec extends VisorRuntimeBaseSpec(2) {
     /** IP finder. */

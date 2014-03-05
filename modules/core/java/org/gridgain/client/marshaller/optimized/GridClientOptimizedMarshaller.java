@@ -20,9 +20,6 @@ import java.util.*;
 /**
  * Wrapper, that adapts {@link GridOptimizedMarshaller} to
  * {@link GridClientMarshaller} interface.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientOptimizedMarshaller implements GridClientMarshaller {
     /** Unique marshaller protocol ID. */

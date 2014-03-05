@@ -15,9 +15,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Data center replication receiver hub configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrReceiverHubConfiguration {
     /** Default server port. */

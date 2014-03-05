@@ -27,9 +27,6 @@ import java.util.*;
 
 /**
  * DHT lock request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     /** Near keys. */

@@ -19,9 +19,6 @@ import java.io.*;
 
 /**
  * Atomic stamped value.
- *
- * @author @java.author
- * @version @java.version
  */
 
 public final class GridCacheAtomicStampedValue<T, S> implements GridCacheInternal, GridPeerDeployAware,

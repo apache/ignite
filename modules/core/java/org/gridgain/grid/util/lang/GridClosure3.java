@@ -25,9 +25,6 @@ import org.gridgain.grid.util.typedef.*;
  * Note that this interface does not impose or assume any specific thread-safety by its
  * implementations. Each implementation can elect what type of thread-safety it provides,
  * if any.
- *
- * @author @java.author
- * @version @java.version
  * @param <E1> Type of the first free variable, i.e. the element the closure is called or closed on.
  * @param <E2> Type of the second free variable, i.e. the element the closure is called or closed on.
  * @param <E3> Type of the third free variable, i.e. the element the closure is called or closed on.
