@@ -28,9 +28,6 @@ import org.gridgain.grid.*;
  * centers), then explicit conflict resolution is required.
  * <p>
  * This enumeration provides several different strategies for conflict resolution.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridDrReceiverCacheConflictResolverMode {
     /**

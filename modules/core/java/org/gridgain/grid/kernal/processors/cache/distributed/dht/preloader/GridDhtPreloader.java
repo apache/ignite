@@ -33,9 +33,6 @@ import static org.gridgain.grid.util.GridConcurrentFactory.*;
 
 /**
  * DHT cache preloader.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     /** Default preload resend timeout. */
@@ -812,7 +809,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     /**
      *
      */
-    private abstract class MessageHandler<M> extends GridBiInClosure<UUID, M> {
+    private abstract class MessageHandler<M> implements GridBiInClosure<UUID, M> {
         /** {@inheritDoc} */
         @Override public void apply(UUID nodeId, M msg) {
             GridNode node = cctx.node(nodeId);

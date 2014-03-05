@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * Local cache implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     /** */

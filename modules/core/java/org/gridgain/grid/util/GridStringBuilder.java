@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * Optimized string builder with better API.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStringBuilder implements Serializable {
     /** */

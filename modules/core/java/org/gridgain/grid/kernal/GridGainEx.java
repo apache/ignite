@@ -99,9 +99,6 @@ import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
  * example on how to start grid with <strong>URI deployment</strong>.
  * <pre name="code" class="java">
  * GridConfiguration cfg = new GridConfiguration();
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGainEx {
     /** Default configuration path relative to GridGain home. */
@@ -980,9 +977,6 @@ public class GridGainEx {
 
     /**
      * Start context encapsulates all starting parameters.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private static final class GridStartContext {
         /** User-defined configuration. */
@@ -1070,9 +1064,6 @@ public class GridGainEx {
 
     /**
      * Grid data container.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private static final class GridNamedInstance {
         /** Map of registered MBeans. */
@@ -2140,9 +2131,6 @@ public class GridGainEx {
         /**
          * Grid factory MBean data container.
          * Contains necessary data for selected MBeanServer.
-         *
-         * @author @java.author
-         * @version @java.version
          */
         private static class GridMBeanServerData {
             /** Set of grid names for selected MBeanServer. */

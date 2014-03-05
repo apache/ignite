@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * This class defines custom JDK object input stream.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridJdkMarshallerObjectInputStream extends ObjectInputStream {
     /** */

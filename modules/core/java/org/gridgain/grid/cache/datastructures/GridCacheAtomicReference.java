@@ -39,9 +39,6 @@ import org.gridgain.grid.lang.*;
  * <ul>
  *     <li>{@link GridCacheDataStructures#atomicReference(String, Object, boolean)}</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  * @see GridCacheDataStructures#atomicReference(String, Object, boolean)
  * @see GridCacheDataStructures#removeAtomicReference(String)
  */

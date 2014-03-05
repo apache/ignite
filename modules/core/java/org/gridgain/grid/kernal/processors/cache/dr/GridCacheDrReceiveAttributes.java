@@ -17,9 +17,6 @@ import java.io.*;
 
 /**
  * DR receiver cache attributes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDrReceiveAttributes implements Externalizable {
     /** Policy for conflict resolver. */

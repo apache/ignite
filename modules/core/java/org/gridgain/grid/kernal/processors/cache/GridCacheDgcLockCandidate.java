@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * DGC lock candidate.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridCacheDgcLockCandidate implements Externalizable {
     /** Node ID. */

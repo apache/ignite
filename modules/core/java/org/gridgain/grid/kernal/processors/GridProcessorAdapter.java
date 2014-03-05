@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
  * Advanced parent adapter for all processor.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridProcessorAdapter implements GridProcessor {
     /** Kernal context. */

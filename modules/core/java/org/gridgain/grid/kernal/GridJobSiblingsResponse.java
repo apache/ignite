@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * Job siblings response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter {
     /** */

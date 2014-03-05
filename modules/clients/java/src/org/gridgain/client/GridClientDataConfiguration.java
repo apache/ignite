@@ -12,9 +12,6 @@ import org.gridgain.client.balancer.*;
 
 /**
  * Java client data configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientDataConfiguration {
     /** Grid cache name. */

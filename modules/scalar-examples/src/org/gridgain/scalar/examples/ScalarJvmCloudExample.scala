@@ -19,9 +19,6 @@ import org.gridgain.scalar.scalar
  * testing and debugging as it allows you to create a full grid within
  * a test case, simulate various scenarios, and watch how jobs and data
  * behave within a grid.
- *
- * @author @java.author
- * @version @java.version
  */
 object ScalarJvmCloudExample {
     /** Names of nodes to start. */

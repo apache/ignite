@@ -21,9 +21,6 @@ import java.nio.*;
 
 /**
  * Indicates that entry scheduled for delete was actually deleted.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
     /** Deleted entry ID. */

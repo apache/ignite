@@ -19,6 +19,7 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -33,9 +34,6 @@ import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.
 
 /**
  * This class defines task processor.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTaskProcessor extends GridProcessorAdapter {
     /** Wait for 5 seconds to allow discovery to take effect (best effort). */

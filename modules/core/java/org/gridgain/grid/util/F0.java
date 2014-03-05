@@ -20,9 +20,6 @@ import java.util.*;
 /**
  * Internal utility class that contains not peer-deployable
  * predicates for use in internal logic.
- *
- * @author @java.author
- * @version @java.version
  */
 public class F0 {
     /**

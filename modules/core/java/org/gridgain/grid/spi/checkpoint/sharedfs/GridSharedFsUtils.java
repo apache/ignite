@@ -18,9 +18,6 @@ import java.io.*;
 /**
  * Utility class that helps to manage files. It provides read/write
  * methods that simplify file operations.
- *
- * @author @java.author
- * @version @java.version
  */
 final class GridSharedFsUtils {
     /**

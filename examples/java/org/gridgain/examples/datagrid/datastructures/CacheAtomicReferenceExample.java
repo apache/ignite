@@ -23,9 +23,6 @@ import java.util.*;
  * <p>
  * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class CacheAtomicReferenceExample {
     /** Cache name. */
@@ -89,7 +86,7 @@ public final class CacheAtomicReferenceExample {
     /**
      * Obtains atomic reference.
      */
-    private static class ReferenceClosure extends GridRunnable {
+    private static class ReferenceClosure implements GridRunnable {
         /** Cache name. */
         private final String cacheName;
 

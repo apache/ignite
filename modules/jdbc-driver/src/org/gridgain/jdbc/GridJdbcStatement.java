@@ -20,9 +20,6 @@ import static java.sql.ResultSet.*;
 
 /**
  * JDBC statement implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridJdbcStatement implements Statement {
     /** Task name. */

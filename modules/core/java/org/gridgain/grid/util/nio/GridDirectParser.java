@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Parser for direct messages.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDirectParser implements GridNioParser {
     /** Message metadata key. */

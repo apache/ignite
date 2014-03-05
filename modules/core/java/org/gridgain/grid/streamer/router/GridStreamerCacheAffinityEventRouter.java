@@ -22,9 +22,6 @@ import org.jetbrains.annotations.*;
  * Affinity key for collocation of event together on the same node is specified
  * via {@link CacheAffinityEvent#affinityKey()} method. If event does not implement
  * {@link CacheAffinityEvent} interface, then event will be routed always to local node.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerCacheAffinityEventRouter extends GridStreamerEventRouterAdapter {
     /**

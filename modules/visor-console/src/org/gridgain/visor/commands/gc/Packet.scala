@@ -61,8 +61,5 @@ package org.gridgain.visor.commands
  *     visor gc "-id8=12345678 -c"
  *         Runs garbage collector and DGC procedure on all caches.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 package object gc

@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
 /**
  * Thrown when IPC operation (such as {@link GridIpcSharedMemorySpace#wait(long)})
  * has timed out.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIpcSharedMemoryOperationTimedoutException extends GridException {
     /**

@@ -97,9 +97,6 @@ import java.lang.annotation.*;
  *         ...
  * &lt;/bean&gt;
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

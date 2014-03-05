@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Convenient adapter for closeable iterator.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridCloseableIteratorAdapter<T> extends GridIteratorAdapter<T> implements
     GridCloseableIterator<T> {

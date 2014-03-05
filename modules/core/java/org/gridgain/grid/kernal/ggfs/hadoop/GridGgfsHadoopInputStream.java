@@ -19,9 +19,6 @@ import java.io.*;
 
 /**
  * GGFS input stream wrapper for hadoop interfaces.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public final class GridGgfsHadoopInputStream extends InputStream implements Seekable, PositionedReadable,

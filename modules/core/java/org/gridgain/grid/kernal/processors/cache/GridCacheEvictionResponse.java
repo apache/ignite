@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Cache eviction response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
     /** Future ID. */

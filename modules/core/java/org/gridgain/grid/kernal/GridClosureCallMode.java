@@ -21,9 +21,6 @@ import org.jetbrains.annotations.*;
  * implement {@link GridComputeTask} interface that allows you to customize every aspect of a
  * distributed Java code execution such as  mapping, load balancing, failover, collision
  * resolution, continuations, etc.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridClosureCallMode {
     /**

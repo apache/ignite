@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * This exception indicates the grid access in invalid state.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIllegalStateException extends IllegalStateException {
     /**

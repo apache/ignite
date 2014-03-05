@@ -18,9 +18,6 @@ import java.net.*;
 
 /**
  * Loopback IPC endpoint based on socket.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIpcClientTcpEndpoint implements GridIpcEndpoint {
     /** Client socket. */

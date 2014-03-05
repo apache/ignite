@@ -22,9 +22,6 @@ import org.jetbrains.annotations.*;
  * <p>
  * Write synchronization mode may be configured via {@link GridCacheConfiguration#getWriteSynchronizationMode()}
  * configuration property.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridCacheWriteSynchronizationMode {
     /**

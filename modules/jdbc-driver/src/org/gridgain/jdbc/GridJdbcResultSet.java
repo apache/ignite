@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * JDBC result set implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridJdbcResultSet implements ResultSet {
     /** Task name. */

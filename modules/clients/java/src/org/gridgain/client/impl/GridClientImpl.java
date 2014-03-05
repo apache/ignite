@@ -27,9 +27,6 @@ import java.util.logging.*;
 
 /**
  * Client implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientImpl implements GridClient {
     /** Null mask object. */

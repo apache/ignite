@@ -16,9 +16,6 @@ import java.io.*;
 
 /**
  * Adds affinity node ID to cache responses.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheRestResponse extends GridRestResponse {
     /** Affinity node ID. */

@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * When log debug mode is disabled this exception should be logged in short form - without stack trace.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridInternalException extends GridException {
     /**

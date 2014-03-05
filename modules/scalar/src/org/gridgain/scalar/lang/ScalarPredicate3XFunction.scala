@@ -11,19 +11,13 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.util.lang.{GridLambdaAdapter, GridPredicate3X}
+import org.gridgain.grid.util.lang.{GridPredicate3X}
 
 /**
  * Wrapping Scala function for `GridPredicate3X`.
- *
- * @author @java.author
- * @version @java.version
  */
-class ScalarPredicate3XFunction[T1, T2, T3](val inner: GridPredicate3X[T1, T2, T3]) extends GridLambdaAdapter
-    with ((T1, T2, T3) => Boolean) {
+class ScalarPredicate3XFunction[T1, T2, T3](val inner: GridPredicate3X[T1, T2, T3]) extends ((T1, T2, T3) => Boolean) {
     assert(inner != null)
-
-    peerDeployLike(inner)
 
     /**
      * Delegates to passed in grid predicate.

@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * Lock request message.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessage<K, V> {
     /** Keys to unlock. */

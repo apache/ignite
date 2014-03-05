@@ -21,11 +21,8 @@ import java.util.*;
 /**
  * Convenience actor-base adapter for {@link GridMessaging#localListen(Object, GridBiPredicate)}
  * method.
- *
- * @author @java.author
- * @version @java.version
  */
-public abstract class GridMessagingListenActor<T> extends GridBiPredicate<UUID, T> {
+public abstract class GridMessagingListenActor<T> implements GridBiPredicate<UUID, T> {
     /** */
     private boolean keepGoing = true;
 

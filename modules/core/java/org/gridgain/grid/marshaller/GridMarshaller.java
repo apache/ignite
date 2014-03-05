@@ -84,9 +84,6 @@ import java.io.*;
  *     ...
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridMarshaller {
     /**

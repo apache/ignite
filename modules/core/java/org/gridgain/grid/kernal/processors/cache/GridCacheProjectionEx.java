@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
  * Internal projection interface.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
     /**

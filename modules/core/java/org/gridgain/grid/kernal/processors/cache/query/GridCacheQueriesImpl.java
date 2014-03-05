@@ -23,9 +23,6 @@ import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
 
 /**
  * {@link GridCacheQueries} implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     /** */

@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -21,9 +22,6 @@ import java.util.*;
 
 /**
  * Continuous handler for message subscription.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridMessageListenHandler implements GridContinuousHandler {
     /** */

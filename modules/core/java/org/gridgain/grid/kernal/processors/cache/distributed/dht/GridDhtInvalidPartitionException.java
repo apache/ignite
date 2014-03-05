@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 /**
  * Exception thrown whenever entry is created for invalid partition.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtInvalidPartitionException extends RuntimeException {
     /** Partition. */

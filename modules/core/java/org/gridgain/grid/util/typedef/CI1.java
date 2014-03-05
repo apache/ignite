@@ -16,11 +16,8 @@ import org.gridgain.grid.util.lang.*;
  * Defines {@code alias} for {@link GridInClosure} by extending it. Since Java doesn't provide type aliases
  * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
  * concise code in cases when readability won't be sacrificed. For more information see {@link GridInClosure}.
- *
- * @author @java.author
- * @version @java.version
  * @param <T> Type of the factory closure.
  * @see GridFunc
  * @see GridInClosure
  */
-public abstract class CI1<T> extends GridInClosure<T> { /* No-op. */ }
+public interface CI1<T> extends GridInClosure<T> { /* No-op. */ }

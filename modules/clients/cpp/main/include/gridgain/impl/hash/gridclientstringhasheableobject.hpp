@@ -19,9 +19,6 @@
 
 /**
  * Provide the implementation of hash-code for the string object.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridStringHasheableObject : public GridHasheableObject {
 public:
@@ -62,9 +59,6 @@ protected:
 
 /**
  * Provide the implementation of hash-code for the string object.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridWideStringHasheableObject : public GridHasheableObject {
 public:

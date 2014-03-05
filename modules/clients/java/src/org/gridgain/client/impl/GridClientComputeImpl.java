@@ -21,9 +21,6 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.ATTR_DAEMON;
 
 /**
  * Compute projection implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridClientComputeImpl extends GridClientAbstractProjection<GridClientComputeImpl> implements GridClientCompute {
     /** */

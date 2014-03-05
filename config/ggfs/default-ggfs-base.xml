@@ -88,6 +88,7 @@
                 <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
                     <property name="name" value="ggfs-meta"/>
                     <property name="cacheMode" value="REPLICATED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="queryIndexEnabled" value="false"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                 </bean>

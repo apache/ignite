@@ -12,18 +12,12 @@
 package org.gridgain.scalar.lang
 
 import org.gridgain.grid.lang.{GridClosure}
-import org.gridgain.grid.util.lang.GridLambdaAdapter
 
 /**
  * Wrapping Scala function for `GridClosure`.
- *
- * @author @java.author
- * @version @java.version
  */
-class ScalarClosureFunction[T, R](val inner: GridClosure[T, R]) extends GridLambdaAdapter with (T => R) {
+class ScalarClosureFunction[T, R](val inner: GridClosure[T, R]) extends (T => R) {
     assert(inner != null)
-
-    peerDeployLike(inner)
 
     /**
      * Delegates to passed in grid closure.

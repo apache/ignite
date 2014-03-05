@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Streamer MBean interface.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean that provides access to streamer description and metrics.")
 public interface GridStreamerMBean {

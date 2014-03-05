@@ -17,9 +17,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Detached cache entry.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtDetachedCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     /**

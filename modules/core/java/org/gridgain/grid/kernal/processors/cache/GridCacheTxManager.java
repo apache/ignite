@@ -41,9 +41,6 @@ import static org.gridgain.grid.util.GridConcurrentFactory.*;
 
 /**
  * Cache transaction manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Maximum number of transactions that have completed (initialized to 100K). */
@@ -2011,7 +2008,7 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * Commit listener. Checks if commit succeeded and rollbacks if case of error.
      */
-    private class CommitListener extends CI1<GridFuture<GridCacheTx>> {
+    private class CommitListener implements CI1<GridFuture<GridCacheTx>> {
         /** Transaction. */
         private final GridCacheTxEx<K, V> tx;
 

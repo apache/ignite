@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * GGFS client future that holds response parse closure.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsHadoopFuture<T> extends GridPlainFutureAdapter<T> {
     /** Output buffer. */

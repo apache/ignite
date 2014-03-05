@@ -29,9 +29,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Storage for local deployments.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     /** Deployment cache by class name. */

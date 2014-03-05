@@ -14,9 +14,6 @@ import java.util.*;
 
 /**
  * Atomic cache version comparator.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheAtomicVersionComparator implements Comparator<GridCacheVersion>, Serializable {
     /** {@inheritDoc} */

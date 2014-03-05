@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
  * Affinity interface implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     /** Cache context. */

@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -32,9 +33,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Deployment manager for cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDeploymentManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Node filter. */

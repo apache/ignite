@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Per-projection queries object returned to user.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V> {
     /** */

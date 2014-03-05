@@ -15,9 +15,6 @@ import java.util.*;
 /**
  * An entity class representing a post, that a
  * {@link User} has made on some public service.
- *
- * @author @java.author
- * @version @java.version
  */
 @Entity
 class Post {

@@ -20,9 +20,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Entry for distributed (replicated/partitioned) cache.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
 public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {

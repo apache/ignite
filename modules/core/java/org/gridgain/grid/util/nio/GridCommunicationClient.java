@@ -19,8 +19,7 @@ import java.nio.*;
 import java.util.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public interface GridCommunicationClient {
     /**

@@ -17,9 +17,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * Client factory opens and closes clients. It also tracks all currently opened clients as well.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientFactory {
     /** Map that contain all opened clients. */

@@ -16,9 +16,6 @@
 
 /**
  * Interface that will define the grid cache.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientCache {
 public:

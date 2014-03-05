@@ -87,8 +87,5 @@ package org.gridgain.visor.commands
  *     visor top
  *         Prints full topology.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 package object top

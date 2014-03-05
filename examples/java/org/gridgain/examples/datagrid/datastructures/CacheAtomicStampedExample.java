@@ -23,9 +23,6 @@ import java.util.*;
  * <p>
  * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class CacheAtomicStampedExample {
     /** Cache name. */
@@ -95,7 +92,7 @@ public final class CacheAtomicStampedExample {
     /**
      * Performs update of on an atomic stamped variable in cache.
      */
-    private static class StampedUpdateClosure extends GridRunnable {
+    private static class StampedUpdateClosure implements GridRunnable {
         /** Cache name. */
         private final String cacheName;
 

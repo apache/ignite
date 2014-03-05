@@ -22,9 +22,6 @@ import java.util.concurrent.atomic.*;
  * This is a faster performing version of {@link UUID}. On basic tests this version is at least
  * 10x time faster for ID creation. It uses extra memory for 8-byte counter additionally to
  * internal UUID.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridUuid implements Comparable<GridUuid>, Iterable<GridUuid>, Cloneable, Externalizable,
     GridOptimizedMarshallable {

@@ -16,9 +16,6 @@ import java.io.*;
 /**
  * {@code GGFS} input stream to read data from the file system.
  * It provides several additional methods for asynchronous access.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridGgfsInputStream extends InputStream {
     /**

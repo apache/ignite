@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * Extended streamer context with methods intended for internal use.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridStreamerEx extends GridStreamer {
     /**

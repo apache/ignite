@@ -17,9 +17,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Convenience adapter for cache managers.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
     /** Context. */

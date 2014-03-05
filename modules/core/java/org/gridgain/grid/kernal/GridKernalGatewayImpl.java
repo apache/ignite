@@ -20,8 +20,7 @@ import java.util.concurrent.*;
 import static org.gridgain.grid.kernal.GridKernalState.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 @GridToStringExclude
 public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {

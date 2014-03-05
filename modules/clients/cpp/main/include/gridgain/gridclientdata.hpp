@@ -18,9 +18,6 @@
 
 /**
  * A data projection of grid client. Contains various methods for cache operations and metrics retrieval.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientData {
 public:

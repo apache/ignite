@@ -14,9 +14,6 @@ import java.lang.annotation.*;
 /**
  * Documentation annotation indicating that a feature is available only in specified
  * GridGain edition(s).
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

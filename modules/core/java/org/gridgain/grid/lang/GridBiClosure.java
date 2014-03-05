@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.lang;
 
-import org.gridgain.grid.util.lang.*;
+import java.io.*;
 
 /**
  * Defines generic closure with two parameters. Bi-Closure is a simple executable which
@@ -19,7 +19,7 @@ import org.gridgain.grid.util.lang.*;
  * @param <E2> Type of the second parameter.
  * @param <R> Type of the closure's return value.
  */
-public abstract class GridBiClosure<E1, E2, R> extends GridLambdaAdapter {
+public interface GridBiClosure<E1, E2, R> extends Serializable {
     /**
      * Closure body.
      *

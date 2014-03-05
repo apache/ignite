@@ -16,9 +16,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Cache entry atomic update result.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheUpdateAtomicResult<K, V> {
     /** Success flag.*/

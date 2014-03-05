@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 /**
  * This exception defines illegal call on empty projection. Thrown by projection when operation
  * that requires at least one node is called on empty projection.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridEmptyProjectionException extends GridTopologyException {
     /**

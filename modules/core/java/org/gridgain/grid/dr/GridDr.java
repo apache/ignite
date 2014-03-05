@@ -46,9 +46,6 @@ import org.jetbrains.annotations.*;
  * <p>
  * This API provides ability to manage DR process on sender cache node as well as get metrics for sender cache,
  * receiver cache, sender hub and receiver hub.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDr {
     /**

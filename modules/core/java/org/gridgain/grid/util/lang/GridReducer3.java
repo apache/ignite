@@ -26,15 +26,12 @@ import org.jetbrains.annotations.*;
  * Note that this interface does not impose or assume any specific thread-safety by its
  * implementations. Each implementation can elect what type of thread-safety it provides,
  * if any.
- *
- * @author @java.author
- * @version @java.version
  * @param <E1> Type of the first free variable, i.e. the element the closure is called on.
  * @param <E2> Type of the second free variable, i.e. the element the closure is called on.
  * @param <E3> Type of the third free variable, i.e. the element the closure is called on.
  * @param <R> Type of the closure's return value.
  */
-public abstract class GridReducer3<E1, E2, E3, R> extends GridOutClosure<R> {
+public interface GridReducer3<E1, E2, E3, R> extends GridOutClosure<R> {
     /**
      * Collects given values. All values will be reduced by {@link #apply()} method.
      * <p>
@@ -47,28 +44,5 @@ public abstract class GridReducer3<E1, E2, E3, R> extends GridOutClosure<R> {
      * @return {@code true} to continue collecting, {@code false} to instruct caller to stop
      *      collecting and call {@link #apply()} method.
      */
-    public abstract boolean collect(@Nullable E1 e1, @Nullable E2 e2, @Nullable E3 e3);
-
-   /**
-     * Curries this closure with given tuple values. When result closure is called it will
-     * be executed with given values.
-     *
-     * @param t Tuples each with three values.
-     * @return Curried or partially applied closure with given values.
-     */
-    public GridOutClosure<R> curry(final GridTuple3<E1, E2, E3>... t) {
-       CO<R> rdc = new CO<R>() {
-           @Override public R apply() {
-               for (GridTuple3<E1, E2, E3> p : t) {
-                   collect(p.get1(), p.get2(), p.get3());
-               }
-
-               return GridReducer3.this.apply();
-           }
-       };
-
-       rdc.peerDeployLike(this);
-
-       return rdc;
-    }
+    public boolean collect(@Nullable E1 e1, @Nullable E2 e2, @Nullable E3 e3);
 }

@@ -18,9 +18,6 @@ import java.io.*;
 
 /**
  * Adapter for DR receive data node metrics.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridCacheDrReceiverMetricsAdapter implements GridDrReceiverCacheMetrics, Externalizable {
     /** Total amount of received cache entries. */

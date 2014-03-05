@@ -13,9 +13,6 @@ import org.gridgain.client.*;
 
 /**
  * Adapter for cache metrics.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientDataMetricsAdapter implements GridClientDataMetrics {
     /** Create time. */

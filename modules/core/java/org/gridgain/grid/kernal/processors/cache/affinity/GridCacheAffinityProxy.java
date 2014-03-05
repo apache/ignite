@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * Affinity interface implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheAffinityProxy<K, V> implements GridCacheAffinity<K> {
     /** Cache gateway. */

@@ -47,9 +47,6 @@ import java.util.concurrent.locks.*;
  * <p>
  * The directory will contain files with serialized metrics named like the following
  * 94816A59-EB51-44EE-BB67-8B24B9C10A09.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoverySharedFsMetricsStore extends GridTcpDiscoveryMetricsStoreAdapter {
     /** Default path for local testing only. */

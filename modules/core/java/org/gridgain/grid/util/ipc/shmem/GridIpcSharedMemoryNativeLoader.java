@@ -18,8 +18,7 @@ import java.util.*;
 import java.util.regex.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 @SuppressWarnings("ErrorNotRethrown")
 public class GridIpcSharedMemoryNativeLoader {

@@ -16,9 +16,6 @@
 using namespace org::gridgain::grid::kernal::processors::rest::client::message;
 
 /** Helper class for wrapping and unwrapping GridClientVariant to/from protobuf.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientObjectWrapperConvertor {
 public:

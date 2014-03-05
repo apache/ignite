@@ -23,9 +23,6 @@ import java.util.concurrent.*;
 
 /**
  * DHT atomic cache near update response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
     /** Cache message index. */

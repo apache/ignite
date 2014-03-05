@@ -16,9 +16,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Starts up node with example streamer configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridOnlyAvailableIn(STREAMING)
 public class StreamingNodeStartup {

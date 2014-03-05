@@ -21,9 +21,6 @@ import java.util.*;
  * <p/>
  * When new new transaction is started, it will wait for this future before acquiring new locks on particular
  * topology version.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDhtTopologyFuture extends GridFuture<Long> {
     /**

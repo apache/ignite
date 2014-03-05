@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal;
 
 /**
  * Internal wrapper interface for custom resource injection logic.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridInternalWrapper<T> {
     /**

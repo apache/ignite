@@ -11,9 +11,6 @@ package org.gridgain.grid.util.offheap;
 
 /**
  * Callback for whenever entries get evicted from off-heap store.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridOffHeapEvictListener {
     /**

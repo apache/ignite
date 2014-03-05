@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Class provides implementation for job result.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJobResultImpl implements GridComputeJobResult {
     /** */

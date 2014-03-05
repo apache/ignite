@@ -46,8 +46,7 @@ import static org.apache.http.conn.ssl.SSLSocketFactory.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestResponse.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 class GridHttpRouterJettyHandler extends AbstractHandler {
     /** Client for message forwarding. */

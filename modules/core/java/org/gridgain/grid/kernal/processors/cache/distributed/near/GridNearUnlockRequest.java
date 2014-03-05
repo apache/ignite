@@ -18,9 +18,6 @@ import java.nio.*;
 
 /**
  * Near cache unlock request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNearUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, V> {
     /**

@@ -135,9 +135,6 @@ import java.util.concurrent.atomic.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
     /**

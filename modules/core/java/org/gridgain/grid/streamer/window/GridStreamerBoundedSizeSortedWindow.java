@@ -20,9 +20,6 @@ import java.util.concurrent.atomic.*;
 /**
  * Size-bounded sorted window. Unlike {@link GridStreamerBoundedSizeWindow}, which limits
  * window only on size, this window also provides events in sorted order.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerBoundedSizeSortedWindow<E>
     extends GridStreamerBoundedSizeWindowAdapter<E, GridStreamerBoundedSizeSortedWindow.Holder<E>> {

@@ -19,9 +19,6 @@ import java.io.*;
  * Node IDs constantly change when nodes get restarted, which causes affinity mapping to change between restarts,
  * and hence causing redundant repartitioning. Providing an alternate node hash value, which survives node restarts,
  * will help to map keys to the same nodes whenever possible.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheAffinityNodeHashResolver extends Serializable {
     /**

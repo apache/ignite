@@ -29,9 +29,6 @@ import java.util.concurrent.*;
 
 /**
  * Base class for snapshotable tree indexes.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("ComparatorNotSerializable")
 public class GridH2Index extends BaseIndex implements Comparator<GridSearchRowPointer> {

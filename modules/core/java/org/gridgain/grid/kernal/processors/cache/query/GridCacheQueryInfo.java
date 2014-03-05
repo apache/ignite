@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * Query information (local or distributed).
- *
- * @author @java.author
- * @version @java.version
  */
 class GridCacheQueryInfo {
     /** */

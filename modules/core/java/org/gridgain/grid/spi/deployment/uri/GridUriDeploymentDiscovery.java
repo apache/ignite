@@ -27,9 +27,6 @@ import java.util.jar.*;
  * If JAR file loading is used helper scans JAR file and tries to
  * load all {@link JarEntry} assuming it's a file name.
  * If at least one of them could not be loaded helper fails.
- *
- * @author @java.author
- * @version @java.version
  */
 final class GridUriDeploymentDiscovery {
     /**

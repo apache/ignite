@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Detects timeout events and processes them.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTimeoutProcessor extends GridProcessorAdapter {
     /** */
@@ -100,9 +97,6 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
     /**
      * Handles job timeouts.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private class TimeoutWorker extends GridWorker {
         /**

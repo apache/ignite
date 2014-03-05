@@ -18,11 +18,8 @@ import org.gridgain.grid.util.lang.*;
  * {@link GridPredicate}. Since Java doesn't provide type aliases (like Scala, for example) we resort
  * to these types of measures. This is intended to provide for more concise code without sacrificing
  * readability. For more information see {@link GridPredicate} and {@link GridCacheEntry}.
- *
- * @author @java.author
- * @version @java.version
  * @see GridPredicate
  * @see GridFunc
  * @see GridCacheEntry
  */
-public abstract class PCE<K, V> extends GridPredicate<GridCacheEntry<K, V>> { /* No-op. */ }
+public interface PCE<K, V> extends GridPredicate<GridCacheEntry<K, V>> { /* No-op. */ }

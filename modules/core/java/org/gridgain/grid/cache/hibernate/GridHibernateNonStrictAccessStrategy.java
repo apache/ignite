@@ -46,9 +46,6 @@ import java.util.*;
  * &#064;org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
  * public class Entity { ... }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridHibernateNonStrictAccessStrategy extends GridHibernateAccessStrategyAdapter {
     /** */

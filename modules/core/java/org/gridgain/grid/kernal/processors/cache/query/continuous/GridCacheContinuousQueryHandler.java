@@ -25,9 +25,6 @@ import java.util.*;
 
 /**
  * Continuous query handler.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** Cache name. */

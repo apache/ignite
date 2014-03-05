@@ -22,9 +22,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * GGFS client logger writing data to the file.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridGgfsHadoopLogger {
     /** Field delimiter. */

@@ -24,9 +24,6 @@ import java.util.*;
  * GridGain implements Memcache binary protocol and it is available if
  * REST is enabled on the node.
  * Remote nodes should always be started using {@link MemcacheRestExampleNodeStartup}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class MemcacheRestExample {
     /** Hostname for client connection. */

@@ -24,9 +24,6 @@ import java.util.*;
  * <p>
  * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class CacheQueueExample {
     /** Cache name. */
@@ -153,7 +150,7 @@ public class CacheQueueExample {
     /**
      * Closure to populate or poll the queue.
      */
-    private static class QueueClosure extends GridRunnable {
+    private static class QueueClosure implements GridRunnable {
         /** Cache name. */
         private final String cacheName;
 

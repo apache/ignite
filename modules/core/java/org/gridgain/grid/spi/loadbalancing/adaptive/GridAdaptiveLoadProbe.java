@@ -66,9 +66,6 @@ import org.gridgain.grid.*;
  *     &lt;/bean&gt;
  * &lt;/property&gt;
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridAdaptiveLoadProbe {
     /**

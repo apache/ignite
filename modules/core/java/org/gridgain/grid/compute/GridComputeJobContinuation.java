@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Defines continuation support for grid job context.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridComputeJobContinuation {
     /**

@@ -21,9 +21,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Abstract non-public class for size-bound windows. Support reset.
- *
- * @author @java.author
- * @version @java.version
  */
 abstract class GridStreamerBoundedSizeWindowAdapter<E, T> extends GridStreamerWindowAdapter<E> {
     /** Reference. */

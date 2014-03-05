@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Cache value operations.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridCacheOperation {
     /** Read operation. */
