@@ -21,4 +21,4 @@ import org.gridgain.grid.util.lang.*;
  * @see GridFunc
  * @see GridBiPredicate
  */
-public abstract class P2<T1, T2> extends GridBiPredicate<T1, T2> { /* No-op. */ }
+public interface P2<T1, T2> extends GridBiPredicate<T1, T2> { /* No-op. */ }

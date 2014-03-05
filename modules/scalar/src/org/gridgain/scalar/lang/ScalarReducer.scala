@@ -20,8 +20,6 @@ import collection._
 class ScalarReducer[E, R](private val r: Seq[E] => R) extends GridReducer[E, R] {
     assert(r != null)
 
-    peerDeployLike(r)
-
     private val buf = new mutable.ListBuffer[E]
 
     /**

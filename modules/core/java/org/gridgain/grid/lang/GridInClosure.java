@@ -9,18 +9,18 @@
 
 package org.gridgain.grid.lang;
 
-import org.gridgain.grid.util.lang.*;
+import java.io.*;
 
 /**
  * Closure with one in-parameter and void return type.
  *
  * @param <E> Type of closure argument.
  */
-public abstract class GridInClosure<E> extends GridLambdaAdapter {
+public interface GridInClosure<E> extends Serializable {
     /**
      * Closure body.
      *
      * @param e Closure argument.
      */
-    public abstract void apply(E e);
+    public void apply(E e);
 }

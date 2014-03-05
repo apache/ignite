@@ -7,17 +7,19 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.lang;
+package org.gridgain.grid.kernal.processors.closure;
 
 import org.gridgain.grid.compute.*;
 
-import java.io.*;
-import java.util.concurrent.*;
-
 /**
- * Grid-aware adapter for {@link Callable} implementations. It adds {@link Serializable} interface
- * to {@link Callable} object. Use this class for executing distributed computations on the grid,
- * like in {@link GridCompute#call(Callable)} method.
+ * Job adapter implementing {@link GridComputeJobMasterLeaveAware}.
  */
-public interface GridCallable<V> extends Callable<V>, Serializable {
+public abstract class GridMasterLeaveAwareComputeJobAdapter extends GridComputeJobAdapter
+    implements GridComputeJobMasterLeaveAware {
+    /**
+     * No-arg constructor.
+     */
+    protected GridMasterLeaveAwareComputeJobAdapter() {
+        // No-op.
+    }
 }

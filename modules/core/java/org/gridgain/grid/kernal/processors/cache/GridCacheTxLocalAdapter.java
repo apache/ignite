@@ -2894,7 +2894,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      *
      * @param <T> Return type.
      */
-    protected abstract class PostLockClosure1<T> extends GridBiClosure<Boolean, Exception, GridFuture<T>> {
+    protected abstract class PostLockClosure1<T> implements GridBiClosure<Boolean, Exception, GridFuture<T>> {
         /** Closure argument. */
         private T arg;
 
@@ -3006,7 +3006,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      *
      * @param <T> Return type.
      */
-    protected abstract class PostLockClosure2<T> extends GridBiClosure<Boolean, Exception, GridFuture<T>> {
+    protected abstract class PostLockClosure2<T> implements GridBiClosure<Boolean, Exception, GridFuture<T>> {
         /** {@inheritDoc} */
         @Override public final GridFuture<T> apply(Boolean locked, @Nullable Exception e) {
             boolean rollback = true;
@@ -3048,7 +3048,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      *
      * @param <T> Return type.
      */
-    protected abstract class PostMissClosure<T> extends GridBiClosure<T, Exception, GridFuture<T>> {
+    protected abstract class PostMissClosure<T> implements GridBiClosure<T, Exception, GridFuture<T>> {
         /** {@inheritDoc} */
         @Override public final GridFuture<T> apply(T t, Exception e) {
             boolean rollback = true;
@@ -3087,7 +3087,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      *
      * @param <T> Return type.
      */
-    protected abstract class FinishClosure<T> extends GridBiClosure<T, Exception, T> {
+    protected abstract class FinishClosure<T> implements GridBiClosure<T, Exception, T> {
         /** {@inheritDoc} */
         @Override public final T apply(T t, @Nullable Exception e) {
             boolean rollback = true;

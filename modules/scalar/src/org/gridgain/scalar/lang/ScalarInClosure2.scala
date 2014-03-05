@@ -19,8 +19,6 @@ import org.gridgain.grid.lang.GridBiInClosure
 class ScalarInClosure2[T1, T2](private val f: (T1, T2) => Unit) extends GridBiInClosure[T1, T2] {
     assert(f != null)
 
-    peerDeployLike(f)
-
     /**
      * Delegates to passed in function.
      */
