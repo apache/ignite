@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Affinity range.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapter implements Externalizable {
     /** Initial range status, right after creation. */

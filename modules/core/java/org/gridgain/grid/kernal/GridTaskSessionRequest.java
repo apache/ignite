@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Task session request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTaskSessionRequest extends GridTcpCommunicationMessageAdapter implements GridTaskMessage {
     /** Task session ID. */

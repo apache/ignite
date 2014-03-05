@@ -13,9 +13,6 @@ import org.gridgain.client.*;
 
 /**
  * Future callback will be notified, when listened future finishes (both succeed or failed).
- *
- * @author @java.author
- * @version @java.version
  * @param <R> Input parameter type.
  * @param <S> Result type.
  */

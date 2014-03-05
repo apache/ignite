@@ -41,9 +41,6 @@ import static org.gridgain.grid.util.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * Command handler for API requests.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
     /** Default maximum number of task results. */

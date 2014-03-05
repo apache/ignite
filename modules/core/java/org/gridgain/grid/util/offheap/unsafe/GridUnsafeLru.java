@@ -18,9 +18,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * Striped LRU queue.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("ForLoopReplaceableByForEach")
 class GridUnsafeLru {

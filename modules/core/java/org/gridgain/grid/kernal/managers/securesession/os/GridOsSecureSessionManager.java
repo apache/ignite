@@ -18,9 +18,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * No-op implementation for {@link GridSecureSessionManager}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridOsSecureSessionManager extends GridNoopManagerAdapter implements GridSecureSessionManager {
     /**

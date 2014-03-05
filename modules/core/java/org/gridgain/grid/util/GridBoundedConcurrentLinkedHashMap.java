@@ -19,8 +19,7 @@ import static org.gridgain.grid.util.ConcurrentLinkedHashMap.QueuePolicy.*;
  *
  * @param <K> Map key.
  * @param <V> Map entry.
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridBoundedConcurrentLinkedHashMap<K, V> extends ConcurrentLinkedHashMap<K, V> {
     /**

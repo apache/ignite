@@ -21,9 +21,6 @@ import scala.util.control.Breaks._
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
- *
- * @author @java.author
- * @version @java.version
  */
 object ScalarCreditRiskExample {
     def main(args: Array[String]) {
@@ -103,9 +100,6 @@ object ScalarCreditRiskExample {
  * probability on default. Although this model is simplified for the purpose
  * of this example, it is close enough to emulate the real-life credit
  * risk assessment application.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class Credit(
     remAmnt: Double, // Remaining crediting amount.
@@ -129,9 +123,6 @@ private case class Credit(
 
 /**
  * This class abstracts out the calculation of risk for a credit portfolio.
- *
- * @author @java.author
- * @version @java.version
  */
 private class CreditRiskManager {
     /**

@@ -15,9 +15,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Growing array.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridFileSwapArray<X> {
     /** First partition size must be power of two. */

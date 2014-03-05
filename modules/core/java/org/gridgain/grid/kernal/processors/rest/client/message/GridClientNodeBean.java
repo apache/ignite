@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Node bean.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientNodeBean implements Externalizable {
     /** Node ID */

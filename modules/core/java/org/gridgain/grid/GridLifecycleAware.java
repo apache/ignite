@@ -13,9 +13,6 @@ package org.gridgain.grid;
  * All components provided in GridGain configuration can implement this interface.
  * If a component implements this interface, then method {@link #start()} will be called
  * during grid startup and {@link #stop()} will be called during stop.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridLifecycleAware {
     /**

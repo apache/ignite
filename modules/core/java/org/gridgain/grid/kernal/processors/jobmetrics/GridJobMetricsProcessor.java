@@ -23,9 +23,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
  * Processes job metrics.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJobMetricsProcessor extends GridProcessorAdapter {
     /** */

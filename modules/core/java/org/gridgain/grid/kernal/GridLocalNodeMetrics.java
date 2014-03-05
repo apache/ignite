@@ -14,9 +14,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Local node metrics MBean.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLocalNodeMetrics implements GridNodeMetricsMBean {
     /** Grid node. */

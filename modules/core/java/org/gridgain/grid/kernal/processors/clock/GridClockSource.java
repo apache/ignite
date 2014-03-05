@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal.processors.clock;
 
 /**
  * Interface representing time source for time processor.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridClockSource {
     /**

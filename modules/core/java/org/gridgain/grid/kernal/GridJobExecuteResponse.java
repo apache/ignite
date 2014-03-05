@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Job execution response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter implements GridTaskMessage {
     /** */

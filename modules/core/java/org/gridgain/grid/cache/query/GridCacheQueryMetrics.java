@@ -13,9 +13,6 @@ package org.gridgain.grid.cache.query;
  * Cache query metrics used to obtain statistics on query. You can get metrics for
  * particular query via {@link GridCacheQuery#metrics()} method or accumulated metrics
  * for all queries via {@link GridCacheQueries#metrics()}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheQueryMetrics {
     /**

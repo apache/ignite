@@ -33,9 +33,6 @@ import java.io.*;
  * <p>
  * For more information on affinity mapping and examples refer to {@link GridCacheAffinityFunction} and
  * {@link GridCacheAffinityKeyMapped @GridCacheAffinityKeyMapped} documentation.
- *
- * @author @java.author
- * @version @java.version
  * @see GridCacheAffinityFunction
  * @see GridCacheAffinityKeyMapped
  */

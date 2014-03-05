@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Continuous processor message.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
     /** Message type. */

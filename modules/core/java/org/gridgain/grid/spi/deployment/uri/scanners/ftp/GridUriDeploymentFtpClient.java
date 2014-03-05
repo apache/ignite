@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * URI FTP deployment client.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridUriDeploymentFtpClient {
     /** Timeout in milliseconds on the underlying socket. */

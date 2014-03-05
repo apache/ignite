@@ -16,9 +16,6 @@ import java.util.*;
 /**
  * A node shadow is a read-only snapshot of last known node internal state.
  * Node shadow is available on {@link GridDiscoveryEvent}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridNodeShadow extends GridMetadataAware {
     /**

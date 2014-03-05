@@ -17,9 +17,6 @@ import java.nio.*;
 
 /**
  * Fragmentizer response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
     /** File ID. */

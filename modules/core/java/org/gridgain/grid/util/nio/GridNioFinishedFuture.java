@@ -18,9 +18,6 @@ import java.util.concurrent.*;
 
 /**
  * Future that represents already completed result.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNioFinishedFuture<R> implements GridNioFuture<R> {
     /** Future result. */

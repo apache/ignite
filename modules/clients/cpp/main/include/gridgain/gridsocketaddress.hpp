@@ -14,9 +14,6 @@
 
 /**
  * Grid host + port address holder.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridSocketAddress {
 public:

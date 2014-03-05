@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
 * Local fields query future.
-*
-* @author @java.author
-* @version @java.version
 */
 public class GridCacheLocalFieldsQueryFuture
     extends GridCacheLocalQueryFuture<Object, Object, List<Object>>

@@ -11,9 +11,6 @@ package org.gridgain.grid.util.nio;
 
 /**
  * Metrics listener for NIO communication.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridNioMetricsListener {
     /**

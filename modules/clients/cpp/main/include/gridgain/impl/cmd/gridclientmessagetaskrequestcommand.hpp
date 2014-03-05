@@ -17,9 +17,6 @@
 
 /**
  * Generic message result.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridTaskRequestCommand : public GridClientMessageCommand {
 public:

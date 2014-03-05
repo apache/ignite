@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * This class deserializes JSON string to Java object.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings( {"UnnecessaryFullyQualifiedName", "SizeReplaceableByIsEmpty", "IfMayBeConditional"})
 public class GridJsonDeserializer {

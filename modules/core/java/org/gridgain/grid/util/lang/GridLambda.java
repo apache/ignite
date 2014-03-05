@@ -14,9 +14,6 @@ import org.gridgain.grid.*;
 /**
  * Common interface for closures, predicates and related entities. It defines any
  * first-class function or monad as P2P deployment and meta-programming aware.
- *
- * @author @java.author
- * @author @java.version
  */
 public interface GridLambda extends GridPeerDeployAware {
     // Marker interface.

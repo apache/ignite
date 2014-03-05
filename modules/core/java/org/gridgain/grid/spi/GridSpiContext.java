@@ -25,9 +25,6 @@ import java.util.*;
 
 /**
  * SPI context provides common functionality for all SPI implementations.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridSpiContext {
     /**

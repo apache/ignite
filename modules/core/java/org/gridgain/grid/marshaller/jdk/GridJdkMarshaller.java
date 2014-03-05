@@ -75,8 +75,7 @@ import java.io.*;
  * }
  * </pre>
  * <br>
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridJdkMarshaller extends GridAbstractMarshaller {
     /** {@inheritDoc} */

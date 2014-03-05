@@ -14,9 +14,6 @@ import java.lang.annotation.*;
 /**
  * Message classes with this annotation attached are processed in a special way to
  * ensure messages delivery.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

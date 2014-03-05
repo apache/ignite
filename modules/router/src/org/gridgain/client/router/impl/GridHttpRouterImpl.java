@@ -29,8 +29,7 @@ import java.net.*;
 import java.util.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridHttpRouterImpl implements GridHttpRouter, GridHttpRouterMBean {
     /** Id. */

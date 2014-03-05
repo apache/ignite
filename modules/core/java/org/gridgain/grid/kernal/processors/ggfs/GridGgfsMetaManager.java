@@ -39,9 +39,6 @@ import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo.*;
 
 /**
  * Cache based structure (meta data) manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsMetaManager extends GridGgfsManager {
     /** GGFS configuration. */

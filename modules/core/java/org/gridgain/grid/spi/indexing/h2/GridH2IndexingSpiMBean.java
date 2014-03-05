@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Management bean for {@link GridH2IndexingSpi}.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean that provides access to H2 indexing SPI configuration.")
 public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {

@@ -20,9 +20,6 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
  * Special kill task that never fails over jobs.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridInternal
 class GridKillTask extends GridComputeTaskAdapter<Boolean, Void> {
@@ -67,9 +64,6 @@ class GridKillTask extends GridComputeTaskAdapter<Boolean, Void> {
 
     /**
      * Kill job.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private class GridKillJob extends GridComputeJobAdapter {
         /** {@inheritDoc} */

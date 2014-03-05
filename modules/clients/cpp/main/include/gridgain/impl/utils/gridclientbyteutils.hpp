@@ -20,9 +20,6 @@
 /**
  *
  * Utilities for converting simple types to byte array and back.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 namespace GridClientByteUtils {
 

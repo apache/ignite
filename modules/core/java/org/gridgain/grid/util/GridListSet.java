@@ -32,9 +32,6 @@ import java.util.*;
  * {@link Comparator#compare(Object, Object)} methods must be absolutely consistent with each other.
  * <p>
  * This set does not allow {@code null} values.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridListSet<V> extends GridSerializableSet<V> implements Cloneable {
     /** Internal list. */

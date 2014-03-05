@@ -22,9 +22,6 @@ import static org.gridgain.grid.cache.GridCacheTxState.*;
 
 /**
  * Cache XA resource implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridCacheXAResource implements XAResource {
     /** Logger reference. */

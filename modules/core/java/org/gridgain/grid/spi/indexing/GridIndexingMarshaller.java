@@ -15,9 +15,6 @@ import org.gridgain.grid.spi.*;
  * Marshaller to be used in indexing SPI. This marshaller automatically
  * takes care of class loading of unmarshalled classes.
  * See also {@link GridIndexingSpi#registerMarshaller(GridIndexingMarshaller)}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridIndexingMarshaller {
     /**

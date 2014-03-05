@@ -29,9 +29,6 @@ import static org.gridgain.grid.kernal.GridTopic.*;
 
 /**
  * Continuous queries manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Ordered topic prefix. */

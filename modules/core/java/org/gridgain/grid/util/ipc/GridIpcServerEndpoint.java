@@ -16,9 +16,6 @@ import java.io.*;
 
 /**
  * IPC server endpoint that is capable for client connections accepting.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridIpcServerEndpoint extends Closeable {
     /**

@@ -15,9 +15,6 @@ import java.nio.*;
 
 /**
  * Version converter.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridVersionConverter {
     /** State. */

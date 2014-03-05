@@ -11,9 +11,6 @@ package org.gridgain.grid;
 
 /**
  * This exception is used to wrap standard {@link InterruptedException} into {@link GridException}.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"TypeMayBeWeakened"})
 public class GridInterruptedException extends GridException {

@@ -53,9 +53,6 @@ import java.util.*;
  *     tx.addMeta("some.name", conn);
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheStore<K, V> {
     /**

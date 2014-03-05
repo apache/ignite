@@ -32,9 +32,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Deployment manager for cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDeploymentManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Node filter. */

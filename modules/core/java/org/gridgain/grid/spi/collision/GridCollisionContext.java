@@ -20,9 +20,6 @@ import java.util.*;
  * always be empty. {@link GridCollisionSpi} will manipulate these lists
  * to make sure that only allowed number of jobs are running in parallel or
  * waiting to be executed.
- *
- * @author @java.author
- * @version @java.version
  * @since 3.5
  */
 public interface GridCollisionContext {

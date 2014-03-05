@@ -27,9 +27,6 @@ import java.util.concurrent.*;
 
 /**
  * Affinity utility methods.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridAffinityUtils {
     /**

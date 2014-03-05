@@ -18,9 +18,6 @@ import java.util.concurrent.*;
 
 /**
  * Streamer configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerConfiguration {
     /** By default maximum number of concurrent sessions is unlimited. */

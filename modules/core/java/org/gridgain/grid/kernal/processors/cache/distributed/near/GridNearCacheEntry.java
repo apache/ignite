@@ -26,9 +26,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Near cache entry.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
 public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {

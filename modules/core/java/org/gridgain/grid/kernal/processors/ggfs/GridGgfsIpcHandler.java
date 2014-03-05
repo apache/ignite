@@ -29,9 +29,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * GGFS IPC handler.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridGgfsIpcHandler implements GridGgfsServerHandler {
     /** For test purposes only. */

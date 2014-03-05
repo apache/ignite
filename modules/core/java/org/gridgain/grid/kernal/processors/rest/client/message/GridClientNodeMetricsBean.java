@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * Node metrics bean.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientNodeMetricsBean implements Externalizable {
     /** */

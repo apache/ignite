@@ -16,9 +16,6 @@
 
 /**
  * Node metrics bean.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
  class GRIDGAIN_API GridClientNodeMetricsBean {
  private:

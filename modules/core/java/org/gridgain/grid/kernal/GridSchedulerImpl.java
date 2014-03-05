@@ -17,9 +17,6 @@ import java.util.concurrent.*;
 
 /**
  * {@link GridScheduler} implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridSchedulerImpl implements GridScheduler {
     /** */

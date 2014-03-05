@@ -31,9 +31,6 @@ import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.
 
 /**
  * {@link GridCompute} implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridComputeImpl implements GridCompute {
     /** */

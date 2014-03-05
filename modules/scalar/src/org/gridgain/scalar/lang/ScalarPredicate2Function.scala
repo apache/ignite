@@ -16,9 +16,6 @@ import org.gridgain.grid.util.lang.GridLambdaAdapter
 
 /**
  * Wrapping Scala function for `GridPredicate2`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarPredicate2Function[T1, T2](val inner: GridBiPredicate[T1, T2]) extends GridLambdaAdapter
     with ((T1, T2) => Boolean) {

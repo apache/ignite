@@ -21,9 +21,6 @@ import java.util.*;
  * <p>
  * Please refer to {@link GridComputeTaskSplitAdapter} documentation for more information
  * on additional functionality this adapter provides.
- *
- * @author @java.author
- * @version @java.version
  * @param <R> Return value of the task (see {@link GridComputeTask#reduce(List)} method).
  */
 public abstract class GridifyTaskSplitAdapter<R> extends GridComputeTaskSplitAdapter<GridifyArgument, R> {

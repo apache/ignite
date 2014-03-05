@@ -22,9 +22,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Window which is bounded by size and time interval.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerBoundedTimeWindow<E> extends GridStreamerWindowAdapter<E> {
     /** Window structures holder. */

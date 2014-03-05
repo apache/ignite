@@ -23,9 +23,6 @@ import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallerUtil
 
 /**
  * Optimized object output stream.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridOptimizedObjectOutputStream extends ObjectOutputStream {
     /** */

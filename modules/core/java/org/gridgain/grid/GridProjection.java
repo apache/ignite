@@ -39,9 +39,6 @@ import java.util.*;
  * <li>{@link GridMessaging} - functionality for topic-based message exchange over nodes in this projection.</li>
  * <li>{@link GridEvents} - functionality for querying and listening to events on nodes in this projection.</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridProjection {
     /**

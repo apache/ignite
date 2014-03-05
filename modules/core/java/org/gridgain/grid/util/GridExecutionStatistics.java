@@ -20,9 +20,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Accumulates execution statistics for named pieces of code.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridExecutionStatistics {
     /** */

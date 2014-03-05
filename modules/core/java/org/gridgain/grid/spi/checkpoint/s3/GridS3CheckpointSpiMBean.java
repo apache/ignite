@@ -14,9 +14,6 @@ import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management bean for {@link GridS3CheckpointSpi}.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean that provides access to S3 checkpoint SPI configuration.")
 public interface GridS3CheckpointSpiMBean extends GridSpiManagementMBean {

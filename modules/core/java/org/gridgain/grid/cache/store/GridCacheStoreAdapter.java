@@ -29,9 +29,6 @@ import java.util.*;
  * Note that method {@link #loadCache(GridBiInClosure, Object...)} has empty
  * implementation because it is essentially up to the user to invoke it with
  * specific arguments.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V> {
     /**

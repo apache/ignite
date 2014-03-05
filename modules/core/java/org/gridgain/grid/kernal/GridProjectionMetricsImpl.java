@@ -20,9 +20,6 @@ import static java.lang.Math.*;
 
 /**
  * Implementation for {@link GridProjectionMetrics} interface.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridProjectionMetricsImpl implements GridProjectionMetrics {
     /** */

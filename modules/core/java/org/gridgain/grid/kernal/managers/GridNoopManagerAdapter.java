@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * No-op {@link GridManager} adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNoopManagerAdapter implements GridManager {
     /**

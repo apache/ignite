@@ -23,9 +23,6 @@ import java.util.*;
 
 /**
  * Response to prepare request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseMessage<K, V> {
     /** Collections of local lock candidates. */

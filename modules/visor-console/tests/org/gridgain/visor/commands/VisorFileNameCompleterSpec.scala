@@ -18,9 +18,6 @@ import java.io.File
 
 /**
  * Test for visor's file name completer.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorFileNameCompleterSpec extends FlatSpec with ShouldMatchers {
     behavior of "A visor file name completer"

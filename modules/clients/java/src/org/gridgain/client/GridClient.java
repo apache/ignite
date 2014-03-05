@@ -43,9 +43,6 @@ import java.util.*;
  * If client can't access some of grid nodes directly (for example due to security restrictions)
  * either dedicated Router component could be used or some of Grid nodes could act as routers.
  * See {@link GridClientConfiguration#getRouters()} for more details.
- *
- * @author @java.author
- * @version @java.version
  * @see GridClientCompute
  * @see GridClientData
  */

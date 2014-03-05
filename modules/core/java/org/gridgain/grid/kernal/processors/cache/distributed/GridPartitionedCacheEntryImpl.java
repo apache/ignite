@@ -29,9 +29,6 @@ import static org.gridgain.grid.cache.GridCachePeekMode.*;
 
 /**
  * Partitioned cache entry public API.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V> {
     /**

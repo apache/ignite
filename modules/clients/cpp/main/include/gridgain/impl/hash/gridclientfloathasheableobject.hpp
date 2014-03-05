@@ -19,9 +19,6 @@
 
 /**
  * Provide the implementation of hash-code for the float type.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridFloatHasheableObject : public GridHasheableObject {
 public:

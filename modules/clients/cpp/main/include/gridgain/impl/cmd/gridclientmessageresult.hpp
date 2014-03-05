@@ -16,9 +16,6 @@
 
 /**
  * Generic message result.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientMessageResult : public GridClientMessage {
 public:

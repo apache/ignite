@@ -31,9 +31,6 @@ import org.hibernate.cache.spi.access.*;
  *     ...
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridHibernateNaturalIdRegion extends GridHibernateTransactionalDataRegion implements NaturalIdRegion {
     /**

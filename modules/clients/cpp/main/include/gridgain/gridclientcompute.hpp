@@ -21,9 +21,6 @@ class GridClientNode;
  * A compute projection of grid client. Contains various methods for a task execution, full and partial (per node)
  * topology refresh and log downloading.
  *
- * @author @cpp.author
- * @version @cpp.version
- *
  */
 class GRIDGAIN_API GridClientCompute {
 public:

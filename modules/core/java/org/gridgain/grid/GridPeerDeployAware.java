@@ -18,9 +18,6 @@ import java.io.*;
  * User's code can however implement this interface, for example, if it wraps a
  * closure or a predicate and wants to maintain its peer deployment
  * information so that the user class could be peer-deployed as well.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridPeerDeployAware extends Serializable {
     /**

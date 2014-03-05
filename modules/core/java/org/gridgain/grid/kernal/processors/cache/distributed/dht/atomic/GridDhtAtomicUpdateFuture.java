@@ -30,9 +30,6 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
  * DHT atomic cache backup update future.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
     implements GridCacheAtomicFuture<K, Void> {

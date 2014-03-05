@@ -16,9 +16,6 @@ import javax.security.auth.callback.*;
 
 /**
  * Callback handler factory for Jaas login module.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridJaasCallbackHandlerFactory {
     /**

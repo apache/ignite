@@ -25,9 +25,6 @@ import java.util.*;
 
 /**
  * Near transaction finish request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest<K, V> {
     /** Near node ID. */

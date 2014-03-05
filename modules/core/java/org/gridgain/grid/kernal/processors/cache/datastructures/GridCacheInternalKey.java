@@ -13,9 +13,6 @@ import org.gridgain.grid.kernal.processors.cache.*;
 
 /**
  * Key is used for caching data structure.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheInternalKey extends GridCacheInternal {
     /**

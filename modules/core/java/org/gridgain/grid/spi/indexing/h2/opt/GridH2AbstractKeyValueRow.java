@@ -26,9 +26,6 @@ import java.util.*;
 
 /**
  * Table row implementation based on {@link GridIndexingTypeDescriptor}.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     /** */

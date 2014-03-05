@@ -28,9 +28,6 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  * Continuous query implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuousQuery<K, V> {
     /** Guard. */

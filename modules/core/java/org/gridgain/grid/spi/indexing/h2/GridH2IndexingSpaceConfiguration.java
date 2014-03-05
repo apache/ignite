@@ -13,9 +13,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Defines per-space configuration properties for {@link GridH2IndexingSpi}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridH2IndexingSpaceConfiguration {
     /** */

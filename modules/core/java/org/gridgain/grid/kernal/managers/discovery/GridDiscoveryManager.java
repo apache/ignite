@@ -46,9 +46,6 @@ import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
 
 /**
  * Discovery SPI manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     /** Fake key for {@code null}-named caches. Used inside {@link DiscoCache}. */

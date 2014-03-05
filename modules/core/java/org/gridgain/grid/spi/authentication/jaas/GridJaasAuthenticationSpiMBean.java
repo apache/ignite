@@ -14,9 +14,6 @@ import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management bean for {@link GridJaasAuthenticationSpi}.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean that provides access to Jaas-based authentication SPI configuration.")
 public interface GridJaasAuthenticationSpiMBean extends GridSpiManagementMBean {

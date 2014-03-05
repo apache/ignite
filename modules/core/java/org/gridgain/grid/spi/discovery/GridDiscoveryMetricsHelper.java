@@ -14,9 +14,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Helper class to serialize and deserialize node metrics.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridDiscoveryMetricsHelper {
     /** Size of serialized node metrics. */

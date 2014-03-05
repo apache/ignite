@@ -33,9 +33,6 @@ import static org.gridgain.grid.util.GridConcurrentFactory.*;
 
 /**
  * DHT cache preloader.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     /** Default preload resend timeout. */

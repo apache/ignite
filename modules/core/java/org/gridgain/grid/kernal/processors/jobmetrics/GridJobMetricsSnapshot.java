@@ -13,9 +13,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Job metrics snapshot.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJobMetricsSnapshot {
     /** */

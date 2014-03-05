@@ -13,9 +13,6 @@ import java.util.*;
 
 /**
  * Container for routed message information.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridRouterRequest extends GridClientAbstractMessage {
     /** Raw message. */

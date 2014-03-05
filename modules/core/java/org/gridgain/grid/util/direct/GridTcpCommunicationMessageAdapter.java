@@ -26,9 +26,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Communication message adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridTcpCommunicationMessageAdapter implements Serializable, Cloneable {
     /** */

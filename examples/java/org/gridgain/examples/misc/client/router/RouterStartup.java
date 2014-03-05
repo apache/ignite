@@ -26,9 +26,6 @@ import javax.swing.*;
  * <p>
  * Note that to start the example, {@code GRIDGAIN_HOME} system property or environment variable
  * must be set.
- *
- * @author @java.author
- * @version @java.version
  */
 public class RouterStartup {
     /** Change to {@code false} to disable {@code TCP_NODELAY}. */
