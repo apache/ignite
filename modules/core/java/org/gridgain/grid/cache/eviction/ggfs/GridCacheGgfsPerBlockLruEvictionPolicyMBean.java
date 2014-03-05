@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * MBean for {@code GGFS per-block LRU} eviction policy.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean for GGFS per-block LRU cache eviction policy.")
 public interface GridCacheGgfsPerBlockLruEvictionPolicyMBean {

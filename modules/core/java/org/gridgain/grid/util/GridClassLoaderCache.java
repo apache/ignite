@@ -17,9 +17,6 @@ import java.util.concurrent.*;
 
 /**
  * Caches class loaders for classes.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridClassLoaderCache {
     /** Fields cache. */

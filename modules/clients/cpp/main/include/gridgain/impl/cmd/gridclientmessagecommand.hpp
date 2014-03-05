@@ -14,9 +14,6 @@
 
 /**
  * Generic grid message command.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientMessageCommand : public GridClientMessage {
 public:

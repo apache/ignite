@@ -92,9 +92,6 @@ import java.util.*;
  * To see example on how to use {@code GridComputeTaskSession} refer to
  * <a href="https://github.com/gridgain/gridgain/tree/master/examples/java/org/gridgain/examples/helloworld/gridify/session" target="github">HelloWorld Distributed Task Session Example</a>
  * on GitHub.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridComputeTaskSession {
     /**

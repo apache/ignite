@@ -27,9 +27,6 @@ import static org.gridgain.grid.GridDeploymentMode.*;
 
 /**
  * Deployment manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi> {
     /** Local deployment storage. */

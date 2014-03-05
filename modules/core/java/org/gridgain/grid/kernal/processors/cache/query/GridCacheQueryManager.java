@@ -44,9 +44,6 @@ import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
 
 /**
  * Query and index manager.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {

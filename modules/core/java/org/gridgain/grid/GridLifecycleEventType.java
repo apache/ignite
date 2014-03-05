@@ -17,9 +17,6 @@ import org.jetbrains.annotations.*;
  * <p>
  * For more information and detailed examples refer to {@link GridLifecycleBean}
  * documentation.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridLifecycleEventType {
     /**

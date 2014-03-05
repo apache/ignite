@@ -17,9 +17,6 @@ import org.gridgain.grid.util.typedef.*;
  * implements {@link #apply(Object, Object, Object)} method that calls
  * {@link #applyx(Object, Object, Object)} method and properly wraps {@link GridException}
  * into {@link GridClosureException} instance.
- *
- * @author @java.author
- * @version @java.version
  * @see CIX3
  */
 public abstract class GridInClosure3X<E1, E2, E3> extends GridInClosure3<E1, E2, E3> {

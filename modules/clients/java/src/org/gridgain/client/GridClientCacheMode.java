@@ -10,9 +10,6 @@ package org.gridgain.client;
 
 /**
  * Cache type on remote node.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridClientCacheMode {
     /** Local cache. */

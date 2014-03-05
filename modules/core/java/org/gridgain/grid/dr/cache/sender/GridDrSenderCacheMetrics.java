@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Metrics for data center replication sender cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDrSenderCacheMetrics {
     /**

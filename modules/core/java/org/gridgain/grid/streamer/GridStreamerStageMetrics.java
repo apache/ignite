@@ -11,9 +11,6 @@ package org.gridgain.grid.streamer;
 
 /**
  * Streamer stage metrics.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridStreamerStageMetrics {
     /**

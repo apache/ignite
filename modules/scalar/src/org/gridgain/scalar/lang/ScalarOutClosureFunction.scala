@@ -16,9 +16,6 @@ import org.gridgain.grid.util.lang.GridLambdaAdapter
 
 /**
  * Wrapping Scala function for `Callable` and specifically for `GridOutClosure`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarOutClosureFunction[R](val inner: Callable[R]) extends GridLambdaAdapter with (() => R) {
     assert(inner != null)

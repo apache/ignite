@@ -68,9 +68,6 @@ import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
  * <p>
  * For sample client and data node configuration refer to {@code config/ggfs/default-ggfs-client.xml}
  * and {@code config/ggfs/default-ggfs-data.xml} configuration files in GridGain installation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsHadoopFileSystem extends FileSystem {
     /** Internal property to indicate management connection. */

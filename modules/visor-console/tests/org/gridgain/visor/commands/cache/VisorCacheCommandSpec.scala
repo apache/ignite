@@ -22,9 +22,6 @@ import org.gridgain.grid.cache.query.GridCacheQuerySqlField
 
 /**
  * Unit test for 'events' command.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorCacheCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterAll {
     /**
@@ -94,9 +91,6 @@ class VisorCacheCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndA
 
 /**
  * Object for queries.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class Foo(
     @GridCacheQuerySqlField

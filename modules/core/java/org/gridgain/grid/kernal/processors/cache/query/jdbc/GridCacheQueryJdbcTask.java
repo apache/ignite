@@ -36,9 +36,6 @@ import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
 
 /**
  * Task for JDBC adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[]> {
     /** Marshaller. */
@@ -115,9 +112,6 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
 
     /**
      * Job for JDBC adapter.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private static class JdbcDriverJob extends GridComputeJobAdapter implements GridOptimizedMarshallable {
         /** */

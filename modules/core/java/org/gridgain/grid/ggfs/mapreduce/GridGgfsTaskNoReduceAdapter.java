@@ -16,9 +16,6 @@ import java.util.*;
 /**
  * Convenient {@link GridGgfsTask} adapter with empty reduce step. Use this adapter in case you are not interested in
  * results returned by jobs.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridGgfsTaskNoReduceAdapter<T, R> extends GridGgfsTask<T, R> {
     /**

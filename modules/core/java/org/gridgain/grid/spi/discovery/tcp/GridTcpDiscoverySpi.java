@@ -121,7 +121,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * cfg.setDiscoverySpi(spi);
  *
  * // Start grid.
- * GridFactory.start(cfg);
+ * GridGain.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * GridTcpDiscoverySpi can be configured from Spring XML configuration file:
@@ -142,9 +142,6 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- *
- * @author @java.author
- * @version @java.version
  * @see GridDiscoverySpi
  */
 @GridSpiInfo(

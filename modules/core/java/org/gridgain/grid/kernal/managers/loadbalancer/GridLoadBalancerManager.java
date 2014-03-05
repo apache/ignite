@@ -25,9 +25,6 @@ import java.util.*;
 
 /**
  * Load balancing manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLoadBalancerManager extends GridManagerAdapter<GridLoadBalancingSpi> {
     /**

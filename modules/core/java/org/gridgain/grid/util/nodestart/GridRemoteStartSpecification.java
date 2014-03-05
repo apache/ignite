@@ -17,9 +17,6 @@ import java.io.*;
 
 /**
  * Host data.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridRemoteStartSpecification {
     /** Hostname. */

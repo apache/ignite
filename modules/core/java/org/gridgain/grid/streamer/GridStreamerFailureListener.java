@@ -15,8 +15,7 @@ import java.util.*;
  * Streamer failure listener. Asynchronous callback passed to user in case of any failure determined by streamer.
  *
  * @see GridStreamer#addStreamerFailureListener(GridStreamerFailureListener)
- * @author @java.author
- * @version @java.version
+ *
  */
 public interface GridStreamerFailureListener {
     /**

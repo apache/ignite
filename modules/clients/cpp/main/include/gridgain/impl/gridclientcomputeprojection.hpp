@@ -18,9 +18,6 @@ class GridTopologyRequestCommand;
 
 /**
  * Implementation of GridClientCompute.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientComputeProjectionImpl : public GridClientCompute, public GridClientProjectionImpl {
 public:

@@ -18,9 +18,6 @@ import java.util.concurrent.*;
 
 /**
  * Storage for object streams.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridOptimizedObjectStreamRegistry {
     /** Holders. */

@@ -25,9 +25,6 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
  * Client topology cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientTopology {
     /** Logger. */

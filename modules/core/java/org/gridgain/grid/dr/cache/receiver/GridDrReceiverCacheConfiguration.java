@@ -16,9 +16,6 @@ import static org.gridgain.grid.dr.cache.receiver.GridDrReceiverCacheConflictRes
 
 /**
  * Data center replication receiver cache configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrReceiverCacheConfiguration {
     /** Default data center replication receiver cache conflict resolver mode. */

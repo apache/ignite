@@ -14,9 +14,6 @@ import java.lang.annotation.*;
 /**
  * Annotation for local {@link GridCacheStore} implementation. "Local" here means that there is no global
  * database behind the grid but each node has an independent one.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

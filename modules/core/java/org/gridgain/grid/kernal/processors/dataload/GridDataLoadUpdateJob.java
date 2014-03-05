@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Job to put entries to cache on affinity node.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
     /** */

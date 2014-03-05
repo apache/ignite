@@ -21,9 +21,6 @@ import java.nio.*;
 
 /**
  * File's binary data block key.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridInternal
 public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter

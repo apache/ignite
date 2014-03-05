@@ -11,9 +11,6 @@ package org.gridgain.grid.util.offheap.unsafe;
 
 /**
  * Compound memory object. Contains one or more memory regions.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridUnsafeCompoundMemory {
     /**

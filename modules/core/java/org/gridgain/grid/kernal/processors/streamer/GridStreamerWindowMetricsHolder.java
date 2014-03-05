@@ -13,9 +13,6 @@ import org.gridgain.grid.streamer.*;
 
 /**
  * Streamer window metrics holder.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerWindowMetricsHolder implements GridStreamerWindowMetrics {
     /** Window instance. */

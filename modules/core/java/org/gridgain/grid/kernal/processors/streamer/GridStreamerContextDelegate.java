@@ -19,9 +19,6 @@ import java.util.concurrent.*;
 
 /**
  * Context delegate allowing to override next stage name.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerContextDelegate implements GridStreamerContext {
     /** Context delegate. */

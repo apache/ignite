@@ -19,9 +19,6 @@ import java.nio.*;
 
 /**
  * Output stream to store data into grid cache with separate blocks.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
 abstract class GridGgfsOutputStreamAdapter extends GridGgfsOutputStream {

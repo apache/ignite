@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Eagerly removes expired entries from cache when {@link GridCacheConfiguration#isEagerTtl()} flag is set.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("NakedNotify")
 public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {

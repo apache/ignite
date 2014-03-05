@@ -20,9 +20,6 @@ import java.util.*;
  * {@link #containsKey(Object)} implemented in {@link AbstractMap} <b>fully iterate through
  * collection</b> so you need to make sure to override these methods if it's possible to create
  * efficient implementations.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridSerializableMap<K, V> extends AbstractMap<K, V> implements Serializable {
     // No-op.

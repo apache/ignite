@@ -15,9 +15,6 @@ import java.io.*;
 
 /**
  * Ping request to replica.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrExternalPingRequest implements Externalizable {
     /** {@inheritDoc} */

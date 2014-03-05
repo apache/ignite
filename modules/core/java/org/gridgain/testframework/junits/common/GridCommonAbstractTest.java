@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -30,9 +30,6 @@ import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 
 /**
  * Super class for all common tests.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**

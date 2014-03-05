@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
 /**
  * This exception indicates that task execution timed out. It is thrown from
  * {@link GridComputeTaskFuture#get()} method.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridComputeTaskTimeoutException extends GridException {
     /**

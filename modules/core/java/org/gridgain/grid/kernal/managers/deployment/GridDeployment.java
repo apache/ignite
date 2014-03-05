@@ -28,9 +28,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Represents single class deployment.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDeployment extends GridMetadataAwareAdapter implements GridDeploymentInfo {
     /** Timestamp. */

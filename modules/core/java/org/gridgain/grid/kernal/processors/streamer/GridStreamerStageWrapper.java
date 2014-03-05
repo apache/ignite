@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * Stage wrapper that handles metrics calculation and time measurement.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerStageWrapper implements GridStreamerStage<Object> {
     /** Stage delegate. */

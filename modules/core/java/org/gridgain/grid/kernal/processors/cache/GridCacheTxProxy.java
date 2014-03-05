@@ -13,9 +13,6 @@ import org.gridgain.grid.cache.*;
 
 /**
  * Marker interface for transaction proxy.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheTxProxy extends GridCacheTx {
     // No-op.

@@ -67,9 +67,6 @@ import java.util.*;
  * <ul>
  *     <li>{@link GridEventType#EVT_NODE_METRICS_UPDATED}</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  * @see GridJobEvent
  * @see GridCacheEvent
  * @see GridCachePreloadingEvent

@@ -17,9 +17,6 @@ import java.util.*;
 /**
  * Value descriptor which allows to extract fields from value object of given type.
  * See also {@link GridIndexingSpi#registerType(String, GridIndexingTypeDescriptor)}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridIndexingTypeDescriptor {
     /**

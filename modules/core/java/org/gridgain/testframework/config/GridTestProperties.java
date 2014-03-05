@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -37,9 +37,6 @@ import java.util.regex.*;
  *     use {@link #getProperties(String)} and {@link #getProperty(String, String)} methods.
  *   </li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridTestProperties {
     /** */

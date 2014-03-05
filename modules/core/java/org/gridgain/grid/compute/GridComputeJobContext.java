@@ -50,9 +50,6 @@ import java.util.concurrent.*;
  * documentation for coding examples on how to inject job context.
  * <p>
  * Attribute names that start with {@code "gridgain:"} are reserved for internal system use.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridComputeJobContext extends GridComputeJobContinuation, GridMetadataAware {
     /**

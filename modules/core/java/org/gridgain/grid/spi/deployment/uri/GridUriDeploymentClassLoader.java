@@ -21,9 +21,6 @@ import java.util.*;
  * <p>
  * Class loader scans GAR directory first and then if
  * class/resource was not found scans all JAR files.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridUriDeploymentClassLoader extends URLClassLoader {
     /**

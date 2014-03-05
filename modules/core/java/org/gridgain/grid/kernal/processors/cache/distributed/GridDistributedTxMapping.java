@@ -22,9 +22,6 @@ import java.util.concurrent.*;
 
 /**
  * Transaction node mapping.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDistributedTxMapping<K, V> implements Externalizable {
     /** Mapped node. */

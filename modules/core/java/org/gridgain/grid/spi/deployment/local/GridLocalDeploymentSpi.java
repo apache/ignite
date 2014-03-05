@@ -41,9 +41,6 @@ import java.util.concurrent.*;
  * There is no point to explicitly configure {@code GridLocalDeploymentSpi}
  * with {@link GridConfiguration} as it is used by default and has no
  * configuration parameters.
- *
- * @author @java.author
- * @version @java.version
  * @see GridDeploymentSpi
  */
 @GridSpiInfo(

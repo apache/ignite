@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,9 +21,6 @@ import java.net.*;
  * that need to make HTTP(s) interactions.
  * <p>
  * NOTE: this implementation is NOT thread-safe.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridEmbeddedHttpServer {
     /** Default hostname to bind the server to. */

@@ -22,9 +22,6 @@
 
 /**
  * Cache request command.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridCacheRequestCommand  : public GridClientMessageCommand {
 public:

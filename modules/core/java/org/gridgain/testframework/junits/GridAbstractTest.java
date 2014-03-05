@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -47,9 +47,6 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
  * Common abstract test for GridGain tests.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({
     "TransientFieldInNonSerializableClass",
@@ -708,7 +705,7 @@ public abstract class GridAbstractTest extends TestCase {
         try {
             Grid grid = G.grid(gridName);
 
-            assert grid != null : "GridFactory returned null grid for name: " + gridName;
+            assert grid != null : "GridGain returned null grid for name: " + gridName;
 
             info(">>> Stopping grid [name=" + grid.name() + ", id=" + grid.localNode().id() + ']');
 
@@ -893,7 +890,7 @@ public abstract class GridAbstractTest extends TestCase {
         try {
             Grid grid = G.grid(gridName);
 
-            assert grid != null : "GridFactory returned null grid for name: " + gridName;
+            assert grid != null : "GridGain returned null grid for name: " + gridName;
 
             info(">>> Stopping grid [name=" + grid.name() + ", id=" + grid.localNode().id() + ']');
 

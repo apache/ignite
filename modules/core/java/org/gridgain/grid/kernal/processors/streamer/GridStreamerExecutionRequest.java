@@ -20,8 +20,7 @@ import java.nio.*;
 import java.util.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAdapter {
     /** Force local deployment flag. */

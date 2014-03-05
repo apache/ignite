@@ -14,9 +14,6 @@ import org.gridgain.grid.util.mbean.*;
 
 /**
  * This interface defines JMX view on {@link GridGain}.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean that provides access to grid life-cycle operations.")
 public interface GridGainMBean {

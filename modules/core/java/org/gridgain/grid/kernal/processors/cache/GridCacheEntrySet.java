@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
  * Entry set backed by cache itself.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheEntrySet<K, V> extends AbstractSet<GridCacheEntry<K, V>> {
     /** Cache context. */

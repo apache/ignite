@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -20,9 +20,6 @@ import static org.apache.commons.lang.SystemUtils.*;
 
 /**
  * Runtime utility allows to execute system commands and shell scripts.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTestRuntime {
     /** Spawnd processes thread's counter. */

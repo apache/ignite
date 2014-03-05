@@ -23,9 +23,6 @@ import java.util.*;
 
 /**
  * Information about partitions of all nodes in topology.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstractMessage<K, V> {
     /** */

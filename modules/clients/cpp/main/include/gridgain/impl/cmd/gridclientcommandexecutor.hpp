@@ -26,9 +26,6 @@
 
 /**
  * Generic command executor class. Currently is implemented with TCP and HTTP executors.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientCommandExecutor {
 public:

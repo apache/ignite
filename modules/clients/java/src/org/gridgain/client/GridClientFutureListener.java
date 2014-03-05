@@ -11,9 +11,6 @@ package org.gridgain.client;
 
 /**
  * Listener interface for {@link GridClientFuture}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridClientFutureListener<R> {
     /**

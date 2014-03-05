@@ -16,9 +16,6 @@ import org.gridgain.grid.util.lang.GridLambdaAdapter
 
 /**
  * Wrapping Scala function for `GridInClosure`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarInClosureFunction[T](val inner: GridInClosure[T]) extends GridLambdaAdapter with (T => Unit) {
     assert(inner != null)

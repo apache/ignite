@@ -24,9 +24,6 @@ import static java.util.concurrent.TimeUnit.*;
 
 /**
  * This class provide implementation for task future.
- *
- * @author @java.author
- * @version @java.version
  * @param <R> Type of the task result returning from {@link GridComputeTask#reduce(List)} method.
  */
 public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements GridComputeTaskFuture<R> {

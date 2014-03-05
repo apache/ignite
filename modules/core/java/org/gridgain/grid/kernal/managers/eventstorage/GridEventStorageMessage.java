@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * Event storage message.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter {
     /** */

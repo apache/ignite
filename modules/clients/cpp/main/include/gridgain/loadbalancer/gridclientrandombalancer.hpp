@@ -14,9 +14,6 @@
 
 /**
  * Random balancer.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientRandomBalancer : public GridClientLoadBalancer {
 public:

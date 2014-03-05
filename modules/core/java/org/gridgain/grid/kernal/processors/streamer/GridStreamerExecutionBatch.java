@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Streamer execution batch which should be processed on one node.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerExecutionBatch implements Externalizable, GridOptimizedMarshallable {
     /** */

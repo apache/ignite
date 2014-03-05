@@ -30,9 +30,6 @@ import java.util.*;
 
 /**
  * Wrapper class for router process.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean {
     /** Id. */

@@ -15,9 +15,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * Simple balancer that implements round-robin balancing.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientRoundRobinBalancer extends GridClientBalancerAdapter implements GridClientTopologyListener {
     /** Lock. */

@@ -22,9 +22,6 @@ import java.util.concurrent.*;
 
 /**
  * Util methods for {@code GridProjection.startNodes(..)} methods.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNodeStartUtils {
     /** Key for hostname. */

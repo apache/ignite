@@ -18,9 +18,6 @@ import VisorVvmCommand._
 
 /**
  * Unit test for 'vvm' command.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorVvmCommandSpec extends FlatSpec with ShouldMatchers {
     behavior of "A 'vvm' visor command"

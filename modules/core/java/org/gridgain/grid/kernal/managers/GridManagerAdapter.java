@@ -37,8 +37,7 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
  * Convenience adapter for grid managers.
  *
  * @param <T> SPI wrapped by this manager.
- * @author @java.author
- * @version @java.version
+ *
  */
 public abstract class GridManagerAdapter<T extends GridSpi> implements GridManager {
     /** Kernal context. */

@@ -13,9 +13,6 @@ import org.gridgain.client.*;
 /**
  * This exception is thrown when ongoing packet should be sent, but network connection is broken.
  * In this case client will try to reconnect to any of the servers specified in configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientConnectionResetException extends GridClientException {
     /**

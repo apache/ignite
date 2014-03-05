@@ -19,9 +19,6 @@ import java.util.*;
  * unmarshalled form. It exists to avoid unnecessary unmarshalling whenever
  * it is not needed.
  * See also {@link GridIndexingSpi#queryFields(String, String, Collection, GridIndexingQueryFilter[])}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridIndexingEntity<T> {
     /**

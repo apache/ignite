@@ -111,9 +111,6 @@ import org.gridgain.visor.commands.{VisorConsoleMultiNodeTask, VisorConsoleComma
  *     visor cache
  *         Prints summary statistics about all caches.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorCacheCommand {
     /**
@@ -461,9 +458,6 @@ class VisorCacheCommand {
 
 /**
  * Task that runs on all nodes and returns cache metrics data.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridInternal
 private class VisorCacheDataTask extends VisorConsoleMultiNodeTask[Option[String], Iterable[VisorCacheAggregatedData]] {
@@ -574,9 +568,6 @@ private class VisorCacheDataTask extends VisorConsoleMultiNodeTask[Option[String
 
 /**
  * Cache metrics data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class VisorCacheData(
     cacheName: String,
@@ -597,9 +588,6 @@ private case class VisorCacheData(
 
 /**
  * Aggregated cache metrics data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class VisorCacheAggregatedData(
     cacheName: String,
@@ -627,9 +615,6 @@ private case class VisorCacheAggregatedData(
 
 /**
  * Cache query metrics data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class VisorCacheQueryMetrics(
     minTime: Long,
@@ -641,9 +626,6 @@ private case class VisorCacheQueryMetrics(
 
 /**
  * Aggregated cache query metrics data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class VisorAggregatedCacheQueryMetrics(
     var minTime: Long = 0,
@@ -656,9 +638,6 @@ private case class VisorAggregatedCacheQueryMetrics(
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorCacheCommand {
     addHelp(

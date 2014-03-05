@@ -221,9 +221,6 @@ import java.util.logging.*;
  *     ...
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("JavadocReference")
 public class GridJdbcDriver implements Driver {
@@ -430,9 +427,6 @@ public class GridJdbcDriver implements Driver {
     /**
      * Extension of {@link DriverPropertyInfo} that adds
      * convenient constructors.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private static class PropertyInfo extends DriverPropertyInfo {
         /**

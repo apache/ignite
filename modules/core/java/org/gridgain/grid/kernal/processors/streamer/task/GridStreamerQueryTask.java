@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * Streamer query task.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerQueryTask<R> extends GridComputeTaskAdapter<Void, Collection<R>> {
     /** Query closure. */

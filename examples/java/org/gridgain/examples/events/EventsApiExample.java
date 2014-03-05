@@ -28,9 +28,6 @@ import static org.gridgain.grid.events.GridEventType.*;
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will start
  * GridGain node with {@code examples/config/example-cache.xml} configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class EventsApiExample {
     /** Cache name. */

@@ -31,9 +31,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * Future for exchanging partition maps.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Long>
     implements Comparable<GridDhtPartitionsExchangeFuture<K, V>>, GridDhtTopologyFuture {

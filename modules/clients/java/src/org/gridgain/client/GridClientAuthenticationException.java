@@ -11,9 +11,6 @@ package org.gridgain.client;
 
 /**
  * Exception that represents client authentication failure.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientAuthenticationException extends GridClientException {
     /**

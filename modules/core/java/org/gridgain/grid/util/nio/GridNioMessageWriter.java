@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * Message writer.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridNioMessageWriter {
     /**

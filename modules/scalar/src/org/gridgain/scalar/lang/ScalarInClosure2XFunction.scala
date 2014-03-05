@@ -15,9 +15,6 @@ import org.gridgain.grid.util.lang.{GridLambdaAdapter, GridInClosure2X}
 
 /**
  * Wrapping Scala function for `GridInClosure2X`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarInClosure2XFunction[T1, T2](val inner: GridInClosure2X[T1, T2]) extends GridLambdaAdapter
     with ((T1, T2) => Unit) {

@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Email holder for email processor.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridEmailHolder {
     /** */

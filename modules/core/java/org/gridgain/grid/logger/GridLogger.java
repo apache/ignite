@@ -55,9 +55,6 @@ import org.jetbrains.annotations.*;
  * <p>
  * Note that GridGain's standard startup scripts <tt>$GRIDGAIN_HOME/bin/ggstart.{sh|bat}</tt> start
  * by default in "quiet" mode. Both scripts accept {@code -v} arguments to turn off "quiet" mode.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridToStringExclude
 public interface GridLogger {

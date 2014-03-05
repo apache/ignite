@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -30,9 +30,6 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
  * Prepared statement test.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
@@ -649,9 +646,6 @@ public class GridJdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
 
     /**
      * Test object.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     @SuppressWarnings("UnusedDeclaration")
     private static class TestObject implements Serializable {

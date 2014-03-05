@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * {@link GridEvents} implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridEventsImpl implements GridEvents {
     /** */

@@ -21,9 +21,6 @@ import java.util.*;
 /**
  * Key set based on provided entries with all remove operations backed
  * by underlying cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
     /** Cache context. */

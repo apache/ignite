@@ -16,9 +16,6 @@ import java.util.*;
  * Makes {@link AbstractCollection} as {@link Serializable} and is
  * useful for making anonymous serializable collections. It has no
  * extra logic or state in addition to {@link AbstractCollection}.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridSerializableCollection<E> extends AbstractCollection<E> implements Serializable {
     // No-op.

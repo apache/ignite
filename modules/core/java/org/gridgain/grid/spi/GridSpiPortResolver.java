@@ -17,9 +17,6 @@ import java.util.*;
  * routers are configured to perform port mapping between external and internal networks and
  * the same mapping must be available to SPIs in GridGain that perform communication over
  * IP protocols. 
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridSpiPortResolver extends GridMetadataAware {
     /**

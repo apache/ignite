@@ -30,9 +30,6 @@ import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * Parser for extended memcache protocol. Handles parsing and encoding activity.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpRestParser implements GridNioParser {
     /** UTF-8 charset. */

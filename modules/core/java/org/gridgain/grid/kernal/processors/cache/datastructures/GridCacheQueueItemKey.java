@@ -13,9 +13,6 @@ import org.gridgain.grid.kernal.processors.cache.*;
 
 /**
  * Queue item key.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheQueueItemKey extends GridCacheInternal {
     /**

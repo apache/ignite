@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Interface for all deployment stores.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDeploymentStore {
     /**

@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Deployment request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDeploymentRequest extends GridTcpCommunicationMessageAdapter {
     /** Response topic. Response should be sent back to this topic. */

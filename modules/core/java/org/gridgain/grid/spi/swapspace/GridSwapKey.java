@@ -18,9 +18,6 @@ import org.jetbrains.annotations.*;
  * <p>
  * This class also holds information about partition this key belongs to
  * (if needed for caches).
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridSwapKey {
     /** */

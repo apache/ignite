@@ -18,9 +18,6 @@ import java.io.*;
  * Message sent by node to its next to ensure that next node and
  * connection to it are alive. Receiving node should send it across the ring,
  * until message does not reach coordinator. Coordinator responds directly to node.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstractMessage {
     /** Status OK. */

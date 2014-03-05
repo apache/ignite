@@ -19,9 +19,6 @@ import java.util.*;
 /**
  * Lean map implementation that keeps up to five entries in its fields.
  * {@code Null}-keys are not supported.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Cloneable {
     /** Implementation used internally. */

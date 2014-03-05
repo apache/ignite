@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
  * Iterator over result set.
- *
- * @author @java.author
- * @version @java.version
  */
 abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAdapterEx<T> {
     /** */

@@ -13,9 +13,6 @@ import java.util.*;
 
 /**
  * Defines "rich" iterable interface that is also acts as lambda function and iterator.
- *
- * @author @java.author
- * @version @java.version
  * @see GridIterator
  */
 public interface GridIterable<T> extends GridIterator<T> {

@@ -52,8 +52,7 @@ import org.gridgain.grid.util.tostring.*;
 import java.util.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 @GridToStringExclude
 public interface GridKernalContext extends GridMetadataAware, Iterable<GridComponent> {

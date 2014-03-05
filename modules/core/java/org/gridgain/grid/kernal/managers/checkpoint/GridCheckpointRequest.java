@@ -18,9 +18,6 @@ import java.nio.*;
 
 /**
  * This class defines checkpoint request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
     /** */

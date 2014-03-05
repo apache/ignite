@@ -30,9 +30,6 @@ import org.gridgain.visor.commands.{VisorConsoleUtils => CU}
 
 /**
  * Task execution state.
- *
- * @author @java.author
- * @version @java.version
  */
 private object State extends Enumeration {
     /** Type shortcut. */
@@ -49,9 +46,6 @@ import org.gridgain.visor.commands.tasks.State._
 
 /**
  * Task execution data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class Execution(
     id: GridUuid,
@@ -141,9 +135,6 @@ private case class Execution(
 
 /**
  * Task data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class Task(
     taskName: String,
@@ -373,9 +364,6 @@ class VisorSessionIdFilter(u: GridUuid) extends GridPredicate[GridEvent] {
  *     visor tasks "-e=@s1"
  *         Traces task execution with ID taken from 's1' memory variable.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorTasksCommand {
     /** Limit for printing tasks and executions. */
@@ -1364,9 +1352,6 @@ class VisorTasksCommand {
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorTasksCommand {
     addHelp(

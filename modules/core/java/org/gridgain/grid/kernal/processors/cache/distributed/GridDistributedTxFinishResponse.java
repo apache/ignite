@@ -19,9 +19,6 @@ import java.nio.*;
 
 /**
  * Transaction finish response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V> {
     /** */

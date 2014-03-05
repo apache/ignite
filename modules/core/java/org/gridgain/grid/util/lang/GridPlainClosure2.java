@@ -13,9 +13,6 @@ import org.gridgain.grid.*;
 
 /**
  * Closure taking 2 arguments.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridPlainClosure2<T1, T2, R> {
     /**

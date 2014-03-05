@@ -16,9 +16,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Data center entry implementation containing only plain key and value.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrPlainEntry<K, V> implements GridDrEntry<K, V> {
     /** Key. */

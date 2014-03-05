@@ -23,9 +23,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Statistics for {@link GridTcpDiscoverySpi}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryStatistics {
     /** Join started timestamp. */

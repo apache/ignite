@@ -15,9 +15,6 @@ import java.io.*;
 
 /**
  * Secondary Hadoop file system output stream wrapper.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsHadoopProxyOutputStream extends OutputStream {
     /** Actual output stream. */

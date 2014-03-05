@@ -24,9 +24,6 @@ class GridClientConnectionPool;
 
 /**
  * Generic connection class. Current implementations are TCP and HTTP connections.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientConnection: private boost::noncopyable {
 public:

@@ -24,9 +24,6 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
  * Bundled factory for cache updaters.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDataLoadCacheUpdaters {
     /** */

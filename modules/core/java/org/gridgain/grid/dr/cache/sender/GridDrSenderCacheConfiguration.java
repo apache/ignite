@@ -17,9 +17,6 @@ import static org.gridgain.grid.dr.cache.sender.GridDrSenderCacheMode.*;
 
 /**
  * Data center replication sender cache configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrSenderCacheConfiguration {
     /** Default data center replication sender cache mode. */

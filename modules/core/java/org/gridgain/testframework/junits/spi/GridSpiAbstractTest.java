@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -34,9 +34,6 @@ import static org.gridgain.grid.product.GridProductVersion.*;
 
 /**
  * Base SPI test class.
- *
- * @author @java.author
- * @version @java.version
  * @param <T> SPI implementation class.
  */
 @SuppressWarnings({"JUnitTestCaseWithNonTrivialConstructors"})
@@ -547,8 +544,7 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
     }
 
     /**
-     * @author @java.author
-     * @version @java.version
+     *
      * @param <T> SPI implementation class.
      */
     protected static class TestData<T> {

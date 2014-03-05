@@ -25,9 +25,6 @@ import static org.gridgain.grid.events.GridEventType.*;
  * NOTE: this class should not make use of any cache specific structures,
  * like, for example GridCacheContext, as it may be reused between different
  * caches.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheVersionManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Timestamp used as base time for cache topology version (January 1, 2014). */

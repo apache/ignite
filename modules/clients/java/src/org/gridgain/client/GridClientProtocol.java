@@ -11,9 +11,6 @@ package org.gridgain.client;
 
 /**
  * Protocol that will be used when client connections are created.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridClientProtocol {
     /** Communication via HTTP protocol. */

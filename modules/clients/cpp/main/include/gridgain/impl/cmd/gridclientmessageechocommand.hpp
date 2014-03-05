@@ -17,9 +17,6 @@
 
 /**
  * Echo command.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientMessageEchoCommand : public GridClientMessageCommand {
 public:

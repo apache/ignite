@@ -27,8 +27,7 @@ import java.util.*;
  * newest elements supersede eldest ones.
  *
  * @param <E> Set element.
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridBoundedLinkedHashSet<E> extends GridSerializableSet<E> implements Cloneable {
     /** */
