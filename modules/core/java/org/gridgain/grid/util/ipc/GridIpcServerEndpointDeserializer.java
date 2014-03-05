@@ -17,9 +17,6 @@ import org.gridgain.grid.util.ipc.shmem.*;
 
 /**
  * Grid GridIpcServerEndpoint configuration JSON deserializer.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIpcServerEndpointDeserializer {
     /**

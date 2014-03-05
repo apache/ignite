@@ -48,9 +48,6 @@ import static org.hibernate.cache.spi.access.AccessType.*;
  * <pre name="code" class="brush: xml; gutter: false;">
  * org.gridgain.hibernate.region_cache.region1=cache1
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridHibernateRegionFactory implements RegionFactory {
     /** Hibernate L2 cache grid name property name. */

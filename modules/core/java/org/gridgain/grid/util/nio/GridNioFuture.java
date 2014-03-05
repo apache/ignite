@@ -19,9 +19,6 @@ import java.util.concurrent.*;
 /**
  * Reduced variant of {@link GridFuture} interface. Removed asynchronous
  * listen methods which require a valid grid kernal context.
- *
- * @author @java.author
- * @version @java.version
  * @param <R> Type of the result for the future.
  */
 public interface GridNioFuture<R> {

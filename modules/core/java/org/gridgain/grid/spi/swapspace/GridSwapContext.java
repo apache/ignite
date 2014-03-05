@@ -13,9 +13,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Context for swap operations.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridSwapContext {
     /** */

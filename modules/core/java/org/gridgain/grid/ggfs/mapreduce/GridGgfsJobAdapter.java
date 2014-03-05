@@ -11,9 +11,6 @@ package org.gridgain.grid.ggfs.mapreduce;
 
 /**
  * Adapter for {@link GridGgfsJob} with no-op implementation of {@link #cancel()} method.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridGgfsJobAdapter implements GridGgfsJob {
     /** {@inheritDoc} */

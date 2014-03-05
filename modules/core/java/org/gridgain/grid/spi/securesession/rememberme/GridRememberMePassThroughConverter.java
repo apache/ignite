@@ -15,9 +15,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 /**
  * No-op converter - {@link #convert(byte[])} method returns the same byte array as
  * the passed-in one.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridRememberMePassThroughConverter implements GridRememberMeConverter {
     /** {@inheritDoc} */

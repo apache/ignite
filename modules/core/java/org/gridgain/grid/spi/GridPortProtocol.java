@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Protocols supported by port processor.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridPortProtocol {
     /**

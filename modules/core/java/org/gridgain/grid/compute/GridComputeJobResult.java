@@ -16,9 +16,6 @@ import java.util.*;
 /**
  * Result of remote job which gets passed into {@link GridComputeTask#result(GridComputeJobResult, List)}
  * method.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridComputeJobResult {
     /**

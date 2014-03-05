@@ -27,9 +27,6 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
  * Cache atomic long implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Externalizable {
     /** Deserialization stash. */

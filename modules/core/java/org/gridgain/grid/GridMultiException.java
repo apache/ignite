@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Grid exception which may contain more than one failure.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridMultiException extends GridException {
     /** Nested exceptions. */

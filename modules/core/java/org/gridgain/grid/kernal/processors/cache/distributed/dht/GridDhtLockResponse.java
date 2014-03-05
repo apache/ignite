@@ -24,9 +24,6 @@ import java.util.*;
 
 /**
  * DHT cache lock response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V> {
     /** Evicted readers. */

@@ -17,9 +17,6 @@ import org.gridgain.visor._
 
 /**
 * Unit test for 'log' command.
-*
-* @author @java.author
-* @version @java.version
 */
 class VisorLogCommandSpec extends FlatSpec with ShouldMatchers {
     behavior of "A 'log' visor command"

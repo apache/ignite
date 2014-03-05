@@ -17,9 +17,6 @@ import java.lang.annotation.*;
  * always be executed in the management thread pool on remote nodes.
  *
  * This annotation intended for internal use only.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

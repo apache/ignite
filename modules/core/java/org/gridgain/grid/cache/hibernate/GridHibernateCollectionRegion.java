@@ -52,9 +52,6 @@ import org.hibernate.cache.spi.access.*;
  * Note: the collection cache does not cache the state of the actual entities in the cache, it caches only identifier
  * values. For this reason, the collection cache should always be used in conjunction with
  * the second-level cache for those entities expected to be cached as part of a collection cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridHibernateCollectionRegion extends GridHibernateTransactionalDataRegion implements CollectionRegion {
     /**

@@ -14,9 +14,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Streamer stage metrics adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerStageMetricsAdapter implements GridStreamerStageMetrics {
     /** */

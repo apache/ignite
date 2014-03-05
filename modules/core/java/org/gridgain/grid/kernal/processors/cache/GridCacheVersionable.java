@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 /**
  * Classes that are based on version may choose to implement this interface.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheVersionable {
     /**

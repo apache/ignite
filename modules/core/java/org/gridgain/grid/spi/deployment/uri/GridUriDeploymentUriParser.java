@@ -19,9 +19,6 @@ import org.gridgain.grid.util.tostring.*;
  * expected format.
  * <p>
  * Expected format is (schema):(//)URL(?|#)(parameters)
- *
- * @author @java.author
- * @version @java.version
  */
 class GridUriDeploymentUriParser {
     /** Input string which should be parsed and encoded. */

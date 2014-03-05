@@ -26,9 +26,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Parent of all cache messages.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessageAdapter {
     /** Maximum number of cache lookup indexes. */

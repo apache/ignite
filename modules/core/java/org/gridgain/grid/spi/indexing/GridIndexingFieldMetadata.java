@@ -14,9 +14,6 @@ import java.io.*;
 /**
  * Query field descriptor. This descriptor is used to provide metadata
  * about fields returned in query result.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridIndexingFieldMetadata extends Externalizable {
     /**

@@ -16,9 +16,6 @@ import org.gridgain.grid.util.lang.GridReducer2
 
 /**
  * Peer deploy aware adapter for Java's `GridReducer2`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarReducer2[E1, E2, R](private val r: (Seq[E1], Seq[E2]) => R) extends GridReducer2[E1, E2, R] {
     assert(r != null)

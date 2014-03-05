@@ -33,9 +33,6 @@ import static org.gridgain.grid.spi.GridSecuritySubjectType.*;
 
 /**
  * Rest processor implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridRestProcessor extends GridProcessorAdapter {
     /** */

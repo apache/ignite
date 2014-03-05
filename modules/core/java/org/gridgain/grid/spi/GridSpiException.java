@@ -13,9 +13,6 @@ import org.gridgain.grid.*;
 
 /**
  * Exception thrown by SPI implementations.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridSpiException extends GridException {
     /**

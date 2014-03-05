@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * DGC response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDgcResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
     /** */

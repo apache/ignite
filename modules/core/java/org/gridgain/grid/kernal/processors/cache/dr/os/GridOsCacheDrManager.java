@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * No-op implementation for {@link GridCacheDrManager}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
     /** {@inheritDoc} */

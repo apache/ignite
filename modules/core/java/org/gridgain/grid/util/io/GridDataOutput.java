@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * Extended data output.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDataOutput extends DataOutput {
     /**

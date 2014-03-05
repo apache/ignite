@@ -28,9 +28,6 @@ import java.nio.*;
 
 /**
  * TCP binary protocol implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** Server. */

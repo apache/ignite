@@ -16,9 +16,6 @@ import java.io.*;
 
 /**
  * DGC bad lock.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridCacheDgcBadLock implements Externalizable {
     /** Near lock version. */

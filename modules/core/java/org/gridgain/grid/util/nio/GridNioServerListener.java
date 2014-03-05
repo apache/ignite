@@ -12,9 +12,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Listener passed in to the {@link GridNioServer} that will be notified on client events.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridNioServerListener<T> {
     /**

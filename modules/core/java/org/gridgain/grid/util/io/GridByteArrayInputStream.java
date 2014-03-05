@@ -16,9 +16,6 @@ import java.io.*;
 /**
  * This class defines input stream backed by byte array.
  * It is identical to {@link ByteArrayInputStream} with no synchronization.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridByteArrayInputStream extends InputStream {
     /** */

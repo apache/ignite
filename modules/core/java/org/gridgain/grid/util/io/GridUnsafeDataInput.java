@@ -20,9 +20,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
  * Data input based on {@code Unsafe} operations.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridUnsafeDataInput extends InputStream implements GridDataInput {
     /** Unsafe. */

@@ -22,9 +22,6 @@ import java.nio.*;
 
 /**
  * Reply for synchronous phase 2.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishResponse<K, V> {
     /** Heuristic error. */

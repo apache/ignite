@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Load balancer for per-task configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridRoundRobinPerTaskLoadBalancer {
     /** Balancing nodes. */

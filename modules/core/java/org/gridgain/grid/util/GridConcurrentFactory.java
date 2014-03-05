@@ -17,9 +17,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
  * Concurrent map factory.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridConcurrentFactory {
     /** Default concurrency level. */

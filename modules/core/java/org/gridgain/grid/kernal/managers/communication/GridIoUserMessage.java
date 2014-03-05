@@ -23,9 +23,6 @@ import java.util.*;
 
 /**
  * User message wrapper.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
     /** Message body. */

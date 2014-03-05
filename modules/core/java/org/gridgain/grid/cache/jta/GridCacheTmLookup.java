@@ -33,9 +33,6 @@ import javax.transaction.*;
  *  to get to transaction manager.
  * </li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheTmLookup {
     /**

@@ -17,9 +17,6 @@ import static org.gridgain.grid.util.GridUtils.*;
 /**
  * General grid exception. This exception is used to indicate any error condition
  * within Grid.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridException extends Exception {
     /**

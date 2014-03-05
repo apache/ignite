@@ -16,9 +16,6 @@ import java.io.*;
 
 /**
  * Cache DR info used as argument in PUT cache internal interfaces.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDrInfo<V> implements Externalizable {
     /** Value. */

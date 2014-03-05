@@ -20,9 +20,6 @@
 
 /**
  * Globally unique universal identifier.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridUuid: public GridHasheableObject {
     class Impl {

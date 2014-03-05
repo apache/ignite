@@ -25,8 +25,7 @@ import java.util.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridProjectionAdapter extends GridMetadataAwareAdapter implements GridProjection, Externalizable {
     /** */
@@ -544,7 +543,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            GridKernal g = GridFactoryEx.gridx(gridName);
+            GridKernal g = GridGainEx.gridx(gridName);
 
             return ids != null ? new GridProjectionAdapter(g, g.context(), ids) :
                 p != null ? new GridProjectionAdapter(g, g.context(), p) : g;

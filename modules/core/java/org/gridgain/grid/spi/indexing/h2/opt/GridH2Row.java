@@ -14,9 +14,6 @@ import org.h2.value.*;
 
 /**
  * Row with locking support needed for unique key conflicts resolution.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridH2Row extends Row implements GridSearchRowPointer {
     /** */

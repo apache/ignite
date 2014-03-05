@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Data center replication sender hub store cursor.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDrSenderHubStoreCursor extends AutoCloseable {
     /**

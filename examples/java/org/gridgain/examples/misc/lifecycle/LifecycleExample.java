@@ -18,9 +18,6 @@ import static org.gridgain.grid.GridLifecycleEventType.*;
  * This example shows how to provide your own {@link GridLifecycleBean} implementation
  * to be able to hook into GridGain lifecycle. The {@link LifecycleExampleBean} bean
  * will output occurred lifecycle events to the console.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class LifecycleExample {
     /**

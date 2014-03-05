@@ -26,9 +26,6 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
  * Cache attributes.
  * <p>
  * This class contains information on a single cache configured on some node.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheAttributes implements Externalizable {
     /** Cache name. */

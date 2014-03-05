@@ -16,9 +16,6 @@ import java.io.*;
 
 /**
  * Adapter for {@link GridCacheQueryMetrics}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheQueryMetricsAdapter implements GridCacheQueryMetrics, Externalizable {
     /** Minimum time of execution. */

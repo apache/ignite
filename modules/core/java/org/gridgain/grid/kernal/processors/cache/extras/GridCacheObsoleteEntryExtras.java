@@ -15,9 +15,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Extras where obsolete version is set.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheObsoleteEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> {
     /** Obsolete version. */

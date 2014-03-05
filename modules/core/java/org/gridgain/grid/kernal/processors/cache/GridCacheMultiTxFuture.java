@@ -23,9 +23,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Future which waits for completion of one or more transactions.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolean> {
     /** Logger reference. */

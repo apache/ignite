@@ -20,9 +20,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
  * Grid performance suggestions.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridPerformanceSuggestions {
     /** */

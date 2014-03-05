@@ -15,9 +15,6 @@ import org.gridgain.grid.util.lang.{GridLambdaAdapter, GridClosureX}
 
 /**
  * Wrapping Scala function for `GridClosureX`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarClosureXFunction[T, R](val inner: GridClosureX[T, R]) extends GridLambdaAdapter with (T => R) {
     assert(inner != null)

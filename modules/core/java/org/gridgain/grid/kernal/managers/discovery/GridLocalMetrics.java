@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * This class represents runtime information available for current VM.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridLocalMetrics extends Serializable {
     /**

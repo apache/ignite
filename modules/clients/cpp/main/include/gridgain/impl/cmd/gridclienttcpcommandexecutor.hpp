@@ -28,9 +28,6 @@ class ObjectWrapper;
 
 /**
  * TCP command executor. Sends commands over HTTP transport.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientTcpCommandExecutor : public GridClientCommandExecutorPrivate {
 public:

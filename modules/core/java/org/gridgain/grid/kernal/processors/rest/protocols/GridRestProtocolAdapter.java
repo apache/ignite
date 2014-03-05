@@ -27,9 +27,6 @@ import java.util.*;
 
 /**
  * Abstract protocol adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridRestProtocolAdapter implements GridRestProtocol {
     /** UTF-8 charset. */

@@ -40,9 +40,6 @@ import java.io.*;
  * For more information and examples of cache affinity refer to
  * {@link GridCacheAffinityKeyMapper} and {@link GridCacheAffinityKeyMapped @GridCacheAffinityKeyMapped}
  * documentation.
- *
- * @author @java.author
- * @version @java.version
  * @see GridCacheAffinityKeyMapped
  * @see GridCacheAffinityKeyMapper
  * @see GridCacheAffinityFunction

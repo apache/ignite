@@ -14,9 +14,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Base64 decoder.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridRememberMeBase64DecodingConverter implements GridRememberMeConverter {
     /** {@inheritDoc} */

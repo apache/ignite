@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * This interface defines a grid authentication manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridAuthenticationManager extends GridManager {
     /**

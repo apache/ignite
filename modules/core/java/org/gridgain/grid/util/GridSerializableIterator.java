@@ -15,9 +15,6 @@ import java.util.*;
 /**
  * Makes {@link Iterator} as {@link Serializable} and is
  * useful for making anonymous serializable iterators.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridSerializableIterator<E> extends Iterator<E>, Serializable {
     // No-op.

@@ -26,9 +26,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 /**
  * Example of {@link GridCacheStore} implementation that uses Hibernate
  * and deals with maps {@link UUID} to {@link Person}.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
 public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Person> {

@@ -71,9 +71,6 @@ import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
  * <p>
  * For more information about grid configuration and startup refer to {@link GridGain}
  * documentation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridConfiguration {
     /** Courtesy notice log category. */
@@ -450,7 +447,7 @@ public class GridConfiguration {
     private int restTcpSndQueueLimit;
 
     /** REST TCP selector count. */
-    private int restTcpSelectorCnt = Runtime.getRuntime().availableProcessors();
+    private int restTcpSelectorCnt = Math.min(4, Runtime.getRuntime().availableProcessors());
 
     /** Idle timeout. */
     private long restIdleTimeout = DFLT_REST_IDLE_TIMEOUT;

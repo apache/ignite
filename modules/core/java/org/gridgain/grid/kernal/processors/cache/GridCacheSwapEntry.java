@@ -17,9 +17,6 @@ import java.io.*;
 
 /**
  * Swap entry.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheSwapEntry<V> implements Externalizable {
     /** Key hash. */

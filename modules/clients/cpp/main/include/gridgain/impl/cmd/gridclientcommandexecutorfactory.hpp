@@ -16,9 +16,6 @@
 
 /**
  * Command executor factory.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientCommandExecutorFactory {
 public:

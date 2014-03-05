@@ -33,8 +33,7 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridLuceneIndex implements Closeable {
     /** */

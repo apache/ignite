@@ -45,9 +45,6 @@ import java.util.*;
  * {@code org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem} for more information.
  * <p>
  * <b>NOTE:</b> integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridGgfs {
     /** Property: user name. */

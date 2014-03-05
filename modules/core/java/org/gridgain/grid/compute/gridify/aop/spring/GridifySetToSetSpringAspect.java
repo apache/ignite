@@ -31,9 +31,6 @@ import static org.gridgain.grid.util.gridify.GridifyUtils.*;
  * <p>
  * See {@link GridifySetToSet} documentation for more information about execution of
  * {@code gridified} methods.
- *
- * @author @java.author
- * @version @java.version
  * @see GridifySetToSet
  */
 public class GridifySetToSetSpringAspect extends GridifySetToSetAbstractAspect implements MethodInterceptor {

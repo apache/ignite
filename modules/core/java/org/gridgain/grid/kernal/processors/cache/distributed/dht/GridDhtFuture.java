@@ -15,9 +15,6 @@ import java.util.*;
 
 /**
  * Keys to retry.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDhtFuture<T> extends GridFuture<T> {
     /**

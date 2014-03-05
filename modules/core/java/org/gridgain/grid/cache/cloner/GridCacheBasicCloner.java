@@ -17,9 +17,6 @@ import org.gridgain.grid.util.typedef.*;
  * a passed in object implements {@link Cloneable} then its implementation of
  * {@link Object#clone()} is used to get a copy. Otherwise, the object itself
  * will be returned without cloning.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheBasicCloner implements GridCacheCloner {
     /** {@inheritDoc} */

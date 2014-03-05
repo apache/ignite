@@ -29,9 +29,6 @@ import static org.gridgain.grid.spi.GridPortProtocol.*;
 
 /**
  * Jetty REST protocol implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     /**

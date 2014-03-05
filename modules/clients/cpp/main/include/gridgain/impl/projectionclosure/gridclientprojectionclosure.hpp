@@ -17,9 +17,6 @@ class GridClientCommandExecutor;
 
 /**
  * Basic class for all closures.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class ClientProjectionClosure {
 public:

@@ -18,9 +18,6 @@
 
 /**
  * Basic class for all exceptions in client.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 #ifdef _MSC_VER
 class GRIDGAIN_API GridClientException : 

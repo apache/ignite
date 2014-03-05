@@ -15,9 +15,6 @@ import org.gridgain.grid.kernal.managers.deployment.*;
 /**
  * Resource injector implementations contain logic and resources that
  * should be injected for selected target objects.
- *
- * @author @java.author
- * @version @java.version
  */
 interface GridResourceInjector {
     /**

@@ -17,8 +17,7 @@ import org.jetbrains.annotations.*;
 import java.nio.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridStreamerResponse extends GridTcpCommunicationMessageAdapter {
     /** */

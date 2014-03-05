@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * File or directory information.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridGgfsFileImpl implements GridGgfsFile, Externalizable {
     /** Path to this file. */

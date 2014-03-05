@@ -50,9 +50,6 @@ import org.gridgain.grid.util.typedef.internal.*;
  * </pre>
  * <p>
  * This implementation is used by default by {@link GridAdaptiveLoadBalancingSpi} SPI.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridAdaptiveCpuLoadProbe implements GridAdaptiveLoadProbe {
     /** Flag indicating whether to use average CPU load vs. current. */

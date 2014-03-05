@@ -20,8 +20,7 @@ import java.nio.*;
 import java.util.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapter {
     /** */

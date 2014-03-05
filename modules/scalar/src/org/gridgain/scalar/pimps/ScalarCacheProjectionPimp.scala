@@ -24,9 +24,6 @@ import scalar._
 
 /**
  * Companion object.
- *
- * @author @java.author
- * @version @java.version
  */
 object ScalarCacheProjectionPimp {
     /**
@@ -64,9 +61,6 @@ object ScalarCacheProjectionPimp {
  * that Scala pimp is shadowing or with Java package name that your Scala code is importing.
  * Instead of giving two different names to the same function we've decided to simply mark
  * Scala's side method with `$` suffix.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedType[GridCacheProjection[K, V]]
     with Iterable[GridCacheEntry[K, V]] {

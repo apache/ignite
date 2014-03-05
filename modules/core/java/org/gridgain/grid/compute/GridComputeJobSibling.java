@@ -16,9 +16,6 @@ import java.util.*;
 /**
  * Job sibling interface defines a job from the same split. In other words a sibling is a job returned
  * from the same {@link GridComputeTask#map(List, Object)} method invocation.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridComputeJobSibling extends GridMetadataAware {
     /**

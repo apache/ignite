@@ -13,9 +13,6 @@ import org.gridgain.grid.dr.*;
 
 /**
  * Data center replication sender cache filter. Prevents data center replication of cache entries which do not pass it.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDrSenderCacheEntryFilter<K, V> {
     /**

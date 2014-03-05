@@ -14,9 +14,6 @@ import java.io.*;
 
 /**
  * Serializable mutex.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings( {"CloneDoesntDeclareCloneNotSupportedException"})
 public class GridMutex implements Externalizable, Cloneable {

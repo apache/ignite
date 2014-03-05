@@ -16,9 +16,6 @@ import java.io.*;
 
 /**
  * This class defines own object output stream.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridJdkMarshallerObjectOutputStream extends ObjectOutputStream {
     /**

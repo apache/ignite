@@ -15,9 +15,6 @@ import java.util.concurrent.*;
 /**
  * Adapter for {@link GridExecutorServiceMBean} which delegates all method calls to the underlying
  * {@link ExecutorService} instance.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridExecutorServiceMBeanAdapter implements GridExecutorServiceMBean {
     /** */

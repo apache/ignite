@@ -14,9 +14,6 @@ import java.io.*;
 /**
  * Helper class that recursively goes through the list of
  * files/directories and handles them by calling given handler.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridDeploymentFolderScannerHelper {
     /**

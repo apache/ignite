@@ -13,9 +13,6 @@ import org.gridgain.grid.*;
 
 /**
  * Exception thrown in case data center replication sender hub store was corrupted.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrSenderHubStoreCorruptedException extends GridException {
     /**

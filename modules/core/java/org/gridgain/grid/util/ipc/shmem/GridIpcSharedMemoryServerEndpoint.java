@@ -32,9 +32,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Server shared memory IPC endpoint.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint {
     /** Troubleshooting public wiki page. */

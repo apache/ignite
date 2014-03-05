@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Base class for balancers. Contains common direct connection handling logic.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridClientBalancerAdapter implements GridClientLoadBalancer {
     /** Selects connectable nodes. */

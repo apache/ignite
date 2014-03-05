@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Replication manager class which processes all replication events.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
     /**

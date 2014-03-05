@@ -47,9 +47,6 @@ import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo.*;
 
 /**
  * Cache-based GGFS implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridGgfsImpl implements GridGgfsEx {
     /** Default permissions for file system entry. */

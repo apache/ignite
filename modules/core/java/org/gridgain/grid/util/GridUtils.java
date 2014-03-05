@@ -76,9 +76,6 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
  * Collection of utility methods used throughout the system.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"UnusedReturnValue", "UnnecessaryFullyQualifiedName"})
 public abstract class GridUtils {

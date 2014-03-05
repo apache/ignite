@@ -20,9 +20,6 @@ import java.util.logging.*;
 
 /**
  * Future adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientFutureAdapter<R> implements GridClientFuture<R> {
     /** Logger. */

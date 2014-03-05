@@ -31,9 +31,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 /**
  * Deployment storage for {@link GridDeploymentMode#SHARED} and
  * {@link GridDeploymentMode#CONTINUOUS} modes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     /** Shared deployment cache. */

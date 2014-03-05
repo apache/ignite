@@ -17,9 +17,6 @@ import java.lang.reflect.*;
  * Pointcut used by gridified aspects to find methods
  * annotated with {@link Gridify}, {@link GridifySetToValue} and
  * {@link GridifySetToSet} annotations.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridifySpringPointcut implements Pointcut {
     /**
@@ -94,8 +91,6 @@ public class GridifySpringPointcut implements Pointcut {
 
     /**
      * Method matcher.
-     *
-     * @author @java.author
      */
     private abstract static class GridifyMethodMatcher implements MethodMatcher {
         /** {@inheritDoc} */
@@ -118,8 +113,6 @@ public class GridifySpringPointcut implements Pointcut {
 
     /**
      * Pointcut type.
-     *
-     * @author @java.author
      */
     @SuppressWarnings({"PublicInnerClass"})
     public enum GridifySpringPointcutType {

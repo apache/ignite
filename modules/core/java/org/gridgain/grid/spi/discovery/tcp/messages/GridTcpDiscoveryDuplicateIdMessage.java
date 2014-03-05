@@ -18,9 +18,6 @@ import java.util.*;
 /**
  * Message telling joining node that new topology already contain
  * different node with same ID.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryDuplicateIdMessage extends GridTcpDiscoveryAbstractMessage {
     /** Node with duplicate ID. */

@@ -24,9 +24,6 @@ import java.util.*;
  * Contains often used utility functions allowing to cut down on code bloat. This
  * is somewhat analogous to {@code Predef} in Scala. Note that this should only be used
  * when this typedef <b>does not sacrifice</b> the code readability.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class X {
     /** Time span dividers. */

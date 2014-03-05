@@ -17,9 +17,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Cache entry for colocated cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtColocatedCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
     /**

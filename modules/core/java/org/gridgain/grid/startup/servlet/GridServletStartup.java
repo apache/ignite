@@ -99,9 +99,6 @@ import java.util.*;
  *
  * service.start();
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridServletStartup extends HttpServlet {
     /** Grid loaded flag. */

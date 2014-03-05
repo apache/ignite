@@ -15,9 +15,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Extras where MVCC and obsolete version are set.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheMvccObsoleteEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> {
     /** MVCC. */

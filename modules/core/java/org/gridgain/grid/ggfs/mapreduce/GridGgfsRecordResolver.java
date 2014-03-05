@@ -32,9 +32,6 @@ import java.io.*;
  *     <li>{@link GridGgfsStringDelimiterRecordResolver}</li>
  *     <li>{@link GridGgfsNewLineRecordResolver}</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridGgfsRecordResolver extends Serializable {
     /**

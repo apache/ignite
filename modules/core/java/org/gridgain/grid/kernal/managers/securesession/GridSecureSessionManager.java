@@ -16,9 +16,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * This interface defines a grid secure session manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridSecureSessionManager extends GridManager {
     /**

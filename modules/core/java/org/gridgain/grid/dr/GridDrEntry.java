@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Data center replication entry.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDrEntry<K, V> {
     /**

@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * Local router. Always routes event to local node.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerLocalEventRouter implements GridStreamerEventRouter {
     /** Grid instance. */
