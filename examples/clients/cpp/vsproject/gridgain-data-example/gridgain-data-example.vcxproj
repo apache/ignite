@@ -106,14 +106,14 @@
       <FunctionLevelLinking>
       </FunctionLevelLinking>
       <IntrinsicFunctions>false</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>c:\BuildAgent\work\6bdd422ad7ee533a\os\modules\clients\cpp\main\include;.\..\..\..\..\modules\clients\cpp\main\include;.\..\..\..\..\clients\cpp\main\include;$(BOOST_HOME)\include\boost-1_53;$(BOOST_HOME)\include\boost-1_52;$(BOOST_HOME)\include\boost-1_51;$(BOOST_HOME)\include\boost-1_49;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>c:\Temp\gridclient\include;c:\BuildAgent\work\6bdd422ad7ee533a\os\modules\clients\cpp\main\include;.\..\..\..\..\modules\clients\cpp\main\include;.\..\..\..\..\clients\cpp\main\include;$(BOOST_HOME)\include\boost-1_53;$(BOOST_HOME)\include\boost-1_52;$(BOOST_HOME)\include\boost-1_51;$(BOOST_HOME)\include\boost-1_49;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>c:\BuildAgent\work\6bdd422ad7ee533a\os\modules\clients\cpp\vsproject\x64\Release;..\..\..\..\..\os\modules\clients\cpp\vsproject\$(Platform)\$(Configuration);..\..\..\..\clients\cpp\vsproject\$(Platform)\$(Configuration);$(BOOST_HOME)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>c:\BuildAgent\work\6bdd422ad7ee533a\os\modules\clients\cpp\vsproject\x64\Release;..\..\..\..\..\os\modules\clients\cpp\vsproject\$(Platform)\$(Configuration);..\..\..\..\clients\cpp\vsproject\$(Platform)\$(Configuration);$(BOOST_HOME)\lib;c:\Temp\gridclient\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>gridgain-client.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <LinkTimeCodeGeneration>
