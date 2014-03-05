@@ -381,10 +381,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
             // Copy values.
             entry.value(e.value(), e.hasWriteValue(), e.hasReadValue());
             entry.transformClosures(e.transformClosures());
-
-            if (cctx.sendValueBytes())
-                entry.valueBytes(e.valueBytes());
-
+            entry.valueBytes(e.valueBytes());
             entry.op(e.op());
             entry.ttl(e.ttl());
             entry.explicitVersion(e.explicitVersion());

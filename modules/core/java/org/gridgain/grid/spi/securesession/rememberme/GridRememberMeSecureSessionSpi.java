@@ -58,7 +58,7 @@ import static org.gridgain.grid.util.GridUtils.*;
  * cfg.setSecureSessionSpi(spi);
  *
  * // Start grid.
- * GridFactory.start(cfg);
+ * GridGain.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * GridRememberMeSecureSessionSpi can be configured from Spring XML configuration file:

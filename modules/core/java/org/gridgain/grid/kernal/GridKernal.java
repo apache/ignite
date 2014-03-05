@@ -108,7 +108,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         boolean ent0;
 
         try {
-            ent0 = Class.forName("org.gridgain.grid.entbreadcrumb") != null;
+            ent0 = Class.forName("org.gridgain.grid.kernal.breadcrumb") != null;
         }
         catch (ClassNotFoundException ignored) {
             ent0 = false;
