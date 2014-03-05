@@ -2004,7 +2004,7 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * Commit listener. Checks if commit succeeded and rollbacks if case of error.
      */
-    private class CommitListener extends CI1<GridFuture<GridCacheTx>> {
+    private class CommitListener implements CI1<GridFuture<GridCacheTx>> {
         /** Transaction. */
         private final GridCacheTxEx<K, V> tx;
 

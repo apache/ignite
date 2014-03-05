@@ -5278,6 +5278,7 @@ public abstract class GridUtils {
         final Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
 
         return new GridPeerDeployAware() {
+            /** */
             private ClassLoader ldr;
 
             @Override public Class<?> deployClass() {

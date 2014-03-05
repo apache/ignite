@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.compute;
 
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -30,7 +28,7 @@ import java.util.concurrent.*;
  * </li>
  * </ul>
  */
-public abstract class GridComputeJobAdapter extends GridLambdaAdapter implements GridComputeJob, Callable<Object> {
+public abstract class GridComputeJobAdapter implements GridComputeJob, Callable<Object> {
     /** Job argument. */
     private Object[] args;
 
@@ -122,16 +120,5 @@ public abstract class GridComputeJobAdapter extends GridLambdaAdapter implements
     /** {@inheritDoc} */
     @Nullable @Override public final Object call() throws Exception {
         return execute();
-    }
-
-    /**
-     * Sets peer deploy aware anchor object for this job.
-     *
-     * @param pda Peer deploy aware.
-     */
-    public void setPeerDeployAware(GridPeerDeployAware pda) {
-        assert pda != null;
-
-        this.pda = pda;
     }
 }
