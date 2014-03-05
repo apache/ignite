@@ -11,7 +11,6 @@ package org.gridgain.grid.util.nio;
 
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
