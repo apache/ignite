@@ -40,8 +40,4 @@
             <version>${gridgain.version}</version>
         </dependency>
     </dependencies>
-
-    <build>
-        <sourceDirectory>src</sourceDirectory>
-    </build>
 </project>
