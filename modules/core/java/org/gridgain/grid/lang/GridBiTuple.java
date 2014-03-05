@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.lang;
 
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -22,7 +21,7 @@ import java.util.*;
  * Convenience class representing mutable tuple of two values.
  */
 public class GridBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
-    Iterable<Object>, GridPeerDeployAware, Externalizable, Cloneable {
+    Iterable<Object>, Externalizable, Cloneable {
     /** First value. */
     @GridToStringInclude
     private V1 val1;
@@ -127,6 +126,7 @@ public class GridBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     /** {@inheritDoc} */
     @Override public Iterator<Object> iterator() {
         return new Iterator<Object>() {
+            /** */
             private int nextIdx = 1;
 
             @Override public boolean hasNext() {
@@ -256,22 +256,6 @@ public class GridBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         val1 = (V1)in.readObject();
         val2 = (V2)in.readObject();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<?> deployClass() {
-        ClassLoader clsLdr = getClass().getClassLoader();
-
-        for (Object o : this)
-            if (o != null && !F.eq(o.getClass().getClassLoader(), clsLdr))
-                return o.getClass();
-
-        return getClass();
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClassLoader classLoader() {
-        return deployClass().getClassLoader();
     }
 
     /** {@inheritDoc} */
