@@ -4022,6 +4022,26 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             assert msg != null;
 
             if (msg.failedNodeId() != null) {
+                GridTcpDiscoveryNode next = ring.nextNode();
+
+                if (next != null && msg.failedNodeId().equals(next.id())) {
+                    try {
+                        trySendMessageDirectly(next, msg);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Status check message discarded (failed node is actually alive: " + next.id() + ").");
+                    }
+                    catch (GridSpiException e) {
+                        msgWorker.addMessage(
+                            new GridTcpDiscoveryNodeFailedMessage(locNodeId, next.id(), next.internalOrder()));
+
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to respond to status check message [recipient=" + next.id() + ']');
+                    }
+
+                    return;
+                }
+
                 if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() != null) {
                     if (log.isDebugEnabled())
                         log.debug("Status check message discarded (local node is the sender of the status message).");
