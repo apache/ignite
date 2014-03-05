@@ -12,6 +12,8 @@ package org.gridgain.grid.cache.affinity.partition;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.logger.*;
+import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -37,6 +39,8 @@ public class GridCachePartitionFairAffinity {
     /** */
     private int keyBackups;
 
+    private static final GridLogger log = new GridLog4jLogger();
+
     public GridCachePartitionFairAffinity(int parts, int keyBackups) {
         this.parts = parts;
         this.keyBackups = keyBackups;
@@ -59,6 +63,9 @@ public class GridCachePartitionFairAffinity {
 
             return assignments;
         }
+
+        U.debug(log, "Assigning partitions [topSnapshot=" + F.viewReadOnly(topSnapshot, F.node2id()) +
+            ", assignments=" + Arrays.asList(prevAssignment) + ']');
 
         Map<UUID, GridNode> nodes = groupByNodeId(topSnapshot);
 
@@ -88,7 +95,8 @@ public class GridCachePartitionFairAffinity {
                 else {
                     assert !perNodeAssignments.containsKey(evt.eventNodeId());
 
-                    int idealPartCnt = Math.round((float)parts / topSnapshot.size());
+//                    int idealPartCnt = Math.round((float)parts / topSnapshot.size());
+                    int idealPartCnt = parts / topSnapshot.size();
 
                     assert idealPartCnt != 0;
 
@@ -149,22 +157,28 @@ public class GridCachePartitionFairAffinity {
         }
         else {
             // Create assignments based on previous ones.
-            GridBiTuple<List<GridNode>[], List<PartitionSet>> tup = createCopy(prevAssignment, evt.eventNodeId());
+            GridBiTuple<List<GridNode>[], Map<UUID, PartitionSet>> tup = createCopy(prevAssignment, evt.eventNodeId());
 
             assignments = tup.get1();
-
-            if (topSnapshot.size() <= keyBackups + 1)
-                return assignments;
 
             // Now we need to balance the last tier based on current assignments.
             Map<UUID, GridNode> nodesMap = groupByNodeId(topSnapshot);
 
-            List<PartitionSet> sets = tup.get2();
+            List<PartitionSet> sets = sortedSets(tup.get2(), ASC_CMP);
+
+            Map<Integer, Collection<UUID>> alternativesMap = new HashMap<>();
 
             for (int part = 0; part < parts; part++) {
                 if (assignments[part].size() < affNodes) {
                     assert assignments[part].size() == keyBackups : "Assignment size: " + assignments[part].size() +
                         ", keyBackups: " + keyBackups; // Can miss only one node.
+
+                    Collection<UUID> alternatives = new HashSet<>(F.viewReadOnly(topSnapshot, F.node2id()));
+
+                    alternatives.removeAll(F.viewReadOnly(assignments[part], F.node2id()));
+
+                    if (alternatives.size() > 1)
+                        alternativesMap.put(part, alternatives);
 
                     boolean assigned = false;
 
@@ -187,17 +201,96 @@ public class GridCachePartitionFairAffinity {
                     assert assigned : "Failed to find node to assign additional backup.";
 
                     // Re-sort collection in ascending order.
-                    if (sets.size() > 1 && Math.abs(sets.get(0).size() - sets.get(1).size()) > 2)
+//                    if (sets.size() > 1 && Math.abs(sets.get(0).size() - sets.get(1).size()) > 2)
                         Collections.sort(sets, ASC_CMP);
                 }
+            }
+
+            // Try to re-balance partitions if distribution is not even.
+            if (!alternativesMap.isEmpty() && topSnapshot.size() <= parts && topSnapshot.size() > keyBackups + 1) {
+                int idealPartCnt = parts / topSnapshot.size();
+
+                PrioritizedPartitionMap underloadedNodes = filterNodes(tup.get2(),
+                    idealPartCnt * (keyBackups + 1), false);
+                PrioritizedPartitionMap overloadedNodes = filterNodes(tup.get2(),
+                    idealPartCnt * (keyBackups + 1), true);
+
+                do {
+                    boolean retry = false;
+
+                    for (PartitionSet overloaded : overloadedNodes.assignments()) {
+                        Collection<Integer> parts = overloaded.partitions();
+
+                        for (Integer part : parts) {
+                            List<GridNode> assignment = assignments[part];
+
+                            // If overloaded is not a last node in assignment, skip it.
+                            if (!assignment.get(assignment.size() - 1).id().equals(overloaded.nodeId()))
+                                continue; // for parts.
+
+                            Collection<UUID> alternates = alternativesMap.get(part);
+
+                            if (alternates == null)
+                                continue; // for parts.
+
+                            for (PartitionSet underloaded : underloadedNodes.assignments()) {
+                                if (alternates.contains(underloaded.nodeId())) {
+                                    overloaded.remove(part);
+                                    underloaded.add(part);
+
+                                    GridNode substitute = nodesMap.get(underloaded.nodeId());
+
+                                    GridNode old = assignment.set(assignment.size() - 1, substitute);
+
+                                    assert old.id().equals(overloaded.nodeId());
+
+                                    if (overloaded.size() <= idealPartCnt + 1)
+                                        overloadedNodes.remove(overloaded.nodeId());
+
+                                    if (underloaded.size() >= idealPartCnt + 1)
+                                        underloadedNodes.remove(underloaded.nodeId());
+
+                                    // Size of partition sets has changed.
+                                    overloadedNodes.update();
+                                    underloadedNodes.update();
+
+                                    retry = true;
+
+                                    break; // for underloaded.
+                                }
+                            }
+
+                            if (retry)
+                                break; // for parts.
+                        }
+
+                        if (retry)
+                            break; // for overloaded.
+                    }
+
+                    if (!retry)
+                        break;
+                }
+                while (true);
             }
         }
 
         return assignments;
     }
 
+    private PrioritizedPartitionMap filterNodes(Map<UUID, PartitionSet> mapping, int idealPartCnt, boolean overloaded) {
+        PrioritizedPartitionMap res = new PrioritizedPartitionMap(overloaded ? DESC_CMP : ASC_CMP);
+
+        for (PartitionSet set : mapping.values()) {
+            if ((overloaded && set.size() > idealPartCnt + 1) || (set.size() < idealPartCnt - 1))
+               res.add(set);
+        }
+
+        return res;
+    }
+
     @SuppressWarnings("unchecked")
-    private GridBiTuple<List<GridNode>[], List<PartitionSet>> createCopy(List<GridNode>[] prevAssignment,
+    private GridBiTuple<List<GridNode>[], Map<UUID, PartitionSet>> createCopy(List<GridNode>[] prevAssignment,
         UUID leftNodeId) {
         List<GridNode>[] cp = new List[prevAssignment.length];
 
@@ -227,7 +320,7 @@ public class GridCachePartitionFairAffinity {
             cp[part] = partNodesCp;
         }
 
-        return F.t(cp, sortedSets(parts, ASC_CMP));
+        return F.t(cp, parts);
     }
 
     private boolean checkDistribution(List<GridNode>[] assignments, int tier) {
@@ -440,6 +533,57 @@ public class GridCachePartitionFairAffinity {
         }
     }
 
+    private static class PrioritizedPartitionMap {
+        /** Comparator. */
+        private Comparator<PartitionSet> cmp;
+
+        /** Assignment map. */
+        private Map<UUID, PartitionSet> assignmentMap = new HashMap<>();
+
+        /** Assignment list, ordered according to comparator. */
+        private List<PartitionSet> assignmentList = new ArrayList<>();
+
+        /**
+         * @param cmp Comparator.
+         */
+        private PrioritizedPartitionMap(Comparator<PartitionSet> cmp) {
+            this.cmp = cmp;
+        }
+
+        /**
+         * @param set Partition set to add.
+         */
+        public void add(PartitionSet set) {
+            PartitionSet old = assignmentMap.put(set.nodeId(), set);
+
+            if (old == null) {
+                assignmentList.add(set);
+
+                update();
+            }
+        }
+
+        /**
+         * Sorts assignment list.
+         */
+        public void update() {
+            Collections.sort(assignmentList, cmp);
+        }
+
+        /**
+         * @return Sorted assignment list.
+         */
+        public List<PartitionSet> assignments() {
+            return assignmentList;
+        }
+
+        public void remove(UUID uuid) {
+            PartitionSet rmv = assignmentMap.remove(uuid);
+
+            assignmentList.remove(rmv);
+        }
+    }
+
     @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
     private static class PartitionSet {
         /** */
@@ -490,6 +634,13 @@ public class GridCachePartitionFairAffinity {
                 throw new IllegalStateException();
 
             parts.add(part);
+        }
+
+        public void remove(Integer part) {
+            if (it != null)
+                throw new IllegalStateException();
+
+            parts.remove(part); // Remove object, not index.
         }
 
         public Collection<Integer> partitions() {
