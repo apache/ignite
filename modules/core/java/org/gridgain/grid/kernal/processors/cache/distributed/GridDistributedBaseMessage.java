@@ -23,9 +23,6 @@ import java.util.*;
 
 /**
  * Base for all messages in replicated cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable,
     GridCacheVersionable {

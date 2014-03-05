@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Interface for all main internal GridGain components (managers and processors).
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridComponent {
     /**

@@ -72,8 +72,5 @@ package org.gridgain.visor.commands
  *     visor disco "-t=2m"
  *         Prints discovery events fired during last two minutes sorted chronologically.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 package object disco

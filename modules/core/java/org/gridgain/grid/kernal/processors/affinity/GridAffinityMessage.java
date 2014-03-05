@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Object wrapper containing serialized byte array of original object and deployment information.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridAffinityMessage implements Externalizable, GridOptimizedMarshallable {
     /** */

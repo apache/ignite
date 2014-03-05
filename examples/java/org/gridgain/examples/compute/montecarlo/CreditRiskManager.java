@@ -13,9 +13,6 @@ import java.util.*;
 
 /**
  * This class abstracts out the calculation of risk for a credit portfolio.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"FloatingPointEquality"})
 public class CreditRiskManager {

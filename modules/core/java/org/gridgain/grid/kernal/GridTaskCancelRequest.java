@@ -18,9 +18,6 @@ import java.nio.*;
 
 /**
  * Request for cancelling tasks.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTaskCancelRequest extends GridTcpCommunicationMessageAdapter {
     /** */

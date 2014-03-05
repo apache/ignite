@@ -16,8 +16,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridDrExternalBatchResponse implements Externalizable {
     /** Request identifier. */

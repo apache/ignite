@@ -23,9 +23,6 @@ import java.util.concurrent.*;
  * <h1 class="header">Creating Distributed Count Down Latch</h1>
  * Instance of cache count down latch can be created by calling the following method:
  * {@link GridCacheDataStructures#countDownLatch(String, int, boolean, boolean)}.
- *
- * @author @java.author
- * @version @java.version
  * @see GridCacheDataStructures#countDownLatch(String, int, boolean, boolean)
  * @see GridCacheDataStructures#removeCountDownLatch(String)
  */

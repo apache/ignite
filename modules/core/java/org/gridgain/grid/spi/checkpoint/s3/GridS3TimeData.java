@@ -14,9 +14,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 /**
  * Helper class that keeps checkpoint expiration date inside to track and delete
  * obsolete files.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridS3TimeData {
     /** Checkpoint expiration date. */

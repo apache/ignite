@@ -16,9 +16,6 @@
 
 /**
  * Authentication request command.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridAuthenticationRequestCommand : public GridClientMessageCommand {
 public:

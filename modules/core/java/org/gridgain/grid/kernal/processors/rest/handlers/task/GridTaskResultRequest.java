@@ -18,9 +18,6 @@ import java.nio.*;
 
 /**
  * Task result request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
     /** Task ID. */

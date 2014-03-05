@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * JDBC prepared statement implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridJdbcPreparedStatement extends GridJdbcStatement implements PreparedStatement {
     /** SQL query. */

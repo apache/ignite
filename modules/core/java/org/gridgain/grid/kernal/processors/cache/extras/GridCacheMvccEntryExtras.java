@@ -15,9 +15,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Extras where MVCC is set.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheMvccEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> {
     /** MVCC. */

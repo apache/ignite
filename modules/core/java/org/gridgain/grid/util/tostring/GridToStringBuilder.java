@@ -53,9 +53,6 @@ import java.util.concurrent.locks.*;
  * <li>{@link Map} implementations
  * <li>{@link Collection} implementations
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridToStringBuilder {
     /** */

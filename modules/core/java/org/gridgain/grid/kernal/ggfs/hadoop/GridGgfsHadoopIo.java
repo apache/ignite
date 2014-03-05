@@ -17,9 +17,6 @@ import org.jetbrains.annotations.*;
 /**
  * IO abstraction layer for GGFS client. Two kind of messages are expected to be sent: requests with response
  * and request without response.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridGgfsHadoopIo {
     /**

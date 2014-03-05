@@ -16,9 +16,6 @@ import org.gridgain.grid.util.lang.GridLambdaAdapter
 
 /**
  * Wrapping Scala function for `GridClosure2`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarClosure2Function[T1, T2, R](val inner: GridBiClosure[T1, T2, R]) extends GridLambdaAdapter
     with ((T1, T2) => R) {

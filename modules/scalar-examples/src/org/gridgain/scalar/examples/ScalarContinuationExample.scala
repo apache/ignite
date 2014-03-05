@@ -33,9 +33,6 @@ import org.gridgain.grid.compute._
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
- *
- * @author @java.author
- * @version @java.version
  */
 object ScalarContinuationExample {
     def main(args: Array[String]) {

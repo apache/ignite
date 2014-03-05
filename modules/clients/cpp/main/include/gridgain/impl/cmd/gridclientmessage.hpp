@@ -20,9 +20,6 @@
 
 /**
  * Generic message.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientMessage {
 public:

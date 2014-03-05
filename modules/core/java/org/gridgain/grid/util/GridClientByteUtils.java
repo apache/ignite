@@ -14,9 +14,6 @@ import java.util.*;
 
 /**
  * Primitive to byte array and backward conversions.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridClientByteUtils {
     /**

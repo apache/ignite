@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * Version converter processor.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridVersionProcessor extends GridProcessor {
     /**

@@ -16,9 +16,6 @@ import org.gridgain.grid.util.lang.GridLambdaAdapter
 
 /**
  * Wrapping Scala function for `GridReducer`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarReducerFunction[E1, R](val inner: GridReducer[E1, R]) extends GridLambdaAdapter with (Seq[E1] => R) {
     assert(inner != null)

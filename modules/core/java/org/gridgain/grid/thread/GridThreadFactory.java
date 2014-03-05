@@ -16,9 +16,6 @@ import java.util.concurrent.*;
 /**
  * This class provides implementation of {@link ThreadFactory} factory
  * for creating grid threads.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridThreadFactory implements ThreadFactory {
     /** Grid name. */

@@ -21,9 +21,6 @@ import static java.sql.Types.*;
 
 /**
  * Utility methods for JDBC driver.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJdbcUtils {
     /** Marshaller. */

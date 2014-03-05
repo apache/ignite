@@ -14,9 +14,6 @@ import org.gridgain.client.*;
  * AND predicate. Passes if and only if both provided filters accept the node.
  * This filter uses short-term condition evaluation, i.e. second filter would not
  * be invoked if first filter returned {@code false}.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridClientAndPredicate<T> implements GridClientPredicate<T> {
     /** First filter to check. */

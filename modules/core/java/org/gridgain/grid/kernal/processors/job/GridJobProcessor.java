@@ -42,9 +42,6 @@ import static org.gridgain.grid.util.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * Responsible for all grid job execution and communication.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJobProcessor extends GridProcessorAdapter {
     /** */
@@ -1671,9 +1668,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
     /**
      * Listener to node discovery events.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private class JobDiscoveryListener implements GridLocalEventListener {
         /**

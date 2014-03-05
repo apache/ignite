@@ -19,9 +19,6 @@ import java.nio.*;
 
 /**
  * Request for single partition info.
- *
- * @author @java.author
- * @version @java.version
  */
 abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K, V> {
     /** Exchange ID. */

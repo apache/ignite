@@ -24,9 +24,6 @@ import java.util.*;
  * all operations on {@code GridClientData} API will be affinity-aware unless
  * such behavior is overridden by pinning one or more remote nodes
  * (see {@link #pinNodes(GridClientNode, GridClientNode...)} for more information).
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridClientData {
     /**

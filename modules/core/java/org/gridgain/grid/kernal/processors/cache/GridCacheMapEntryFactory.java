@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Factory for cache entries.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheMapEntryFactory<K, V> {
     /**

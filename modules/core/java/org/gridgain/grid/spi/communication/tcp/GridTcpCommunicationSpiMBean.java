@@ -5,9 +5,6 @@ import org.gridgain.grid.util.mbean.*;
 
 /**
  * MBean provide access to TCP-based communication SPI.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean provide access to TCP-based communication SPI.")
 public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {

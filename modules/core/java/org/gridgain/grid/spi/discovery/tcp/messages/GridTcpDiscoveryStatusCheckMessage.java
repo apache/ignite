@@ -22,9 +22,6 @@ import java.util.*;
  * <p>
  * If a failed node id is specified then the message is sent across the ring up to the sender node
  * to ensure that the failed node is actually failed.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstractMessage {
     /** Status OK. */

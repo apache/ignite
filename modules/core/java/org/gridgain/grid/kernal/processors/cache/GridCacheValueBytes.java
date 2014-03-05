@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Wrapped value bytes of cache entry.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheValueBytes {
     /** Null instance. */

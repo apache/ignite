@@ -68,9 +68,6 @@ import org.gridgain.grid.kernal.processors.task.GridInternal
  *     ccompact "cache"
  *         Compacts entries in cache with name 'cache'.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorCacheCompactCommand {
     /**
@@ -145,8 +142,7 @@ class VisorCacheCompactCommand {
 }
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 @GridInternal
 class CompactClosure(val cacheName: String) extends CO[(UUID, Int, Int, Int)] {
@@ -166,9 +162,6 @@ class CompactClosure(val cacheName: String) extends CO[(UUID, Int, Int, Int)] {
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorCacheCompactCommand {
     addHelp(

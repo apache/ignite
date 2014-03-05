@@ -18,9 +18,6 @@ import visor._
 
 /**
  * Test for visor's argument list parsing.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorArgListSpec extends FlatSpec with ShouldMatchers {
     behavior of "A visor argument list"

@@ -26,9 +26,6 @@ import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 
 /**
  * Handler for {@link GridRestCommand#LOG} command.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
     /** Default log path. */

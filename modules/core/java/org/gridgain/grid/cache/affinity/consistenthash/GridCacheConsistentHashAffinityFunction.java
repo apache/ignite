@@ -43,9 +43,6 @@ import java.util.concurrent.atomic.*;
  *      primary and backup nodes will be selected out of all nodes available for this cache.
  * </li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinityFunction {
     /** Flag to enable/disable consistency check (for internal use only). */

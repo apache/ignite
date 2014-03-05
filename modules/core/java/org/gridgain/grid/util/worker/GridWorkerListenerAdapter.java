@@ -11,9 +11,6 @@ package org.gridgain.grid.util.worker;
 
 /**
  * Convenience adapter for {@link GridWorkerListener}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridWorkerListenerAdapter implements GridWorkerListener {
     /** {@inheritDoc} */

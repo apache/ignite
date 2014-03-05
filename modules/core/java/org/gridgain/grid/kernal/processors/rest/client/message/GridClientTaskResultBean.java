@@ -15,9 +15,6 @@ import java.io.*;
 
 /**
  * Task result.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientTaskResultBean implements Externalizable {
     /** Synthetic ID containing task ID and result holding node ID. */

@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Exception thrown when parent supposed to be a directory is a file.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsParentNotDirectoryException extends GridGgfsInvalidPathException {
     /**

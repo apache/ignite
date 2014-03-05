@@ -31,9 +31,6 @@ import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 
 /**
  * Listener for nio server that handles incoming tcp rest packets.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridClientMessage> {
     /** Logger. */

@@ -92,9 +92,6 @@ import org.gridgain.grid.resources.*;
  *    ...
  * &lt;/bean&gt;
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridLifecycleBean {
     /**

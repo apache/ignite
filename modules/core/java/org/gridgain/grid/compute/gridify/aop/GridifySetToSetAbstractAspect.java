@@ -23,9 +23,6 @@ import static org.gridgain.grid.util.gridify.GridifyUtils.UNKNOWN_SIZE;
  * Convenience adapter with common methods for different aspect implementations
  * (AspectJ, JBoss AOP, Spring AOP).
  * This adapter used in grid task for {@link GridifySetToSet} annotation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridifySetToSetAbstractAspect {
     /**

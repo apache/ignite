@@ -23,9 +23,6 @@ import static org.gridgain.client.util.GridClientUtils.*;
 
 /**
  * Class contains common connection-error handling logic.
- *
- * @author @java.author
- * @version @java.version
  */
 abstract class GridClientAbstractProjection<T extends GridClientAbstractProjection> {
     /** Logger. */

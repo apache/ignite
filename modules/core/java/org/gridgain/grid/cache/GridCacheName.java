@@ -27,9 +27,6 @@ import java.util.concurrent.*;
  * <p>
  * Refer to {@link GridCacheAffinityKeyMapped @GridCacheAffinityKeyMapped} documentation for more information
  * and examples about this annotation.
- *
- * @author @java.author
- * @version @java.version
  * @see GridCacheAffinityKeyMapped
  */
 @Documented

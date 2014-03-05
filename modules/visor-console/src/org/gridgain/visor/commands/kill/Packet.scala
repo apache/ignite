@@ -78,8 +78,5 @@ package org.gridgain.visor.commands
  *     visor kill "-k"
  *         Kill (stop) all nodes.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 package object kill

@@ -15,9 +15,6 @@ import org.gridgain.grid.util.lang.GridPredicate3
 
 /**
  * Peer deploy aware adapter for Java's `GridPredicate3`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarPredicate3[T1, T2, T3](private val p: (T1, T2, T3) => Boolean) extends GridPredicate3[T1, T2, T3] {
     assert(p != null)

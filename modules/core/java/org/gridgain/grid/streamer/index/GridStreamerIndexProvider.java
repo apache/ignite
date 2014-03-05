@@ -19,9 +19,6 @@ import org.gridgain.grid.streamer.window.*;
  * <p>
  * To configure index for a streamer window, use
  * {@link GridStreamerWindowAdapter#setIndexes(GridStreamerIndexProvider[])}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridStreamerIndexProvider<E, K, V> extends GridStreamerIndexProviderMBean {
     /**

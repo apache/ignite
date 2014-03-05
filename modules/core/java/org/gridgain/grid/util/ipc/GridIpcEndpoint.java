@@ -15,9 +15,6 @@ import java.io.*;
 
 /**
  * GGFS IPC endpoint used for point-to-point communication.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridIpcEndpoint extends Closeable {
     /**

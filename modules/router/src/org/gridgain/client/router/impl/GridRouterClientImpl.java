@@ -22,9 +22,6 @@ import static org.gridgain.client.util.GridClientUtils.*;
 
 /**
  * A {@link GridClient} router implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridRouterClientImpl implements GridClient {
     /** Decorated client implementation. */

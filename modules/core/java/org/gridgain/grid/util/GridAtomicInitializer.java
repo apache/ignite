@@ -16,9 +16,6 @@ import java.util.concurrent.*;
 
 /**
  * Executes initialization operation once.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridAtomicInitializer<T> {
     /** */

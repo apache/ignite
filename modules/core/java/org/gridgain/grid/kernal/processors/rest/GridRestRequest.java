@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Grid command request. Getters and setters must conform to JavaBean standard.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridRestRequest implements Externalizable {
     /** Destination ID. */

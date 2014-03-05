@@ -29,9 +29,6 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
  * Cache atomic stamped implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicStampedEx<T, S>, Externalizable {
     /** Deserialization stash. */

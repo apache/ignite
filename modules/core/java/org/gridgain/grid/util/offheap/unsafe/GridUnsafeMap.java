@@ -24,9 +24,6 @@ import static org.gridgain.grid.util.offheap.GridOffHeapEvent.*;
 
 /**
  * Off-heap map based on {@code Unsafe} implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     /** Debug flag. */

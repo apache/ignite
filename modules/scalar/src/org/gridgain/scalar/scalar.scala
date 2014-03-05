@@ -118,9 +118,6 @@ import org.gridgain.grid.dataload.GridDataLoader
  *     t -= ('symbol)
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 object scalar extends ScalarConversions {
     /** Visor copyright blurb. */

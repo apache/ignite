@@ -19,9 +19,6 @@ import java.nio.*;
 
 /**
  * Internal replication response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrInternalResponse extends GridTcpCommunicationMessageAdapter {
     /** Request id. */

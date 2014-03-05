@@ -31,9 +31,6 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
  * Time synchronization processor.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClockSyncProcessor extends GridProcessorAdapter {
     /** Maximum size for time sync history. */

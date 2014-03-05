@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Message reader.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridNioMessageReader {
     /**

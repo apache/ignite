@@ -15,9 +15,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Extras where TTL and expire time are set.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheTtlEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> {
     /** TTL. */

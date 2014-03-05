@@ -29,9 +29,6 @@ import java.util.concurrent.*;
 
 /**
  * Cache proxy.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externalizable {
     /** Context. */

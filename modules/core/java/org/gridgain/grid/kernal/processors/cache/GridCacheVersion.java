@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Grid unique version.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheVersion implements Comparable<GridCacheVersion>, Externalizable, GridOptimizedMarshallable {
     /** */

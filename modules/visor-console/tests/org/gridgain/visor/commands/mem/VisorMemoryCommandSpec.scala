@@ -17,9 +17,6 @@ import org.gridgain.visor._
 
 /**
  * Unit test for memory commands.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorMemoryCommandSpec extends FlatSpec with ShouldMatchers {
     "A 'mget' visor command" should "get correct value" in {

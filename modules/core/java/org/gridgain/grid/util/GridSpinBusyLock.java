@@ -26,9 +26,6 @@ import org.gridgain.grid.util.tostring.*;
  * the activity is done, the thread should leave "busy" state calling method
  * {@link #leaveBusy()}. The manager itself, when stopping, should call method
  * {@link #block} that blocks till all activities leave "busy" state.
- *
- * @author @java.author
- * @version @java.version
  * @see GridBusyLock
  * @see GridSpinReadWriteLock
  */

@@ -21,9 +21,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * This class defines a collision manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCollisionManager extends GridManagerAdapter<GridCollisionSpi> {
     /** Reference for external listener. */

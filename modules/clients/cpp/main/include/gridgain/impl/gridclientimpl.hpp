@@ -24,9 +24,6 @@
 
 /**
  * Client implementation.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientImpl : public GridClient, public GridClientProjectionListener {
 public:

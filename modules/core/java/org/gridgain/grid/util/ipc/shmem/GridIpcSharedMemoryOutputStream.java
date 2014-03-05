@@ -15,8 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridIpcSharedMemoryOutputStream extends OutputStream {
     /** */

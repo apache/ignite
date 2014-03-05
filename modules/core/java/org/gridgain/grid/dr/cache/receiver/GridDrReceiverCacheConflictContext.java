@@ -20,9 +20,6 @@ import org.jetbrains.annotations.*;
  * occurs this entity is passed to {@link GridDrReceiverCacheConflictResolver} to perform explicit conflict resolution.
  * <p>
  * Contains all data necessary for conflict resolution.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDrReceiverCacheConflictContext<K, V> {
     /**

@@ -21,9 +21,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Utility class for debugging.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDebug {
     /** */

@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * Person class.
- *
- * @author @java.author
- * @version @java.version
  */
 public class Person implements Serializable {
     /** Person ID. */

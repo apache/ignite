@@ -77,9 +77,6 @@ import collection.JavaConversions._
  *     vvm
  *         Opens VisualVM connected to all nodes.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorVvmCommand {
     /**
@@ -254,9 +251,6 @@ class VisorVvmCommand {
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorVvmCommand {
     // Adds command's help to visor.

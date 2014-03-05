@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * This exception is thrown when license violation is detected.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridProductLicenseException extends GridException {
     /** Short message. */

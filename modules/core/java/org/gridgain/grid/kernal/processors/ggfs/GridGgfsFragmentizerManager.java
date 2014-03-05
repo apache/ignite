@@ -33,9 +33,6 @@ import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileAffinityRange
 
 /**
  * GGFS fragmentizer manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsFragmentizerManager extends GridGgfsManager {
     /** Message offer wait interval. */

@@ -16,9 +16,6 @@ import VisorAckCommand._
 
 /**
  * Unit test for 'ack' command.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorAckCommandSpec extends VisorRuntimeBaseSpec(2) {
     behavior of "A 'ack' visor command"

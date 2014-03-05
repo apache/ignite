@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Exception thrown when target path supposed to be created already exists.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsPathAlreadyExistsException extends GridGgfsInvalidPathException {
     /**

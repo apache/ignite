@@ -14,9 +14,6 @@
 
 /**
  * Log request command result.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientMessageLogResult : public GridClientMessageResult {
 public:

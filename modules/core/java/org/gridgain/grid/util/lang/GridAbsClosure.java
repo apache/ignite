@@ -26,9 +26,6 @@ import org.gridgain.grid.util.typedef.internal.*;
  * Note that this class implements {@link GridComputeJob} interface for convenience and can be
  * used in {@link GridComputeTask} implementations directly, if needed, as an alternative to
  * {@link GridComputeJobAdapter}.
- *
- * @author @java.author
- * @version @java.version
  * @see GridFunc
  */
 public abstract class GridAbsClosure extends GridLambdaAdapter implements Runnable, GridComputeJob {

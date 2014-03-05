@@ -13,9 +13,6 @@ import java.util.*;
 
 /**
  * Update future for atomic cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheAtomicFuture<K, R> extends GridCacheFuture<R> {
     /**

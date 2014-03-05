@@ -20,9 +20,6 @@ import java.nio.*;
 
 /**
  * DHT transaction finish response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishResponse<K, V> {
     /** Mini future ID. */

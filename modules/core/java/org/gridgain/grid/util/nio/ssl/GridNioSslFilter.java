@@ -22,9 +22,6 @@ import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * Implementation of SSL filter using {@link SSLEngine}
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNioSslFilter extends GridNioFilterAdapter {
     /** Logger to use. */

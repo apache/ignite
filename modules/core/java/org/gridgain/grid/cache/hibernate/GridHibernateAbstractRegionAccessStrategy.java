@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Implementation of L2 cache access strategy delegating to {@link GridHibernateAccessStrategyAdapter}.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridHibernateAbstractRegionAccessStrategy implements RegionAccessStrategy {
     /** */

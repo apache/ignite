@@ -14,9 +14,6 @@ import java.io.*;
 /**
  * A client handshake response, containing result
  * code.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientHandshakeResponse extends GridClientAbstractMessage {
     /** Response, indicating successful handshake. */

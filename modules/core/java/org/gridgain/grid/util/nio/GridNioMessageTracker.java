@@ -18,9 +18,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * Message tracker.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNioMessageTracker extends GridRunnable {
     /** */

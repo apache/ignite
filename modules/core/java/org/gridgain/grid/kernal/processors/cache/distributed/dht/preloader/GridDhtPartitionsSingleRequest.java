@@ -17,9 +17,6 @@ import java.nio.*;
 
 /**
  * Request for single partition info.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtPartitionsSingleRequest<K, V> extends GridDhtPartitionsAbstractMessage<K, V> {
     /**

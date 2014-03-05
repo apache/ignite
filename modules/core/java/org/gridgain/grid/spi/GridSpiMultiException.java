@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Grid SPI exception which may contain more than one failure.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridSpiMultiException extends GridSpiException {
     /** Nested exceptions. */

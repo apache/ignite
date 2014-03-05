@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * Serializable object used for {@link Object} replacement.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridJdkMarshallerDummySerializable implements Serializable {
     // No-op.

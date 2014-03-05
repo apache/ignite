@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * Data center replication cache updater for data loader.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrDataLoadCacheUpdater<K, V> implements GridDataLoadCacheUpdater<K, V> {
     /** {@inheritDoc} */

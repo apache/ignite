@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Log4J {@link DailyRollingFileAppender} with added support for grid node IDs.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLog4jDailyRollingFileAppender extends DailyRollingFileAppender implements GridLog4jNodeIdSupported {
     /** Node ID. */

@@ -54,8 +54,5 @@ package org.gridgain.visor.commands
  *     visor license "-f=/path/to/new/license.xml -id=fbdea781-90e6-4d1b-b8b3-5b8c14aa2df7"
  *         Copies new license file to all nodes that use license with provided ID.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 package object license

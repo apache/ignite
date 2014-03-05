@@ -20,9 +20,6 @@ import java.io.*;
  * Note that these metrics already represent the current snapshot and can change from call
  * to call. If projection is dynamic the metrics snapshot will also change with changes
  * in participating nodes.
- *
- * @author @java.author
- * @version @java.version
  * @see GridNodeMetrics
  * @see GridProjection#metrics()
  */

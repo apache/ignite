@@ -27,9 +27,6 @@ import java.io.*;
  *      itself for GAR archive.
  * </li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDeploymentGarAntTask extends Zip {
     /** GAR descriptor name. Its value is {@code gridgain.xml}. */

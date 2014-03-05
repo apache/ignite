@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Log4J {@link FileAppender} with added support for grid node IDs.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLog4jFileAppender extends FileAppender implements GridLog4jNodeIdSupported {
     /** Node ID. */

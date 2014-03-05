@@ -11,9 +11,6 @@ package org.gridgain.grid.util.tostring;
 
 /**
  * Simple field descriptor containing field name and its order in the class descriptor.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridToStringFieldDescriptor {
     /** Field name. */

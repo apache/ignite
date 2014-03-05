@@ -64,9 +64,6 @@ import org.jetbrains.annotations.*;
  *     }
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridComputeJobContinuationAdapter extends GridComputeJobAdapter implements
     GridComputeJobContinuation {

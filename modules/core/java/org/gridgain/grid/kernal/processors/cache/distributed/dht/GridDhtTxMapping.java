@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * DHT transaction mapping.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtTxMapping<K, V> {
     /** Transaction nodes mapping (primary node -> related backup nodes). */

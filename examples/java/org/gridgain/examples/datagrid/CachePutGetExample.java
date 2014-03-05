@@ -23,9 +23,6 @@ import java.util.*;
  * <p>
  * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class CachePutGetExample {
     /** Cache name. */

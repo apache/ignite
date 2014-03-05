@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * Internal API for cache entry ({@code 'Ex'} stands for extended).
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
     /**

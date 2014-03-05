@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Sent by coordinator across the ring to finish node add process.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridTcpDiscoveryEnsureDelivery
 public class GridTcpDiscoveryNodeAddFinishedMessage extends GridTcpDiscoveryAbstractMessage {

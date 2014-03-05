@@ -15,9 +15,6 @@ import java.io.*;
 
 /**
  * Path summary: total files count, total directories count, total length.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsPathSummary implements Externalizable {
     /** Path. */

@@ -22,9 +22,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * Default future implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements GridNioFuture<R> {
     /** Initial state. */

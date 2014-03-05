@@ -16,9 +16,6 @@ import org.gridgain.visor.visor
 
 /**
  * Command implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 trait VisorConsoleCommand {
     /**

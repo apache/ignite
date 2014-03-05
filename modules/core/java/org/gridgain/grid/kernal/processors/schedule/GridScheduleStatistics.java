@@ -13,9 +13,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Scheduled task statistics.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridScheduleStatistics {
     /** Create time. */

@@ -40,9 +40,6 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
 /**
  * DHT cache adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdapter<K, V> {
     /** Topology. */

@@ -14,9 +14,6 @@ import org.gridgain.grid.util.lang.*;
 
 /**
  * Empty closeable iterator.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridEmptyCloseableIterator<T> extends GridEmptyIterator<T> implements GridCloseableIterator<T> {
     /** Closed flag. */

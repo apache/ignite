@@ -17,9 +17,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Row descriptor.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<GridH2KeyValueRowOffheap> {
     /**

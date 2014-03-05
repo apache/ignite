@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Base runnable for {@link GridCacheAdapter#clearAll()} routine.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheClearAllRunnable<K, V> implements Runnable {
     /** Cache to be cleared. */

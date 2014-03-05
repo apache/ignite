@@ -34,9 +34,6 @@ import java.util.*;
  * </ul>
  * <p>
  * Streamer window is configured vis {@link GridStreamerConfiguration#getWindows()} method.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridStreamerWindow<E> extends Iterable<E> {
     /**

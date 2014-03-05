@@ -55,9 +55,6 @@ import java.util.*;
  * {@code GRIDGAIN_HOME/examples/config/hibernate.xml}, used by the example.
  * <p>
  * Remote nodes should always be started using {@link HibernateL2CacheExampleNodeStartup}
- *
- * @author @java.author
- * @version @java.version
  */
 public class HibernateL2CacheExample {
     /** JDBC URL for backing database (an H2 in-memory database is used). */

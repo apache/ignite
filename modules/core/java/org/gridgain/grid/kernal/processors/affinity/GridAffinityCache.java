@@ -21,9 +21,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Affinity cached function.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridAffinityCache {
     /** Node order comparator. */

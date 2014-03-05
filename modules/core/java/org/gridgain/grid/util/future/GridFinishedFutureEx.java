@@ -22,9 +22,6 @@ import java.util.concurrent.*;
  * Future that is completed at creation time. This future is different from
  * {@link GridFinishedFuture} as it does not take context as a parameter and
  * performs notifications in the same thread.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridFinishedFutureEx<T> implements GridFuture<T>, Externalizable {
     /** Complete value. */

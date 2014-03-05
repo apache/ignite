@@ -35,9 +35,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Colocated cache lock future.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentityFuture<Boolean>
     implements GridCacheFuture<Boolean> {

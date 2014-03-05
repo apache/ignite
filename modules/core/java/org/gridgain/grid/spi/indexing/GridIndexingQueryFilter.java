@@ -11,9 +11,6 @@ package org.gridgain.grid.spi.indexing;
 
 /**
  * Space name and key filter.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridIndexingQueryFilter<K, V> {
     /**

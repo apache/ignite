@@ -16,9 +16,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Convenience adapter for {@link GridIndexingEntity}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIndexingEntityAdapter<T> implements GridIndexingEntity<T> {
     /** */

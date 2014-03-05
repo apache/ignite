@@ -99,9 +99,6 @@ import java.util.*;
  * via {@link Grid#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridLoadBalancingSpi extends GridSpi, GridSpiJsonConfigurable {
     /**

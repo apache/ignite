@@ -18,9 +18,6 @@ import java.util.*;
 /**
  * Various {@code 'createXxxQuery(..)'} methods to query cache using either {@code SQL},
  * full text search, or filter-based full scan (see {@link GridCacheQuery} for more information).
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheQueries<K, V> {
     /**

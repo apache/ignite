@@ -14,9 +14,6 @@ import org.gridgain.grid.compute.*;
 /**
  * This interface defines set of operations that collision SPI implementation can perform on
  * jobs that are either waiting or executing.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCollisionJobContext {
     /**

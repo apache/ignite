@@ -14,9 +14,6 @@ import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management bean for {@link GridRememberMeSecureSessionSpi}.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean that provides access to remember-me secure session SPI configuration.")
 public interface GridRememberMeSecureSessionSpiMBean extends GridSpiManagementMBean {

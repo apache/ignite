@@ -17,9 +17,6 @@ typedef std::map<GridClientVariant, GridClientVariant> TCacheValuesMap;
 
 /**
  * Cache get result message.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientMessageCacheGetResult : public GridClientMessageCacheResult {
 public:

@@ -14,9 +14,6 @@
 
 /**
  * Round robin balancer.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientRoundRobinBalancer : public GridClientLoadBalancer {
 public:

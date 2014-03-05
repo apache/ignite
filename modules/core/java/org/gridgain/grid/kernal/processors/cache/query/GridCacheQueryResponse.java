@@ -26,9 +26,6 @@ import java.util.*;
 
 /**
  * Query request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
     /** */

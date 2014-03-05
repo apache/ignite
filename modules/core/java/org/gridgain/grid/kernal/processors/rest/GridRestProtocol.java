@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * REST protocol.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridRestProtocol {
     /**

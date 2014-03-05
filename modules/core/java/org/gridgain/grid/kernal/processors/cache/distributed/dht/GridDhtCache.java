@@ -18,9 +18,6 @@ import java.io.*;
 
 /**
  * DHT cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** Near cache. */

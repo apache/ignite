@@ -29,9 +29,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Cache lock future.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Boolean>
     implements GridCacheMvccFuture<K, V, Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion {

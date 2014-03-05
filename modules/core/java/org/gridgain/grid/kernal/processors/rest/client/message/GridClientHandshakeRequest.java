@@ -27,9 +27,6 @@ import static org.gridgain.grid.kernal.processors.rest.GridRestProcessor.*;
  *     <li>Version info (4 bytes)</li>
  *     <li>Marshaller PROTOCOL_ID (1 byte)</li>
  * </ol>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientHandshakeRequest extends GridClientAbstractMessage {
     /** Packet size. */

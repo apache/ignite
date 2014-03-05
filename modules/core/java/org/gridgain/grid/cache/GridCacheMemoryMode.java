@@ -14,9 +14,6 @@ import org.gridgain.grid.cache.eviction.*;
 /**
  * Defines set of memory modes. Memory modes help control whether cache entries are
  * stored on heap memory, offheap memory, or in swap space.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridCacheMemoryMode {
     /**

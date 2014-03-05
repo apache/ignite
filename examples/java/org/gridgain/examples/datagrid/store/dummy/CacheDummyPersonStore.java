@@ -22,9 +22,6 @@ import java.util.concurrent.*;
 
 /**
  * Dummy cache store implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class CacheDummyPersonStore extends GridCacheStoreAdapter<Long, Person> {
     /** Auto-inject grid instance. */

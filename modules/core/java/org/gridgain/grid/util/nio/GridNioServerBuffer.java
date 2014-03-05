@@ -16,9 +16,6 @@ import java.nio.*;
 
 /**
  * NIO server buffer.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNioServerBuffer {
     /** */

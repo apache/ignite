@@ -14,9 +14,6 @@ import java.lang.annotation.*;
 /**
  * Annotates fields for SQL queries. All fields that will be involved in SQL clauses must have
  * this annotation. For more information about cache queries see {@link GridCacheQuery} documentation.
- *
- * @author @java.author
- * @version @java.version
  * @see GridCacheQuery
  */
 @Documented

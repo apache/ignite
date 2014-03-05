@@ -23,9 +23,6 @@ import java.util.*;
 
 /**
  * DHT transaction prepare response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResponse<K, V> {
     /** Evicted readers. */

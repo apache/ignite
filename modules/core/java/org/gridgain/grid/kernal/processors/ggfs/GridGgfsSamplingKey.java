@@ -17,9 +17,6 @@ import java.io.*;
 
 /**
  * Internal key used to track if sampling enabled or disabled for particular GGFS instance.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridGgfsSamplingKey implements GridCacheInternal, Externalizable {
     /** GGFS name. */
