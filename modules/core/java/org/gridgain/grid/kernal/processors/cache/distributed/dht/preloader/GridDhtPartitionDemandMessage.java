@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * Partition demand request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> {
     /** Update sequence. */

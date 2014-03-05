@@ -25,8 +25,7 @@ import java.util.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridLoggerProxy extends GridMetadataAwareAdapter implements GridLogger, GridLifecycleAware,
     Externalizable {

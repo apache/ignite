@@ -18,9 +18,6 @@ import java.io.*;
 
 /**
  * Return value for cases where both, value and success flag need to be returned.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheReturn<V> implements Externalizable, GridOptimizedMarshallable {
     /** */

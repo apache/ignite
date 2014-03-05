@@ -15,9 +15,6 @@ import org.gridgain.grid.kernal.processors.segmentation.*;
 
 /**
  * No-op implementation for {@link GridSegmentationProcessor}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridOsSegmentationProcessor extends GridProcessorAdapter implements GridSegmentationProcessor {
     /**

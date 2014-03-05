@@ -61,9 +61,6 @@ import java.util.*;
  *       ...
  * &lt;/bean&gt;
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 @GridSpiInfo(
     author = /*@java.spi.author*/"GridGain Systems",

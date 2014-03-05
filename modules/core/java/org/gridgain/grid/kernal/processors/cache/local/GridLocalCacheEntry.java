@@ -16,9 +16,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Cache entry for local caches.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
 public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {

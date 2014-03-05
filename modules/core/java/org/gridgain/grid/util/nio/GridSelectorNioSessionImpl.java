@@ -24,9 +24,6 @@ import java.util.concurrent.atomic.*;
  * Session implementation bound to selector API and socket API.
  * Note that this implementation requires non-null values for local and remote
  * socket addresses.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /** Pending write requests. */

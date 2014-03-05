@@ -11,9 +11,6 @@ package org.gridgain.grid.util.ipc;
 
 /**
  * IPC endpoint type.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridIpcEndpointType {
     /** TCP loopback socket. Supported on all platforms. */

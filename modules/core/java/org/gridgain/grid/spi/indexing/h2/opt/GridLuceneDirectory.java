@@ -19,9 +19,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * A memory-resident {@link Directory} implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLuceneDirectory extends Directory {
     /** */

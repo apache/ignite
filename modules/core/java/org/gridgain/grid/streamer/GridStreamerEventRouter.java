@@ -18,9 +18,6 @@ import java.util.*;
  * Streamer event router. Pluggable component that determines event execution flow across the grid.
  * Each time a group of events is submitted to streamer or returned to streamer by a stage, event
  * router will be used to select execution node for next stage.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridStreamerEventRouter {
     /**

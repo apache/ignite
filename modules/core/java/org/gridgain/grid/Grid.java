@@ -60,9 +60,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * linked to current grid node. Node-local map is useful for saving shared state between job executions
  * on the grid. Additionally you can also ping, start, and restart remote nodes, map keys to caching nodes,
  * and get other useful information about topology.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface Grid extends GridProjection, AutoCloseable {
     /**

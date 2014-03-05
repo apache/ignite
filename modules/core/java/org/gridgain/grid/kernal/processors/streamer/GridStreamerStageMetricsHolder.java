@@ -14,9 +14,6 @@ import org.gridgain.grid.util.*;
 
 /**
  * Streamer stage metrics holder.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerStageMetricsHolder implements GridStreamerStageMetrics {
     /** Stage name. */

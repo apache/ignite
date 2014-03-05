@@ -23,9 +23,6 @@ import java.util.concurrent.*;
 /**
  * Synchronization structure for asynchronous waiting for near tx finish responses based on per-node per-thread
  * basis.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheTxFinishSync<K, V> {
     /** Cache context. */

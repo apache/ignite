@@ -93,9 +93,6 @@ import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
  * <p/>
  * See <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a> for information on the
  * misspelling.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridKernal extends GridProjectionAdapter implements GridEx, GridKernalMBean {
     /** Enterprise release flag. */

@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * Store manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** */

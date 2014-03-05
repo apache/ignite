@@ -15,9 +15,6 @@ import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsIpcCommand.*;
 
 /**
  * GGFS status (total/used/free space) request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsStatusRequest extends GridGgfsMessage {
     /** {@inheritDoc} */

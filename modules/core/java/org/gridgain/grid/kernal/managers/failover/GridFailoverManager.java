@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * Grid failover spi manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridFailoverManager extends GridManagerAdapter<GridFailoverSpi> {
     /**

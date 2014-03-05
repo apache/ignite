@@ -29,9 +29,6 @@ import org.slf4j.*;
  * It's recommended to use GridGain's logger injection instead of using/instantiating
  * logger in your task/job code. See {@link GridLoggerResource} annotation about logger
  * injection.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridSlf4jLogger extends GridMetadataAwareAdapter implements GridLogger {
     /** SLF4J implementation proxy. */

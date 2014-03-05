@@ -21,9 +21,6 @@ import java.util.*;
  * <p>
  * Use {@link GridEventStorageManager#addLocalEventListener(GridPredicate, int...)} to register
  * this listener with grid.
- *
- * @author @java.author
- * @version @java.version
  * @see GridEvents#localListen(GridPredicate, int...)
  */
 public interface GridLocalEventListener extends EventListener {

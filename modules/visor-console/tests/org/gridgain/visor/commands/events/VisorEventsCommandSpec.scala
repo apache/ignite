@@ -17,9 +17,6 @@ import org.gridgain.grid._
 
 /**
  * Unit test for 'events' command.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorEventsCommandSpec extends VisorRuntimeBaseSpec(1) {
     /**

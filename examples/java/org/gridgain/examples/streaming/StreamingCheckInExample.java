@@ -48,9 +48,6 @@ import java.util.concurrent.*;
  * <p>
  * Alternatively you can run {@link StreamingNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-streamer.xml} configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class StreamingCheckInExample {
     /** Streamer name. */

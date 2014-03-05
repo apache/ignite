@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Local transaction API.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
     /**

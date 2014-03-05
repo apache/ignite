@@ -12,9 +12,6 @@ package org.gridgain.grid.dr.hub.sender;
 /**
  * Data center replication sender hub metrics for outgoing data, i.e. data transferred from sender hub to
  * remote receiver hubs.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDrSenderHubOutMetrics {
     /**

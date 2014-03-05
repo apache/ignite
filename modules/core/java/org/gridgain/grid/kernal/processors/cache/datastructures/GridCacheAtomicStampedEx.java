@@ -13,9 +13,6 @@ import org.gridgain.grid.cache.datastructures.*;
 
 /**
  * Atomic stamped managed by cache ({@code 'Ex'} stands for external).
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheAtomicStampedEx<T, S> extends GridCacheRemovable, GridCacheAtomicStamped<T, S> {
     /**

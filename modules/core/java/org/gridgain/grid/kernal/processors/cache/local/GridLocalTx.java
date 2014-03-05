@@ -23,9 +23,6 @@ import static org.gridgain.grid.cache.GridCacheTxState.*;
 
 /**
  * Local cache transaction.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
     /** Transaction future. */

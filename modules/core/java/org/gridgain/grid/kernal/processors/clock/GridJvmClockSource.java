@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal.processors.clock;
 
 /**
  * JVM time source.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJvmClockSource implements GridClockSource {
     /** {@inheritDoc} */

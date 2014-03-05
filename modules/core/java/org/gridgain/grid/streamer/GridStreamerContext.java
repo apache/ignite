@@ -19,9 +19,6 @@ import java.util.concurrent.*;
 /**
  * Streamer context. Provides access to streamer local store, configured windows and various methods
  * to run streamer queries.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridStreamerContext {
     /**

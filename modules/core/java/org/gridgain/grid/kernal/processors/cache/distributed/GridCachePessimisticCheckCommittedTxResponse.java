@@ -21,9 +21,6 @@ import java.nio.*;
 
 /**
  * Check prepared transactions response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDistributedBaseMessage<K, V> {
     /** Future ID. */

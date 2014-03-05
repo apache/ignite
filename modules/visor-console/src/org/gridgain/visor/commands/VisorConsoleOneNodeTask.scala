@@ -25,8 +25,7 @@ import org.gridgain.grid.util.scala.impl
  *
  * @tparam T Task argument type.
  * @tparam R Task result type.
- * @author @java.author
- * @version @java.version
+ *
  */
 trait VisorConsoleOneNodeTask[T <: VisorConsoleOneNodeArgument, R] extends GridComputeTask[T, R] {
     @impl def map(subgrid: JavaList[GridNode], arg: T): JavaMap[GridComputeJob, GridNode] =

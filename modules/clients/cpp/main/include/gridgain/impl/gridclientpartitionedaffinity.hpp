@@ -47,9 +47,6 @@ typedef std::function<GridClientVariant (const GridClientNode&)> GridHashIdResol
  *      filter returns <tt>false</tt>, first backup node for the key will be considered primary.
  * </li>
  * </ul>
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientPartitionAffinity: public GridClientDataAffinity {
 public:

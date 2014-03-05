@@ -36,9 +36,6 @@ import java.util.*;
  * after being processed in
  * {@link GridComputeTask#result(GridComputeJobResult, List) GridComputeTask.result(GridComputeJobResult, List&lt;GridComputeJobResult&gt;)}
  * method.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

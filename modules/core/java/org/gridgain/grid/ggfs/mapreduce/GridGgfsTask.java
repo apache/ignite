@@ -62,9 +62,6 @@ import java.util.*;
  *     }
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridGgfsTask<T, R> extends GridComputeTaskAdapter<GridGgfsTaskArgs<T>, R> {
     /** Injected grid. */

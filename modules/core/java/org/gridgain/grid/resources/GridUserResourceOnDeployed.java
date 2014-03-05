@@ -37,9 +37,6 @@ import java.lang.annotation.*;
  * </pre>
  * <p>
  * See also {@link GridUserResourceOnUndeployed} for undeployment callbacks.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

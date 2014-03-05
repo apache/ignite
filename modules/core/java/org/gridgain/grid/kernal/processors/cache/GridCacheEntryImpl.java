@@ -29,9 +29,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
  * Entry wrapper that never obscures obsolete entries from user.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externalizable {
     /** Collection of one peek mode to avoid collection creation. */

@@ -22,9 +22,6 @@ import java.net.*;
 
 /**
  * Time server that enables time synchronization between nodes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClockServer {
     /** Kernal context. */

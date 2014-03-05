@@ -91,8 +91,5 @@ package org.gridgain.visor.commands
  *     visor start "-f=start-nodes.ini -r"
  *         Starts topology defined in 'start-nodes.ini' file. Existing nodes are stopped.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 package object start

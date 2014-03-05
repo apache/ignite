@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Metadata-aware interface.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheQueryMetadataAware {
     /**

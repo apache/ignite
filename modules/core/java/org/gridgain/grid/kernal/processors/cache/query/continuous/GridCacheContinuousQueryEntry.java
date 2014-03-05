@@ -29,9 +29,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheValueBytes.*;
 
 /**
  * Entry implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>, GridCacheDeployable, Externalizable {
     /** Cache context. */

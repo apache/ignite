@@ -17,9 +17,6 @@ import java.util.*;
 /**
  * This class defines output stream backed by byte array.
  * It is identical to {@link ByteArrayOutputStream} with no synchronization.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridByteArrayOutputStream extends OutputStream {
     /** The buffer where data is stored. */

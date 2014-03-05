@@ -18,9 +18,6 @@ import static org.gridgain.grid.ggfs.GridGgfs.*;
 
 /**
  * HDFS properties.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridGgfsHdfsProperties {
     /** Username. */

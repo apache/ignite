@@ -28,9 +28,6 @@ import java.util.*;
 
 /**
  * URI deployment HTTP scanner.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
     /** Secure socket protocol to use. */
@@ -417,9 +414,6 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
 
     /**
      * Verifier always return successful result for any host.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private static class DeploymentHostnameVerifier implements HostnameVerifier {
         /** {@inheritDoc} */

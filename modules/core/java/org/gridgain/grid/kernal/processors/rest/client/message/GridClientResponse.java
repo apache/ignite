@@ -14,9 +14,6 @@ import java.io.*;
 
 /**
  * Bean representing client operation result.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientResponse extends GridClientAbstractMessage {
     /** Command succeeded. */

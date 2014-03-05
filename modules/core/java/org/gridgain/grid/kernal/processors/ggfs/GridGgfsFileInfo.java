@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * Unmodifiable file information.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridGgfsFileInfo implements Externalizable {
     /** ID for the root directory. */

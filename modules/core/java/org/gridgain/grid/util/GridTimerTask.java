@@ -13,9 +13,6 @@ import java.util.*;
 
 /**
  * Utility extension for {@link TimerTask}.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridTimerTask extends TimerTask {
     /**

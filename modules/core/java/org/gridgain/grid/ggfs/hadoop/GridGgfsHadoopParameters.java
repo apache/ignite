@@ -81,9 +81,6 @@ import org.gridgain.grid.ggfs.*;
  * </pre>
  * If you want to use these parameters in code, then you have to substitute you file system name in it. The easiest
  * way to do that is {@code String.format(PARAM_GGFS_ENDPOINT_TYPE, [name])}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsHadoopParameters {
     /** Parameter name for IPC endpoint type. */

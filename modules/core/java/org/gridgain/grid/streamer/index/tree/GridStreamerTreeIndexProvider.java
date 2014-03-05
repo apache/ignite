@@ -39,8 +39,7 @@ import static org.gridgain.grid.streamer.index.GridStreamerIndexPolicy.*;
  * comparability.
  *
  * @see GridStreamerHashIndexProvider
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridStreamerTreeIndexProvider<E, K, V> extends GridStreamerIndexProviderAdapter<E, K, V> {
     /** */

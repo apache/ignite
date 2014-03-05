@@ -16,9 +16,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Manager of data structures.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridCacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**

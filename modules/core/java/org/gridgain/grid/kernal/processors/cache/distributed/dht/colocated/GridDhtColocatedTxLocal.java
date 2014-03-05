@@ -35,9 +35,6 @@ import static org.gridgain.grid.cache.GridCacheTxState.*;
 /**
  * Colocated transaction. Embedded combination of near and dht local transactions
  * when near cache is disabled.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     /** Topology snapshot on which this tx was started. */

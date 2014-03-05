@@ -30,9 +30,6 @@ import static org.gridgain.grid.cache.GridCacheFlag.*;
 
 /**
  * Concurrent implementation of cache map.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheConcurrentMap<K, V> {
     /** Debug flag. */

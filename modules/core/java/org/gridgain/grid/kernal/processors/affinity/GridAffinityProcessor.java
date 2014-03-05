@@ -34,9 +34,6 @@ import static org.gridgain.grid.kernal.processors.affinity.GridAffinityUtils.*;
 
 /**
  * Data affinity processor.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridAffinityProcessor extends GridProcessorAdapter {
     /** Affinity map cleanup delay (ms). */

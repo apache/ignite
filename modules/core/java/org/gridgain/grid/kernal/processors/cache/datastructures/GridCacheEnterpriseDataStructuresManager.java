@@ -31,9 +31,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
  * Manager of data structures.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCacheDataStructuresManager<K, V> {
     /** Initial capacity. */

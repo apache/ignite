@@ -36,8 +36,7 @@ import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridStreamerImpl implements GridStreamerEx, Externalizable {
     /** Number of message send retries. */

@@ -19,9 +19,6 @@ import java.lang.annotation.*;
  * <p>
  * Note that SPI consistency courtesy log can also be disabled by disabling
  * {@link GridConfiguration#COURTESY_LOGGER_NAME} category in log configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

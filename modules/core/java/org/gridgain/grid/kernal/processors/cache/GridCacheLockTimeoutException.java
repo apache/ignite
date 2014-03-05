@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 /**
  * Used to internally indicate that lock acquisition has timed out.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheLockTimeoutException extends Exception {
     /**

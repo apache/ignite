@@ -31,9 +31,6 @@ import static org.gridgain.grid.GridGainState.*;
  * <p>
  * See {@link Gridify} documentation for more information about execution of
  * {@code gridified} methods.
- *
- * @author @java.author
- * @version @java.version
  * @see Gridify
  */
 public class GridifySpringAspect implements MethodInterceptor {

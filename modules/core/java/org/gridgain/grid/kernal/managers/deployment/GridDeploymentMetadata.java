@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Deployment metadata.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridDeploymentMetadata {
     /** Deployment mode. */

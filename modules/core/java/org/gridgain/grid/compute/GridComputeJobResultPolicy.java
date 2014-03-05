@@ -17,9 +17,6 @@ import java.util.*;
  * This enumeration provides different types of actions following the last
  * received job result. See {@link GridComputeTask#result(GridComputeJobResult, List)} for
  * more details.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridComputeJobResultPolicy {
     /**

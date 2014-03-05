@@ -30,9 +30,6 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 
 /**
  * Responsible for high performance file system.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsProcessor extends GridProcessorAdapter {
     /** Null GGFS name. */

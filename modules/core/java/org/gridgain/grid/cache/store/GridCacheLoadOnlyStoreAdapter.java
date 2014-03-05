@@ -59,9 +59,6 @@ import static java.util.concurrent.TimeUnit.*;
  * @param <K> Key type.
  * @param <V> Value type.
  * @param <I> Input type.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCacheStore<K, V> {
     /**

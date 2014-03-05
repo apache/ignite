@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * No-op implementation for {@link GridLicenseProcessor}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridOsLicenseProcessor extends GridProcessorAdapter implements GridLicenseProcessor {
     /** */

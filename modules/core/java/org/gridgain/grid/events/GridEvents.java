@@ -41,9 +41,6 @@ import java.util.*;
  *     &lt;util:constant static-field="org.gridgain.grid.events.GridEventType.EVTS_CACHE"/&gt;
  * &lt;/property&gt;
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridEvents {
     /**

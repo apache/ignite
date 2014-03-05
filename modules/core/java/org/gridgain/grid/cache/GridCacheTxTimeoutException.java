@@ -13,9 +13,6 @@ import org.gridgain.grid.*;
 
 /**
  * Exception thrown whenever grid transactions time out.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheTxTimeoutException extends GridException {
     /**

@@ -14,9 +14,6 @@ import org.gridgain.grid.util.typedef.*;
 
 /**
  * Management bean that provides access to {@link GridGain}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGainMBeanAdapter implements GridGainMBean {
     /** {@inheritDoc} */

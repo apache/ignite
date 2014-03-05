@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal.processors.task;
 
 /**
  * Defines keys for thread-local context in task processor.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridTaskThreadContextKey {
     /** Task name. */

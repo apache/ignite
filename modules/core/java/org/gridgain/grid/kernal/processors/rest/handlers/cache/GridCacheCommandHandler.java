@@ -37,9 +37,6 @@ import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 
 /**
  * Command handler for API requests.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     /** */

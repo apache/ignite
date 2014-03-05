@@ -15,9 +15,6 @@ import java.lang.annotation.*;
  * Annotation for fields or getters to be indexed for full text
  * search using {@code H2 TEXT} indexing. For more information
  * refer to {@link GridCacheQuery} documentation.
- *
- * @author @java.author
- * @version @java.version
  * @see GridCacheQuery
  */
 @Documented

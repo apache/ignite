@@ -19,9 +19,6 @@ import java.net.*;
 
 /**
  * IPC endpoint based on shared memory space.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
     /** In space. */

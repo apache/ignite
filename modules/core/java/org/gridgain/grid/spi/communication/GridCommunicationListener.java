@@ -19,9 +19,6 @@ import java.util.*;
  * <p>
  * {@link GridCommunicationSpi} should ignore very first 4 bytes received from
  * sender node and pass the rest of the message to the listener.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCommunicationListener<T extends Serializable> {
     /**

@@ -17,9 +17,6 @@ import org.jetbrains.annotations.*;
  * <pre name="code" class="java">
  * GridProduct p = GridGain.grid().product();
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridProduct {
     /**

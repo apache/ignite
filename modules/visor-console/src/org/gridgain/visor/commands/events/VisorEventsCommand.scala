@@ -114,9 +114,6 @@ import visor._
  *     visor events
  *         Starts command in interactive mode.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorEventsCommand {
     /**
@@ -401,9 +398,6 @@ private case class VisorConsoleCollectEventsTaskArgument(
 
 /**
  * Task that runs on specified node and returns events data.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridInternal
 private class VisorConsoleCollectEventsTask
@@ -528,9 +522,6 @@ private class VisorConsoleCollectEventsTask
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorEventsCommand {
     addHelp(

@@ -13,9 +13,6 @@ import org.gridgain.grid.cache.datastructures.*;
 
 /**
  * Atomic managed by cache ({@code 'Ex'} stands for external).
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheAtomicLongEx extends GridCacheRemovable, GridCacheAtomicLong {
     /**

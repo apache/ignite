@@ -21,9 +21,6 @@ import java.util.*;
  * Metadata describes objects stored in the cache and
  * can be used to gather information about what can
  * be queried using GridGain cache queries feature.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheSqlMetadata extends Externalizable {
     /**

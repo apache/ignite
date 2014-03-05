@@ -14,9 +14,6 @@ import org.gridgain.grid.kernal.processors.*;
 
 /**
  * Data center replication processor.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDrProcessor<K, V> extends GridProcessor {
     /**

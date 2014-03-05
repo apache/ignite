@@ -23,9 +23,6 @@ import org.jetbrains.annotations.*;
  * It's recommended to use GridGain logger injection instead of using/instantiating
  * logger in your task/job code. See {@link GridLoggerResource} annotation about logger
  * injection.
- *
- * @author @java.author
- * @version @java.version
  * @see GridTomcatStartup
  */
 public class GridTomcatLogger extends GridMetadataAwareAdapter implements GridLogger {

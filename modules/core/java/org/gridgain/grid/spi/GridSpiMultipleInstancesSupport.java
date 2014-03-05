@@ -19,9 +19,6 @@ import java.lang.annotation.*;
  * <b>Note:</b> if this annotations is omitted on SPI it will be
  * assumed that SPI doesn't support multiple grid instances on the
  * same VM.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Inherited

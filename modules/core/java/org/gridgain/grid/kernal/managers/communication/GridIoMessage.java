@@ -19,9 +19,6 @@ import java.nio.*;
 
 /**
  * Wrapper for all grid messages.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
     /** Policy. */

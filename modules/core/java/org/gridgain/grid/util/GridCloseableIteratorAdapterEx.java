@@ -17,9 +17,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Adapter for closeable iterator that can be safely closed concurrently.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridCloseableIteratorAdapterEx<T> extends GridIteratorAdapter<T>
     implements GridCloseableIterator<T> {

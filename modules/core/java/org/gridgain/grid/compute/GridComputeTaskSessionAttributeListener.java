@@ -13,9 +13,6 @@ import java.util.*;
 
 /**
  * This interface defines listener for task session attributes.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridComputeTaskSessionAttributeListener extends EventListener {
     /**

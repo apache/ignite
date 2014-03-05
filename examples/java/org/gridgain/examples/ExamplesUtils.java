@@ -13,8 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.streamer.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class ExamplesUtils {
     /**

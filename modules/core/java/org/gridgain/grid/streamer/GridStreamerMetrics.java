@@ -15,9 +15,6 @@ import java.util.*;
 
 /**
  * Streamer metrics.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridStreamerMetrics {
     /**

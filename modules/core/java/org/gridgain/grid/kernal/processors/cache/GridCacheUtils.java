@@ -37,9 +37,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
  * Cache utility methods.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheUtils {
     /** Flag to turn off DHT cache for debugging purposes. */

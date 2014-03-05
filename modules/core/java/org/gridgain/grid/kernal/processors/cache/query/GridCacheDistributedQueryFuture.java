@@ -20,9 +20,6 @@ import java.util.concurrent.*;
 
 /**
  * Distributed query future.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutureAdapter<K, V, R> {
     /** */

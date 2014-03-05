@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
  * No-op implementation for {@link GridAuthenticationManager}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridOsAuthenticationManager extends GridNoopManagerAdapter implements GridAuthenticationManager {
     /**

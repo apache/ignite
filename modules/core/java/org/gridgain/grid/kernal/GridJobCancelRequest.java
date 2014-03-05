@@ -19,9 +19,6 @@ import java.nio.*;
 
 /**
  * Job cancellation request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
     /** */

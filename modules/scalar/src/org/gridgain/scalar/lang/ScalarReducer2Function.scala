@@ -15,9 +15,6 @@ import org.gridgain.grid.util.lang.{GridLambdaAdapter, GridReducer2}
 
 /**
  * Wrapping Scala function for `GridReducer2`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarReducer2Function[E1, E2, R](val inner: GridReducer2[E1, E2, R]) extends GridLambdaAdapter
     with ((Seq[E1], Seq[E2]) => R) {

@@ -22,9 +22,6 @@ import java.util.*;
  * Message telling nodes that new node should be added to topology.
  * When newly added node receives the message it connects to its next and finishes
  * join process.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridTcpDiscoveryEnsureDelivery
 public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMessage {

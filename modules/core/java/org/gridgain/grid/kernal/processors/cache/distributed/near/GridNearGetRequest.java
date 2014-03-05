@@ -25,9 +25,6 @@ import java.util.*;
 
 /**
  * Get request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable,
     GridCacheVersionable {

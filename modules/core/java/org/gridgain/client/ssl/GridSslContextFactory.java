@@ -16,9 +16,6 @@ import javax.net.ssl.*;
  * <p>
  * Usually, it is enough to configure context from a particular key and trust stores, this functionality is provided
  * in {@link GridSslBasicContextFactory}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridSslContextFactory {
     /**

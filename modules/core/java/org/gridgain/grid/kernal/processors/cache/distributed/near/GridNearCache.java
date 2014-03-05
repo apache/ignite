@@ -32,9 +32,6 @@ import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 
 /**
  * Near cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
     /** DHT cache. */

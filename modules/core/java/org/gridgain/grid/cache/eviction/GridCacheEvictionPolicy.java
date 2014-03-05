@@ -37,9 +37,6 @@ import org.gridgain.grid.lang.*;
  * create any internal tables, arrays, or other expensive structures.
  * The eviction order is preserved by attaching light-weight meta-data to existing
  * cache entries.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheEvictionPolicy<K, V> {
     /**

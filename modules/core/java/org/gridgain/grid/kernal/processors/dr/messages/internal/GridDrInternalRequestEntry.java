@@ -15,9 +15,6 @@ import java.io.*;
 
 /**
  * Internal DR request entry.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrInternalRequestEntry implements Externalizable {
     /** Data center ID. */

@@ -20,9 +20,6 @@ import org.jetbrains.annotations.*;
  * that work with byte array or {@link GridByteArrayList}. These implementations
  * use {@link GridByteArrayInputStream} or {@link GridByteArrayOutputStream}
  * to marshal and unmarshal objects.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridAbstractMarshaller implements GridMarshaller {
     /** Default initial buffer size for the {@link GridByteArrayOutputStream}. */

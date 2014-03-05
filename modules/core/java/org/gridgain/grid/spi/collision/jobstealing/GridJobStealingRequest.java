@@ -17,9 +17,6 @@ import java.nio.*;
 
 /**
  * Job stealing request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJobStealingRequest extends GridTcpCommunicationMessageAdapter {
     /** Delta. */

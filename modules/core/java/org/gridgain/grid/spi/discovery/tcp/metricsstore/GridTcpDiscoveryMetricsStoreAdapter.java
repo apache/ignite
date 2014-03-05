@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Convenient metrics store adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridTcpDiscoveryMetricsStoreAdapter implements GridTcpDiscoveryMetricsStore {
     /** Default metrics expire time in milliseconds (value is <tt>10000</tt>). */

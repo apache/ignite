@@ -55,9 +55,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
  * Cache processor.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheProcessor extends GridProcessorAdapter {
     /** */

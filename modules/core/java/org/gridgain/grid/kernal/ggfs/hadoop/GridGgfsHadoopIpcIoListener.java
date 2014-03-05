@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal.ggfs.hadoop;
 
 /**
  * Listens to the events of {@link GridGgfsHadoopIpcIo}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridGgfsHadoopIpcIoListener {
     /**

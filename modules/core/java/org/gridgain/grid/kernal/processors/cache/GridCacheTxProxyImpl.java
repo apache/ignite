@@ -21,9 +21,6 @@ import java.util.concurrent.*;
 
 /**
  * Cache transaction proxy.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externalizable {
     /** Wrapped transaction. */

@@ -14,9 +14,6 @@ import java.util.concurrent.*;
 
 /**
  * Adds serialization to the {@link Future} interface.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridSerializableFuture<T> extends Future<T>, Serializable {
     // No-op.

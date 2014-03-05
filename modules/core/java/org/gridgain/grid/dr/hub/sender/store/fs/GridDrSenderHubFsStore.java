@@ -85,9 +85,6 @@ import static org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflow
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- *
- * @author @java.author
- * @version @java.version
  * @see GridDrSenderHubStore
  */
 public class GridDrSenderHubFsStore implements GridDrSenderHubStore, GridLifecycleAware {

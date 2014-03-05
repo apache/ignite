@@ -24,9 +24,6 @@ import java.util.concurrent.*;
 
 /**
  * Streamer execution future.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> {
     /** Logger. */

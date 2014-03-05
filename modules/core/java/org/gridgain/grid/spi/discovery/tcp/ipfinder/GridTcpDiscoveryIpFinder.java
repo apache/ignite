@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * IP finder interface for {@link GridTcpDiscoverySpi}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridTcpDiscoveryIpFinder {
     /**

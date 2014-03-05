@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Full partition map.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap>
     implements Comparable<GridDhtPartitionFullMap>, Externalizable {
