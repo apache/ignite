@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.streaming;
 
+import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.streamer.*;
@@ -43,10 +44,10 @@ import java.util.concurrent.*;
  * the users that have checked-in in the known places within the last 10 seconds.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-streaming.xml'}.
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-streamer.xml'}.
  * <p>
  * Alternatively you can run {@link StreamingNodeStartup} in another JVM which will start GridGain node
- * with {@code examples/config/example-streaming.xml} configuration.
+ * with {@code examples/config/example-streamer.xml} configuration.
  *
  * @author @java.author
  * @version @java.version
@@ -124,14 +125,14 @@ public class StreamingCheckInExample {
 
             // Reset all streamers on all nodes to make sure that
             // consecutive executions start from scratch.
-            g.compute().run(new Runnable() {
+            g.compute().broadcast(new Runnable() {
                 @Override public void run() {
-                    GridStreamer streamer = g.streamer(STREAMER_NAME);
-
-                    if (streamer == null)
+                    if (!ExamplesUtils.hasStreamer(g, STREAMER_NAME))
                         System.err.println("Default streamer not found (is example-streamer.xml " +
                             "configuration used on all nodes?)");
                     else {
+                        GridStreamer streamer = g.streamer(STREAMER_NAME);
+
                         System.out.println("Clearing streamer data.");
 
                         streamer.reset();

@@ -2812,13 +2812,18 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public GridGgfs ggfs(String name) {
+    @Override public GridGgfs ggfs(String name) {
         A.ensure(!F.isEmpty(name), "!F.isEmpty(name)");
 
         guard();
 
         try{
-            return ctx.ggfs().ggfs(name);
+            GridGgfs ggfs = ctx.ggfs().ggfs(name);
+
+            if (ggfs == null)
+                throw new IllegalArgumentException("GGFS is not configured: " + name);
+
+            return ggfs;
         }
         finally {
             unguard();
@@ -2882,7 +2887,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridStreamer streamer(@Nullable String name) {
+    @Override public GridStreamer streamer(@Nullable String name) {
         guard();
 
         try {
@@ -2928,7 +2933,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDr dr() {
+    @Override public GridDr dr() {
         return ctx.dr().dr();
     }
 

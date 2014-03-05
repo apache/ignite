@@ -22,6 +22,7 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.task.*;
@@ -1902,7 +1903,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         /**
          * @param ggfsName GGFS name.
          */
-        private GgfsGlobalSpaceTask(String ggfsName) {
+        private GgfsGlobalSpaceTask(@Nullable String ggfsName) {
             this.ggfsName = ggfsName;
         }
 
@@ -1918,7 +1919,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     private Grid g;
 
                     @Nullable @Override public GridBiTuple<Long, Long> execute() throws GridException {
-                        GridGgfs ggfs = g.ggfs(ggfsName);
+                        GridGgfs ggfs = ((GridKernal)g).context().ggfs().ggfs(ggfsName);
 
                         if (ggfs == null)
                             return F.t(0L, 0L);

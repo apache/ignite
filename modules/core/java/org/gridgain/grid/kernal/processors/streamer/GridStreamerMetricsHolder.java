@@ -251,7 +251,12 @@ public class GridStreamerMetricsHolder implements GridStreamerMetrics {
 
     /** {@inheritDoc} */
     @Override public GridStreamerStageMetrics stageMetrics(String stageName) {
-        return stageMetricsMap.get(stageName);
+        GridStreamerStageMetrics metrics = stageMetricsMap.get(stageName);
+
+        if (metrics == null)
+            throw new IllegalArgumentException("Streamer stage is not configured: " + stageName);
+
+        return metrics;
     }
 
     /** {@inheritDoc} */
@@ -261,7 +266,12 @@ public class GridStreamerMetricsHolder implements GridStreamerMetrics {
 
     /** {@inheritDoc} */
     @Override public GridStreamerWindowMetrics windowMetrics(String winName) {
-        return windowMetricsMap.get(winName);
+        GridStreamerWindowMetrics metrics = windowMetricsMap.get(winName);
+
+        if (metrics == null)
+            throw new IllegalArgumentException("Streamer window is not configured: " + winName);
+
+        return metrics;
     }
 
     /** {@inheritDoc} */

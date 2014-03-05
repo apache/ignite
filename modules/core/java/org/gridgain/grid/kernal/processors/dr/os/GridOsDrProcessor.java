@@ -30,7 +30,7 @@ public class GridOsDrProcessor extends GridProcessorAdapter implements GridDrPro
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDr dr() {
-        return null;
+    @Override public GridDr dr() {
+        throw new IllegalStateException("Data center replication is not configured.");
     }
 }

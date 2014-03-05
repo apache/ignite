@@ -46,12 +46,13 @@ public interface GridStreamerContext {
     public <E> GridStreamerWindow<E> window();
 
     /**
-     * Gets streamer event window by window name.
+     * Gets streamer event window by window name, if no window with such
+     * name was configured {@link IllegalArgumentException} will be thrown.
      *
      * @param winName Window name.
-     * @return Window instance or {@code null} if no window with such name was configured.
+     * @return Window instance.
      */
-    @Nullable public <E> GridStreamerWindow<E> window(String winName);
+    public <E> GridStreamerWindow<E> window(String winName);
 
     /**
      * For context passed to {@link GridStreamerStage#run(GridStreamerContext, Collection)} this method will

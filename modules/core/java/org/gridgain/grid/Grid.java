@@ -143,32 +143,33 @@ public interface Grid extends GridProjection, AutoCloseable {
      * @return Instance of Data Center Replication.
      */
     @GridOnlyAvailableIn(DATA_GRID)
-    @Nullable public GridDr dr();
+    public GridDr dr();
 
     /**
-     * Gets the cache instance for the given name if one is configured or <tt>null</tt> otherwise.
+     * Gets the cache instance for the given name, if one does not
+     * exist {@link IllegalArgumentException} will be thrown.
      * Note that in case named cache instance is used as GGFS data or meta cache, {@link IllegalStateException}
      * will be thrown.
      *
      * @param <K> Key type.
      * @param <V> Value type.
      * @param name Cache name.
-     * @return Cache instance for given name or <tt>null</tt> if one does not exist.
+     * @return Cache instance for given name.
      * @see GridGgfsConfiguration
      * @see GridGgfsConfiguration#getDataCacheName()
      * @see GridGgfsConfiguration#getMetaCacheName()
      */
     @GridOnlyAvailableIn(DATA_GRID)
-    @Nullable public <K, V> GridCache<K, V> cache(@Nullable String name);
+    public <K, V> GridCache<K, V> cache(@Nullable String name);
 
     /**
-     * Gets configured cache instance that satisfy all provided predicates. If no predicates
-     * provided - all configured caches will be returned.
+     * Gets all configured caches.
      * Caches that are used as GGFS meta and data caches will not be returned in resulting collection.
      *
      * @see GridGgfsConfiguration
      * @see GridGgfsConfiguration#getDataCacheName()
      * @see GridGgfsConfiguration#getMetaCacheName()
+     * @return All configured caches.
      */
     @GridOnlyAvailableIn(DATA_GRID)
     public Collection<GridCache<?, ?>> caches();
@@ -185,7 +186,8 @@ public interface Grid extends GridProjection, AutoCloseable {
     public <K, V> GridDataLoader<K, V> dataLoader(@Nullable String cacheName);
 
     /**
-     * Gets an instance of GGFS - GridGain In-Memory File System.
+     * Gets an instance of GGFS - GridGain In-Memory File System, if one is not
+     * configured then {@link IllegalArgumentException} will be thrown.
      * <p>
      * GGFS is fully compliant with Hadoop {@code FileSystem} APIs and can
      * be plugged into Hadoop installations. For more information refer to
@@ -195,7 +197,7 @@ public interface Grid extends GridProjection, AutoCloseable {
      * @return GGFS instance.
      */
     @GridOnlyAvailableIn(HADOOP)
-    @Nullable public GridGgfs ggfs(String name);
+    public GridGgfs ggfs(String name);
 
     /**
      * Gets all instances of the grid file systems.
@@ -206,13 +208,14 @@ public interface Grid extends GridProjection, AutoCloseable {
     public Collection<GridGgfs> ggfss();
 
     /**
-     * Gets an instance of streamer by name or {@code null} if one does not exist.
+     * Gets an instance of streamer by name, if one does not exist then
+     * {@link IllegalArgumentException} will be thrown.
      *
      * @param name Streamer name.
-     * @return Streamer for given name or {@code null} if one does not exist.
+     * @return Streamer for given name.
      */
     @GridOnlyAvailableIn(STREAMING)
-    @Nullable public GridStreamer streamer(@Nullable String name);
+    public GridStreamer streamer(@Nullable String name);
 
     /**
      * Gets all instances of streamers.
