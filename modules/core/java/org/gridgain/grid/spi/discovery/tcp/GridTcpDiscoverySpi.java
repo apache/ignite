@@ -1310,7 +1310,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         if (!res) {
             LT.warn(log, null, "Failed to ping node (status check will be initiated): " + nodeId);
 
-            msgWorker.addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, node.id(), node.internalOrder()));
+            msgWorker.addMessage(new GridTcpDiscoveryStatusCheckMessage(locNode, node.id()));
         }
 
         return res;
@@ -2475,7 +2475,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 // 4. Send status check message.
                 lastSent = U.currentTimeMillis();
 
-                msgWorker.addMessage(new GridTcpDiscoveryStatusCheckMessage(locNode));
+                msgWorker.addMessage(new GridTcpDiscoveryStatusCheckMessage(locNode, null));
             }
         }
     }
@@ -4020,6 +4020,27 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
          */
         private void processStatusCheckMessage(GridTcpDiscoveryStatusCheckMessage msg) {
             assert msg != null;
+
+            if (msg.failedNodeId() != null) {
+                if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() != null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Status check message discarded (local node is the sender of the status message).");
+
+                    return;
+                }
+
+                if (isLocalNodeCoordinator() && ring.node(msg.creatorNodeId()) == null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Status check message discarded (creator node is not in topology).");
+
+                    return;
+                }
+
+                if (ring.hasRemoteNodes())
+                    sendMessageAcrossRing(msg);
+
+                return;
+            }
 
             if (isLocalNodeCoordinator() && !locNodeId.equals(msg.creatorNodeId())) {
                 // Local node is real coordinator, it should respond and discard message.
