@@ -2001,7 +2001,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         try {
             sock.setSoTimeout((int)timeout);
 
-            return sock.getInputStream().read();
+            int res = sock.getInputStream().read();
+
+            if (res == -1)
+                throw new EOFException();
+
+            return res;
         }
         catch (SocketTimeoutException e) {
             LT.warn(log, null, "Timed out waiting for message delivery receipt (most probably, the reason is " +
@@ -2900,7 +2905,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to connect to next node [msg=" + msg + ", err=" + e + ']');
 
-                                if (e instanceof SocketTimeoutException || X.hasCause(e, SocketTimeoutException.class)) {
+                                if (e instanceof SocketTimeoutException ||
+                                    X.hasCause(e, SocketTimeoutException.class)) {
                                     ackTimeout0 *= 2;
 
                                     if (!checkAckTimeout(ackTimeout0))
@@ -3061,9 +3067,24 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                         }
                     }
 
-                    searchNext = true;
+                    if (msg instanceof GridTcpDiscoveryStatusCheckMessage) {
+                        GridTcpDiscoveryStatusCheckMessage msg0 = (GridTcpDiscoveryStatusCheckMessage)msg;
+
+                        if (next.id().equals(msg0.failedNodeId())) {
+                            next = null;
+
+                            if (log.isDebugEnabled())
+                                log.debug("Discarding status check since next has indeed failed [next=" + next +
+                                    ", msg=" + msg + ']');
+
+                            // Discard status check message by exiting loop and handle failure.
+                            break;
+                        }
+                    }
 
                     next = null;
+
+                    searchNext = true;
 
                     errs = null;
                 }
@@ -4019,22 +4040,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             assert msg != null;
 
             if (msg.failedNodeId() != null) {
-                GridTcpDiscoveryNode next = ring.nextNode();
-
-                if (next != null && msg.failedNodeId().equals(next.id())) {
-                    try {
-                        trySendMessageDirectly(next, msg);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Status check message discarded (failed node is actually alive: " + next.id() + ").");
-                    }
-                    catch (GridSpiException e) {
-                        msgWorker.addMessage(
-                            new GridTcpDiscoveryNodeFailedMessage(locNodeId, next.id(), next.internalOrder()));
-
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to respond to status check message [recipient=" + next.id() + ']');
-                    }
+                if (locNodeId.equals(msg.failedNodeId())) {
+                    if (log.isDebugEnabled())
+                        log.debug("Status check message discarded (suspect node is local node).");
 
                     return;
                 }
@@ -4052,91 +4060,88 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                     return;
                 }
-
-                if (ring.hasRemoteNodes())
-                    sendMessageAcrossRing(msg);
-
-                return;
             }
+            else {
+                if (isLocalNodeCoordinator() && !locNodeId.equals(msg.creatorNodeId())) {
+                    // Local node is real coordinator, it should respond and discard message.
+                    if (ring.node(msg.creatorNodeId()) != null) {
+                        // Sender is in topology, send message via ring.
+                        msg.status(STATUS_OK);
 
-            if (isLocalNodeCoordinator() && !locNodeId.equals(msg.creatorNodeId())) {
-                // Local node is real coordinator, it should respond and discard message.
-                if (ring.node(msg.creatorNodeId()) != null) {
-                    // Sender is in topology, send message via ring.
-                    msg.status(STATUS_OK);
-
-                    sendMessageAcrossRing(msg);
-                }
-                else {
-                    // Sender is not in topology, it should reconnect.
-                    msg.status(STATUS_RECON);
-
-                    try {
-                        trySendMessageDirectly(msg.creatorNode(), msg);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Responded to status check message " +
-                                "[recipient=" + msg.creatorNodeId() + ", status=" + msg.status() + ']');
+                        sendMessageAcrossRing(msg);
                     }
-                    catch (GridSpiException e) {
-                        if (e.hasCause(SocketException.class)) {
-                            if (log.isDebugEnabled()) {
-                                log.debug("Failed to respond to status check message (connection refused) " +
+                    else {
+                        // Sender is not in topology, it should reconnect.
+                        msg.status(STATUS_RECON);
+
+                        try {
+                            trySendMessageDirectly(msg.creatorNode(), msg);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Responded to status check message " +
                                     "[recipient=" + msg.creatorNodeId() + ", status=" + msg.status() + ']');
-                            }
                         }
-                        else {
-                            if (pingNode(msg.creatorNode())) {
-                                // Node exists and accepts incoming connections.
-                                U.error(log, "Failed to respond to status check message " +
-                                    "[recipient=" + msg.creatorNodeId() + ", status=" + msg.status() + ']', e);
+                        catch (GridSpiException e) {
+                            if (e.hasCause(SocketException.class)) {
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Failed to respond to status check message (connection refused) " +
+                                        "[recipient=" + msg.creatorNodeId() + ", status=" + msg.status() + ']');
+                                }
                             }
-                            else if (log.isDebugEnabled()) {
-                                log.debug("Failed to respond to status check message (did the node stop?) " +
-                                    "[recipient=" + msg.creatorNodeId() + ", status=" + msg.status() + ']');
+                            else {
+                                if (pingNode(msg.creatorNode())) {
+                                    // Node exists and accepts incoming connections.
+                                    U.error(log, "Failed to respond to status check message " +
+                                        "[recipient=" + msg.creatorNodeId() + ", status=" + msg.status() + ']', e);
+                                }
+                                else if (log.isDebugEnabled()) {
+                                    log.debug("Failed to respond to status check message (did the node stop?) " +
+                                        "[recipient=" + msg.creatorNodeId() + ", status=" + msg.status() + ']');
+                                }
                             }
                         }
                     }
-                }
 
-                return;
-            }
-
-            if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null &&
-                U.currentTimeMillis() - locNode.lastUpdateTime() < hbFreq) {
-                if (log.isDebugEnabled())
-                    log.debug("Status check message discarded (local node receives updates).");
-
-                return;
-            }
-
-            if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null && spiStateCopy() != CONNECTED) {
-                if (log.isDebugEnabled())
-                    log.debug("Status check message discarded (local node is not connected to topology).");
-
-                return;
-            }
-
-            if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() != null) {
-                if (spiStateCopy() != CONNECTED)
                     return;
+                }
 
-                if (msg.status() == STATUS_OK) {
+                if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null &&
+                    U.currentTimeMillis() - locNode.lastUpdateTime() < hbFreq) {
                     if (log.isDebugEnabled())
-                        log.debug("Received OK status response from coordinator: " + msg);
-                }
-                else if (msg.status() == STATUS_RECON) {
-                    U.warn(log, "Node is out of topology (probably, due to short-time network problems).");
-
-                    notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+                        log.debug("Status check message discarded (local node receives updates).");
 
                     return;
                 }
-                else if (log.isDebugEnabled())
-                    log.debug("Status value was not updated in status response: " + msg);
 
-                // Discard the message.
-                return;
+                if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null &&
+                    spiStateCopy() != CONNECTED) {
+                    if (log.isDebugEnabled())
+                        log.debug("Status check message discarded (local node is not connected to topology).");
+
+                    return;
+                }
+
+                if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() != null) {
+                    if (spiStateCopy() != CONNECTED)
+                        return;
+
+                    if (msg.status() == STATUS_OK) {
+                        if (log.isDebugEnabled())
+                            log.debug("Received OK status response from coordinator: " + msg);
+                    }
+                    else if (msg.status() == STATUS_RECON) {
+                        U.warn(log, "Node is out of topology (probably, due to short-time network problems).");
+
+                        notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+
+                        return;
+                    }
+                    else if (log.isDebugEnabled())
+                        log.debug("Status value was not updated in status response: " + msg);
+
+                    // Discard the message.
+                    return;
+                }
             }
 
             if (ring.hasRemoteNodes())
