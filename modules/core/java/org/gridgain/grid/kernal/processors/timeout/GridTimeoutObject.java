@@ -13,9 +13,6 @@ import org.gridgain.grid.*;
 
 /**
  * All objects that can timeout should implement this interface.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridTimeoutObject {
     /**

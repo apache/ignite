@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Continuous processor message types.
- *
- * @author @java.author
- * @version @java.version
  */
 enum GridContinuousMessageType {
     /** Consume start request. */

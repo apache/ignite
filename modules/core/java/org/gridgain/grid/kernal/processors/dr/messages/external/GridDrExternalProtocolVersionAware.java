@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal.processors.dr.messages.external;
 
 /**
  * DR external message aware of protocol version.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDrExternalProtocolVersionAware {
     /**

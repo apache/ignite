@@ -45,9 +45,6 @@ import org.jetbrains.annotations.*;
  * &#064;org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.TRANSACTIONAL)
  * public class Entity { ... }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridHibernateTransactionalAccessStrategy extends GridHibernateAccessStrategyAdapter {
     /**

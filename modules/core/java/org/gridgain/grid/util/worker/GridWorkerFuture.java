@@ -17,9 +17,6 @@ import java.io.*;
 
 /**
  * Future for locally executed closure that defines cancellation logic.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridWorkerFuture<T> extends GridFutureAdapter<T> {
     /** */

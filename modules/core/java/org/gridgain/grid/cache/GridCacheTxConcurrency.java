@@ -14,9 +14,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Transaction concurrency control. See {@link GridCacheTx} for more information
  * on transaction concurrency controls.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridCacheTxConcurrency {
     /** Optimistic concurrency control. */

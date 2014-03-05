@@ -15,9 +15,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * Synchronization primitive allowing concurrent updates and taking consistent snapshots.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridSnapshotLock<X> {
     /** */

@@ -15,9 +15,6 @@ import java.io.*;
 
 /**
  * Secondary Hadoop file system input stream wrapper.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsHadoopProxyInputStream extends InputStream implements Seekable, PositionedReadable {
     /** Actual input stream to the secondary file system. */

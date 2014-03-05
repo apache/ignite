@@ -52,8 +52,5 @@ package org.gridgain.visor.commands
  *     visor cswap "cache"
  *         Swaps entries in cache with name 'cache'.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 package object cswap

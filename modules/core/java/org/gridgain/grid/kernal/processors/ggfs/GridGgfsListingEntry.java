@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Directory listing entry.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsListingEntry implements Externalizable {
     /** File id. */

@@ -12,9 +12,6 @@ package org.gridgain.grid.streamer.index;
 /**
  * Streamer index policy, which defines how events
  * are tracked within an index.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridStreamerIndexPolicy {
     /**

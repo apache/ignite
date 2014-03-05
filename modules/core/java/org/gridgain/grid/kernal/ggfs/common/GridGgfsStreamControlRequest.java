@@ -14,9 +14,6 @@ import org.gridgain.grid.util.tostring.*;
 
 /**
  * Read block request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsStreamControlRequest extends GridGgfsMessage {
     /** Stream id. */

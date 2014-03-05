@@ -124,9 +124,6 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  * value back to the session. In case of {@link GridCacheAtomicityMode#ATOMIC}
  * cache concurrent requests can get equal value, but {@link GridCacheAtomicityMode#TRANSACTIONAL}
  * cache will always process such updates one after another.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridWebSessionFilter implements Filter {
     /** Web sessions caching grid name parameter name. */

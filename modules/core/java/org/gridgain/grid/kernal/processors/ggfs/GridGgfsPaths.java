@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Description of path modes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsPaths implements Externalizable {
     /** Secondary file system URI. */

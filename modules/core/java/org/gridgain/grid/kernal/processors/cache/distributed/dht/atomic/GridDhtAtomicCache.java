@@ -42,9 +42,6 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
 /**
  * Non-transactional partitioned cache.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridToStringExclude
 public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {

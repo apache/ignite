@@ -18,9 +18,6 @@
 
 /**
  * Client configuration class.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientConfiguration {
 public:

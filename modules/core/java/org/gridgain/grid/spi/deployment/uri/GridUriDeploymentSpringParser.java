@@ -21,9 +21,6 @@ import java.io.*;
  * Workaround for {@link InputStreamResource}. Converts input stream with XML
  * to {@code GridUriDeploymentSpringDocument} with {@link ByteArrayResource}
  * instead of {@link InputStreamResource}.
- *
- * @author @java.author
- * @version @java.version
  */
 final class GridUriDeploymentSpringParser {
     /**

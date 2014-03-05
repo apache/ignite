@@ -13,9 +13,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Meta keys for {@link GridNioSession}.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridNioSessionMetaKey {
     /** NIO parser state. */

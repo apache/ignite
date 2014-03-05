@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
  * Communication topic.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridTopic {
     /** */

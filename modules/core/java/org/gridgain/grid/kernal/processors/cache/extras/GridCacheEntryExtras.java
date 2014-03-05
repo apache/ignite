@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Cache extras.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheEntryExtras<K> {
     /**

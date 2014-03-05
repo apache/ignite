@@ -22,9 +22,6 @@ import java.util.*;
  * implementation is very efficient since it is lock-free and does not
  * create any additional table-like data structures. The {@code LRU} ordering
  * information is maintained by attaching ordering metadata to cache entries.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheLruEvictionPolicy<K, V> implements GridCacheEvictionPolicy<K, V>,
     GridCacheLruEvictionPolicyMBean {

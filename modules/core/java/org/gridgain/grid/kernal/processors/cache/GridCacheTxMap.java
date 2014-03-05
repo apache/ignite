@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Grid cache transaction read or write set.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheTxMap<K, V> extends AbstractMap<K, GridCacheTxEntry<K, V>> implements Externalizable {
     /** Base transaction map. */

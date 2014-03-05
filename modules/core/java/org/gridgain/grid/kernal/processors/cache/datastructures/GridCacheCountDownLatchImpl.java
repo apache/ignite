@@ -27,9 +27,6 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
  * Cache count down latch implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatchEx, Externalizable {
     /** Deserialization stash. */

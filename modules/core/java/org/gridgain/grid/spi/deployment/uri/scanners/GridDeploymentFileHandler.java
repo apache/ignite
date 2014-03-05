@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * File handler interface. It somehow handles given file.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDeploymentFileHandler {
     /**

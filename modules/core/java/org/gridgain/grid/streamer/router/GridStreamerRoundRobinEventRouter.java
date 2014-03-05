@@ -17,9 +17,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Round robin router.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerRoundRobinEventRouter extends GridStreamerEventRouterAdapter {
     /** */

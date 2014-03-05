@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Extended queries interface.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheQueriesEx<K, V> extends GridCacheQueries<K, V> {
     /**

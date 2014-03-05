@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Topology snapshot managed by discovery manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDiscoveryTopologySnapshot {
     /** Topology version. */

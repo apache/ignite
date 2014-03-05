@@ -29,9 +29,6 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
  * Command handler for API requests.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
     /**

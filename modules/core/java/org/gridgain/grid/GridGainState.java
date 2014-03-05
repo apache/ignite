@@ -16,9 +16,6 @@ import org.jetbrains.annotations.*;
  * Possible states of {@link GridGain}. You can register a listener for
  * state change notifications via {@link GridGain#addListener(GridGainListener)}
  * method.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridGainState {
     /**

@@ -15,9 +15,6 @@
 
 /**
  * Template class for composite filters.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 template<class T>
 class GridClientCompositeFilter: public GridClientPredicate<T> {

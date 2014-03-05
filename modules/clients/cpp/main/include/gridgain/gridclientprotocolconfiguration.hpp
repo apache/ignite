@@ -18,9 +18,6 @@
 
 /**
  * Protocol configuration.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientProtocolConfiguration {
 public:

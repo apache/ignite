@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * FIXDOC: Add class description.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheAffinityFunctionContextImpl implements GridCacheAffinityFunctionContext {
     /** Topology snapshot. */

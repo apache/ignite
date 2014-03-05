@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Session listener for web sessions caching.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridWebSessionListener {
     /** Cache. */

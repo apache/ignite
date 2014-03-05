@@ -18,9 +18,6 @@ import java.nio.*;
 
 /**
  * Job siblings request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJobSiblingsRequest extends GridTcpCommunicationMessageAdapter {
     /** */

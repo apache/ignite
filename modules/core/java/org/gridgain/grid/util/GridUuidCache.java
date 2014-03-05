@@ -13,8 +13,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public final class GridUuidCache {
     /** Maximum cache size. */

@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
  * No-op implementation for {@link GridVersionProcessor}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridOsVersionProcessor extends GridProcessorAdapter implements GridVersionProcessor {
     /**

@@ -38,9 +38,6 @@ import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.
 
 /**
  * Grid task worker. Handles full task life cycle.
- *
- * @author @java.author
- * @version @java.version
  * @param <T> Task argument type.
  * @param <R> Task return value type.
  */

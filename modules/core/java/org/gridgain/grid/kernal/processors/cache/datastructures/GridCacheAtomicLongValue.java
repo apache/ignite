@@ -16,9 +16,6 @@ import java.io.*;
 
 /**
  * Atomic long value.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridCacheAtomicLongValue implements GridCacheInternal, Externalizable, Cloneable {
     /** Value. */

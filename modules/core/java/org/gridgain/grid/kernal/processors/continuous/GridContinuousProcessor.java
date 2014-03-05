@@ -40,9 +40,6 @@ import static org.gridgain.grid.kernal.processors.continuous.GridContinuousMessa
 
 /**
  * Processor for continuous routines.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridContinuousProcessor extends GridProcessorAdapter {
     /** Local infos. */

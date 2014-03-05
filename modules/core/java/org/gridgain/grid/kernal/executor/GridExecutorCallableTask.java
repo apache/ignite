@@ -23,9 +23,6 @@ import java.util.concurrent.*;
  * randomly assigned to available grid nodes. This grid task creates only one
  * {@link GridComputeJob} and transfer it to any available node. See {@link GridComputeTaskSplitAdapter}
  * for more details.
- *
- * @author @java.author
- * @version @java.version
  * @param <T> Return type of {@link Callable}.
  */
 @SuppressWarnings({"TransientFieldNotInitialized"})

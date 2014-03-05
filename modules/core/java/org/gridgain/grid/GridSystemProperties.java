@@ -18,9 +18,6 @@ import javax.net.ssl.*;
 /**
  * Contains constants for all system properties and environmental variables in GridGain. These
  * properties and variables can be used to affect the behavior of GridGain.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridSystemProperties {
     /**

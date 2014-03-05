@@ -14,9 +14,6 @@
 #include <boost/date_time.hpp>
 
 /** Future for operations that return boolean flag.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridBoolFuture {
 public:
@@ -44,9 +41,6 @@ public:
 
 /**
  * Future for operations that return complex values like GridClientVariant, etc.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 template<class T>
 class GridFuture {

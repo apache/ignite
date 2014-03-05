@@ -20,9 +20,6 @@ import java.io.*;
  * This stream is used for {@link GridGgfsInputStreamJobAdapter} convenience adapter to create
  * jobs which will be working only with the assigned range. You can also use it explicitly when
  * working with {@link GridGgfsJob} directly.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridGgfsRangeInputStream extends GridGgfsInputStream {
     /** Empty chunks result. */

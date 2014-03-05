@@ -121,9 +121,6 @@ import org.gridgain.grid.lang.GridPredicate
  *     alert "-r -t=900 -cc=gte4 -cl=gt50"
  *         Notify every 15 min if grid has >= 4 CPUs and > 50% CPU load.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorAlertCommand {
     /** Default alert frequency. */
@@ -686,9 +683,6 @@ class VisorAlertCommand {
 
 /**
  * Visor alert.
- *
- * @author @java.author
- * @version @java.version
  */
 sealed private case class Alert(
     id: String,
@@ -708,9 +702,6 @@ sealed private case class Alert(
 
 /**
  * Snapshot of the sent alert.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class SentAlert(
     id: String,
@@ -730,9 +721,6 @@ private case class SentAlert(
 
 /**
  * Statistics holder for visor alert.
- *
- * @author @java.author
- * @version @java.version
  */
 sealed private case class Stats(
     var cnt: Int = 0,
@@ -742,9 +730,6 @@ sealed private case class Stats(
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorAlertCommand {
     addHelp(

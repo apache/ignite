@@ -58,9 +58,6 @@ import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.
 
 /**
  * Adapter for different cache implementations.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter implements GridCache<K, V>,
     GridCacheProjectionEx<K, V>, Externalizable {
@@ -3739,7 +3736,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         try {
             GridBiTuple<String, String> t = stash.get();
 
-            return GridFactoryEx.gridx(t.get1()).cachex(t.get2());
+            return GridGainEx.gridx(t.get1()).cachex(t.get2());
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
@@ -4118,10 +4115,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         validateCacheKeys(keys);
 
-        return new GridCacheEntrySet<>(
-            ctx,
-            F.<K, GridCacheEntry<K, V>>viewReadOnly(keys, CU.<K, V>cacheKey2Entry(ctx), keyFilter),
-            filter);
+        return new GridCacheEntrySet<>(ctx, F.viewReadOnly(keys, CU.cacheKey2Entry(ctx), keyFilter), filter);
     }
 
     /**
@@ -4130,7 +4124,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      */
     public Set<GridCacheEntry<K, V>> primaryEntrySet(
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
-        return map.entries(F.<GridCacheEntry<K, V>>and(filter, F.<K, V>cachePrimary()));
+        return map.entries(F.and(filter, F.<K, V>cachePrimary()));
     }
 
     /**
@@ -4146,9 +4140,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @return Primary key set.
      */
     public Set<K> primaryKeySet(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
-        GridPredicate<GridCacheEntry<K, V>> anded = F.and(filter, F.<K, V>cachePrimary());
-
-        return map.keySet(anded);
+        return map.keySet(F.and(filter, F.<K, V>cachePrimary()));
     }
 
     /**
@@ -4156,7 +4148,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @return Primary values.
      */
     public Collection<V> primaryValues(@Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
-        return map.values(F.<GridCacheEntry<K, V>>and(filter, F.<K, V>cachePrimary()));
+        return map.values(F.and(filter, F.<K, V>cachePrimary()));
     }
 
     /**

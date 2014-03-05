@@ -14,9 +14,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Runnable for {@link GridCacheAdapter#clearAll()} routine for near cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNearCacheClearAllRunnable<K, V> extends GridCacheClearAllRunnable<K, V> {
     /** Runnable for DHT cache. */

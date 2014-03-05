@@ -26,9 +26,6 @@ import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallerUtil
 
 /**
  * Class descriptor.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridOptimizedClassDescriptor {
     /** Unsafe. */

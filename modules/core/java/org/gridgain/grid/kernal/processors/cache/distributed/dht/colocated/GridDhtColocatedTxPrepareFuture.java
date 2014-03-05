@@ -37,9 +37,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  * Prepare future for colocated cache. For pessimistic transactions this future
  * never gets to real work as prepare step for pessimistic transactions is no-op
  * (locks are acquired on write or read).
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtColocatedTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<GridCacheTxEx<K, V>>
     implements GridCacheFuture<GridCacheTxEx<K, V>> {

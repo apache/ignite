@@ -26,9 +26,6 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
  * <p>
  * Refer to {@code config/ggfs/default-ggfs-data.xml} or {@code config/ggfs/default-ggfs-client.xml}
  * configuration files under GridGain installation to see sample {@code GGFS} configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsConfiguration {
     /** Default file system user name. */

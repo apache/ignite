@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Adapter for preloading which always assumes that preloading finished.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V> {
     /** Cache context. */

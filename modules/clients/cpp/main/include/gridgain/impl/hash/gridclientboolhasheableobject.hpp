@@ -15,9 +15,6 @@
 
 /**
  * Hashable object wrapping boolean value.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridBoolHasheableObject : public GridHasheableObject {
 public:

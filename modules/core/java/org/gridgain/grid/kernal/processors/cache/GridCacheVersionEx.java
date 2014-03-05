@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * Extended cache version which also has additional DR version.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheVersionEx extends GridCacheVersion {
     /** DR version. */

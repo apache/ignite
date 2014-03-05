@@ -28,9 +28,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Continuous routine handler for remote event listening.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridEventConsumeHandler implements GridContinuousHandler {
     /** Default callback. */

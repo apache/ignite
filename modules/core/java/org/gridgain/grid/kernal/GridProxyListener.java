@@ -18,9 +18,6 @@ import java.util.*;
  * Method {@link #beforeCall(Class, String, Object[])} is called right before the
  * traceable method and the second apply {@link #afterCall(Class, String, Object[], Object, Throwable)}
  * is made to get invocation result and exception, if there was one.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridProxyListener extends EventListener {
     /**

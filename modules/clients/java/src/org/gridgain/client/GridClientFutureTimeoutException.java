@@ -10,9 +10,6 @@ package org.gridgain.client;
 
 /**
  * Client future timeout exception is thrown whenever any client waiting is timed out.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientFutureTimeoutException extends GridClientException {
     /**

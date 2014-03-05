@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 /**
  * {@code GGFS} exception indicating that operation target is invalid
  * (e.g. not a file while expecting to be a file).
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsInvalidPathException extends GridGgfsException {
     /**

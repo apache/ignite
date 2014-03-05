@@ -17,9 +17,6 @@ import java.nio.*;
 
 /**
  * Task result response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
     /** Result. */

@@ -21,9 +21,6 @@ import java.util.*;
  * Thread local that auto resets upon leaving thread context. This thread local is
  * integrated with {@link GridKernalGateway} and
  * with {@link GridWorker} threads.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridThreadLocal<T> extends ThreadLocal<T> {
     /** Thread context for non-worker threads. */

@@ -25,9 +25,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Load balancer that works in global (not-per-task) mode.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridRoundRobinGlobalLoadBalancer {
     /** SPI context. */

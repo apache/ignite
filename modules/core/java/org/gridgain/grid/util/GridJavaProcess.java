@@ -31,9 +31,6 @@ import java.util.*;
  * NOTE 1: For the moment inner class running is not supported.
  * <p>
  * NOTE 2: This util class should work fine on Linux, Mac OS and Windows.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridJavaProcess {
     /** Internal protocol message prefix saying that the next text in the outputted line is pid. */

@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * {@code GGFS} output stream to write data into the file system.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridGgfsOutputStream extends OutputStream {
     /**

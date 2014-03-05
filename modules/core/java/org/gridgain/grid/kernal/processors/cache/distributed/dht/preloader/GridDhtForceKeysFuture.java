@@ -32,9 +32,6 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
 /**
  * Force keys request future.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Object, Collection<K>>
     implements GridDhtFuture<Collection<K>> {

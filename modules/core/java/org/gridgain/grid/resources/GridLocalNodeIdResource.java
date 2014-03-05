@@ -53,9 +53,6 @@ import java.util.*;
  * </pre>
  * <p>
  * See {@link GridConfiguration#getNodeId()} for Grid configuration details.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

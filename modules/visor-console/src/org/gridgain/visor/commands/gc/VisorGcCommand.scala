@@ -74,9 +74,6 @@ import org.gridgain.grid.util.lang.GridAbsClosure
  *     gc "-id8=12345678 -c"
  *         Runs garbage collector and DGC procedure on all caches.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorGcCommand {
     /**
@@ -188,9 +185,6 @@ class VisorGcCommand {
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorGcCommand {
     addHelp(

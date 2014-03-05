@@ -14,9 +14,6 @@ import org.gridgain.grid.*;
 /**
  * This interface defines the general element in transformation chain between the nio server and
  * application.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridNioFilter {
     /**

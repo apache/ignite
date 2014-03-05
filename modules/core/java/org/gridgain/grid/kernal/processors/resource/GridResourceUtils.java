@@ -17,9 +17,6 @@ import java.util.concurrent.*;
 
 /**
  * Collection of utility methods used in package for classes reflection.
- *
- * @author @java.author
- * @version @java.version
  */
 final class GridResourceUtils {
     /**

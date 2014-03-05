@@ -32,9 +32,6 @@ import org.gridgain.grid.spi.*;
  *     iter.close();
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCloseableIterator<T> extends GridIterator<T>, GridSpiCloseableIterator<T>, AutoCloseable {
     /**

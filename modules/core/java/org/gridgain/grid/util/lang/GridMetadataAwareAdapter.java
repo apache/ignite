@@ -23,9 +23,6 @@ import java.util.concurrent.*;
  * Convenient adapter for {@link GridMetadataAware}.
  * <h2 class="header">Thread Safety</h2>
  * This class provides necessary synchronization for thread-safe access.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings( {"SynchronizeOnNonFinalField"})
 public class GridMetadataAwareAdapter implements GridMetadataAware {

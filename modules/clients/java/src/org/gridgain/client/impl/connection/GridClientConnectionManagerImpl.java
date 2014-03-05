@@ -26,9 +26,6 @@ import static org.gridgain.client.impl.connection.GridClientConnectionCloseReaso
 
 /**
  * Cached connections manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientConnectionManagerImpl implements GridClientConnectionManager {
     /** Class logger. */

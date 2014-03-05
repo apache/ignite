@@ -19,9 +19,6 @@ import java.util.concurrent.*;
 /**
  * GGFS client session. Effectively used to manage lifecycle of opened resources and close them on
  * connection close.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsClientSession {
     /** Session resources. */

@@ -22,9 +22,6 @@ import java.util.concurrent.*;
 
 /**
  * Controls what classes should be excluded from marshalling by default.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridMarshallerExclusions {
     /**

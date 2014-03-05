@@ -52,9 +52,6 @@ import java.util.concurrent.atomic.*;
  * Note that storing data in AWS S3 service will result in charges to your AWS account.
  * Choose another implementation of {@link GridTcpDiscoveryMetricsStore} for local
  * or home network tests.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryS3MetricsStore extends GridTcpDiscoveryMetricsStoreAdapter {
     /** Entry metadata with content length set. */

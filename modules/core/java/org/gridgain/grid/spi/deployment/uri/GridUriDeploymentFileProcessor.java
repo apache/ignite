@@ -27,9 +27,6 @@ import static org.gridgain.grid.spi.deployment.uri.GridUriDeploymentSpi.*;
  * Utility class.
  * <p>
  * Provides useful and common functions for URI deployment.
- *
- * @author @java.author
- * @version @java.version
  */
 final class GridUriDeploymentFileProcessor {
     /**

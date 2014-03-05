@@ -13,9 +13,6 @@ import org.gridgain.grid.cache.datastructures.*;
 
 /**
  * Grid cache count down latch ({@code 'Ex'} stands for external).
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheCountDownLatchEx extends GridCacheCountDownLatch, GridCacheRemovable {
     /**

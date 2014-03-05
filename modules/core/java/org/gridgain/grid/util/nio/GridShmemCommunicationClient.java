@@ -22,8 +22,7 @@ import java.nio.*;
 import java.util.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridShmemCommunicationClient extends GridAbstractCommunicationClient {
     /** */

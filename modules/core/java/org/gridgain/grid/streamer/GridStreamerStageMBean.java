@@ -13,9 +13,6 @@ import org.gridgain.grid.util.mbean.*;
 
 /**
  * Streamer stage MBean.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean that provides access to streamer stage description and metrics.")
 public interface GridStreamerStageMBean {

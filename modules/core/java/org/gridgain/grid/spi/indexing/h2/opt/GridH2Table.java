@@ -31,9 +31,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * H2 Table implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridH2Table extends TableBase {
     /** */

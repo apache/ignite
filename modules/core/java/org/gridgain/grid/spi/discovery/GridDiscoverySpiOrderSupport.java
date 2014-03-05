@@ -28,9 +28,6 @@ import java.lang.annotation.*;
  * listeners to discovery events will receive discovery notifications in proper order.
  * </li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Inherited

@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
 * Error future for fields query.
-*
-* @author @java.author
-* @version @java.version
 */
 public class GridCacheFieldsQueryErrorFuture extends GridCacheQueryErrorFuture<List<?>> {
     /** */

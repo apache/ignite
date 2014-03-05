@@ -28,9 +28,6 @@ import static org.gridgain.grid.spi.GridPortProtocol.*;
 
 /**
  * GGFS server. Handles requests passed from GGFS clients.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsServer {
     /** GGFS context. */

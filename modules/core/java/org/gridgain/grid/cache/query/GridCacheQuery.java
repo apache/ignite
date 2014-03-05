@@ -140,9 +140,6 @@ import org.jetbrains.annotations.*;
  * // Query all cache nodes.
  * mastersQry.execute();
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheQuery<T> {
     /** Default query page size. */

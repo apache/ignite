@@ -29,9 +29,6 @@ import org.gridgain.grid.lang.GridRunnable
 
 /**
  * License data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class License(
     id: String,
@@ -67,9 +64,6 @@ private case class License(
 
 /**
  * License getter closure.
- *
- * @author @java.author
- * @version @java.version
  */
 private class LicenseGetter extends CO[License] {
     /**Injected grid */
@@ -167,9 +161,6 @@ private class LicenseGetter extends CO[License] {
 
 /**
  * License updater closure.
- *
- * @author @java.author
- * @version @java.version
  */
 private class LicenseUpdater(oldLicId: UUID, newLicLines: List[String]) extends GridRunnable {
     /**Injected grid */
@@ -237,9 +228,6 @@ private class LicenseUpdater(oldLicId: UUID, newLicLines: List[String]) extends 
  *     license "-f=/path/to/new/license.xml -id=fbdea781-90e6-4d1b-b8b3-5b8c14aa2df7"
  *         Copies new license file to all nodes that use license with provided ID.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorLicenseCommand {
     /**
@@ -381,9 +369,6 @@ class VisorLicenseCommand {
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorLicenseCommand {
     addHelp(

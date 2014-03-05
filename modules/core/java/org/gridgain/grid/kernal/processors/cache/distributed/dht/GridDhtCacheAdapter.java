@@ -40,9 +40,6 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
 /**
  * DHT cache adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdapter<K, V> {
     /** Topology. */
@@ -2295,7 +2292,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                     // calls and won't be serialized. We are also including DHT version.
                                     res.addValueBytes(
                                         val,
-                                        ret && ctx.sendValueBytes() ? e.valueBytes(null).getIfMarshaled() : null,
+                                        ret ? e.valueBytes(null).getIfMarshaled() : null,
                                         filterPassed,
                                         ver,
                                         mappedVer,

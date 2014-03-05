@@ -28,9 +28,6 @@ import org.gridgain.grid.util.tostring.*;
  * Kernal gateway is also responsible for notifying various futures about the change in
  * kernal state so that issued futures could properly interrupt themselves when kernal
  * becomes unavailable while future is held externally by the user.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridToStringExclude
 public interface GridKernalGateway {

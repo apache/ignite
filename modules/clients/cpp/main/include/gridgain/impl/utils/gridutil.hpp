@@ -13,9 +13,6 @@
 
 /**
  * Holder class for various utility functions.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridUtil {
 public:

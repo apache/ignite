@@ -11,9 +11,6 @@ package org.gridgain.grid.ggfs;
 
 /**
  * {@code GGFS} exception indicating that target resource is not found.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsFileNotFoundException extends GridGgfsInvalidPathException {
     /**

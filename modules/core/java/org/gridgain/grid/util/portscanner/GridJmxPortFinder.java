@@ -15,9 +15,6 @@ import java.nio.channels.*;
 
 /**
  * GridGain port scanner.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJmxPortFinder {
     /** Minimum port number */

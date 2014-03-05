@@ -16,9 +16,6 @@
 /**
  * Interface that defines a selection logic of a server node for a particular operation
  * (e.g. task run or cache operation in case of pinned mode).
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientLoadBalancer {
 public:

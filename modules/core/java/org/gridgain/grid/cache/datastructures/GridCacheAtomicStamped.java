@@ -47,9 +47,6 @@ import org.gridgain.grid.lang.*;
  * <ul>
  *     <li>{@link GridCacheDataStructures#atomicLong(String, long, boolean)}</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  * @see GridCacheDataStructures#atomicStamped(String, Object, Object, boolean)
  * @see GridCacheDataStructures#removeAtomicStamped(String)
  */

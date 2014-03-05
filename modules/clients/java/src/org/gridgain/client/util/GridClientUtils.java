@@ -19,9 +19,6 @@ import java.util.logging.*;
 
 /**
  * Java client utils.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridClientUtils {
     /**

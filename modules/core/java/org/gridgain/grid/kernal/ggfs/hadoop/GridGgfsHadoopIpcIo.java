@@ -31,9 +31,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * IO layer implementation based on blocking IPC streams.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
