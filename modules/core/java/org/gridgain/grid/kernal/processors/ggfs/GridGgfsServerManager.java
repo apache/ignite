@@ -81,8 +81,13 @@ public class GridGgfsServerManager extends GridGgfsManager {
             srvrs.add(ipcSrv);
         }
         catch (GridGgfsIpcEndpointBindException ignored) {
-            U.warn(log, "Failed to start GGFS " + (mgmt ? "management " : "") + "endpoint (is port already in " +
-                "use?). Will try to re-start endpoint every " + (REBIND_INTERVAL / 1000) + "s.");
+            int port = ipcSrv.getIpcServerEndpoint().getPort();
+
+            String portMsg = port != -1 ? " Failed to bind to port (is port already in use?): " + port : "";
+
+            U.warn(log, "Failed to start GGFS " + (mgmt ? "management " : "") + "endpoint " +
+                "(will retry every " + (REBIND_INTERVAL / 1000) + "s)." +
+                portMsg);
 
             if (bindWorker == null)
                 bindWorker = new BindWorker();
