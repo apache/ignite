@@ -23,9 +23,6 @@ import static org.gridgain.grid.cache.GridCachePeekMode.*;
 /**
  * Entry implementation for passing raw cache map entries through filters.
  * Needed to protect original entry from invalidation by filter's peek.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("unchecked")
 public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V> {

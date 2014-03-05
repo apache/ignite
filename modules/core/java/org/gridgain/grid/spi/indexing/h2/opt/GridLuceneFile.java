@@ -17,9 +17,6 @@ import static org.gridgain.grid.spi.indexing.h2.opt.GridLuceneOutputStream.*;
 
 /**
  * Lucene file.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLuceneFile implements Serializable {
     /** */

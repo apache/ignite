@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * Input stream wrapper which allows to read exactly expected number of bytes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridFixedSizeInputStream extends InputStream {
     /** */

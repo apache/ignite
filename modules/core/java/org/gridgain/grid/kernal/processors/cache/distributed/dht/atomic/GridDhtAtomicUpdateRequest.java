@@ -25,9 +25,6 @@ import java.util.*;
 
 /**
  * Lite dht cache backup update request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
     /** Message index. */

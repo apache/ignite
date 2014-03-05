@@ -25,9 +25,6 @@ import java.util.*;
 
 /**
  * Near cache prepare response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareResponse<K, V> {
     /** Collection of versions that are pending and less than lock version. */

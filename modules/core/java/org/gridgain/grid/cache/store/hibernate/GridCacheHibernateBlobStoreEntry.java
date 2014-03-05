@@ -17,9 +17,6 @@ import javax.persistence.*;
  * Note that this is a reference implementation for tests only.
  * When running on production systems use concrete key-value types to
  * get better performance.
- *
- * @author @java.author
- * @version @java.version
  */
 @Entity
 @Table(name = "ENTRIES")

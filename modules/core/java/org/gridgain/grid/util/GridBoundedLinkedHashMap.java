@@ -17,8 +17,7 @@ import java.util.*;
  *
  * @param <K> Map key.
  * @param <V> Map entry.
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridBoundedLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
     /** Maximum map capacity. */

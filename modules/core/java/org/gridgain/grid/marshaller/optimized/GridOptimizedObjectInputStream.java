@@ -24,9 +24,6 @@ import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallerUtil
 
 /**
  * Optimized object input stream.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridOptimizedObjectInputStream extends ObjectInputStream {
     /** Unsafe. */

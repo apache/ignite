@@ -82,9 +82,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  *      class loaded by the class-loader for given data.
  *  </li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
 public interface GridDataLoader<K, V> extends AutoCloseable {

@@ -148,9 +148,6 @@ import static org.gridgain.grid.events.GridEventType.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- *
- * @author @java.author
- * @version @java.version
  */
 @GridSpiInfo(
     author = /*@java.spi.author*/"GridGain Systems",
@@ -354,9 +351,6 @@ public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implement
 
     /**
      * Holder for weighted topology.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private class WeightedTopology {
         /** Total topology weight. */

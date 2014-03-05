@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Enumeration for supported subject types.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridSecuritySubjectType {
     /**

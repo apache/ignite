@@ -24,9 +24,6 @@ import java.util.*;
 
 /**
  * Replicated cache entry.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"TooBroadScope", "NonPrivateFieldAccessedInSynchronizedContext"})
 public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {

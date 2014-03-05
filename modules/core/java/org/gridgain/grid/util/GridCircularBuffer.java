@@ -22,9 +22,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * This class implements a circular buffer for efficient data exchange.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCircularBuffer<T> {
     /** */

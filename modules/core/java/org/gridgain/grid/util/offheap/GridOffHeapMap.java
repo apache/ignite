@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Off-heap map.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridOffHeapMap<K> {
     /**

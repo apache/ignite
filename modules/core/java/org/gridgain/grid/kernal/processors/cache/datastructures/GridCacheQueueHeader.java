@@ -17,9 +17,6 @@ import java.io.*;
 
 /**
  * Queue header.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheQueueHeader<T> implements GridCacheInternal, Externalizable, Cloneable {
     /** Queue id. */

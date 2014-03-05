@@ -23,9 +23,6 @@ import org.jetbrains.annotations.*;
  * <p>
  * {@link #CLOCK} mode will be automatically configured only with {@link GridCacheWriteSynchronizationMode#FULL_SYNC}
  * write synchronization mode, as for other synchronization modes it does not render better performance.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridCacheAtomicWriteOrderMode {
     /**

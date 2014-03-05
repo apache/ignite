@@ -18,9 +18,6 @@ import org.jetbrains.annotations.*;
  * <p>
  * This mode is configured via {@link GridGgfsConfiguration#getDefaultMode()}
  * configuration property.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridGgfsMode {
     /**

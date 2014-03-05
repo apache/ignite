@@ -23,9 +23,6 @@ import java.util.*;
 
 /**
  * Near transaction prepare request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequest<K, V> {
     /** Future ID. */

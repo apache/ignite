@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * Local query future.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdapter<K, V, R> {
     /** */

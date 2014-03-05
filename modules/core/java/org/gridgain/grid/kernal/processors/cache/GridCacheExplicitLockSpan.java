@@ -22,9 +22,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * Collection of near local locks acquired by a thread on one topology version.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheExplicitLockSpan<K> extends ReentrantLock {
     /** Topology snapshot. */

@@ -11,9 +11,6 @@ package org.gridgain.client.impl.connection;
 
 /**
  * Set of reasons why connection closed.
- *
- * @author @java.author
- * @version @java.version
  */
 enum GridClientConnectionCloseReason {
     /** Connection failed, IO exception or other unexpected result of request execution. */

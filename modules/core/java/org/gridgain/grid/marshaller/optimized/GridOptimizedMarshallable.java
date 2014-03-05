@@ -43,9 +43,6 @@ import java.util.*;
  * <p>
  * Note that for better performance you should also specify list of classes you
  * plan to serialize via {@link GridOptimizedMarshaller#setClassNames(List)} method.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridOptimizedMarshallable {
     /** */

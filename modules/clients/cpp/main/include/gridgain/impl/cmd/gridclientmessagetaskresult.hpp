@@ -14,9 +14,6 @@
 
 /**
  * Message task result.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientMessageTaskResult : public GridClientMessageResult {
 private:

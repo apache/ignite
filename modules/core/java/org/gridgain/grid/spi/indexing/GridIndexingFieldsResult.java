@@ -17,9 +17,6 @@ import java.util.*;
  * Field query result. It is composed of
  * fields metadata and iterator over queried fields.
  * See also {@link GridIndexingSpi#queryFields(String, String, Collection, GridIndexingQueryFilter[])}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridIndexingFieldsResult {
     /**

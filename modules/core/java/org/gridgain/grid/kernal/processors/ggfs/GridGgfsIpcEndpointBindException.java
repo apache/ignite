@@ -13,9 +13,6 @@ import org.gridgain.grid.*;
 
 /**
  * Represents exception occurred during IPC endpoint binding.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsIpcEndpointBindException extends GridException {
     /**

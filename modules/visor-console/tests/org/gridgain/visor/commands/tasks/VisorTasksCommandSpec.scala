@@ -25,9 +25,6 @@ import java.util
 
 /**
  * Unit test for 'tasks' command.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorTasksCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterAll {
     /**
@@ -161,9 +158,6 @@ class VisorTasksCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndA
 
 /**
  * Test task 1.
- *
- * @author @java.author
- * @version @java.version
  */
 private class TestTask1 extends GridComputeTaskSplitAdapter[String, Void] {
     def split(gridSize: Int, arg: String): java.util.Collection[_ <: GridComputeJob] = {
@@ -181,9 +175,6 @@ private class TestTask1 extends GridComputeTaskSplitAdapter[String, Void] {
 
 /**
  * Test task 2.
- *
- * @author @java.author
- * @version @java.version
  */
 private class TestTask2 extends GridComputeTaskSplitAdapter[String, Void] {
     def split(gridSize: Int, arg: String): java.util.Collection[_ <: GridComputeJob] = {
@@ -201,9 +192,6 @@ private class TestTask2 extends GridComputeTaskSplitAdapter[String, Void] {
 
 /**
  * Test task 3 (w/o 'Task' in host for testing '-s' option).
- *
- * @author @java.author
- * @version @java.version
  */
 private class Test3 extends GridComputeTaskSplitAdapter[String, Void] {
     def split(gridSize: Int, arg: String): java.util.Collection[_ <: GridComputeJob] = {

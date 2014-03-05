@@ -13,9 +13,6 @@ import org.gridgain.grid.*;
 
 /**
  * GGFS input stream event listener.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridGgfsStreamEventListener {
     /**

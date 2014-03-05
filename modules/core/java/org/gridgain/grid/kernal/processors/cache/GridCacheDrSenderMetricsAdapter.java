@@ -18,9 +18,6 @@ import java.io.*;
 
 /**
  * Adapter for DR send data node metrics.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridCacheDrSenderMetricsAdapter implements GridDrSenderCacheMetrics, Externalizable {
     /** Number of sent batches. */

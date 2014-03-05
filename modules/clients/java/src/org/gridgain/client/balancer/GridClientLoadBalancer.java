@@ -23,9 +23,6 @@ import java.util.*;
  * <li>{@link GridClientRandomBalancer}</li>
  * <li>{@link GridClientRoundRobinBalancer}</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridClientLoadBalancer {
     /**

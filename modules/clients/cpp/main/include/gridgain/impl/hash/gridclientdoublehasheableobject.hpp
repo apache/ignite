@@ -19,9 +19,6 @@
 
 /**
  * Provide the implementation of hash-code for the double type.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridDoubleHasheableObject : public GridHasheableObject {
 public:

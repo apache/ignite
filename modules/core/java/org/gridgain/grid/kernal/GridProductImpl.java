@@ -17,9 +17,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * {@link GridProduct} implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridProductImpl implements GridProduct {
     /** Ant-augmented version number. */

@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 /**
  * Provides ability to listen to swap events in cache which is necessary for preloading.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheSwapListener<K, V> {
     /**

@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Cache entry transactional update result.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheUpdateTxResult<V> {
     /** Success flag.*/

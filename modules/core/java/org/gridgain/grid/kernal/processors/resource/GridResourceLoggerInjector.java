@@ -16,9 +16,6 @@ import org.gridgain.grid.resources.*;
 
 /**
  *
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridResourceLoggerInjector extends GridResourceBasicInjector<GridLogger> {
     /**

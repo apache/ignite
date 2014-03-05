@@ -26,9 +26,6 @@ import java.util.concurrent.atomic.*;
  *
  * Note that this class consumes an entire thread inside {@link #serve()} method
  * in order to serve one {@link GridIpcEndpoint}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIpcToNioAdapter<T> {
     /** */

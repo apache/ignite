@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Handshake request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryHandshakeRequest extends GridTcpDiscoveryAbstractMessage {
     /**

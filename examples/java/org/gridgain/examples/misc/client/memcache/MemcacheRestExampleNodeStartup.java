@@ -31,9 +31,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * <p>
  * The difference is that running this class from IDE adds all example classes to classpath
  * but running from command line doesn't.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
 public class MemcacheRestExampleNodeStartup {

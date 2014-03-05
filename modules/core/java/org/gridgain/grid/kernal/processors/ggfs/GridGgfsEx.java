@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Internal API extension for {@link GridGgfs}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridGgfsEx extends GridGgfs {
     /**

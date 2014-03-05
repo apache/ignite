@@ -15,9 +15,6 @@ import java.util.*;
 
 /**
  * This class provides implementation for commit message fields and cannot be used directly.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridClientAbstractMessage implements GridClientMessage, Externalizable {
     /** Request ID (transient). */

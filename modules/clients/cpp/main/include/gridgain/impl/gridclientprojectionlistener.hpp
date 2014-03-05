@@ -14,9 +14,6 @@
 
 /**
  * Projection listener.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientProjectionListener {
 public:

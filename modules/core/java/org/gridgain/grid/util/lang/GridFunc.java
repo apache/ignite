@@ -45,9 +45,6 @@ import java.util.concurrent.atomic.*;
  * <p>
  * Also note, that in all methods with predicates, null predicate has a {@code true} meaning. So does
  * the empty predicate array.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridFunc {
     /** */

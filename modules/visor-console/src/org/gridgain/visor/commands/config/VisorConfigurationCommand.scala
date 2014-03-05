@@ -75,9 +75,6 @@ import org.gridgain.grid.kernal.GridEx
  *     config
  *         Starts command in interactive mode.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorConfigurationCommand {
     /** Split tag. */
@@ -476,9 +473,6 @@ class VisorConfigurationCommand {
 
 /**
  * Closure that returns configuration object.
- *
- * @author @java.author
- * @version @java.version
  */
 private class GridConfigurationCallable extends GridCallable[Config] {
     /** Injected grid */
@@ -887,9 +881,6 @@ private class GridConfigurationCallable extends GridCallable[Config] {
 
 /**
  * Grid configuration data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class Config (
     // License
@@ -947,9 +938,6 @@ private case class Config (
 
 /**
  * License data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class License(
     `type`: String,
@@ -978,9 +966,6 @@ private case class License(
 
 /**
  * Basic configuration data 1.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class BasicConfig1(
     gridName: String,
@@ -999,9 +984,6 @@ private case class BasicConfig1(
 
 /**
  * Basic configuration data 2.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class BasicConfig2(
     discoStartupDelay: String,
@@ -1017,9 +999,6 @@ private case class BasicConfig2(
 
 /**
  * Metrics configuration data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class MetricsConfig(
     expTime: String,
@@ -1029,9 +1008,6 @@ private case class MetricsConfig(
 
 /**
  * SPIs configuration data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class SpisConfig(
     discoSpi: String,
@@ -1049,9 +1025,6 @@ private case class SpisConfig(
 
 /**
  * P2P configuration data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class PeerToPeerConfig(
     p2pEnabled: String,
@@ -1061,9 +1034,6 @@ private case class PeerToPeerConfig(
 
 /**
  * Email configuration data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class EmailConfig(
     smtpHost: String,
@@ -1077,9 +1047,6 @@ private case class EmailConfig(
 
 /**
  * Lifecycle configuration data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class LifecycleConfig(
     beans: String,
@@ -1088,9 +1055,6 @@ private case class LifecycleConfig(
 
 /**
  * Executors configuration data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class ExecServiceConfig(
     execSvc: String,
@@ -1103,9 +1067,6 @@ private case class ExecServiceConfig(
 
 /**
  * Segmentation configuration data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class SegmentationConfig(
     plc: String,
@@ -1117,9 +1078,6 @@ private case class SegmentationConfig(
 
 /**
  * Cache configuration data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class CacheConfig(
     name: String,
@@ -1145,9 +1103,6 @@ private case class CacheConfig(
 
 /**
  * Affinity configuration data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class AffinityConfig(
     affinity: String,
@@ -1156,9 +1111,6 @@ private case class AffinityConfig(
 
 /**
  * Preload configuration data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class PreloadConfig(
     poolSize: String,
@@ -1168,9 +1120,6 @@ private case class PreloadConfig(
 
 /**
  * Eviction configuration data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class EvictionConfig(
     plc: String,
@@ -1182,9 +1131,6 @@ private case class EvictionConfig(
 
 /**
  * Near cache configuration data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class NearCacheConfig(
     nearEnabled: String,
@@ -1194,9 +1140,6 @@ private case class NearCacheConfig(
 
 /**
  * Default cache configuration data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class DefaultCacheConfig(
     dfltIsolation: String,
@@ -1207,9 +1150,6 @@ private case class DefaultCacheConfig(
 
 /**
  * DGC configuration data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class DgcConfig(
     freq: String,
@@ -1219,9 +1159,6 @@ private case class DgcConfig(
 
 /**
  * Store configuration data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class StoreConfig(
     enabled: String,
@@ -1231,9 +1168,6 @@ private case class StoreConfig(
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorConfigurationCommand {
     addHelp(

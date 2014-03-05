@@ -19,9 +19,6 @@ import java.lang.annotation.*;
  * Interceptors can be used to provide fine-grain control on {@link Gridify} annotation
  * behavior. For example, an interceptor can be implemented to grid enable the method
  * only if CPU on the local node has been above 80% of utilization for the last 5 minutes.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridifyInterceptor {
     /**

@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * {@code Topology} command request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientTopologyRequest extends GridClientAbstractMessage {
     /** Id of requested node. */

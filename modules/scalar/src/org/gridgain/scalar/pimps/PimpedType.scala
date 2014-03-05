@@ -16,9 +16,6 @@ package org.gridgain.scalar.pimps
  * 'pimp my library' pattern. http://www.artima.com/weblogs/viewpost.jsp?thread=179766
  * <p/>
  * The companion object provides an implicit conversion to unwrap `value`.
- *
- * @author @java.author
- * @version @java.version
  */
 trait PimpedType[X] {
     val value: X

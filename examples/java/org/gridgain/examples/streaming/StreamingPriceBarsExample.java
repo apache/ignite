@@ -44,9 +44,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * <p>
  * Alternatively you can run {@link StreamingNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-streaming.xml} configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridOnlyAvailableIn(STREAMING)
 public class StreamingPriceBarsExample {

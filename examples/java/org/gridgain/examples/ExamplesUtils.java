@@ -12,8 +12,7 @@ package org.gridgain.examples;
 import org.gridgain.grid.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class ExamplesUtils {
     /**

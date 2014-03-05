@@ -23,9 +23,6 @@ typedef std::map<std::string, std::string> TRequestParams;
 
 /**
  * Client HTTP connection class.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientHttpConnection: public GridClientConnection {
 public:

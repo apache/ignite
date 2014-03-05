@@ -13,9 +13,6 @@ import org.gridgain.grid.util.mbean.*;
 
 /**
  * This interface defines JMX view on data center replication receiver hub.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean that provides access to receiver hub descriptor.")
 public interface GridDrReceiverHubMBean {

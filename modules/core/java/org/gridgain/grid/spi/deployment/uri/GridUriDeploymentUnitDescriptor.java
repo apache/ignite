@@ -23,15 +23,10 @@ import static org.gridgain.grid.spi.deployment.uri.GridUriDeploymentUnitDescript
 
 /**
  * Container for information about tasks and file where classes placed. It also contains tasks instances.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridUriDeploymentUnitDescriptor {
     /**
      * Container type.
-     *
-     * @author @java.author
      */
     @SuppressWarnings({"PackageVisibleInnerClass"}) enum Type {
         /**

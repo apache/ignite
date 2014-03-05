@@ -15,9 +15,6 @@ import org.gridgain.grid.lang.GridOutClosure
 
 /**
  * Peer deploy aware adapter for Java's `GridOutClosure`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarOutClosure[R](private val f: () => R) extends GridOutClosure[R] {
     assert(f != null)

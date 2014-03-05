@@ -15,8 +15,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridIpcSharedMemoryInitResponse implements Externalizable {
     /** */

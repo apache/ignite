@@ -60,9 +60,6 @@ import java.util.concurrent.*;
  * <ul>
  *     <li>{@link GridCacheDataStructures#queue(String, int, boolean, boolean)}</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  * @see GridCacheDataStructures#queue(String, int, boolean, boolean)
  * @see GridCacheDataStructures#removeQueue(String)
  * @see GridCacheDataStructures#removeQueue(String, int)

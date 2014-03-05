@@ -6,9 +6,6 @@ import java.util.concurrent.*;
 
 /**
  * Enumeration of all queue operation, which have common implementation and need operation name for logging.
- *
- * @author @java.author
- * @version @java.version
  */
 enum GridCacheQueueOperation {
     /** {@link GridCacheQueueImpl#addx(Object)}*/

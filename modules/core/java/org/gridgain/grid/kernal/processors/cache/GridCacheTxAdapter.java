@@ -39,9 +39,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
  * Managed transaction adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     implements GridCacheTxEx<K, V>, Externalizable {

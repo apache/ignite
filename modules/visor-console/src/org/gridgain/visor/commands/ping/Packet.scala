@@ -50,8 +50,5 @@ package org.gridgain.visor.commands
  *     visor ping
  *         Pings all nodes in the topology.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 package object ping

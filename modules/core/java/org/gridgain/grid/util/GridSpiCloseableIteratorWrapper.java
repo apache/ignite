@@ -15,9 +15,6 @@ import org.gridgain.grid.util.lang.*;
 
 /**
  * Wrapper used to covert {@link GridSpiCloseableIterator} to {@link GridCloseableIterator}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridSpiCloseableIteratorWrapper<T> extends GridCloseableIteratorAdapter<T> {
     /** */

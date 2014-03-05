@@ -13,9 +13,6 @@ import org.gridgain.grid.util.typedef.*;
 
 /**
  * GGFS ad-hoc thread.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridGgfsThread extends Thread {
     /**

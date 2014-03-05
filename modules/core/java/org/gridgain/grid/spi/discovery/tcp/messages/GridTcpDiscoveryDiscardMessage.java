@@ -18,9 +18,6 @@ import java.util.*;
 /**
  * Message sent by coordinator when some operation handling is over. All receiving
  * nodes should discard this and all preceding messages in local buffers.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryDiscardMessage extends GridTcpDiscoveryAbstractMessage {
     /** ID of the message to discard (this and all preceding). */

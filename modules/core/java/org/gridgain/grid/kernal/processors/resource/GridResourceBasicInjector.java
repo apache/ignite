@@ -15,9 +15,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Simple injector which wraps only one resource object.
- *
- * @author @java.author
- * @version @java.version
  * @param <T> Type of injected resource.
  */
 class GridResourceBasicInjector<T> implements GridResourceInjector {

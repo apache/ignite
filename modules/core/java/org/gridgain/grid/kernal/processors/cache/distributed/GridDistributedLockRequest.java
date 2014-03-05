@@ -23,9 +23,6 @@ import java.util.*;
 
 /**
  * Lock request message.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage<K, V> {
     /** Sender node ID. */

@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Concurrent phantom hash set implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridConcurrentPhantomHashSet<E> implements Set<E> {
     /** Empty array. */

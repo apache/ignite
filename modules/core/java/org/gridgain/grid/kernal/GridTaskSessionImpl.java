@@ -21,9 +21,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Task session.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** */

@@ -23,9 +23,6 @@ class ClientProjectionClosure;
 
 /**
  * Implementation of client projection.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientProjectionImpl {
 public:

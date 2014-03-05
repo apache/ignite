@@ -23,9 +23,6 @@ import java.util.concurrent.*;
 /**
  * Utility class for getting annotated values from classes.
  * Contains local cache of annotated methods and fields by classes for best performance.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheAnnotationHelper<A extends Annotation> {
     /** Number of entries to keep in annotation cache. */

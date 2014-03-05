@@ -17,9 +17,6 @@
 
 /**
  * Provide the implementation of hash-code for GridClientVariant.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientVariantHasheableObject : public GridHasheableObject {
 public:

@@ -18,9 +18,6 @@ import org.jetbrains.annotations.*;
  * <p>
  * Updater is provided to index provider in configuration usually via
  * {@link GridStreamerIndexProviderAdapter#setUpdater(GridStreamerIndexUpdater)} method.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridStreamerIndexUpdater<E, K, V> {
     /**

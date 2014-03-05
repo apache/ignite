@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Distributed cache implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter<K, V> {
     /**

@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * Data input stream implementing object input but throwing exceptions on object methods.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsDataInputStream extends DataInputStream implements ObjectInput {
     /**

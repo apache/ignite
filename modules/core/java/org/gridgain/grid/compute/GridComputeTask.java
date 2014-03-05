@@ -225,9 +225,6 @@ import java.util.*;
  * </pre>
  * </li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  * @param <T> Type of the task argument that is passed into {@link GridComputeTask#map(List, Object)} method.
  * @param <R> Type of the task result returning from {@link GridComputeTask#reduce(List)} method.
  */

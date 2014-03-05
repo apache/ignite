@@ -16,9 +16,6 @@ import java.io.*;
 
 /**
  * Lucene {@link LockFactory} implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLuceneLockFactory extends LockFactory {
     /** */

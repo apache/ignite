@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Deployment or re-deployment failed.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDeploymentException extends GridException {
     /**

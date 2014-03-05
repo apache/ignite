@@ -21,9 +21,6 @@ import static org.gridgain.client.impl.connection.GridClientConnectionCloseReaso
 /**
  * Facade for all possible network communications between client and server. Introduced to hide
  * protocol implementation (TCP, HTTP) from client code.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridClientConnection {
     /** Topology */

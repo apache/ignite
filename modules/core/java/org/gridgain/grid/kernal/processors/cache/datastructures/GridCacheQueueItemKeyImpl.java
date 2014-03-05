@@ -20,8 +20,6 @@ import java.io.*;
  * when used in {@code PARTITIONED} cache mode. In particular, all items belonging to the
  * same queue will be stored on the same node or distributed through grid nodes -
  * hence the {@link GridCacheAffinityKeyMapped} annotation on {@link GridCacheQueueItemKeyImpl#affinityKey} method.
- *
- * @author GridGain
  */
 public class GridCacheQueueItemKeyImpl implements Externalizable, GridCacheQueueItemKey {
     /** Sequence id in queue. */

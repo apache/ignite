@@ -19,9 +19,6 @@ import java.io.*;
  * <p>
  * Host name is used by {@link GridSharedFsCheckpointSpi} SPI to give node
  * correct files if it is restarted.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridSharedFsCheckpointData implements Serializable {
     /** Checkpoint data. */

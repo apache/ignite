@@ -14,9 +14,6 @@ import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management bean that provides access to the FIFO queue collision SPI configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean provides information about FIFO queue based collision SPI configuration.")
 public interface GridFifoQueueCollisionSpiMBean extends GridSpiManagementMBean {

@@ -25,9 +25,6 @@ import java.util.concurrent.*;
  * framework. Grid bean is described in spring-bean.xml file and instantiated
  * by Spring context. Once application completed its execution Spring will
  * apply grid bean destructor and stop the grid.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class SpringBeanExample {
     /**

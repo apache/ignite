@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Jetty protocol json configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJettyJsonConfig extends JsonConfig {
     /**

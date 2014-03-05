@@ -16,9 +16,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Extras where attributes, obsolete version and TTL are set.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheAttributesObsoleteTtlEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> {
     /** Attributes data. */

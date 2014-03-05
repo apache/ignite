@@ -16,9 +16,6 @@ import java.util.*;
 /**
  * Exception thrown from non-transactional cache in case when update succeeded only partially.
  * One can get list of keys for which update failed with method {@link #failedKeys()}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCachePartialUpdateException extends GridMultiException {
     /** Failed keys. */

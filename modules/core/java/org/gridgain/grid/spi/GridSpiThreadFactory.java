@@ -15,9 +15,6 @@ import java.util.concurrent.*;
 /**
  * This class provides implementation of {@link ThreadFactory}  factory
  * for creating grid SPI threads.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridSpiThreadFactory implements ThreadFactory {
     /** */

@@ -27,9 +27,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * Example of {@link GridCacheStore} implementation that uses JDBC
  * transaction with cache transactions and maps {@link UUID} to {@link Person}.
  *
- *
- * @author @java.author
- * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
 public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {

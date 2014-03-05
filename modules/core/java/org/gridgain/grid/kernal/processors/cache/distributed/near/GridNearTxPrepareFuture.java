@@ -33,8 +33,7 @@ import static org.gridgain.grid.cache.GridCacheTxState.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<GridCacheTxEx<K, V>>
     implements GridCacheMvccFuture<K, V, GridCacheTxEx<K, V>> {

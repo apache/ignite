@@ -27,9 +27,6 @@ import static org.gridgain.grid.kernal.processors.cache.distributed.dht.GridDhtP
 
 /**
  * Partition topology.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridToStringExclude
 class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, V> {

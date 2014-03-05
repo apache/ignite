@@ -14,9 +14,6 @@ import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management bean for {@link GridAlwaysFailoverSpi}.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean that provides access to always failover SPI configuration.")
 public interface GridAlwaysFailoverSpiMBean extends GridSpiManagementMBean {

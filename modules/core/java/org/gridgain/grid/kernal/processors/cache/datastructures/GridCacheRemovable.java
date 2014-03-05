@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Provides callback for marking object as removed.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheRemovable {
     /**

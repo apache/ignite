@@ -42,9 +42,6 @@ import java.util.*;
  * waiting for messages that are ordered ahead of it to arrive. If timeout expires, then all ordered
  * messages for a given topic that have not arrived yet will be skipped. When (and if) expired messages
  * actually do arrive, they will be ignored.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridMessaging {
     /**

@@ -20,9 +20,6 @@ import org.jetbrains.annotations.*;
  * </ul>
  * Also, some flags, like {@link #LOCAL}, or {@link #READ} may be implicitly set whenever
  * creating new projections and passing entries to predicate filters.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridCacheFlag {
     /**

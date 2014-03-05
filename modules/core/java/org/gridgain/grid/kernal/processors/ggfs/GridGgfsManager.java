@@ -16,9 +16,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Abstract class for GGFS managers.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridGgfsManager {
     /** GGFS context. */

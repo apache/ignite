@@ -41,9 +41,6 @@ import java.util.*;
  * an it will be routing incoming requests.
  * <p>
  * Before running this example you must run {@link RouterStartup}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class RouterExample {
     /** Grid node address to connect to. */

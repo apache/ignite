@@ -15,9 +15,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Filter chain implementation for nio server filters.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNioFilterChain<T> extends GridNioFilterAdapter {
     /** Grid logger. */

@@ -14,9 +14,6 @@ import org.gridgain.grid.product.*;
 
 /**
  * License processor.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridLicenseProcessor extends GridProcessor {
     /**

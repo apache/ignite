@@ -42,9 +42,6 @@ import org.gridgain.grid.util.scala.impl
 
 /**
  * Holder for command help information.
- *
- * @author @java.author
- * @version @java.version
  */
 sealed case class VisorConsoleCommandHolder(
     name: String,
@@ -89,9 +86,6 @@ sealed case class VisorConsoleCommandHolder(
  *     implicit def fromVisor(vs: VisorTag) = new VisorCustomCommand
  * }
  * </ex>
- *
- * @author @java.author
- * @version @java.version
  */
 trait VisorTag
 
@@ -112,9 +106,6 @@ trait VisorTag
  * GridGain ships with `GRIDGAIN_HOME/bin/ggvisorcmd.{sh|bat}` script that starts Visor console.
  *
  * Just type:<ex>help</ex> in Visor console to get help and get started.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridNotPeerDeployable
 object visor extends VisorTag {
@@ -2544,9 +2535,6 @@ object visor extends VisorTag {
 
 /**
  * Event collect utils
- *
- * @author @java.author
- * @version @java.version
  */
 object Collector {
     /**
@@ -2580,9 +2568,6 @@ object Collector {
 
 /**
  * Remote events collector closure.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridInternal
 class CollectorClosure(types: Seq[Int], key: String) extends CO[Seq[GridEvent]] {

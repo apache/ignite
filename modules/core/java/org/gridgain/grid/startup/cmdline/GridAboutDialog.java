@@ -25,9 +25,6 @@ import java.util.*;
 
 /**
  * About dialog.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridAboutDialog extends JDialog {
     /** Border color. */

@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * Abstract command handler.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridRestCommandHandlerAdapter implements GridRestCommandHandler {
     /** Kernal context. */

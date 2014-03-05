@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Partition map.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtPartitionMap extends HashMap<Integer, GridDhtPartitionState>
     implements Comparable<GridDhtPartitionMap>, Externalizable {

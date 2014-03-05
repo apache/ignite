@@ -33,9 +33,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Handles all swap operations.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Swap manager. */

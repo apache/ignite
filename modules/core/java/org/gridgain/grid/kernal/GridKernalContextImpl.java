@@ -60,9 +60,6 @@ import static org.gridgain.grid.kernal.GridKernalState.*;
 
 /**
  * Implementation of kernal context.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridToStringExclude
 public class GridKernalContextImpl extends GridMetadataAwareAdapter implements GridKernalContext, Externalizable {

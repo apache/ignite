@@ -22,9 +22,6 @@ import java.util.*;
 /**
  * Fragmentizer request. Sent from coordinator to other GGFS nodes when colocated part of file
  * should be fragmented.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
     /** File id. */

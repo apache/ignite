@@ -19,9 +19,6 @@ import org.jetbrains.annotations.*;
  * For example, if you increment {@link GridCacheAtomicLong} on one node, another node will
  * know about the change. Or if you add an element to {@link GridCacheQueue} on one node,
  * you can poll it on another node.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheDataStructures {
     /**

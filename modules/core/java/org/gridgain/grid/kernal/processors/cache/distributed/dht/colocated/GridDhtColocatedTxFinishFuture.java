@@ -29,9 +29,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Colocated tx finish future.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFuture<GridCacheTx>
     implements GridCacheFuture<GridCacheTx> {

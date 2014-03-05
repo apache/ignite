@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * Factory that allow to acquire/release Print Stream for test logging.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridTestPrintStreamFactory {
     /** */
