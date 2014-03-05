@@ -130,14 +130,14 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>c:\Temp\gridclient\include;c:\BuildAgent\work\6bdd422ad7ee533a\os\modules\clients\cpp\main\include;.\..\..\..\..\modules\clients\cpp\main\include;.\..\..\..\..\clients\cpp\main\include;$(BOOST_HOME)\include\boost-1_53;$(BOOST_HOME)\include\boost-1_52;$(BOOST_HOME)\include\boost-1_51;$(BOOST_HOME)\include\boost-1_49;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>c:\BuildAgent\work\6bdd422ad7ee533a\os\modules\clients\cpp\main\include;.\..\..\..\..\modules\clients\cpp\main\include;.\..\..\..\..\clients\cpp\main\include;$(BOOST_HOME)\include\boost-1_53;$(BOOST_HOME)\include\boost-1_52;$(BOOST_HOME)\include\boost-1_51;$(BOOST_HOME)\include\boost-1_49;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>c:\BuildAgent\work\6bdd422ad7ee533a\os\modules\clients\cpp\vsproject\x64\Release;..\..\..\..\..\os\modules\clients\cpp\vsproject\$(Platform)\$(Configuration);..\..\..\..\clients\cpp\vsproject\$(Platform)\$(Configuration);$(BOOST_HOME)\lib;c:\Temp\gridclient\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>c:\BuildAgent\work\6bdd422ad7ee533a\os\modules\clients\cpp\vsproject\x64\Release;..\..\..\..\..\os\modules\clients\cpp\vsproject\$(Platform)\$(Configuration);..\..\..\..\clients\cpp\vsproject\$(Platform)\$(Configuration);$(BOOST_HOME)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>gridgain-client.lib</AdditionalDependencies>
       <LinkTimeCodeGeneration>
       </LinkTimeCodeGeneration>
