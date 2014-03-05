@@ -81,9 +81,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         GridDhtPreloader<K, V> preloader) {
         super(cctx.kernalContext());
 
-        assert topVer != 0;
-        assert cctx.preloader().startFuture().isDone();
-        assert !F.isEmpty(keys);
+        assert topVer != 0 : topVer;
+        assert !F.isEmpty(keys) : keys;
 
         this.cctx = cctx;
         this.keys = keys;
@@ -188,6 +187,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * Initializes this future.
      */
     public void init() {
+        assert cctx.preloader().startFuture().isDone();
+
         map(keys, Collections.<GridNode>emptyList());
 
         markInitialized();
