@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual C++ Express 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gridgain-data-example", "gridgain-data-example\gridgain-data-example.vcxproj", "{258EE28D-025B-41CC-ABB1-4453521FA914}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gridgain-compute-example", "gridgain-compute-example\gridgain-compute-example.vcxproj", "{AC5F108C-DB5F-C705-AF53-4ABF1A142CC4}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gridgain-compute-example", "gridgain-compute-example\gridgain-compute-example.vcxproj", "{2014FFB4-5FC6-3B3A-9F68-13EA3B6B9178}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,14 +20,14 @@ Global
 		{258EE28D-025B-41CC-ABB1-4453521FA914}.Release|Win32.Build.0 = Release|Win32
 		{258EE28D-025B-41CC-ABB1-4453521FA914}.Release|x64.ActiveCfg = Release|x64
 		{258EE28D-025B-41CC-ABB1-4453521FA914}.Release|x64.Build.0 = Release|x64
-		{AC5F108C-DB5F-C705-AF53-4ABF1A142CC4}.Debug|Win32.ActiveCfg = Debug|Win32
-		{AC5F108C-DB5F-C705-AF53-4ABF1A142CC4}.Debug|Win32.Build.0 = Debug|Win32
-		{AC5F108C-DB5F-C705-AF53-4ABF1A142CC4}.Debug|x64.ActiveCfg = Debug|x64
-		{AC5F108C-DB5F-C705-AF53-4ABF1A142CC4}.Debug|x64.Build.0 = Debug|x64
-		{AC5F108C-DB5F-C705-AF53-4ABF1A142CC4}.Release|Win32.ActiveCfg = Release|Win32
-		{AC5F108C-DB5F-C705-AF53-4ABF1A142CC4}.Release|Win32.Build.0 = Release|Win32
-		{AC5F108C-DB5F-C705-AF53-4ABF1A142CC4}.Release|x64.ActiveCfg = Release|x64
-		{AC5F108C-DB5F-C705-AF53-4ABF1A142CC4}.Release|x64.Build.0 = Release|x64
+		{2014FFB4-5FC6-3B3A-9F68-13EA3B6B9178}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2014FFB4-5FC6-3B3A-9F68-13EA3B6B9178}.Debug|Win32.Build.0 = Debug|Win32
+		{2014FFB4-5FC6-3B3A-9F68-13EA3B6B9178}.Debug|x64.ActiveCfg = Debug|x64
+		{2014FFB4-5FC6-3B3A-9F68-13EA3B6B9178}.Debug|x64.Build.0 = Debug|x64
+		{2014FFB4-5FC6-3B3A-9F68-13EA3B6B9178}.Release|Win32.ActiveCfg = Release|Win32
+		{2014FFB4-5FC6-3B3A-9F68-13EA3B6B9178}.Release|Win32.Build.0 = Release|Win32
+		{2014FFB4-5FC6-3B3A-9F68-13EA3B6B9178}.Release|x64.ActiveCfg = Release|x64
+		{2014FFB4-5FC6-3B3A-9F68-13EA3B6B9178}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
