@@ -11,7 +11,6 @@ package org.gridgain.grid.streamer;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
