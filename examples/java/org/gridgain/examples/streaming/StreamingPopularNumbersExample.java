@@ -106,7 +106,7 @@ public class StreamingPopularNumbersExample {
 
             // Reset all streamers on all nodes to make sure that
             // consecutive executions start from scratch.
-            g.compute().run(new Runnable() {
+            g.compute().broadcast(new Runnable() {
                 @Override public void run() {
                     if (!ExamplesUtils.hasStreamer(g, "popular-numbers"))
                         System.err.println("Default streamer not found (is example-streamer.xml " +

@@ -13,7 +13,6 @@ import org.gridgain.grid.dr.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.dr.*;
-import org.jetbrains.annotations.*;
 
 /**
  * No-op implementation for {@link GridDrProcessor}.
@@ -28,6 +27,6 @@ public class GridOsDrProcessor extends GridProcessorAdapter implements GridDrPro
 
     /** {@inheritDoc} */
     @Override public GridDr dr() {
-        throw new IllegalStateException("Data center replication is not configured.");
+        throw new IllegalStateException("Data center replication is not supported.");
     }
 }
