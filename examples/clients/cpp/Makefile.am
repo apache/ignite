@@ -1,5 +1,4 @@
-AM_CPPFLAGS = -I../../../../os/modules/clients/cpp/main/include -DGRIDGAIN_EXPORT 
-AM_CXXFLAGS = -Wall -std=c++0x
+AM_CXXFLAGS=-Wall -std=gnu++0x
 
 bin_PROGRAMS=gridgain-data-example gridgain-compute-example
 
