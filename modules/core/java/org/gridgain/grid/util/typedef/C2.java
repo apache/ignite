@@ -22,4 +22,4 @@ import org.gridgain.grid.util.lang.*;
  * @see GridFunc
  * @see GridBiClosure
  */
-public abstract class C2<E1, E2, R> extends GridBiClosure<E1, E2, R> { /* No-op. */ }
+public interface C2<E1, E2, R> extends GridBiClosure<E1, E2, R> { /* No-op. */ }

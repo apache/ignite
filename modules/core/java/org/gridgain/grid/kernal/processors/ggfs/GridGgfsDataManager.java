@@ -1556,7 +1556,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * Helper closure to update data in cache.
      */
     @GridInternal
-    private static final class UpdateClosure extends GridClosure<byte[], byte[]> implements Externalizable {
+    private static final class UpdateClosure implements GridClosure<byte[], byte[]>, Externalizable {
         /** Start position in the block to write new data from. */
         private int start;
 

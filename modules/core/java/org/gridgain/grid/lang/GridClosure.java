@@ -10,7 +10,8 @@
 package org.gridgain.grid.lang;
 
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.util.lang.*;
+
+import java.io.*;
 
 /**
  * Defines generic closure with one parameter. Closure is a simple executable which accepts a parameter and
@@ -22,12 +23,12 @@ import org.gridgain.grid.util.lang.*;
  * @param <E> Type of closure parameter.
  * @param <R> Type of the closure return value.
  */
-public abstract class GridClosure<E, R> extends GridLambdaAdapter {
+public interface GridClosure<E, R> extends Serializable {
     /**
      * Closure body.
      *
      * @param e Closure parameter.
      * @return Closure return value.
      */
-    public abstract R apply(E e);
+    public R apply(E e);
 }

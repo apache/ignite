@@ -18,7 +18,7 @@ import org.gridgain.grid.util.typedef.*;
  * implements {@link #apply()} method that calls {@link #applyx()} method and properly
  * wraps {@link GridException} into {@link GridClosureException} instance.
  */
-public abstract class GridOutClosureX<T> extends GridOutClosure<T> {
+public abstract class GridOutClosureX<T> implements GridOutClosure<T> {
     /** {@inheritDoc} */
     @Override public T apply() {
         try {

@@ -12,16 +12,12 @@
 package org.gridgain.scalar.lang
 
 import org.gridgain.grid.lang.{GridBiPredicate}
-import org.gridgain.grid.util.lang.GridLambdaAdapter
 
 /**
  * Wrapping Scala function for `GridPredicate2`.
  */
-class ScalarPredicate2Function[T1, T2](val inner: GridBiPredicate[T1, T2]) extends GridLambdaAdapter
-    with ((T1, T2) => Boolean) {
+class ScalarPredicate2Function[T1, T2](val inner: GridBiPredicate[T1, T2]) extends ((T1, T2) => Boolean) {
     assert(inner != null)
-
-    peerDeployLike(inner)
 
     /**
      * Delegates to passed in grid predicate.

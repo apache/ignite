@@ -62,22 +62,6 @@ public abstract class GridComputeTaskSplitAdapter<T, R> extends GridComputeTaskA
     private GridComputeLoadBalancer balancer;
 
     /**
-     * Empty constructor.
-     */
-    protected GridComputeTaskSplitAdapter() {
-        // No-op.
-    }
-
-    /**
-     * Constructor that receives deployment information for task.
-     *
-     * @param p Deployment information.
-     */
-    protected GridComputeTaskSplitAdapter(GridPeerDeployAware p) {
-        super(p);
-    }
-
-    /**
      * This is a simplified version of {@link GridComputeTask#map(List, Object)} method.
      * <p>
      * This method basically takes given argument and splits it into a collection

@@ -11,8 +11,6 @@ package org.gridgain.grid.util.lang;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
@@ -28,7 +26,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * {@link GridComputeJobAdapter}.
  * @see GridFunc
  */
-public abstract class GridAbsClosure extends GridLambdaAdapter implements Runnable, GridComputeJob {
+public abstract class GridAbsClosure implements Runnable, GridComputeJob {
     /**
      * Absolute closure body.
      */
@@ -55,69 +53,6 @@ public abstract class GridAbsClosure extends GridLambdaAdapter implements Runnab
      */
     @Override public void cancel() {
         // No-op.
-    }
-
-    /**
-     * Gets closure that ignores its argument and executes the same way as this
-     * absolute closure.
-     *
-     * @param <E> Type of ignore argument.
-     * @return Closure that ignores its argument and executes the same way as this
-     *      absolute closure.
-     */
-    public <E> GridInClosure<E> uncurry() {
-        GridInClosure<E> c = new CI1<E>() {
-            @Override public void apply(E e) {
-                GridAbsClosure.this.apply();
-            }
-        };
-
-        c.peerDeployLike(this);
-
-        return c;
-    }
-
-    /**
-     * Gets closure that ignores its arguments and executes the same way as this
-     * absolute closure.
-     *
-     * @param <E1> Type of 1st ignore argument.
-     * @param <E2> Type of 2nd ignore argument.
-     * @return Closure that ignores its arguments and executes the same way as this
-     *      absolute closure.
-     */
-    public <E1, E2> GridBiInClosure<E1, E2> uncurry2() {
-        GridBiInClosure<E1, E2> c = new CI2<E1, E2>() {
-            @Override public void apply(E1 e1, E2 e2) {
-                GridAbsClosure.this.apply();
-            }
-        };
-
-        c.peerDeployLike(this);
-
-        return c;
-    }
-
-    /**
-     * Gets closure that ignores its arguments and executes the same way as this
-     * absolute closure.
-     *
-     * @param <E1> Type of 1st ignore argument.
-     * @param <E2> Type of 2nd ignore argument.
-     * @param <E3> Type of 3d ignore argument.
-     * @return Closure that ignores its arguments and executes the same way as this
-     *      absolute closure.
-     */
-    public <E1, E2, E3> GridInClosure3<E1, E2, E3> uncurry3() {
-        GridInClosure3<E1, E2, E3> c = new CI3<E1, E2, E3>() {
-            @Override public void apply(E1 e1, E2 e2, E3 e3) {
-                GridAbsClosure.this.apply();
-            }
-        };
-
-        c.peerDeployLike(this);
-
-        return c;
     }
 
     /**

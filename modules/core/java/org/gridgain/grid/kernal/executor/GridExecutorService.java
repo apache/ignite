@@ -14,6 +14,7 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -23,10 +24,10 @@ import java.util.concurrent.*;
 /**
  * An {@link ExecutorService} that executes each submitted task in grid
  * through {@link Grid} instance, normally configured using
- * {@link GridProjection#executor(GridPredicate[])} ()} method.
+ * {@link GridCompute#executorService()} method.
  * {@code GridExecutorService} delegates commands execution to already
  * started {@link Grid} instance. Every submitted task will be serialized and
- * transfered to any node in grid.
+ * transferred to any node in grid.
  * <p>
  * All submitted tasks must implement {@link Serializable} interface.
  * <p>
@@ -75,7 +76,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     private boolean isBeingShutdown;
 
     /** List of executing or scheduled for execution tasks. */
-    private List<GridComputeTaskFuture<?>> futs = new ArrayList<>();
+    private List<GridFuture<?>> futs = new ArrayList<>();
 
     /** Rejected or completed tasks listener. */
     private TaskTerminateListener lsnr = new TaskTerminateListener<>();
@@ -145,7 +146,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
     /** {@inheritDoc} */
     @Override public List<Runnable> shutdownNow() {
-        List<GridComputeTaskFuture<?>> cpFuts;
+        List<GridFuture<?>> cpFuts;
 
         // Cancel all tasks.
         synchronized (mux) {
@@ -154,7 +155,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
             isBeingShutdown = true;
         }
 
-        for (GridComputeTaskFuture<?> task : cpFuts) {
+        for (GridFuture<?> task : cpFuts) {
             try {
                 task.cancel();
             }
@@ -192,17 +193,17 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
         if (end < 0)
             end = Long.MAX_VALUE;
 
-        List<GridComputeTaskFuture<?>> locTasks;
+        List<GridFuture<?>> locTasks;
 
         // Cancel all tasks.
         synchronized (mux) {
             locTasks = new ArrayList<>(futs);
         }
 
-        Iterator<GridComputeTaskFuture<?>> iter = locTasks.iterator();
+        Iterator<GridFuture<?>> iter = locTasks.iterator();
 
         while (iter.hasNext() && now < end) {
-            GridComputeTaskFuture<?> fut = iter.next();
+            GridFuture<?> fut = iter.next();
 
             try {
                 fut.get(end - now);
@@ -231,21 +232,24 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         checkShutdown();
 
-        deployTask(GridExecutorCallableTask.class, task);
-
-        return addFuture(prj.compute().execute(new GridExecutorCallableTask<T>(task.getClass()), task));
+        return addFuture(prj.compute().call(task));
     }
 
     /** {@inheritDoc} */
-    @Override public <T> Future<T> submit(Runnable task, T res) {
+    @Override public <T> Future<T> submit(Runnable task, final T res) {
         A.notNull(task, "task != null");
 
         checkShutdown();
 
-        deployTask(GridExecutorCallableTask.class, task);
+        GridFuture<T> fut = prj.compute().run(task).chain(new CX1<GridFuture<?>, T>() {
+            @Override public T applyx(GridFuture<?> fut) throws GridException {
+                fut.get();
 
-        return addFuture(prj.compute().execute(new GridExecutorCallableTask<T>(task.getClass()),
-            new GridExecutorRunnableAdapter<>(task, res)));
+                return res;
+            }
+        });
+
+        return addFuture(fut);
     }
 
     /** {@inheritDoc} */
@@ -254,9 +258,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         checkShutdown();
 
-        deployTask(GridExecutorRunnableTask.class, task);
-
-        return addFuture(prj.compute().execute(new GridExecutorRunnableTask(task.getClass()), task));
+        return addFuture(prj.compute().run(task));
     }
 
     /**
@@ -308,14 +310,12 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         checkShutdown();
 
-        Collection<GridComputeTaskFuture<T>> taskFuts = new ArrayList<>();
+        Collection<GridFuture<T>> taskFuts = new ArrayList<>();
 
         for (Callable<T> task : tasks) {
-            deployTask(GridExecutorCallableTask.class, task);
-
             // Execute task without predefined timeout.
             // GridFuture.cancel() will be called if timeout elapsed.
-            GridComputeTaskFuture<T> fut = prj.compute().execute(new GridExecutorCallableTask<T>(task.getClass()), task);
+            GridFuture<T> fut = prj.compute().call(task);
 
             taskFuts.add(fut);
 
@@ -324,7 +324,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         boolean isInterrupted = false;
 
-        for (GridComputeTaskFuture<T> fut : taskFuts) {
+        for (GridFuture<T> fut : taskFuts) {
             if (!isInterrupted && now < end) {
                 try {
                     fut.get(end - now);
@@ -356,7 +356,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
         List<Future<T>> futs = new ArrayList<>(taskFuts.size());
 
         // Convert futures.
-        for (GridComputeTaskFuture<T> fut : taskFuts) {
+        for (GridFuture<T> fut : taskFuts) {
             // Per executor service contract any task that was not completed
             // should be cancelled upon return.
             if (!fut.isDone())
@@ -438,11 +438,11 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         checkShutdown();
 
-        Collection<GridComputeTaskFuture<T>> taskFuts = new ArrayList<>();
+        Collection<GridFuture<T>> taskFuts = new ArrayList<>();
 
         for (Callable<T> cmd : tasks) {
             // Execute task with predefined timeout.
-            GridComputeTaskFuture<T> fut = prj.compute().execute(new GridExecutorCallableTask<T>(cmd.getClass()), cmd);
+            GridFuture<T> fut = prj.compute().call(cmd);
 
             taskFuts.add(fut);
         }
@@ -454,7 +454,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         int errCnt = 0;
 
-        for (GridComputeTaskFuture<T> fut : taskFuts) {
+        for (GridFuture<T> fut : taskFuts) {
             now = U.currentTimeMillis();
 
             boolean cancel = false;
@@ -512,9 +512,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
         checkShutdown();
 
-        deployTask(GridExecutorRunnableTask.class, cmd);
-
-        addFuture(prj.compute().execute(new GridExecutorRunnableTask(cmd.getClass()), cmd));
+        addFuture(prj.compute().run(cmd));
     }
 
     /**
@@ -533,7 +531,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
      * @return Future for command.
      */
     @SuppressWarnings("unchecked")
-    private <T> Future<T> addFuture(GridComputeTaskFuture<T> fut) {
+    private <T> Future<T> addFuture(GridFuture<T> fut) {
         synchronized (mux) {
             if (!fut.isDone()) {
                 fut.listenAsync(lsnr);
@@ -546,25 +544,11 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     }
 
     /**
-     * @param taskCls Task class.
-     * @param cmd Command to deploy.
-     */
-    @SuppressWarnings("unchecked")
-    private void deployTask(Class<? extends GridComputeTask> taskCls, Object cmd) {
-        try {
-            prj.compute().localDeployTask(taskCls, cmd.getClass().getClassLoader());
-        }
-        catch (GridException e) {
-            throw new RejectedExecutionException("Failed to deploy command: " + cmd, e);
-        }
-    }
-
-    /**
      * Listener to track tasks.
      */
-    private class TaskTerminateListener<T> extends GridInClosure<GridComputeTaskFuture<T>> {
+    private class TaskTerminateListener<T> implements GridInClosure<GridFuture<T>> {
         /** {@inheritDoc} */
-        @Override public void apply(GridComputeTaskFuture<T> taskFut) {
+        @Override public void apply(GridFuture<T> taskFut) {
             synchronized (mux) {
                 futs.remove(taskFut);
             }
@@ -572,20 +556,20 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     }
 
     /**
-     * Wrapper for {@link GridComputeTaskFuture}.
+     * Wrapper for {@link GridFuture}.
      * Used for compatibility {@link Future} interface.
      * @param <T> The result type of the {@link Future} argument.
      */
     private class TaskFutureWrapper<T> implements Future<T> {
         /** */
-        private final GridComputeTaskFuture<T> fut;
+        private final GridFuture<T> fut;
 
         /**
          * Creates wrapper.
          *
          * @param fut Grid future.
          */
-        TaskFutureWrapper(GridComputeTaskFuture<T> fut) {
+        TaskFutureWrapper(GridFuture<T> fut) {
             assert fut != null;
 
             this.fut = fut;

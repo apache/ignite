@@ -70,7 +70,7 @@ public class CacheCountDownLatchExample {
     /**
      * Closure which simply waits on the latch on all nodes.
      */
-    private static class LatchClosure extends GridRunnable {
+    private static class LatchClosure implements GridRunnable {
         /** Cache name. */
         private final String cacheName;
 

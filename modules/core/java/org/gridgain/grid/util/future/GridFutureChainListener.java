@@ -18,7 +18,7 @@ import org.gridgain.grid.util.lang.*;
 /**
  * Future listener to fill chained future with converted result of the source future.
  */
-public class GridFutureChainListener<T, R> extends GridInClosure<GridFuture<T>> {
+public class GridFutureChainListener<T, R> implements GridInClosure<GridFuture<T>> {
     /** Context. */
     private final GridKernalContext ctx;
 

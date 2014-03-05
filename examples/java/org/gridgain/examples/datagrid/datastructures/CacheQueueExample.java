@@ -150,7 +150,7 @@ public class CacheQueueExample {
     /**
      * Closure to populate or poll the queue.
      */
-    private static class QueueClosure extends GridRunnable {
+    private static class QueueClosure implements GridRunnable {
         /** Cache name. */
         private final String cacheName;
 
