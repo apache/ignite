@@ -35,7 +35,7 @@ import org.jetbrains.annotations.*;
  * cfg.setSecureSessionSpi(spi);
  *
  * // Start grid.
- * GridFactory.start(cfg);
+ * GridGain.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * GridNoopSecureSessionSpi can be configured from Spring XML configuration file:

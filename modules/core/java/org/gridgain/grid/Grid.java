@@ -375,7 +375,7 @@ public interface Grid extends GridProjection, AutoCloseable {
     /**
      * Stops nodes satisfying optional set of predicates.
      * <p>
-     * <b>NOTE:</b> {@code System.exit(GridFactory.KILL_EXIT_CODE)} will be executed on each
+     * <b>NOTE:</b> {@code System.exit(GridGain.KILL_EXIT_CODE)} will be executed on each
      * stopping node. If you have other applications running in the same JVM along with GridGain,
      * those applications will be stopped as well.
      *
@@ -386,7 +386,7 @@ public interface Grid extends GridProjection, AutoCloseable {
     /**
      * Stops nodes defined by provided IDs.
      * <p>
-     * <b>NOTE:</b> {@code System.exit(GridFactory.KILL_EXIT_CODE)} will be executed on each
+     * <b>NOTE:</b> {@code System.exit(GridGain.KILL_EXIT_CODE)} will be executed on each
      * stopping node. If you have other applications running in the same JVM along with GridGain,
      * those applications will be stopped as well.
      *

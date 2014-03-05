@@ -36,7 +36,7 @@ import org.gridgain.grid.dataload.GridDataLoader
  * ==Overview==
  * `scalar` is the main object that encapsulates Scalar DSL. It includes global functions
  * on "scalar" keyword, helper converters as well as necessary implicit conversions. `scalar` also
- * mimics many methods in `GridFactory` class from Java side.
+ * mimics many methods in `GridGain` class from Java side.
  *
  * The idea behind Scalar DSL - '''zero additional logic and only conversions''' implemented
  * using Scala "Pimp" pattern. Note that most of the Scalar DSL development happened on Java

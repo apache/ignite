@@ -47,7 +47,7 @@ import java.util.*;
  *
  * cfg.setDeploymentSpi(deploySpi);
  *
- * GridFactory.start(cfg);
+ * GridGain.start(cfg);
  * </pre>
  * Here is how a grid instance can be configured from Spring XML configuration file. The
  * example below configures a grid instance with additional user attributes
@@ -76,7 +76,7 @@ import java.util.*;
  * G.start("/path/to/spring/xml/file.xml");
  * ...
  * </pre>
- * You can also instantiate grid directly from Spring without using {@code GridFactory}.
+ * You can also instantiate grid directly from Spring without using {@code GridGain}.
  * For more information refer to {@link GridSpringBean} documentation.
  *
  * @author @java.author

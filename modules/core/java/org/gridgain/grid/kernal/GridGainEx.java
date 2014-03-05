@@ -100,44 +100,6 @@ import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
  * <pre name="code" class="java">
  * GridConfiguration cfg = new GridConfiguration();
  *
- * GridUriDeployment deploySpi = new GridUriDeployment();
- *
- * deploySpi.setUriList(Collections.singletonList("classes://tmp/output/classes"));
- *
- * cfg.setDeploymentSpi(deploySpi);
- *
- * GridFactory.start(cfg);
- * </pre>
- * Here is how a grid instance can be configured from Spring XML configuration file. The
- * example below configures a grid instance with additional user attributes
- * (see {@link GridNode#attributes()}) and specifies a grid name:
- * <pre name="code" class="xml">
- * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton"&gt;
- *     ...
- *     &lt;property name="gridName" value="grid"/&gt;
- *     &lt;property name="userAttributes"&gt;
- *         &lt;map&gt;
- *             &lt;entry key="group" value="worker"/&gt;
- *             &lt;entry key="grid.node.benchmark"&gt;
- *                 &lt;bean class="org.gridgain.grid.benchmarks.GridLocalNodeBenchmark" init-method="start"/&gt;
- *             &lt;/entry&gt;
- *         &lt;/map&gt;
- *     &lt;/property&gt;
- *     ...
- * &lt;/bean&gt;
- * </pre>
- * A grid instance with Spring configuration above can be started as following. Note that
- * you do not need to pass path to Spring XML file if you are using
- * {@code GRIDGAIN_HOME/config/default-config.xml}. Also note, that the path can be
- * absolute or relative to GRIDGAIN_HOME.
- * <pre name="code" class="java">
- * ...
- * G.start("/path/to/spring/xml/file.xml");
- * ...
- * </pre>
- * You can also instantiate grid directly from Spring without using {@code GridFactory}.
- * For more information refer to {@link GridSpringBean} documentation.
- *
  * @author @java.author
  * @version @java.version
  */
@@ -1867,7 +1829,7 @@ public class GridGainEx {
                 ensureMultiInstanceSupport(swapspaceSpi);
             }
 
-            // Register GridFactory MBean for current grid instance.
+            // Register GridGain MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
 
             boolean started = false;
@@ -1999,7 +1961,7 @@ public class GridGainEx {
                         log.debug("Shutdown is in progress (ignoring): " + e.getMessage());
                 }
 
-            // Unregister GridFactory MBean.
+            // Unregister GridGain MBean.
             unregisterFactoryMBean();
 
             try {
@@ -2095,7 +2057,7 @@ public class GridGainEx {
 
                 if (data == null) {
                     try {
-                        GridGainMBean mbean = new GridFactoryMBeanAdapter();
+                        GridGainMBean mbean = new GridGainMBeanAdapter();
 
                         ObjectName objName = U.makeMBeanName(
                             null,
