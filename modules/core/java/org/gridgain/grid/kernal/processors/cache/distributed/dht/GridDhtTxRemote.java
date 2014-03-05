@@ -273,9 +273,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cctx, this, op, val, 0L, -1L, cached, drVer);
 
         txEntry.keyBytes(keyBytes);
-
-        if (cctx.sendValueBytes())
-            txEntry.valueBytes(valBytes);
+        txEntry.valueBytes(valBytes);
 
         writeMap.put(key, txEntry);
     }

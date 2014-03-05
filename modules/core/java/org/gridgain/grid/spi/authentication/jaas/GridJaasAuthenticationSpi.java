@@ -61,7 +61,7 @@ import javax.security.auth.login.*;
  * cfg.setAuthenticationSpi(authSpi);
  *
  * // Start grid.
- * GridFactory.start(cfg);
+ * GridGain.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * GridPasscodeAuthenticationSpi can be configured from Spring XML configuration file:

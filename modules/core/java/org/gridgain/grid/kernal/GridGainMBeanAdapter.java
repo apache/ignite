@@ -18,7 +18,7 @@ import org.gridgain.grid.util.typedef.*;
  * @author @java.author
  * @version @java.version
  */
-public class GridFactoryMBeanAdapter implements GridGainMBean {
+public class GridGainMBeanAdapter implements GridGainMBean {
     /** {@inheritDoc} */
     @Override public String getState() {
         return G.state().toString();

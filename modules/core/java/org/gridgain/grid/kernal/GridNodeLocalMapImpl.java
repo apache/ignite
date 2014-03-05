@@ -154,7 +154,7 @@ public class GridNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> impleme
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            return GridFactoryEx.gridx(stash.get()).nodeLocalMap();
+            return GridGainEx.gridx(stash.get()).nodeLocalMap();
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
