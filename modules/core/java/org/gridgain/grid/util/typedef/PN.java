@@ -22,4 +22,4 @@ import org.gridgain.grid.util.lang.*;
  * @see GridNode
  * @see GridFunc
  */
-public abstract class PN extends GridPredicate<GridNode> { /* No-op. */ }
+public interface PN extends GridPredicate<GridNode> { /* No-op. */ }

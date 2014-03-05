@@ -290,7 +290,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     /**
      * Listener for futures.
      */
-    private class Listener extends GridInClosure<GridFuture<T>> {
+    private class Listener implements GridInClosure<GridFuture<T>> {
         /** {@inheritDoc} */
         @Override public void apply(GridFuture<T> fut) {
             pending.remove(fut);

@@ -1200,7 +1200,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Metadata job.
      */
     @GridInternal
-    private static class MetadataJob extends CO<Collection<CacheSqlMetadata>> {
+    private static class MetadataJob implements GridCallable<Collection<CacheSqlMetadata>> {
         /** Grid */
         @GridInstanceResource
         private Grid grid;
@@ -1216,7 +1216,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<CacheSqlMetadata> apply() {
+        @Override public Collection<CacheSqlMetadata> call() {
             final GridKernalContext ctx = ((GridKernal)grid).context();
 
             Collection<String> cacheNames = F.viewReadOnly(ctx.cache().caches(),

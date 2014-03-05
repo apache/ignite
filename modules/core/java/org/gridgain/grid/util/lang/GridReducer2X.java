@@ -18,7 +18,7 @@ import org.gridgain.grid.util.typedef.*;
  * properly wraps {@link GridException} into {@link GridClosureException} instance.
  * @see RX2
  */
-public abstract class GridReducer2X<E1, E2, R> extends GridReducer2<E1, E2, R> {
+public abstract class GridReducer2X<E1, E2, R> implements GridReducer2<E1, E2, R> {
     /** {@inheritDoc} */
     @Override public R apply() {
         try {

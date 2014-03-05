@@ -261,7 +261,7 @@ public interface GridCompute {
      * @param args Job arguments.
      * @return Future with collection of job results.
      */
-    public <T, R> GridFuture<Collection<R>> apply(GridClosure<T, R> job, @Nullable Collection<? extends T> args);
+    public <T, R> GridFuture<Collection<R>> apply(GridClosure<T, R> job, Collection<? extends T> args);
 
     /**
      * Executes provided closure job on nodes within this grid projection. A new job is executed for
@@ -274,7 +274,7 @@ public interface GridCompute {
      * @param rdc Reducer to reduce all job results into one individual return value.
      * @return Future with reduced job result for this execution.
      */
-    public <R1, R2, T> GridFuture<R2> apply(GridClosure<T, R1> job, @Nullable Collection<? extends T> args,
+    public <R1, R2, T> GridFuture<R2> apply(GridClosure<T, R1> job, Collection<? extends T> args,
         GridReducer<R1, R2> rdc);
 
     /**

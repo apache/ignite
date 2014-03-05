@@ -9,10 +9,7 @@
 
 package org.gridgain.grid.lang;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
@@ -21,33 +18,5 @@ import java.io.*;
  * to {@link Runnable} object. Use this class for executing distributed computations on the grid,
  * like in {@link GridCompute#run(Runnable)} method.
  */
-public abstract class GridRunnable extends GridLambdaAdapter implements Runnable, GridComputeJob {
-    /**
-     * Runnable body mainly used for distributed executions on grid nodes.
-     */
-    @Override public abstract void run();
-
-    /** {@inheritDoc} */
-    @Override public void cancel() {
-        // No-op.
-    }
-
-    /**
-     * Delegates to {@link #run()} method.
-     * <p>
-     * {@inheritDoc}
-     *
-     * @return {@inheritDoc}
-     * @throws GridException {@inheritDoc}
-     */
-    @Override public final Object execute() throws GridException {
-        try {
-            run();
-        }
-        catch (Throwable e) {
-            throw U.cast(e);
-        }
-
-        return null;
-    }
+public interface GridRunnable extends Runnable, Serializable {
 }

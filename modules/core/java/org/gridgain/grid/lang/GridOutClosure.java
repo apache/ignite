@@ -9,63 +9,18 @@
 
 package org.gridgain.grid.lang;
 
-import org.gridgain.grid.*;
-import org.gridgain.grid.compute.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.typedef.internal.*;
-
-import java.util.concurrent.*;
+import java.io.*;
 
 /**
  * Closure that does not take any parameters and returns a value.
  *
  * @param <T> Type of return value from this closure.
  */
-public abstract class GridOutClosure<T> extends GridLambdaAdapter implements Callable<T>, GridComputeJob {
+public interface GridOutClosure<T> extends Serializable {
     /**
      * Closure body.
      *
      * @return Return value.
      */
-    public abstract T apply();
-
-    /**
-     * Delegates to {@link #apply()} method.
-     * <p>
-     * {@inheritDoc}
-     */
-    @Override public final T call() {
-        return apply();
-    }
-
-    /**
-     * Does nothing by default. Child classes may override this method
-     * to provide implementation-specific cancellation logic.
-     * <p>
-     * Note that this method is here only to support {@link GridComputeJob} interface
-     * and only makes sense whenever this class is used as grid job or is
-     * executed via any of {@link GridProjection} methods.
-     * <p>
-     * {@inheritDoc}
-     */
-    @Override public void cancel() {
-        // No-op.
-    }
-
-    /**
-     * Delegates to {@link #apply()} method.
-     * <p>
-     * {@inheritDoc}
-     *
-     * @return {@inheritDoc}
-     * @throws GridException {@inheritDoc}
-     */
-    @Override public final Object execute() throws GridException {
-        try {
-            return apply();
-        }
-        catch (Throwable e) {
-            throw U.cast(e);
-        }
-    }
+    public T apply();
 }

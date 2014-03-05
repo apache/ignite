@@ -69,7 +69,7 @@ public final class CacheAtomicSequenceExample {
     /**
      * Obtains atomic sequence.
      */
-    private static class SequenceClosure extends GridRunnable {
+    private static class SequenceClosure implements GridRunnable {
         /** Cache name. */
         private final String cacheName;
 
