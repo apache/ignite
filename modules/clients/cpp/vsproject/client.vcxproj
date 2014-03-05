@@ -94,7 +94,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(OPENSSL_HOME)\include;$(PROTOBUF_DEBUG_HOME)\include;$(BOOST_HOME)\include\boost-1_49;..\main\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;$(PROTOBUF_HOME)\vsprojects\include;$(OPENSSL_HOME)\include;$(PROTOBUF_DEBUG_HOME)\include;$(BOOST_HOME)\include\boost-1_49;..\main\include;$(BOOST_HOME)\include\boost-1_55;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4345;4996;4290</DisableSpecificWarnings>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
@@ -105,7 +105,7 @@
       <TargetMachine>MachineX86</TargetMachine>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
-      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC\static;$(PROTOBUF_DEBUG_HOME)\lib;$(BOOST_HOME)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC\static;$(PROTOBUF_DEBUG_HOME)\lib;$(BOOST_HOME)\lib;$(PROTOBUF_HOME)\vsprojects\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>ssleay32MD.lib;libeay32MD.lib;libprotobuf.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
