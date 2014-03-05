@@ -48,7 +48,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
     public static final int DFLT_SPACE_SIZE = 256 * 1024;
 
     /** Default shared memory space in bytes. */
-    public static final String DFLT_TOKEN_DIR_PATH = "work/ipc/shmem";
+    public static final String DFLT_TOKEN_DIR_PATH = U.WORK_DIR + "/ipc/shmem";
 
     /**
      * Shared memory token file name prefix.
@@ -146,19 +146,19 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
         if (size <= 0)
             throw new GridGgfsIpcEndpointBindException("Space size should be positive: " + size);
 
+        String tokDirPath = this.tokDirPath;
+
         if (F.isEmpty(tokDirPath))
             throw new GridGgfsIpcEndpointBindException("Token directory path is empty.");
 
-        File workDir = new File(tokDirPath);
+        tokDirPath = tokDirPath + '/' + locNodeId.toString() + '-' + GridIpcSharedMemoryUtils.pid();
 
-        String locNodeTokDir = locNodeId.toString() + "-" + GridIpcSharedMemoryUtils.pid();
-
-        if (workDir.isAbsolute())
-            tokDir = new File(workDir, locNodeTokDir);
-        else if (!F.isEmpty(U.getGridGainHome()))
-            tokDir = new File(new File(U.getGridGainHome(), tokDirPath), locNodeTokDir);
-        else
-            throw new GridGgfsIpcEndpointBindException("Failed to resolve token directory path: " + tokDirPath);
+        try {
+            tokDir = U.resolveWorkDirectory(tokDirPath);
+        }
+        catch (IOException e) {
+            throw new GridGgfsIpcEndpointBindException("Failed to resolve token directory path: " + tokDirPath, e);
+        }
 
         if (!U.mkdirs(tokDir))
             throw new GridGgfsIpcEndpointBindException("Failed to create token directory: " + tokDir.getAbsolutePath());

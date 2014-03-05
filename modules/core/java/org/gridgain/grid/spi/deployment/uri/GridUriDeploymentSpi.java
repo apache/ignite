@@ -311,7 +311,7 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
      * Default deployment directory where SPI will pick up GAR files (value is {@code work/deployment/file}).
      * Note that this path relative to {@code GRIDGAIN_HOME} folder.
      */
-    public static final String DFLT_DEPLOY_DIR = "work/deployment/file";
+    public static final String DFLT_DEPLOY_DIR = U.WORK_DIR + "/deployment/file";
 
     /** Default scan frequency for {@code file://} and {@code classes://} protocols (value is {@code 5000}). */
     public static final int DFLT_DISK_SCAN_FREQUENCY = 5000;
@@ -1046,8 +1046,15 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
         URI uri;
 
         // GridGain home found.
-        if (getGridGainHome() != null && !getGridGainHome().isEmpty()) {
-            File dir = new File(getGridGainHome(), DFLT_DEPLOY_DIR);
+        if (!F.isEmpty(getGridGainHome())) {
+            File dir;
+
+            try {
+                dir = U.resolveWorkDirectory(DFLT_DEPLOY_DIR);
+            }
+            catch (IOException e) {
+                throw new GridSpiException(e);
+            }
 
             if (!dir.exists() && !dir.mkdirs())
                 throw new GridSpiException("Failed to initialize default file scanner (folder doesn't exist): " + dir);

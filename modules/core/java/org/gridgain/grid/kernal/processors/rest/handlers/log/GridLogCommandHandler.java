@@ -29,7 +29,7 @@ import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
  */
 public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
     /** Default log path. */
-    private static final String DFLT_PATH = "work/log/gridgain.log";
+    private static final String DFLT_PATH = U.WORK_DIR + "/log/gridgain.log";
 
     /** Approximate line length. */
     private static final int LINE_LENGTH = 120;

@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.spi.checkpoint.sharedfs.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -48,7 +49,7 @@ public class ComputeFailoverNodeStartup {
         // Configure checkpoint SPI.
         GridSharedFsCheckpointSpi checkpointSpi = new GridSharedFsCheckpointSpi();
 
-        checkpointSpi.setDirectoryPaths(Collections.singletonList("/work/checkpoint/sharedfs"));
+        checkpointSpi.setDirectoryPaths(Collections.singletonList('/' + U.WORK_DIR + "/checkpoint/sharedfs"));
 
         cfg.setCheckpointSpi(checkpointSpi);
 

@@ -179,7 +179,7 @@ object visor extends VisorTag {
     @volatile private var shutdownCbs = Seq.empty[() => Unit]
 
     /** Default log file path. */
-    private final val DFLT_LOG_PATH = "work/visor/visor-log"
+    private final val DFLT_LOG_PATH = U.WORK_DIR + "/visor/visor-log"
 
     /** Default configuration path relative to GridGain home. */
     private final val DFLT_CFG = "config/default-config.xml"
@@ -2272,10 +2272,7 @@ object visor extends VisorTag {
 
         val path = pathOpt.getOrElse(DFLT_LOG_PATH)
 
-        logFile = new File(path)
-
-        if (!logFile.isAbsolute)
-            logFile = new File(U.getGridGainHome, path)
+        logFile = U.resolveWorkDirectory(path)
 
         if (!logFile.getParentFile.exists && !logFile.getParentFile.mkdirs)
             throw new IllegalArgumentException("Failed to 'mkdir' log path: " + path)

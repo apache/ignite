@@ -105,7 +105,7 @@ public class GridSharedFsCheckpointSpi extends GridSpiAdapter implements GridChe
      * Note that this path used relatively {@code GRIDGAIN_HOME} directory when {@code GRIDGAIN_HOME} exists.
      * For unknown {@code GRIDGAIN_HOME} used another directory {@link #DFLT_TMP_DIR}
      */
-    public static final String DFLT_DIR_PATH = "work/cp/sharedfs";
+    public static final String DFLT_DIR_PATH = U.WORK_DIR + "/cp/sharedfs";
 
     /**
      * Default directory name for SPI when {@code GRIDGAIN_HOME} not defined.
@@ -265,9 +265,14 @@ public class GridSharedFsCheckpointSpi extends GridSpiAdapter implements GridChe
             if (new File(curDirPath).exists())
                 folder = new File(curDirPath);
             else {
-                if (getGridGainHome() != null && !getGridGainHome().isEmpty()) {
+                if (!F.isEmpty(getGridGainHome())) {
                     // Create relative by default.
-                    folder = new File(getGridGainHome(), curDirPath);
+                    try {
+                        folder = U.resolveWorkDirectory(curDirPath);
+                    }
+                    catch (IOException e) {
+                        throw new GridSpiException(e);
+                    }
 
                     if (!folder.mkdirs() && !folder.exists()) {
                         // Remove failed directory.

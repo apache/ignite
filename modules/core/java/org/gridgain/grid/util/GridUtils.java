@@ -277,6 +277,9 @@ public abstract class GridUtils {
         "Troubleshooting:      http://bit.ly/GridGain-Troubleshooting",
         "Documentation Center: http://bit.ly/GridGain-Documentation");
 
+    /** Work directory. */
+    public static final String WORK_DIR = "work";
+
     /**
      * Initializes enterprise check.
      */
@@ -8168,5 +8171,25 @@ public abstract class GridUtils {
         sb.a(']');
 
         return sb.toString();
+    }
+
+    /**
+     * Resolves work directory.
+     *
+     * @param path Path to resolve.
+     * @return Resolved work directory.
+     * @throws IOException If failed.
+     */
+    public static File resolveWorkDirectory(String path) throws IOException {
+        File dir = new File(path);
+
+        String ggHome;
+
+        if (dir.isAbsolute())
+            return dir;
+        else if (!F.isEmpty(ggHome = U.getGridGainHome()))
+            return new File(ggHome, path);
+        else
+            throw new IOException("Failed to resolve directory path: " + path);
     }
 }

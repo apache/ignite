@@ -44,7 +44,7 @@ public class GridNodeCallable implements Callable<GridTuple3<String, Boolean, St
      * Logs folder for Windows.
      * Folder for linux is configured in {@code gridgain-log4j.xml}.
      */
-    private static final String LOG_DIR_WIN = "work\\log";
+    private static final String LOG_DIR_WIN = U.WORK_DIR + "\\log";
 
     /** Windows service executable. */
     private static final String SVC_EXE = "bin\\include\\ggservice.exe";
