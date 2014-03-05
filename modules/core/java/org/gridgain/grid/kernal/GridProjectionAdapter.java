@@ -544,7 +544,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            GridKernal g = GridFactoryEx.gridx(gridName);
+            GridKernal g = GridGainEx.gridx(gridName);
 
             return ids != null ? new GridProjectionAdapter(g, g.context(), ids) :
                 p != null ? new GridProjectionAdapter(g, g.context(), p) : g;

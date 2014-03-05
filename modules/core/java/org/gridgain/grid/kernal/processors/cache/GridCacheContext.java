@@ -1344,14 +1344,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} to send value bytes (even in case when deployment may be disabled).
-     */
-    public boolean sendValueBytes() {
-        // TODO: gg-6992-3
-        return true;
-    }
-
-    /**
      * @return {@code True} if swap store of off-heap cache are enabled.
      */
     public boolean isSwapOrOffheapEnabled() {
@@ -1719,7 +1711,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         try {
             GridBiTuple<String, String> t = stash.get();
 
-            GridKernal grid = GridFactoryEx.gridx(t.get1());
+            GridKernal grid = GridGainEx.gridx(t.get1());
 
             if (grid == null)
                 throw new IllegalStateException("Failed to find grid for name: " + t.get1());

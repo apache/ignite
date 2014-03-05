@@ -2295,7 +2295,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                     // calls and won't be serialized. We are also including DHT version.
                                     res.addValueBytes(
                                         val,
-                                        ret && ctx.sendValueBytes() ? e.valueBytes(null).getIfMarshaled() : null,
+                                        ret ? e.valueBytes(null).getIfMarshaled() : null,
                                         filterPassed,
                                         ver,
                                         mappedVer,
