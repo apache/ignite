@@ -9,6 +9,7 @@
 
 package org.gridgain.jdbc.suite;
 
+import junit.framework.*;
 import org.gridgain.testframework.*;
 import org.gridgain.jdbc.*;
 
