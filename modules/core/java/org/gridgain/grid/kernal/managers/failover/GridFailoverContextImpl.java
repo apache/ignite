@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
  * GridFailoverContext implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridFailoverContextImpl implements GridFailoverContext {
     /** Grid task session. */

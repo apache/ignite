@@ -23,9 +23,6 @@ import java.util.*;
 
 /**
  * Streamer window adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridStreamerWindowAdapter<E> implements GridLifecycleAware, GridStreamerWindow<E>,
     GridStreamerWindowMBean {
@@ -465,9 +462,6 @@ public abstract class GridStreamerWindowAdapter<E> implements GridLifecycleAware
     /**
      * Window iterator wrapper which prevent returning more elements that existed in the underlying collection by the
      * time of iterator creation.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private class BoundedIterator implements Iterator<E> {
         /** Iterator. */

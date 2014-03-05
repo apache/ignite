@@ -8,9 +8,6 @@ import java.util.*;
 
 /**
  * Common interface for client connection managers.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridClientConnectionManager {
     /**

@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Swap space SPI eviction listener.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridSwapSpaceSpiListener {
     /**

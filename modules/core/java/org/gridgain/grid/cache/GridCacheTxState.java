@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Cache transaction state.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridCacheTxState {
     /** Transaction started. */

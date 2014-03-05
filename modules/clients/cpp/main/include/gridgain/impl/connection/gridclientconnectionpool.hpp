@@ -39,9 +39,6 @@ typedef std::shared_ptr<GridClientConnection> TConnectionPtr;
  * Thus, several connections to the same endpoint may be created by
  * this pool, if several threads need to communicate with this endpoint
  * simultaneously.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientConnectionPool:
     private boost::noncopyable,

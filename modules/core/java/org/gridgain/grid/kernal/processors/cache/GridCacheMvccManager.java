@@ -33,9 +33,6 @@ import static org.gridgain.grid.util.GridConcurrentFactory.*;
 
 /**
  * Manages lock order within a thread.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Maxim number of removed locks. */

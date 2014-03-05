@@ -13,9 +13,6 @@ import org.gridgain.grid.util.mbean.*;
 
 /**
  * MBean for {@code FIFO} eviction policy.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean for FIFO cache eviction policy.")
 public interface GridCacheFifoEvictionPolicyMBean {

@@ -17,9 +17,6 @@ import java.nio.*;
 
 /**
  * Streamer cancel request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapter {
     /** Cancelled future ID. */

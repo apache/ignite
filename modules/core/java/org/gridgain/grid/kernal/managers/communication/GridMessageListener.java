@@ -13,9 +13,6 @@ import java.util.*;
 
 /**
  * Listener for messages received from remote nodes.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridMessageListener extends EventListener {
     /**

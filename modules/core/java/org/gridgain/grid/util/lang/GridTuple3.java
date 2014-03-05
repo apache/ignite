@@ -23,9 +23,6 @@ import java.util.*;
  * This class doesn't provide any synchronization for multi-threaded access
  * and it is responsibility of the user of this class to provide outside
  * synchronization, if needed.
- *
- * @author @java.author
- * @version @java.version
  * @see GridFunc#t3()
  * @see GridFunc#t(Object, Object, Object)
  */

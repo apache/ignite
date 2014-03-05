@@ -17,9 +17,6 @@ import java.util.Map;
 
 /**
  * Interface for all processors.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridToStringExclude
 public interface GridProcessor extends GridComponent {

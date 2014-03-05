@@ -22,9 +22,6 @@ import java.util.*;
  *     // Get metadata about file.
  *     GridGgfsFile file = ggfs.info(filePath);
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridGgfsFile {
     /**

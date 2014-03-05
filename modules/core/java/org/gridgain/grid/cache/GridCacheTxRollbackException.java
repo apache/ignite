@@ -13,9 +13,6 @@ import org.gridgain.grid.*;
 
 /**
  * Exception thrown whenever grid transactions has been automatically rolled back.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheTxRollbackException extends GridException {
     /**

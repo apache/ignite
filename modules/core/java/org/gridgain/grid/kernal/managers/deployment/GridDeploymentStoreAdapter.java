@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * Adapter for all store implementations.
- *
- * @author @java.author
- * @version @java.version
  */
 abstract class GridDeploymentStoreAdapter implements GridDeploymentStore {
     /** Logger. */

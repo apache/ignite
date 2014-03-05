@@ -14,9 +14,6 @@ import java.util.*;
 
 /**
  * Listener for task events.
- *
- * @author @java.author
- * @version @java.version
  */
 interface GridTaskEventListener extends EventListener {
     /**

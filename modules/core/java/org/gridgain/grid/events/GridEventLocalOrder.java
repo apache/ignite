@@ -13,9 +13,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Generator for local atomically incremented IDs for grid events.
- *
- * @author @java.author
- * @version @java.version
  */
 final class GridEventLocalOrder {
     /** Generator implementation. */

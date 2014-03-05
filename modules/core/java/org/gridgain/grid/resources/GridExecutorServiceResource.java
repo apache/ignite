@@ -53,9 +53,6 @@ import java.util.concurrent.*;
  * </pre>
  * <p>
  * See {@link GridConfiguration#getExecutorService()} for Grid configuration details.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

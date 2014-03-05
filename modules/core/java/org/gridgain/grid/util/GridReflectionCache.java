@@ -22,9 +22,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
  * Reflection field and method cache for classes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridReflectionCache implements Externalizable {
     /** Compares fields by name. */

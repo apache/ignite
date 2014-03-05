@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * Implementation of {@link Region}. This interface defines base contract for all L2 cache regions.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridHibernateRegion implements Region {
     /** */

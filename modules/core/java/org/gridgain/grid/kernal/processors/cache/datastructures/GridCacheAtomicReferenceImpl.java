@@ -27,9 +27,6 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
  * Cache atomic reference implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicReferenceEx<T>, Externalizable {
     /** Deserialization stash. */

@@ -108,8 +108,5 @@ package org.gridgain.visor.commands
  *     visor alert "-r -t=900 -cc=gte4 -cl=gt50"
  *         Notify every 15 min if grid has >= 4 CPUs and > 50% CPU load.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 package object alert

@@ -18,9 +18,6 @@
 
 /**
  * C++ client API.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClient {
 public:

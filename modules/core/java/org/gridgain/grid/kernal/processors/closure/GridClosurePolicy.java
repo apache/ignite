@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 /**
  * This enumeration defines different types of closure
  * processing by the closure processor.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridClosurePolicy {
     /** Public execution pool. */

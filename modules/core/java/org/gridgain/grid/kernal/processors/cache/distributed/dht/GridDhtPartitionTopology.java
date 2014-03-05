@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * DHT partition topology.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridToStringExclude
 public interface GridDhtPartitionTopology<K, V> {

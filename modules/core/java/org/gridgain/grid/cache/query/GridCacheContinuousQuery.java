@@ -100,9 +100,6 @@ import java.util.*;
  * Note that one query instance can be executed only once. After it's cancelled, it's non-operational.
  * If you need to repeat execution, use {@link GridCacheQueries#createContinuousQuery()} method to create
  * new query.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
     /**

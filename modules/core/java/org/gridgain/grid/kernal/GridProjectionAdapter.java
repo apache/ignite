@@ -25,8 +25,7 @@ import java.util.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridProjectionAdapter extends GridMetadataAwareAdapter implements GridProjection, Externalizable {
     /** */

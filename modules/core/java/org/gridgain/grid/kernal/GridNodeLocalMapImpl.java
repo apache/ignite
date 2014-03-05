@@ -21,8 +21,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> implements GridNodeLocalMap<K, V>,
     Externalizable {

@@ -18,8 +18,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridDrExternalBatchRequest<K, V> implements Externalizable {
     /** Request ID. */

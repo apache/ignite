@@ -26,9 +26,6 @@ import static org.gridgain.grid.util.gridify.GridifyUtils.*;
  * Default gridify task which simply executes a method on remote node.
  * <p/>
  * See {@link Gridify} documentation for more information about execution of {@code gridified} methods.
- *
- * @author @java.author
- * @version @java.version
  * @see GridifySetToSet
  * @see GridifySetToValue
  */

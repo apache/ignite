@@ -14,9 +14,6 @@ import java.io.*;
 
 /**
  * Request for a log file.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientLogRequest extends GridClientAbstractMessage {
     /** Task name. */

@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * Snapshot of time deltas for given topology.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClockDeltaSnapshot {
     /** Time delta version. */

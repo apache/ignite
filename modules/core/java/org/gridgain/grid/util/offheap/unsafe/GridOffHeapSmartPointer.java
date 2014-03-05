@@ -11,9 +11,6 @@ package org.gridgain.grid.util.offheap.unsafe;
 
 /**
  * Smart pointer with reference counting.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridOffHeapSmartPointer {
     /**

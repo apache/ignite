@@ -15,9 +15,6 @@ import org.gridgain.grid.util.typedef.internal.*;
  * Helper class that keeps checkpoint expiration date and last file
  * access date inside. This class used by {@link GridSharedFsTimeoutTask}
  * to track and delete obsolete files.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridSharedFsTimeData {
     /** Checkpoint expiration date. */

@@ -42,9 +42,6 @@ import java.util.concurrent.locks.*;
  * <p/>
  * Since write operations to the cache store are deferred, transaction support is lost; no
  * transaction objects are passed to the underlying store.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, GridLifecycleAware {
     /** Default write cache initial capacity. */

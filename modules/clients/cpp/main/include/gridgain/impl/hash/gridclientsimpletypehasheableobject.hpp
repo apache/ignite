@@ -19,9 +19,6 @@ typedef std::shared_ptr<GridHasheableObject> TGridHasheableObjectPtr;
 
 /**
  * Template class for GridHashealeObject for simple types like int_...
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 template<class T> class GridSimpleTypeHasheable: public GridHasheableObject {
 protected:
@@ -85,9 +82,6 @@ protected:
 
 /**
  * Hasheable 64-bit signed integer.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridInt64Hasheable: public GridSimpleTypeHasheable<int64_t> {
 public:
@@ -117,9 +111,6 @@ inline TGridHasheableObjectPtr createHasheable(int64_t val) {
 
 /**
  * Hasheable 32-bit signed integer.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridInt32Hasheable: public GridSimpleTypeHasheable<int32_t> {
 public:

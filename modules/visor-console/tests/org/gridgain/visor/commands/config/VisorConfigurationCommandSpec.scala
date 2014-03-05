@@ -20,9 +20,6 @@ import org.gridgain.grid.events.GridEventType
 
 /**
  * Unit test for 'config' command.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorConfigurationCommandSpec extends VisorRuntimeBaseSpec(1) {
     /**

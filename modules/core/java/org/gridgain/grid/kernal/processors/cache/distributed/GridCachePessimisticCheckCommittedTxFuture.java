@@ -26,9 +26,6 @@ import java.util.concurrent.atomic.*;
 /**
  * Future verifying that all remote transactions related to some
  * optimistic transaction were prepared.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompoundIdentityFuture<GridCacheCommittedTxInfo<K, V>>
     implements GridCacheFuture<GridCacheCommittedTxInfo<K, V>> {

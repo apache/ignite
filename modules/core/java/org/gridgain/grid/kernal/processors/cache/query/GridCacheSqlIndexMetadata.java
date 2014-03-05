@@ -17,9 +17,6 @@ import java.util.*;
  * <p>
  * All index descriptors can be obtained from
  * {@link GridCacheSqlMetadata#indexes(String)} method.
- *
- * @author @java.author
- * @version @java.version
  * @see GridCacheSqlMetadata
  */
 public interface GridCacheSqlIndexMetadata extends Externalizable {

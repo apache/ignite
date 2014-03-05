@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * H2 Cursor implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridH2Cursor implements Cursor {
     /** */

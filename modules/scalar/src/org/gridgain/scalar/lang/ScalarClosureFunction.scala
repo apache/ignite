@@ -15,9 +15,6 @@ import org.gridgain.grid.lang.{GridClosure}
 
 /**
  * Wrapping Scala function for `GridClosure`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarClosureFunction[T, R](val inner: GridClosure[T, R]) extends (T => R) {
     assert(inner != null)

@@ -21,9 +21,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
  * Contains the list with one class from every used library.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLibraryConsistencyCheck {
     /** List that contains by one class from each library. */

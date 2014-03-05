@@ -28,9 +28,6 @@ import static org.gridgain.grid.cache.GridCacheTxState.*;
 
 /**
  * Replicated user transaction.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements GridCacheMappedVersion {
     /** */

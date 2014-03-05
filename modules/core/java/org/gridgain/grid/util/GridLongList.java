@@ -19,9 +19,6 @@ import java.util.*;
 /**
  * Minimal list API to work with primitive longs. This list exists
  * to avoid boxing/unboxing when using standard list from Java.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLongList implements Externalizable {
     /** */

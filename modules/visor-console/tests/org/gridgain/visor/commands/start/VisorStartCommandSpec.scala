@@ -19,9 +19,6 @@ import commands.top.VisorTopologyCommand._
 
 /**
  * Unit test for 'start' command.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorStartCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterAll {
     override def beforeAll() {

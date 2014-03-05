@@ -16,9 +16,6 @@ import java.util.concurrent.Callable
 
 /**
  * Peer deploy aware adapter for Java's `GridOutClosure`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarOutClosure[R](private val f: () => R) extends GridOutClosure[R] with Callable[R] {
     assert(f != null)

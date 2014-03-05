@@ -14,9 +14,6 @@
 
 /**
  * Cache modify result message.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientMessageCacheModifyResult : public GridClientMessageCacheResult {
 public:

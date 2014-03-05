@@ -17,8 +17,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridGgfsModeResolver {
     /** Maximum size of map with cached path modes. */

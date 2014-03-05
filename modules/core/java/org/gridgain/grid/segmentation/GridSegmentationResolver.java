@@ -27,9 +27,6 @@ import java.io.*;
  * mark the topology as segmented in case it is not available. In other words
  * you can equate the service outage with network outage via segmentation resolution
  * and employ the unified approach in dealing with these types of problems.
- *
- * @author @java.author
- * @version @java.version
  * @see GridConfiguration#getSegmentationResolvers()
  * @see GridConfiguration#getSegmentationPolicy()
  * @see GridConfiguration#getSegmentCheckFrequency()

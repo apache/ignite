@@ -28,9 +28,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
  * Lite DHT cache update request sent from near node to primary node.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
     /** Message index. */

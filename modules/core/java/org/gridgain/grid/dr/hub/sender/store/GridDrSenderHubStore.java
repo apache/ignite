@@ -22,9 +22,6 @@ import org.gridgain.grid.dr.hub.sender.store.memory.*;
  * <li>{@link GridDrSenderHubInMemoryStore}</li>
  * <li>{@link GridDrSenderHubFsStore}</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDrSenderHubStore {
     /**

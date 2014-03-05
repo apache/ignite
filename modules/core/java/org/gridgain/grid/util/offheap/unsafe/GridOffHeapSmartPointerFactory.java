@@ -11,9 +11,6 @@ package org.gridgain.grid.util.offheap.unsafe;
 
 /**
  * Factory to create smart pointer instances.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridOffHeapSmartPointerFactory<T extends GridOffHeapSmartPointer> {
     /**

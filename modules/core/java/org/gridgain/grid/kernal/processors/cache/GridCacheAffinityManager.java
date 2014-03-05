@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Cache affinity manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Factor for maximum number of attempts to calculate all partition affinity keys. */

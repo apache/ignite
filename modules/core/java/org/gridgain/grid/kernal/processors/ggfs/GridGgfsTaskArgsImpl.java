@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * GGFS task arguments implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsTaskArgsImpl<T> implements GridGgfsTaskArgs<T>,  Externalizable {
     /** GGFS name. */

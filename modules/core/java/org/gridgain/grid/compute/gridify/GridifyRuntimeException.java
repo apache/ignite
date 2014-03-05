@@ -14,9 +14,6 @@ import org.gridgain.grid.*;
 /**
  * This defines gridify exception. This runtime exception gets thrown out of gridified
  * methods in case if method execution resulted in undeclared exception.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridifyRuntimeException extends GridRuntimeException {
     /**

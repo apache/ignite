@@ -15,9 +15,6 @@ import java.lang.annotation.*;
  * Attach this annotation to a field or a class to indicate that this field or fields of this
  * class <b>should</b> be included in {@code toString()} output. This annotation allows
  * to override the default exclusion policy.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

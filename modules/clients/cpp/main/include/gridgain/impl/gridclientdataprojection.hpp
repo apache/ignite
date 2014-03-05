@@ -19,9 +19,6 @@
 
 /**
  * GridClientData implementation.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientDataProjectionImpl: public GridClientProjectionImpl, public GridClientData {
 public:

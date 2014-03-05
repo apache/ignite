@@ -31,9 +31,6 @@ import java.lang.reflect.*;
  * <p>
  * If non-default affinity mapper is used, is should be provided via
  * {@link GridCacheConfiguration#getAffinityMapper()} configuration property.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDefaultAffinityKeyMapper implements GridCacheAffinityKeyMapper {
     /** Reflection cache. */

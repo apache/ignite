@@ -23,9 +23,6 @@ import java.util.*;
 
 /**
  * Streamer query task.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridComputeTaskNoResultCache
 public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapter<Void, R2> {

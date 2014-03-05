@@ -132,9 +132,6 @@ import java.util.*;
  * then job can continue from where it failed last time, otherwise it would start
  * from scratch. Throughout it's execution job should periodically save its
  * intermediate state to avoid starting from scratch in case of a failure.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridComputeJob extends Serializable {
     /**

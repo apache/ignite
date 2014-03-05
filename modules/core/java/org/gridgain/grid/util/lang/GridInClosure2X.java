@@ -17,9 +17,6 @@ import org.gridgain.grid.util.typedef.*;
  * Convenient in-closure subclass that allows for thrown grid exception. This class
  * implements {@link #apply(Object, Object)} method that calls {@link #applyx(Object, Object)}
  * method and properly wraps {@link GridException} into {@link GridClosureException} instance.
- *
- * @author @java.author
- * @version @java.version
  * @see CIX2
  */
 public abstract class GridInClosure2X<E1, E2> implements GridBiInClosure<E1, E2> {

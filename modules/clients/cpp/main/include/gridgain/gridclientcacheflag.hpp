@@ -12,9 +12,6 @@
 
 /**
  * Cache projection flags that specify projection behaviour.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 enum GridClientCacheFlag {
     /** Skips store, i.e. no read-through and no write-through behavior. */

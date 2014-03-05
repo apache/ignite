@@ -20,9 +20,6 @@ import org.gridgain.grid.kernal.processors.*;
  * Typically, resolver should run light-weight single check (i.e. one IP address or
  * one shared folder). Compound segment checks may be performed using several
  * resolvers.
- *
- * @author @java.author
- * @version @java.version
  * @see GridConfiguration#getSegmentationResolvers()
  * @see GridConfiguration#getSegmentationPolicy()
  * @see GridConfiguration#getSegmentCheckFrequency()

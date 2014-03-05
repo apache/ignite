@@ -15,9 +15,6 @@ import org.gridgain.grid.lang.*;
 
 /**
  * Predicate node filter.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridifyNodeFilter extends GridBiPredicate<GridNode, GridComputeTaskSession> {
     // No-op.

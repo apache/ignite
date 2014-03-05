@@ -19,9 +19,6 @@ import org.gridgain.grid.util.tostring.*;
  * GridGain implementation will supply discovery SPI with metrics provider
  * via {@link GridDiscoverySpi#setMetricsProvider(GridDiscoveryMetricsProvider)}
  * method.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridToStringExclude
 public interface GridDiscoveryMetricsProvider {

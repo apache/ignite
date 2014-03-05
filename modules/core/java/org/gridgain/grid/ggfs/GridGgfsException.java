@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * {@code GGFS} exception thrown by file system components.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsException extends GridException {
     /**

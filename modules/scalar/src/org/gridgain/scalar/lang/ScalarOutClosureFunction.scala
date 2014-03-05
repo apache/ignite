@@ -15,9 +15,6 @@ import java.util.concurrent.Callable
 
 /**
  * Wrapping Scala function for `Callable` and specifically for `GridOutClosure`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarOutClosureFunction[R](val inner: Callable[R]) extends (() => R) {
     assert(inner != null)

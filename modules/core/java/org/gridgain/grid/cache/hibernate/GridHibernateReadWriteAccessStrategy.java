@@ -47,9 +47,6 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
  * &#064;org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
  * public class Entity { ... }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStrategyAdapter {
     /** */

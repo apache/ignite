@@ -45,9 +45,6 @@ import static org.gridgain.grid.util.ConcurrentLinkedDeque8.*;
 
 /**
  * Cache eviction manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Unsafe instance. */

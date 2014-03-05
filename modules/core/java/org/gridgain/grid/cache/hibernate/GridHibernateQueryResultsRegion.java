@@ -48,9 +48,6 @@ import org.hibernate.cache.spi.*;
  * Note: the query cache does not cache the state of the actual entities in the cache, it caches only identifier
  * values. For this reason, the query cache should always be used in conjunction with
  * the second-level cache for those entities expected to be cached as part of a query result cache
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridHibernateQueryResultsRegion extends GridHibernateGeneralDataRegion implements QueryResultsRegion {
     /**

@@ -27,9 +27,6 @@ import java.util.*;
  *     <li>User-defined task argument</li>
  *     <li>Maximum file range length for that task (see {@link GridGgfsConfiguration#getMaximumTaskRangeLength()})</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridGgfsTaskArgs<T> {
     /**

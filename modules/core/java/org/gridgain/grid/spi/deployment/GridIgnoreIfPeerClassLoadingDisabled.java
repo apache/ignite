@@ -15,9 +15,6 @@ import java.lang.annotation.*;
  * This annotation is for all implementations of {@link GridDeploymentSpi} that may be
  * ignored if peer class loading is disabled.
  * If so, system manages deployment information without invoking SPI.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Inherited

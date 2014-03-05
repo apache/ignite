@@ -39,8 +39,7 @@ import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
  * This implementation supports several selectors and several reading threads.
  *
  * @param <T> Message type.
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridNioServer<T> {
     /** Default session write timeout. */

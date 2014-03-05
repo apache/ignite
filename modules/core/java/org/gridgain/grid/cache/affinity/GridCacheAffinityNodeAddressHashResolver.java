@@ -14,9 +14,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Node hash resolver which uses {@link GridNode#consistentId()} as alternate hash value.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheAffinityNodeAddressHashResolver implements GridCacheAffinityNodeHashResolver {
     /** {@inheritDoc} */

@@ -16,9 +16,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Convenience adapter for {@link GridIndexingKeyValueRow}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIndexingKeyValueRowAdapter<K, V> implements GridIndexingKeyValueRow<K, V> {
     /** Key. */

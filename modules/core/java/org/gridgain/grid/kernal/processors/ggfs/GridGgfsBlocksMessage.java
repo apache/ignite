@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * GGFS write blocks message.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
     /** File id. */

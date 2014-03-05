@@ -20,9 +20,6 @@ import java.nio.*;
 
 /**
  * Block write request acknowledgement message.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
     /** File id. */

@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Error future.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheQueryErrorFuture<T> extends GridFinishedFuture<Collection<T>> implements GridCacheQueryFuture<T> {
     /**

@@ -18,9 +18,6 @@ import java.io.*;
 
 /**
  * DR sender cache attributes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDrSendAttributes implements Externalizable {
     /** Data center replication mode. */

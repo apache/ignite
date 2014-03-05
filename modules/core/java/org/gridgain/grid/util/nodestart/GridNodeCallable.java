@@ -26,9 +26,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
  * SSH-based node starter.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNodeCallable implements Callable<GridTuple3<String, Boolean, String>> {
     /** Default GridGain home path for Windows (taken from environment variable). */

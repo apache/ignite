@@ -32,9 +32,6 @@ import java.util.concurrent.*;
 
 /**
  * Processor for all Grid and task/job resources.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridResourceProcessor extends GridProcessorAdapter {
     /** */

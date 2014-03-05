@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Different GridGain editions.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridProductEdition {
     /** In-Memory Data Grid. */

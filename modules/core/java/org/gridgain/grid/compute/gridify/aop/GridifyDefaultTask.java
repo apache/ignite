@@ -23,9 +23,6 @@ import java.util.*;
  * <p>
  * See {@link Gridify} documentation for more information about execution of
  * {@code gridified} methods.
- *
- * @author @java.author
- * @version @java.version
  * @see Gridify
  */
 public class GridifyDefaultTask extends GridComputeTaskAdapter<GridifyArgument, Object>

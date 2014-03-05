@@ -68,9 +68,6 @@ import org.gridgain.grid.lang.GridCallable
  *     cswap "cache"
  *         Swaps entries in cache with name 'cache'.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorCacheSwapCommand {
     /**
@@ -145,8 +142,7 @@ class VisorCacheSwapCommand {
 }
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 @GridInternal
 class SwapCommand(val cacheName: String) extends GridCallable[(UUID, Int, Int, Int)] {
@@ -166,9 +162,6 @@ class SwapCommand(val cacheName: String) extends GridCallable[(UUID, Int, Int, I
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorCacheSwapCommand {
     addHelp(

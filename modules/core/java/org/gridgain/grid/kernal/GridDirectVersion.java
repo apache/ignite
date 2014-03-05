@@ -13,9 +13,6 @@ import java.lang.annotation.*;
 
 /**
  * Assigns version to a field.
- *
- * @author @java.author
- * @version @java.version
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

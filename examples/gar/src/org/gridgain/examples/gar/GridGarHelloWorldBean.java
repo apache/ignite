@@ -18,9 +18,6 @@ import java.util.*;
 /**
  * Imported class which should be placed in JAR file in GAR/lib folder.
  * Loads message resource file via class loader. See {@code GridGarHelloWorldExample} for more details.
- *
- * @author link
- * @version 1.5
  */
 public class GridGarHelloWorldBean {
     /** */

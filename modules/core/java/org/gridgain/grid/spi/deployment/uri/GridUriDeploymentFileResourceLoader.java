@@ -16,9 +16,6 @@ import java.io.*;
 /**
  * Class loader helper that could load class from the file using certain
  * class loader.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridUriDeploymentFileResourceLoader {
     /** Class loader class should be loaded by. */

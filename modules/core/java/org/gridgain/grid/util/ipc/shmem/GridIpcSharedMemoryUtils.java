@@ -20,9 +20,6 @@ import java.util.*;
 /**
  * NOTE: Native library should be loaded, before methods of this class are called. Native library is loaded with: {@link
  * GridIpcSharedMemoryNativeLoader#load()}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIpcSharedMemoryUtils {
     /**

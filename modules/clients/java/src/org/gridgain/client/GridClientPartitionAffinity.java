@@ -28,9 +28,6 @@ import java.util.concurrent.*;
 *      filter returns {@code false}, first backup node for the key will be considered primary.
 * </li>
 * </ul>
-*
-* @author @java.author
-* @version @java.version
 */
 @SuppressWarnings("NullableProblems")
 public class GridClientPartitionAffinity implements GridClientDataAffinity, GridClientTopologyListener {

@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Management bean for {@link GridTcpDiscoverySpi}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridTcpDiscoverySpiMBean extends GridSpiManagementMBean {
     /**

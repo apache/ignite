@@ -19,8 +19,7 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridIpcSharedMemorySpace implements Closeable {
     /** Shared memory segment size (operable). */

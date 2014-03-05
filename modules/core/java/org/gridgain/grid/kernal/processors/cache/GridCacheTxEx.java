@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
  * Transaction managed by cache ({@code 'Ex'} stands for external).
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
     @SuppressWarnings("PublicInnerClass")

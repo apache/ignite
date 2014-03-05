@@ -13,9 +13,6 @@ import java.util.*;
 
 /**
  * Job event listener.
- *
- * @author @java.author
- * @version @java.version
  */
 interface GridJobEventListener extends EventListener {
     /**

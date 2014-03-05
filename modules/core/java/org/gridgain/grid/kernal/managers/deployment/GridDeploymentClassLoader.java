@@ -27,9 +27,6 @@ import java.util.concurrent.*;
  * by system class loader will be downloaded from given remote node
  * by task deployment identifier. If identifier has been changed on
  * remote node this class will throw exception.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"CustomClassloader"})
 class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInfo {

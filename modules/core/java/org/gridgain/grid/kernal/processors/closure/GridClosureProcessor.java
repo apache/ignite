@@ -33,8 +33,7 @@ import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
 import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridClosureProcessor extends GridProcessorAdapter {
     /** */

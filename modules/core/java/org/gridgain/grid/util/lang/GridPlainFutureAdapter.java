@@ -18,9 +18,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Plain future adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridPlainFutureAdapter<R> implements GridPlainFuture<R> {
     /** This future done callbacks. */

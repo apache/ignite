@@ -20,9 +20,6 @@ import java.nio.*;
 /**
  * Message sent to check that transactions related to some optimistic transaction
  * were prepared on remote node.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistributedBaseMessage<K, V> {
     /** Future ID. */

@@ -48,9 +48,6 @@ import java.lang.annotation.*;
  * </pre>
  * <p>
  * See {@link GridConfiguration#getLoadBalancingSpi()} for Grid configuration details.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

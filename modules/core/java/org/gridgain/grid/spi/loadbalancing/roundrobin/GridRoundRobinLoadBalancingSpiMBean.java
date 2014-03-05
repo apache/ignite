@@ -14,9 +14,6 @@ import org.gridgain.grid.util.mbean.*;
 
 /**
  * Management bean for {@link GridRoundRobinLoadBalancingSpi} SPI.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean that provides access to round robin load balancing SPI configuration.")
 public interface GridRoundRobinLoadBalancingSpiMBean extends GridSpiManagementMBean {

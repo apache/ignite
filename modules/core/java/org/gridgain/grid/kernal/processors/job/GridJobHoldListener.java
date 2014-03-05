@@ -14,9 +14,6 @@ import java.util.*;
 /**
  * Job hold listener to notify job processor on {@code hold}
  * state change.
- *
- * @author @java.author
- * @version @java.version
  */
 interface GridJobHoldListener extends EventListener {
     /**

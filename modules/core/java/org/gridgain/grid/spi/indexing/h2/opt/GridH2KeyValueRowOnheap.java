@@ -16,9 +16,6 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Onheap row.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridH2KeyValueRowOnheap extends GridH2AbstractKeyValueRow {
     /**

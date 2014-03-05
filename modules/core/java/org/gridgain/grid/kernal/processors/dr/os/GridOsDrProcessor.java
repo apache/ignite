@@ -17,9 +17,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * No-op implementation for {@link GridDrProcessor}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridOsDrProcessor extends GridProcessorAdapter implements GridDrProcessor {
     /**

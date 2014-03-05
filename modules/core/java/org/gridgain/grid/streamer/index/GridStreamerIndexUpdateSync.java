@@ -18,8 +18,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * operations on window index.
  *
  * @see GridStreamerIndexProvider
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridStreamerIndexUpdateSync {
     /** */

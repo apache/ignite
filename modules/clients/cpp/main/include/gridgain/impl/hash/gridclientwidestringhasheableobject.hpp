@@ -31,9 +31,6 @@
 
 /**
  * Provides the implementation of hash code for wide strings.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridWideStringHasheableObject : public GridHasheableObject {
 public:

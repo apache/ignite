@@ -31,9 +31,6 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
  * Cache sequence implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenceEx, Externalizable {
     /** De-serialization stash. */

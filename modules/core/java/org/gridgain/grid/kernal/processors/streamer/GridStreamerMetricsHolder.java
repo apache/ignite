@@ -19,9 +19,6 @@ import java.util.*;
  * Metrics holder.
  *
  * Note that for current active stages we use maximum active stages over last second.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerMetricsHolder implements GridStreamerMetrics {
     /** Max active stages over last minute. */

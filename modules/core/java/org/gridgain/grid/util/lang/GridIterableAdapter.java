@@ -15,9 +15,6 @@ import java.util.*;
 
 /**
  * Convenient adapter for "rich" iterable interface.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIterableAdapter<T> implements GridIterable<T> {
     /** */

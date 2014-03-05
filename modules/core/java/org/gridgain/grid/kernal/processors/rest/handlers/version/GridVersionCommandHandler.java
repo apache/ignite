@@ -19,9 +19,6 @@ import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 
 /**
  * Handler for {@link GridRestCommand#VERSION} command.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridVersionCommandHandler extends GridRestCommandHandlerAdapter {
     /**

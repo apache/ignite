@@ -32,9 +32,6 @@ import static org.gridgain.grid.cache.GridCacheTxState.*;
 
 /**
  * Replicated user transaction.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
     /** Future. */

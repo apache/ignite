@@ -32,9 +32,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
  * Colocated cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtColocatedCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**

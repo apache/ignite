@@ -25,9 +25,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Future composed of multiple inner futures.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     /** Futures. */

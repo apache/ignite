@@ -17,9 +17,6 @@ import org.gridgain.grid.util.typedef.*;
  * Convenient predicate subclass that allows for thrown grid exception. This class
  * implements {@link #apply(Object)} method that calls {@link #applyx(Object)} method
  * and properly wraps {@link GridException} into {@link GridClosureException} instance.
- *
- * @author @java.author
- * @version @java.version
  * @see PX1
  */
 public abstract class GridPredicateX<E1> implements GridPredicate<E1> {

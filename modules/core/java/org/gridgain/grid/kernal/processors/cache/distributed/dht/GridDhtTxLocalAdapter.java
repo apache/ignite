@@ -30,9 +30,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
  * Replicated user transaction.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapter<K, V> {
     /** Near mappings. */

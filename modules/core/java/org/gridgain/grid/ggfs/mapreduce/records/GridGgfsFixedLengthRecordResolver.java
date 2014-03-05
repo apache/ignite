@@ -19,9 +19,6 @@ import java.io.*;
 /**
  * Record resolver which adjusts records to fixed length. That is, start offset of the record is shifted to the
  * nearest position so that {@code newStart % length == 0}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsFixedLengthRecordResolver implements GridGgfsRecordResolver, Externalizable {
     /** Record length. */

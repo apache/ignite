@@ -15,9 +15,6 @@ import java.io.*;
 
 /**
  * Handshake message.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsHandshakeResponse implements Externalizable {
     /** GGFS name. */

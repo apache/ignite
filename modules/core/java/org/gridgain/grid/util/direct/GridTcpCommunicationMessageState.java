@@ -28,9 +28,6 @@ import static org.gridgain.grid.util.direct.GridTcpCommunicationMessageAdapter.*
 
 /**
  * Communication message state.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("PublicField")
 public class GridTcpCommunicationMessageState {

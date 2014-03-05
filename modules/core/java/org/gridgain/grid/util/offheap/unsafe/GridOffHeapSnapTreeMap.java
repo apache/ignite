@@ -100,8 +100,6 @@ import java.util.concurrent.locks.*;
  *  queries, size(), and root marking acquire the lock in Shared mode.
  *
  *  @author Nathan Bronson
- *  @author @java.author
- *  @version @java.version
  */
 @SuppressWarnings("ALL")
 public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends GridOffHeapSmartPointer>

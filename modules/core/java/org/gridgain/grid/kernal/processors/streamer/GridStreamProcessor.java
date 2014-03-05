@@ -27,8 +27,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridStreamProcessor extends GridProcessorAdapter {
     /** Streamers map. */

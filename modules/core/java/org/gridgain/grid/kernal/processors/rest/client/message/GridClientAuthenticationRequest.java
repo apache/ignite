@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * Client authentication request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientAuthenticationRequest extends GridClientAbstractMessage {
     /** Credentials. */

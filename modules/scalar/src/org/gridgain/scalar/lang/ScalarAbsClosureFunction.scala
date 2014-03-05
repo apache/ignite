@@ -13,9 +13,6 @@ package org.gridgain.scalar.lang
 
 /**
  * Wrapping Scala function for `GridAbsClosure`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarAbsClosureFunction(val inner: Runnable) extends (() => Unit) {
     assert(inner != null)

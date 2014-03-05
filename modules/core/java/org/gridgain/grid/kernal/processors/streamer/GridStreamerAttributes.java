@@ -19,8 +19,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridStreamerAttributes implements Externalizable {
     /** */

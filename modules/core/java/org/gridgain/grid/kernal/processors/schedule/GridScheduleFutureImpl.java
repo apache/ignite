@@ -33,9 +33,6 @@ import static java.util.concurrent.TimeUnit.*;
 
 /**
  * Implementation of {@link GridSchedulerFuture} interface.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements GridSchedulerFuture<R>, Externalizable {
     /** Empty time array. */

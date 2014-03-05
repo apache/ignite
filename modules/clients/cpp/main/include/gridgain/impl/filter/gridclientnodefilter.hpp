@@ -31,9 +31,6 @@ class GridClientAllPassFilter: public TGridClientNodePredicate {
 
 /**
  * The special filter for STL-filtering operations.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientNodeUuidFilter: public TGridClientNodePredicate {
 public:

@@ -15,9 +15,6 @@ package org.gridgain.client;
  * Since the topology refresh is performed in background, the listeners will not be notified
  * immediately after the node leaves grid, but the maximum time window between remote grid detects
  * node leaving and client receives topology update is {@link GridClientConfiguration#getTopologyRefreshFrequency()}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridClientTopologyListener {
     /**
