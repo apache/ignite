@@ -1048,7 +1048,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      */
     private static class IndexDescriptor implements GridIndexDescriptor {
         /** Fields sorted by order number. */
-        private final Collection<T2<String, Integer>> fields = new PriorityQueue<>(4,
+        private final Collection<T2<String, Integer>> fields = new TreeSet<>(
             new Comparator<T2<String, Integer>>() {
                 @Override public int compare(T2<String, Integer> o1, T2<String, Integer> o2) {
                     return o1.get2() - o2.get2();

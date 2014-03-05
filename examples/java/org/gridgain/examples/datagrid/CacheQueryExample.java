@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.lang.*;
 
 import java.io.*;
@@ -103,22 +102,6 @@ public class CacheQueryExample {
             sqlFieldsQuery();
 
             print("Query example finished.");
-
-            Collection<GridCacheSqlMetadata> meta = ((GridCacheQueriesEx<?, ?>)g.cache(CACHE_NAME).queries()).sqlMetadata();
-
-            GridCacheSqlMetadata m = meta.iterator().next();
-
-            Collection<GridCacheSqlIndexMetadata> idxs = m.indexes("Person");
-
-            for (GridCacheSqlIndexMetadata ix : m.indexes("Person")) {
-                if ("GRP1".equalsIgnoreCase(ix.name())) {
-                    print(ix.fields().toString());
-
-                    assert "[lastName, firstName, orgId]".equalsIgnoreCase(ix.fields().toString()) : "Invalid index fields order!";
-
-                    break;
-                }
-            }
         }
     }
 
@@ -363,15 +346,15 @@ public class CacheQueryExample {
         private UUID id;
 
         /** Organization ID (create non-unique SQL index for this field). */
-        @GridCacheQuerySqlField(orderedGroups = {@GridCacheQuerySqlField.Group(name = "grp1", order = 3)})
+        @GridCacheQuerySqlField
         private UUID orgId;
 
         /** First name (not-indexed). */
-        @GridCacheQuerySqlField(orderedGroups = {@GridCacheQuerySqlField.Group(name = "grp1", order = 2)})
+        @GridCacheQuerySqlField(index = false)
         private String firstName;
 
         /** Last name (not indexed). */
-        @GridCacheQuerySqlField(orderedGroups = {@GridCacheQuerySqlField.Group(name = "grp1", order = 1)})
+        @GridCacheQuerySqlField(index = false)
         private String lastName;
 
         /** Resume text (create LUCENE-based TEXT index for this field). */
