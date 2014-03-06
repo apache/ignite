@@ -90,18 +90,56 @@ GridClientComputeProjectionImpl::GridClientComputeProjectionImpl(TGridClientShar
     loadBalancer_ = balancer;
 }
 
+/**
+ * Creates a projection that will communicate only with specified remote node.
+ * <p>
+ * If current projection is dynamic projection, then this method will check is passed node is in topology.
+ * If any filters were specified in current topology, this method will check if passed node is accepted by
+ * the filter. If current projection was restricted to any subset of nodes, this method will check if
+ * passed node is in that subset. If any of the checks fails an exception will be thrown.
+ *
+ * @param node Single node to which this projection will be restricted.
+ * @return Resulting static projection that is bound to a given node.
+ * @throw GridClientException If resulting projection is empty.
+ */
 TGridClientComputePtr GridClientComputeProjectionImpl::projection(const GridClientNode& node) {
     TGridClientNodePredicatePtr filter(new GridClientNodeUuidFilter(node));
 
     return makeProjection(filter, TGridClientLoadBalancerPtr());
 }
 
+/**
+ * Creates a projection that will communicate only with specified remote nodes. For any particular call
+ * a node to communicate will be selected with passed balancer..
+ * <p>
+ * If current projection is dynamic projection, then this method will check is passed nodes are in topology.
+ * If any filters were specified in current topology, this method will check if passed nodes are accepted by
+ * the filter. If current projection was restricted to any subset of nodes, this method will check if
+ * passed nodes are in that subset (i.e. calculate the intersection of two collections).
+ * If any of the checks fails an exception will be thrown.
+ *
+ * @param nodes Collection of nodes to which this projection will be restricted.
+ * @return Resulting static projection that is bound to a given nodes.
+ * @throw GridClientException If resulting projection is empty.
+ */
 TGridClientComputePtr GridClientComputeProjectionImpl::projection(const TGridClientNodeList& nodes) {
     TGridClientNodePredicatePtr filter(new GridClientNodeUuidFilter(nodes));
 
     return makeProjection(filter, TGridClientLoadBalancerPtr());
 }
 
+/**
+ * Creates a projection that will communicate only with nodes that are accepted by the passed filter.
+ * <p>
+ * If current projection is dynamic projection, then filter will be applied to the most relevant
+ * topology snapshot every time a node to communicate is selected. If current projection is a static projection,
+ * then resulting projection will only be restricted to nodes that were in parent projection and were
+ * accepted by the passed filter. If any of the checks fails an exception will be thrown.
+ *
+ * @param filter Filter that will select nodes for projection.
+ * @return Resulting projection (static or dynamic, depending in parent projection type).
+ * @throws GridClientException If resulting projection is empty.
+ */
 TGridClientComputePtr GridClientComputeProjectionImpl::projection(TGridClientNodePredicatePtr filter) {
     return makeProjection(filter, TGridClientLoadBalancerPtr());
 }
@@ -133,10 +171,25 @@ TGridClientComputePtr GridClientComputeProjectionImpl::projection(const TGridCli
     return makeProjection(filter, balancer);
 }
 
+/**
+ * Gets balancer used by projection.
+ *
+ * @return Instance of {@link GridClientLoadBalancer}.
+ */
 TGridClientLoadBalancerPtr GridClientComputeProjectionImpl::balancer() const {
     return loadBalancer();
 }
 
+/**
+ * Executes task.
+ *
+ * @param taskName Task name or task class name.
+ * @param taskArg Optional task argument.
+ * @return Task execution result.
+ * @throw GridClientException In case of error.
+ * @throw GridClientClosedException If client was closed manually.
+ * @throw GridServerUnreachableException If none of the servers can be reached.
+ */
 GridClientVariant GridClientComputeProjectionImpl::execute(const string& taskName,
         const GridClientVariant& taskArg) {
     if (invalidated)
@@ -156,6 +209,13 @@ GridClientVariant GridClientComputeProjectionImpl::execute(const string& taskNam
     return GridClientVariant(res.getTaskResult());
 }
 
+/**
+ * Asynchronously executes task.
+ *
+ * @param taskName Task name or task class name.
+ * @param taskArg Optional task argument.
+ * @return Future.
+ */
 TGridClientFutureVariant GridClientComputeProjectionImpl::executeAsync(const string& taskName,
         const GridClientVariant& taskArg) {
     if (invalidated)
@@ -173,6 +233,19 @@ TGridClientFutureVariant GridClientComputeProjectionImpl::executeAsync(const str
     return res;
 }
 
+/**
+ * Executes task using cache affinity key for routing. This way the task will start executing
+ * exactly on the node where this affinity key is cached.
+ *
+ * @param taskName Task name or task class name.
+ * @param cacheName Name of the cache on which affinity should be calculated.
+ * @param affKey Affinity key.
+ * @param taskArg Optional task argument.
+ * @return Task execution result.
+ * @throw GridClientException In case of error.
+ * @throw GridServerUnreachableException If none of the servers can be reached.
+ * @throw GridClientClosedException If client was closed manually.
+ */
 GridClientVariant GridClientComputeProjectionImpl::affinityExecute(const string& taskName, const string& cacheName,
         const GridClientVariant& affKey, const GridClientVariant& taskArg) {
     if (invalidated)
@@ -194,6 +267,16 @@ GridClientVariant GridClientComputeProjectionImpl::affinityExecute(const string&
     return GridClientVariant(res.getTaskResult());
 }
 
+/**
+ * Asynchronously executes task using cache affinity key for routing. This way
+ * the task will start executing exactly on the node where this affinity key is cached.
+ *
+ * @param taskName Task name or task class name.
+ * @param cacheName Name of the cache on which affinity should be calculated.
+ * @param affKey Affinity key.
+ * @param taskArg Optional task argument.
+ * @return Future.
+ */
 TGridClientFutureVariant GridClientComputeProjectionImpl::affinityExecuteAsync(const string& taskName,
         const string& cacheName, const GridClientVariant& affKey, const GridClientVariant& taskArg) {
     if (invalidated)
@@ -212,10 +295,23 @@ TGridClientFutureVariant GridClientComputeProjectionImpl::affinityExecuteAsync(c
     return res;
 }
 
+/**
+ * Gets node with given id from most recently refreshed topology.
+ *
+ * @param id Node ID.
+ * @return Node for given ID or {@code null} if node with given id was not found.
+ */
 TGridClientNodePtr GridClientComputeProjectionImpl::node(const GridUuid& uuid) const {
     return GridClientProjectionImpl::node(uuid);
 }
 
+/**
+ * Gets nodes that passes the filter. If this compute instance is a projection, then only
+ * nodes that passes projection criteria will be passed to the filter.
+ *
+ * @param filter Node filter.
+ * @return Collection of nodes that satisfy provided filter.
+ */
 TGridClientNodeList GridClientComputeProjectionImpl::nodes(TGridClientNodePredicatePtr pred) const {
     if (pred.get() != NULL) {
         return nodes([&pred](const GridClientNode& n) {
@@ -247,12 +343,25 @@ TGridClientNodeList GridClientComputeProjectionImpl::nodes(std::function<bool(co
     return nodes;
 }
 
+/**
+ * Gets all nodes in the projection.
+ *
+ * @param filter Node filter.
+ * @return Collection of nodes that satisfy provided filter.
+ */
 TGridClientNodeList GridClientComputeProjectionImpl::nodes() const {
     TGridClientNodePredicatePtr filter = TGridClientNodePredicatePtr((GridClientPredicate<GridClientNode> *) NULL);
 
     return nodes(filter);
 }
 
+/**
+ * Gets nodes that passes the filter. If this compute instance is a projection, then only
+ * nodes that passes projection criteria will be passed to the filter.
+ *
+ * @param filter Node filter.
+ * @return Collection of nodes that satisfy provided filter.
+ */
 TGridClientNodeList GridClientComputeProjectionImpl::nodes(const std::vector<GridUuid>& ids) const {
     TGridClientNodeList nodes;
 
@@ -307,6 +416,17 @@ TGridClientNodeList GridClientComputeProjectionImpl::refreshTopology(GridTopolog
     return nodes;
 }
 
+/**
+ * Gets node by its ID.
+ *
+ * @param id Node ID.
+ * @param includeAttrs Whether to include node attributes.
+ * @param includeMetrics Whether to include node metrics.
+ * @return Node descriptor or {@code null} if node doesn't exist.
+ * @throw GridClientException In case of error.
+ * @throw GridServerUnreachableException If none of the servers can be reached.
+ * @throw GridClientClosedException If client was closed manually.
+ */
 TGridClientNodePtr GridClientComputeProjectionImpl::refreshNode(const GridUuid& id, bool includeAttrs,
         bool includeMetrics) {
     if (invalidated)
@@ -326,6 +446,14 @@ TGridClientNodePtr GridClientComputeProjectionImpl::refreshNode(const GridUuid& 
     return nodes[0];
 }
 
+/**
+ * Asynchronously gets node by its ID.
+ *
+ * @param id Node ID.
+ * @param includeAttrs Whether to include node attributes.
+ * @param includeMetrics Whether to include node metrics.
+ * @return Future.
+ */
 TGridClientNodeFuturePtr GridClientComputeProjectionImpl::refreshNodeAsync(const GridUuid& id, bool includeAttrs,
         bool includeMetrics) {
     if (invalidated)
@@ -345,6 +473,17 @@ TGridClientNodeFuturePtr GridClientComputeProjectionImpl::refreshNodeAsync(const
     return res;
 }
 
+/**
+ * Gets node by IP address.
+ *
+ * @param ip IP address.
+ * @param includeAttrs Whether to include node attributes.
+ * @param includeMetrics Whether to include node metrics.
+ * @return Node descriptor or {@code null} if node doesn't exist.
+ * @throw GridClientException In case of error.
+ * @throw GridServerUnreachableException If none of the servers can be reached.
+ * @throw GridClientClosedException If client was closed manually.
+ */
 TGridClientNodePtr GridClientComputeProjectionImpl::refreshNode(const string& ip, bool includeAttrs,
         bool includeMetrics) {
     if (invalidated)
@@ -366,6 +505,14 @@ TGridClientNodePtr GridClientComputeProjectionImpl::refreshNode(const string& ip
     return nodes[0];
 }
 
+/**
+ * Asynchronously gets node by IP address.
+ *
+ * @param ip IP address.
+ * @param includeAttrs Whether to include node attributes.
+ * @param includeMetrics Whether to include node metrics.
+ * @return Future.
+ */
 TGridClientNodeFuturePtr GridClientComputeProjectionImpl::refreshNodeAsync(const string& ip, bool includeAttrs,
         bool includeMetrics) {
     if (invalidated)
@@ -384,6 +531,16 @@ TGridClientNodeFuturePtr GridClientComputeProjectionImpl::refreshNodeAsync(const
     return res;
 }
 
+/**
+ * Gets current topology.
+ *
+ * @param includeAttrs Whether to include node attributes.
+ * @param includeMetrics Whether to include node metrics.
+ * @return Node descriptors.
+ * @throw GridClientException In case of error.
+ * @throw GridServerUnreachableException If none of the servers can be reached.
+ * @throw GridClientClosedException If client was closed manually.
+ */
 TGridClientNodeList GridClientComputeProjectionImpl::refreshTopology(bool includeAttrs, bool includeMetrics) {
     if (invalidated)
         throw GridClientClosedException();
@@ -396,6 +553,13 @@ TGridClientNodeList GridClientComputeProjectionImpl::refreshTopology(bool includ
     return refreshTopology(cmd);
 }
 
+/**
+ * Asynchronously gets current topology.
+ *
+ * @param includeAttrs Whether to include node attributes.
+ * @param includeMetrics Whether to include node metrics.
+ * @return Future.
+ */
 TGridClientNodeFutureList GridClientComputeProjectionImpl::refreshTopologyAsync(bool includeAttrs,
         bool includeMetrics) {
     if (invalidated)
@@ -414,6 +578,16 @@ TGridClientNodeFutureList GridClientComputeProjectionImpl::refreshTopologyAsync(
     return res;
 }
 
+/**
+ * Gets contents of default log file ({@code GRIDGAIN_HOME/work/log/gridgain.log}).
+ *
+ * @param lineFrom Index of line from which log is get, inclusive (starting from 0).
+ * @param lineTo Index of line to which log is get, inclusive (starting from 0).
+ * @return Log contents.
+ * @throw GridClientException In case of error.
+ * @throw GridServerUnreachableException If none of the servers can be reached.
+ * @throw GridClientClosedException If client was closed manually.
+ */
 vector<string> GridClientComputeProjectionImpl::log(int lineFrom, int lineTo) {
     if (invalidated)
         throw GridClientClosedException();
@@ -421,6 +595,14 @@ vector<string> GridClientComputeProjectionImpl::log(int lineFrom, int lineTo) {
     return log("work/log/gridgain.log", lineFrom, lineTo);
 }
 
+/**
+ * Asynchronously gets contents of default log file
+ * ({@code GRIDGAIN_HOME/work/log/gridgain.log}).
+ *
+ * @param lineFrom Index of line from which log is get, inclusive (starting from 0).
+ * @param lineTo Index of line to which log is get, inclusive (starting from 0).
+ * @return Future.
+ */
 TGridFutureStringList GridClientComputeProjectionImpl::logAsync(int lineFrom, int lineTo) {
     if (invalidated)
         return TGridFutureStringList(
@@ -438,6 +620,17 @@ TGridFutureStringList GridClientComputeProjectionImpl::logAsync(int lineFrom, in
     return res;
 }
 
+/**
+ * Gets contents of custom log file.
+ *
+ * @param path Log file path. Can be absolute or relative to GRIDGAIN_HOME.
+ * @param lineFrom Index of line from which log is get, inclusive (starting from 0).
+ * @param lineTo Index of line to which log is get, inclusive (starting from 0).
+ * @return Log contents.
+ * @throw GridClientException In case of error.
+ * @throw GridServerUnreachableException If none of the servers can be reached.
+ * @throw GridClientClosedException If client was closed manually.
+ */
 vector<string> GridClientComputeProjectionImpl::log(const string& path, int lineFrom, int lineTo) {
     if (invalidated)
         throw GridClientClosedException();
@@ -459,6 +652,14 @@ vector<string> GridClientComputeProjectionImpl::log(const string& path, int line
     return res.lines();
 }
 
+/**
+ * Asynchronously gets contents of custom log file.
+ *
+ * @param path Log file path. Can be absolute or relative to GRIDGAIN_HOME.
+ * @param lineFrom Index of line from which log is get, inclusive (starting from 0).
+ * @param lineTo Index of line to which log is get, inclusive (starting from 0).
+ * @return Future.
+ */
 TGridFutureStringList GridClientComputeProjectionImpl::logAsync(const string& path, int lineFrom, int lineTo) {
     if (invalidated)
         return TGridFutureStringList(
@@ -486,6 +687,11 @@ TGridClientComputePtr GridClientComputeProjectionImpl::makeProjection(TGridClien
     return subProjection;
 }
 
+/**
+ * Invalidates this data instance. This is done by the client to indicate
+ * that is has been stopped. After this call, all interface methods
+ * will throw GridClientClosedException.
+ */
 void GridClientComputeProjectionImpl::invalidate() {
 	invalidated = true;
 }
