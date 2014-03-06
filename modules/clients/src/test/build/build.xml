@@ -14,14 +14,14 @@
         GridGain Clients tests build script.
     </description>
 
-    <import file="../../../build/build.xml"/>
+    <import file="../../../../../../build/build.xml"/>
 
     <!-- Base test folder. -->
-    <property name="test.base.dir" value="${gridgain.home}/modules/clients-tests"/>
+    <property name="test.base.dir" value="${gridgain.home}/os/modules/clients"/>
 
     <!-- Paths relative to basedir. -->
-    <property name="tests.cfg.dir" value="${test.base.dir}/config"/>
-    <property name="tests.src.dir" value="${test.base.dir}/java/src"/>
+    <property name="tests.cfg.dir" value="${test.base.dir}/src/test/resources"/>
+    <property name="tests.src.dir" value="${test.base.dir}/src/test/java"/>
 
     <!-- JAR file names. -->
     <property name="jar.tests" value="${gg.sys.name}-clients-tests.jar"/>

@@ -41,7 +41,8 @@ public class GridClientPropertiesConfigurationSelfTest extends GridCommonAbstrac
      *
      */
     static {
-        GRID_CLIENT_SPRING_CONFIG = U.resolveGridGainUrl("/modules/clients/java/config/grid-client-spring-config.xml");
+        GRID_CLIENT_SPRING_CONFIG =
+            U.resolveGridGainUrl("/modules/clients/java/config/grid-client-spring-config.xml");
 
         GRID_CLIENT_CONFIG = U.resolveGridGainUrl("/modules/clients/java/config/grid-client-config.properties");
     }
