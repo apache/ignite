@@ -241,7 +241,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     /**
      * Make sure that listener does not throw exceptions.
      */
-    private abstract class AsyncListener1 extends GridInClosure<GridFuture<B>> {
+    private abstract class AsyncListener1 implements GridInClosure<GridFuture<B>> {
         @Override public final void apply(GridFuture<B> f) {
             try {
                 applyx(f);
@@ -265,7 +265,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     /**
      * Make sure that listener does not throw exceptions.
      */
-    private abstract class AsyncListener2 extends GridInClosure<GridFuture<A>> {
+    private abstract class AsyncListener2 implements GridInClosure<GridFuture<A>> {
         @Override public final void apply(GridFuture<A> f) {
             try {
                 applyx(f);

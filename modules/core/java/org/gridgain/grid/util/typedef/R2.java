@@ -20,4 +20,4 @@ import org.gridgain.grid.util.lang.*;
  * @see GridFunc
  * @see GridReducer2
  */
-public abstract class R2<E1, E2, R> extends GridReducer2<E1, E2, R> { /* No-op. */ }
+public interface R2<E1, E2, R> extends GridReducer2<E1, E2, R> { /* No-op. */ }

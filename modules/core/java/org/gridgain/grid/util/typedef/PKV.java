@@ -20,4 +20,4 @@ import org.gridgain.grid.util.lang.*;
  * @see GridBiPredicate
  * @see GridFunc
  */
-public abstract class PKV<K, V> extends GridBiPredicate<K, V> { /* No-op. */ }
+public interface PKV<K, V> extends GridBiPredicate<K, V> { /* No-op. */ }

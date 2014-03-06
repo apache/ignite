@@ -13,6 +13,7 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.compute.gridify.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.gridify.*;
 import java.util.*;
@@ -24,7 +25,8 @@ import java.util.*;
  * {@code gridified} methods.
  * @see Gridify
  */
-public class GridifyDefaultTask extends GridComputeTaskAdapter<GridifyArgument, Object> {
+public class GridifyDefaultTask extends GridComputeTaskAdapter<GridifyArgument, Object>
+    implements GridPeerDeployAware {
     /** Deploy class. */
     @SuppressWarnings({"TransientFieldNotInitialized"})
     private final transient Class<?> p2pCls;

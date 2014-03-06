@@ -10,7 +10,8 @@
 package org.gridgain.grid.lang;
 
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.util.lang.*;
+
+import java.io.*;
 
 /**
  * Defines a predicate which accepts a parameter and returns {@code true} or {@code false}. In
@@ -20,12 +21,12 @@ import org.gridgain.grid.util.lang.*;
  *
  * @param <E> Type of predicate parameter.
  */
-public abstract class GridPredicate<E> extends GridLambdaAdapter {
+public interface GridPredicate<E> extends Serializable {
     /**
      * Predicate body.
      *
      * @param e Predicate parameter.
      * @return Return value.
      */
-    public abstract boolean apply(E e);
+    public boolean apply(E e);
 }

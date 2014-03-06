@@ -809,7 +809,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     /**
      *
      */
-    private abstract class MessageHandler<M> extends GridBiInClosure<UUID, M> {
+    private abstract class MessageHandler<M> implements GridBiInClosure<UUID, M> {
         /** {@inheritDoc} */
         @Override public void apply(UUID nodeId, M msg) {
             GridNode node = cctx.node(nodeId);

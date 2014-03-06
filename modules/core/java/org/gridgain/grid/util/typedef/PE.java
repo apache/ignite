@@ -22,4 +22,4 @@ import org.gridgain.grid.util.lang.*;
  * @see GridEvent
  * @see GridFunc
  */
-public abstract class PE extends GridPredicate<GridEvent> { /* No-op. */ }
+public interface PE extends GridPredicate<GridEvent> { /* No-op. */ }

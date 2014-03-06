@@ -21,4 +21,4 @@ import org.gridgain.grid.util.lang.*;
  * @see GridFunc
  * @see GridClosure
  */
-public abstract class C1<E1, R> extends GridClosure<E1, R> { /* No-op. */ }
+public interface C1<E1, R> extends GridClosure<E1, R> { /* No-op. */ }
