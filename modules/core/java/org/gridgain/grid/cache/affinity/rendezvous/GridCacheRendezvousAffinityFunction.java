@@ -325,7 +325,8 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
 
                 if (!allNeighbors.contains(node))
                     res.add(node);
-            } else {
+            }
+            else {
                 if (!res.contains(node) && (backupFilter == null || backupFilter.apply(primary, node)))
                     res.add(next.get2());
             }
