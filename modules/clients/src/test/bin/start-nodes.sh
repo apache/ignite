@@ -16,7 +16,7 @@
 
 # Define environment paths.
 SCRIPT_DIR=$(cd $(dirname "$0"); pwd)
-GG_HOME=$(cd $SCRIPT_DIR/../../..; pwd)
+GG_HOME=$(cd $SCRIPT_DIR/../../../../../..; pwd)
 
 echo Switch to build script directory $SCRIPT_DIR
 cd $SCRIPT_DIR
