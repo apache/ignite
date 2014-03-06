@@ -139,7 +139,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
      * @param parts Partitions count.
      * @param backupFilter Backup filter.
      */
-    public GridCacheRendezvousAffinityFunction(boolean exclNeighbors, int parts,
+    private GridCacheRendezvousAffinityFunction(boolean exclNeighbors, int parts,
         GridBiPredicate<GridNode, GridNode> backupFilter) {
         A.ensure(parts != 0, "parts != 0");
 
@@ -306,10 +306,15 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
 
         Collections.sort(lst, COMPARATOR);
 
-        List<GridNode> res = new ArrayList<>(backups + 1);
+        int primaryAndBackups = backups + 1;
+
+        List<GridNode> res = new ArrayList<>(primaryAndBackups);
 
         GridNode primary = lst.get(0).get2();
 
+        res.add(primary);
+
+        // Select backups.
         for (int i = 1; i < lst.size(); i++) {
             GridBiTuple<Long, GridNode> next = lst.get(i);
 
@@ -325,11 +330,11 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
                     res.add(next.get2());
             }
 
-            if (res.size() == backups + 1)
+            if (res.size() == primaryAndBackups)
                 break;
         }
 
-        if (res.size() < backups + 1 && exclNeighbors) {
+        if (res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups && exclNeighbors) {
             // Need to iterate one more time in case if there are no nodes which pass exclude backups criteria.
             for (int i = 1; i < lst.size(); i++) {
                 GridBiTuple<Long, GridNode> next = lst.get(i);
@@ -339,7 +344,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
                 if (!res.contains(node))
                     res.add(next.get2());
 
-                if (res.size() == backups + 1)
+                if (res.size() == primaryAndBackups)
                     break;
             }
         }
@@ -367,8 +372,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
         List<List<GridNode>> assignments = new ArrayList<>();
 
         Map<UUID, Collection<GridNode>> neighborhoodCache = exclNeighbors ?
-            neighbors(affCtx.currentTopologySnapshot())
-            : null;
+            neighbors(affCtx.currentTopologySnapshot()) : null;
 
         for (int i = 0; i < parts; i++) {
             List<GridNode> partAssignment = assignPartition(i, affCtx.currentTopologySnapshot(), affCtx.backups(),
