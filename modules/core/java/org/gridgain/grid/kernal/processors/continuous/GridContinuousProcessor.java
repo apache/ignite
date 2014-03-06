@@ -1176,7 +1176,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 }
             }
 
-            return toSnd;
+            return new ArrayList<>(toSnd);
         }
 
         /**
