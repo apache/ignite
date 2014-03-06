@@ -68,8 +68,22 @@ private:
     GridClientMessageLogResult rslt;
 };
 
+template <class T> class GridClientPredicateLambdaWrapper: public GridClientPredicate<T> {
+public:
+    GridClientPredicateLambdaWrapper(std::function<bool (const T&)> lambda): lambda(lambda) {}
+
+    virtual ~GridClientPredicateLambdaWrapper() {}
+
+    virtual bool apply(const T& e) const {
+        return lambda(e);
+    }
+
+private:
+    std::function<bool (const T&)> lambda;
+};
+
 GridClientComputeProjectionImpl::GridClientComputeProjectionImpl(TGridClientSharedDataPtr pData,
-		GridClientProjectionListener& prjLsnr,
+        GridClientProjectionListener& prjLsnr,
         TGridClientNodePredicatePtr filter, TGridClientLoadBalancerPtr balancer, TGridThreadPoolPtr& threadPool)
         : GridClientProjectionImpl(pData, prjLsnr, filter), invalidated(false), threadPool(threadPool) {
 
@@ -130,40 +144,26 @@ TGridClientComputePtr GridClientComputeProjectionImpl::projection(TGridClientNod
     return makeProjection(filter, TGridClientLoadBalancerPtr());
 }
 
-/**
- * Creates a projection that will communicate only with nodes that are accepted by the passed filter. The
- * balancer passed will override default balancer specified in configuration.
- * <p>
- * If current projection is dynamic projection, then filter will be applied to the most relevant
- * topology snapshot every time a node to communicate is selected. If current projection is a static projection,
- * then resulting projection will only be restricted to nodes that were in parent projection and were
- * accepted by the passed filter. If any of the checks fails an exception will be thrown.
- *
- * @param filter Filter that will select nodes for projection.
- * @param balancer Balancer that will select balanced node in resulting projection.
- * @return Resulting projection (static or dynamic, depending in parent projection type).
- * @throws GridClientException If resulting projection is empty.
- */
+TGridClientComputePtr GridClientComputeProjectionImpl::projection(std::function<bool(const GridClientNode&)> filter) {
+    return makeProjection(
+        TGridClientNodePredicatePtr(
+            new GridClientPredicateLambdaWrapper<GridClientNode>(filter)),
+        TGridClientLoadBalancerPtr());
+}
+
 TGridClientComputePtr GridClientComputeProjectionImpl::projection(const TGridClientNodePredicatePtr filter,
         TGridClientLoadBalancerPtr balancer) {
     return makeProjection(filter, balancer);
 }
 
-/**
- * Creates a projection that will communicate only with specified remote nodes. For any particular call
- * a node to communicate will be selected with passed balancer..
- * <p>
- * If current projection is dynamic projection, then this method will check is passed nodes are in topology.
- * If any filters were specified in current topology, this method will check if passed nodes are accepted by
- * the filter. If current projection was restricted to any subset of nodes, this method will check if
- * passed nodes are in that subset (i.e. calculate the intersection of two collections).
- * If any of the checks fails an exception will be thrown.
- *
- * @param nodes Collection of nodes to which this projection will be restricted.
- * @param balancer Balancer that will select nodes in resulting projection.
- * @return Resulting static projection that is bound to a given nodes.
- * @throws GridClientException If resulting projection is empty.
- */
+TGridClientComputePtr GridClientComputeProjectionImpl::projection(std::function<bool (const GridClientNode&)> filter,
+        TGridClientLoadBalancerPtr balancer) {
+    return makeProjection(
+        TGridClientNodePredicatePtr(
+            new GridClientPredicateLambdaWrapper<GridClientNode>(filter)),
+        balancer);
+}
+
 TGridClientComputePtr GridClientComputeProjectionImpl::projection(const TGridClientNodeList& nodes,
         TGridClientLoadBalancerPtr balancer) {
     TGridClientNodePredicatePtr filter(new GridClientNodeUuidFilter(nodes));
@@ -313,27 +313,32 @@ TGridClientNodePtr GridClientComputeProjectionImpl::node(const GridUuid& uuid) c
  * @return Collection of nodes that satisfy provided filter.
  */
 TGridClientNodeList GridClientComputeProjectionImpl::nodes(TGridClientNodePredicatePtr pred) const {
+    if (pred.get() != NULL) {
+        return nodes([&pred](const GridClientNode& n) {
+            return pred->apply(n);
+        });
+    }
+    else {
+        return nodes([](const GridClientNode& n) {
+            return true;
+        });
+    }
+}
+
+TGridClientNodeList GridClientComputeProjectionImpl::nodes(std::function<bool(const GridClientNode&)> filter) const {
     TGridClientNodeList nodes;
 
     TNodesSet ns;
 
     subProjectionNodes(ns);
 
-    if (pred.get() == NULL) {
-        for (auto it = ns.begin(); it != ns.end(); ++it) {
-            GridClientNode* gcn = new GridClientNode(*it);
-            TGridClientNodePtr p = TGridClientNodePtr(gcn);
+    for (auto it = ns.begin(); it != ns.end(); ++it) {
+        GridClientNode* gcn = new GridClientNode(*it);
+        TGridClientNodePtr p = TGridClientNodePtr(gcn);
 
+        if (filter(*p))
             nodes.push_back(p);
-        }
-    } else
-        for (auto it = ns.begin(); it != ns.end(); ++it) {
-            GridClientNode* gcn = new GridClientNode(*it);
-            TGridClientNodePtr p = TGridClientNodePtr(gcn);
-
-            if (pred->apply(*p))
-                nodes.push_back(p);
-        }
+    }
 
     return nodes;
 }
