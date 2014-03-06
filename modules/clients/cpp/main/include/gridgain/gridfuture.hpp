@@ -15,10 +15,10 @@
 
 /** Future for operations that return boolean flag.
  */
-class GRIDGAIN_API GridBoolFuture {
+class GRIDGAIN_API GridClientBoolFuture {
 public:
     /** Destructor. */
-    virtual ~GridBoolFuture() {}
+    virtual ~GridClientBoolFuture() {}
 
     /**
      * Waits for future to finish and returns the result of operation.
@@ -43,10 +43,10 @@ public:
  * Future for operations that return complex values like GridClientVariant, etc.
  */
 template<class T>
-class GridFuture {
+class GridClientFuture {
 public:
     /** Destructor. */
-    virtual ~GridFuture(){}
+    virtual ~GridClientFuture(){}
 
     /**
      * Was the operation successful or not. If it was not successful, result is not valid.

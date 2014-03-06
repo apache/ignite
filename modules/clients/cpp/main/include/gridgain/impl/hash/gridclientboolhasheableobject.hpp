@@ -16,7 +16,7 @@
 /**
  * Hashable object wrapping boolean value.
  */
-class GridBoolHasheableObject : public GridHasheableObject {
+class GridBoolHasheableObject : public GridClientHasheableObject {
 public:
     /**
      * Public constructor.

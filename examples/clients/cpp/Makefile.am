@@ -1,4 +1,4 @@
-AM_CXXFLAGS=-Wall -std=gnu++0x
+AM_CXXFLAGS=-Wall -std=c++11
 
 bin_PROGRAMS=gridgain-data-example gridgain-compute-example
 
