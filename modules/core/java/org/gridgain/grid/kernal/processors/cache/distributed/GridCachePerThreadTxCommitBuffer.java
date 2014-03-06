@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
  * Committed tx buffer which should be used in synchronous commit mode.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCachePerThreadTxCommitBuffer<K, V> implements GridCacheTxCommitBuffer<K, V> {
     /** Logger. */

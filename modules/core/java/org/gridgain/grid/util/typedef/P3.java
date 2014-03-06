@@ -15,9 +15,6 @@ import org.gridgain.grid.util.lang.*;
  * Defines {@code alias} for {@link GridPredicate3} by extending it. Since Java doesn't provide type aliases
  * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
  * concise code in cases when readability won't be sacrificed. For more information see {@link GridPredicate3}.
- *
- * @author @java.author
- * @version @java.version
  * @param <T1> Type of the first free variable, i.e. the element the closure is called on.
  * @param <T2> Type of the second free variable, i.e. the element the closure is called on.
  * @param <T3> Type of the third free variable, i.e. the element the closure is called on.

@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * DGC request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDgcRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
     /** */

@@ -30,9 +30,6 @@ import java.util.concurrent.atomic.*;
  * <p>
  * Note that {@link #remove(Object)} and {@link #remove(Object, Object)} methods
  * are not supported for this kind of map.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridBoundedConcurrentOrderedMap<K, V> extends ConcurrentSkipListMap<K, V> {
     /** Element count. */

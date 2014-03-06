@@ -19,9 +19,6 @@
 
 /**
  * HTTP command executor. Sends commands over HTTP transport.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientHttpCommandExecutor : public GridClientCommandExecutorPrivate {
 public:

@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Deployment file processing result.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridUriDeploymentFileProcessorResult {
     /** Class loader. */

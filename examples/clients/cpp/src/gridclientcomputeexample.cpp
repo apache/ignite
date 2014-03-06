@@ -32,22 +32,6 @@
 using namespace std;
 
 /**
- * Predicate for filtering nodes by UUIDs.
- */
-class GridUuidNodePredicate : public GridClientPredicate<GridClientNode> {
-public:
-    GridUuidNodePredicate(const GridUuid& u) : uu(u) {
-    }
-
-    bool apply(const GridClientNode& node) const {
-        return node.getNodeId() == uu;
-    }
-
-private:
-    GridUuid uu;
-};
-
-/**
  * Runs a Compute Grid client example.
  *
  * @param client A client reference.
@@ -92,11 +76,9 @@ void clientComputeExample(TGridClientPtr& client) {
     cout << ">>> Collection execution : there are totally " << rslt.toString() <<
         " test entries on the grid" << endl;
 
-    GridUuidNodePredicate* uuidPredicate = new GridUuidNodePredicate(randNodeId);
-
-    TGridClientNodePredicatePtr predPtr(uuidPredicate);
-
-    prj = clientCompute->projection(predPtr);
+    prj = clientCompute->projection([&randNodeId](const GridClientNode& node) {
+        return node.getNodeId() == randNodeId;
+    });
 
     rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask");
 
@@ -107,7 +89,9 @@ void clientComputeExample(TGridClientPtr& client) {
     // custom load balancers as well.
     TGridClientLoadBalancerPtr balancer(new GridClientRandomBalancer());
 
-    prj = clientCompute->projection(predPtr, balancer);
+    prj = clientCompute->projection([&randNodeId](const GridClientNode& node) {
+        return node.getNodeId() == randNodeId;
+    }, balancer);
 
     rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask");
 
@@ -147,12 +131,10 @@ void clientComputeExample(TGridClientPtr& client) {
     cout << endl;
 
     // Nodes may also be filtered with predicate. Here
-    // we create projection which only contains local node.
-    GridUuidNodePredicate* uuidNodePredicate = new GridUuidNodePredicate(randNodeId);
-
-    TGridClientNodePredicatePtr predFullPtr(uuidNodePredicate);
-
-    nodes = prj->nodes(predFullPtr);
+    // we create a projection containing only local node.
+    nodes = prj->nodes([&randNodeId](const GridClientNode& node) {
+        return node.getNodeId() == randNodeId;
+    });
 
     cout << ">>> Nodes filtered with predicate : ";
 

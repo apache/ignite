@@ -53,9 +53,6 @@ import org.gridgain.grid.spi.deployment.uri.*;
  * </ol>
  * <p>
  * Remote nodes must be started using {@link GarDeploymentNodeStartup}.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GarDeploymentExample {
     /**

@@ -13,9 +13,6 @@ import org.gridgain.grid.compute.*;
 
 /**
  * Generic abstraction over deployed resource containing resource's name, class and corresponding class loader.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDeploymentResource {
     /**

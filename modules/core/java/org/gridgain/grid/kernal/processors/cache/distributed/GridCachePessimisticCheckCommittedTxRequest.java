@@ -21,9 +21,6 @@ import java.util.*;
 /**
  * Message sent to check that transactions related to some pessimistic transaction
  * were prepared on remote node.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistributedBaseMessage<K, V> {
     /** Future ID. */

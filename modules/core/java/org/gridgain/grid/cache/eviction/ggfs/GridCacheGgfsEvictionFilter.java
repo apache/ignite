@@ -15,9 +15,6 @@ import org.gridgain.grid.kernal.processors.ggfs.*;
 
 /**
  * GGFS eviction filter which will not evict blocks of particular files.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheGgfsEvictionFilter implements GridCacheEvictionFilter {
     /** {@inheritDoc} */

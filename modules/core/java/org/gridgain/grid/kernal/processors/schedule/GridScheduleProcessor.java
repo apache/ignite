@@ -24,9 +24,6 @@ import java.util.concurrent.*;
 
 /**
  * Schedules cron-based execution of grid tasks and closures.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridScheduleProcessor extends GridProcessorAdapter {
     /** Cron scheduler. */

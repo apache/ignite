@@ -13,9 +13,6 @@ package org.gridgain.grid.kernal.processors.cache;
  * Marker interface using in cache implementations.
  * If values and keys implements this interface, they will be excluded from some cache internal
  * operations (eviction, iteration).
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheInternal {
     // No-op.

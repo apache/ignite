@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Set implementation that delegates to map.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridSetWrapper<E> extends GridSerializableSet<E> {
     /** Dummy value. */

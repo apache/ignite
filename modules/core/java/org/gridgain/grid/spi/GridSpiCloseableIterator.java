@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  *  Closeable iterator.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridSpiCloseableIterator<T> extends Iterator<T>, AutoCloseable, Serializable {
     /**

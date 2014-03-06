@@ -27,9 +27,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  *
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Collection<GridCacheEntryInfo<K, V>>>
     implements GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> {

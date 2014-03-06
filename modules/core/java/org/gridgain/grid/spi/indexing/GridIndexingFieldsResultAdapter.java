@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Convenience adapter for {@link GridIndexingFieldsResult}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIndexingFieldsResultAdapter implements GridIndexingFieldsResult {
     /** Meta data. */

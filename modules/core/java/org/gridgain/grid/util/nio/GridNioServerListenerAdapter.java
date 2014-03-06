@@ -11,9 +11,6 @@ package org.gridgain.grid.util.nio;
 
 /**
  * Server listener adapter providing empty methods implementation for rarely used methods.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridNioServerListenerAdapter<T> implements GridNioServerListener<T> {
     /** {@inheritDoc} */

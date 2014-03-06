@@ -92,9 +92,6 @@ private:
 
 /**
  * Implementation of GridClientConsistentHash.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientConsistentHashImpl {
 public:

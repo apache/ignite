@@ -29,9 +29,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  *
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFuture<GridCacheTx>
     implements GridCacheFuture<GridCacheTx> {

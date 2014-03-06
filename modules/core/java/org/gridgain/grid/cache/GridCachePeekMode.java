@@ -27,9 +27,6 @@ import java.util.*;
  * <li>{@link #SWAP}</li>
  * <li>{@link #DB}</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridCachePeekMode {
     /** Peeks value only from in-transaction memory of an ongoing transaction, if any. */

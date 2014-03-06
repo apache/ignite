@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Embedded DHT future.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtEmbeddedFuture<A, B> extends GridEmbeddedFuture<A, B> implements GridDhtFuture<A> {
     /** Retries. */

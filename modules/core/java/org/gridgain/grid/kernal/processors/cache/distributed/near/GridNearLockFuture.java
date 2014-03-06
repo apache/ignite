@@ -34,9 +34,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Cache lock future.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<Boolean>
     implements GridCacheMvccFuture<K, V, Boolean> {

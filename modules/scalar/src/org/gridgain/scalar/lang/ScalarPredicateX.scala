@@ -17,14 +17,9 @@ import org.gridgain.grid.util.lang.GridPredicateX
 
 /**
  * Peer deploy aware adapter for Java's `GridPredicateX`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarPredicateX[T](private val p: T => Boolean) extends GridPredicateX[T] {
     assert(p != null)
-
-    peerDeployLike(p)
 
     /**
      * Delegates to passed in function.

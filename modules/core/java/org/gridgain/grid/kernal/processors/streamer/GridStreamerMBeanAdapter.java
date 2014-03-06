@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Streamer MBean implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerMBeanAdapter implements GridStreamerMBean {
     /** Streamer. */

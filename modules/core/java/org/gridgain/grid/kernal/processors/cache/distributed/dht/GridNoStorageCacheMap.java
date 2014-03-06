@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * Empty cache map that will never store any entries.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNoStorageCacheMap<K, V> extends GridCacheConcurrentMap<K, V> {
     /** Empty triple. */

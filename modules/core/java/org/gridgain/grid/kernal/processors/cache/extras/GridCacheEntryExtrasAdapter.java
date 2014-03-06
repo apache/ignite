@@ -14,9 +14,6 @@ import org.gridgain.grid.util.*;
 
 /**
  * Cache extras adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridCacheEntryExtrasAdapter<K> implements GridCacheEntryExtras<K> {
     /** {@inheritDoc} */

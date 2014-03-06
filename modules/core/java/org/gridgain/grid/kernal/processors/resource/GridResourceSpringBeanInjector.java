@@ -20,9 +20,6 @@ import java.lang.reflect.*;
 /**
  * Spring bean injector implementation works with resources provided
  * by Spring {@code ApplicationContext}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridResourceSpringBeanInjector implements GridResourceInjector {
     /** */

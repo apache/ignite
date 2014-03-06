@@ -19,9 +19,6 @@ import java.nio.*;
 
 /**
  * Check prepared transactions response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistributedBaseMessage<K, V> {
     /** Future ID. */

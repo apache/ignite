@@ -11,9 +11,6 @@ package org.gridgain.grid.dr.cache.receiver;
 
 /**
  * Metrics for data center replication receiver cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDrReceiverCacheMetrics {
     /**

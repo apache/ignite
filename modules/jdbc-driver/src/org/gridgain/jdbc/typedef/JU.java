@@ -13,9 +13,6 @@ import org.gridgain.jdbc.util.*;
 
 /**
  * Defines internal {@code typedef} for {@link GridJdbcUtils}.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("ExtendsUtilityClass")
 public class JU extends GridJdbcUtils {

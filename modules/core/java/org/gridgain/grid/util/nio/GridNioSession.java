@@ -14,9 +14,6 @@ import java.net.*;
 
 /**
  * This interface represents established or closed connection between nio server and remote client.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridNioSession {
     /**

@@ -11,9 +11,6 @@ package org.gridgain.grid.dr.hub.sender.store;
 
 /**
  * Data center replication sender hub store entry.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDrSenderHubStoreEntry {
     /**

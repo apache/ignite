@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Utility class with common methods used in gridify annotations.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridifyUtils {
     /** */
@@ -423,8 +420,6 @@ public final class GridifyUtils {
 
     /**
      * Serializable {@link Enumeration} implementation based on {@link Collection}.
-     *
-     * @author @java.author
      */
     private static class EnumerationAdapter<T> implements Enumeration<T>, Serializable {
         /** */
@@ -480,8 +475,6 @@ public final class GridifyUtils {
 
     /**
      * Serializable {@link Iterator} implementation based on {@link Collection}.
-     *
-     * @author @java.author
      */
     private static class IteratorAdapter<T> implements Iterator<T>, Serializable {
         /** */

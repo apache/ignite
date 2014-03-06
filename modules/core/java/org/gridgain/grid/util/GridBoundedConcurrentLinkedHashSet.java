@@ -20,9 +20,6 @@ import static org.gridgain.grid.util.ConcurrentLinkedHashMap.QueuePolicy.*;
 /**
  * Concurrent set with an upper bound. Once set reaches its maximum capacity,
  * the eldest elements will be removed based on insertion or access order.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridBoundedConcurrentLinkedHashSet<E> extends GridSetWrapper<E> {
     /**

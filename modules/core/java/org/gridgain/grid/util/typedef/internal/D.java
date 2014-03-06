@@ -13,9 +13,6 @@ import org.gridgain.grid.util.*;
 
 /**
  * Convenience alias for {@link GridDebug} class.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("ExtendsUtilityClass")
 public class D extends GridDebug {

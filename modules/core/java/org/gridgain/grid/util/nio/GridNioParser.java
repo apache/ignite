@@ -20,9 +20,6 @@ import java.nio.*;
  * Note that methods of this interface are called within NIO threads and should be as fast as possible. If
  * any of methods throw an exception, corresponding session will be closed and listener will be notified with
  * exception passed in as argument.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridNioParser {
     /**

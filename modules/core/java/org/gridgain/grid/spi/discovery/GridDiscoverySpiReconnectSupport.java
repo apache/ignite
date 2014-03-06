@@ -14,9 +14,6 @@ import java.lang.annotation.*;
 /**
  * This annotation is for all implementations of {@link GridDiscoverySpi} that support
  * disconnect and reconnect operations.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Inherited

@@ -21,9 +21,6 @@ class GridClientNode;
  * A compute projection of grid client. Contains various methods for a task execution, full and partial (per node)
  * topology refresh and log downloading.
  *
- * @author @cpp.author
- * @version @cpp.version
- *
  */
 class GRIDGAIN_API GridClientCompute {
 public:
@@ -76,6 +73,20 @@ public:
     virtual TGridClientComputePtr projection(TGridClientNodePredicatePtr filter) = 0;
 
     /**
+     * Creates a projection that will communicate only with nodes that are accepted by the given filter.
+     * <p>
+     * If this projection is dynamic projection, then filter will be applied to the most relevant
+     * topology snapshot every time a node is selected. If this projection is a static projection,
+     * then resulting projection will only be restricted to nodes that were in this projection and were
+     * accepted by the filter. If any of the checks fails an exception will be thrown.
+     *
+     * @param filter Filter that will select nodes for projection.
+     * @return Resulting projection (static or dynamic, depending in parent projection type).
+     * @throws GridClientException If resulting projection is empty.
+     */
+    virtual TGridClientComputePtr projection(std::function<bool (const GridClientNode&)> filter) = 0;
+
+    /**
      * Creates a projection that will communicate only with nodes that are accepted by the given filter. The
      * balancer will override the default balancer specified in the configuration.
      * <p>
@@ -90,7 +101,24 @@ public:
      * @throws GridClientException If resulting projection is empty.
      */
     virtual TGridClientComputePtr projection(TGridClientNodePredicatePtr filter,
-            TGridClientLoadBalancerPtr balancer) = 0;
+        TGridClientLoadBalancerPtr balancer) = 0;
+
+    /**
+     * Creates a projection that will communicate only with nodes that are accepted by the given filter. The
+     * balancer will override the default balancer specified in the configuration.
+     * <p>
+     * If this projection is dynamic projection, then filter will be applied to the most relevant
+     * topology snapshot every time a node to communicate is selected. If this projection is a static projection,
+     * then resulting projection will only be restricted to nodes that were in this projection and were
+     * accepted by the filter. If any of the checks fails an exception will be thrown.
+     *
+     * @param filter Filter that will select nodes for projection.
+     * @param balancer Balancer that will select balanced node in resulting projection.
+     * @return Resulting projection (static or dynamic, depending in parent projection type).
+     * @throws GridClientException If resulting projection is empty.
+     */
+    virtual TGridClientComputePtr projection(std::function<bool (const GridClientNode&)> filter,
+        TGridClientLoadBalancerPtr balancer) = 0;
 
     /**
      * Creates a projection that will communicate only with specified remote nodes. For any particular call
@@ -177,13 +205,22 @@ public:
     virtual TGridClientNodePtr node(const GridUuid& id) const = 0;
 
     /**
-     * Gets nodes that passes the filter. If this compute instance is a projection, then only
-     * nodes that passes projection criteria will be passed to the filter.
+     * Gets nodes that pass the filter. If this compute instance is a projection, then only
+     * nodes that pass projection criteria will be passed to the filter.
      *
      * @param filter Node filter.
      * @return Collection of nodes that satisfy provided filter.
      */
     virtual TGridClientNodeList nodes(TGridClientNodePredicatePtr filter) const = 0;
+
+    /**
+     * Gets nodes that pass the filter. If this compute instance is a projection, then only
+     * nodes that pass projection criteria will be passed to the filter.
+     *
+     * @param filter Node filter.
+     * @return Collection of nodes that satisfy provided filter.
+     */
+    virtual TGridClientNodeList nodes(std::function<bool (const GridClientNode&)> filter) const = 0;
 
     /**
      * Gets all nodes in the projection.

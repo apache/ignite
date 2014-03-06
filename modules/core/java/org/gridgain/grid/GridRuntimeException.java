@@ -17,9 +17,6 @@ import static org.gridgain.grid.util.GridUtils.*;
 /**
  * Common runtime exception for grid. Thrown by all components wherever
  * runtime exception is needed.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridRuntimeException extends RuntimeException {
     /**

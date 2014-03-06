@@ -38,9 +38,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
  * GridConfiguration#setCacheConfiguration(GridCacheConfiguration...)} method. This adapter is a simple bean and
  * can be configured from Spring XML files (or other DI frameworks). <p> Note that absolutely all configuration
  * properties are optional, so users should only change what they need.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("RedundantFieldInitialization")
 public class GridCacheConfiguration {
@@ -163,7 +160,7 @@ public class GridCacheConfiguration {
     public static final boolean DFLT_SWAP_ENABLED = false;
 
     /** Default value for 'maxConcurrentAsyncOps'. */
-    public static final int DFLT_MAX_CONCURRENT_ASYNC_OPS = 10000;
+    public static final int DFLT_MAX_CONCURRENT_ASYNC_OPS = 500;
 
     /** Default value for 'swapEnabled' flag. */
     public static final boolean DFLT_QUERY_INDEX_ENABLED = false;

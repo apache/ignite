@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 /**
  * Thrown when an operation is performed on removed entry.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheEntryRemovedException extends Exception {
     /* No-op. */

@@ -14,9 +14,6 @@ import java.util.*;
 /**
  * Simple class descriptor containing simple and fully qualified class names as well as
  * the list of class fields.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridToStringClassDescriptor {
     /** */

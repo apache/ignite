@@ -15,9 +15,6 @@ import org.gridgain.grid.kernal.processors.cache.*;
  * Defines internal {@code typedef} for {@link GridCacheUtils}. Since Java doesn't provide type aliases
  * (like Scala, for example) we resort to these types of measures. This is intended for internal
  * use only and meant to provide for more terse code when readability of code is not compromised.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"ExtendsUtilityClass"})
 public final class CU extends GridCacheUtils {

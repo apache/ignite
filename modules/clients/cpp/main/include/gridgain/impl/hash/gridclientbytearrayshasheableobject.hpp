@@ -16,9 +16,6 @@
 
 /**
  * Hashable object wrapping byte array.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridByteArrayHasheableObject : public GridHasheableObject {
 public:

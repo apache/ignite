@@ -16,9 +16,6 @@
 
 /**
  * Cache metrics used to obtain statistics on cache itself or any of its entries.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientDataMetrics {
 public:

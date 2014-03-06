@@ -23,9 +23,6 @@ class GridHasheableObject;
  * If implementation of data affinity implements {@link GridClientTopologyListener} interface as well,
  * then affinity will be added to topology listeners on client start before firs connection is established
  * and will be removed after last connection is closed.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientDataAffinity {
 public:

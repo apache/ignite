@@ -18,9 +18,6 @@ import java.util.concurrent.*;
  * Extension for standard {@link Future} interface. It adds simplified exception handling,
  * functional programming support and ability to listen for future completion via functional
  * callback.
- *
- * @author @java.author
- * @version @java.version
  * @param <R> Type of the result for the future.
  */
 public interface GridFuture<R> {

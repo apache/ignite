@@ -13,9 +13,6 @@ import java.util.*;
 
 /**
  * Generates a random number and prints it to the console.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCommandLineRandomNumberGenerator {
     /**

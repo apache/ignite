@@ -26,14 +26,11 @@ import org.jetbrains.annotations.*;
  * Note that this interface does not impose or assume any specific thread-safety by its
  * implementations. Each implementation can elect what type of thread-safety it provides,
  * if any.
- *
- * @author @java.author
- * @version @java.version
  * @param <E1> Type of the first free variable, i.e. the element the closure is called on.
  * @param <E2> Type of the second free variable, i.e. the element the closure is called on.
  * @param <R> Type of the closure's return value.
  */
-public abstract class GridReducer2<E1, E2, R> extends GridOutClosure<R> {
+public interface GridReducer2<E1, E2, R> extends GridOutClosure<R> {
     /**
      * Collects given values. All values will be reduced by {@link #apply()} method.
      * <p>
@@ -46,56 +43,4 @@ public abstract class GridReducer2<E1, E2, R> extends GridOutClosure<R> {
      *      collecting and call {@link #apply()} method.
      */
     public abstract boolean collect(@Nullable E1 e1, @Nullable E2 e2);
-
-    /**
-     * Curries this closure with given tuple values. When result closure is called it will
-     * be executed with given values.
-     *
-     * @param t Tuples each with two values.
-     * @return Curried or partially applied closure with given values.
-     */
-    public GridOutClosure<R> curry(final GridBiTuple<E1, E2>... t) {
-        GridOutClosure<R> rdc = new CO<R>() {
-            @Override public R apply() {
-                for (GridBiTuple<E1, E2> p : t) {
-                    collect(p.get1(), p.get2());
-                }
-
-                return GridReducer2.this.apply();
-            }
-        };
-
-        rdc.peerDeployLike(this);
-
-        return rdc;
-    }
-
-    /**
-     * Gets reducer that ignores third argument passed to method
-     * {@link GridReducer3#collect(Object, Object, Object)} and works as this reducer
-     * with just first and second arguments.
-     * <p>
-     * NOTE: the name is changed from the standard one to avoid signature conflict on erased
-     * return type.
-     *
-     * @param <E3> Type of 3d argument that is ignored.
-     * @return Reducer that ignores third argument passed to method
-     *      {@link GridReducer3#collect(Object, Object, Object)} and works as this reducer
-     *      with first and second arguments.
-     */
-    public <E3> GridReducer3<E1, E2, E3, R> uncurry3x() {
-        GridReducer3<E1, E2, E3, R> rdc = new R3<E1, E2, E3, R>() {
-            @Override public boolean collect(E1 e1, E2 e2, E3 e3) {
-                return GridReducer2.this.collect(e1, e2);
-            }
-
-            @Override public R apply() {
-                return GridReducer2.this.apply();
-            }
-        };
-
-        rdc.peerDeployLike(this);
-
-        return rdc;
-    }
 }

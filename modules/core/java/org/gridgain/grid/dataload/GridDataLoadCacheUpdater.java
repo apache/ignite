@@ -21,9 +21,6 @@ import java.util.*;
  * performance custom implementation may help.
  * Data loader can be configured to use custom implementation of updater instead of default one using
  * {@link GridDataLoader#updater(GridDataLoadCacheUpdater)} method.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDataLoadCacheUpdater<K, V> extends Serializable {
     /**

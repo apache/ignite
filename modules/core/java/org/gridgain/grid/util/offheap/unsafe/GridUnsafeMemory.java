@@ -25,9 +25,6 @@ import static org.gridgain.grid.util.offheap.GridOffHeapEvent.*;
 
 /**
  * Unsafe memory.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridUnsafeMemory {
     /** Unsafe handle. */

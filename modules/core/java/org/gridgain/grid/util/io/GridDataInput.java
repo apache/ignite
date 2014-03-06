@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * Extended data input.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDataInput extends DataInput {
     /**

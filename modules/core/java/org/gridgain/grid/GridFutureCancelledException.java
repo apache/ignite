@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Future computation cannot be retrieved because it was cancelled.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridFutureCancelledException extends GridException {
     /**

@@ -20,9 +20,6 @@ import java.util.concurrent.atomic.*;
  * <li>Consistent naming of threads</li>
  * <li>Dedicated parent thread group</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridSpiThread extends Thread {
     /** Default thread's group. */

@@ -39,9 +39,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
  * <p>
  * Note that scripts {@code ${GRIDGAIN_HOME}/bin/ggstart.{sh|bat}} shipped with GridGain use
  * this startup and you can use them as an example.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"CallToSystemExit"})
 public final class GridCommandLineStartup {

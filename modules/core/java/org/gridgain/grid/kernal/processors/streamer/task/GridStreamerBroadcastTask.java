@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.streamer.task;
 
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.streamer.*;
@@ -22,11 +23,8 @@ import java.util.*;
 
 /**
  * Streamer broadcast task.
- *
- * @author @java.author
- * @version @java.version
  */
-public class GridStreamerBroadcastTask extends GridComputeTaskAdapter<Void, Void> {
+public class GridStreamerBroadcastTask extends GridPeerDeployAwareTaskAdapter<Void, Void> {
     /** Closure. */
     private GridInClosure<GridStreamerContext> clo;
 
@@ -38,7 +36,7 @@ public class GridStreamerBroadcastTask extends GridComputeTaskAdapter<Void, Void
      * @param streamer Streamer.
      */
     public GridStreamerBroadcastTask(GridInClosure<GridStreamerContext> clo, @Nullable String streamer) {
-        super(clo);
+        super(U.peerDeployAware(clo));
 
         this.clo = clo;
         this.streamer = streamer;

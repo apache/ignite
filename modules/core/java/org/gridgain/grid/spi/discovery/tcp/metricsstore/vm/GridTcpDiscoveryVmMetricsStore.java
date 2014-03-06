@@ -27,9 +27,6 @@ import java.util.*;
  * <ul>
  *     <li>Metrics expire time (see {@link #setMetricsExpireTime(int)}).</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryVmMetricsStore extends GridTcpDiscoveryMetricsStoreAdapter {
     /** Metrics. */

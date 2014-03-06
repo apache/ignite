@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal.processors.dr;
 
 /**
  * Data center replication type.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridDrType {
     /** Do not replicate that entry. */

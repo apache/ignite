@@ -17,9 +17,6 @@ import org.jetbrains.annotations.*;
  * <p>
  * Note that data structures throw runtime exceptions out of methods that don't have
  * checked exceptions in the signature.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDataStructureRemovedRuntimeException extends GridRuntimeException {
     /**

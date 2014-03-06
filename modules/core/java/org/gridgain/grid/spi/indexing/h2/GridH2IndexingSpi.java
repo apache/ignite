@@ -130,9 +130,6 @@ import static org.h2.result.SortOrder.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- *
- * @author @java.author
- * @version @java.version
  * @see GridIndexingSpi
  */
 @GridSpiInfo(
@@ -594,7 +591,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             log.debug("Context has been initialized.");
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected GridSpiContext getSpiContext() {
         if (ctxInitLatch.getCount() != 0) {
             try {
@@ -2036,8 +2033,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
     /**
      * Class to store information about group index.
-     *
-     * @author @java.author
      */
     private static class IndexGroup {
         /** */
@@ -2077,8 +2072,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
     /**
      * Information about table in database.
-     *
-     * @author @java.author
      */
     private class TableDescriptor implements GridH2Table.IndexesFactory {
         /** */

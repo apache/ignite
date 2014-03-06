@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Session listener for web sessions caching.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridWebSessionListener {
     /** Cache. */
@@ -116,7 +113,7 @@ class GridWebSessionListener {
     /**
      * Multiple attributes update transformer.
      */
-    private static class AttributesUpdated extends C1<GridWebSession, GridWebSession> implements Externalizable {
+    private static class AttributesUpdated implements C1<GridWebSession, GridWebSession>, Externalizable {
         /** Updates list. */
         private Collection<T2<String, Object>> updates;
 

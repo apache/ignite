@@ -18,9 +18,6 @@ import java.nio.*;
 
 /**
  * Base class for all GGFS communication messages sent between nodes.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridGgfsCommunicationMessage extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */

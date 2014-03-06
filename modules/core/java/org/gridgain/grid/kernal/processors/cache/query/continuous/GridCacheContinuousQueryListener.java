@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
 /**
  * Continuous query listener.
- *
- * @author @java.author
- * @version @java.version
  */
 interface GridCacheContinuousQueryListener<K, V> {
     /**

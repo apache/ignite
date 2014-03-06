@@ -15,9 +15,6 @@ import java.util.*;
 
 /**
  * Generic cache request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
     /**

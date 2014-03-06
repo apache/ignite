@@ -21,9 +21,6 @@ import java.util.jar.*;
  * Helper class that verifies either JAR file or JAR file input stream
  * if it is consistent or not. Consistency means that file was not changed
  * since build and all files mentioned in manifest are signed.
- *
- * @author @java.author
- * @version @java.version
  */
 final class GridUriDeploymentJarVerifier {
     /**

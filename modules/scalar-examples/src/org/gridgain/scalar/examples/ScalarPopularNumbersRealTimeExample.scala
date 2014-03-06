@@ -25,9 +25,6 @@ import java.util.Map.Entry
  * at least one in-memory data grid nodes using command `ggstart.sh examples/config/example-cache.xml`
  * The counts are kept in cache on all remote nodes. Top `10` counts from each node are then grabbed to produce
  * an overall top `10` list within the grid.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridOnlyAvailableIn(Array(GridProductEdition.DATA_GRID))
 object ScalarPopularNumbersRealTimeExample extends App {

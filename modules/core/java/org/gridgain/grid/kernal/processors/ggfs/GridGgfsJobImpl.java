@@ -21,9 +21,6 @@ import java.io.*;
 
 /**
  * GGFS job implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsJobImpl implements GridComputeJob, GridInternalWrapper<GridGgfsJob> {
     /** GGFS job. */

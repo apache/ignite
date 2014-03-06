@@ -30,9 +30,6 @@ import java.util.concurrent.*;
  * Note also that this connectivity is not necessary to successfully start the system as it will
  * gracefully ignore any errors occurred during notification and verification process.
  * See {@link #HTTP_URL} for specific access URL used.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridUpdateNotifier {
     /*
@@ -202,8 +199,6 @@ class GridUpdateNotifier {
 
     /**
      * Asynchronous checker of the latest version available.
-     *
-     * @author @java.author
      */
     private class UpdateChecker extends GridWorker {
         /** Logger. */
@@ -240,6 +235,9 @@ class GridUpdateNotifier {
                     InputStream in = null;
 
                     Document dom = null;
+
+                    // gridgain.org analyzes User-Agent header and default value "Java/1.7.0_XX" does not work.
+                    conn.setRequestProperty("User-Agent", "");
 
                     try {
                         in = conn.getInputStream();

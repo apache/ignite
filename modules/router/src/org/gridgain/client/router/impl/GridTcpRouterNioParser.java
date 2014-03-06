@@ -23,8 +23,7 @@ import java.nio.*;
 import static org.gridgain.grid.kernal.processors.rest.protocols.tcp.GridMemcachedMessage.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 class GridTcpRouterNioParser extends GridTcpRestParser {
     /** Number of received messages. */

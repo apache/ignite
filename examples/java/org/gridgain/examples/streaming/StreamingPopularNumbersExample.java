@@ -33,9 +33,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * <p>
  * Alternatively you can run {@link StreamingNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-streaming.xml} configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridOnlyAvailableIn(STREAMING)
 public class StreamingPopularNumbersExample {
@@ -58,7 +55,7 @@ public class StreamingPopularNumbersExample {
         };
 
     /** Reducer selecting first POPULAR_NUMBERS_CNT values. */
-    private static class PupularNumbersReducer extends GridReducer<Collection<GridStreamerIndexEntry<Integer, Integer, Long>>,
+    private static class PupularNumbersReducer implements GridReducer<Collection<GridStreamerIndexEntry<Integer, Integer, Long>>,
         Collection<GridStreamerIndexEntry<Integer, Integer, Long>>> {
         /** */
         private List<GridStreamerIndexEntry<Integer, Integer, Long>> sorted = new ArrayList<>();

@@ -24,9 +24,6 @@ import java.util.*;
 
 /**
  * Lock response message.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessage<K, V> {
     /** Future ID. */

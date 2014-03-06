@@ -15,9 +15,6 @@ import java.util.concurrent.*;
 
 /**
  * Future that does not depend on kernal context.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridPlainFuture<R> {
     /**

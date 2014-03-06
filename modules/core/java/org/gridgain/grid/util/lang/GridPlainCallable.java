@@ -13,9 +13,6 @@ import java.util.concurrent.*;
 
 /**
  * Callable instance that should never be deployed or injected.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridPlainCallable<T> extends Callable<T> {
     // No-op.

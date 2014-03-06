@@ -22,9 +22,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Manages offheap memory caches.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridOffHeapProcessor extends GridProcessorAdapter {
     /** */

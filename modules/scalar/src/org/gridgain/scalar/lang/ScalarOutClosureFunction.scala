@@ -12,18 +12,12 @@
 package org.gridgain.scalar.lang
 
 import java.util.concurrent.Callable
-import org.gridgain.grid.util.lang.GridLambdaAdapter
 
 /**
  * Wrapping Scala function for `Callable` and specifically for `GridOutClosure`.
- *
- * @author @java.author
- * @version @java.version
  */
-class ScalarOutClosureFunction[R](val inner: Callable[R]) extends GridLambdaAdapter with (() => R) {
+class ScalarOutClosureFunction[R](val inner: Callable[R]) extends (() => R) {
     assert(inner != null)
-
-    peerDeployLike(inner)
 
     /**
      * Delegates to passed in grid closure.

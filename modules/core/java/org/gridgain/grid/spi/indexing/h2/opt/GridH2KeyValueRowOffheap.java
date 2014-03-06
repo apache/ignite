@@ -21,9 +21,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * Offheap row.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     /** */

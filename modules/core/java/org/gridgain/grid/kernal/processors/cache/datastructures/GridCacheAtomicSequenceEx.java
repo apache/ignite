@@ -13,9 +13,6 @@ import org.gridgain.grid.cache.datastructures.*;
 
 /**
  * Sequence managed by cache ({@code 'Ex'} stands for external.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheAtomicSequenceEx extends GridCacheRemovable, GridCacheAtomicSequence {
     /**

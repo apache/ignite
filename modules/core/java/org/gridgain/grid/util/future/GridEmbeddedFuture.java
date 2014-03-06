@@ -20,9 +20,6 @@ import java.io.*;
 /**
  * Future which waits for embedded future to complete and then asynchronously executes
  * provided closure with embedded future result.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"NullableProblems"})
 public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
@@ -244,7 +241,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     /**
      * Make sure that listener does not throw exceptions.
      */
-    private abstract class AsyncListener1 extends GridInClosure<GridFuture<B>> {
+    private abstract class AsyncListener1 implements GridInClosure<GridFuture<B>> {
         @Override public final void apply(GridFuture<B> f) {
             try {
                 applyx(f);
@@ -268,7 +265,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     /**
      * Make sure that listener does not throw exceptions.
      */
-    private abstract class AsyncListener2 extends GridInClosure<GridFuture<A>> {
+    private abstract class AsyncListener2 implements GridInClosure<GridFuture<A>> {
         @Override public final void apply(GridFuture<A> f) {
             try {
                 applyx(f);

@@ -20,9 +20,6 @@ import java.io.*;
 
 /**
  * Adapter for cache metrics.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable {
     /** Create time. */
@@ -290,6 +287,18 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
 
         if (delegate != null)
             delegate.onSenderCacheBackupQueueSizeChanged(newSize);
+    }
+
+    /**
+     * Callback for replication pause state changed.
+     *
+     * @param pauseReason Pause reason or {@code null} if replication is not paused.
+     */
+    public void onPauseStateChanged(@Nullable GridDrPauseReason pauseReason) {
+        drSndMetrics.onPauseStateChanged(pauseReason);
+
+        if (delegate != null)
+            delegate.onPauseStateChanged(pauseReason);
     }
 
     /**

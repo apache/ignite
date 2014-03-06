@@ -34,9 +34,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Manages cache indexing.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     /** */
@@ -1048,10 +1045,15 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      */
     private static class IndexDescriptor implements GridIndexDescriptor {
         /** Fields sorted by order number. */
-        private final Collection<T2<String, Integer>> fields = new PriorityQueue<>(4,
+        private final Collection<T2<String, Integer>> fields = new TreeSet<>(
             new Comparator<T2<String, Integer>>() {
                 @Override public int compare(T2<String, Integer> o1, T2<String, Integer> o2) {
-                    return o1.get2() - o2.get2();
+                    int d = o1.get2() - o2.get2();
+
+                    if (d == 0) // Order is equal, compare field names to avoid replace in Set.
+                        return o1.get1().compareTo(o2.get1());
+
+                    return d;
                 }
             });
 

@@ -30,9 +30,6 @@ import static org.gridgain.grid.kernal.GridTopic.*;
 
 /**
  * Distributed query manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManager<K, V> {
     /** */

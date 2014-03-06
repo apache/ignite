@@ -17,12 +17,9 @@ import org.gridgain.grid.util.typedef.*;
  * Convenient closure subclass that allows for thrown grid exception. This class
  * implements {@link #apply(Object)} method that calls {@link #applyx(Object)} method
  * and properly wraps {@link GridException} into {@link GridClosureException} instance.
- *
- * @author @java.author
- * @version @java.version
  * @see CX1
  */
-public abstract class GridClosureX<E, R> extends GridClosure<E, R> {
+public abstract class GridClosureX<E, R> implements GridClosure<E, R> {
     /** {@inheritDoc} */
     @Override public R apply(E e) {
         try {

@@ -11,9 +11,6 @@ package org.gridgain.grid.util.offheap;
 
 /**
  * Thrown when memory could not be allocated.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridOffHeapOutOfMemoryException extends RuntimeException {
     /**

@@ -17,9 +17,6 @@ import java.util.concurrent.*;
 
 /**
  * Collection of utility methods used in package for classes reflection.
- *
- * @author @java.author
- * @version @java.version
  */
 final class GridResourceUtils {
     /**
@@ -96,7 +93,6 @@ final class GridResourceUtils {
 
         // Need to inspect anonymous classes, callable and runnable instances.
         return f.getName().startsWith("this$") || f.getName().startsWith("val$") ||
-            Callable.class.isAssignableFrom(f.getType()) || Runnable.class.isAssignableFrom(f.getType()) ||
-            GridLambda.class.isAssignableFrom(f.getType());
+            Callable.class.isAssignableFrom(f.getType()) || Runnable.class.isAssignableFrom(f.getType());
     }
 }

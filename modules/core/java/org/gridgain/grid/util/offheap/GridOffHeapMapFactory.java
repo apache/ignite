@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Factory for off-heap maps.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridOffHeapMapFactory {
     /**

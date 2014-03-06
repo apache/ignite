@@ -16,9 +16,6 @@ import org.gridgain.grid.spi.collision.*;
 
 /**
  * Adapter for {@link GridCollisionJobContext}.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridCollisionJobContextAdapter implements GridCollisionJobContext {
     /** */

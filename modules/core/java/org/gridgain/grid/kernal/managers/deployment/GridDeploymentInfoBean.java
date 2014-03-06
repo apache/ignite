@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Deployment info bean.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter implements GridDeploymentInfo,
     Externalizable {

@@ -25,8 +25,7 @@ import java.util.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridProjectionAdapter extends GridMetadataAwareAdapter implements GridProjection, Externalizable {
     /** */
@@ -544,7 +543,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            GridKernal g = GridFactoryEx.gridx(gridName);
+            GridKernal g = GridGainEx.gridx(gridName);
 
             return ids != null ? new GridProjectionAdapter(g, g.context(), ids) :
                 p != null ? new GridProjectionAdapter(g, g.context(), p) : g;
@@ -556,7 +555,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
 
     /**
      */
-    private static class CachesFilter extends GridPredicate<GridNode> {
+    private static class CachesFilter implements GridPredicate<GridNode> {
         /** Cache name. */
         private final String cacheName;
 
@@ -588,7 +587,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
 
     /**
      */
-    private static class StreamersFilter extends GridPredicate<GridNode> {
+    private static class StreamersFilter implements GridPredicate<GridNode> {
         /** Streamer name. */
         private final String streamerName;
 
@@ -620,7 +619,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
 
     /**
      */
-    private static class AttributeFilter extends GridPredicate<GridNode> {
+    private static class AttributeFilter implements GridPredicate<GridNode> {
         /** Name. */
         private final String name;
 
@@ -644,7 +643,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
 
     /**
      */
-    private static class DaemonFilter extends GridPredicate<GridNode> {
+    private static class DaemonFilter implements GridPredicate<GridNode> {
         /** {@inheritDoc} */
         @Override public boolean apply(GridNode n) {
             return n.isDaemon();
@@ -653,7 +652,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
 
     /**
      */
-    private static class OthersFilter extends GridPredicate<GridNode> {
+    private static class OthersFilter implements GridPredicate<GridNode> {
         /** */
         private final Collection<UUID> nodeIds;
 

@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Data center replication processor.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDrProcessor<K, V> extends GridProcessor {
     /**

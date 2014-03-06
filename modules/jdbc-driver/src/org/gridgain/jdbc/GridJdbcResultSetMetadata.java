@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * JDBC result set metadata implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridJdbcResultSetMetadata implements ResultSetMetaData {
     /** Column width. */

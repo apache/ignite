@@ -18,9 +18,6 @@ import VisorKillCommand._
 
 /**
  * Unit test for 'kill' command.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorKillCommandSpec extends FlatSpec with ShouldMatchers {
     behavior of "A 'kill' visor command"

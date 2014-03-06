@@ -23,9 +23,6 @@ import java.util.*;
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-compute.xml} configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class ComputeBroadcastExample {
     /**
@@ -82,7 +79,7 @@ public class ComputeBroadcastExample {
                 @GridInstanceResource
                 private Grid grid;
 
-                public String call() {
+                @Override public String call() {
                     System.out.println();
                     System.out.println("Executing task on node: " + grid.localNode().id());
 

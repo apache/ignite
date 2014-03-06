@@ -31,9 +31,6 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
  * Colocated get future.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<Map<K, V>>
     implements GridCacheFuture<Map<K, V>> {

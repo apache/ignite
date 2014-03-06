@@ -15,9 +15,6 @@ import java.util.*;
  * Listener to be set on {@link GridCollisionSpi} for notification of external
  * collision events (e.g. job stealing). Once grid receives such notification,
  * it will immediately invoke collision SPI.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCollisionExternalListener extends EventListener {
     /**

@@ -22,6 +22,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -38,9 +39,6 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
  * Data loader implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     /** Cache updater. */

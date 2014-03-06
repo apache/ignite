@@ -22,9 +22,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * Example implementation of {@link GridClientMessageInterceptor}.
  * <p>
  * For demonstration purpose it converts received byte arrays to {@link BigInteger} and back.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridOnlyAvailableIn(DATA_GRID)
 public class ClientBigIntegerMessageInterceptor implements GridClientMessageInterceptor {

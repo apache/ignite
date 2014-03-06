@@ -25,9 +25,6 @@ import static org.gridgain.grid.cache.GridCacheTxState.*;
 
 /**
  * Replicated cache transaction future.
- *
- * @author @java.author
- * @version @java.version
  */
 final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V>>
     implements GridCacheMvccFuture<K, V, GridCacheTxEx<K, V>> {

@@ -37,9 +37,6 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
  * Grid event storage SPI manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridEventStorageManager extends GridManagerAdapter<GridEventStorageSpi> {
     /** */

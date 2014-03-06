@@ -15,9 +15,6 @@ import org.gridgain.grid.kernal.managers.deployment.*;
 
 /**
  * Simple injector which wraps GridComputeJobContext resource object.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridResourceJobContextInjector extends GridResourceBasicInjector<GridComputeJobContext> {
     /**

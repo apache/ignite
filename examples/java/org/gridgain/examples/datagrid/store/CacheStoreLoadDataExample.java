@@ -22,9 +22,6 @@ import org.gridgain.grid.lang.*;
  * Remote nodes should always be started using {@link CacheNodeWithStoreStartup}.
  * Also you can change type of underlying store modifying configuration in the
  * {@link CacheNodeWithStoreStartup#configure()} method.
- *
- * @author @java.author
- * @version @java.version
  */
 public class CacheStoreLoadDataExample {
     /** Heap size required to run this example. */

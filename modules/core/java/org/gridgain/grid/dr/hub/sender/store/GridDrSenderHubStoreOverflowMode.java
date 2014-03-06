@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Data center replication sender hub store overflow mode.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridDrSenderHubStoreOverflowMode {
     /** Removes oldest entries. */

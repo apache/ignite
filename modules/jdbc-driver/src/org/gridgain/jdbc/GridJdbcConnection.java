@@ -21,9 +21,6 @@ import static org.gridgain.jdbc.GridJdbcDriver.*;
 
 /**
  * JDBC connection implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridJdbcConnection implements Connection {
     /** Validation task name. */

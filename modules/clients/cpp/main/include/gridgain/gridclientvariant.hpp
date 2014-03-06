@@ -25,9 +25,6 @@ class GridClientVariantVisitor;
 /**
  * Class that replaces java.lang.Object holder for primitive types and string. It can hold boolean, int_*, float, double,
  * string and byte array values.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientVariant {
 

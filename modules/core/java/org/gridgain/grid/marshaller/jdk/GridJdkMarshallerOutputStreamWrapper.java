@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * Wrapper for {@link OutputStream}.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridJdkMarshallerOutputStreamWrapper extends OutputStream {
     /** */

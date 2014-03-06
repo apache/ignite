@@ -22,9 +22,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTaskSessionProcessor extends GridProcessorAdapter {
     /** Sessions (initialized to 2K number of concurrent sessions). */

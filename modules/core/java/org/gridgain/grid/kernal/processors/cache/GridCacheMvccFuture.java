@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 /**
  * Distributed future aware of MVCC locking.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheMvccFuture<K, V, T> extends GridCacheFuture<T> {
     /**

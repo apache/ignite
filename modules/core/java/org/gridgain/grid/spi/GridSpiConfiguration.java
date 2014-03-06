@@ -16,9 +16,6 @@ import java.lang.annotation.*;
  * <p>
  * Note that this annotation is used only for documentation purposes now and is not checked by
  * GridGain implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -21,9 +21,6 @@ import java.io.*;
  * Note that fields annotated with {@link GridCacheQuerySqlField}
  * annotation will be indexed and can be used in cache queries. Also note that
  * arbitrary {@link #userObject()} put into the queue can also be indexed the same way.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("AbbreviationUsage")
 public class GridCacheQueueItemImpl<T> implements GridCacheQueueItem<T>, GridPeerDeployAware, Externalizable,

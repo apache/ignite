@@ -18,9 +18,6 @@ import java.lang.annotation.*;
  * <p>
  * This annotation allows to mark Scala function as an implementation for documentation and
  * readability purposes.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.SOURCE)

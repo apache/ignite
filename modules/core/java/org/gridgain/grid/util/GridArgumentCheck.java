@@ -16,9 +16,6 @@ import java.util.*;
 /**
  * This class encapsulates argument check (null and range) for public facing APIs. Unlike asserts
  * it throws "normal" exceptions with standardized messages.
- *
- * @author @java.author
- * @version @java.version
  * @see A
  */
 public class GridArgumentCheck {

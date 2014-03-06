@@ -16,14 +16,9 @@ import org.gridgain.grid.compute.GridComputeJobAdapter
 
 /**
  * Peer deploy aware adapter for Java's `GridComputeJob`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarJob(private val inner: () => Any) extends GridComputeJobAdapter {
     assert(inner != null)
-
-    setPeerDeployAware(U.peerDeployAware(inner))
 
     /**
      * Delegates to passed in function.

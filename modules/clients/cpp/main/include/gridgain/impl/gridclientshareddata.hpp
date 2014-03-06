@@ -26,9 +26,6 @@ typedef std::shared_ptr<GridClientCommandExecutor> TGridClientCommandExecutorPtr
 
 /**
  * Common client data.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientSharedData {
 public:
