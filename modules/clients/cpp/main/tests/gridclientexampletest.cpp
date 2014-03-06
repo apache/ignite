@@ -239,18 +239,6 @@ BOOST_FIXTURE_TEST_CASE(clientCacheExample, GridClientFactoryFixture1<clientConf
     futMetrics->get();
 }
 
-class GridUuidNodePredicate : public GridClientPredicate<GridClientNode> {
-    private:
-        GridUuid uu;
-    public:
-        GridUuidNodePredicate(const GridUuid& u) : uu(u) {
-        }
-
-        bool apply(const GridClientNode& node) const {
-            return node.getNodeId() == uu;
-        }
-};
-
 BOOST_FIXTURE_TEST_CASE(clientComputeExample, GridClientFactoryFixture1<clientConfig2>) {
     TGridClientComputePtr clientCompute = client->compute();
 
@@ -270,13 +258,9 @@ BOOST_FIXTURE_TEST_CASE(clientComputeExample, GridClientFactoryFixture1<clientCo
 
     nodes = prj->nodes(uuids);
 
-    // Nodes may also be filtered with predicate. Here
-    // we create projection which only contains local node.
-    GridUuidNodePredicate* uuidNodePredicate = new GridUuidNodePredicate(randNodeId);
-
-    TGridClientNodePredicatePtr predFullPtr(uuidNodePredicate);
-
-    nodes = prj->nodes(predFullPtr);
+    nodes = prj->nodes([&randNodeId](const GridClientNode& n) {
+        return n.getNodeId() == randNodeId;
+    });
 
     // Information about nodes may be refreshed explicitly.
     TGridClientNodePtr clntNode = prj->refreshNode(randNodeId, true, true);
