@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<!--
+    Default rest router configuration.
+
+    This file is automatically scanned by
+    $GRIDGAIN_HOME/bin/ggrouter.sh and $GRIDGAIN_HOME/bin/ggrouter.bat
+    for org.gridgain.client.router.GridTcpRestRouterConfiguration and
+    org.gridgain.client.router.GridHttpRestRouterConfiguration bean definitions.
+    First found are used to start corresponding router instances.
+
+    You can also use org.gridgain.client.router.GridRouterFactory to
+    programmatically start and stop router instances inside your application.
+    Please refer to javadoc for more details.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
+    <description>Main Spring file for router configuration.</description>
+
+    <!-- Initialize property configurer so we can reference environment variables. -->
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_FALLBACK"/>
+        <property name="searchSystemEnvironment" value="true"/>
+    </bean>
+
+    <!-- Set up jetty port from the spring config. -->
+    <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetObject">
+            <!-- System.getProperties() -->
+            <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+                <property name="targetClass" value="java.lang.System"/>
+                <property name="targetMethod" value="getProperties"/>
+            </bean>
+        </property>
+        <property name="targetMethod" value="putAll"/>
+        <property name="arguments">
+            <map>
+                <entry key="GRIDGAIN_JETTY_PORT" value="12400"/>
+            </map>
+        </property>
+    </bean>
+
+    <!-- Configuration of Tcp router. -->
+    <bean id="tcp.router.cfg" class="org.gridgain.client.router.GridTcpRouterConfiguration"
+          scope="singleton">
+
+        <property name="logger" ref="router.log" />
+
+        <!-- Specify local bind port for Tcp router. -->
+        <property name="port" value="12300"/>
+
+        <!-- Allow router use wider port range than default. -->
+        <property name="portRange" value="0"/>
+
+        <!-- Specify list of remote grid nodes to connect. -->
+        <property name="servers">
+            <list>
+                <value>127.0.0.1:10443</value>
+            </list>
+        </property>
+
+        <!-- Sets flag indicating whether or not SSL client authentication is required. -->
+        <property name="sslClientAuth" value="true"/>
+
+        <!-- Provide Ssl context. -->
+        <property name="sslContextFactory">
+            <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
+                <property name="keyStoreFilePath" value="${GRIDGAIN_HOME}/os/modules/clients/src/test/keystore/server.jks"/>
+                <property name="keyStorePassword" value="123456"/>
+                <property name="trustStoreFilePath" value="${GRIDGAIN_HOME}/os/modules/clients/src/test/keystore/trust.jks"/>
+                <property name="trustStorePassword" value="123456"/>
+            </bean>
+        </property>
+
+        <!-- Specify credentials for grid connection. -->
+        <property name="credentials" value="s3cret"/>
+    </bean>
+
+    <!-- Configuration of Http router. -->
+    <bean id="http.router.cfg" class="org.gridgain.client.router.GridHttpRouterConfiguration"
+          scope="singleton">
+
+        <property name="logger" ref="router.log"/>
+
+        <!-- GRIDGAIN_JETTY_PORT=12400 -->
+        <property name="jettyConfigurationPath" value="${GRIDGAIN_HOME}/modules/tests/config/jetty/router-jetty-ssl.xml"/>
+
+        <!-- Specify list of remote grid nodes to connect. -->
+        <property name="servers">
+            <list>
+                <value>127.0.0.1:11443</value>
+            </list>
+        </property>
+
+        <!-- Provide Ssl context. -->
+        <property name="clientSslContextFactory">
+            <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
+                <property name="keyStoreFilePath" value="${GRIDGAIN_HOME}/os/modules/clients/src/test/keystore/client.jks"/>
+                <property name="keyStorePassword" value="123456"/>
+                <property name="trustStoreFilePath" value="${GRIDGAIN_HOME}/os/modules/clients/src/test/keystore/trust.jks"/>
+                <property name="trustStorePassword" value="123456"/>
+            </bean>
+        </property>
+
+        <!-- Specify credentials for grid connection. -->
+        <property name="credentials" value="s3cret"/>
+    </bean>
+
+    <!--
+        Logger with the same configuration as in default grid instances.
+    -->
+    <bean id="router.log" class="org.gridgain.grid.logger.log4j.GridLog4jLogger">
+        <constructor-arg type="java.lang.String" value="os/modules/clients/src/test/resources/log4j.xml"/>
+    </bean>
+</beans>

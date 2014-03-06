@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<!--
+    GridGain Spring configuration file to startup grid cache.
+
+    When starting a standalone GridGain node, you need to execute the following command:
+    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} path-to-this-file/example-cache.xml
+
+    When starting GridGain from Java IDE, pass path to this file into GridGain:
+    GridGain.start("path-to-this-file/example-benchmark.xml");
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+       http://www.springframework.org/schema/util
+       http://www.springframework.org/schema/util/spring-util-2.0.xsd">
+
+    <!--
+        Optional description.
+    -->
+    <description>
+        Spring file for grid configuration with client available endpoints.
+    </description>
+
+    <!--
+        Initialize property configurer so we can reference environment variables.
+    -->
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_FALLBACK"/>
+        <property name="searchSystemEnvironment" value="true"/>
+    </bean>
+
+    <!--
+        Configuration below demonstrates how to setup a collision and failover SPI's
+        to enable work stealing from overloaded nodes to underloaded nodes.
+
+        Note that for job stealing to work, you must always use both,
+        GridJobStealingCollisionSpi and GridJobStealingFailoverSPI.
+    -->
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+        <property name="gridName" value="node"/>
+
+        <!-- Set to local host address. -->
+        <property name="localHost" value="127.0.0.1"/>
+
+        <!-- Enable rest protocol. -->
+        <property name="restEnabled" value="true"/>
+
+        <!-- Configure TCP rest protocol. -->
+        <property name="restTcpPort" value="10080"/>
+
+        <!-- Configure HTTP rest protocol. -->
+        <property name="restJettyPath" value="${GRIDGAIN_HOME}/modules/tests/config/jetty/rest-jetty.xml"/>
+
+        <!-- Configure to skip all events for better performance. -->
+        <property name="includeEventTypes">
+            <list>
+                <util:constant static-field="org.gridgain.grid.events.GridEventType.EVT_TASK_FAILED"/>
+                <util:constant static-field="org.gridgain.grid.events.GridEventType.EVT_TASK_FINISHED"/>
+                <util:constant static-field="org.gridgain.grid.events.GridEventType.EVT_JOB_MAPPED"/>
+            </list>
+        </property>
+
+        <property name="cacheConfiguration">
+            <!--
+                Specify list of cache configurations here. Any property from
+                GridCacheConfiguration interface can be configured here.
+            -->
+            <list>
+                <!--
+                    Local cache example configuration.
+                -->
+                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                    <!-- Cache name is null. -->
+                    <!--<property name="name"><null/></property>-->
+
+                    <!-- LOCAL cache mode. -->
+                    <property name="cacheMode" value="LOCAL"/>
+
+                    <property name="queryIndexEnabled" value="false"/>
+                </bean>
+
+                <!--
+                    Partitioned cache example configuration.
+                -->
+                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                    <!-- Cache name is 'partitioned'. -->
+                    <property name="name" value="partitioned"/>
+
+                    <!-- PARTITIONED cache mode. -->
+                    <property name="cacheMode" value="PARTITIONED"/>
+
+                    <!-- Transactional updates supported. -->
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+
+                    <!-- Enable near cache to cache recently accessed data. -->
+                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
+
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+
+                    <property name="affinity">
+                        <bean class="org.gridgain.grid.cache.affinity.consistenthash.GridCacheConsistentHashAffinityFunction">
+                            <constructor-arg value="1"/>
+                        </bean>
+                    </property>
+
+                    <property name="queryIndexEnabled" value="false"/>
+                </bean>
+
+                <!--
+                    Local cache with store.
+                -->
+                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                    <property name="name" value="local.store"/>
+
+                    <property name="cacheMode" value="LOCAL"/>
+
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+
+                    <property name="queryIndexEnabled" value="false"/>
+
+                    <property name="store">
+                        <bean class="org.gridgain.client.GridHashMapStore"/>
+                    </property>
+                </bean>
+
+                <!--
+                    Replicated cache example configuration.
+                -->
+                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                    <!-- Cache name is 'replicated'. -->
+                    <property name="name" value="replicated"/>
+
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+
+                    <!-- REPLICATED cache mode. -->
+                    <property name="cacheMode" value="REPLICATED"/>
+
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                </bean>
+
+                <!--
+                    Replicated cache with in-memory store enabled.
+                -->
+                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                    <!-- Cache name is 'replicated.store'. -->
+                    <property name="name" value="replicated.store"/>
+
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+
+                    <!-- REPLICATED cache mode. -->
+                    <property name="cacheMode" value="REPLICATED"/>
+
+                    <!-- Store.-->
+                    <property name="store">
+                        <bean class="org.gridgain.client.GridHashMapStore"/>
+                    </property>
+                </bean>
+            </list>
+        </property>
+
+        <!--
+            Use passcode authentication SPI.
+        -->
+        <property name="authenticationSpi">
+            <bean class="org.gridgain.grid.spi.authentication.passcode.GridPasscodeAuthenticationSpi">
+                <property name="passcodes">
+                    <map>
+                        <entry key="REMOTE_NODE" value="s3cret"/>
+                        <entry key="REMOTE_CLIENT" value="s3cret"/>
+                    </map>
+                </property>
+            </bean>
+        </property>
+
+        <!--
+            Use remember me secure session SPI.
+        -->
+        <property name="secureSessionSpi">
+            <bean class="org.gridgain.grid.spi.securesession.rememberme.GridRememberMeSecureSessionSpi">
+                <!-- Session TTL = 1 hour -->
+                <property name="ttl" value="3600000"/>
+            </bean>
+        </property>
+
+        <!--
+            TCP discovery SPI (uses VM-shared IP-finder).
+        -->
+        <property name="discoverySpi">
+            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+                <!-- Make sure both servers (unsecured and SSL-protected) can start as independent grids. -->
+                <property name="localPort" value="49500"/>
+
+                <!-- Override default IP-finder.-->
+                <property name="ipFinder">
+                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <!--
+                                    List all IP/port configurations that potentially
+                                    can be started first in examples. We are assuming
+                                    grid of size 10 or less.
+                                -->
+                                <value>127.0.0.1:49500</value>
+                                <value>127.0.0.1:49501</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+
+        <!--
+            Logger to use.
+        -->
+        <property name="gridLogger">
+            <bean class="org.gridgain.grid.logger.log4j.GridLog4jLogger">
+                <constructor-arg type="java.lang.String" value="os/modules/clients/src/test/resources/log4j.xml"/>
+            </bean>
+        </property>
+
+        <!--
+            Explicitly set custom public and system thread pools to increase
+            possible started nodes count in one VM.
+        -->
+        <property name="executorService">
+            <bean class="org.gridgain.grid.thread.GridThreadPoolExecutor">
+                <constructor-arg value="SERVER"/>
+                <constructor-arg type="int" value="15"/>
+                <constructor-arg type="int" value="15"/>
+                <constructor-arg type="long">
+                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
+                </constructor-arg>
+                <constructor-arg type="java.util.concurrent.BlockingQueue">
+                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
+                </constructor-arg>
+            </bean>
+        </property>
+
+        <property name="executorServiceShutdown" value="true"/>
+
+        <property name="systemExecutorService">
+            <bean class="org.gridgain.grid.thread.GridThreadPoolExecutor">
+                <constructor-arg value="SYS-SERVER"/>
+                <constructor-arg type="int" value="15"/>
+                <constructor-arg type="int" value="15"/>
+                <constructor-arg type="long">
+                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
+                </constructor-arg>
+                <constructor-arg type="java.util.concurrent.BlockingQueue">
+                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
+                </constructor-arg>
+            </bean>
+        </property>
+
+        <property name="systemExecutorServiceShutdown" value="true"/>
+    </bean>
+</beans>

@@ -38,6 +38,7 @@ public class GridRouterTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridHttpRouterMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridHttpsRouterMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridRouterMultiAuthSelfTest.class));
+        suite.addTest(new TestSuite(GridClientFailedInitSelfTest.class));
 
         return suite;
     }
