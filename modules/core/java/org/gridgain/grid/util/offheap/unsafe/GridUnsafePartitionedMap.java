@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
  * Off-heap map based on {@code Unsafe} implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
     /** Minimum segment concurrency. */

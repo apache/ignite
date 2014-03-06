@@ -87,9 +87,6 @@ import java.util.Map.*;
  * <h1 class="header">Peer Class Loading</h1>
  * All classes passed into cache API will be automatically deployed to any participating grid nodes.
  * No explicit deployment step is required.
- *
- * @author @java.author
- * @version @java.version
  * @param <K> Key type.
  * @param <V> Value type.
  */

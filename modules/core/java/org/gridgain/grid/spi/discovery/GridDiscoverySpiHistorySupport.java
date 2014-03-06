@@ -14,9 +14,6 @@ import java.lang.annotation.*;
 /**
  * This annotation is for all implementations of {@link GridDiscoverySpi} that support
  * topology snapshots history.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Inherited

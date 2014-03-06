@@ -20,9 +20,6 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  * Local query manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V> {
     /** {@inheritDoc} */

@@ -29,9 +29,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * <p>
  * Alternatively you can run {@link GgfsNodeStartup} in another JVM which will start
  * GridGain node with {@code examples/config/example-ggfs.xml} configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridOnlyAvailableIn(HADOOP)
 public final class GgfsExample {

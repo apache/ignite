@@ -14,9 +14,6 @@ import java.io.*;
 
 /**
  * Simple marshaller that utilize JDK serialization features.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientJdkMarshaller implements GridClientMarshaller {
     /** Unique marshaller ID. */

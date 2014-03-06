@@ -16,9 +16,6 @@ import java.io.*;
 
 /**
  * Entry for batch swap operations.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheBatchSwapEntry<K, V> extends GridCacheSwapEntry<V> {
     /** Key. */

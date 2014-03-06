@@ -13,9 +13,6 @@ import java.util.concurrent.*;
 
 /**
  * Future for asynchronous operations.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridClientFuture<R> {
     /**

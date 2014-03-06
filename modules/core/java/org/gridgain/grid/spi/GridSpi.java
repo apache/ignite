@@ -31,9 +31,6 @@ import java.util.*;
  * <li>{@link GridSpringResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridSpi {
     /**

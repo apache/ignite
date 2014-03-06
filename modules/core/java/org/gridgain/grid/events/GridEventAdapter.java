@@ -18,9 +18,6 @@ import java.util.*;
 /**
  * Base adapter for the events. All events (including user-defined ones) should
  * extend this adapter as it provides necessary plumbing implementation details.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridEventAdapter implements GridEvent {
     /** */

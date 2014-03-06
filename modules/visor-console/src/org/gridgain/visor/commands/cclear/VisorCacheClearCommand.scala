@@ -24,6 +24,7 @@ import org.gridgain.grid.resources._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import visor._
+import org.gridgain.grid.lang.GridCallable
 
 /**
  * ==Overview==
@@ -66,9 +67,6 @@ import visor._
  *     visor cclear "cache"
  *         Clears cache with name 'cache'.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorCacheClearCommand {
     /**
@@ -145,16 +143,13 @@ class VisorCacheClearCommand {
 }
 
 /**
- *
- * @author @java.author
- * @version @java.version
  */
 @GridInternal
-class ClearClosure(val cacheName: String) extends CO[(UUID, Int, Int)] {
+class ClearClosure(val cacheName: String) extends GridCallable[(UUID, Int, Int)] {
     @GridInstanceResource
     private val g: GridEx = null
 
-    @impl def apply(): (UUID, Int, Int) = {
+    @impl def call(): (UUID, Int, Int) = {
         val c = g.cachex[AnyRef, AnyRef](cacheName)
 
         val oldSize = c.size
@@ -167,9 +162,6 @@ class ClearClosure(val cacheName: String) extends CO[(UUID, Int, Int)] {
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorCacheClearCommand {
     addHelp(

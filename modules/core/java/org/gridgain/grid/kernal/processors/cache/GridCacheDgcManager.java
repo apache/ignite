@@ -30,9 +30,6 @@ import static org.gridgain.grid.cache.GridCacheConfiguration.*;
 
 /**
  * Distributed Garbage Collector for cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDgcManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Flag to log trace enabled/disabled message. */
@@ -737,7 +734,7 @@ public class GridCacheDgcManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      *
      */
-    private static class DgcCallable extends GridCallable<Object> {
+    private static class DgcCallable implements GridCallable<Object> {
         /** */
         private final String cacheName;
 

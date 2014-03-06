@@ -52,9 +52,6 @@ import static org.gridgain.grid.events.GridEventType.*;
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
  *
- * @author @java.author
- * @version @java.version
- *
  * @see GridEventType#EVT_GGFS_FILE_CREATED
  * @see GridEventType#EVT_GGFS_FILE_RENAMED
  * @see GridEventType#EVT_GGFS_FILE_DELETED

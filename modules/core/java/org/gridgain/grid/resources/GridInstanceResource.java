@@ -11,7 +11,6 @@ package org.gridgain.grid.resources;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.util.lang.*;
 
 import java.lang.annotation.*;
 
@@ -25,7 +24,7 @@ import java.lang.annotation.*;
  * <li>{@link GridComputeTask}</li>
  * <li>{@link GridComputeJob}</li>
  * <li>{@link GridLifecycleBean}</li>
- * <li>{@link GridLambda} - includes all closures and predicates that can run on grid.</li>
+ * <li>All closures and predicates that can run on grid.</li>
  * <li>{@link GridUserResource @GridUserResource}</li>
  * </ul>
  * <p>
@@ -51,9 +50,6 @@ import java.lang.annotation.*;
  *     ...
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

@@ -21,9 +21,6 @@ import org.gridgain.grid.lang.*;
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-compute.xml} configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class ComputeProjectionExample {
     /**

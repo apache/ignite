@@ -15,6 +15,9 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.gridify.*;
+import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.util.*;
 
 import static org.gridgain.grid.util.gridify.GridifyUtils.*;
@@ -23,13 +26,11 @@ import static org.gridgain.grid.util.gridify.GridifyUtils.*;
  * Default gridify task which simply executes a method on remote node.
  * <p/>
  * See {@link Gridify} documentation for more information about execution of {@code gridified} methods.
- *
- * @author @java.author
- * @version @java.version
  * @see GridifySetToSet
  * @see GridifySetToValue
  */
-public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRangeArgument, Collection<?>> {
+public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRangeArgument, Collection<?>>
+    implements GridPeerDeployAware {
     /** Deploy class. */
     @SuppressWarnings({"TransientFieldNotInitialized"})
     private final transient Class<?> p2pCls;
@@ -90,6 +91,11 @@ public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRange
     /** {@inheritDoc} */
     @Override public Class<?> deployClass() {
         return p2pCls;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClassLoader classLoader() {
+        return U.detectClassLoader(p2pCls);
     }
 
     /** {@inheritDoc} */

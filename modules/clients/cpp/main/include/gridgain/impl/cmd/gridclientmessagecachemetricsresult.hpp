@@ -18,9 +18,6 @@ typedef std::map<std::string, GridClientVariant> TCacheMetrics;
 
 /**
  * Cache metrics result message.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientMessageCacheMetricResult : public GridClientMessageCacheResult {
 public:

@@ -16,9 +16,6 @@ import org.jetbrains.annotations.*;
  * This exception defines execution rejection. This exception is used to indicate
  * the situation when execution service provided by the user in configuration
  * rejects execution.
- *
- * @author @java.author
- * @version @java.version
  * @see GridConfiguration#getExecutorService()
  */
 public class GridComputeExecutionRejectedException extends GridException {

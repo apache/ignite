@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Near transaction finish request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishRequest<K, V> {
     /** Mini future ID. */

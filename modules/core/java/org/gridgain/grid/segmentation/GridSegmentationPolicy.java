@@ -17,9 +17,6 @@ import org.gridgain.grid.spi.discovery.*;
 /**
  * Policy that defines how node will react on topology segmentation. Note that default
  * segmentation policy is defined by {@link GridConfiguration#DFLT_SEG_PLC} property.
- *
- * @author @java.author
- * @version @java.version
  * @see GridSegmentationResolver
  */
 public enum GridSegmentationPolicy {

@@ -13,9 +13,6 @@ import java.util.*;
 
 /**
  * Listener for port change events.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridPortListener extends EventListener {
     /** */

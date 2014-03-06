@@ -72,9 +72,6 @@ import java.util.concurrent.*;
  *     <li>Commit DB transaction.</li>
  *     <li>Call {@link GridHibernateAccessStrategyAdapter#unlockRegion}.</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridHibernateAccessStrategyAdapter {
     /** */

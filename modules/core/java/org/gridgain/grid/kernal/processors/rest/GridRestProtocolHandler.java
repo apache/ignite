@@ -13,9 +13,6 @@ import org.gridgain.grid.*;
 
 /**
  * Command protocol handler.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridRestProtocolHandler {
     /**

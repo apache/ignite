@@ -16,12 +16,9 @@ import org.gridgain.grid.util.lang.*;
  * Defines {@code alias} for {@link GridBiInClosure} by extending it. Since Java doesn't provide type aliases
  * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
  * concise code in cases when readability won't be sacrificed. For more information see {@link GridBiInClosure}.
- *
- * @author @java.author
- * @version @java.version
  * @param <E1> Type of the first parameter.
  * @param <E2> Type of hte second parameter.
  * @see GridFunc
  * @see GridBiInClosure
  */
-public abstract class CI2<E1, E2> extends GridBiInClosure<E1, E2> { /* No-op. */ }
+public interface CI2<E1, E2> extends GridBiInClosure<E1, E2> { /* No-op. */ }

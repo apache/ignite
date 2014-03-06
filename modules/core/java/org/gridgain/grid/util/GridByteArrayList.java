@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Re-sizable array implementation of the byte list (eliminating auto-boxing of primitive byte type).
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridByteArrayList implements Externalizable {
     /** List byte data. */

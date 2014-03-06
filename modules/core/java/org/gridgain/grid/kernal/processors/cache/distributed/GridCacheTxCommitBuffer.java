@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Buffer that stores transaction commit values in order to restore them in case of originating node crash.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheTxCommitBuffer<K, V> {
     /**

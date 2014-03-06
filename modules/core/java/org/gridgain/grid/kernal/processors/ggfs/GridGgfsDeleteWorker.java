@@ -28,9 +28,6 @@ import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo.*;
 
 /**
  * GGFS worker for removal from the trash directory.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsDeleteWorker extends GridGgfsThread {
     /** Awake frequency, */

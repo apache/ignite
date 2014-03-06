@@ -38,9 +38,6 @@ import static java.sql.Connection.*;
  * There are no optional configuration parameters.
  * <p>
  * The database will contain 1 table which will hold IP addresses.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapter {
     /** Query to get addresses. */

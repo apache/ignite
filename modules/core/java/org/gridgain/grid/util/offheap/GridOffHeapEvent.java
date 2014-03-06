@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Off-heap event types.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridOffHeapEvent {
     /** Rehash event. */

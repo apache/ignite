@@ -18,9 +18,6 @@
 
 /**
  * Base class for message closures.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class ClientMessageProjectionClosure : public ClientProjectionClosure {
 public:

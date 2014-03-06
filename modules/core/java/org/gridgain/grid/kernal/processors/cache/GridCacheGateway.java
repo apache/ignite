@@ -16,9 +16,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Cache gateway.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridToStringExclude
 public class GridCacheGateway<K, V> {

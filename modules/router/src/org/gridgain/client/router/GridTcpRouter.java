@@ -46,8 +46,7 @@ import java.util.*;
  * Instances of this interface are managed through {@link GridRouterFactory}.
  *
  * @see GridTcpRouterConfiguration
- * @author @java.author
- * @version @java.version
+ *
  */
 public interface GridTcpRouter {
     /**

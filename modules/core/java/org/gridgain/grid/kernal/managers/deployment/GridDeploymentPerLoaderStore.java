@@ -27,9 +27,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 /**
  * Deployment storage for {@link GridDeploymentMode#PRIVATE} and
  * {@link GridDeploymentMode#ISOLATED} modes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
     /** Cache keyed by class loader ID. */

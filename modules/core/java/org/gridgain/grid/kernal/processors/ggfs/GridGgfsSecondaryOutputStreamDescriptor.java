@@ -14,9 +14,6 @@ import org.gridgain.grid.*;
 
 /**
  * Descriptor of an output stream opened to the secondary file system.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsSecondaryOutputStreamDescriptor {
     /** Parent ID in the primary file system. */

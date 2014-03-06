@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.lang.annotation.*;
@@ -23,9 +22,6 @@ import java.util.concurrent.*;
 /**
  * Utility class for getting annotated values from classes.
  * Contains local cache of annotated methods and fields by classes for best performance.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheAnnotationHelper<A extends Annotation> {
     /** Number of entries to keep in annotation cache. */
@@ -175,8 +171,7 @@ public class GridCacheAnnotationHelper<A extends Annotation> {
 
         // Need to inspect anonymous classes, callable and runnable instances.
         return f.getName().startsWith("this$") || f.getName().startsWith("val$") ||
-            Callable.class.isAssignableFrom(f.getType()) || Runnable.class.isAssignableFrom(f.getType()) ||
-            GridLambda.class.isAssignableFrom(f.getType());
+            Callable.class.isAssignableFrom(f.getType()) || Runnable.class.isAssignableFrom(f.getType());
     }
 
     /**

@@ -16,9 +16,6 @@ import java.io.*;
 
 /**
  * DR utility methods.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrUtils {
     /** Key used to store {@code GridDrPauseInfo} in system cache. */

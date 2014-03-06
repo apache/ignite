@@ -29,9 +29,6 @@ import static org.gridgain.grid.util.gridify.GridifyUtils.*;
  * <p>
  * See {@link GridifySetToValue} documentation for more information about execution of
  * {@code gridified} methods.
- *
- * @author @java.author
- * @version @java.version
  * @see GridifySetToValue
  */
 @Aspect

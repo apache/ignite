@@ -18,9 +18,6 @@ import java.io.*;
 /**
  * GGFS server message handler. Server component that is plugged in to the server implementation
  * to handle incoming messages asynchronously.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridGgfsServerHandler {
     /**

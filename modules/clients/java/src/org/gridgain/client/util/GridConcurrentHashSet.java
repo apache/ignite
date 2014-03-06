@@ -13,9 +13,6 @@ import java.util.concurrent.*;
 
 /**
  * Wrapper around concurrent map.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridConcurrentHashSet<E> extends AbstractSet<E> {
     /** Dummy value. */

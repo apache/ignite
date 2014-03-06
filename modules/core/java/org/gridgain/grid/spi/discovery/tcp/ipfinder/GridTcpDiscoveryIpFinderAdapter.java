@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * IP finder interface implementation adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridTcpDiscoveryIpFinderAdapter implements GridTcpDiscoveryIpFinder {
     /** Shared flag. */

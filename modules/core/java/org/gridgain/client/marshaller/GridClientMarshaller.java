@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * Marshaller for binary protocol messages.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridClientMarshaller {
     /**

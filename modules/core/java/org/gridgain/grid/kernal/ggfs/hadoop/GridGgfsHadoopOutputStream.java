@@ -16,9 +16,6 @@ import java.io.*;
 
 /**
  * GGFS Hadoop output stream implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfsStreamEventListener {
     /** Log instance. */

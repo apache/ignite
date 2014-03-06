@@ -19,9 +19,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Exchange ID.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtPartitionExchangeId implements Comparable<GridDhtPartitionExchangeId>, Externalizable {
     /** Node ID. */

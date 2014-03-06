@@ -25,9 +25,6 @@ import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
 
 /**
  * GGFS server manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsServerManager extends GridGgfsManager {
     /** IPC server rebind interval. */

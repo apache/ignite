@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Grid client for NIO server.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClient {
     /** Socket. */

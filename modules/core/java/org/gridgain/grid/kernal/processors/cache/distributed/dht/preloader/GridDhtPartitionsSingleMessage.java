@@ -22,9 +22,6 @@ import java.nio.*;
 
 /**
  * Information about partitions of a single node.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstractMessage<K, V> {
     /** Local partitions. */

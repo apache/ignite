@@ -20,9 +20,6 @@ import java.util.*;
  * Note that methods {@link #contains(Object)} and {@link #remove(Object)} implemented
  * in {@link AbstractCollection} fully iterate through collection so you need to make
  * sure to override these methods if it's possible to create efficient implementations.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridSerializableSet<E> extends AbstractSet<E> implements Serializable {
     // No-op.

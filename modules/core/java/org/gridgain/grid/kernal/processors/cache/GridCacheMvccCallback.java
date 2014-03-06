@@ -4,9 +4,6 @@ import org.gridgain.grid.kernal.processors.cache.distributed.*;
 
 /**
  * Lock and Unlock callbacks.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheMvccCallback<K, V> {
     /**

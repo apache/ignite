@@ -22,9 +22,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheMvccCandidate.M
 
 /**
  * Lock candidate.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheMvccCandidate<K> implements Externalizable,
     Comparable<GridCacheMvccCandidate<K>> {

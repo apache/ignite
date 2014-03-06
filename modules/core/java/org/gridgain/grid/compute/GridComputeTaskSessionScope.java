@@ -16,9 +16,6 @@ import org.jetbrains.annotations.*;
  * <ul>
  *      <li>{@link GridComputeTaskSession#saveCheckpoint(String, Object, GridComputeTaskSessionScope, long)}</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridComputeTaskSessionScope {
     /**

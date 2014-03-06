@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Query execution bean.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheQueryBean {
     /** */

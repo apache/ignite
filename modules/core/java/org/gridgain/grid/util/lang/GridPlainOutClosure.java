@@ -13,9 +13,6 @@ import org.gridgain.grid.*;
 
 /**
  * Closure that takes no arguments, returns result and does not implement {@code GridPeerDeployAware}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridPlainOutClosure<R> {
     /**

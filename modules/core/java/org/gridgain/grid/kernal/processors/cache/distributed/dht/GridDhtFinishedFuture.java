@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * Finished DHT future.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtFinishedFuture<T> extends GridFinishedFuture<T> implements GridDhtFuture<T> {
     /**

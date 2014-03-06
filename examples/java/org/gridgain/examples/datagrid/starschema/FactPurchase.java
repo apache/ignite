@@ -16,9 +16,6 @@ import org.gridgain.grid.cache.query.*;
  * Represents a purchase record. In our {@code snowflake} schema purchase
  * is a {@code 'fact'} and will be cached in larger {@link GridCacheMode#PARTITIONED}
  * cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public class FactPurchase {
     /** Primary key. */

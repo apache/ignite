@@ -16,9 +16,6 @@ import java.security.*;
 
 /**
  * Provides handle on Unsafe class from SUN which cannot be instantiated directly.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridUnsafe {
     /**

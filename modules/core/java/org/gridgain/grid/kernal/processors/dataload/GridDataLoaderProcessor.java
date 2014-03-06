@@ -30,8 +30,7 @@ import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
     /** Loaders map (access is not supposed to be highly concurrent). */

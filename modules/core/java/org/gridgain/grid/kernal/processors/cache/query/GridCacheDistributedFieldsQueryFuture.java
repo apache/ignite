@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
 * Distributed fields query future.
-*
-* @author @java.author
-* @version @java.version
 */
 public class GridCacheDistributedFieldsQueryFuture
     extends GridCacheDistributedQueryFuture<Object, Object, List<Object>>

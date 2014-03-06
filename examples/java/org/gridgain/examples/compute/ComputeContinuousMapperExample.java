@@ -34,9 +34,6 @@ import java.util.concurrent.atomic.*;
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-compute.xml} configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class ComputeContinuousMapperExample {
     /**
@@ -83,9 +80,6 @@ public class ComputeContinuousMapperExample {
      * not to accumulate results from individual jobs. In this example we increment
      * total character count directly in {@link #result(GridComputeJobResult, List)} method,
      * and therefore don't need to accumulate them be be processed at reduction step.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     @GridComputeTaskNoResultCache
     private static class GridContinuousMapperTask extends GridComputeTaskAdapter<String, Integer> {

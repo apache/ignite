@@ -15,9 +15,6 @@ import java.util.*;
 
 /**
  * Convenient adapter for "rich" iterator interface.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridIteratorAdapter<T> implements GridIterator<T> {
     /** {@inheritDoc} */

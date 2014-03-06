@@ -32,9 +32,6 @@ import java.io.*;
  * {@link GridGgfsRangeInputStream}.
  * <p>
  * You can inject any resources in concrete implementation, just as with regular {@link GridComputeJob} implementations.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridGgfsJob {
     /**

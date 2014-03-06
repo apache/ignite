@@ -40,8 +40,7 @@ import org.gridgain.visor.commands.top.VisorTopologyCommandSpec
 import org.gridgain.visor.commands.VisorArgListSpec
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 @RunWith(classOf[JUnitRunner])
 class VisorConsoleSelfTestSuite extends Suites (

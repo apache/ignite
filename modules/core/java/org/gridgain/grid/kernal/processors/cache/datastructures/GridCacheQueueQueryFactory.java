@@ -32,9 +32,6 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
  * Query factory responsible for providing all queries utilized by queue service.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("PackageVisibleInnerClass")
 class GridCacheQueueQueryFactory<T> implements Externalizable {
@@ -266,7 +263,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
      *
      */
     static class TerminalItemQueryLocalReducer<T>
-        extends R1<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>,
+        implements R1<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>,
         Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> {
         /** */
         @SuppressWarnings("OverlyStrongTypeCast")
@@ -308,7 +305,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
      *
      */
     static class RemoveItemsQueryLocalReducer
-        extends R1<GridBiTuple<Integer, GridException>, GridBiTuple<Integer, GridException>> {
+        implements R1<GridBiTuple<Integer, GridException>, GridBiTuple<Integer, GridException>> {
         /** */
         private final GridBiTuple<Integer, GridException> retVal = new T2<>(0, null);
 
@@ -333,7 +330,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
      *
      */
     static class RemoveAllKeysQueryLocalReducer
-        extends R1<GridBiTuple<Integer, GridException>, GridBiTuple<Integer, GridException>> {
+        implements R1<GridBiTuple<Integer, GridException>, GridBiTuple<Integer, GridException>> {
         /** */
         private final GridBiTuple<Integer, GridException> retVal = new T2<>(0, null);
 
@@ -356,7 +353,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
     /**
      *
      */
-    private static class PositionQueryRemoteReducer<T> extends
+    private static class PositionQueryRemoteReducer<T> implements
         R1<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>, Integer> {
         /** */
         private Object item;
@@ -391,7 +388,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
     /**
      *
      */
-    static class ContainsQueryLocalReducer extends R1<boolean[], Boolean> {
+    static class ContainsQueryLocalReducer implements R1<boolean[], Boolean> {
         /** */
         private final boolean[] arr;
 
@@ -428,7 +425,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
     /**
      *
      */
-    static class ContainsQueryRemoteReducer<T> extends R1<Map.Entry<GridCacheQueueItemKey,
+    static class ContainsQueryRemoteReducer<T> implements R1<Map.Entry<GridCacheQueueItemKey,
         GridCacheQueueItemImpl<T>>, boolean[]> {
         /** Items. */
         private final Object[] items;
@@ -470,7 +467,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
      *
      */
     private static class RemoveAllKeysQueryRemoteReducer<T>
-        extends R1<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>, GridBiTuple<Integer, GridException>> {
+        implements R1<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>, GridBiTuple<Integer, GridException>> {
         /** */
         @GridLoggerResource
         private GridLogger log;
@@ -569,7 +566,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
     /**
      * Remove items query remote reducer.
      */
-    private static class RemoveItemsQueryRemoteReducer<T> extends R1<Map.Entry<GridCacheQueueItemKey,
+    private static class RemoveItemsQueryRemoteReducer<T> implements R1<Map.Entry<GridCacheQueueItemKey,
         GridCacheQueueItemImpl<T>>, GridBiTuple<Integer, GridException>> {
         /** */
         private GridCacheContext cctx;
@@ -681,7 +678,7 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
      * One record reducer.
      */
     static class OneRecordReducer<T>
-        extends GridReducer<Map.Entry<GridCacheQueueItemKey,GridCacheQueueItemImpl<T>>,
+        implements GridReducer<Map.Entry<GridCacheQueueItemKey,GridCacheQueueItemImpl<T>>,
         Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> {
         /** */
         private Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> entry;

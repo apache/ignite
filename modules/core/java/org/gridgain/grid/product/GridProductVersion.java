@@ -26,9 +26,6 @@ import java.util.regex.*;
  * <p>
  * Two versions are compared in the following order: major number,
  * minor number, maintenance number, revision timestamp.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridProductVersion implements Comparable<GridProductVersion>, Externalizable {
     /** Development version. This version is larger than any other version. */

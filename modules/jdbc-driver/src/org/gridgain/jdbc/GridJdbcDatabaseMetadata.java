@@ -22,9 +22,6 @@ import static java.sql.RowIdLifetime.*;
 
 /**
  * JDBC database metadata implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("RedundantCast")
 class GridJdbcDatabaseMetadata implements DatabaseMetaData {

@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * {@link GridMessaging} implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridMessagingImpl implements GridMessaging {
     /** */

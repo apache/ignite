@@ -14,9 +14,6 @@ import org.gridgain.grid.cache.*;
 
 /**
  * Management bean that provides access to {@link GridCache}.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridCacheMBeanAdapter implements GridCacheMBean {
     /** Cache context. */

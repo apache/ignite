@@ -23,9 +23,6 @@ import java.util.*;
 
 /**
  * Transaction completion message.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMessage<K, V> {
     /** Future ID. */

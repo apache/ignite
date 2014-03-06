@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
  * Internal DR request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrInternalRequest extends GridTcpCommunicationMessageAdapter {
     /** Request ID. */

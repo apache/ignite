@@ -17,9 +17,6 @@
 
 /**
  *  Provide the unified interface for calculation the hash-code for an object.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridHasheableObject {
 public:

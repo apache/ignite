@@ -24,9 +24,6 @@ import org.gridgain.grid.kernal.processors.task.GridInternal
  *
  * @tparam A Task argument type.
  * @tparam R Task result type.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridInternal
 trait VisorConsoleMultiNodeTask[A, R] extends GridComputeTask[A, R] {

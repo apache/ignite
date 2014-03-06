@@ -13,9 +13,6 @@ import org.gridgain.grid.streamer.*;
 
 /**
  * Streamer stage MBean adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("ConstantConditions")
 public class GridStreamerStageMBeanAdapter implements GridStreamerStageMBean {

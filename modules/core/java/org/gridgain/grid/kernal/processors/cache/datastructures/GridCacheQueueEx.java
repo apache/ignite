@@ -14,9 +14,6 @@ import org.gridgain.grid.cache.datastructures.*;
 
 /**
  * Queue managed by cache ({@code 'Ex'} stands for external).
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheQueueEx<T> extends GridCacheQueue<T>, GridCacheRemovable {
     /**

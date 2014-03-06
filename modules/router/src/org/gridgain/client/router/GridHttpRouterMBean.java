@@ -15,9 +15,6 @@ import java.util.*;
 
 /**
  * MBean interface for HTTP rest router.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean for TCP router.")
 public interface GridHttpRouterMBean {

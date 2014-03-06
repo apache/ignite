@@ -15,9 +15,6 @@ import java.net.*;
 
 /**
  * Custom stream protocol handler implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridProtocolHandler extends URLStreamHandler {
     /** Deployment manager. */

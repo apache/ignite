@@ -16,9 +16,6 @@ import java.io.*;
 
 /**
  * Cache DR info used as argument in PUT cache internal interfaces with expiration info added.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDrExpirationInfo<V> extends GridCacheDrInfo<V> {
     /** TTL. */

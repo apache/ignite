@@ -19,9 +19,6 @@ import org.jetbrains.annotations.*;
  * <p>
  * Cache atomicity may be set via {@link GridCacheConfiguration#getAtomicityMode()}
  * configuration property.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridCacheAtomicityMode {
     /**

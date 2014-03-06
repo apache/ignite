@@ -21,9 +21,6 @@ import java.util.*;
  * <p>
  * The main idea behind JSON-based configuration is to provide more terse configuration via JSON
  * rather than traditional Spring syntax.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridSpiJsonConfigurable {
     /**

@@ -24,9 +24,6 @@ import java.util.*;
 
 /**
  * Near cache lock response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V> {
     /** Collection of versions that are pending and less than lock version. */

@@ -30,9 +30,6 @@ import java.util.concurrent.locks.*;
  * Injector creates and collects all created user resources.
  * All resources will be cleaned before task undeploy.
  * Task resources should be marked in task with {@link GridUserResource} annotation.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridResourceCustomInjector implements GridResourceInjector {
     /** Class-based resource attachment. */

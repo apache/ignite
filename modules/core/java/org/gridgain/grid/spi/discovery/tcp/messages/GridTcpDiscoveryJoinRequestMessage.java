@@ -18,9 +18,6 @@ import java.util.*;
 /**
  * Initial message sent by a node that wants to enter topology.
  * Sent to random node during SPI start. Then forwarded directly to coordinator.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstractMessage {
     /** New node that wants to join the topology. */

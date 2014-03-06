@@ -18,9 +18,6 @@ import org.jetbrains.annotations.*;
 /**
  * Implementation of {@link GeneralDataRegion}. This interface defines common contract for {@link QueryResultsRegion}
  * and {@link TimestampsRegion}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridHibernateGeneralDataRegion extends GridHibernateRegion implements GeneralDataRegion {
     /**

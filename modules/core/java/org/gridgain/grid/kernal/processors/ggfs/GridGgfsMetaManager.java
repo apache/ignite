@@ -39,9 +39,6 @@ import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo.*;
 
 /**
  * Cache based structure (meta data) manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsMetaManager extends GridGgfsManager {
     /** GGFS configuration. */
@@ -2455,8 +2452,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     /**
      * Updates file length information in parent listing.
      */
-    private static final class UpdateListingEntry extends GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>
-        implements Externalizable {
+    private static final class UpdateListingEntry implements GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
+        Externalizable {
         /** File name. */
         private String fileName;
 
@@ -2540,8 +2537,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * Update directory listing closure.
      */
     @GridInternal
-    private static final class UpdateListing extends GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>
-        implements Externalizable {
+    private static final class UpdateListing implements GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
+        Externalizable {
         /** File name to add into parent listing. */
         private String fileName;
 
@@ -2632,8 +2629,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * Update path closure.
      */
     @GridInternal
-    private static final class UpdatePath extends GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>
-        implements Externalizable {
+    private static final class UpdatePath implements GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
+        Externalizable {
         /** New path. */
         private GridGgfsPath path;
 

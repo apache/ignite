@@ -12,8 +12,7 @@ package org.gridgain.grid.util.ipc.shmem;
 import java.io.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridIpcSharedMemoryInitRequest implements Externalizable {
     /** */

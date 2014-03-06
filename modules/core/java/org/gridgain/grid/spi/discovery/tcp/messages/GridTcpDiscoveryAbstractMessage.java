@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Base class to implement discovery messages.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable {
     /** Sender of the message (transient). */

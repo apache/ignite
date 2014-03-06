@@ -93,9 +93,6 @@ import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
  * <p/>
  * See <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a> for information on the
  * misspelling.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridKernal extends GridProjectionAdapter implements GridEx, GridKernalMBean {
     /** Enterprise release flag. */
@@ -108,7 +105,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         boolean ent0;
 
         try {
-            ent0 = Class.forName("org.gridgain.grid.entbreadcrumb") != null;
+            ent0 = Class.forName("org.gridgain.grid.kernal.breadcrumb") != null;
         }
         catch (ClassNotFoundException ignored) {
             ent0 = false;

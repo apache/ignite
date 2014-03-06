@@ -12,18 +12,12 @@
 package org.gridgain.scalar.lang
 
 import org.gridgain.grid.lang.{GridReducer}
-import org.gridgain.grid.util.lang.GridLambdaAdapter
 
 /**
  * Wrapping Scala function for `GridReducer`.
- *
- * @author @java.author
- * @version @java.version
  */
-class ScalarReducerFunction[E1, R](val inner: GridReducer[E1, R]) extends GridLambdaAdapter with (Seq[E1] => R) {
+class ScalarReducerFunction[E1, R](val inner: GridReducer[E1, R]) extends (Seq[E1] => R) {
     assert(inner != null)
-
-    peerDeployLike(inner)
 
     /**
      * Delegates to passed in grid reducer.

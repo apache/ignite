@@ -21,9 +21,6 @@ import java.util.*;
  * constant time removal from the middle of the queue.
  * <p>
  * This queue is not thread-safe.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridQueue<E> extends AbstractCollection<E> implements Queue<E> {
     /** Queue size. */

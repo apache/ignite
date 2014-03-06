@@ -13,9 +13,6 @@ import org.gridgain.grid.*;
 
 /**
  * Exception thrown whenever grid transactions fail optimistically.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheTxOptimisticException extends GridException {
     /**

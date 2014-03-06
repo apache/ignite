@@ -17,9 +17,6 @@ import java.util.*;
 /**
  * Class to store query results returned by remote nodes. It's required to fully
  * control serialization process. Local entries can be returned to user as is.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheQueryResponseEntry<K, V> implements Map.Entry<K, V>, Externalizable {
     /** */

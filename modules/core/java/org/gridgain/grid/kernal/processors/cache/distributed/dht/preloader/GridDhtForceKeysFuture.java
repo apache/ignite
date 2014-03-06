@@ -32,9 +32,6 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
 /**
  * Force keys request future.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Object, Collection<K>>
     implements GridDhtFuture<Collection<K>> {
@@ -84,9 +81,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         GridDhtPreloader<K, V> preloader) {
         super(cctx.kernalContext());
 
-        assert topVer != 0;
-        assert cctx.preloader().startFuture().isDone();
-        assert !F.isEmpty(keys);
+        assert topVer != 0 : topVer;
+        assert !F.isEmpty(keys) : keys;
 
         this.cctx = cctx;
         this.keys = keys;
@@ -191,6 +187,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * Initializes this future.
      */
     public void init() {
+        assert cctx.preloader().startFuture().isDone();
+
         map(keys, Collections.<GridNode>emptyList());
 
         markInitialized();
@@ -320,7 +318,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             assert pick != null;
 
             if (!cctx.preloadEnabled() && loc.id().equals(pick.id()))
-                pick = F.first(F.view(owners, F.<GridNode>remoteNodes(loc.id())));
+                pick = F.first(F.view(owners, F.remoteNodes(loc.id())));
 
             if (pick == null) {
                 if (log.isDebugEnabled())

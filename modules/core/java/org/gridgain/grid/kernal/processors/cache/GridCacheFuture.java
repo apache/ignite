@@ -15,9 +15,6 @@ import java.util.*;
 
 /**
  * This interface should be implemented by all distributed futures.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheFuture<R> extends GridFuture<R> {
     /**

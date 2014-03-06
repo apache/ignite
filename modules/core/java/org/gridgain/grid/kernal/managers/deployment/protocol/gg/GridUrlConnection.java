@@ -17,9 +17,6 @@ import java.net.*;
 
 /**
  * Connection implementation for custom protocol.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridUrlConnection extends URLConnection {
     /** Deployment manager. */

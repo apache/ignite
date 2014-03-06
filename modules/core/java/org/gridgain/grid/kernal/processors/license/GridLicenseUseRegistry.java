@@ -17,9 +17,6 @@ import java.util.concurrent.*;
 
 /**
  * Usage registry.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLicenseUseRegistry {
     /** Usage map. */

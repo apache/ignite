@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * No-op implementation of {@link GridSwapSpaceSpi}. Exists for testing and benchmarking purposes.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridSpiInfo(
     author = /*@java.spi.author*/"GridGain Systems",

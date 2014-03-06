@@ -32,9 +32,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * This class provides convenient adapter for SPI implementations.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean, GridSpiJsonConfigurable {
     /** Instance of SPI annotation. */
@@ -568,9 +565,6 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
 
     /**
      * Temporarily SPI context.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private static class GridDummySpiContext implements GridSpiContext {
         /** */

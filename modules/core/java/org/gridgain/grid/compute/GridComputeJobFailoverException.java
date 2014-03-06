@@ -20,9 +20,6 @@ import java.util.concurrent.*;
  * job failover to another node within task topology. Any
  * {@link GridClosure}, {@link Callable}, or {@link Runnable} instance passed into
  * any of the {@link GridCompute} methods can also throw this exception to force failover.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridComputeJobFailoverException extends GridRuntimeException {
     /**

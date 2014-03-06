@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Nio specific exception.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNioException extends GridException {
     /**

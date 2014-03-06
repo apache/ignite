@@ -16,9 +16,6 @@ import java.util.*;
 
 /**
  * Timer to use mostly for debugging purposes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTimer {
     /** Debug date format. */

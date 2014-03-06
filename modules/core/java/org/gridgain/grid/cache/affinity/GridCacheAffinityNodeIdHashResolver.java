@@ -15,9 +15,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 /**
  * Node hash resolver which uses generated node ID as node hash value. As new node ID is generated
  * on each node start, this resolver do not provide ability to map keys to the same nodes after restart.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheAffinityNodeIdHashResolver implements GridCacheAffinityNodeHashResolver {
     /** {@inheritDoc} */

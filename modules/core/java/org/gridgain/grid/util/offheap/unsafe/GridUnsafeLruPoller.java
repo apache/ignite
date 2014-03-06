@@ -11,9 +11,6 @@ package org.gridgain.grid.util.offheap.unsafe;
 
 /**
  * Polls LRU.
- *
- * @author @java.author
- * @version @java.version
  */
 interface GridUnsafeLruPoller {
     /**

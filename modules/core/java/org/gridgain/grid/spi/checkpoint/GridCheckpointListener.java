@@ -11,9 +11,6 @@ package org.gridgain.grid.spi.checkpoint;
 
 /**
  * Listener for notifications of checkpoints removed by {@link GridCheckpointSpi}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCheckpointListener {
     /**

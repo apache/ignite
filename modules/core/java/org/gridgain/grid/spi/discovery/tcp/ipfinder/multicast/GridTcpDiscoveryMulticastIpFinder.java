@@ -48,9 +48,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
  *      <li>Address request attempts (see {@link #setAddressRequestAttempts(int)}).</li>
  *      <li>Pre-configured addresses (see {@link #setAddresses(Collection)})</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinder {
     /** Default multicast IP address (value is {@code 228.1.2.4}). */

@@ -20,9 +20,6 @@ import java.net.*;
 /**
  * Base deployment scanner implementation. It simplifies scanner implementation
  * by providing loggers, executors and file names parsing methods.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridUriDeploymentScanner {
     /** Grid name. */

@@ -17,9 +17,6 @@ import java.io.*;
  * probability on default. Although this model is simplified for the purpose
  * of this example, it is close enough to emulate the real-life credit
  * risk assessment application.
- *
- * @author @java.author
- * @version @java.version
  */
 public class Credit implements Serializable {
     /** Remaining crediting amount. */

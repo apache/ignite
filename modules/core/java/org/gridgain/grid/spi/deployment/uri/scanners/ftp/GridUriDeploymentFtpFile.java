@@ -15,9 +15,6 @@ import java.util.*;
 
 /**
  * Value object which encapsulates {@link FTPFile} and corresponding directory.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridUriDeploymentFtpFile {
     /** */

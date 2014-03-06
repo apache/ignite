@@ -27,9 +27,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
  * Transaction created by system implicitly on remote nodes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> {
     /** Evicted keys. */
@@ -359,9 +356,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
         GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cctx, this, NOOP, val, 0L, -1L, cached, drVer);
 
         txEntry.keyBytes(keyBytes);
-
-        if (cctx.sendValueBytes())
-            txEntry.valueBytes(valBytes);
+        txEntry.valueBytes(valBytes);
 
         writeMap.put(key, txEntry);
     }
@@ -408,9 +403,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
                         drVer);
 
                     txEntry.keyBytes(keyBytes);
-
-                    if (cctx.sendValueBytes())
-                        txEntry.valueBytes(valBytes);
+                    txEntry.valueBytes(valBytes);
 
                     writeMap.put(key, txEntry);
 

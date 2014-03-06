@@ -12,9 +12,6 @@ package org.gridgain.grid.ggfs;
 /**
  * {@code GGFS} metrics snapshot for the file system. Note, that some metrics are global and
  * some are local (i.e. per each node).
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridGgfsMetrics {
     /**

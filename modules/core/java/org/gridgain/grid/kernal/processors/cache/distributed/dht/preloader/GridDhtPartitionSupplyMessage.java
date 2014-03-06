@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * Partition supply message.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
     /** Worker ID. */

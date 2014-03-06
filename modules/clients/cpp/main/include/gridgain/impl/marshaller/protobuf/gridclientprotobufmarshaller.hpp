@@ -33,9 +33,6 @@ using namespace org::gridgain::grid::kernal::processors::rest::client::message;
 
 /**
  * Grid protobuf marshaler.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientProtobufMarshaller {
 public:

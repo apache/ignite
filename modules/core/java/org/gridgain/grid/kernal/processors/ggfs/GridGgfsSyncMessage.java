@@ -17,9 +17,6 @@ import java.nio.*;
 
 /**
  * Basic sync message.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
     /** Coordinator node order. */

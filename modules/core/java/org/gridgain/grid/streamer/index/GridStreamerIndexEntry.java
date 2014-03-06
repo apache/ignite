@@ -18,9 +18,6 @@ import java.util.*;
  * Streamer index entry. Individual index entry contains index key, value, and all events
  * associated with given key.
  *
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridStreamerIndexEntry<E, K, V> {
     /**

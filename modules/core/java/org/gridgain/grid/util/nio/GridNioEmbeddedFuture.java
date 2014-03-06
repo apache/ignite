@@ -18,9 +18,6 @@ import java.io.*;
 
 /**
  * Future that delegates to some other future.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNioEmbeddedFuture<R> extends GridNioFutureImpl<R> {
     /**

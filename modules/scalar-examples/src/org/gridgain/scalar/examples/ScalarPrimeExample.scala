@@ -33,9 +33,6 @@ import java.util
  * Note that when running this example on a multi-core box, simply
  * starting additional grid node on the same box will speed up
  * prime number calculation by a factor of 2.
- *
- @author @java.author
- * @version @java.version
  */
 object ScalarPrimeExample {
     /**

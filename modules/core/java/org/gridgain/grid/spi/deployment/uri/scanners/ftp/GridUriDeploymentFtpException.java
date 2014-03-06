@@ -13,9 +13,6 @@ import org.gridgain.grid.*;
 
 /**
  * An exception occurred during URI FTP deployment.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridUriDeploymentFtpException extends GridException {
     /**

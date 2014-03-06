@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Concurrent weak hash set implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridConcurrentWeakHashSet<E> implements Set<E> {
     /** Empty array. */

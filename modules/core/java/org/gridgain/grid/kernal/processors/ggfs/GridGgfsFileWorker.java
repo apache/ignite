@@ -14,9 +14,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * GGFS file worker for DUAL modes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsFileWorker extends GridGgfsThread {
     /** Time during which thread remains alive since it's last batch is finished. */

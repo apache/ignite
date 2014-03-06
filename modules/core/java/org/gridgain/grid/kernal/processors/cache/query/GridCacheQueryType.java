@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
 /**
  * Defines different cache query types. For more information on cache query types
  * and their usage see {@link GridCacheQuery} documentation.
- *
- * @author @java.author
- * @version @java.version
  * @see GridCacheQuery
  */
 public enum GridCacheQueryType {

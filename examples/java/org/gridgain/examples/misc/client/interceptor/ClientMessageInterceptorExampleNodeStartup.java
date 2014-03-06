@@ -32,9 +32,6 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  * Note that different nodes cannot share the same port for rest services. If you want
  * to start more than one node on the same physical machine you must provide different
  * configurations for each node. Otherwise, this example would not work.
- *
- * @author @java.author
- * @version @java.version
  */
 public class ClientMessageInterceptorExampleNodeStartup {
     /**

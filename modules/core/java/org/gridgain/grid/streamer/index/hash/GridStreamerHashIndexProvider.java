@@ -32,8 +32,7 @@ import static org.gridgain.grid.streamer.index.GridStreamerIndexPolicy.*;
  * If ordering is required, consider using {@link GridStreamerTreeIndexProvider}.
  *
  * @see GridStreamerTreeIndexProvider
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridStreamerHashIndexProvider<E, K, V> extends GridStreamerIndexProviderAdapter<E, K, V> {
     /** */

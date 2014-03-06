@@ -30,9 +30,6 @@ import java.util.*;
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-compute.xml} configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class ComputeFibonacciContinuationExample {
     /**
@@ -77,7 +74,7 @@ public final class ComputeFibonacciContinuationExample {
     /**
      * Closure to execute.
      */
-    private static class FibonacciClosure extends GridClosure<Long, BigInteger> {
+    private static class FibonacciClosure implements GridClosure<Long, BigInteger> {
         /** Future for spawned task. */
         private GridFuture<BigInteger> fut1;
 

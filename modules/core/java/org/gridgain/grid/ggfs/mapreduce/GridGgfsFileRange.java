@@ -14,9 +14,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Entity representing part of GGFS file identified by file path, start position, and length.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsFileRange {
     /** File path. */
