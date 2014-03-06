@@ -370,7 +370,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
 
     /** {@inheritDoc} */
     @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
-        List<List<GridNode>> assignments = new ArrayList<>();
+        List<List<GridNode>> assignments = new ArrayList<>(parts);
 
         Map<UUID, Collection<GridNode>> neighborhoodCache = exclNeighbors ?
             neighbors(affCtx.currentTopologySnapshot()) : null;
