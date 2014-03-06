@@ -267,12 +267,7 @@ public class GridSharedFsCheckpointSpi extends GridSpiAdapter implements GridChe
             else {
                 if (!F.isEmpty(getGridGainHome())) {
                     // Create relative by default.
-                    try {
-                        folder = U.resolveWorkDirectory(curDirPath);
-                    }
-                    catch (IOException e) {
-                        throw new GridSpiException(e);
-                    }
+                    folder = U.resolveWorkDirectory(curDirPath);
 
                     if (!folder.mkdirs() && !folder.exists()) {
                         // Remove failed directory.

@@ -261,12 +261,7 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
         registerMBean(gridName, this, GridFileSwapSpaceSpiMBean.class);
 
-        try {
-            dir = U.resolveWorkDirectory(baseDir + File.separator + gridName + File.separator + locNodeId);
-        }
-        catch (IOException e) {
-            throw new GridSpiException(e);
-        }
+        dir = U.resolveWorkDirectory(baseDir + File.separator + gridName + File.separator + locNodeId);
 
         if (dir.exists()) {
             U.warn(log, "Swap directory already exists (will delete): " + dir.getAbsolutePath());

@@ -8175,21 +8175,14 @@ public abstract class GridUtils {
 
     /**
      * Resolves work directory.
+     * Method does not throw exception if gridgain home is {@code null}.
      *
      * @param path Path to resolve.
      * @return Resolved work directory.
-     * @throws IOException If failed.
      */
-    public static File resolveWorkDirectory(String path) throws IOException {
+    public static File resolveWorkDirectory(String path) {
         File dir = new File(path);
 
-        String ggHome;
-
-        if (dir.isAbsolute())
-            return dir;
-        else if (!F.isEmpty(ggHome = U.getGridGainHome()))
-            return new File(ggHome, path);
-        else
-            throw new IOException("Failed to resolve directory path: " + path);
+        return dir.isAbsolute() ? dir : new File(U.getGridGainHome(), dir.getPath());
     }
 }

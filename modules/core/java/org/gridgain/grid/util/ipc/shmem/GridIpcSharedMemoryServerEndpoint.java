@@ -153,12 +153,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
 
         tokDirPath = tokDirPath + '/' + locNodeId.toString() + '-' + GridIpcSharedMemoryUtils.pid();
 
-        try {
-            tokDir = U.resolveWorkDirectory(tokDirPath);
-        }
-        catch (IOException e) {
-            throw new GridGgfsIpcEndpointBindException("Failed to resolve token directory path: " + tokDirPath, e);
-        }
+        tokDir = U.resolveWorkDirectory(tokDirPath);
 
         if (!U.mkdirs(tokDir))
             throw new GridGgfsIpcEndpointBindException("Failed to create token directory: " + tokDir.getAbsolutePath());

@@ -1047,14 +1047,7 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
 
         // GridGain home found.
         if (!F.isEmpty(getGridGainHome())) {
-            File dir;
-
-            try {
-                dir = U.resolveWorkDirectory(DFLT_DEPLOY_DIR);
-            }
-            catch (IOException e) {
-                throw new GridSpiException(e);
-            }
+            File dir = U.resolveWorkDirectory(DFLT_DEPLOY_DIR);
 
             if (!dir.exists() && !dir.mkdirs())
                 throw new GridSpiException("Failed to initialize default file scanner (folder doesn't exist): " + dir);
