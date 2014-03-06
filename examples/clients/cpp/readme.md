@@ -15,12 +15,12 @@ To build the C++ Client library, please follow the instructions in `GRIDGAIN_HOM
 
 ## Running the Client Examples
 
-First, build the examples by going into the `GRIDGAIN_HOME/examples/clients/cpp` directory and executing the following commands:
+After you have built the C++ client library and installed it in your system, you can build the examples by going into the `GRIDGAIN_HOME/examples/clients/cpp` directory and executing the following commands:
 
     ./configure
     make
 
-On Windows you can use the provided Visual Studio solution (in the `vsproject/` directory) to compile the examples code.
+On Windows you can use the provided Visual Studio solution (in the `vsproject/` directory) to compile the examples code. Please note that you will have to adjust include and library directories in relevant projects to match your environment configuration.
 <br/><br/>
 Before you can run the examples, you must ensure that the org.gridgain.examples.client package are available on the GridGain node's classpath. One way to achieve that is to buildthe jar containing the examples code and drop it to the `GRIDGAIN_HOME/libs/ext` directory. When the `ggstart` script runs it automatically picks up the jars from that directory.
 <br/><br/>
