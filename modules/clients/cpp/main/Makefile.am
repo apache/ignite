@@ -6,7 +6,7 @@ SUBDIRS = . include $(TESTS_DIR)
 DIST_SUBDIRS = . include $(TESTS_DIR)
 
 AM_CPPFLAGS = -I$(srcdir)/include -DGRIDGAIN_EXPORT -DBOOST_SPIRIT_THREADSAFE
-AM_CXXFLAGS = -Wall -std=c++11
+AM_CXXFLAGS = -Wall -std=c++0x
 LIB_LDFLAGS = -no-undefined -version-info 1
 
 COMMON_SRC = src/model/gridclientuuid.cpp src/model/gridclientvariant.cpp \
