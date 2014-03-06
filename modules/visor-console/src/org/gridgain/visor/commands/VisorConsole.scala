@@ -33,6 +33,7 @@ import alert.VisorAlertCommand
 import cache.VisorCacheCommand
 import cclear.VisorCacheClearCommand
 import ccompact.VisorCacheCompactCommand
+import cscan.VisorCacheScanCommand
 import cswap.VisorCacheSwapCommand
 import config.VisorConfigurationCommand
 import deploy.VisorDeployCommand
@@ -67,6 +68,7 @@ object VisorConsole extends App {
     VisorCacheCommand
     VisorCacheClearCommand
     VisorCacheCompactCommand
+    VisorCacheScanCommand
     VisorCacheSwapCommand
     VisorConfigurationCommand
     VisorDeployCommand

@@ -11,8 +11,16 @@
 
 package org.gridgain.visor.commands.cscan
 
+import java.util.{Map => JavaMap, UUID}
+import collection.JavaConversions._
+import org.gridgain.grid.cache.query.GridCacheQueryFuture
+import org.gridgain.grid.kernal.{GridInternalException, GridEx}
+import org.gridgain.grid.kernal.processors.task.GridInternal
+import org.gridgain.grid.util.{GridUtils => U}
+import org.gridgain.grid.util.scala.impl
+import org.gridgain.grid.util.typedef.CAX
 import org.gridgain.visor._
-import org.gridgain.visor.commands.{VisorTextTable, VisorConsoleCommand}
+import org.gridgain.visor.commands._
 import org.gridgain.visor.visor._
 
 /**
@@ -77,55 +85,228 @@ class VisorCacheScanCommand {
      *
      * @param cacheName Cache name.
      */
-    def cscan(cacheName: String) = breakable {
+    def cscan(cacheName: String) {
         if (!isConnected)
             adviseToConnect()
         else {
-            if (cacheName == null || cacheName.isEmpty)
-                scold("Cache name is empty.").^^
+            if (cacheName == null || cacheName.isEmpty) {
+                scold("Cache name is empty.")
+                
+                return
+            }
 
-            val caches = getVariable(cacheName)
+            val cache = getVariable(cacheName)
 
-            val prj = grid.forCache(caches)
+            val cachePrj = grid.forCache(cache)
+            val qryPrj = cachePrj.forRandom()
+            val nid = qryPrj.node().id()
 
-            if (prj.isEmpty)
-                scold("Can't find nodes with specified cache: " + caches).^^
+            if (cachePrj.nodes().isEmpty) {
+                scold("Can't find nodes with specified cache: " + cache)
 
-//            val res = prj
-//                .compute()
-//                .withName("visor-cscan-task")
-//                .withNoFailover()
-//                .broadcast(new ClearClosure(caches))
-//                .get
-//
-            val t = VisorTextTable()
+                return
+            }
 
-            t #= ("Node ID8(@)", "Cache Size Before", "Cache Size After")
+            var res = qryPrj
+                .compute()
+                .withName("visor-cscan-task")
+                .withNoFailover()
+                .execute(classOf[VisorScanCacheTask],
+                    new VisorScanCacheTaskArgs(nid, cachePrj.nodes().map(_.id()).toSeq, cache, 25))
+                .get
+            
+            if (res.rows.isEmpty) {
+                println("Cache is empty")
+                
+                return
+            }
 
-//            res.foreach(r => t += (nodeId8(r._1), r._2, r._3))
+            def render() {
+                val t = VisorTextTable()
 
-            t.render()
+                t #= ("Key Class", "Key", "Value Class", "Value")
+
+                    res.rows.foreach(r => t += (r._1, r._2, r._3, r._4))
+
+                    t.render()
+            }
+            
+            render()
+            
+            while (res.hasMore) {
+                ask("\nFetch more objects (y/n) [y]:", "y") match {
+                    case "y" | "Y" =>
+                        res = qryPrj
+                            .compute()
+                            .withName("visor-cscan-fetch-task")
+                            .withNoFailover()
+                            .execute(classOf[VisorFetchNextPageTask], new VisorFetchNextPageTaskArgs(nid, res.nlKey, 25))
+                            .get
+
+                        render()
+
+                    case _ => return
+                }
+
+            }
         }
+    }
+
+    def cscan() {
+        scold("Cache name required")
     }
 }
 
-///**
-//  */
-//@GridInternal
-//class ClearClosure(val cacheName: String) extends GridCallable[(UUID, Int, Int)] {
-//    @GridInstanceResource
-//    private val g: GridEx = null
-//
-//    @impl def call(): (UUID, Int, Int) = {
-//        val c = g.cachex[AnyRef, AnyRef](cacheName)
-//
-//        val oldSize = c.size
-//
-//        c.clearAll()
-//
-//        (g.localNode.id, oldSize, c.size)
-//    }
-//}
+object VisorScanCache {
+    type VisorScanStorageValType = (GridCacheQueryFuture[JavaMap.Entry[Object, Object]], JavaMap.Entry[Object, Object],
+        Int, Boolean)
+    
+    type VisorScanResult = (String, String, String, String)
+
+    final val SCAN_QUERY_KEY = "VISOR_CONSOLE_SCAN_CACHE"
+
+    /** How long to store future. */
+    final val RMV_DELAY: Int = 5 * 60 // 5 minutes.
+
+    /**
+     * Fetch rows from SCAN query future.
+     *
+     * @param fut Query future to fetch rows from.
+     * @param savedNext Last processed element from future.
+     * @param pageSize Number of rows to fetch.
+     * @return Fetched rows and last processed element.
+     */
+    def fetchRows(fut: GridCacheQueryFuture[JavaMap.Entry[Object, Object]],
+        savedNext: JavaMap.Entry[Object, Object],
+        pageSize: Int): (Array[VisorScanResult], JavaMap.Entry[Object, Object]) = {
+        def typeOf(o: Object): String = if (o != null) U.compact(o.getClass.getName) else "null"
+
+        def valueOf(o: Object): String =
+            if (o != null) {
+                if (o.getClass.isArray) "binary" else  o.toString
+            }
+            else
+                "null"
+
+        val rows = collection.mutable.ArrayBuffer.empty[VisorScanResult]
+
+        var cnt = 0
+
+        var next = if (savedNext != null) savedNext else fut.next
+
+        while (next != null && cnt < pageSize) {
+            val k = next.getKey
+            val v = next.getValue
+
+            val row = (typeOf(k), valueOf(k), typeOf(v), valueOf(v))
+
+            rows += row
+
+            cnt += 1
+
+            next = fut.next
+        }
+
+        (rows.toArray, next)
+    }
+}
+
+import VisorScanCache._
+
+/**
+ * Executes SCAN or SQL query and get first page of results.
+ */
+@GridInternal
+private class VisorScanCacheTask extends VisorConsoleOneNodeTask[VisorScanCacheTaskArgs, VisorScanCacheResult] {
+    @impl protected def run(g: GridEx, arg: VisorScanCacheTaskArgs): VisorScanCacheResult = {
+        val nodeLclKey = SCAN_QUERY_KEY + "-" + UUID.randomUUID()
+
+        val c = g.cache[Object, Object](arg.cacheName)
+
+        val fut = c.queries().createScanQuery(null)
+            .pageSize(arg.pageSize)
+            .projection(g.forNodeIds(arg.proj))
+            .execute()
+
+
+        val (rows, next) = fetchRows(fut, null, arg.pageSize)
+
+        g.nodeLocalMap[String, VisorScanStorageValType]().put(nodeLclKey, (fut, next, arg.pageSize, false))
+
+        scheduleRemoval(g, nodeLclKey)
+
+        new VisorScanCacheResult(g.localNode().id(), nodeLclKey, rows, next != null)
+    }
+
+    private def scheduleRemoval(g: GridEx, id: String) {
+        g.scheduler().scheduleLocal(new CAX() {
+            override def applyx() {
+                val storage = g.nodeLocalMap[String, VisorScanStorageValType]()
+
+                val t = storage.get(id)
+
+                if (t != null) {
+                    // If future was accessed since last scheduling,
+                    // set access flag to false and reschedule.
+                    val (fut, next, pageSize, accessed) = t
+
+                    if (accessed) {
+                        storage.put(id, (fut, next, pageSize, false))
+
+                        scheduleRemoval(g, id)
+                    }
+                    else
+                        storage.remove(id) // Remove stored future otherwise.
+                }
+            }
+        }, "{" + RMV_DELAY + ", 1} * * * * *")
+    }
+}
+
+/** Arguments for `VisorScanCacheTask` */
+private case class VisorScanCacheTaskArgs(@impl nodeId: UUID, proj: Seq[UUID], cacheName: String, pageSize: Int)
+    extends VisorConsoleOneNodeTaskArgs
+
+/**
+ * Fetch next page task.
+ */
+private class VisorFetchNextPageTask extends VisorConsoleOneNodeTask[VisorFetchNextPageTaskArgs, VisorScanCacheResult] {
+    @impl protected def run(g: GridEx, arg: VisorFetchNextPageTaskArgs): VisorScanCacheResult = {
+        val storage = g.nodeLocalMap[String, VisorScanStorageValType]()
+
+        val t = storage.get(arg.nlKey)
+
+        if (t == null)
+            throw new GridInternalException("Scan query results are expired.")
+
+        val (fut, savedNext, pageSize, _) = t
+
+        val (rows, next) = fetchRows(fut, savedNext, pageSize)
+
+        val hasMore = next != null
+
+        if (hasMore)
+            storage.put(arg.nlKey, (fut, next, pageSize, true))
+        else
+            storage.remove(arg.nlKey)
+
+        VisorScanCacheResult(arg.nodeId, arg.nlKey, rows, hasMore)
+    }
+}
+
+/** Arguments for `VisorFetchNextPageTask` */
+private case class VisorFetchNextPageTaskArgs(@impl nodeId: UUID, nlKey: String, pageSize: Int)
+    extends VisorConsoleOneNodeTaskArgs
+
+/**
+ * Result of `VisorFieldsQueryTask`.
+ *
+ * @param nid Node where query executed.
+ * @param nlKey Key for later query future extraction.
+ * @param rows First page of rows fetched from query.
+ * @param hasMore `True` if there is more data could be fetched.
+ */
+case class VisorScanCacheResult(nid: UUID, nlKey: String, rows: Array[VisorScanResult], hasMore: Boolean)
 
 /**
  * Companion object that does initialization of the command.

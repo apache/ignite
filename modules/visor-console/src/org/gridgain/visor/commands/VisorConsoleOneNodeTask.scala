@@ -27,7 +27,7 @@ import org.gridgain.grid.util.scala.impl
  * @tparam R Task result type.
  *
  */
-trait VisorConsoleOneNodeTask[T <: VisorConsoleOneNodeArgument, R] extends GridComputeTask[T, R] {
+trait VisorConsoleOneNodeTask[T <: VisorConsoleOneNodeTaskArgs, R] extends GridComputeTask[T, R] {
     @impl def map(subgrid: JavaList[GridNode], arg: T): JavaMap[GridComputeJob, GridNode] =
         subgrid.find(_.id() == arg.nodeId) match {
             case Some(node) => Collections.singletonMap(
@@ -80,7 +80,7 @@ trait VisorConsoleOneNodeTask[T <: VisorConsoleOneNodeArgument, R] extends GridC
 /**
  * Argument for a `VisorConsoleOneNodeTask` containing information on where task should run.
  */
-trait VisorConsoleOneNodeArgument extends Serializable {
+trait VisorConsoleOneNodeTaskArgs extends Serializable {
     /**
      * Id of the node where task should run.
      */
