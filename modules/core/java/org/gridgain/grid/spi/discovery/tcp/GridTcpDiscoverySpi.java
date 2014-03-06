@@ -3074,7 +3074,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                             next = null;
 
                             if (log.isDebugEnabled())
-                                log.debug("Discarding status check since next has indeed failed [next=" + next +
+                                log.debug("Discarding status check since next node has indeed failed [next=" + next +
                                     ", msg=" + msg + ']');
 
                             // Discard status check message by exiting loop and handle failure.
