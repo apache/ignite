@@ -13,11 +13,15 @@ import org.gridgain.grid.spi.discovery.tcp.internal.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
+import java.util.*;
 
 /**
  * Message sent by node to its next to ensure that next node and
  * connection to it are alive. Receiving node should send it across the ring,
  * until message does not reach coordinator. Coordinator responds directly to node.
+ * <p>
+ * If a failed node id is specified then the message is sent across the ring up to the sender node
+ * to ensure that the failed node is actually failed.
  */
 public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstractMessage {
     /** Status OK. */
@@ -28,6 +32,9 @@ public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstract
 
     /** Creator node. */
     private GridTcpDiscoveryNode creatorNode;
+
+    /** Failed node id. */
+    private UUID failedNodeId;
 
     /** Creator node status (initialized by coordinator). */
     private int status;
@@ -43,11 +50,13 @@ public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstract
      * Constructor.
      *
      * @param creatorNode Creator node.
+     * @param failedNodeId Failed node id.
      */
-    public GridTcpDiscoveryStatusCheckMessage(GridTcpDiscoveryNode creatorNode) {
+    public GridTcpDiscoveryStatusCheckMessage(GridTcpDiscoveryNode creatorNode, UUID failedNodeId) {
         super(creatorNode.id());
 
         this.creatorNode = creatorNode;
+        this.failedNodeId = failedNodeId;
     }
 
     /**
@@ -57,6 +66,15 @@ public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstract
      */
     public GridTcpDiscoveryNode creatorNode() {
         return creatorNode;
+    }
+
+    /**
+     * Gets failed node id.
+     *
+     * @return Failed node id.
+     */
+    public UUID failedNodeId() {
+        return failedNodeId;
     }
 
     /**
@@ -82,6 +100,7 @@ public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstract
         super.writeExternal(out);
 
         out.writeObject(creatorNode);
+        U.writeUuid(out, failedNodeId);
         out.writeInt(status);
     }
 
@@ -90,6 +109,7 @@ public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstract
         super.readExternal(in);
 
         creatorNode = (GridTcpDiscoveryNode)in.readObject();
+        failedNodeId = U.readUuid(in);
         status = in.readInt();
     }
 
