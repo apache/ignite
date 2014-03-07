@@ -10,7 +10,6 @@
 package org.gridgain.testframework.junits.common;
 
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
