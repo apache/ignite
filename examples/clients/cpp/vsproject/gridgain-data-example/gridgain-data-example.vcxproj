@@ -69,9 +69,12 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(OPENSSL_HOME)\include;$(BOOST_HOME)\include\boost-1_55;$(BOOST_HOME)\include\boost-1_49;$(PROTOBUF_DEBUG_HOME)\include;.\..\..\..\..\..\modules\clients\cpp\main\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC\static;$(PROTOBUF_DEBUG_HOME)\lib;$(BOOST_HOME)\lib;../../../../../modules\clients\cpp\vsproject\x64\$(TargetName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AddModuleNamesToAssembly>libprotobuf.lib;ssleay32MD.lib;libeay32MD.lib;libgridgain-client.lib;%(AddModuleNamesToAssembly)</AddModuleNamesToAssembly>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -103,14 +106,14 @@
       <FunctionLevelLinking>
       </FunctionLevelLinking>
       <IntrinsicFunctions>false</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\..\..\..\modules\clients\cpp\main\include;..\..\..\..\clients\cpp\main\include;$(BOOST_HOME)\include\boost-1_53;$(BOOST_HOME)\include\boost-1_52;$(BOOST_HOME)\include\boost-1_51;$(BOOST_HOME)\include\boost-1_49;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>c:\Temp\gridclient\include;.\..\..\..\..\modules\clients\cpp\main\include;.\..\..\..\..\clients\cpp\main\include;$(BOOST_HOME)\include\boost-1_53;$(BOOST_HOME)\include\boost-1_52;$(BOOST_HOME)\include\boost-1_51;$(BOOST_HOME)\include\boost-1_49;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>..\..\..\..\modules\clients\cpp\vsproject\$(Platform)\$(Configuration);..\..\..\..\clients\cpp\vsproject\$(Platform)\$(Configuration);$(BOOST_HOME)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\..\modules\clients\cpp\vsproject\$(Platform)\$(Configuration);..\..\..\..\clients\cpp\vsproject\$(Platform)\$(Configuration);$(BOOST_HOME)\lib;c:\Temp\gridclient\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>gridgain-client.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <LinkTimeCodeGeneration>
