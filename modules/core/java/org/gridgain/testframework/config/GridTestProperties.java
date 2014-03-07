@@ -56,16 +56,11 @@ public final class GridTestProperties {
 
     /** */
     static {
-        String ggTestHome = System.getProperty("GG_TEST_HOME");
+        String ggHome = System.getProperty("GG_TEST_HOME");
 
-        File cfgDir;
-
-        if (ggTestHome != null && !ggTestHome.isEmpty()) {
-            cfgDir = new File(ggTestHome, TESTS_CFG_PATH);
-        }
-        else {
+        if (ggHome == null) {
             // Initialize GRIDGAIN_HOME system property.
-            String ggHome = System.getProperty("GRIDGAIN_HOME");
+            ggHome = System.getProperty("GRIDGAIN_HOME");
 
             if (ggHome == null || ggHome.isEmpty()) {
                 ggHome = System.getenv("GRIDGAIN_HOME");
@@ -74,9 +69,9 @@ public final class GridTestProperties {
                     System.setProperty("GRIDGAIN_HOME", ggHome);
                 }
             }
-
-            cfgDir = GridTestUtils.resolveGridGainPath(TESTS_CFG_PATH);
         }
+
+        File cfgDir = GridTestUtils.resolveGridGainPath(ggHome, TESTS_CFG_PATH);
 
         assert cfgDir != null;
         assert cfgDir.isDirectory();
@@ -270,8 +265,7 @@ public final class GridTestProperties {
     private static Map<String, String> loadProperties(Map<String, String> props, String dir) {
         String ggTestHome = System.getProperty("GG_TEST_HOME");
 
-        File homeDir = ggTestHome != null ? new File(ggTestHome, TESTS_CFG_PATH) :
-            GridTestUtils.resolveGridGainPath(TESTS_CFG_PATH);
+        File homeDir = GridTestUtils.resolveGridGainPath(ggTestHome, TESTS_CFG_PATH);
 
         assert homeDir != null;
         assert homeDir.isDirectory();

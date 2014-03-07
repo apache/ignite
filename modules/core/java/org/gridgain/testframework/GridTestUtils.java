@@ -906,20 +906,30 @@ public final class GridTestUtils {
      * @see #getGridGainHome()
      */
     @Nullable public static File resolveGridGainPath(String path) {
-        File file = resolvePath("os/" + path);
-
-        return file != null ? file : resolvePath(path);
+        return resolveGridGainPath(null, path);
     }
 
     /**
+     * @param ggHome Optional gridgain home path.
      * @param path Path to resolve.
      * @return Resolved path, or {@code null} if file cannot be resolved.
      */
-    @Nullable private static File resolvePath(String path) {
+    @Nullable public static File resolveGridGainPath(@Nullable String ggHome, String path) {
+        File file = resolvePath(ggHome, "os/" + path);
+
+        return file != null ? file : resolvePath(ggHome, path);
+    }
+
+    /**
+     * @param ggHome Optional gridgain home path.
+     * @param path Path to resolve.
+     * @return Resolved path, or {@code null} if file cannot be resolved.
+     */
+    @Nullable private static File resolvePath(@Nullable String ggHome, String path) {
         File file = new File(path);
 
         if (!file.exists()) {
-            String home = U.getGridGainHome();
+            String home = ggHome != null ? ggHome : U.getGridGainHome();
 
             if (home == null)
                 return null;
