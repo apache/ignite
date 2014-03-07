@@ -123,7 +123,7 @@
             <artifactId>jmxtools</artifactId>
             <scope>system</scope>
             <version>1.2.1</version>
-            <systemPath>${env.GRIDGAIN_HOME}/modules/tests/libs/jmxtools-1.2.1.jar</systemPath>
+            <systemPath>${env.GRIDGAIN_HOME}/libs/test/jmxtools-1.2.1.jar</systemPath>
         </dependency>
     </dependencies>
 

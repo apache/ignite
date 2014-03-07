@@ -906,6 +906,16 @@ public final class GridTestUtils {
      * @see #getGridGainHome()
      */
     @Nullable public static File resolveGridGainPath(String path) {
+        File file = resolvePath("os/" + path);
+
+        return file != null ? file : resolvePath(path);
+    }
+
+    /**
+     * @param path Path to resolve.
+     * @return Resolved path, or {@code null} if file cannot be resolved.
+     */
+    @Nullable private static File resolvePath(String path) {
         File file = new File(path);
 
         if (!file.exists()) {
