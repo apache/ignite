@@ -98,7 +98,7 @@ public class CacheQueryExample {
             // fields instead of whole key-value pairs.
             sqlFieldsQuery();
 
-            print("Query example finished.");
+            print("Cache query example finished.");
         }
     }
 
