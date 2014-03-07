@@ -231,7 +231,7 @@
         -->
         <property name="gridLogger">
             <bean class="org.gridgain.grid.logger.log4j.GridLog4jLogger">
-                <constructor-arg type="java.lang.String" value="os/modules/clients/src/test/resources/log4j.xml"/>
+                <constructor-arg type="java.lang.String" value="modules/clients/src/test/resources/log4j.xml"/>
             </bean>
         </property>
 

@@ -79,9 +79,9 @@
         <!-- Provide Ssl context. -->
         <property name="sslContextFactory">
             <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
-                <property name="keyStoreFilePath" value="${GRIDGAIN_HOME}/os/modules/clients/src/test/keystore/server.jks"/>
+                <property name="keyStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/server.jks"/>
                 <property name="keyStorePassword" value="123456"/>
-                <property name="trustStoreFilePath" value="${GRIDGAIN_HOME}/os/modules/clients/src/test/keystore/trust.jks"/>
+                <property name="trustStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/trust.jks"/>
                 <property name="trustStorePassword" value="123456"/>
             </bean>
         </property>
@@ -97,7 +97,7 @@
         <property name="logger" ref="router.log"/>
 
         <!-- GRIDGAIN_JETTY_PORT=12400 -->
-        <property name="jettyConfigurationPath" value="${GRIDGAIN_HOME}/modules/tests/config/jetty/router-jetty-ssl.xml"/>
+        <property name="jettyConfigurationPath" value="${CLIENTS_MODULE_PATH}/src/test/resources/jetty/router-jetty-ssl.xml"/>
 
         <!-- Specify list of remote grid nodes to connect. -->
         <property name="servers">
@@ -109,9 +109,9 @@
         <!-- Provide Ssl context. -->
         <property name="clientSslContextFactory">
             <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
-                <property name="keyStoreFilePath" value="${GRIDGAIN_HOME}/os/modules/clients/src/test/keystore/client.jks"/>
+                <property name="keyStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/client.jks"/>
                 <property name="keyStorePassword" value="123456"/>
-                <property name="trustStoreFilePath" value="${GRIDGAIN_HOME}/os/modules/clients/src/test/keystore/trust.jks"/>
+                <property name="trustStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/trust.jks"/>
                 <property name="trustStorePassword" value="123456"/>
             </bean>
         </property>
@@ -124,6 +124,6 @@
         Logger with the same configuration as in default grid instances.
     -->
     <bean id="router.log" class="org.gridgain.grid.logger.log4j.GridLog4jLogger">
-        <constructor-arg type="java.lang.String" value="os/modules/clients/src/test/resources/log4j.xml"/>
+        <constructor-arg type="java.lang.String" value="modules/clients/src/test/resources/log4j.xml"/>
     </bean>
 </beans>

@@ -1344,7 +1344,9 @@ public final class GridTestUtils {
     public static GridSslContextFactory sslContextFactory() {
         GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
 
-        factory.setKeyStoreFilePath(GridTestProperties.getProperty("ssl.keystore.path"));
+        File keystore = U.resolveGridGainPath(GridTestProperties.getProperty("ssl.keystore.path"));
+
+        factory.setKeyStoreFilePath(keystore.getAbsolutePath());
         factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
 
         factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());

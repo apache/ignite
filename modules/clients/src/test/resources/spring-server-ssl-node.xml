@@ -68,9 +68,9 @@
 
         <property name="restTcpSslContextFactory">
             <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
-                <property name="keyStoreFilePath" value="${GRIDGAIN_HOME}/os/modules/clients/src/test/keystore/server.jks"/>
+                <property name="keyStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/server.jks"/>
                 <property name="keyStorePassword" value="123456"/>
-                <property name="trustStoreFilePath" value="${GRIDGAIN_HOME}/os/modules/clients/src/test/keystore/trust.jks"/>
+                <property name="trustStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/trust.jks"/>
                 <property name="trustStorePassword" value="123456"/>
             </bean>
         </property>
@@ -78,7 +78,7 @@
         <property name="restTcpPort" value="10443"/>
 
         <!-- Configure HTTPs rest protocol. -->
-        <property name="restJettyPath" value="${GRIDGAIN_HOME}/modules/tests/config/jetty/rest-jetty-ssl.xml"/>
+        <property name="restJettyPath" value="${CLIENTS_MODULE_PATH}/src/test/resources/jetty/rest-jetty-ssl.xml"/>
 
         <property name="cacheConfiguration">
             <!--
@@ -219,7 +219,7 @@
         -->
         <property name="gridLogger">
             <bean class="org.gridgain.grid.logger.log4j.GridLog4jLogger">
-                <constructor-arg type="java.lang.String" value="os/modules/clients/src/test/resources/log4j.xml"/>
+                <constructor-arg type="java.lang.String" value="modules/clients/src/test/resources/log4j.xml"/>
             </bean>
         </property>
 

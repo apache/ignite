@@ -4,11 +4,11 @@ rem Define environment paths.
 SET SCRIPT_DIR=%~dp0
 
 SET CONFIG_DIR=%SCRIPT_DIR%\..\resources
+SET CLIENTS_MODULE_PATH=%SCRIPT_DIR%\..\..\..
+SET BIN_PATH=%SCRIPT_DIR%\..\..\..\..\..\bin
 
 cd %SCRIPT_DIR%\..\..\..\..\..\..
 set GG_HOME=%CD%
-
-if "%BIN_PATH%" == "" set BIN_PATH=%GG_HOME%\bin
 
 echo Switch to build script directory %SCRIPT_DIR%
 cd %SCRIPT_DIR%
@@ -38,6 +38,8 @@ mkdir %GG_HOME%\work\log
 
 rem Provide user library to the grid startup scripts.
 set USER_LIBS=%CLIENT_TEST_JAR%
+
+set JAVA_OPTS=-DCLIENTS_MODULE_PATH=%CLIENTS_MODULE_PATH%
 
 FOR /L %%G IN (1,1,%NODES_COUNT%) DO start "Node #%%G" /low /MIN cmd /C "%BIN_PATH%\ggstart.bat -v %CONFIG_DIR%\spring-server-node.xml >> %GG_HOME%\work\log\node-%%G.log 2>&1"
 FOR /L %%G IN (1,1,%NODES_COUNT%) DO start "SSL Node #%%G" /low /MIN cmd /C "%BIN_PATH%\ggstart.bat -v %CONFIG_DIR%\spring-server-ssl-node.xml >> %GG_HOME%\work\log\node-ssl-%%G.log 2>&1"
