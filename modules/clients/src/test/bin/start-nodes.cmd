@@ -39,7 +39,7 @@ mkdir %GG_HOME%\work\log
 rem Provide user library to the grid startup scripts.
 set USER_LIBS=%CLIENT_TEST_JAR%
 
-set JAVA_OPTS=-DCLIENTS_MODULE_PATH=%CLIENTS_MODULE_PATH%
+set JVM_OPTS=-DCLIENTS_MODULE_PATH=%CLIENTS_MODULE_PATH%
 
 FOR /L %%G IN (1,1,%NODES_COUNT%) DO start "Node #%%G" /low /MIN cmd /C "%BIN_PATH%\ggstart.bat -v %CONFIG_DIR%\spring-server-node.xml >> %GG_HOME%\work\log\node-%%G.log 2>&1"
 FOR /L %%G IN (1,1,%NODES_COUNT%) DO start "SSL Node #%%G" /low /MIN cmd /C "%BIN_PATH%\ggstart.bat -v %CONFIG_DIR%\spring-server-ssl-node.xml >> %GG_HOME%\work\log\node-ssl-%%G.log 2>&1"
@@ -49,7 +49,7 @@ echo Wait 60 seconds while nodes started.
 ping -n 60 127.0.0.1 > NUL
 
 rem Disable hostname verification for self-signed certificates.
-set JVM_OPTS=-DGRIDGAIN_DISABLE_HOSTNAME_VERIFIER=true
+set JVM_OPTS=%JVM_OPTS% -DGRIDGAIN_DISABLE_HOSTNAME_VERIFIER=true
 
 FOR /L %%G IN (1,1,1) DO start "Router #%%G" /low /MIN cmd /C "%BIN_PATH%\ggrouter.bat -v %CONFIG_DIR%\spring-router.xml >> %GG_HOME%\work\log\router-%%G.log 2>&1"
 FOR /L %%G IN (1,1,1) DO start "SSL Router #%%G" /low /MIN cmd /C "%BIN_PATH%\ggrouter.bat -v %CONFIG_DIR%\spring-router-ssl.xml >> %GG_HOME%\work\log\router-ssl-%%G.log 2>&1"

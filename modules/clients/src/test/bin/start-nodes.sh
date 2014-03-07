@@ -16,6 +16,11 @@
 
 # Define environment paths.
 SCRIPT_DIR=$(cd $(dirname "$0"); pwd)
+
+SET CONFIG_DIR=%$CRIPT_DIR/../resources
+SET CLIENTS_MODULE_PATH=$SCRIPT_DIR/../../..
+SET BIN_PATH=$SCRIPT_DIR/../../../../../bin
+
 GG_HOME=$(cd $SCRIPT_DIR/../../../../../..; pwd)
 
 echo Switch to build script directory $SCRIPT_DIR
@@ -30,7 +35,7 @@ if [ ! -d "${JAVA_HOME}" ]; then
     JAVA_HOME=/Library/Java/Home
 fi
 
-JVM_OPTS="-Xmx512m -Xss4m -XX:+UseConcMarkSweepGC -XX:MaxPermSize=256m"
+JVM_OPTS="-Xmx512m -Xss4m -XX:+UseConcMarkSweepGC -XX:MaxPermSize=256m -DCLIENTS_MODULE_PATH=$CLIENTS_MODULE_PATH"
 echo "JVM_OPTS ${JVM_OPTS}"
 export JVM_OPTS
 
@@ -61,7 +66,7 @@ do
     LOG_FILE=${GG_HOME}/work/log/node-${iter}.log
 
     echo Start node ${iter}: ${LOG_FILE}
-    nohup /bin/bash $GG_HOME/os/bin/ggstart.sh $GG_HOME/os/modules/clients/src/test/resources/spring-server-node.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
+    nohup /bin/bash $BIN_PATH/ggstart.sh $CONFIG_DIR/spring-server-node.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
 done
 
 for iter in {1..2}
@@ -69,7 +74,7 @@ do
     LOG_FILE=${GG_HOME}/work/log/node-ssl-${iter}.log
 
     echo Start SSL node ${iter}: ${LOG_FILE}
-    nohup /bin/bash $GG_HOME/os/bin/ggstart.sh $GG_HOME/os/modules/clients/src/test/resources/spring-server-ssl-node.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
+    nohup /bin/bash $BIN_PATH/ggstart.sh $CONFIG_DIR/spring-server-ssl-node.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
 done
 
 echo Wait 60 seconds while nodes start.
@@ -77,14 +82,14 @@ sleep 60
 
 LOG_FILE=${GG_HOME}/work/log/router.log
 echo Start Router: ${LOG_FILE}
-nohup /bin/bash $GG_HOME/os/bin/ggrouter.sh $GG_HOME/os/modules/clients/src/test/resources/spring-router.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
+nohup /bin/bash $BIN_PATH/ggrouter.sh $CONFIG_DIR/spring-router.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
 
 # Disable hostname verification for self-signed certificates.
 export JVM_OPTS=-DGRIDGAIN_DISABLE_HOSTNAME_VERIFIER=true
 
 LOG_FILE=${GG_HOME}/work/log/router-ssl.log
 echo Start Router SSL: ${LOG_FILE}
-nohup /bin/bash $GG_HOME/os/bin/ggrouter.sh $GG_HOME/os/modules/clients/src/test/resources/spring-router-ssl.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
+nohup /bin/bash $BIN_PATH/ggrouter.sh $CONFIG_DIR/spring-router-ssl.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
 
 echo Wait 30 seconds while router starts.
 sleep 30
