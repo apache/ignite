@@ -430,6 +430,8 @@
     </dependencies>
 
     <build>
+        <sourceDirectory>src</sourceDirectory>
+
         <pluginManagement>
             <plugins>
                 <plugin>
