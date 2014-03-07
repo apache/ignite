@@ -11,11 +11,11 @@ package org.gridgain.grid.kernal.processors.rest;
 
 import org.gridgain.client.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -102,8 +102,8 @@ public class GridRestProcessorStartSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void doTest(final GridClientConfiguration cfg) throws Exception {
-        GridTestUtils.runAsync(new CO<Object>() {
-            @Override public Object apply() {
+        GridTestUtils.runAsync(new GridCallable<Object>() {
+            @Override public Object call() {
                 try {
                     startGrid();
                 }

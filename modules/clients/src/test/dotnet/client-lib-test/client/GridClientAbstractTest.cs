@@ -336,7 +336,7 @@ namespace GridGain.Client {
             });
         }
 
-        [Test]
+//        [Test] TODO: GG-7579
         public void TestCacheFlags() {
             /* Note! Only 'SkipStore' flag is validated. */
             IList<GridClientCacheFlag> readOnlyFlags = U.List(GridClientCacheFlag.SkipStore);
@@ -374,7 +374,7 @@ namespace GridGain.Client {
 
                 Assert.IsNull(readData.GetItem<String, Object>(key));
                 Assert.IsNull(writeData.GetItem<String, Object>(key));
-            }        
+            }
         }
 
         [Test]
@@ -646,9 +646,9 @@ namespace GridGain.Client {
 
             origMap.Add("1", "a1");
             origMap.Add("2", "a2");
-                
+
             IDictionary<String, String> newMap = new Dictionary<String, String>();
-            
+
             newMap.Add("2", "b2");
             newMap.Add("3", "b3");
 
@@ -987,9 +987,6 @@ namespace GridGain.Client {
 
             Assert.Fail("Affinity test failed.");
         }
-
-
-
 
         /**
          * <summary>

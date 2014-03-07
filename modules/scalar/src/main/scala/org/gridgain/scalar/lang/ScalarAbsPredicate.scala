@@ -19,8 +19,6 @@ import org.gridgain.grid.util.lang.GridAbsPredicate
 class ScalarAbsPredicate(private val f: () => Boolean) extends GridAbsPredicate {
     assert(f != null)
 
-    peerDeployLike(f)
-
     /**
      * Delegates to passed in function.
      */

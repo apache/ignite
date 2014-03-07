@@ -22,4 +22,4 @@ import org.gridgain.grid.util.lang.*;
  * @see GridFunc
  * @see GridCacheEntry
  */
-public abstract class PCE<K, V> extends GridPredicate<GridCacheEntry<K, V>> { /* No-op. */ }
+public interface PCE<K, V> extends GridPredicate<GridCacheEntry<K, V>> { /* No-op. */ }

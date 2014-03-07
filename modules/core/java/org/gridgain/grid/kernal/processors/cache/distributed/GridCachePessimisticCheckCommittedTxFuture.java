@@ -342,7 +342,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
     /**
      * Single value reducer.
      */
-    private static class SingleReducer<K, V> extends
+    private static class SingleReducer<K, V> implements
         GridReducer<GridCacheCommittedTxInfo<K, V>, GridCacheCommittedTxInfo<K, V>> {
         /** */
         private AtomicReference<GridCacheCommittedTxInfo<K, V>> collected = new AtomicReference<>();

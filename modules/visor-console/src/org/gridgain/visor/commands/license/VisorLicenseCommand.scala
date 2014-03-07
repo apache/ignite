@@ -17,7 +17,6 @@ import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import visor._
 import org.gridgain.grid._
-import org.gridgain.grid.util.typedef._
 import resources.GridInstanceResource
 import org.jetbrains.annotations.Nullable
 import java.text.SimpleDateFormat
@@ -25,7 +24,7 @@ import java.io._
 import scala.io.Source
 import java.util.{Locale, Date, UUID}
 import java.net.URL
-import org.gridgain.grid.lang.GridRunnable
+import org.gridgain.grid.lang.{GridCallable, GridRunnable}
 
 /**
  * License data.
@@ -65,12 +64,12 @@ private case class License(
 /**
  * License getter closure.
  */
-private class LicenseGetter extends CO[License] {
+private class LicenseGetter extends GridCallable[License] {
     /**Injected grid */
     @GridInstanceResource
     private val g: Grid = null
 
-    override def apply(): License = {
+    override def call(): License = {
         val l = g.product().license()
 
         if (l == null)

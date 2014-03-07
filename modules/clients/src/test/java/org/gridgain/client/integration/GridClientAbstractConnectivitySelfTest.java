@@ -286,7 +286,7 @@ public abstract class GridClientAbstractConnectivitySelfTest extends GridCommonA
     /**
      * Predicate that returns IPv4 address strings.
      */
-    private static class IpV4AddressPredicate extends P1<String> {
+    private static class IpV4AddressPredicate implements P1<String> {
         /** {@inheritDoc} */
         @Override public boolean apply(String s) {
             return s.matches("\\d+\\.\\d+\\.\\d+\\.\\d+");

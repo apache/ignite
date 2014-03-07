@@ -20,4 +20,4 @@ import org.gridgain.grid.util.lang.*;
  * @see GridFunc
  * @see GridOutClosure
  */
-public abstract class CO<T> extends GridOutClosure<T> { /* No-op. */ }
+public interface CO<T> extends GridOutClosure<T> { /* No-op. */ }

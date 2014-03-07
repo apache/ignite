@@ -427,8 +427,8 @@ class GridGgfsOutputStreamImpl extends GridGgfsOutputStreamAdapter {
      * Helper closure to reserve specified space and update file's length
      */
     @GridInternal
-    private static final class ReserveSpaceClosure extends GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>
-        implements Externalizable {
+    private static final class ReserveSpaceClosure implements GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
+        Externalizable {
         /** Space amount (bytes number) to increase file's length. */
         private long space;
 

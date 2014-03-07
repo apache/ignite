@@ -158,15 +158,6 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
         assert(i.get == 9)
     }
 
-    it should "convert out closure" in {
-        val f = new GridOutClosure[Int] {
-            override def apply: Int =
-                3
-        }
-
-        assert(f.scala.apply() == 3)
-    }
-
     it should "convert absolute closure" in {
         val i = new AtomicInteger()
 

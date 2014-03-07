@@ -27,15 +27,6 @@ public abstract class GridTaskSingleJobSplitAdapter<T, R> extends GridComputeTas
         // No-op.
     }
 
-    /**
-     * Constructor that receives deployment information for task.
-     *
-     * @param p Deployment information.
-     */
-    protected GridTaskSingleJobSplitAdapter(GridPeerDeployAware p) {
-        super(p);
-    }
-
     /** {@inheritDoc} */
     @Override protected Collection<? extends GridComputeJob> split(final int gridSize, final T arg) throws GridException {
         return Collections.singleton(new GridComputeJobAdapter() {

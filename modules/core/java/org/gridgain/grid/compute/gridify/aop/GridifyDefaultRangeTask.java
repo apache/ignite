@@ -15,6 +15,9 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.gridify.*;
+import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.util.*;
 
 import static org.gridgain.grid.util.gridify.GridifyUtils.*;
@@ -26,7 +29,8 @@ import static org.gridgain.grid.util.gridify.GridifyUtils.*;
  * @see GridifySetToSet
  * @see GridifySetToValue
  */
-public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRangeArgument, Collection<?>> {
+public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRangeArgument, Collection<?>>
+    implements GridPeerDeployAware {
     /** Deploy class. */
     @SuppressWarnings({"TransientFieldNotInitialized"})
     private final transient Class<?> p2pCls;
@@ -87,6 +91,11 @@ public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRange
     /** {@inheritDoc} */
     @Override public Class<?> deployClass() {
         return p2pCls;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClassLoader classLoader() {
+        return U.detectClassLoader(p2pCls);
     }
 
     /** {@inheritDoc} */

@@ -79,7 +79,7 @@ public class ComputeBroadcastExample {
                 @GridInstanceResource
                 private Grid grid;
 
-                public String call() {
+                @Override public String call() {
                     System.out.println();
                     System.out.println("Executing task on node: " + grid.localNode().id());
 

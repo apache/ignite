@@ -318,7 +318,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             assert pick != null;
 
             if (!cctx.preloadEnabled() && loc.id().equals(pick.id()))
-                pick = F.first(F.view(owners, F.<GridNode>remoteNodes(loc.id())));
+                pick = F.first(F.view(owners, F.remoteNodes(loc.id())));
 
             if (pick == null) {
                 if (log.isDebugEnabled())

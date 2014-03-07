@@ -21,8 +21,6 @@ import org.gridgain.grid.util.lang.GridClosureX
 class ScalarClosureX[E, R](private val f: E => R) extends GridClosureX[E, R] {
     assert(f != null)
 
-    peerDeployLike(f)
-
     /**
      * Delegates to passed in function.
      */
