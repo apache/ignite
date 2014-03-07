@@ -410,7 +410,7 @@ ACLOCAL_AMFLAGS = "-Im4"
 SUBDIRS = . include $(TESTS_DIR)
 DIST_SUBDIRS = . include $(TESTS_DIR)
 AM_CPPFLAGS = -I$(srcdir)/include -DGRIDGAIN_EXPORT -DBOOST_SPIRIT_THREADSAFE
-AM_CXXFLAGS = -Wall -std=c++11
+AM_CXXFLAGS = -Wall -std=c++0x
 LIB_LDFLAGS = -no-undefined -version-info 1
 COMMON_SRC = src/model/gridclientuuid.cpp src/model/gridclientvariant.cpp \
     src/impl/gridclientcomputeprojection.cpp src/impl/gridclientconfiguration.cpp src/impl/gridclientdataconfiguration.cpp src/impl/gridclientdatametrics.cpp src/impl/gridclientdataprojection.cpp src/impl/gridclientfactory.cpp src/impl/gridclientimpl.cpp src/impl/gridclientnode.cpp src/impl/gridclientpartionedataaffinity.cpp src/impl/gridclientprojectionimpl.cpp src/impl/gridclientprotocolconfiguration.cpp src/impl/gridclientrandombalancer.cpp src/impl/gridclientroundrobinbalancer.cpp src/impl/gridclientrandomrouterbalancer.cpp src/impl/gridclienttopology.cpp src/impl/gridfuture.cpp src/impl/cmd/gridclientcommandexecutorfactory.cpp src/impl/cmd/gridclienthttpcommandexecutor.cpp src/impl/cmd/gridclienttcpcommandexecutor.cpp src/impl/cmd/gridechocommand.cpp src/impl/connection/gridclientconnection.cpp src/impl/connection/gridclientconnectionpool.cpp src/impl/connection/gridclienthttpconnection.cpp src/impl/connection/gridclienttcpconnection.cpp \
