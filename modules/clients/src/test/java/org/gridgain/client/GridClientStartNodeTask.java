@@ -37,10 +37,10 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
      * Available node's configurations.
      */
     private static final Map<String, String> NODE_CFG = new HashMap<String, String>() {{
-        put("tcp", "os/modules/clients/src/test/resources/spring-server-node.xml");
-        put("http", "os/modules/clients/src/test/resources/spring-server-node.xml");
-        put("tcp+ssl", "os/modules/clients/src/test/resources/spring-server-ssl-node.xml");
-        put("http+ssl", "os/modules/clients/src/test/resources/spring-server-ssl-node.xml");
+        put("tcp", "modules/clients/src/test/resources/spring-server-node.xml");
+        put("http", "modules/clients/src/test/resources/spring-server-node.xml");
+        put("tcp+ssl", "modules/clients/src/test/resources/spring-server-ssl-node.xml");
+        put("http+ssl", "modules/clients/src/test/resources/spring-server-ssl-node.xml");
     }};
 
     /** */

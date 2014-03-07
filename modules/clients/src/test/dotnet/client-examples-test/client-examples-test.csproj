@@ -90,7 +90,7 @@
     <None Include="client-examples-test.snk" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\dotnet\GridClientApiExample.csproj">
+    <ProjectReference Include="..\..\..\..\..\examples\clients\dotnet\GridClientApiExample.csproj">
       <Project>{93C19D37-D5A4-41D0-8E10-F214B1F61213}</Project>
       <Name>GridClientApiExample</Name>
     </ProjectReference>
