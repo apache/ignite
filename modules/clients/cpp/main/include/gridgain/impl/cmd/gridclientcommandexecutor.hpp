@@ -40,7 +40,7 @@ public:
      * @param result Log request result.
      */
     virtual void executeLogCmd(const GridClientSocketAddress& nodeHost,
-            GridLogRequestCommand& logRequest, GridClientMessageLogResult& result) = 0;
+        GridLogRequestCommand& logRequest, GridClientMessageLogResult& result) = 0;
 
     /**
      * Execute topology command.
@@ -50,7 +50,7 @@ public:
      * @param result Topology request result.
      */
     virtual void executeTopologyCmd(const GridClientSocketAddress& nodeHost,
-            GridTopologyRequestCommand& topologyRequest, GridClientMessageTopologyResult& result) = 0;
+        GridTopologyRequestCommand& topologyRequest, GridClientMessageTopologyResult& result) = 0;
 
     /**
      * Execute cache get command.
@@ -60,7 +60,7 @@ public:
      * @param result Cache get request result.
      */
     virtual void executeGetCacheCmd(const GridClientSocketAddress& nodeHost,
-            GridCacheRequestCommand& cacheCmd, GridClientMessageCacheGetResult& result)  = 0;
+        GridCacheRequestCommand& cacheCmd, GridClientMessageCacheGetResult& result)  = 0;
 
     /**
      * Execute cache modify command.
@@ -70,7 +70,7 @@ public:
      * @param result Cache modify request result.
      */
     virtual void executeModifyCacheCmd(const GridClientSocketAddress& nodeHost,
-            GridCacheRequestCommand& cacheCmd, GridClientMessageCacheModifyResult& result) = 0;
+        GridCacheRequestCommand& cacheCmd, GridClientMessageCacheModifyResult& result) = 0;
 
     /**
      * Execute cache metrics command.
@@ -80,7 +80,7 @@ public:
      * @param result Cache metrics request result.
      */
     virtual void executeGetCacheMetricsCmd(const GridClientSocketAddress& nodeHost,
-            GridCacheRequestCommand& cacheCmd, GridClientMessageCacheMetricResult& result) = 0;
+        GridCacheRequestCommand& cacheCmd, GridClientMessageCacheMetricResult& result) = 0;
 
     /**
      * Execute task command.
@@ -90,7 +90,7 @@ public:
      * @param result task request result.
      */
     virtual void executeTaskCmd(const GridClientSocketAddress& nodeHost,
-            GridTaskRequestCommand& taskCmd, GridClientMessageTaskResult& result) = 0;
+        GridTaskRequestCommand& taskCmd, GridClientMessageTaskResult& result) = 0;
 };
 
 #endif
