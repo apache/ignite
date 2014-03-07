@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    @xml.file.header
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+-->
+
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<!--
+    Log4j configuration.
+-->
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
+    <!--
+        Logs System.out messages to console.
+    -->
+    <appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
+        <!-- Log to STDOUT. -->
+        <param name="Target" value="System.out"/>
+
+        <!-- Log from DEBUG and higher. -->
+        <param name="Threshold" value="DEBUG"/>
+
+        <!-- The default pattern: Date Priority [Category] Message\n -->
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"/>
+        </layout>
+
+        <!-- Do not log beyond INFO level. -->
+        <filter class="org.apache.log4j.varia.LevelRangeFilter">
+            <param name="levelMin" value="DEBUG"/>
+            <param name="levelMax" value="INFO"/>
+        </filter>
+    </appender>
+
+    <!--
+        Logs all System.err messages to console.
+    -->
+    <appender name="CONSOLE_ERR" class="org.apache.log4j.ConsoleAppender">
+        <!-- Log to STDERR. -->
+        <param name="Target" value="System.err"/>
+
+        <!-- Log from WARN and higher. -->
+        <param name="Threshold" value="WARN"/>
+
+        <!-- The default pattern: Date Priority [Category] Message\n -->
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"/>
+        </layout>
+    </appender>
+
+    <!--
+        Logs all output to specified file.
+    -->
+    <appender name="FILE" class="org.apache.log4j.RollingFileAppender">
+        <param name="Threshold" value="DEBUG"/>
+        <param name="File" value="${GRIDGAIN_HOME}/work/log/gridgain.log"/>
+        <param name="Append" value="true"/>
+        <param name="MaxFileSize" value="10MB"/>
+        <param name="MaxBackupIndex" value="10"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"/>
+        </layout>
+    </appender>
+
+    <!--
+        Uncomment to enable GridGain query execution debugging.
+    -->
+    <!--
+    <category name="org.gridgain.cache.queries">
+        <level value="DEBUG"/>
+    </category>
+    -->
+
+    <!-- Enable Gridgain debugging.
+     <category name="org.gridgain">
+         <level value="DEBUG"/>
+     </category>
+    -->
+
+    <!-- Disable all open source debugging. -->
+    <category name="org">
+        <level value="INFO"/>
+    </category>
+
+    <category name="org.eclipse.jetty">
+        <level value="INFO"/>
+    </category>
+
+    <!-- Default settings. -->
+    <root>
+        <!-- Print out all debug by default. -->
+        <level value="INFO"/>
+
+        <!-- Append to file and console. -->
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="CONSOLE_ERR"/>
+    </root>
+</log4j:configuration>

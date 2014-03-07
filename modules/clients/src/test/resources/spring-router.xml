@@ -86,7 +86,7 @@
         <property name="logger" ref="router.log"/>
 
         <!-- GRIDGAIN_JETTY_PORT=12200 -->
-        <property name="jettyConfigurationPath" value="${GRIDGAIN_HOME}/modules/tests/config/jetty/router-jetty.xml"/>
+        <property name="jettyConfigurationPath" value="${CLIENTS_MODULE_PATH}/src/test/resources/jetty/router-jetty.xml"/>
 
         <!-- Specify list of remote grid nodes to connect. -->
         <property name="servers">

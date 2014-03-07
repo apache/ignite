@@ -24,13 +24,13 @@ public class GridGgfsExamplesSelfTest extends GridAbstractExamplesTest {
     private static final String CLIENT_LIGHT_GRID_NAME = "client-light-grid";
 
     /** GGFS config with shared memory IPC. */
-    private static final String GGFS_SHMEM_CFG = "modules/tests/config/ggfs-shmem.xml";
+    private static final String GGFS_SHMEM_CFG = "modules/core/src/test/config/ggfs-shmem.xml";
 
     /** GGFS config with loopback IPC. */
-    private static final String GGFS_LOOPBACK_CFG = "modules/tests/config/ggfs-loopback.xml";
+    private static final String GGFS_LOOPBACK_CFG = "modules/core/src/test/config/ggfs-loopback.xml";
 
     /** GGFS no endpoint config. */
-    private static final String GGFS_NO_ENDPOINT_CFG = "modules/tests/config/ggfs-no-endpoint.xml";
+    private static final String GGFS_NO_ENDPOINT_CFG = "modules/core/src/test/config/ggfs-no-endpoint.xml";
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {

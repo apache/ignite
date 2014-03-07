@@ -26,7 +26,7 @@ public abstract class GridAbstractExamplesTest extends GridCommonAbstractTest {
     protected static final int RMT_NODES_CNT = 3;
 
     /** */
-    protected static final String RMT_NODE_CFGS = "modules/tests/config/examples.properties";
+    protected static final String RMT_NODE_CFGS = "modules/core/src/test/config/examples.properties";
 
     /** */
     protected static final String DFLT_CFG = "examples/config/example-compute.xml";

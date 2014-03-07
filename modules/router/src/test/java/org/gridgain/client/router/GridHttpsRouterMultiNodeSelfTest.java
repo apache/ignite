@@ -23,7 +23,7 @@ import static org.gridgain.client.router.GridClientAbstractSelfTest.*;
  */
 public class GridHttpsRouterMultiNodeSelfTest extends GridHttpRouterMultiNodeSelfTest {
     /** Path to jetty config configured with SSL. */
-    private static final String REST_JETTY_SSL_CFG = "modules/tests/config/jetty/router-jetty-ssl.xml";
+    private static final String REST_JETTY_SSL_CFG = "modules/clients/src/test/resources/jetty/router-jetty-ssl.xml";
 
     /** Base for http rest ports. */
     public static final int ROUTER_HTTPS_PORT_BASE = 12400;

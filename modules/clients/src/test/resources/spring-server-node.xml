@@ -64,7 +64,7 @@
         <property name="restTcpPort" value="10080"/>
 
         <!-- Configure HTTP rest protocol. -->
-        <property name="restJettyPath" value="${GRIDGAIN_HOME}/modules/tests/config/jetty/rest-jetty.xml"/>
+        <property name="restJettyPath" value="${CLIENTS_MODULE_PATH}/src/test/resources/jetty/rest-jetty.xml"/>
 
         <!-- Configure to skip all events for better performance. -->
         <property name="includeEventTypes">

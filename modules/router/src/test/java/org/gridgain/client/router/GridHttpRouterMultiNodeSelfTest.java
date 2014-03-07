@@ -17,7 +17,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
  */
 public class GridHttpRouterMultiNodeSelfTest extends GridClientAbstractMultiNodeSelfTest {
     /** Template fo paths to jetty configurations. */
-    private static final String ROUTER_JETTY_CFG = "modules/tests/config/jetty/router-jetty.xml";
+    private static final String ROUTER_JETTY_CFG = "modules/clients/src/test/resources/jetty/router-jetty.xml";
 
     /** Number of routers to start in this test. */
     private static final int ROUTERS_CNT = 3;

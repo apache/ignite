@@ -43,7 +43,7 @@ public final class GridTestProperties {
     public static final String TESTS_PROP_FILE = "tests.properties";
 
     /** */
-    public static final String TESTS_CFG_PATH = "modules/tests/config";
+    public static final String TESTS_CFG_PATH = "modules/core/src/test/config";
 
     /** */
     private static final Pattern PROP_REGEX = Pattern.compile("[@$]\\{[^@${}]+\\}");
