@@ -128,8 +128,6 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>java</sourceDirectory>
-
         <resources>
             <resource>
                 <directory>java</directory>
