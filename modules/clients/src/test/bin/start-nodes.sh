@@ -17,9 +17,9 @@
 # Define environment paths.
 SCRIPT_DIR=$(cd $(dirname "$0"); pwd)
 
-SET CONFIG_DIR=%$CRIPT_DIR/../resources
-SET CLIENTS_MODULE_PATH=$SCRIPT_DIR/../../..
-SET BIN_PATH=$SCRIPT_DIR/../../../../../bin
+export CONFIG_DIR=%$CRIPT_DIR/../resources
+export CLIENTS_MODULE_PATH=$SCRIPT_DIR/../../..
+export BIN_PATH=$SCRIPT_DIR/../../../../../bin
 
 GG_HOME=$(cd $SCRIPT_DIR/../../../../../..; pwd)
 
