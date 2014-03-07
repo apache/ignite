@@ -454,6 +454,8 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         String script = U.isWindows() ? CUSTOM_SCRIPT_WIN : CUSTOM_SCRIPT_LINUX;
 
+        script = U.resolveGridGainPath(script).getPath();
+
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
                 maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 1, U.getGridGainHome(), null, script),

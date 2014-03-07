@@ -67,8 +67,9 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
         String srcDirName = GridTestProperties.getProperty("ant.gar.srcdir");
         String baseDirName = tmpDirName + File.separator + System.currentTimeMillis();
         String metaDirName = baseDirName + File.separator + "META-INF";
-        String garDescDirName = GridTestProperties.getProperty("deploy.gar.descriptor.dir")
-            + File.separator + garDescFileName;
+        String garDescDirName =
+            U.resolveGridGainPath(GridTestProperties.getProperty("deploy.gar.descriptor.dir")) +
+            File.separator + garDescFileName;
 
         // Make base, META-INF and deployment dirs.
         File destDir = new File(GridTestProperties.getProperty("deploy.uri.file2.path"));

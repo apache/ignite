@@ -55,7 +55,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     private static final AtomicInteger cnt = new AtomicInteger();
 
     /** */
-    private static final String CUSTOM_CFG_PATH = "module/core/src/test/config/factory/custom-grid-name-spring-test.xml";
+    private static final String CUSTOM_CFG_PATH = "modules/core/src/test/config/factory/custom-grid-name-spring-test.xml";
 
     /**
      *
@@ -81,7 +81,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         try {
             srv = GridEmbeddedHttpServer.startHttpServer().withFileDownloadingHandler(null,
-                GridTestUtils.resolveGridGainPath("/module/core/src/test/config/default-spring-url-testing.xml"));
+                GridTestUtils.resolveGridGainPath("/modules/core/src/test/config/default-spring-url-testing.xml"));
 
             Grid grid = G.start(srv.getBaseUrl());
 
@@ -104,7 +104,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         try {
             srv = GridEmbeddedHttpServer.startHttpServer().withFileDownloadingHandler(null,
-                GridTestUtils.resolveGridGainPath("/modules/core/src/test/config/default-spring-url-testing.xml"));
+                GridTestUtils.resolveGridGainPath("modules/core/src/test/config/default-spring-url-testing.xml"));
 
             Grid grid = G.start(new URL(srv.getBaseUrl()));
 

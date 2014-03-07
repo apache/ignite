@@ -168,7 +168,7 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
         try {
             String urlPath = "/testDownloadUrl/";
             srv = GridEmbeddedHttpServer.startHttpsServer().withFileDownloadingHandler(urlPath,
-                GridTestUtils.resolveGridGainPath("/modules/core/src/test/config/tests.properties"));
+                GridTestUtils.resolveGridGainPath("modules/core/src/test/config/tests.properties"));
 
             File file = new File(System.getProperty("java.io.tmpdir") + File.separator + "url-http.file");
 
@@ -190,7 +190,7 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
         File file = new File(System.getProperty("java.io.tmpdir") + File.separator + "url-http.file");
 
         file = U.downloadUrl(
-            GridTestUtils.resolveGridGainPath("/module/core/src/test/config/tests.properties").toURI().toURL(), file);
+            GridTestUtils.resolveGridGainPath("modules/core/src/test/config/tests.properties").toURI().toURL(), file);
 
         assert file.exists();
         assert file.delete();

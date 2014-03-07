@@ -124,7 +124,7 @@ public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridCommonAbs
 
         Configuration fsCfg = new Configuration();
 
-        fsCfg.addResource(U.resolveGridGainUrl("modules/tests/config/hadoop/core-site-loopback.xml"));
+        fsCfg.addResource(U.resolveGridGainUrl("modules/core/src/test/config/hadoop/core-site-loopback.xml"));
 
         fs = (GridGgfsHadoopFileSystem)FileSystem.get(new URI("ggfs://primary/"), fsCfg);
     }

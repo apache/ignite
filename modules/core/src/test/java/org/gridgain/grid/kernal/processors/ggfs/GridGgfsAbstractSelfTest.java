@@ -60,7 +60,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
     protected static final String PRIMARY_URI = "ggfs://primary/";
 
     /** Primary file system configuration path. */
-    protected static final String PRIMARY_CFG = "module/core/src/test/config/hadoop/core-site-loopback.xml";
+    protected static final String PRIMARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback.xml";
 
     /** Primary file system REST endpoint configuration string. */
     protected static final String PRIMARY_REST_CFG = "{type:'tcp', port:10500}";
@@ -69,7 +69,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridCommonAbstractTest {
     protected static final String SECONDARY_URI = "ggfs://secondary/";
 
     /** Secondary file system configuration path. */
-    protected static final String SECONDARY_CFG = "module/core/src/test/config/hadoop/core-site-loopback-secondary.xml";
+    protected static final String SECONDARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml";
 
     /** Secondary file system REST endpoint configuration string. */
     protected static final String SECONDARY_REST_CFG = "{type:'tcp', port:11500}";

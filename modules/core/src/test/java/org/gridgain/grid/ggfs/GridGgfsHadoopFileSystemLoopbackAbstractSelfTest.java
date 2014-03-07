@@ -32,7 +32,7 @@ public abstract class GridGgfsHadoopFileSystemLoopbackAbstractSelfTest extends
 
     /** {@inheritDoc} */
     @Override protected String primaryFileSystemConfigPath() {
-        return "module/core/src/test/config/hadoop/core-site-loopback.xml";
+        return "modules/core/src/test/config/hadoop/core-site-loopback.xml";
     }
 
     /** {@inheritDoc} */
@@ -52,7 +52,7 @@ public abstract class GridGgfsHadoopFileSystemLoopbackAbstractSelfTest extends
 
     /** {@inheritDoc} */
     @Override protected String secondaryFileSystemConfigPath() {
-        return "modules/tests/config/hadoop/core-site-loopback-secondary.xml";
+        return "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml";
     }
 
     /** {@inheritDoc} */

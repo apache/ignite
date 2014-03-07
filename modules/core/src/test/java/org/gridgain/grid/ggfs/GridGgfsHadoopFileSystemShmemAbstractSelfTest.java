@@ -59,7 +59,7 @@ public abstract class GridGgfsHadoopFileSystemShmemAbstractSelfTest extends Grid
 
     /** {@inheritDoc} */
     @Override protected String secondaryFileSystemConfigPath() {
-        return "modules/tests/config/hadoop/core-site-secondary.xml";
+        return "modules/core/src/test/config/hadoop/core-site-secondary.xml";
     }
 
     /** {@inheritDoc} */
