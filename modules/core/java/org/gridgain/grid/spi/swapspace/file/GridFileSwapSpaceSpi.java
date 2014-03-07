@@ -100,7 +100,7 @@ import static org.gridgain.grid.events.GridEventType.*;
 @SuppressWarnings({"PackageVisibleInnerClass", "PackageVisibleField"})
 public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpaceSpi, GridFileSwapSpaceSpiMBean {
     /** Default base directory. */
-    public static final String DFLT_BASE_DIR = U.WORK_DIR + "/swapspace";
+    public static final String DFLT_BASE_DIR = "work/swapspace";
 
     /** Default maximum sparsity. */
     public static final float DFLT_MAX_SPARSITY = 0.5f;

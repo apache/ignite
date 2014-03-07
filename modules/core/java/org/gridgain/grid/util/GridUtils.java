@@ -277,9 +277,6 @@ public abstract class GridUtils {
         "Troubleshooting:      http://bit.ly/GridGain-Troubleshooting",
         "Documentation Center: http://bit.ly/GridGain-Documentation");
 
-    /** Work directory. */
-    public static final String WORK_DIR = "work";
-
     /**
      * Initializes enterprise check.
      */

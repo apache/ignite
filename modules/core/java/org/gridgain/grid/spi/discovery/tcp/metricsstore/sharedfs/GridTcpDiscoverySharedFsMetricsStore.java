@@ -50,7 +50,7 @@ import java.util.concurrent.locks.*;
  */
 public class GridTcpDiscoverySharedFsMetricsStore extends GridTcpDiscoveryMetricsStoreAdapter {
     /** Default path for local testing only. */
-    public static final String DFLT_PATH = U.WORK_DIR + "/disco/metrics-store";
+    public static final String DFLT_PATH = "work/disco/metrics-store";
 
     /** Grid logger. */
     @GridLoggerResource

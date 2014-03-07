@@ -179,7 +179,7 @@ object visor extends VisorTag {
     @volatile private var shutdownCbs = Seq.empty[() => Unit]
 
     /** Default log file path. */
-    private final val DFLT_LOG_PATH = U.WORK_DIR + "/visor/visor-log"
+    private final val DFLT_LOG_PATH = "work/visor/visor-log"
 
     /** Default configuration path relative to GridGain home. */
     private final val DFLT_CFG = "config/default-config.xml"

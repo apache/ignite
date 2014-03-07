@@ -77,7 +77,7 @@ public class GgfsFileSystemExample {
 
             Path locSrc = new Path(locHome, path);
 
-            Path locTmp = new Path(locHome, U.WORK_DIR + "/tmp");
+            Path locTmp = new Path(locHome, "work/tmp");
             Path ggfsTmp1 = new Path(ggfsHome, "/tmp1");
             Path ggfsTmp2 = new Path(ggfsHome, "/tmp2");
             Path hdfsTmp1 = new Path(hdfsHome, "/tmp1");

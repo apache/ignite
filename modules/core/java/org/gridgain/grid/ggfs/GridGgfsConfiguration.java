@@ -56,7 +56,7 @@ public class GridGgfsConfiguration {
     public static final int DFLT_GGFS_LOG_BATCH_SIZE = 100;
 
     /** Default {@code GGFS} log directory. */
-    public static final String DFLT_GGFS_LOG_DIR = U.WORK_DIR + "/ggfs/log";
+    public static final String DFLT_GGFS_LOG_DIR = "work/ggfs/log";
 
     /** Default per node buffer size. */
     public static final int DFLT_PER_NODE_BATCH_SIZE = 100;
