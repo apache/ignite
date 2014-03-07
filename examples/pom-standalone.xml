@@ -441,8 +441,6 @@
             </plugin>
         </plugins>
 
-        <sourceDirectory>java</sourceDirectory>
-
         <resources>
             <resource>
                 <directory>config</directory>
