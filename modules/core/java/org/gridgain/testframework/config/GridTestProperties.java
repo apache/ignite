@@ -11,6 +11,7 @@ package org.gridgain.testframework.config;
 
 import org.apache.log4j.xml.*;
 import org.gridgain.testframework.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -44,6 +45,9 @@ public final class GridTestProperties {
 
     /** */
     public static final String TESTS_CFG_PATH = "modules/core/src/test/config";
+
+    /** */
+    public static final String OPTIONAL_TESTS_CFG_PATH = "modules/src/src/test/config";
 
     /** */
     private static final Pattern PROP_REGEX = Pattern.compile("[@$]\\{[^@${}]+\\}");
@@ -85,8 +89,12 @@ public final class GridTestProperties {
         dfltProps = Collections.unmodifiableMap(loadFromFile(new HashMap<String, String>(), cfgFile));
 
         if ("false".equals(System.getProperty("GRIDGAIN_TEST_PROP_DISABLE_LOG4J", "false"))) {
+            String user = System.getProperty("user.name");
+
+            assert user != null;
+
             // Configure log4j logger.
-            configureLog4j(cfgDir);
+            configureLog4j(user);
         }
     }
 
@@ -98,43 +106,18 @@ public final class GridTestProperties {
     }
 
     /**
-     * @param cfgDir Configuration directory.
+     * @param user User name.
      */
-    private static void configureLog4j(File cfgDir) {
-        String user = System.getProperty("user.name");
+    private static void configureLog4j(String user) {
+        String cfgFile = System.getProperty("GG_TEST_PROP_LOG4J_FILE");
 
-        assert user != null;
+        if (cfgFile == null)
+            cfgFile = "log4j-test.xml";
 
-        File log4jDir = new File(cfgDir, user);
+        File log4jFile = getTestConfigurationFile(user, cfgFile);
 
-        // If user defined own log4j configuration, try to load it.
-        if (log4jDir.exists()) {
-            assert log4jDir.isDirectory();
-
-            String cfgFile = System.getProperty("GG_TEST_PROP_LOG4J_FILE");
-
-            if (cfgFile == null) {
-                cfgFile = "log4j-test.xml";
-            }
-
-            File log4jFile = new File(log4jDir, cfgFile);
-
-            if (log4jFile.exists()) {
-                assert !log4jFile.isDirectory();
-
-                DOMConfigurator.configure(log4jFile.getAbsolutePath());
-
-                System.out.println("Configured log4j from: " + log4jFile);
-
-                return;
-            }
-        }
-
-        // If user did not define own log4j configuration, load default one.
-        File log4jFile = new File(cfgDir, "log4j-test.xml");
-
-        assert log4jFile.exists();
-        assert !log4jFile.isDirectory();
+        if (log4jFile == null)
+            log4jFile = new File(GridTestUtils.resolveGridGainPath(TESTS_CFG_PATH), "log4j-test.xml");
 
         DOMConfigurator.configure(log4jFile.getAbsolutePath());
 
@@ -263,26 +246,53 @@ public final class GridTestProperties {
      * @return Loaded properties.
      */
     private static Map<String, String> loadProperties(Map<String, String> props, String dir) {
+        File cfg = getTestConfigurationFile(dir, TESTS_PROP_FILE);
+
+        if (cfg != null)
+            loadFromFile(props, cfg);
+
+        return props;
+    }
+
+    /**
+     * @param user User name.
+     * @param fileName File name.
+     * @return Configuration file for given user.
+     */
+    @Nullable private static File getTestConfigurationFile(String user, String fileName) {
         String ggTestHome = System.getProperty("GG_TEST_HOME");
 
-        File homeDir = GridTestUtils.resolveGridGainPath(ggTestHome, TESTS_CFG_PATH);
+        File baseCfgDir = GridTestUtils.resolveGridGainPath(ggTestHome, TESTS_CFG_PATH);
 
-        assert homeDir != null;
-        assert homeDir.isDirectory();
+        File userCfgDir = new File(baseCfgDir, user);
 
-        File cfgDir = new File(homeDir, dir);
+        if (userCfgDir.exists()) {
+            File file = new File(userCfgDir, fileName);
 
-        if (cfgDir.exists()) {
-            File cfgFile = new File(cfgDir, TESTS_PROP_FILE);
+            if (file.exists()) {
+                assert !file.isDirectory();
 
-            if (cfgFile.exists()) {
-                assert !cfgFile.isDirectory();
-
-                loadFromFile(props, cfgFile);
+                return file;
             }
         }
 
-        return props;
+        baseCfgDir = GridTestUtils.resolveGridGainPath(ggTestHome, OPTIONAL_TESTS_CFG_PATH);
+
+        if (baseCfgDir != null) {
+            userCfgDir = new File(baseCfgDir, user);
+
+            if (userCfgDir.exists()) {
+                File file = new File(userCfgDir, fileName);
+
+                if (file.exists()) {
+                    assert !file.isDirectory();
+
+                    return file;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
