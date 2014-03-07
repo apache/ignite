@@ -18,10 +18,10 @@
 /**
  *  Provide the unified interface for calculation the hash-code for an object.
  */
-class GRIDGAIN_API GridHasheableObject {
+class GRIDGAIN_API GridClientHasheableObject {
 public:
     /** Destructor. */
-    virtual ~GridHasheableObject() {};
+    virtual ~GridClientHasheableObject() {};
 
     /**
      * Calculates hash code for the contained object.

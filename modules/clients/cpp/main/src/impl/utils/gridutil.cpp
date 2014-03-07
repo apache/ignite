@@ -70,7 +70,7 @@ std::ostream& GridUtil::toStream(std::ostream &out, const std::vector<std::strin
     return out;
 }
 
-std::ostream& GridUtil::toStream(std::ostream &out, const std::vector<GridSocketAddress> &v) {
+std::ostream& GridUtil::toStream(std::ostream &out, const std::vector<GridClientSocketAddress> &v) {
     for (size_t i = 1; i < v.size(); ++i) {
         if (i != 0)
             out << ",";

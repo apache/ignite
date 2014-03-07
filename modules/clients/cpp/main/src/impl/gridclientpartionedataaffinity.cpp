@@ -100,19 +100,19 @@ void GridClientPartitionAffinity::add(const GridClientNode& node, int replicas) 
     nodeHash.addNode(
         NodeInfo(
             node.getNodeId(),
-            std::shared_ptr<GridHasheableObject>(new GridClientVariantHasheableObject(hashIdResolver(node)))),
+            std::shared_ptr<GridClientHasheableObject>(new GridClientVariantHasheableObject(hashIdResolver(node)))),
         replicas);
 
     addedNodes.insert(node.getNodeId());
 }
 
-TGridClientNodePtr GridClientPartitionAffinity::getNode(const TNodesSet& nodes, const GridHasheableObject& key) {
-    set<GridUuid> newNodes;
+TGridClientNodePtr GridClientPartitionAffinity::getNode(const TNodesSet& nodes, const GridClientHasheableObject& key) {
+    set<GridClientUuid> newNodes;
 
     for (auto iter = nodes.begin(); iter != nodes.end(); ++iter)
         newNodes.insert(iter->getNodeId());
 
-    GridUuid nodeId;
+    GridClientUuid nodeId;
 
     {
         boost::lock_guard<boost::mutex> lock(mux);
@@ -135,7 +135,7 @@ TGridClientNodePtr GridClientPartitionAffinity::getNode(const TNodesSet& nodes, 
 
         for (TNodesSet::const_iterator i = nodes.begin(); i != nodes.end(); i++)
             nInfos.insert(NodeInfo(i->getNodeId(),
-                std::shared_ptr<GridHasheableObject>(new GridClientVariantHasheableObject(hashIdResolver(*i)))));
+                std::shared_ptr<GridClientHasheableObject>(new GridClientVariantHasheableObject(hashIdResolver(*i)))));
 
         nodeId = nodeHash.node(GridInt32Hasheable(part), nInfos).id();
     }
@@ -143,7 +143,7 @@ TGridClientNodePtr GridClientPartitionAffinity::getNode(const TNodesSet& nodes, 
     return findNode(nodeId, nodes);
 }
 
-TGridClientNodePtr GridClientPartitionAffinity::findNode(const GridUuid& id, const TNodesSet& nodes) const {
+TGridClientNodePtr GridClientPartitionAffinity::findNode(const GridClientUuid& id, const TNodesSet& nodes) const {
     TNodesSet::const_iterator iter = find_if(nodes.begin(), nodes.end(), [&id] (const GridClientNode& node) {
         return node.getNodeId() == id;
     });
@@ -156,10 +156,10 @@ TGridClientNodePtr GridClientPartitionAffinity::findNode(const GridUuid& id, con
 void GridClientPartitionAffinity::checkRemoved(const GridClientNode& node) {
     boost::lock_guard<boost::mutex> lock(mux);
 
-    addedNodes.erase(find_if(addedNodes.begin(), addedNodes.end(), [&node] (const GridUuid& id) {
+    addedNodes.erase(find_if(addedNodes.begin(), addedNodes.end(), [&node] (const GridClientUuid& id) {
         return id == node.getNodeId();
     }));
 
     nodeHash.removeNode(NodeInfo(node.getNodeId(),
-        std::shared_ptr<GridHasheableObject>(new GridClientVariantHasheableObject(hashIdResolver(node)))));
+        std::shared_ptr<GridClientHasheableObject>(new GridClientVariantHasheableObject(hashIdResolver(node)))));
 }

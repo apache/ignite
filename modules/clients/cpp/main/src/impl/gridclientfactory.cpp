@@ -77,7 +77,7 @@ public:
         clients.clear();
     }
 
-    void stop(const GridUuid clientId, bool wait) {
+    void stop(const GridClientUuid clientId, bool wait) {
         std::shared_ptr<GridClientImpl> client;
 
         {
@@ -97,7 +97,7 @@ public:
     }
 
     /** Typedef for list of produced client. */
-    typedef std::map<GridUuid, std::shared_ptr<GridClientImpl> > TClientList;
+    typedef std::map<GridClientUuid, std::shared_ptr<GridClientImpl> > TClientList;
 
     /** List of produced client. */
     TClientList clients;
@@ -140,6 +140,6 @@ void GridClientFactory::stopAll(bool wait) {
  *      closing (however, no new requests will be accepted). If {@code false}, client will be
  *      closed immediately and all ongoing requests will be failed.
  */
-void GridClientFactory::stop(const GridUuid& clientId, bool wait) {
+void GridClientFactory::stop(const GridClientUuid& clientId, bool wait) {
     impl.stop(clientId, wait);
 }

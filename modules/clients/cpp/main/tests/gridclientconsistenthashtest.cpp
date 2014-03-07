@@ -29,7 +29,7 @@
 
 using namespace std;
 
-static void checkHash(const char* testVal, const GridHasheableObject& o, const int8_t* hash, size_t nBytes, int code);
+static void checkHash(const char* testVal, const GridClientHasheableObject& o, const int8_t* hash, size_t nBytes, int code);
 static void checkUUID(const string& uuid, int code);
 
 #ifdef _MSC_VER
@@ -235,20 +235,20 @@ BOOST_AUTO_TEST_CASE(testHashGeneraton) {
 }
 
 BOOST_AUTO_TEST_CASE(testCollisions) {
-    std::map<int32_t, std::set<GridUuid> > map;
+    std::map<int32_t, std::set<GridClientUuid> > map;
 
-    std::set<GridUuid> nodes;
+    std::set<GridClientUuid> nodes;
 
     int32_t iterCnt = 0;
 
     while (nodes.size() < 10) {
         iterCnt++;
 
-        GridUuid id = GridUuid::randomUuid();
+        GridClientUuid id = GridClientUuid::randomUuid();
 
         int32_t hashCode = id.hashCode();
 
-        std::set<GridUuid>& s = map[hashCode];
+        std::set<GridClientUuid>& s = map[hashCode];
 
         s.insert(id);
 
@@ -261,26 +261,26 @@ BOOST_AUTO_TEST_CASE(testCollisions) {
     GridClientConsistentHashImpl hash;
 
     for (auto i = nodes.begin(); i != nodes.end(); i++)
-        hash.addNode(NodeInfo(*i, std::shared_ptr<GridHasheableObject>(new GridUuid(*i))), 128);
+        hash.addNode(NodeInfo(*i, std::shared_ptr<GridClientHasheableObject>(new GridClientUuid(*i))), 128);
 
     for (auto i = nodes.begin(); i != nodes.end(); i++) {
         std::set<NodeInfo> singleton;
 
-        singleton.insert(NodeInfo(*i, std::shared_ptr<GridHasheableObject>(new GridUuid(*i))));
+        singleton.insert(NodeInfo(*i, std::shared_ptr<GridClientHasheableObject>(new GridClientUuid(*i))));
 
-        GridUuid act = hash.node(GridInt32Hasheable(0), singleton).id();
+        GridClientUuid act = hash.node(GridInt32Hasheable(0), singleton).id();
 
         BOOST_CHECK_EQUAL(act, *i);
     }
 }
 
-typedef std::shared_ptr<GridHasheableObject> KeyT;
+typedef std::shared_ptr<GridClientHasheableObject> KeyT;
 typedef std::map<KeyT, int32_t> DataMapT;
 
 BOOST_AUTO_TEST_SUITE_END()
 
 static void checkUUID(const string& uuid, int code) {
-    checkHash(uuid.c_str(), GridUuid(uuid), 0, 0, code);
+    checkHash(uuid.c_str(), GridClientUuid(uuid), 0, 0, code);
 }
 
 /**
@@ -331,7 +331,7 @@ static void dumpHashObjectBytes(const char* testVal, const std::vector<int8_t>& 
  * @param hash Expected bytes-array serialization of the object.
  * @param code Expected hash code.
  */
-void checkHash(const char* testVal, const GridHasheableObject& o, const int8_t* bytes, size_t nBytes, int code) {
+void checkHash(const char* testVal, const GridClientHasheableObject& o, const int8_t* bytes, size_t nBytes, int code) {
     std::vector<int8_t> hashBytes;
 
     if (bytes != NULL) {

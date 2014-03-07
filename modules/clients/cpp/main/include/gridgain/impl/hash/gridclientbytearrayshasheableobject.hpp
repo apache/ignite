@@ -17,7 +17,7 @@
 /**
  * Hashable object wrapping byte array.
  */
-class GridByteArrayHasheableObject : public GridHasheableObject {
+class GridByteArrayHasheableObject : public GridClientHasheableObject {
 public:
     /**
      * Public constructor.

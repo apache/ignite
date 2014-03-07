@@ -268,7 +268,7 @@ namespace {
             delete[] pBuffer;
         }
 
-        virtual void visit(const GridUuid& uuid) const {
+        virtual void visit(const GridClientUuid& uuid) const {
             TByteVector bytes;
 
             uuid.convertToBytes(bytes);
