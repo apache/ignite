@@ -17,7 +17,7 @@
 # Define environment paths.
 SCRIPT_DIR=$(cd $(dirname "$0"); pwd)
 
-export CONFIG_DIR=%$CRIPT_DIR/../resources
+export CONFIG_DIR=$SCRIPT_DIR/../resources
 export CLIENTS_MODULE_PATH=$SCRIPT_DIR/../../..
 export BIN_PATH=$SCRIPT_DIR/../../../../../bin
 
