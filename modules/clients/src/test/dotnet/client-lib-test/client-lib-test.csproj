@@ -62,7 +62,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Google.ProtocolBuffers">
-      <HintPath>..\..\..\..\os\modules\clients\dotnet\client-lib\libs\Google.ProtocolBuffers.dll</HintPath>
+      <HintPath>..\..\..\..\dotnet\client-lib\libs\Google.ProtocolBuffers.dll</HintPath>
     </Reference>
     <Reference Include="nunit.framework, Version=2.5.10.11092, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -99,7 +99,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\os\modules\clients\dotnet\client-lib\client-lib.csproj">
+    <ProjectReference Include="..\..\..\..\dotnet\client-lib\client-lib.csproj">
       <Project>{1A6F93A0-33A1-42D1-B97D-CBFCF787D637}</Project>
       <Name>client-lib</Name>
     </ProjectReference>

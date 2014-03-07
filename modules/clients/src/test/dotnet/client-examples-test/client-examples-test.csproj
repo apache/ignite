@@ -62,10 +62,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Google.ProtocolBuffers">
-      <HintPath>..\..\..\..\os\modules\clients\dotnet\client-lib\libs\Google.ProtocolBuffers.dll</HintPath>
+      <HintPath>..\..\..\..\dotnet\client-lib\libs\Google.ProtocolBuffers.dll</HintPath>
     </Reference>
     <Reference Include="GridGainClient">
-      <HintPath>..\..\..\..\os\modules\clients\dotnet\client-lib\libs\GridGainClient.dll</HintPath>
+      <HintPath>..\..\..\..\dotnet\client-lib\libs\GridGainClient.dll</HintPath>
     </Reference>
     <Reference Include="nunit.framework, Version=2.5.10.11092, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -90,7 +90,7 @@
     <None Include="client-examples-test.snk" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\os\examples\clients\dotnet\GridClientApiExample.csproj">
+    <ProjectReference Include="..\..\..\..\dotnet\GridClientApiExample.csproj">
       <Project>{93C19D37-D5A4-41D0-8E10-F214B1F61213}</Project>
       <Name>GridClientApiExample</Name>
     </ProjectReference>

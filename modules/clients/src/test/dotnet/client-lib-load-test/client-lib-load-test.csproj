@@ -73,7 +73,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\os\modules\clients\dotnet\client-lib\client-lib.csproj">
+    <ProjectReference Include="..\..\..\..\dotnet\client-lib\client-lib.csproj">
       <Project>{1A6F93A0-33A1-42D1-B97D-CBFCF787D637}</Project>
       <Name>client-lib</Name>
     </ProjectReference>
