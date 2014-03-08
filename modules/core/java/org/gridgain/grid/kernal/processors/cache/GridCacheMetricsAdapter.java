@@ -101,8 +101,8 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         misses = m.misses();
         txCommits = m.txCommits();
         txRollbacks = m.txRollbacks();
-        drSndMetrics = (GridCacheDrSenderMetricsAdapter)m.drSendMetrics();
-        drRcvMetrics = (GridCacheDrReceiverMetricsAdapter)m.drReceiveMetrics();
+        drSndMetrics = ((GridCacheMetricsAdapter)m).drSndMetrics;
+        drRcvMetrics = ((GridCacheMetricsAdapter)m).drRcvMetrics;
     }
 
     /**
@@ -168,12 +168,18 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDrSenderCacheMetrics drSendMetrics() {
+    @Override public GridDrSenderCacheMetrics drSendMetrics() {
+        if (drSndMetrics == null)
+            throw new IllegalStateException("Data center replication is not configured.");
+
         return drSndMetrics;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDrReceiverCacheMetrics drReceiveMetrics() {
+    @Override public GridDrReceiverCacheMetrics drReceiveMetrics() {
+        if (drRcvMetrics == null)
+            throw new IllegalStateException("Data center replication is not configured.");
+
         return drRcvMetrics;
     }
 
