@@ -49,7 +49,7 @@ public abstract class GridAbstractExamplesTest extends GridCommonAbstractTest {
         if (rmtCfgs.isEmpty()) {
             info("Loading remote configs properties from file: " + RMT_NODE_CFGS);
 
-            try (FileReader reader = new FileReader(new File(U.getGridGainHome(), RMT_NODE_CFGS))) {
+            try (FileReader reader = new FileReader(U.resolveGridGainPath(RMT_NODE_CFGS))) {
                 rmtCfgs.load(reader);
             }
         }

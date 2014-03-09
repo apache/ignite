@@ -41,7 +41,7 @@ public class GridGgfsHadoopFileSystemLightIpcCacheSelfTest extends GridCommonAbs
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Path to test hadoop configuration. */
-    private static final String HADOOP_FS_CFG = "module/core/src/test/config/hadoop/core-site.xml";
+    private static final String HADOOP_FS_CFG = "modules/core/src/test/config/hadoop/core-site.xml";
 
     /** Group size. */
     public static final int GRP_SIZE = 128;
