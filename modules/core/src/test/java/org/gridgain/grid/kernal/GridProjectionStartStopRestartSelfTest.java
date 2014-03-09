@@ -21,6 +21,7 @@ import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -454,7 +455,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         String script = U.isWindows() ? CUSTOM_SCRIPT_WIN : CUSTOM_SCRIPT_LINUX;
 
-        script = U.resolveGridGainPath(script).getPath();
+        script = Paths.get(U.getGridGainHome()).relativize(U.resolveGridGainPath(script).toPath()).toString();
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(

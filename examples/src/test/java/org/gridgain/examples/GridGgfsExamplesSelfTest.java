@@ -16,6 +16,8 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
+import java.nio.file.*;
+
 /**
  * GGFS examples self test.
  */
@@ -63,11 +65,13 @@ public class GridGgfsExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     public void testHadoopFileSystemExample() throws Exception {
+        Path path = U.resolveGridGainPath("examples/config").toPath();
+
         startGrid(CLIENT_LIGHT_GRID_NAME);
 
         try {
             // Execute light version of this benchmark in order to ensure that it work.
-            GgfsFileSystemExample.main(new String[]{"os/examples/config"});
+            GgfsFileSystemExample.main(new String[]{Paths.get(U.getGridGainHome()).relativize(path).toString()});
         }
         finally {
             stopAllGrids();
