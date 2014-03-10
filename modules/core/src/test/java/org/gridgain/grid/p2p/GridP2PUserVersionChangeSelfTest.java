@@ -10,11 +10,13 @@
 package org.gridgain.grid.p2p;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.common.*;
@@ -41,8 +43,11 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     /** Current deployment mode. */
     private GridDeploymentMode depMode;
 
-    /** Class Name of task. */
+    /** Test task class name. */
     private static final String TEST_TASK_NAME = "org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1";
+
+    /** Test resource class name. */
+    private static final String TEST_RCRS_NAME = "org.gridgain.grid.tests.p2p.GridTestUserResource";
 
     /** IP finder. */
     private final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
@@ -50,6 +55,18 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     /** */
     public GridP2PUserVersionChangeSelfTest() {
         super(/*start grid*/false);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 30 * 1000;
+    }
+
+    /**
+     * @return Timeout for condition waits.
+     */
+    private long getConditionTimeout() {
+        return getTestTimeout() > 10000 ? getTestTimeout() - 10000 : getTestTimeout();
     }
 
     /** {@inheritDoc} */
@@ -65,7 +82,15 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        cfg.setCacheConfiguration();
+        if (gridName.contains("testCacheRedeployVersionChangeContinuousMode")) {
+            GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
+
+            cacheCfg.setCacheMode(GridCacheMode.REPLICATED);
+
+            cfg.setCacheConfiguration(cacheCfg);
+        }
+        else
+            cfg.setCacheConfiguration();
 
         return cfg;
     }
@@ -242,6 +267,70 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
         finally {
             stopGrid(1);
             stopGrid(2);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    // TODO: GG-5678 Uncomment when fix
+    public void _testCacheRedeployVersionChangeContinuousMode() throws Exception {
+        depMode = GridDeploymentMode.CONTINUOUS;
+
+        try {
+            Grid grid1 = startGrid("testCacheRedeployVersionChangeContinuousMode1");
+            Grid grid2 = startGrid("testCacheRedeployVersionChangeContinuousMode2");
+
+            GridTestExternalClassLoader ldr = new GridTestExternalClassLoader(
+                new URL[] { new URL(GridTestProperties.getProperty("p2p.uri.cls")) },
+                Collections.singletonMap("META-INF/gridgain.xml", makeUserVersion("1").getBytes()));
+
+            Class rcrsCls = ldr.loadClass(TEST_RCRS_NAME);
+
+            GridCache<Long, Object> cache1 = grid1.cache(null);
+
+            assertNotNull(cache1);
+
+            cache1.put(1L, rcrsCls.newInstance());
+
+            final GridCache<Long, Object> cache2 = grid2.cache(null);
+
+            assertNotNull(cache2);
+
+            // The entry should propagate to grid2, because the
+            // cache is REPLICATED. This happens asynchronously, we
+            // need to use condition wait.
+            assert GridTestUtils.waitForCondition(new PAX() {
+                @Override public boolean applyx() throws GridException {
+                    return cache2.get(1L) != null;
+                }
+            }, getConditionTimeout());
+
+            stopGrid("testCacheRedeployVersionChangeContinuousMode1");
+
+            // Increase the user version of the test class.
+            ldr.setResourceMap(Collections.singletonMap("META-INF/gridgain.xml", makeUserVersion("2").getBytes()));
+
+            grid1 = startGrid("testCacheRedeployVersionChangeContinuousMode1");
+
+            cache1 = grid1.cache(null);
+
+            assertNotNull(cache1);
+
+            // Put an entry with a new user version.
+            cache1.put(2L, rcrsCls.newInstance());
+
+            // At this point, old version of test resource should be undeployed
+            // and removed from cache asynchronously.
+            assert GridTestUtils.waitForCondition(new PAX() {
+                @Override public boolean applyx() throws GridException {
+                    return cache2.get(1L) == null;
+                }
+            }, getConditionTimeout()) : "2nd condition failed [entries1=" + cache1.entrySet() +
+                ", entries2=" + cache2.entrySet() + ']';
+        }
+        finally {
+            stopAllGrids();
         }
     }
 

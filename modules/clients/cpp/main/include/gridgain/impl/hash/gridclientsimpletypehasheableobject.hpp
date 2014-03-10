@@ -15,12 +15,12 @@
 #include "gridgain/gridhasheableobject.hpp"
 #include "gridgain/impl/utils/gridclientbyteutils.hpp"
 
-typedef std::shared_ptr<GridHasheableObject> TGridHasheableObjectPtr;
+typedef std::shared_ptr<GridClientHasheableObject> TGridHasheableObjectPtr;
 
 /**
  * Template class for GridHashealeObject for simple types like int_...
  */
-template<class T> class GridSimpleTypeHasheable: public GridHasheableObject {
+template<class T> class GridSimpleTypeHasheable: public GridClientHasheableObject {
 protected:
     /**
      * Constructor.

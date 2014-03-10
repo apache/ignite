@@ -32,7 +32,7 @@
 /**
  * Provides the implementation of hash code for wide strings.
  */
-class GridWideStringHasheableObject : public GridHasheableObject {
+class GridWideStringHasheableObject : public GridClientHasheableObject {
 public:
     /**
      * Public constructor.

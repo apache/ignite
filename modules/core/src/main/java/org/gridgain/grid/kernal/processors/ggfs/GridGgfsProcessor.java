@@ -190,7 +190,7 @@ public class GridGgfsProcessor extends GridProcessorAdapter {
      * @param name Cache name.
      * @return Masked name accounting for {@code nulls}.
      */
-    private String maskName(String name) {
+    private String maskName(@Nullable String name) {
         return name == null ? NULL_NAME : name;
     }
 

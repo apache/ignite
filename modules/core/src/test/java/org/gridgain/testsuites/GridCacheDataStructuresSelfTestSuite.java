@@ -51,6 +51,8 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
         // suite.addTest(new TestSuite(GridCachePartitionedQueueRotativeMultiNodeTest.class));
         // TODO: GG-2699
         //suite.addTest(new TestSuite(GridCachePartitionedDataStructuresFailoverSelfTest.class));
+        // TODO: GG-4807 Uncomment when fix
+        // suite.addTest(new TestSuite(GridCacheQueueMultiNodeConsistencySelfTest.class));
 
         suite.addTest(new TestSuite(GridCacheCountDownLatchSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicLongApiSelfTest.class));

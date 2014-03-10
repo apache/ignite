@@ -162,7 +162,7 @@ public:
      * @param uuid An UUID to marshal.
      * @param bytes Vector to fill.
      */
-    static void marshal(const GridUuid& uuid, std::vector<int8_t>& bytes);
+    static void marshal(const GridClientUuid& uuid, std::vector<int8_t>& bytes);
 
     /**
      * General unmarshaling function for converting byte array to protobuf message.

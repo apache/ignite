@@ -69,7 +69,7 @@ void GridClientProtobufMarshaller::marshal(int64_t i64, std::vector<int8_t>& byt
     GridClientByteUtils::valueToBytes(i64, &bytes[0], sizeof(i64));
 }
 
-void GridClientProtobufMarshaller::marshal(const GridUuid& uuid, std::vector<int8_t>& bytes) {
+void GridClientProtobufMarshaller::marshal(const GridClientUuid& uuid, std::vector<int8_t>& bytes) {
     uuid.rawBytes(bytes);
 }
 
@@ -516,9 +516,9 @@ static void unwrap(const ObjectWrapper& objWrapper, GridClientNode& res) {
 
     unmarshalMsg((int8_t*) objWrapper.binary().c_str(), objWrapper.binary().size(), bean);
 
-    GridNodeMarshallerHelper helper(res);
+    GridClientNodeMarshallerHelper helper(res);
 
-    helper.setNodeId(GridUuid::fromBytes(bean.nodeid()));
+    helper.setNodeId(GridClientUuid::fromBytes(bean.nodeid()));
 
     GridClientVariant consistentId;
 
@@ -529,11 +529,11 @@ static void unwrap(const ObjectWrapper& objWrapper, GridClientNode& res) {
     int tcpport = bean.tcpport();
     int jettyport = bean.jettyport();
 
-    std::vector<GridSocketAddress> addresses;
+    std::vector<GridClientSocketAddress> addresses;
 
     for (int i = 0; i < bean.jettyaddress_size(); ++i) {
         if (bean.jettyaddress(i).size()) {
-            GridSocketAddress newJettyAddress = GridSocketAddress(bean.jettyaddress(i), jettyport);
+            GridClientSocketAddress newJettyAddress = GridClientSocketAddress(bean.jettyaddress(i), jettyport);
 
             boost::asio::ip::tcp::resolver::query queryIp(bean.jettyaddress(i),
                 boost::lexical_cast<std::string>(bean.jettyport()));
@@ -551,7 +551,7 @@ static void unwrap(const ObjectWrapper& objWrapper, GridClientNode& res) {
 
     for (int i = 0; i < bean.jettyhostname_size(); ++i) {
         if (bean.jettyhostname(i).size()) {
-            GridSocketAddress newJettyAddress = GridSocketAddress(bean.jettyhostname(i), jettyport);
+            GridClientSocketAddress newJettyAddress = GridClientSocketAddress(bean.jettyhostname(i), jettyport);
 
             boost::asio::ip::tcp::resolver::query queryHostname(bean.jettyhostname(i),
                 boost::lexical_cast<std::string>(bean.jettyport()));
@@ -573,7 +573,7 @@ static void unwrap(const ObjectWrapper& objWrapper, GridClientNode& res) {
 
     for (int i = 0; i < bean.tcpaddress_size(); ++i) {
         if (bean.tcpaddress(i).size()) {
-            GridSocketAddress newTCPAddress = GridSocketAddress(bean.tcpaddress(i), tcpport);
+            GridClientSocketAddress newTCPAddress = GridClientSocketAddress(bean.tcpaddress(i), tcpport);
 
             boost::asio::ip::tcp::resolver::query queryIp(bean.tcpaddress(i),
                 boost::lexical_cast<std::string>(bean.tcpport()));
@@ -591,7 +591,7 @@ static void unwrap(const ObjectWrapper& objWrapper, GridClientNode& res) {
 
     for (int i = 0; i < bean.tcphostname_size(); ++i) {
         if (bean.tcphostname(i).size()) {
-            GridSocketAddress newTCPAddress = GridSocketAddress(bean.tcphostname(i), tcpport);
+            GridClientSocketAddress newTCPAddress = GridClientSocketAddress(bean.tcphostname(i), tcpport);
 
             boost::asio::ip::tcp::resolver::query queryHostname(bean.tcphostname(i),
                 boost::lexical_cast<std::string>(bean.tcpport()));

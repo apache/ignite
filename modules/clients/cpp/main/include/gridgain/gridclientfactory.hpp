@@ -13,7 +13,7 @@
 #include <gridgain/gridconf.hpp>
 
 class GridClientConfiguration;
-class GridUuid;
+class GridClientUuid;
 
 /**
  * Factory implementation.
@@ -47,7 +47,7 @@ public:
      *      closing (however, no new requests will be accepted). If <tt>false</tt>, client will be
      *      closed immediately and all ongoing requests will be failed.
      */
-    static void stop(const GridUuid& clientId, bool wait = true);
+    static void stop(const GridClientUuid& clientId, bool wait = true);
 };
 
 #endif

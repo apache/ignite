@@ -102,13 +102,20 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
     public void testAffinityProcessor() throws Exception {
         Random rnd = new Random();
 
-        GridKernal grid1 = (GridKernal)grid(rnd.nextInt(NODES_CNT)); // With cache.
+        final GridKernal grid1 = (GridKernal)grid(rnd.nextInt(NODES_CNT)); // With cache.
         GridKernal grid2 = (GridKernal)grid(NODES_CNT + rnd.nextInt(NODES_CNT)); // Without cache.
 
         assertEquals(NODES_CNT * 2, grid1.nodes().size());
         assertEquals(NODES_CNT * 2, grid2.nodes().size());
 
-        assertNull(grid1.cache(CACHE_NAME));
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                grid1.cache(CACHE_NAME);
+
+                return null;
+            }
+        }, IllegalArgumentException.class, null);
+
         assertNotNull(grid2.cache(CACHE_NAME));
 
         GridAffinityProcessor affPrc1 = grid1.context().affinity();

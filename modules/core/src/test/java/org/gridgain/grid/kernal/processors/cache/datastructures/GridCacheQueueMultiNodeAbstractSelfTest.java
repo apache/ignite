@@ -46,7 +46,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     private static final int RETRIES = 20;
 
     /** */
-    private static final int QUEUE_CAPACITY = 100000;
+    protected static final int QUEUE_CAPACITY = 100000;
 
     /** */
     private static CountDownLatch lthTake = new CountDownLatch(1);
@@ -343,6 +343,56 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    // TODO: GG-4807 Uncomment when fix
+    public void _testIterator() throws Exception {
+        final String queueName = UUID.randomUUID().toString();
+
+        info("Queue name: " + queueName);
+
+        GridCacheQueue<Integer> queue = grid(0).cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY, false, true);
+
+        assertTrue(queue.isEmpty());
+
+        grid(0).compute().call(new AddAllJob(queueName, RETRIES));
+
+        assertEquals(GRID_CNT * RETRIES, queue.size());
+
+        Collection<GridNode> nodes = grid(0).nodes();
+
+        for (GridNode node : nodes) {
+            Collection<Integer> queueElements = grid(0).forNode(node).compute().call(new GridCallable<Collection<Integer>>() {
+                @GridInstanceResource
+                private Grid grid;
+
+                /** {@inheritDoc} */
+                @Override public Collection<Integer> call() throws Exception {
+                    Collection<Integer> values = new ArrayList<>();
+
+                    grid.log().info("Running job [node=" + grid.localNode().id() + ", job=" + this + "]");
+
+                    GridCacheQueue<Integer> locQueue = grid.cache(null).dataStructures().queue(queueName,
+                        QUEUE_CAPACITY, false, true);
+
+                    grid.log().info("Queue size " + locQueue.size());
+
+                    for (Integer element : locQueue)
+                        values.add(element);
+
+                    grid.log().info("Returning: " + values);
+
+                    return values;
+                }
+            }).get();
+
+            assertTrue(F.eqOrdered(queue, queueElements));
+        }
+
+        grid(0).cache(null).dataStructures().removeQueue(queueName);
+    }
+
+    /**
      * @param q Queue.
      * @param v Value.
      */
@@ -367,7 +417,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     /**
      * Test job putting data to queue.
      */
-    protected class PutJob implements GridCallable<Integer> {
+    protected static class PutJob implements GridCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource
@@ -414,7 +464,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     /**
      * Test job putting data to queue.
      */
-    protected class AddAllJob implements GridCallable<Integer> {
+    protected static class AddAllJob implements GridCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource
@@ -465,7 +515,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     /**
      * Test job putting data to queue.
      */
-    protected class GetJob implements GridCallable<Integer> {
+    protected static class GetJob implements GridCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource
@@ -522,7 +572,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     /**
      * Test job putting and taking data to/from queue.
      */
-    protected class PutTakeJob implements GridCallable<Integer> {
+    protected static class PutTakeJob implements GridCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource
@@ -576,7 +626,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     /**
      * Test job taking data from queue.
      */
-    protected class TakeJob implements GridCallable<Boolean> {
+    protected static class TakeJob implements GridCallable<Boolean> {
         /** */
         @GridInstanceResource
         private Grid grid;
@@ -624,7 +674,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     /**
      * Job removing queue.
      */
-    protected class RemoveQueueJob implements GridCallable<Boolean> {
+    protected static class RemoveQueueJob implements GridCallable<Boolean> {
         /** */
         @GridInstanceResource
         private Grid grid;
