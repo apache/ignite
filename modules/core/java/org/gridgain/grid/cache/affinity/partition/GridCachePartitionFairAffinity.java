@@ -50,8 +50,8 @@ public class GridCachePartitionFairAffinity {
     public List<GridNode>[] assignPartitions(List<GridNode>[] prevAssignment,
         List<GridNode> topSnapshot, GridDiscoveryEvent evt) {
 
-        if (prevAssignment != null)
-            U.debug(log, "Assigning partitions: " + Arrays.asList(prevAssignment) + ", topSnapshot=" + topSnapshot);
+//        if (prevAssignment != null)
+//            U.debug(log, "Assigning partitions: " + Arrays.asList(prevAssignment) + ", topSnapshot=" + topSnapshot);
 
         if (topSnapshot.size() == 1) {
             GridNode primary = F.first(topSnapshot);
@@ -76,7 +76,7 @@ public class GridCachePartitionFairAffinity {
         FullAssignmentMap fullMap = new FullAssignmentMap(tiers, assignment, topSnapshot);
 
         for (int tier = 0; tier < tiers; tier++) {
-            U.debug(log, "Assigning tier: " + tier);
+//            U.debug(log, "Assigning tier: " + tier);
 
             // Check if this is a new tier and add pending partitions.
             Queue<Integer> pending = pendingParts.get(tier);
@@ -95,19 +95,19 @@ public class GridCachePartitionFairAffinity {
                 }
             }
 
-            U.debug(log, "Assigning pending partitions for tier [tier=" + tier + ", pending=" + pendingParts + ']');
+//            U.debug(log, "Assigning pending partitions for tier [tier=" + tier + ", pending=" + pendingParts + ']');
 
             // Assign pending partitions, if any.
             assignPending(tier, pendingParts, fullMap, topSnapshot);
 
-            U.debug(log, "Balancing parititions: " + Arrays.asList(fullMap.assignments) +
-                ", tier0=" + fullMap.tierMapping(0) + ", tier1=" + fullMap.tierMapping(1));
+//            U.debug(log, "Balancing parititions: " + Arrays.asList(fullMap.assignments) +
+//                ", tier0=" + fullMap.tierMapping(0) + ", tier1=" + fullMap.tierMapping(1));
 
             // Balance assignments.
             balance(tier, pendingParts, fullMap, topSnapshot);
         }
 
-        U.debug(log, ">>>>> Assigned partitions: " + Arrays.asList(fullMap.assignments));
+//        U.debug(log, ">>>>> Assigned partitions: " + Arrays.asList(fullMap.assignments));
 
         return fullMap.assignments;
     }
@@ -285,15 +285,15 @@ public class GridCachePartitionFairAffinity {
             boolean retry = false;
 
             for (PartitionSet overloaded : overloadedNodes.assignments()) {
-                U.debug(log, "Stealing partitions from overloaded set: " + overloaded);
+//                U.debug(log, "Stealing partitions from overloaded set: " + overloaded);
 
                 for (Integer part : overloaded.partitions()) {
-                    U.debug(log, "Trying to move partition: " + part);
+//                    U.debug(log, "Trying to move partition: " + part);
 
                     boolean assigned = false;
 
                     for (PartitionSet underloaded : underloadedNodes.assignments()) {
-                        U.debug(log, "Trying to move partition to underloaded set: " + underloaded);
+//                        U.debug(log, "Trying to move partition to underloaded set: " + underloaded);
 
                         if (fullMap.assign(part, tier, underloaded.node(), false, pendingParts)) {
                             // Size of partition sets has changed.
@@ -314,13 +314,13 @@ public class GridCachePartitionFairAffinity {
                             break;
                         }
                         else {
-                            U.debug(log, "Failed to assign: " + part);
+//                            U.debug(log, "Failed to assign: " + part);
                         }
                     }
 
                     if (!assigned) {
                         for (PartitionSet underloaded : underloadedNodes.assignments()) {
-                            U.debug(log, "Trying to forcibly move partition to underloaded set: " + underloaded);
+//                            U.debug(log, "Trying to forcibly move partition to underloaded set: " + underloaded);
 
                             if (fullMap.assign(part, tier, underloaded.node(), true, pendingParts)) {
                                 // Size of partition sets has changed.
@@ -339,7 +339,7 @@ public class GridCachePartitionFairAffinity {
                                 break;
                             }
                             else {
-                                U.debug(log, "Failed to assign: " + part);
+//                                U.debug(log, "Failed to assign: " + part);
                             }
                         }
                     }
@@ -580,8 +580,8 @@ public class GridCachePartitionFairAffinity {
         }
 
         boolean assign(int part, int tier, GridNode node, boolean force, Map<Integer, Queue<Integer>> pendingParts) {
-            U.debug(log, "Assigning partition to node [part=" + part + ", tier=" + tier + ", nodeId=" + node.id() +
-                ", force=" + force + ", pending=" + pendingParts + ']');
+//            U.debug(log, "Assigning partition to node [part=" + part + ", tier=" + tier + ", nodeId=" + node.id() +
+//                ", force=" + force + ", pending=" + pendingParts + ']');
 
             UUID nodeId = node.id();
 
@@ -614,24 +614,24 @@ public class GridCachePartitionFairAffinity {
 
                 // Check previous tiers first.
                 for (int t = 0; t < tier; t++) {
-                    U.debug(log, "Check1: " + t);
+//                    U.debug(log, "Check1: " + t);
 
                     if (tierMaps[t].get(nodeId).contains(part)) {
-                        U.debug(log, "Cannot assign partition to node since partition is present on tier [tier=" + t
-                            + ']');
+//                        U.debug(log, "Cannot assign partition to node since partition is present on tier [tier=" + t
+//                            + ']');
 
                         return false;
                     }
                 }
 
-                U.debug(log, "tierMaps.length=" + tierMaps.length);
+//                U.debug(log, "tierMaps.length=" + tierMaps.length);
 
                 // Partition is on some lower tier, switch it.
                 for (int t = tier + 1; t < tierMaps.length; t++) {
-                    U.debug(log, "Check2: " + t + ", " + tierMaps[t].get(nodeId) + ", nodeId=" + nodeId);
+//                    U.debug(log, "Check2: " + t + ", " + tierMaps[t].get(nodeId) + ", nodeId=" + nodeId);
 
                     if (tierMaps[t].get(nodeId).contains(part)) {
-                        U.debug(log, "Contains!");
+//                        U.debug(log, "Contains!");
 
                         GridNode oldNode = assignments[part].get(tier);
 
@@ -656,13 +656,13 @@ public class GridCachePartitionFairAffinity {
 
                         pending.add(part);
 
-                        U.debug(log, "Added partition to pending set: " + pending + ", t=" + t +
-                            ", pending=" + pending);
+//                        U.debug(log, "Added partition to pending set: " + pending + ", t=" + t +
+//                            ", pending=" + pending);
 
                         return true;
                     }
                     else {
-                        U.debug(log, "Does not contain part: " + part);
+//                        U.debug(log, "Does not contain part: " + part);
                     }
                 }
 
