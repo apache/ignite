@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi.deployment.uri;
 
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.spi.*;
 import java.util.*;
@@ -37,7 +38,8 @@ public class GridUriDeploymentMultiScannersSelfTest extends GridUriDeploymentAbs
         uriList.add(GridTestProperties.getProperty("deploy.uri.http"));
 
         // One real URI.
-        uriList.add(GridTestProperties.getProperty("ant.urideployment.gar.uri"));
+        uriList.add(GridTestProperties.getProperty("ant.urideployment.gar.uri").
+            replace("EXTDATA", U.resolveGridGainPath("modules/extdata").getAbsolutePath()));
 
         return uriList;
     }

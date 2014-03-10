@@ -46,7 +46,8 @@ public class GridFileDeploymentUndeploySelfTest extends GridSpiAbstractTest<Grid
      * @throws Exception If failed.
      */
     public void testUndeployGarFile() throws Exception {
-        String garFilePath = GridTestProperties.getProperty("ant.urideployment.gar.file");
+        String garFilePath =
+            U.resolveGridGainPath(GridTestProperties.getProperty("ant.urideployment.gar.file")).getPath();
 
         File garFile = new File(garFilePath);
 

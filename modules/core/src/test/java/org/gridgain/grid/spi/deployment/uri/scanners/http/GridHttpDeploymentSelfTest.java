@@ -4,6 +4,7 @@ import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.*;
 import org.eclipse.jetty.util.resource.*;
 import org.gridgain.grid.spi.deployment.uri.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.spi.*;
 
@@ -39,7 +40,8 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
         };
 
         hnd.setDirectoriesListed(true);
-        hnd.setResourceBase(GridTestProperties.getProperty("ant.urideployment.gar.path"));
+        hnd.setResourceBase(
+            U.resolveGridGainPath(GridTestProperties.getProperty("ant.urideployment.gar.path")).getPath());
 
         srv.setHandler(hnd);
 

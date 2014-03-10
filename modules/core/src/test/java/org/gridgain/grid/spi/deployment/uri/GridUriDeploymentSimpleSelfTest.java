@@ -12,6 +12,7 @@ package org.gridgain.grid.spi.deployment.uri;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.spi.deployment.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.spi.*;
 
@@ -29,7 +30,8 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
     @GridSpiTestConfig
     public List<String> getUriList() {
         // No real gar file is required. Add one just to avoid failure because of missed default directory.
-        return Collections.singletonList(GridTestProperties.getProperty("ant.urideployment.gar.uri"));
+        return Collections.singletonList(GridTestProperties.getProperty("ant.urideployment.gar.uri").
+            replace("EXTDATA", U.resolveGridGainPath("modules/extdata").getAbsolutePath()));
     }
 
     /**

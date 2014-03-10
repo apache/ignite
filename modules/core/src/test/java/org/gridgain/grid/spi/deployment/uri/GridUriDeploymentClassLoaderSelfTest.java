@@ -10,6 +10,7 @@
 package org.gridgain.grid.spi.deployment.uri;
 
 import org.gridgain.grid.spi.deployment.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.spi.*;
 
@@ -60,6 +61,7 @@ public class GridUriDeploymentClassLoaderSelfTest extends GridUriDeploymentAbstr
      */
     @GridSpiTestConfig
     public List<String> getUriList() {
-        return Collections.singletonList(GridTestProperties.getProperty("ant.urideployment.gar.uri"));
+        return Collections.singletonList(GridTestProperties.getProperty("ant.urideployment.gar.uri").
+            replace("EXTDATA", U.resolveGridGainPath("modules/extdata").getAbsolutePath()));
     }
 }
