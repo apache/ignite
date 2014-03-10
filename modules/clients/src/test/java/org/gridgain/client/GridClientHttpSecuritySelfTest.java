@@ -16,7 +16,7 @@ import org.gridgain.grid.*;
  */
 public class GridClientHttpSecuritySelfTest extends GridClientAbstractSecuritySelfTest {
     /** Path to jetty config configured with SSL. */
-    private static final String REST_JETTY_CFG = "modules/tests/config/jetty/rest-jetty.xml";
+    private static final String REST_JETTY_CFG = "modules/clients/src/test/resources/jetty/rest-jetty.xml";
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {

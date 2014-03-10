@@ -27,7 +27,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
  */
 public class GridClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     /** Path to jetty config configured with SSL. */
-    private static final String REST_JETTY_CFG = "modules/tests/config/jetty/rest-jetty.xml";
+    private static final String REST_JETTY_CFG = "modules/clients/src/test/resources/jetty/rest-jetty.xml";
 
     /** IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);

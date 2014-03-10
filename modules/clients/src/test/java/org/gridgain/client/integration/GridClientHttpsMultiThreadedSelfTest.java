@@ -24,7 +24,7 @@ import javax.net.ssl.*;
  */
 public class GridClientHttpsMultiThreadedSelfTest extends GridClientAbstractMultiThreadedSelfTest {
     /** Path to jetty config configured with SSL. */
-    private static final String REST_JETTY_SSL_CFG = "modules/tests/config/jetty/rest-jetty-ssl.xml";
+    private static final String REST_JETTY_SSL_CFG = "modules/clients/src/test/resources/jetty/rest-jetty-ssl.xml";
 
     /** */
     private static final int REST_JETTY_SSL_PORT = 11443;

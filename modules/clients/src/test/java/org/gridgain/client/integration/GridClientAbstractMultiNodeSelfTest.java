@@ -70,10 +70,10 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
     static final int TOP_REFRESH_FREQ = 2500;
 
     /** Path to jetty config. */
-    public static final String REST_JETTY_CFG = "modules/tests/config/jetty/rest-jetty.xml";
+    public static final String REST_JETTY_CFG = "modules/clients/src/test/resources/jetty/rest-jetty.xml";
 
     /** Path to jetty config with SSl enabled. */
-    public static final String REST_JETTY_SSL_CFG = "modules/tests/config/jetty/rest-jetty-ssl.xml";
+    public static final String REST_JETTY_SSL_CFG = "modules/clients/src/test/resources/jetty/rest-jetty-ssl.xml";
 
     /** Host. */
     public static final String HOST = "127.0.0.1";

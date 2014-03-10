@@ -25,6 +25,7 @@ import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -80,6 +81,10 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
 
     /** Base for tcp rest ports. */
     public static final int REST_TCP_PORT_BASE = 12345;
+
+    static {
+        System.setProperty("CLIENTS_MODULE_PATH", U.resolveGridGainPath("modules/clients").getAbsolutePath());
+    }
 
     /** Client instance for each test. */
     private GridClient client;
