@@ -8172,14 +8172,53 @@ public abstract class GridUtils {
 
     /**
      * Resolves work directory.
-     * Method does not throw exception if gridgain home is {@code null}.
      *
      * @param path Path to resolve.
+     * @param tmpSubDir Subdirectory in temporary folder. It's used when GridGain home is null.
+     * @param failOnEmptyGridGainHome {@code True} if exception should be thrown on empty GridGain home,
+     * {@code false} otherwise.
+     * @param deleteIfExist Flag indicating whether to delete the specify directory or not.
      * @return Resolved work directory.
+     * @throws GridException If failed.
      */
-    public static File resolveWorkDirectory(String path) {
-        File dir = new File(path);
+    public static File resolveWorkDirectory(String path, String tmpSubDir, boolean failOnEmptyGridGainHome,
+        boolean deleteIfExist) throws GridException {
+        String ggHome = getGridGainHome();
 
-        return dir.isAbsolute() ? dir : new File(U.getGridGainHome(), dir.getPath());
+        File dir;
+
+        if (F.isEmpty(ggHome)) {
+            if (failOnEmptyGridGainHome)
+                throw new GridException("Failed to create directory, property " + GG_HOME + " is null.");
+
+            String tmpDirPath = System.getProperty("java.io.tmpdir");
+
+            if (tmpDirPath == null)
+                throw new GridException("System property 'java.io.tmpdir' is null.");
+
+            dir = tmpSubDir == null ? new File(tmpDirPath) : new File(tmpDirPath, tmpSubDir);
+        }
+        else {
+            dir = new File(path);
+
+            if (!dir.isAbsolute())
+                dir = new File(ggHome, dir.getPath());
+        }
+
+        if (deleteIfExist && dir.exists()) {
+            if (!U.delete(dir))
+                throw new GridException("Failed to delete directory: " + dir);
+        }
+
+        if (!mkdirs(dir))
+            throw new GridException("Directory does not exist and cannot be created: " + dir);
+
+        if (!dir.canRead())
+            throw new GridException("Cannot read from directory: " + dir);
+
+        if (!dir.canWrite())
+            throw new GridException("Cannot write to directory: " + dir);
+
+        return dir;
     }
 }

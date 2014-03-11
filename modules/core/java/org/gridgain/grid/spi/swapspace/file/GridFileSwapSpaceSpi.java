@@ -261,23 +261,14 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
         registerMBean(gridName, this, GridFileSwapSpaceSpiMBean.class);
 
-        dir = U.resolveWorkDirectory(baseDir + File.separator + gridName + File.separator + locNodeId);
+        String path = baseDir + File.separator + gridName + File.separator + locNodeId;
 
-        if (dir.exists()) {
-            U.warn(log, "Swap directory already exists (will delete): " + dir.getAbsolutePath());
-
-            if (!U.delete(dir))
-                throw new GridSpiException("Failed to delete swap directory: " + dir.getAbsolutePath());
+        try {
+            dir = U.resolveWorkDirectory(path, null, false, true);
         }
-
-        if (!U.mkdirs(dir))
-            throw new GridSpiException("Failed to create swap directory: " + dir.getAbsolutePath());
-
-        if (!dir.canRead())
-            throw new GridSpiException("Can't read from swap directory: " + dir.getAbsolutePath());
-
-        if (!dir.canWrite())
-            throw new GridSpiException("Can't write to swap directory: " + dir.getAbsolutePath());
+        catch (GridException e) {
+            throw new GridSpiException(e);
+        }
 
         if (log.isDebugEnabled())
             log.debug(startInfo());

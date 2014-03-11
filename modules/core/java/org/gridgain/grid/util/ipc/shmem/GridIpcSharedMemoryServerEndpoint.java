@@ -153,14 +153,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
 
         tokDirPath = tokDirPath + '/' + locNodeId.toString() + '-' + GridIpcSharedMemoryUtils.pid();
 
-        tokDir = U.resolveWorkDirectory(tokDirPath);
-
-        if (!U.mkdirs(tokDir))
-            throw new GridGgfsIpcEndpointBindException("Failed to create token directory: " + tokDir.getAbsolutePath());
-
-        if (!tokDir.canRead() || !tokDir.canWrite())
-            throw new GridGgfsIpcEndpointBindException("Cannot read from or write to token directory: " +
-                tokDir.getAbsolutePath());
+        tokDir = U.resolveWorkDirectory(tokDirPath, null, true, false);
 
         if (port <= 0 || port >= 0xffff)
             throw new GridGgfsIpcEndpointBindException("Port value is illegal: " + port);

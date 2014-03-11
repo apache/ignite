@@ -265,32 +265,23 @@ public class GridSharedFsCheckpointSpi extends GridSpiAdapter implements GridChe
             if (new File(curDirPath).exists())
                 folder = new File(curDirPath);
             else {
-                if (!F.isEmpty(getGridGainHome())) {
-                    // Create relative by default.
-                    folder = U.resolveWorkDirectory(curDirPath);
-
-                    if (!folder.mkdirs() && !folder.exists()) {
-                        // Remove failed directory.
-                        dirPaths.poll();
-
-                        // Select next shared directory if exists, otherwise throw exception.
-                        if (!dirPaths.isEmpty())
-                            continue;
-                        else
-                            throw new GridSpiException("Checkpoint directory does not exist and cannot be created : " +
-                                folder);
-                    }
+                try {
+                    folder = U.resolveWorkDirectory(curDirPath, DFLT_TMP_DIR, false, false);
                 }
-                else {
-                    String tmpDirPath = System.getProperty("java.io.tmpdir");
+                catch (GridException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to resolve directory [path=" + curDirPath +
+                            ", exception=" + e.getMessage() + ']');
 
-                    if (tmpDirPath == null)
-                        throw new GridSpiException("System property 'java.io.tmpdir' is invalid.");
+                    // Remove failed directory.
+                    dirPaths.poll();
 
-                    folder = new File(tmpDirPath, DFLT_TMP_DIR);
-
-                    if (!folder.mkdirs() && !folder.exists())
-                        throw new GridSpiException("Failed to create checkpoint directory: " + folder);
+                    // Select next shared directory if exists, otherwise throw exception.
+                    if (!dirPaths.isEmpty())
+                        continue;
+                    else
+                        throw new GridSpiException("Failed to resolve directory [path=" + curDirPath +
+                            ", exception=" + e.getMessage() + ']');
                 }
 
                 if (log.isDebugEnabled())
