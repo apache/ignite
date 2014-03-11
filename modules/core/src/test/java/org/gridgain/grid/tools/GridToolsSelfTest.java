@@ -33,7 +33,8 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
         String baseDirName = tmpDirName + File.separator + System.currentTimeMillis() + "_0";
         String metaDirName = baseDirName + File.separator + "META-INF";
         String garFileName = baseDirName + ".gar";
-        String garDescDirName = GridTestProperties.getProperty("ant.gar.descriptor.dir")
+        String garDescDirName =
+            U.resolveGridGainPath(GridTestProperties.getProperty("ant.gar.descriptor.dir")).getAbsolutePath()
             + File.separator + "gridgain.xml";
 
         // Make base and META-INF dir.
@@ -119,7 +120,8 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
         String baseDirName = tmpDirName + File.separator + System.currentTimeMillis() + "_1";
         String metaDirName = baseDirName + File.separator + "META-INF";
         String garFileName = baseDirName + ".gar";
-        String garDescrDirName = GridTestProperties.getProperty("ant.gar.descriptor.dir");
+        String garDescrDirName =
+            U.resolveGridGainPath(GridTestProperties.getProperty("ant.gar.descriptor.dir")).getAbsolutePath();
 
         // Make base and META-INF dir.
         boolean mkdir = new File(baseDirName).mkdirs();
@@ -164,7 +166,8 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
         String baseDirName = tmpDirName + File.separator + System.currentTimeMillis() + "_2";
         String metaDirName = baseDirName + File.separator + "META-INF";
         String garFileName = baseDirName + ".gar";
-        String garDescrDirName = GridTestProperties.getProperty("ant.gar.descriptor.dir")
+        String garDescrDirName =
+            U.resolveGridGainPath(GridTestProperties.getProperty("ant.gar.descriptor.dir")).getAbsolutePath()
             + File.separator + "gridgain.xml";
 
         // Make base and META-INF dir.
