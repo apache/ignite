@@ -55,7 +55,7 @@ target_triplet = @target@
 bin_PROGRAMS = gridgain-data-example$(EXEEXT) \
 	gridgain-compute-example$(EXEEXT)
 subdir = .
-DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
+DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
 	$(top_srcdir)/configure config.guess config.sub depcomp \
 	install-sh missing
@@ -210,7 +210,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CXXFLAGS = -Wall -std=gnu++0x
+AM_CXXFLAGS = -Wall -std=c++11
 gridgain_data_example_SOURCES = src/gridclientapiexample.cpp src/gridclientdataexample.cpp
 gridgain_data_example_LDADD = -L/usr/local/lib -lgridgain-client
 gridgain_compute_example_SOURCES = src/gridclientapiexample.cpp src/gridclientcomputeexample.cpp

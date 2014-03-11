@@ -49,7 +49,7 @@ public:
         authReq.setClientId(clientId);
         authReq.credentials(creds);
         authReq.setRequestId(1);
-        authReq.setDestinationId(GridUuid::randomUuid()); // Random unexistent ID.
+        authReq.setDestinationId(GridClientUuid::randomUuid()); // Random unexistent ID.
 
         GridClientProtobufMarshaller::wrap(authReq, protoMsg);
 
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(testAbsentDestinationId) {
     GridClientTestTcpConnection conn;
 
     GridClientConfiguration config = clientConfig();
-    std::vector<GridSocketAddress> routers = config.routers();
+    std::vector<GridClientSocketAddress> routers = config.routers();
     GridClientProtocolConfiguration protoCfg = config.protocolConfiguration();
 
     conn.connect(routers[0].host(), boost::lexical_cast<int>(routers[0].port()));

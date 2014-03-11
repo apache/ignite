@@ -25,11 +25,11 @@ static int HTTP_PORT = 8081;
 GridClientConfiguration tcpClientConfiguration() {
     GridClientConfiguration clientConfig;
 
-    vector<GridSocketAddress> routers;
+    vector<GridClientSocketAddress> routers;
 
     cout << "Connecting to router " << SERVER_ADDRESS << ", port " << TCP_PORT << endl;
 
-    routers.push_back(GridSocketAddress(SERVER_ADDRESS, TCP_PORT));
+    routers.push_back(GridClientSocketAddress(SERVER_ADDRESS, TCP_PORT));
 
     clientConfig.routers(routers);
 
@@ -45,11 +45,11 @@ GridClientConfiguration tcpClientConfiguration() {
 GridClientConfiguration httpClientConfiguration() {
     GridClientConfiguration clientConfig;
 
-    vector<GridSocketAddress> routers;
+    vector<GridClientSocketAddress> routers;
 
     cout << "Connecting to router " << SERVER_ADDRESS << ", port " << HTTP_PORT << endl;
 
-    routers.push_back(GridSocketAddress(SERVER_ADDRESS, HTTP_PORT));
+    routers.push_back(GridClientSocketAddress(SERVER_ADDRESS, HTTP_PORT));
 
     clientConfig.routers(routers);
 
@@ -84,7 +84,7 @@ int main() {
     }
 
     // Random node ID.
-    GridUuid randNodeId = nodes[0]->getNodeId();
+    GridClientUuid randNodeId = nodes[0]->getNodeId();
 
     // Get client projection of grid partitioned cache.
     TGridClientDataPtr rmtCache = client->data(CACHE_NAME);
@@ -103,7 +103,7 @@ int main() {
 
         rmtCache->put(key, v);
 
-        GridUuid nodeId = rmtCache->affinity(key);
+        GridClientUuid nodeId = rmtCache->affinity(key);
 
         cout << ">>> Storing key " << key << " on node " << nodeId << endl;
 

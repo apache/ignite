@@ -53,7 +53,7 @@ GridClientImpl::GridClientImpl(const GridClientConfiguration& cfg,
  *
  * @return Generated client id.
  */
-GridUuid GridClientImpl::id() const {
+GridClientUuid GridClientImpl::id() const {
     return getSharedData()->clientUuid();
 }
 
@@ -199,7 +199,7 @@ void GridClientImpl::onNodeIoFailed(const GridClientNode& n) {
 
 void GridClientImpl::refreshTopology() {
     const GridClientConfiguration& clientCfg = sharedData->clientConfiguration();
-    TGridSocketAddressList addrs = clientCfg.routers().size() > 0
+    TGridClientSocketAddressList addrs = clientCfg.routers().size() > 0
             ? clientCfg.routers()
             : clientCfg.servers();
 

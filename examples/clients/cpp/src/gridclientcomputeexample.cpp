@@ -32,22 +32,6 @@
 using namespace std;
 
 /**
- * Predicate for filtering nodes by UUIDs.
- */
-class GridUuidNodePredicate : public GridClientPredicate<GridClientNode> {
-public:
-    GridUuidNodePredicate(const GridUuid& u) : uu(u) {
-    }
-
-    bool apply(const GridClientNode& node) const {
-        return node.getNodeId() == uu;
-    }
-
-private:
-    GridUuid uu;
-};
-
-/**
  * Runs a Compute Grid client example.
  *
  * @param client A client reference.
@@ -68,7 +52,7 @@ void clientComputeExample(TGridClientPtr& client) {
 
     cout << "Current grid topology: " << nodes.size() << endl;
 
-    GridUuid randNodeId = nodes[0]->getNodeId();
+    GridClientUuid randNodeId = nodes[0]->getNodeId();
 
     cout << "RandNodeId is " << randNodeId.uuid() << endl;
 
@@ -92,11 +76,8 @@ void clientComputeExample(TGridClientPtr& client) {
     cout << ">>> Collection execution : there are totally " << rslt.toString() <<
         " test entries on the grid" << endl;
 
-    GridUuidNodePredicate* uuidPredicate = new GridUuidNodePredicate(randNodeId);
-
-    TGridClientNodePredicatePtr predPtr(uuidPredicate);
-
-    prj = clientCompute->projection(predPtr);
+    std::function<bool (const GridClientNode&)> filter = [&randNodeId](const GridClientNode& node) { return node.getNodeId() == randNodeId; };
+    prj = clientCompute->projection(filter);
 
     rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask");
 
@@ -107,7 +88,8 @@ void clientComputeExample(TGridClientPtr& client) {
     // custom load balancers as well.
     TGridClientLoadBalancerPtr balancer(new GridClientRandomBalancer());
 
-    prj = clientCompute->projection(predPtr, balancer);
+    std::function<bool (const GridClientNode&)> filter1 = [&randNodeId](const GridClientNode& node) { return node.getNodeId() == randNodeId; };
+    prj = clientCompute->projection(filter1, balancer);
 
     rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask");
 
@@ -129,7 +111,7 @@ void clientComputeExample(TGridClientPtr& client) {
     cout << ">>> Execute async : there are totally " << futVal->get().toString() <<
        " test entries on the grid" << endl;
 
-    vector<GridUuid> uuids;
+    vector<GridClientUuid> uuids;
 
     uuids.push_back(randNodeId);
 
@@ -147,12 +129,9 @@ void clientComputeExample(TGridClientPtr& client) {
     cout << endl;
 
     // Nodes may also be filtered with predicate. Here
-    // we create projection which only contains local node.
-    GridUuidNodePredicate* uuidNodePredicate = new GridUuidNodePredicate(randNodeId);
-
-    TGridClientNodePredicatePtr predFullPtr(uuidNodePredicate);
-
-    nodes = prj->nodes(predFullPtr);
+    // we create a projection containing only local node.
+    std::function < bool(const GridClientNode&) > filter2 = [&randNodeId](const GridClientNode& node) { return node.getNodeId() == randNodeId; };
+    nodes = prj->nodes(filter2);
 
     cout << ">>> Nodes filtered with predicate : ";
 
@@ -177,7 +156,7 @@ void clientComputeExample(TGridClientPtr& client) {
     // Nodes may also be refreshed by IP address.
     string clntAddr = "127.0.0.1";
 
-    vector<GridSocketAddress> addrs = clntNode->availableAddresses(TCP);
+    vector<GridClientSocketAddress> addrs = clntNode->availableAddresses(TCP);
 
     if (addrs.size() > 0)
         clntAddr = addrs[0].host();
@@ -272,9 +251,9 @@ int main () {
 
         cout << "The client will try to connect to the following addresses:" << endl;
 
-        vector<GridSocketAddress> srvrs = cfg.servers();
+        vector<GridClientSocketAddress> srvrs = cfg.servers();
 
-        for (vector<GridSocketAddress>::iterator i = srvrs.begin(); i < srvrs.end(); i++)
+        for (vector<GridClientSocketAddress>::iterator i = srvrs.begin(); i < srvrs.end(); i++)
             cout << i->host() << ":" << i->port() << endl;
 
         TGridClientPtr client = GridClientFactory::start(cfg);

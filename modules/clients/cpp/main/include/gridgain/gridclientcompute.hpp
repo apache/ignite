@@ -73,6 +73,20 @@ public:
     virtual TGridClientComputePtr projection(TGridClientNodePredicatePtr filter) = 0;
 
     /**
+     * Creates a projection that will communicate only with nodes that are accepted by the given filter.
+     * <p>
+     * If this projection is dynamic projection, then filter will be applied to the most relevant
+     * topology snapshot every time a node is selected. If this projection is a static projection,
+     * then resulting projection will only be restricted to nodes that were in this projection and were
+     * accepted by the filter. If any of the checks fails an exception will be thrown.
+     *
+     * @param filter Filter that will select nodes for projection.
+     * @return Resulting projection (static or dynamic, depending in parent projection type).
+     * @throws GridClientException If resulting projection is empty.
+     */
+    virtual TGridClientComputePtr projection(std::function<bool (const GridClientNode&)> & filter) = 0;
+
+    /**
      * Creates a projection that will communicate only with nodes that are accepted by the given filter. The
      * balancer will override the default balancer specified in the configuration.
      * <p>
@@ -87,7 +101,24 @@ public:
      * @throws GridClientException If resulting projection is empty.
      */
     virtual TGridClientComputePtr projection(TGridClientNodePredicatePtr filter,
-            TGridClientLoadBalancerPtr balancer) = 0;
+        TGridClientLoadBalancerPtr balancer) = 0;
+
+    /**
+     * Creates a projection that will communicate only with nodes that are accepted by the given filter. The
+     * balancer will override the default balancer specified in the configuration.
+     * <p>
+     * If this projection is dynamic projection, then filter will be applied to the most relevant
+     * topology snapshot every time a node to communicate is selected. If this projection is a static projection,
+     * then resulting projection will only be restricted to nodes that were in this projection and were
+     * accepted by the filter. If any of the checks fails an exception will be thrown.
+     *
+     * @param filter Filter that will select nodes for projection.
+     * @param balancer Balancer that will select balanced node in resulting projection.
+     * @return Resulting projection (static or dynamic, depending in parent projection type).
+     * @throws GridClientException If resulting projection is empty.
+     */
+    virtual TGridClientComputePtr projection(std::function<bool (const GridClientNode&)> & filter,
+        TGridClientLoadBalancerPtr balancer) = 0;
 
     /**
      * Creates a projection that will communicate only with specified remote nodes. For any particular call
@@ -171,16 +202,25 @@ public:
      * @param id Node ID.
      * @return Node for given ID or <tt>null</tt> if node with given id was not found.
      */
-    virtual TGridClientNodePtr node(const GridUuid& id) const = 0;
+    virtual TGridClientNodePtr node(const GridClientUuid& id) const = 0;
 
     /**
-     * Gets nodes that passes the filter. If this compute instance is a projection, then only
-     * nodes that passes projection criteria will be passed to the filter.
+     * Gets nodes that pass the filter. If this compute instance is a projection, then only
+     * nodes that pass projection criteria will be passed to the filter.
      *
      * @param filter Node filter.
      * @return Collection of nodes that satisfy provided filter.
      */
     virtual TGridClientNodeList nodes(TGridClientNodePredicatePtr filter) const = 0;
+
+    /**
+     * Gets nodes that pass the filter. If this compute instance is a projection, then only
+     * nodes that pass projection criteria will be passed to the filter.
+     *
+     * @param filter Node filter.
+     * @return Collection of nodes that satisfy provided filter.
+     */
+    virtual TGridClientNodeList nodes(std::function<bool (const GridClientNode&)> & filter) const = 0;
 
     /**
      * Gets all nodes in the projection.
@@ -195,7 +235,7 @@ public:
      * @param ids Node IDs.
      * @return Collection of nodes for provided IDs.
      */
-    virtual TGridClientNodeList nodes(const std::vector<GridUuid>& ids) const = 0;
+    virtual TGridClientNodeList nodes(const std::vector<GridClientUuid>& ids) const = 0;
 
     /**
      * Gets node by its ID.
@@ -208,7 +248,7 @@ public:
      * @throw GridServerUnreachableException If none of the servers can be reached.
      * @throw GridClientClosedException If client was closed manually.
      */
-    virtual TGridClientNodePtr refreshNode(const GridUuid& id, bool includeAttrs, bool includeMetrics) = 0;
+    virtual TGridClientNodePtr refreshNode(const GridClientUuid& id, bool includeAttrs, bool includeMetrics) = 0;
 
     /**
      * Asynchronously gets node by its ID.
@@ -218,7 +258,7 @@ public:
      * @param includeMetrics Whether to include node metrics.
      * @return Future.
      */
-    virtual TGridClientNodeFuturePtr refreshNodeAsync(const GridUuid& id, bool includeAttrs, bool includeMetrics) = 0;
+    virtual TGridClientNodeFuturePtr refreshNodeAsync(const GridClientUuid& id, bool includeAttrs, bool includeMetrics) = 0;
 
     /**
      * Gets node by IP address.

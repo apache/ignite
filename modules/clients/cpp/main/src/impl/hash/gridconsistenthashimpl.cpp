@@ -85,7 +85,7 @@ typename std::map<K, V>::const_iterator inclusiveUpperBound(const std::map<K, V>
     return ub;
 }
 
-NodeInfo GridClientConsistentHashImpl::node(const GridHasheableObject& value, const std::set<NodeInfo>& inc) const {
+NodeInfo GridClientConsistentHashImpl::node(const GridClientHasheableObject& value, const std::set<NodeInfo>& inc) const {
     int32_t hashVal = hash(value); //(matches)
 
     // Point to the nodeId that compares greater than this key.
@@ -100,16 +100,16 @@ NodeInfo GridClientConsistentHashImpl::node(const GridHasheableObject& value, co
             if (inc.count(*iter) != 0)
                 return *iter;
             else if (failed.insert(*iter).second && failed.size() == nodes.size())
-                return NodeInfo(GridUuid(), std::shared_ptr<GridHasheableObject>());
+                return NodeInfo(GridClientUuid(), std::shared_ptr<GridClientHasheableObject>());
         }
 
         itFoundKey++;
     }
 
-    return NodeInfo(GridUuid(), std::shared_ptr<GridHasheableObject>());
+    return NodeInfo(GridClientUuid(), std::shared_ptr<GridClientHasheableObject>());
 }
 
-int32_t GridClientConsistentHashImpl::hash(const GridHasheableObject& key) const {
+int32_t GridClientConsistentHashImpl::hash(const GridClientHasheableObject& key) const {
     int32_t h = key.hashCode();
 
     // Spread bits to hash code.

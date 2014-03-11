@@ -160,7 +160,7 @@ public class GridCacheConfiguration {
     public static final boolean DFLT_SWAP_ENABLED = false;
 
     /** Default value for 'maxConcurrentAsyncOps'. */
-    public static final int DFLT_MAX_CONCURRENT_ASYNC_OPS = 10000;
+    public static final int DFLT_MAX_CONCURRENT_ASYNC_OPS = 500;
 
     /** Default value for 'swapEnabled' flag. */
     public static final boolean DFLT_QUERY_INDEX_ENABLED = false;

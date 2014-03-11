@@ -75,9 +75,6 @@ public abstract class GridGgfsTask<T, R> extends GridComputeTaskAdapter<GridGgfs
 
         GridGgfsImpl ggfs = (GridGgfsImpl)grid.ggfs(args.ggfsName());
 
-        if (ggfs == null)
-            throw new GridException("Failed to get GGFS instance: " + args.ggfsName());
-
         Map<GridComputeJob, GridNode> splitMap = new HashMap<>();
 
         Map<UUID, GridNode> nodes = mapSubgrid(subgrid);

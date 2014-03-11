@@ -20,7 +20,7 @@
 /**
  * Provide the implementation of hash-code for the string object.
  */
-class GridStringHasheableObject : public GridHasheableObject {
+class GridStringHasheableObject : public GridClientHasheableObject {
 public:
     /**
      * Public constructor.
@@ -60,7 +60,7 @@ protected:
 /**
  * Provide the implementation of hash-code for the string object.
  */
-class GridWideStringHasheableObject : public GridHasheableObject {
+class GridWideStringHasheableObject : public GridClientHasheableObject {
 public:
     /**
      * Public constructor.

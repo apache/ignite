@@ -71,10 +71,6 @@ public class GridGgfsJobImpl implements GridComputeJob, GridInternalWrapper<Grid
     @Override public Object execute() throws GridException {
         GridGgfs ggfs = grid.ggfs(ggfsName);
 
-        if (ggfs == null)
-            throw new GridException("Failed to find GGFS with given name on local node [ggfsName=" + ggfsName +
-                ", locNode=" + grid.localNode() + ']');
-
         try (GridGgfsInputStream in = ggfs.open(path)) {
             GridGgfsFileRange split = new GridGgfsFileRange(path, start, len);
 

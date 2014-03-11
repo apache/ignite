@@ -121,7 +121,7 @@ public:
                         break;
 
                     case UUID: { // block of code to avoid compilation error in gcc
-                            value.set(GridUuid("550e8400-e29b-41d4-a716-446655440000"));
+                            value.set(GridClientUuid("550e8400-e29b-41d4-a716-446655440000"));
                             if (unmarshal)
                                 std::cerr << "Unmarshalling UUID is not supported yet";
                         }
@@ -151,8 +151,8 @@ public:
 
                             cmd.sessionToken("Something");
                             cmd.setCacheName("partitioned");
-                            cmd.setClientId(GridUuid("550e8400-e29b-41d4-a716-446655440000"));
-                            cmd.setDestinationId(GridUuid("550e8400-e29b-41d4-a716-446655440000"));
+                            cmd.setClientId(GridClientUuid("550e8400-e29b-41d4-a716-446655440000"));
+                            cmd.setDestinationId(GridClientUuid("550e8400-e29b-41d4-a716-446655440000"));
                             cmd.setKey(42.0f);
                             cmd.setRequestId(42);
                             cmd.setValue(42.0f);
