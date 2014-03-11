@@ -108,18 +108,26 @@ class VisorCacheScanCommand {
             var nid: UUID = null
 
             if (id8Arg.isDefined) {
-                val id8 = id8Arg.get
-                val ns = nodeById8(id8)
+                id8Arg match {
+                    case Some(v) if v.startsWith("@") =>
+                        warn("Can't find node variable with specified name: " + v,
+                            "Type 'nodes' to see available nodes variables."
+                        )
 
-                if (ns.isEmpty)
-                    scold("Unknown 'id8' value: " + id8)
-                else if (ns.size != 1)
-                    scold("'id8' resolves to more than one node (use full 'id' instead): " + id8)
-                else
-                    nid = ns.head.id
+                        return
+                    case Some(id8) =>
+                        val ns = nodeById8(id8)
 
-                if (nid == null)
-                    return
+                        if (ns.isEmpty)
+                            scold("Unknown 'id8' value: " + id8)
+                        else if (ns.size != 1)
+                            scold("'id8' resolves to more than one node (use full 'id' instead): " + id8)
+                        else
+                            nid = ns.head.id
+
+                        if (nid == null)
+                            return
+                }
             }
             else if (idArg.isDefined) {
                 val id = idArg.get
@@ -160,20 +168,28 @@ class VisorCacheScanCommand {
                 }
             }
 
-            var cacheName = ""
+            val cacheName = cacheArg match {
+                case None =>
+                    scold("Cache name is empty.")
 
-            if (cacheArg.isDefined)
-                cacheName = getVariable(cacheArg.get)
-            else {
-                scold("Cache name is empty.")
+                    return
 
-                return
+                case Some(s) if s.startsWith("@") =>
+                    warn("Can't find cache variable with specified name: " + s,
+                        "Type 'cache' to see available cache variables."
+                    )
+
+                    return
+
+                case Some(name) => name
             }
 
             val cachePrj = if (nid != null) grid.forNodeId(nid).forCache(cacheName) else grid.forCache(cacheName)
 
             if (cachePrj.nodes().isEmpty) {
-                scold("Can't find nodes with specified cache: " + cacheName)
+                warn("Can't find nodes with specified cache: " + cacheName,
+                    "Type 'cache' to see available cache names."
+                )
 
                 return
             }
@@ -191,7 +207,13 @@ class VisorCacheScanCommand {
                     .withNoFailover()
                     .execute(classOf[VisorScanCacheTask],
                         new VisorScanCacheTaskArgs(nid, cachePrj.nodes().map(_.id()).toSeq, cacheName, pageSize))
-                    .get
+                    .get match {
+                        case Left(e) =>
+                            error(e)
+
+                            return
+                        case Right(r) => r
+                    }
                 catch {
                     case e: Exception =>
                         error(e)
@@ -304,25 +326,30 @@ import VisorScanCache._
  * Executes SCAN or SQL query and get first page of results.
  */
 @GridInternal
-private class VisorScanCacheTask extends VisorConsoleOneNodeTask[VisorScanCacheTaskArgs, VisorScanCacheResult] {
-    @impl protected def run(g: GridEx, arg: VisorScanCacheTaskArgs): VisorScanCacheResult = {
+private class VisorScanCacheTask extends VisorConsoleOneNodeTask[VisorScanCacheTaskArgs, Either[Exception, VisorScanCacheResult]] {
+    @impl protected def run(g: GridEx, arg: VisorScanCacheTaskArgs): Either[Exception, VisorScanCacheResult] = {
         val nodeLclKey = SCAN_QRY_KEY + "-" + UUID.randomUUID()
 
-        val c = g.cache[Object, Object](arg.cacheName)
+        try {
+            val c = g.cache[Object, Object](arg.cacheName)
 
-        val fut = c.queries().createScanQuery(null)
-            .pageSize(arg.pageSize)
-            .projection(g.forNodeIds(arg.proj))
-            .execute()
+            val fut = c.queries().createScanQuery(null)
+                .pageSize(arg.pageSize)
+                .projection(g.forNodeIds(arg.proj))
+                .execute()
 
 
-        val (rows, next) = fetchRows(fut, null, arg.pageSize)
+            val (rows, next) = fetchRows(fut, null, arg.pageSize)
 
-        g.nodeLocalMap[String, VisorScanStorageValType]().put(nodeLclKey, (fut, next, arg.pageSize, false))
+            g.nodeLocalMap[String, VisorScanStorageValType]().put(nodeLclKey, (fut, next, arg.pageSize, false))
 
-        scheduleRemoval(g, nodeLclKey)
+            scheduleRemoval(g, nodeLclKey)
 
-        new VisorScanCacheResult(g.localNode().id(), nodeLclKey, rows, next != null)
+            Right(new VisorScanCacheResult(g.localNode().id(), nodeLclKey, rows, next != null))
+        }
+        catch {
+            case e: Exception => Left(e)
+        }
     }
 
     private def scheduleRemoval(g: GridEx, id: String) {
