@@ -14,7 +14,7 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.loadtests.util.*;
+import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

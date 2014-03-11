@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.loadtests.util;
+package org.gridgain.testframework;
 
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;

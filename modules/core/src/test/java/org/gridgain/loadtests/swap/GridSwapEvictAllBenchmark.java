@@ -20,6 +20,7 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.spi.swapspace.file.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.loadtests.util.*;
+import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

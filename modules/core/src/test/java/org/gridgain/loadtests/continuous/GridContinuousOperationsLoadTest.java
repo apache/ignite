@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.loadtests.util.GridLoadTestArgs.*;
-import static org.gridgain.loadtests.util.GridLoadTestUtils.*;
+import static org.gridgain.testframework.GridLoadTestUtils.*;
 import static org.gridgain.testframework.GridTestUtils.*;
 
 /**

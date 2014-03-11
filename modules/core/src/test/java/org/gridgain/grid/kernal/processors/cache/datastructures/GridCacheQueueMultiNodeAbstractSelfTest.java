@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
-import org.gridgain.examples.datagrid.store.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -412,6 +411,94 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         // No-op.
+    }
+
+    /**
+     */
+    public static class Person implements Serializable {
+        /** Person ID. */
+        private long id;
+
+        /** First name. */
+        private String firstName;
+
+        /** Last name. */
+        private String lastName;
+
+        /**
+         *
+         */
+        public Person() {
+            // No-op.
+        }
+
+        /**
+         * Constructs person record.
+         *
+         * @param id Person ID.
+         * @param firstName First name.
+         * @param lastName Last name.
+         */
+        public Person(long id, String firstName, String lastName) {
+            this.id = id;
+            this.firstName = firstName;
+            this.lastName = lastName;
+        }
+
+        /**
+         * @return Person ID.
+         */
+        public long getId() {
+            return id;
+        }
+
+        /**
+         * @param id Person ID.
+         */
+        public void setId(long id) {
+            this.id = id;
+        }
+
+        /**
+         * @return First name.
+         */
+        public String getFirstName() {
+            return firstName;
+        }
+
+        /**
+         * @param firstName First name.
+         */
+        public void setFirstName(String firstName) {
+            this.firstName = firstName;
+        }
+
+        /**
+         * @return Last name.
+         */
+        public String getLastName() {
+            return lastName;
+        }
+
+        /**
+         * @param lastName Last name.
+         */
+        public void setLastName(String lastName) {
+            this.lastName = lastName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            StringBuilder sb = new StringBuilder();
+
+            sb.
+                append("Person [id=").append(id).
+                append(", firstName=").append(firstName).
+                append(", lastName=").append(lastName).
+                append(']');
+
+            return sb.toString();
+        }
     }
 
     /**

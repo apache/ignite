@@ -18,6 +18,7 @@ import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.loadtests.util.*;
+import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -26,7 +27,7 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
-import static org.gridgain.loadtests.util.GridLoadTestUtils.*;
+import static org.gridgain.testframework.GridLoadTestUtils.*;
 
 /**
  * By default this benchmarks uses original GridGain configuration

@@ -12,7 +12,7 @@ package org.gridgain.loadtests.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.loadtests.util.*;
+import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

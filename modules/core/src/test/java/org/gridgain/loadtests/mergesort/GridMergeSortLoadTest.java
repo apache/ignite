@@ -12,7 +12,7 @@ package org.gridgain.loadtests.mergesort;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.lang.*;
-import org.gridgain.loadtests.util.*;
+import org.gridgain.testframework.*;
 
 import java.io.*;
 import java.util.*;

@@ -10,10 +10,8 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.commons.io.*;
-import org.gridgain.client.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -89,16 +87,6 @@ public class GridGgfsStreamsSelfTest extends GridCommonAbstractTest {
 
         // Cleanup FS.
         fs.format().get();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        if (NODES_CNT <= 0)
-            return;
-
-        Map openClients = getFieldValue(GridClientFactory.class, "openClients");
-
-        assertTrue("Expects no more started clients.", openClients.isEmpty());
     }
 
     /** {@inheritDoc} */
