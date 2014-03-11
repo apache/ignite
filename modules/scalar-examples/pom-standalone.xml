@@ -262,12 +262,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.mongodb</groupId>
-            <artifactId>mongo-java-driver</artifactId>
-            <version>2.11.1</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.pcollections</groupId>
             <artifactId>pcollections</artifactId>
             <version>2.1.2</version>

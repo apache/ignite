@@ -70,7 +70,6 @@ public class GridLibraryConsistencyCheck {
         "javax.mail.internet.MimeMessage",                                // mail-XXX.jar
         "net.miginfocom.layout.LayoutCallback",                           // miglayout-core-XXX.jar
         "net.miginfocom.swing.MigLayout",                                 // miglayout-swing-XXX.jar
-        "com.mongodb.DBCollection",                                       // mongo-java-driver-XXX.jar
         "io.netty.channel.Channel",                                       // netty-all-XXX.jar
         "com.google.protobuf.ByteString",                                 // protobuf-java-XXX.jar
         "org.slf4j.LoggerFactory",                                        // slf4j-api-XXX.jar
