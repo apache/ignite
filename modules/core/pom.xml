@@ -36,20 +36,6 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-examples</artifactId>
-            <version>${gridgain.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-clients</artifactId>
-            <version>${gridgain.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
             <artifactId>benchmark-risk-analytics</artifactId>
             <version>${gridgain.version}</version>
             <scope>test</scope>

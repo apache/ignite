@@ -172,7 +172,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
         String garDir = "modules/extdata/p2p/deploy";
         String garFileName = "p2p.gar";
 
-        File origGarPath = new File(U.getGridGainHome() + '/' + garDir + '/' + garFileName);
+        File origGarPath = U.resolveGridGainPath(garDir + '/' + garFileName);
 
         File tmpPath = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
 
