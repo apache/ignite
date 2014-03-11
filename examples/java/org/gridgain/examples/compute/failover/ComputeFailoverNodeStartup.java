@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.spi.checkpoint.sharedfs.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 

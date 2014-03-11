@@ -8203,11 +8203,11 @@ public abstract class GridUtils {
 
             if (!dir.isAbsolute())
                 dir = new File(ggHome, dir.getPath());
-        }
 
-        if (deleteIfExist && dir.exists()) {
-            if (!U.delete(dir))
-                throw new GridException("Failed to delete directory: " + dir);
+            if (deleteIfExist && dir.exists()) {
+                if (!U.delete(dir))
+                    throw new GridException("Failed to delete directory: " + dir);
+            }
         }
 
         if (!mkdirs(dir))
