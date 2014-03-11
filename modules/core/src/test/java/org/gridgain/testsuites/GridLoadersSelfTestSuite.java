@@ -11,7 +11,6 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.startup.cmdline.*;
-import org.gridgain.grid.startup.jboss.*;
 import org.gridgain.testframework.*;
 
 /**

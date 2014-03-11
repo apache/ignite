@@ -14,7 +14,6 @@ import org.gridgain.grid.cache.hibernate.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.cache.store.hibernate.*;
 import org.gridgain.grid.cache.store.jdbc.*;
-import org.gridgain.grid.cache.store.local.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
