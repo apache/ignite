@@ -247,7 +247,7 @@ public:
      * @return Node ID.
      * @throws GridClientException In case of error.
      */
-    virtual GridUuid affinity(const GridClientVariant& key);
+    virtual GridClientUuid affinity(const GridClientVariant& key);
 
     /**
      * Gets metrics for default cache.

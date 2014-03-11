@@ -1457,7 +1457,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (sysCaches.contains(name))
             throw new IllegalStateException("Failed to get cache because it is system cache: " + name);
 
-        return (GridCache<K, V>)publicProxies.get(name);
+        GridCache<K, V> cache = (GridCache<K, V>)publicProxies.get(name);
+
+        if (cache == null)
+            throw new IllegalArgumentException("Cache is not configured: " + name);
+
+        return cache;
     }
 
     /**

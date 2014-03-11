@@ -55,7 +55,7 @@ void clientDataExample(TGridClientPtr& client) {
     cout << "Current grid topology: " << nodes.size() << endl;
 
     // Random node ID.
-    GridUuid randNodeId = nodes[0]->getNodeId();
+    GridClientUuid randNodeId = nodes[0]->getNodeId();
 
     // Get client projection of grid partitioned cache.
     TGridClientDataPtr rmtCache = client->data(CACHE_NAME);
@@ -74,7 +74,7 @@ void clientDataExample(TGridClientPtr& client) {
 
         rmtCache->put(key, v);
 
-        GridUuid nodeId = rmtCache->affinity(key);
+        GridClientUuid nodeId = rmtCache->affinity(key);
 
         cout << ">>> Storing key " << key << " on node " << nodeId << endl;
 
@@ -110,9 +110,9 @@ void clientDataExample(TGridClientPtr& client) {
 
     cout << ">>> Result of asynchronous put: " << (futPut->get() ? "success" : "failure") << endl;
 
-    unordered_map<GridUuid, TGridClientVariantMap> keyVals;
+    unordered_map<GridClientUuid, TGridClientVariantMap> keyVals;
 
-    GridUuid nodeId = rmtCache->affinity(key0);
+    GridClientUuid nodeId = rmtCache->affinity(key0);
 
     for (int32_t i = 0; i < KEYS_CNT; i++) {
         ostringstream oss;
@@ -126,13 +126,13 @@ void clientDataExample(TGridClientPtr& client) {
         keyVals[nodeId][key] = v;
     }
 
-    for (unordered_map<GridUuid, TGridClientVariantMap>::iterator iter = keyVals.begin();
+    for (unordered_map<GridClientUuid, TGridClientVariantMap>::iterator iter = keyVals.begin();
             iter != keyVals.end(); ++iter)
        rmtCache->putAll(iter->second);
 
     vector<TGridBoolFuturePtr> futs;
 
-    for (unordered_map<GridUuid, TGridClientVariantMap>::iterator iter = keyVals.begin();
+    for (unordered_map<GridClientUuid, TGridClientVariantMap>::iterator iter = keyVals.begin();
             iter != keyVals.end(); ++iter) {
        TGridBoolFuturePtr fut = rmtCache->putAllAsync(iter->second);
 
@@ -153,9 +153,9 @@ void clientDataExample(TGridClientPtr& client) {
 
     // Multiple values can be fetched at once. Here we batch our get
     // requests by affinity nodes to ensure least amount of network trips.
-    for (unordered_map<GridUuid, TGridClientVariantMap>::iterator iter = keyVals.begin();
+    for (unordered_map<GridClientUuid, TGridClientVariantMap>::iterator iter = keyVals.begin();
             iter != keyVals.end(); ++iter) {
-       GridUuid uuid = iter->first;
+       GridClientUuid uuid = iter->first;
 
        TGridClientVariantMap m = iter->second;
 
@@ -307,9 +307,9 @@ int main () {
 
         cout << "The client will try to connect to the following addresses:" << endl;
 
-        vector<GridSocketAddress> srvrs = cfg.servers();
+        vector<GridClientSocketAddress> srvrs = cfg.servers();
 
-        for (vector<GridSocketAddress>::iterator i = srvrs.begin(); i < srvrs.end(); i++)
+        for (vector<GridClientSocketAddress>::iterator i = srvrs.begin(); i < srvrs.end(); i++)
             cout << i->host() << ":" << i->port() << endl;
 
         TGridClientPtr client = GridClientFactory::start(cfg);

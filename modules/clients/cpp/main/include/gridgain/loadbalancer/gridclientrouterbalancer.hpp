@@ -29,7 +29,7 @@ public:
      * @param addrs Address list to pick router from.
      * @return Index of the next router address to pick from the list.
      */
-    virtual unsigned int balancedRouter(const TGridSocketAddressList& addrs) = 0;
+    virtual unsigned int balancedRouter(const TGridClientSocketAddressList& addrs) = 0;
 };
 
 #endif /* GRIDCLIENTROUTERBALANCER_HPP_ */

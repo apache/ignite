@@ -23,11 +23,11 @@ using namespace std;
 static boost::uuids::random_generator uuidGen;
 static boost::mutex uuidGenMux;
 
-GridUuid::GridUuid() {
+GridClientUuid::GridClientUuid() {
     memset(pimpl.uuid_.data, 0, pimpl.uuid_.size());
 }
 
-GridUuid::GridUuid(const char* str)  {
+GridClientUuid::GridClientUuid(const char* str)  {
     if (str != NULL) {
         std::stringstream ss;
 
@@ -39,7 +39,7 @@ GridUuid::GridUuid(const char* str)  {
         memset(pimpl.uuid_.data, 0, pimpl.uuid_.size());
 }
 
-GridUuid::GridUuid(const string& str)  {
+GridClientUuid::GridClientUuid(const string& str)  {
     std::stringstream ss;
 
     ss << str;
@@ -47,12 +47,12 @@ GridUuid::GridUuid(const string& str)  {
     ss >> pimpl.uuid_;
 }
 
-GridUuid::GridUuid(const GridUuid& other) {
+GridClientUuid::GridClientUuid(const GridClientUuid& other) {
     pimpl.uuid_ = other.pimpl.uuid_;
 }
 
-GridUuid GridUuid::randomUuid() {
-    GridUuid ret;
+GridClientUuid GridClientUuid::randomUuid() {
+    GridClientUuid ret;
 
     {
         boost::lock_guard<boost::mutex> g(uuidGenMux);
@@ -63,17 +63,17 @@ GridUuid GridUuid::randomUuid() {
     return ret;
 }
 
-GridUuid& GridUuid::operator=(const GridUuid& rhs){
+GridClientUuid& GridClientUuid::operator=(const GridClientUuid& rhs){
     if (this != &rhs)
         pimpl.uuid_ = rhs.pimpl.uuid_;
 
     return *this;
 }
 
-GridUuid::~GridUuid(){
+GridClientUuid::~GridClientUuid(){
 }
 
-std::string const GridUuid::uuid() const {
+std::string const GridClientUuid::uuid() const {
     std::stringstream ss;
 
     ss << pimpl.uuid_;
@@ -81,7 +81,7 @@ std::string const GridUuid::uuid() const {
     return ss.str();
 }
 
-int64_t GridUuid::leastSignificantBits() const {
+int64_t GridClientUuid::leastSignificantBits() const {
     int64_t lsb = pimpl.uuid_.data[8];
 
     for (int i = 9 ; i < 16 ; i++) {
@@ -92,7 +92,7 @@ int64_t GridUuid::leastSignificantBits() const {
     return lsb;
 }
 
-int64_t GridUuid::mostSignificantBits() const {
+int64_t GridClientUuid::mostSignificantBits() const {
     int64_t msb = pimpl.uuid_.data[0];
 
     for (int i = 1 ; i < 8 ; i++) {
@@ -103,14 +103,14 @@ int64_t GridUuid::mostSignificantBits() const {
     return msb;
 }
 
-int32_t GridUuid::hashCode() const {
+int32_t GridClientUuid::hashCode() const {
     int32_t hashCode = (int32_t)((mostSignificantBits() >> 32) ^
             mostSignificantBits() ^ (leastSignificantBits() >> 32) ^ leastSignificantBits());
 
     return hashCode;
 }
 
-void GridUuid::convertToBytes(vector<int8_t>& bytes) const {
+void GridClientUuid::convertToBytes(vector<int8_t>& bytes) const {
     back_insert_iterator<vector<int8_t>> inserter=back_inserter(bytes);
 
     reverse_copy(&(pimpl.uuid_.data[0]), &(pimpl.uuid_.data[pimpl.uuid_.size()/2]), inserter);
@@ -118,21 +118,21 @@ void GridUuid::convertToBytes(vector<int8_t>& bytes) const {
     reverse_copy(&(pimpl.uuid_.data[pimpl.uuid_.size()/2]), &(pimpl.uuid_.data[pimpl.uuid_.size()]), inserter);
 }
 
-void GridUuid::rawBytes(vector<int8_t>& bytes) const {
+void GridClientUuid::rawBytes(vector<int8_t>& bytes) const {
     bytes.resize(pimpl.uuid_.size());
 
     copy(pimpl.uuid_.data, pimpl.uuid_.data + pimpl.uuid_.size(), bytes.begin());
 }
 
-GridUuid GridUuid::fromBytes(const string& bytes) {
-    GridUuid ret;
+GridClientUuid GridClientUuid::fromBytes(const string& bytes) {
+    GridClientUuid ret;
 
     ::memcpy(ret.pimpl.uuid_.data, bytes.c_str(), ret.pimpl.uuid_.size());
 
     return ret;
 }
 
-bool GridUuid::operator < (const GridUuid& other) const {
+bool GridClientUuid::operator < (const GridClientUuid& other) const {
     if (mostSignificantBits() < other.mostSignificantBits())
         return true;
 
@@ -142,6 +142,6 @@ bool GridUuid::operator < (const GridUuid& other) const {
     return leastSignificantBits() < other.leastSignificantBits();
 }
 
-bool GridUuid::operator == (const GridUuid& other) const {
+bool GridClientUuid::operator == (const GridClientUuid& other) const {
     return pimpl.uuid_ == other.pimpl.uuid_;
 }

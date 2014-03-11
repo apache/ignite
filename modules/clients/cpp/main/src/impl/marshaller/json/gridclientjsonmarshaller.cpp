@@ -118,10 +118,10 @@ void GridClientJsonMarshaller::unwrap(const TJson& json, GridClientMessageTopolo
 
     BOOST_FOREACH(const TJson::value_type &i, json.get_child("response")) {
         GridClientNode nb;
-        GridNodeMarshallerHelper helper(nb);
+        GridClientNodeMarshallerHelper helper(nb);
         TGridClientVariantMap caches;
 
-        std::vector<GridSocketAddress> tcpAddrs, jettyAddrs;
+        std::vector<GridClientSocketAddress> tcpAddrs, jettyAddrs;
 
         TJson pt = i.second;
 
@@ -147,7 +147,7 @@ void GridClientJsonMarshaller::unwrap(const TJson& json, GridClientMessageTopolo
 
         BOOST_FOREACH(const TJson::value_type &j, pt.get_child("tcpHostNames")) {
             if (j.second.data().size()) {
-                GridSocketAddress newTCPAddress = GridSocketAddress(j.second.data(), tcpport);
+                GridClientSocketAddress newTCPAddress = GridClientSocketAddress(j.second.data(), tcpport);
 
                 boost::asio::ip::tcp::resolver::query queryHostname(newTCPAddress.host(),
                     boost::lexical_cast<std::string>(pt.get("tcpPort", -1)));
@@ -165,7 +165,7 @@ void GridClientJsonMarshaller::unwrap(const TJson& json, GridClientMessageTopolo
 
         BOOST_FOREACH(const TJson::value_type &j, pt.get_child("tcpAddresses")) {
             if (j.second.data().size()) {
-                GridSocketAddress newTCPAddress = GridSocketAddress(j.second.data(), tcpport);
+                GridClientSocketAddress newTCPAddress = GridClientSocketAddress(j.second.data(), tcpport);
 
                 boost::asio::ip::tcp::resolver::query queryIp(newTCPAddress.host(),
                     boost::lexical_cast<std::string>(pt.get("tcpPort", -1)));
@@ -183,7 +183,7 @@ void GridClientJsonMarshaller::unwrap(const TJson& json, GridClientMessageTopolo
 
         BOOST_FOREACH(const TJson::value_type &j, pt.get_child("jettyHostNames")) {
             if (j.second.data().size()) {
-                GridSocketAddress newJettyAddress = GridSocketAddress(j.second.data(), jettyport);
+                GridClientSocketAddress newJettyAddress = GridClientSocketAddress(j.second.data(), jettyport);
 
                 boost::asio::ip::tcp::resolver::query queryHostname(newJettyAddress.host(),
                     boost::lexical_cast<std::string>(pt.get("jettyPort", -1)));
@@ -201,7 +201,7 @@ void GridClientJsonMarshaller::unwrap(const TJson& json, GridClientMessageTopolo
 
         BOOST_FOREACH(const TJson::value_type &j, pt.get_child("jettyAddresses")) {
             if (j.second.data().size()) {
-                GridSocketAddress newJettyAddress = GridSocketAddress(j.second.data(), jettyport);
+                GridClientSocketAddress newJettyAddress = GridClientSocketAddress(j.second.data(), jettyport);
 
                 boost::asio::ip::tcp::resolver::query queryIp(newJettyAddress.host(),
                     boost::lexical_cast<std::string>(pt.get("jettyPort", -1)));
