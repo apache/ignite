@@ -34,8 +34,8 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor ack {"s"}
- *     visor ack ("s", f)
+ *     ack {"s"}
+ *     ack ("s", f)
  * }}}
  *
  * ====Arguments====
@@ -48,11 +48,11 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor ack "Howdy!"
+ *     ack "Howdy!"
  *         Prints 'Howdy!' on all nodes in the topology.
- *     visor ack("Howdy!", _.id8.startsWith("123"))
+ *     ack("Howdy!", _.id8.startsWith("123"))
  *         Prints 'Howdy!' on all nodes satisfying this predicate.
- *     visor ack
+ *     ack
  *         Prints local node ID on all nodes in the topology.
  * }}}
  */

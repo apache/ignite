@@ -35,7 +35,7 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor deploy "-h={<username>{:<password>}@}<host>{:<port>} {-u=<username>}
+ *     deploy "-h={<username>{:<password>}@}<host>{:<port>} {-u=<username>}
  *         {-p=<password>} {-k=<path>} -s=<path> {-d<path>}"
  * }}}
  *
@@ -71,9 +71,9 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor deploy "-h=uname:passwd@host -s=/local/path -d=/remote/path"
+ *     deploy "-h=uname:passwd@host -s=/local/path -d=/remote/path"
  *         Copies file or directory to remote host (password authentication).
- *     visor deploy "-h=uname@host -k=ssh-key.pem -s=/local/path -d=/remote/path"
+ *     deploy "-h=uname@host -k=ssh-key.pem -s=/local/path -d=/remote/path"
  *         Copies file or directory to remote host (private key authentication).
  * }}}
  */

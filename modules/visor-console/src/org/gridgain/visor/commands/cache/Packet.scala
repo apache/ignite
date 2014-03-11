@@ -42,9 +42,9 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor cache
- *     visor cache "-i {-n=<name>}"
- *     visor cache "{-n=<name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}"
+ *     cache
+ *     cache "-i {-n=<name>}"
+ *     cache "{-n=<name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}"
  * }}}
  *
  * ====Arguments====
@@ -82,14 +82,14 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor cache "-id8=12345678 -s=hi -r"
+ *     cache "-id8=12345678 -s=hi -r"
  *         Prints summary statistics about caches from node with specified id8
  *         sorted by number of hits in reverse order.
- *     visor cache "-i"
+ *     cache "-i"
  *         Prints cache statistics for interactively selected node.
- *     visor cache "-s=hi -r -a"
+ *     cache "-s=hi -r -a"
  *         Prints detailed statistics about all caches sorted by number of hits in reverse order.
- *     visor cache
+ *     cache
  *         Prints summary statistics about all caches.
  * }}}
  */

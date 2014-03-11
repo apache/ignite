@@ -34,7 +34,7 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor top "{-c1=e1<num> -c2=e2<num> ... -ck=ek<num>} {-h=<host1> ... -h=<hostk>} {-a}"
+ *     top "{-c1=e1<num> -c2=e2<num> ... -ck=ek<num>} {-h=<host1> ... -h=<hostk>} {-a}"
  * }}}
  *
  * ====Arguments====
@@ -78,13 +78,13 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor top "-cc=eq2"
+ *     top "-cc=eq2"
  *         Prints topology for all nodes with two CPUs.
- *     visor top "-cc=eq2 -a"
+ *     top "-cc=eq2 -a"
  *         Prints full information for all nodes with two CPUs.
- *     visor top "-h=10.34.2.122 -h=10.65.3.11"
+ *     top "-h=10.34.2.122 -h=10.65.3.11"
  *         Prints topology for provided hosts.
- *     visor top
+ *     top
  *         Prints full topology.
  * }}}
  */

@@ -34,8 +34,8 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor node "{id8=<node-id8>|id=<node-id>} {-a}"
- *     visor node
+ *     node "{id8=<node-id8>|id=<node-id>} {-a}"
+ *     node
  * }}}
  *
  * ====Arguments====
@@ -53,11 +53,11 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor node
+ *     node
  *         Starts command in interactive mode.
- *     visor node "-id8=12345678"
+ *     node "-id8=12345678"
  *         Prints statistics for specified node.
- *     visor node "-id8=12345678 -a"
+ *     node "-id8=12345678 -a"
  *         Prints full statistics for specified node.
  * }}}
  */

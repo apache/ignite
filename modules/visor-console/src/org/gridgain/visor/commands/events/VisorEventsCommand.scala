@@ -60,8 +60,8 @@ import visor._
  *
  * ====Specification====
  * {{{
- *     visor events
- *     visor events "{-id=<node-id>|-id8=<node-id8>} {-e=<ch,cp,de,di,jo,ta,cl,ca,sw>}
+ *     events
+ *     events "{-id=<node-id>|-id8=<node-id8>} {-e=<ch,cp,de,di,jo,ta,cl,ca,sw>}
  *         {-t=<num>s|m|h|d} {-s=e|t} {-r} {-c=<n>}"
  * }}}
  *
@@ -107,11 +107,11 @@ import visor._
  *
  * ====Examples====
  * {{{
- *     visor events "-id8=12345678"
+ *     events "-id8=12345678"
  *         Queries all events from node with '12345678' ID8.
- *     visor events "-id8=12345678 -e=di,ca"
+ *     events "-id8=12345678 -e=di,ca"
  *         Queries discovery and cache events from node with '12345678' ID8.
- *     visor events
+ *     events
  *         Starts command in interactive mode.
  * }}}
  */

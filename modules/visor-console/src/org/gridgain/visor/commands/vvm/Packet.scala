@@ -34,7 +34,7 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor vvm "{-home=dir} {-id8=<node-id8>} {-id=<node-id>}"
+ *     vvm "{-home=dir} {-id8=<node-id8>} {-id=<node-id>}"
  * }}}
  *
  * ====Arguments====
@@ -52,13 +52,13 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor vvm "-id8=12345678"
+ *     vvm "-id8=12345678"
  *         Opens VisualVM connected to JVM for node with '12345678' ID8.
- *     visor vvm "-id=5B923966-85ED-4C90-A14C-96068470E94D"
+ *     vvm "-id=5B923966-85ED-4C90-A14C-96068470E94D"
  *         Opens VisualVM connected to JVM for node with given full node ID.
- *     visor vvm "-home=C:\VisualVM -id8=12345678"
+ *     vvm "-home=C:\VisualVM -id8=12345678"
  *         Opens VisualVM installed in 'C:\VisualVM' directory for specified node.
- *     visor vvm
+ *     vvm
  *         Opens VisualVM connected to all nodes.
  * }}}
  */

@@ -292,13 +292,13 @@ class VisorSessionIdFilter(u: GridUuid) extends GridPredicate[GridEvent] {
  *
  * ====Specification====
  * {{{
- *     visor tasks
- *     visor tasks "-l {-t=<num>s|m|h|d} {-r}"
- *     visor tasks "-s=<substring> {-t=<num>s|m|h|d} {-r}"
- *     visor tasks "-g {-t=<num>s|m|h|d} {-r}"
- *     visor tasks "-h {-t=<num>s|m|h|d} {-r}"
- *     visor tasks "-n=<task-name> {-r}"
- *     visor tasks "-e=<exec-id>"
+ *     tasks
+ *     tasks "-l {-t=<num>s|m|h|d} {-r}"
+ *     tasks "-s=<substring> {-t=<num>s|m|h|d} {-r}"
+ *     tasks "-g {-t=<num>s|m|h|d} {-r}"
+ *     tasks "-h {-t=<num>s|m|h|d} {-r}"
+ *     tasks "-n=<task-name> {-r}"
+ *     tasks "-e=<exec-id>"
  * }}}
  *
  * ====Arguments====

@@ -34,8 +34,8 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor cscan
- *     visor cscan "<cache-name>"
+ *     cscan
+ *     cscan "<cache-name>"
  * }}}
  *
  * ====Arguments====
@@ -46,7 +46,7 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor cscan "cache"
+ *     cscan "cache"
  *         List of all object in cache with name 'cache'.
  * }}}
  */

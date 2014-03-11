@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -46,8 +46,8 @@ import org.gridgain.visor.visor._
  *
  * ====Specification====
  * {{{
- *     visor cscan
- *     visor cscan "<cache-name>"
+ *     cscan
+ *     cscan "<cache-name>"
  * }}}
  *
  * ====Arguments====
@@ -58,7 +58,7 @@ import org.gridgain.visor.visor._
  *
  * ====Examples====
  * {{{
- *     visor cscan "cache"
+ *     cscan "cache"
  *         List all entries in cache with name 'cache'.
  * }}}
  */
@@ -80,10 +80,6 @@ class VisorCacheScanCommand {
 
         while (cause.getCause != null)
             cause = cause.getCause
-
-        val s = cause.getMessage
-
-        println(s)
 
         scold(cause.getMessage)
     }
@@ -231,9 +227,9 @@ class VisorCacheScanCommand {
                                 .withNoFailover()
                                 .execute(classOf[VisorFetchNextPageTask], new VisorFetchNextPageTaskArgs(nid, res.nlKey, pageSize))
                                 .get
-                            catch {
-                                case e: Exception => error(e)
-                            }
+                        catch {
+                            case e: Exception => error(e)
+                        }
 
                         render()
 
@@ -255,7 +251,7 @@ object VisorScanCache {
     
     type VisorScanResult = (String, String, String, String)
 
-    final val SCAN_QUERY_KEY = "VISOR_CONSOLE_SCAN_CACHE"
+    final val SCAN_QRY_KEY = "VISOR_CONSOLE_SCAN_CACHE"
 
     /** How long to store future. */
     final val RMV_DELAY: Int = 5 * 60 // 5 minutes.
@@ -273,12 +269,11 @@ object VisorScanCache {
         pageSize: Int): (Array[VisorScanResult], JavaMap.Entry[Object, Object]) = {
         def typeOf(o: Object): String = if (o != null) U.compact(o.getClass.getName) else "null"
 
-        def valueOf(o: Object): String =
-            if (o != null) {
-                if (o.getClass.isArray) "binary" else  o.toString
-            }
-            else
-                "null"
+        def valueOf(o: Object): String = o match {
+            case null => "null"
+            case array if array.getClass.isArray => "binary"
+            case other => other.toString
+        }
 
         val rows = collection.mutable.ArrayBuffer.empty[VisorScanResult]
 
@@ -311,7 +306,7 @@ import VisorScanCache._
 @GridInternal
 private class VisorScanCacheTask extends VisorConsoleOneNodeTask[VisorScanCacheTaskArgs, VisorScanCacheResult] {
     @impl protected def run(g: GridEx, arg: VisorScanCacheTaskArgs): VisorScanCacheResult = {
-        val nodeLclKey = SCAN_QUERY_KEY + "-" + UUID.randomUUID()
+        val nodeLclKey = SCAN_QRY_KEY + "-" + UUID.randomUUID()
 
         val c = g.cache[Object, Object](arg.cacheName)
 

@@ -35,9 +35,9 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor alert
- *     visor alert "-u {-id=<alert-id>|-a}"
- *     visor alert "-r {-t=<sec>} -c1=e1<num> -c2=e2<num> ... -ck=ek<num>"
+ *     alert
+ *     alert "-u {-id=<alert-id>|-a}"
+ *     alert "-r {-t=<sec>} -c1=e1<num> -c2=e2<num> ... -ck=ek<num>"
  * }}}
  *
  * ====Arguments====
@@ -99,13 +99,13 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor alert
+ *     alert
  *         Prints all currently registered alerts.
- *     visor alert "-u -a"
+ *     alert "-u -a"
  *         Unregisters all currently registered alerts.
- *     visor alert "-u -id=12345678"
+ *     alert "-u -id=12345678"
  *         Unregisters alert with provided ID.
- *     visor alert "-r -t=900 -cc=gte4 -cl=gt50"
+ *     alert "-r -t=900 -cc=gte4 -cl=gt50"
  *         Notify every 15 min if grid has >= 4 CPUs and > 50% CPU load.
  * }}}
  */

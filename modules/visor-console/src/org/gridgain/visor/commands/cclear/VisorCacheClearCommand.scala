@@ -49,8 +49,8 @@ import org.gridgain.grid.lang.GridCallable
  *
  * ====Specification====
  * {{{
- *     visor cclear
- *     visor cclear "<cache-name>"
+ *     cclear
+ *     cclear "<cache-name>"
  * }}}
  *
  * ====Arguments====
@@ -62,9 +62,9 @@ import org.gridgain.grid.lang.GridCallable
  *
  * ====Examples====
  * {{{
- *     visor cclear
+ *     cclear
  *         Clears default cache.
- *     visor cclear "cache"
+ *     cclear "cache"
  *         Clears cache with name 'cache'.
  * }}}
  */

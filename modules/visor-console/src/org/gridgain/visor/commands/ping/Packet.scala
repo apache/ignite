@@ -34,7 +34,7 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor ping {"id81 id82 ... id8k"}
+ *     ping {"id81 id82 ... id8k"}
  * }}}
  *
  * ====Arguments====
@@ -45,9 +45,9 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor ping "12345678"
+ *     ping "12345678"
  *         Pings node with '12345678' ID8.
- *     visor ping
+ *     ping
  *         Pings all nodes in the topology.
  * }}}
  */

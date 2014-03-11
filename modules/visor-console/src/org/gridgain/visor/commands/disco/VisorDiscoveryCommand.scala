@@ -58,8 +58,8 @@ import scala.util.control.Breaks._
  *
  * ====Specification====
  * {{{
- *     visor disco
- *     visor disco "{-t=<num>s|m|h|d} {-r} {-c=<n>}"
+ *     disco
+ *     disco "{-t=<num>s|m|h|d} {-r} {-c=<n>}"
  * }}}
  *
  * ====Arguments====
@@ -78,11 +78,11 @@ import scala.util.control.Breaks._
  *
  * ====Examples====
  * {{{
- *     visor disco
+ *     disco
  *         Prints all discovery events sorted chronologically (oldest first).
- *     visor disco "-r"
+ *     disco "-r"
  *         Prints all discovery events sorted chronologically in reversed order (newest first).
- *     visor disco "-t=2m"
+ *     disco "-t=2m"
  *         Prints discovery events fired during last two minutes sorted chronologically.
  * }}}
  */

@@ -34,8 +34,8 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor ccompact
- *     visor ccompact "<cache-name>"
+ *     ccompact
+ *     ccompact "<cache-name>"
  * }}}
  *
  * ====Arguments====
@@ -47,9 +47,9 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor ccompact
+ *     ccompact
  *         Compacts entries in default cache.
- *     visor ccompact "cache"
+ *     ccompact "cache"
  *         Compacts entries in cache with name 'cache'.
  * }}}
  */

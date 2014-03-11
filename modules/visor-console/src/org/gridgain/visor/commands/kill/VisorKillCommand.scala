@@ -47,9 +47,9 @@ import scala.collection.JavaConversions._
  *
  * ====Specification====
  * {{{
- *     visor kill
- *     visor kill "-in|-ih"
- *     visor kill "{-r|-k} {-id8=<node-id8>|-id=<node-id>}"
+ *     kill
+ *     kill "-in|-ih"
+ *     kill "{-r|-k} {-id8=<node-id8>|-id=<node-id>}"
  * }}}
  *
  * ====Arguments====
@@ -84,11 +84,11 @@ import scala.collection.JavaConversions._
  *
  * ====Examples====
  * {{{
- *     visor kill
+ *     kill
  *         Starts command in interactive mode.
- *     visor kill "-id8=12345678 -r"
+ *     kill "-id8=12345678 -r"
  *         Restart node with '12345678' ID8.
- *     visor kill "-k"
+ *     kill "-k"
  *         Kill (stop) all nodes.
  * }}}
  */
