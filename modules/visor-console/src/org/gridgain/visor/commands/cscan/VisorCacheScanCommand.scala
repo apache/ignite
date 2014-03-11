@@ -75,6 +75,19 @@ class VisorCacheScanCommand {
         warn("Type 'help cscan' to see how to use this command.")
     }
 
+    private def error(e: Exception) {
+        var cause: Throwable = e
+
+        while (cause.getCause != null)
+            cause = cause.getCause
+
+        val s = cause.getMessage
+
+        println(s)
+
+        scold(cause.getMessage)
+    }
+
     /**
      * ===Command===
      * List all entries in cache with specified name.
@@ -174,13 +187,21 @@ class VisorCacheScanCommand {
             if (nid == null)
                 nid = qryPrj.node().id()
 
-            var res = qryPrj
-                .compute()
-                .withName("visor-cscan-task")
-                .withNoFailover()
-                .execute(classOf[VisorScanCacheTask],
-                    new VisorScanCacheTaskArgs(nid, cachePrj.nodes().map(_.id()).toSeq, cacheName, pageSize))
-                .get
+            var res =
+                try
+                    qryPrj
+                    .compute()
+                    .withName("visor-cscan-task")
+                    .withNoFailover()
+                    .execute(classOf[VisorScanCacheTask],
+                        new VisorScanCacheTaskArgs(nid, cachePrj.nodes().map(_.id()).toSeq, cacheName, pageSize))
+                    .get
+                catch {
+                    case e: Exception =>
+                        error(e)
+
+                        return
+                }
             
             if (res.rows.isEmpty) {
                 println("Cache is empty")
@@ -203,12 +224,16 @@ class VisorCacheScanCommand {
             while (res.hasMore) {
                 ask("\nFetch more objects (y/n) [y]:", "y") match {
                     case "y" | "Y" =>
-                        res = qryPrj
-                            .compute()
-                            .withName("visor-cscan-fetch-task")
-                            .withNoFailover()
-                            .execute(classOf[VisorFetchNextPageTask], new VisorFetchNextPageTaskArgs(nid, res.nlKey, pageSize))
-                            .get
+                        try
+                            res = qryPrj
+                                .compute()
+                                .withName("visor-cscan-fetch-task")
+                                .withNoFailover()
+                                .execute(classOf[VisorFetchNextPageTask], new VisorFetchNextPageTaskArgs(nid, res.nlKey, pageSize))
+                                .get
+                            catch {
+                                case e: Exception => error(e)
+                            }
 
                         render()
 
