@@ -13,20 +13,20 @@ package org.gridgain.scalar.testsuites
 
 import org.scalatest._
 import org.gridgain.scalar.tests._
+import examples.{ScalarExamplesMultiNodeSelfTest, ScalarExamplesSelfTest}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
+import org.gridgain.grid.GridSystemProperties._
+import org.gridgain.testframework.GridTestUtils
 
 /**
  *
  */
 @RunWith(classOf[JUnitRunner])
-class ScalarSelfTestSuite extends Suites(
-    new ScalarAffinityRoutingSpec,
-    new ScalarCacheQueriesSpec,
-    new ScalarCacheSpec,
-    new ScalarConversionsSpec,
-    new ScalarProjectionSpec,
-    new ScalarReturnableSpec,
-    new ScalarSpec
+class ScalarExamplesSelfTestSuite extends Suites(
+    new ScalarExamplesSelfTest,
+    new ScalarExamplesMultiNodeSelfTest
 ) {
+    System.setProperty(GG_OVERRIDE_MCAST_GRP,
+        GridTestUtils.getNextMulticastGroup(classOf[ScalarExamplesSelfTest]))
 }
