@@ -34,7 +34,7 @@ public:
      *
      * @param clientId Client id as uuid.
      */
-    ClientMessageProjectionClosure(GridUuid & clientId) :
+    ClientMessageProjectionClosure(GridClientUuid & clientId) :
         clientId(clientId) {};
 
     /**
@@ -52,7 +52,7 @@ public:
 
 private:
     /** Client id. */
-    GridUuid clientId;
+    GridClientUuid clientId;
 };
 
 #endif

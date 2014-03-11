@@ -88,7 +88,7 @@ public:
      * @return Resulting projection (static or dynamic, depending in parent projection type).
      * @throws GridClientException If resulting projection is empty.
      */
-    virtual TGridClientComputePtr projection(std::function<bool (const GridClientNode&)> filter);
+    virtual TGridClientComputePtr projection(std::function<bool (const GridClientNode&)> & filter);
 
     /**
      * Creates a projection that will communicate only with nodes that are accepted by the passed filter. The
@@ -121,7 +121,7 @@ public:
      * @return Resulting projection (static or dynamic, depending in parent projection type).
      * @throws GridClientException If resulting projection is empty.
      */
-    virtual TGridClientComputePtr projection(std::function<bool (const GridClientNode&)> filter,
+    virtual TGridClientComputePtr projection(std::function<bool (const GridClientNode&)> & filter,
         TGridClientLoadBalancerPtr balancer);
 
     /**
@@ -202,7 +202,7 @@ public:
      * @param id Node ID.
      * @return Node for given ID or <tt>null</tt> if node with given id was not found.
      */
-    virtual TGridClientNodePtr node(const GridUuid& id) const;
+    virtual TGridClientNodePtr node(const GridClientUuid& id) const;
 
     /**
      * Gets nodes that pass the filter. If this compute instance is a projection, then only
@@ -220,7 +220,7 @@ public:
      * @param filter Node filter.
      * @return Collection of nodes that satisfy provided filter.
      */
-    virtual TGridClientNodeList nodes(std::function<bool (const GridClientNode&)> filter) const;
+    virtual TGridClientNodeList nodes(std::function<bool (const GridClientNode&)> & filter) const;
 
     /**
      * Gets all nodes in the projection.
@@ -236,7 +236,7 @@ public:
      * @param filter Node filter.
      * @return Collection of nodes that satisfy provided filter.
      */
-   virtual TGridClientNodeList nodes(const std::vector<GridUuid>& ids) const;
+   virtual TGridClientNodeList nodes(const std::vector<GridClientUuid>& ids) const;
 
     /**
      * Gets node by its ID.
@@ -249,7 +249,7 @@ public:
      * @throw GridServerUnreachableException If none of the servers can be reached.
      * @throw GridClientClosedException If client was closed manually.
      */
-    virtual TGridClientNodePtr refreshNode(const GridUuid& id, bool includeAttrs, bool includeMetrics);
+    virtual TGridClientNodePtr refreshNode(const GridClientUuid& id, bool includeAttrs, bool includeMetrics);
 
     /**
      * Asynchronously gets node by its ID.
@@ -259,7 +259,7 @@ public:
      * @param includeMetrics Whether to include node metrics.
      * @return Future.
      */
-    virtual TGridClientNodeFuturePtr refreshNodeAsync(const GridUuid& id, bool includeAttrs,
+    virtual TGridClientNodeFuturePtr refreshNodeAsync(const GridClientUuid& id, bool includeAttrs,
         bool includeMetrics);
 
     /**

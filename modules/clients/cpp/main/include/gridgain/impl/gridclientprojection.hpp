@@ -64,12 +64,12 @@ public:
      * @throws GridClientException In case of problems.
      */
     void withReconnectHandling(ClientProjectionClosure& c, const std::string& cacheName,
-            const GridHasheableObject& affKey);
+            const GridClientHasheableObject& affKey);
 
 protected:
 
     /** Gets the primary node for the given cache and the affinity key */
-    TGridClientNodePtr affinityNode(const std::string& cacheName, const GridHasheableObject& affKey);
+    TGridClientNodePtr affinityNode(const std::string& cacheName, const GridClientHasheableObject& affKey);
 
     /** Gets the current node to be used for processing. */
     TGridClientNodePtr balancedNode() const;
@@ -84,7 +84,7 @@ protected:
     }
 
     /** Returns the unique ID of the client. */
-    GridUuid& clientUniqueUuid() {
+    GridClientUuid& clientUniqueUuid() {
         return sharedData->clientUniqueUuid();
     }
 
@@ -94,7 +94,7 @@ protected:
     }
 
     /** Returns the definition of the node by the given uuid. */
-    TGridClientNodePtr node(const GridUuid& uuid) const {
+    TGridClientNodePtr node(const GridClientUuid& uuid) const {
         return sharedData->topology()->node(uuid);
     }
 

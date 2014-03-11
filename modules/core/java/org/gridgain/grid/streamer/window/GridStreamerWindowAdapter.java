@@ -358,20 +358,22 @@ public abstract class GridStreamerWindowAdapter<E> implements GridLifecycleAware
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K, V> GridStreamerIndex<E, K, V> index() {
+    @Override public <K, V> GridStreamerIndex<E, K, V> index() {
         return index(null);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K, V> GridStreamerIndex<E, K, V> index(@Nullable String name) {
+    @Override public <K, V> GridStreamerIndex<E, K, V> index(@Nullable String name) {
         if (idxsAsMap != null) {
             GridStreamerIndexProvider<E, K, V> idx = (GridStreamerIndexProvider<E, K, V>)idxsAsMap.get(name);
 
-            if (idx != null)
-                return idx.index();
+            if (idx == null)
+                throw new IllegalArgumentException("Streamer index is not configured: " + name);
+
+            return idx.index();
         }
 
-        return null;
+        throw new IllegalArgumentException("Streamer index is not configured: " + name);
     }
 
     /** {@inheritDoc} */

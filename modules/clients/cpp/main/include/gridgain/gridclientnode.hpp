@@ -51,7 +51,7 @@ public:
      *
      * @return Node Id.
      */
-    GridUuid getNodeId() const;
+    GridClientUuid getNodeId() const;
 
     /**
      * Gets node consistent ID.
@@ -65,14 +65,14 @@ public:
      *
      * @return List of address strings.
      */
-    const std::vector<GridSocketAddress> & getTcpAddresses() const;
+    const std::vector<GridClientSocketAddress> & getTcpAddresses() const;
 
     /**
      * Gets REST HTTP server addresses.
      *
      * @return List of address strings.
      */
-    const std::vector<GridSocketAddress> & getJettyAddresses() const;
+    const std::vector<GridClientSocketAddress> & getJettyAddresses() const;
 
     /**
      * Gets metrics.
@@ -109,21 +109,21 @@ public:
      * @param proto Protocol - TCP or HTTP
      * @return List of host/port pairs.
      */
-    const std::vector<GridSocketAddress> & availableAddresses(GridClientProtocol proto) const;
+    const std::vector<GridClientSocketAddress> & availableAddresses(GridClientProtocol proto) const;
 
     /**
      * Returns the router TCP address.
      *
      * @return Router address (host name and port).
      */
-    const GridSocketAddress & getRouterTcpAddress() const;
+    const GridClientSocketAddress & getRouterTcpAddress() const;
 
     /**
      * Returns the router Jetty address.
      *
      * @return Router address (host name and port).
      */
-    const GridSocketAddress & getRouterJettyAddress() const;
+    const GridClientSocketAddress & getRouterJettyAddress() const;
 
     /**
      * Returns the number of replicas for this node.
@@ -144,7 +144,7 @@ private:
     class Impl;
     Impl* pimpl;
 
-    friend class GridNodeMarshallerHelper;
+    friend class GridClientNodeMarshallerHelper;
 };
 
 /**

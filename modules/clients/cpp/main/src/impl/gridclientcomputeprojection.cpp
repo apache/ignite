@@ -32,7 +32,7 @@ public:
             : ClientMessageProjectionClosure(clientId), cmd(command) {
     }
 
-    virtual void apply(TGridClientNodePtr node, GridSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
+    virtual void apply(TGridClientNodePtr node, GridClientSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
         fillRequestHeader(cmd, node);
 
         cmdExecutor.executeTaskCmd(connParams, cmd, rslt);
@@ -53,7 +53,7 @@ public:
             : ClientMessageProjectionClosure(clientId), cmd(command) {
     }
 
-    virtual void apply(TGridClientNodePtr node, GridSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
+    virtual void apply(TGridClientNodePtr node, GridClientSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
         fillRequestHeader(cmd, node);
 
         cmdExecutor.executeLogCmd(connParams, cmd, rslt);
@@ -70,7 +70,7 @@ private:
 
 template <class T> class GridClientPredicateLambdaWrapper: public GridClientPredicate<T> {
 public:
-    GridClientPredicateLambdaWrapper(std::function<bool (const T&)> lambda): lambda(lambda) {}
+    GridClientPredicateLambdaWrapper(std::function<bool (const T&)> & lambda): lambda(lambda) {}
 
     virtual ~GridClientPredicateLambdaWrapper() {}
 
@@ -144,7 +144,7 @@ TGridClientComputePtr GridClientComputeProjectionImpl::projection(TGridClientNod
     return makeProjection(filter, TGridClientLoadBalancerPtr());
 }
 
-TGridClientComputePtr GridClientComputeProjectionImpl::projection(std::function<bool(const GridClientNode&)> filter) {
+TGridClientComputePtr GridClientComputeProjectionImpl::projection(std::function<bool(const GridClientNode&)> & filter) {
     return makeProjection(
         TGridClientNodePredicatePtr(
             new GridClientPredicateLambdaWrapper<GridClientNode>(filter)),
@@ -156,7 +156,7 @@ TGridClientComputePtr GridClientComputeProjectionImpl::projection(const TGridCli
     return makeProjection(filter, balancer);
 }
 
-TGridClientComputePtr GridClientComputeProjectionImpl::projection(std::function<bool (const GridClientNode&)> filter,
+TGridClientComputePtr GridClientComputeProjectionImpl::projection(std::function<bool (const GridClientNode&)> & filter,
         TGridClientLoadBalancerPtr balancer) {
     return makeProjection(
         TGridClientNodePredicatePtr(
@@ -301,7 +301,7 @@ TGridClientFutureVariant GridClientComputeProjectionImpl::affinityExecuteAsync(c
  * @param id Node ID.
  * @return Node for given ID or {@code null} if node with given id was not found.
  */
-TGridClientNodePtr GridClientComputeProjectionImpl::node(const GridUuid& uuid) const {
+TGridClientNodePtr GridClientComputeProjectionImpl::node(const GridClientUuid& uuid) const {
     return GridClientProjectionImpl::node(uuid);
 }
 
@@ -314,18 +314,16 @@ TGridClientNodePtr GridClientComputeProjectionImpl::node(const GridUuid& uuid) c
  */
 TGridClientNodeList GridClientComputeProjectionImpl::nodes(TGridClientNodePredicatePtr pred) const {
     if (pred.get() != NULL) {
-        return nodes([&pred](const GridClientNode& n) {
-            return pred->apply(n);
-        });
+        std::function <bool(const GridClientNode&)> filter = [&pred](const GridClientNode& n) { return pred->apply(n); };
+        return nodes(filter);
     }
     else {
-        return nodes([](const GridClientNode& n) {
-            return true;
-        });
+        std::function <bool(const GridClientNode&)> filter = [](const GridClientNode& n) { return true; };
+        return nodes(filter);
     }
 }
 
-TGridClientNodeList GridClientComputeProjectionImpl::nodes(std::function<bool(const GridClientNode&)> filter) const {
+TGridClientNodeList GridClientComputeProjectionImpl::nodes(std::function<bool(const GridClientNode&)> & filter) const {
     TGridClientNodeList nodes;
 
     TNodesSet ns;
@@ -362,10 +360,10 @@ TGridClientNodeList GridClientComputeProjectionImpl::nodes() const {
  * @param filter Node filter.
  * @return Collection of nodes that satisfy provided filter.
  */
-TGridClientNodeList GridClientComputeProjectionImpl::nodes(const std::vector<GridUuid>& ids) const {
+TGridClientNodeList GridClientComputeProjectionImpl::nodes(const std::vector<GridClientUuid>& ids) const {
     TGridClientNodeList nodes;
 
-    std::set<GridUuid> nodeIds(ids.begin(), ids.end());
+    std::set<GridClientUuid> nodeIds(ids.begin(), ids.end());
 
     TNodesSet ns;
 
@@ -389,7 +387,7 @@ TGridClientNodeList GridClientComputeProjectionImpl::refreshTopology(GridTopolog
                 : ClientMessageProjectionClosure(clientId), cmd(topReqCmd), topRslt(rslt) {
         }
 
-        virtual void apply(TGridClientNodePtr node, GridSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
+        virtual void apply(TGridClientNodePtr node, GridClientSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
             fillRequestHeader(cmd, node);
 
             cmdExecutor.executeTopologyCmd(connParams, cmd, topRslt);
@@ -427,7 +425,7 @@ TGridClientNodeList GridClientComputeProjectionImpl::refreshTopology(GridTopolog
  * @throw GridServerUnreachableException If none of the servers can be reached.
  * @throw GridClientClosedException If client was closed manually.
  */
-TGridClientNodePtr GridClientComputeProjectionImpl::refreshNode(const GridUuid& id, bool includeAttrs,
+TGridClientNodePtr GridClientComputeProjectionImpl::refreshNode(const GridClientUuid& id, bool includeAttrs,
         bool includeMetrics) {
     if (invalidated)
         throw GridClientClosedException();
@@ -454,7 +452,7 @@ TGridClientNodePtr GridClientComputeProjectionImpl::refreshNode(const GridUuid& 
  * @param includeMetrics Whether to include node metrics.
  * @return Future.
  */
-TGridClientNodeFuturePtr GridClientComputeProjectionImpl::refreshNodeAsync(const GridUuid& id, bool includeAttrs,
+TGridClientNodeFuturePtr GridClientComputeProjectionImpl::refreshNodeAsync(const GridClientUuid& id, bool includeAttrs,
         bool includeMetrics) {
     if (invalidated)
         return TGridClientNodeFuturePtr(
@@ -465,7 +463,7 @@ TGridClientNodeFuturePtr GridClientComputeProjectionImpl::refreshNodeAsync(const
 
     boost::packaged_task<TGridClientNodePtr> pt(
             boost::bind(
-                    static_cast<TGridClientNodePtr (GridClientComputeProjectionImpl::*)(const GridUuid&, bool, bool)>
+                    static_cast<TGridClientNodePtr (GridClientComputeProjectionImpl::*)(const GridClientUuid&, bool, bool)>
                     (&GridClientComputeProjectionImpl::refreshNode), this, id, includeAttrs, includeMetrics));
 
     fut->task(pt);

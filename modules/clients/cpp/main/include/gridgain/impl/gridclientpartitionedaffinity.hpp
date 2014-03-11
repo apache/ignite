@@ -81,7 +81,7 @@ public:
      *
      * @return The affinity node for the given key.
      */
-    virtual TGridClientNodePtr getNode(const TNodesSet& nodes, const GridHasheableObject& key);
+    virtual TGridClientNodePtr getNode(const TNodesSet& nodes, const GridClientHasheableObject& key);
 
     /**
      * Gets default count of virtual replicas on the consistent hash ring.
@@ -215,7 +215,7 @@ private:
      *
      * @return The client node with the matching uuid.
      */
-    TGridClientNodePtr findNode(const GridUuid& id, const TNodesSet& nodes) const;
+    TGridClientNodePtr findNode(const GridClientUuid& id, const TNodesSet& nodes) const;
 
     /** Hasher for this affinity function. */
     GridClientConsistentHashImpl nodeHash;
@@ -233,7 +233,7 @@ private:
     std::string attrName;
 
     /** Nodes IDs. */
-    std::set<GridUuid> addedNodes;
+    std::set<GridClientUuid> addedNodes;
 
     /** Optional backup filter. */
     TGridClientNodePredicatePtr backupFilter;

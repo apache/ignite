@@ -1138,12 +1138,7 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
      * @return Reconstructed object.
      */
     protected Object readResolve() {
-        GridStreamer s = ctx.stream().streamer(name);
-
-        if (s == null)
-            throw new IllegalStateException("Failed to resolve streamer with name: " + name);
-
-        return s;
+        return ctx.stream().streamer(name);
     }
 
     /** {@inheritDoc} */

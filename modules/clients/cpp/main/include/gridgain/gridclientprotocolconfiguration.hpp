@@ -134,7 +134,7 @@ public:
     /**
      * Returns UUID used to authenticate
      */
-    GridUuid uuid() const;
+    GridClientUuid uuid() const;
 
     /**
      * Gets client credentials to authenticate with.
