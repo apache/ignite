@@ -29,7 +29,7 @@ public:
             : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
     }
 
-    CacheRequestProjectionClosure(GridUuid & clientId, GridCacheRequestCommand& cacheCmd)
+    CacheRequestProjectionClosure(GridClientUuid & clientId, GridCacheRequestCommand& cacheCmd)
             : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
     }
 
@@ -37,7 +37,7 @@ public:
             : ClientMessageProjectionClosure(clientId.c_str()), cmd(cacheCmd) {
     }
 
-    virtual void apply(TGridClientNodePtr node, GridSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
+    virtual void apply(TGridClientNodePtr node, GridClientSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
         fillRequestHeader(cmd, node);
 
         cmdExecutor.executeModifyCacheCmd(connParams, cmd, rslt);
@@ -65,7 +65,7 @@ public:
             : ClientMessageProjectionClosure(clientId.c_str()), cmd(cacheCmd) {
     }
 
-    virtual void apply(TGridClientNodePtr node, GridSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
+    virtual void apply(TGridClientNodePtr node, GridClientSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
         fillRequestHeader(cmd, node);
 
         cmdExecutor.executeGetCacheMetricsCmd(connParams, cmd, rslt);
@@ -92,7 +92,7 @@ public:
 
     }
 
-    virtual void apply(TGridClientNodePtr node, GridSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
+    virtual void apply(TGridClientNodePtr node, GridClientSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
         fillRequestHeader(cmd, node);
 
         cmdExecutor.executeGetCacheCmd(connParams, cmd, rslt);
@@ -493,7 +493,7 @@ TGridClientFutureDataMetrics GridClientDataProjectionImpl::metricsAsync() {
     return res;
 }
 
-GridUuid GridClientDataProjectionImpl::affinity(const GridClientVariant& key) {
+GridClientUuid GridClientDataProjectionImpl::affinity(const GridClientVariant& key) {
     return affinityNode(prjCacheName, GridClientVariantHasheableObject(key))->getNodeId();
 }
 

@@ -77,7 +77,7 @@ GridClientVariant::GridClientVariant(const std::vector<GridClientVariant>& v)  {
     pimpl.var = v;
 }
 
-GridClientVariant::GridClientVariant(const GridUuid& val)  {
+GridClientVariant::GridClientVariant(const GridClientUuid& val)  {
     pimpl.var = val;
 }
 
@@ -197,7 +197,7 @@ std::vector<GridClientVariant> GridClientVariant::getVariantVector() const {
     return boost::get<std::vector<GridClientVariant> >(pimpl.var);
 }
 
-void GridClientVariant::set(const GridUuid& val) {
+void GridClientVariant::set(const GridClientUuid& val) {
     pimpl.var = val;
 }
 
@@ -205,8 +205,8 @@ bool GridClientVariant::hasUuid() const {
     return pimpl.var.which() == Impl::UUID_TYPE;
 }
 
-GridUuid GridClientVariant::getUuid() const {
-    return boost::get<GridUuid>(pimpl.var);
+GridClientUuid GridClientVariant::getUuid() const {
+    return boost::get<GridClientUuid>(pimpl.var);
 }
 
 string GridClientVariant::toString() const {
@@ -324,7 +324,7 @@ string GridClientVariant::debugString() const {
             break;
 
         case Impl::UUID_TYPE:
-            os << "GridUuid, value=" << getUuid().uuid();
+            os << "GridClientUuid, value=" << getUuid().uuid();
 
             break;
 
@@ -384,7 +384,7 @@ public:
         visitor.visit(val);
     }
 
-    void operator()(const GridUuid& val) const {
+    void operator()(const GridClientUuid& val) const {
         visitor.visit(val);
     }
 

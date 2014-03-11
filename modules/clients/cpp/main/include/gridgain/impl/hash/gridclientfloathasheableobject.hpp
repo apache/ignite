@@ -20,7 +20,7 @@
 /**
  * Provide the implementation of hash-code for the float type.
  */
-class GridFloatHasheableObject : public GridHasheableObject {
+class GridFloatHasheableObject : public GridClientHasheableObject {
 public:
     /**
      * Public constructor.

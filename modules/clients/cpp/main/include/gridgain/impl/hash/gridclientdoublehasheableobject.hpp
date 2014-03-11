@@ -20,7 +20,7 @@
 /**
  * Provide the implementation of hash-code for the double type.
  */
-class GridDoubleHasheableObject : public GridHasheableObject {
+class GridDoubleHasheableObject : public GridClientHasheableObject {
 public:
     /** Public constructor.
      *

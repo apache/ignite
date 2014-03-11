@@ -56,7 +56,7 @@ private:
 /**
  * Boost-based implementation of the Grid future.
  */
-class GridBoolFutureImpl: public GridBoolFuture {
+class GridBoolFutureImpl: public GridClientBoolFuture {
 public:
     GridBoolFutureImpl(TGridThreadPoolPtr& threadPool): threadPool(threadPool) {}
 
@@ -118,7 +118,7 @@ private:
  * @param ExT Type of exception to throw.
  */
 template<class ExT>
-class GridBoolFailFutureImpl: public GridBoolFuture {
+class GridBoolFailFutureImpl: public GridClientBoolFuture {
 public:
     GridBoolFailFutureImpl() {}
 
@@ -145,7 +145,7 @@ public:
  * Generic future implementation.
  */
 template<class T>
-class GridFutureImpl: public GridFuture<T> {
+class GridFutureImpl: public GridClientFuture<T> {
 public:
 
     /** Default constructor. */
@@ -249,7 +249,7 @@ private:
  * @param ExT Type of exception to throw.
  */
 template<class T, class ExT>
-class GridFailFutureImpl: public GridFuture<T> {
+class GridFailFutureImpl: public GridClientFuture<T> {
 public:
     /**
      * Always returns false - the operation was initially invalid.

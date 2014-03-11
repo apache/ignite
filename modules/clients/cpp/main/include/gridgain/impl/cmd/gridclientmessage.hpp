@@ -48,14 +48,14 @@ public:
      *
      * @return Client identifier.
      */
-    GridUuid getClientId() const { return clientId; }
+    GridClientUuid getClientId() const { return clientId; }
 
     /**
      * Sets client identifier from which this request comes.
      *
      * @param id Client identifier.
      */
-    void setClientId(const GridUuid& id) {
+    void setClientId(const GridClientUuid& id) {
         clientId = id;
     }
 
@@ -82,7 +82,7 @@ public:
      *
      * @return destination id.
      */
-    GridUuid getDestinationId() const {
+    GridClientUuid getDestinationId() const {
         return destinationId;
     }
 
@@ -91,7 +91,7 @@ public:
      *
      * @param destinationId Destination id.
      */
-    void setDestinationId(const GridUuid& destinationId) {
+    void setDestinationId(const GridClientUuid& destinationId) {
         this->destinationId = destinationId;
     }
 
@@ -105,7 +105,7 @@ public:
     }
 private:
     /** Message client id. */
-    GridUuid clientId;
+    GridClientUuid clientId;
 
     /** Message sessio token. */
     std::string sessTok;
@@ -114,7 +114,7 @@ private:
     int64_t reqId;
 
     /** Message destination id. */
-    GridUuid destinationId;
+    GridClientUuid destinationId;
 };
 
 #endif

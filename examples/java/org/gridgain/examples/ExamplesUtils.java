@@ -10,6 +10,7 @@
 package org.gridgain.examples;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.streamer.*;
 
 /**
  *
@@ -67,5 +68,21 @@ public class ExamplesUtils {
                 "(please set 'GRIDGAIN_HOME' environment or system variable)");
 
         return var;
+    }
+
+    /**
+     * @param grid Grid.
+     * @param name Streamer name.
+     * @return {@code True} if grid has streamer with given name.
+     */
+    public static boolean hasStreamer(Grid grid, String name) {
+        if (grid.configuration().getStreamerConfiguration() != null) {
+            for (GridStreamerConfiguration cfg : grid.configuration().getStreamerConfiguration()) {
+                if (name.equals(cfg.getName()))
+                    return true;
+            }
+        }
+
+        return false;
     }
 }

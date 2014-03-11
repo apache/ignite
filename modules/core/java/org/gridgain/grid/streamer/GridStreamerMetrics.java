@@ -170,12 +170,13 @@ public interface GridStreamerMetrics {
     public int executorServiceCapacity();
 
     /**
-     * Gets current stage metrics.
+     * Gets current stage metrics, if stage with given name is not configured
+     * then {@link IllegalArgumentException} will be thrown.
      *
      * @param stageName Stage name.
-     * @return Stage metrics. Will return {@code null} if stage with given name is not configured.
+     * @return Stage metrics.
      */
-    @Nullable public GridStreamerStageMetrics stageMetrics(String stageName);
+    public GridStreamerStageMetrics stageMetrics(String stageName);
 
     /**
      * Gets metrics for all stages. Stage metrics order is the same as stage order in configuration.
@@ -185,12 +186,13 @@ public interface GridStreamerMetrics {
     public Collection<GridStreamerStageMetrics> stageMetrics();
 
     /**
-     * Gets current window metrics.
+     * Gets current window metrics, if window with given name is not configured
+     * then {@link IllegalArgumentException} will be thrown.
      *
      * @param winName Window name.
      * @return Window metrics.
      */
-    @Nullable public GridStreamerWindowMetrics windowMetrics(String winName);
+    public GridStreamerWindowMetrics windowMetrics(String winName);
 
     /**
      * Gets metrics for all windows.

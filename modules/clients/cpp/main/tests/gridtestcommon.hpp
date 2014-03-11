@@ -88,7 +88,7 @@ public:
 
 private:
     /** Nodes map. */
-    std::map<GridUuid, GridClientNode> nodes;
+    std::map<GridClientUuid, GridClientNode> nodes;
 
     /** Nodes map mutex. */
     mutable boost::mutex nodesMux;

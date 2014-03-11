@@ -12,7 +12,7 @@
 
 #include "gridgain/gridclienttypedef.hpp"
 
-class GridSocketAddress;
+class GridClientSocketAddress;
 class GridClientCommandExecutor;
 
 /**
@@ -29,7 +29,7 @@ public:
      * @param connParams Host/port pair.
      * @param cmdExecutor Command executor.
      */
-    virtual void apply(TGridClientNodePtr node, GridSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) = 0;
+    virtual void apply(TGridClientNodePtr node, GridClientSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) = 0;
 };
 
 #endif
