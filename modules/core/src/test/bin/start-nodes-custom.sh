@@ -11,6 +11,6 @@
 
 SCRIPT_DIR=$(cd $(dirname "$0"); pwd)
 
-export GRIDGAIN_HOME="${SCRIPT_DIR}"/../../../../..
+BIN_DIR="${SCRIPT_DIR}"/../../../../..
 
-"${GRIDGAIN_HOME}"/bin/ggstart.sh -v modules/core/src/test/config/spring-start-nodes-attr.xml
+"${BIN_DIR}"/bin/ggstart.sh -v modules/core/src/test/config/spring-start-nodes-attr.xml
