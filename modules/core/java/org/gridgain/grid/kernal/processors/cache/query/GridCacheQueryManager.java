@@ -1204,55 +1204,63 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws GridException In case of error.
      */
     public Collection<GridCacheSqlMetadata> sqlMetadata() throws GridException {
-        Callable<Collection<CacheSqlMetadata>> job = new MetadataJob(spi);
+        if (!enterBusy())
+            throw new IllegalStateException("Failed to get metadata (grid is stopping).");
 
-        // Remote nodes that have current cache.
-        Collection<GridNode> nodes = F.view(cctx.discovery().remoteNodes(), new P1<GridNode>() {
-            @Override public boolean apply(GridNode n) {
-                return U.hasCache(n, space);
+        try {
+            Callable<Collection<CacheSqlMetadata>> job = new MetadataJob(spi);
+
+            // Remote nodes that have current cache.
+            Collection<GridNode> nodes = F.view(cctx.discovery().remoteNodes(), new P1<GridNode>() {
+                @Override public boolean apply(GridNode n) {
+                    return U.hasCache(n, space);
+                }
+            });
+
+            Collection<Collection<CacheSqlMetadata>> res = new ArrayList<>(nodes.size() + 1);
+
+            GridFuture<Collection<Collection<CacheSqlMetadata>>> rmtFut = null;
+
+            // Get metadata from remote nodes.
+            if (!nodes.isEmpty())
+                rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, F.asSet(job), nodes, true);
+
+            // Get local metadata.
+            GridFuture<Collection<CacheSqlMetadata>> locFut = cctx.closures().callLocalSafe(job, true);
+
+            if (rmtFut != null)
+                res.addAll(rmtFut.get());
+
+            res.add(locFut.get());
+
+            Map<String, Collection<CacheSqlMetadata>> map = new HashMap<>();
+
+            for (Collection<CacheSqlMetadata> col : res) {
+                for (CacheSqlMetadata meta : col) {
+                    String name = meta.cacheName();
+
+                    Collection<CacheSqlMetadata> cacheMetas = map.get(name);
+
+                    if (cacheMetas == null)
+                        map.put(name, cacheMetas = new LinkedList<>());
+
+                    cacheMetas.add(meta);
+                }
             }
-        });
 
-        Collection<Collection<CacheSqlMetadata>> res = new ArrayList<>(nodes.size() + 1);
+            Collection<GridCacheSqlMetadata> col = new ArrayList<>(map.size());
 
-        GridFuture<Collection<Collection<CacheSqlMetadata>>> rmtFut = null;
+            // Metadata for current cache must be first in list.
+            col.add(new CacheSqlMetadata(map.remove(space)));
 
-        // Get metadata from remote nodes.
-        if (!nodes.isEmpty())
-            rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, F.asSet(job), nodes, true);
+            for (Collection<CacheSqlMetadata> metas : map.values())
+                col.add(new CacheSqlMetadata(metas));
 
-        // Get local metadata.
-        GridFuture<Collection<CacheSqlMetadata>> locFut = cctx.closures().callLocalSafe(job, true);
-
-        if (rmtFut != null)
-            res.addAll(rmtFut.get());
-
-        res.add(locFut.get());
-
-        Map<String, Collection<CacheSqlMetadata>> map = new HashMap<>();
-
-        for (Collection<CacheSqlMetadata> col : res) {
-            for (CacheSqlMetadata meta : col) {
-                String name = meta.cacheName();
-
-                Collection<CacheSqlMetadata> cacheMetas = map.get(name);
-
-                if (cacheMetas == null)
-                    map.put(name, cacheMetas = new LinkedList<>());
-
-                cacheMetas.add(meta);
-            }
+            return col;
         }
-
-        Collection<GridCacheSqlMetadata> col = new ArrayList<>(map.size());
-
-        // Metadata for current cache must be first in list.
-        col.add(new CacheSqlMetadata(map.remove(space)));
-
-        for (Collection<CacheSqlMetadata> metas : map.values())
-            col.add(new CacheSqlMetadata(metas));
-
-        return col;
+        finally {
+            leaveBusy();
+        }
     }
 
     /**
