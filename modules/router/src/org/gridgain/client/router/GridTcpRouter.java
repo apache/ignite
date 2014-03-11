@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,9 +9,9 @@
 
 package org.gridgain.client.router;
 
-import java.util.*;
-
 import org.gridgain.client.*;
+
+import java.util.*;
 
 /**
  * TCP router interface.
@@ -46,8 +46,7 @@ import org.gridgain.client.*;
  * Instances of this interface are managed through {@link GridRouterFactory}.
  *
  * @see GridTcpRouterConfiguration
- * @author @java.author
- * @version @java.version
+ *
  */
 public interface GridTcpRouter {
     /**
@@ -56,8 +55,8 @@ public interface GridTcpRouter {
      * Unique router Ids are automatically generated on router startup.
      * They are used to control router's lifecycle via {@link GridRouterFactory}.
      *
-     * @see GridRouterFactory#tcpRouter(java.util.UUID)
-     * @see GridRouterFactory#stopTcpRouter(java.util.UUID)
+     * @see GridRouterFactory#tcpRouter(UUID)
+     * @see GridRouterFactory#stopTcpRouter(UUID)
      * @return Router Id.
      */
     public UUID id();

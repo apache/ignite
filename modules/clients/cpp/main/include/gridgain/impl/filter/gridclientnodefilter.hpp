@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -31,9 +31,6 @@ class GridClientAllPassFilter: public TGridClientNodePredicate {
 
 /**
  * The special filter for STL-filtering operations.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientNodeUuidFilter: public TGridClientNodePredicate {
 public:
@@ -56,7 +53,7 @@ public:
      *
      * @param nodes List of UUIDs.
      */
-    GridClientNodeUuidFilter(const std::vector<GridUuid>& uuids) {
+    GridClientNodeUuidFilter(const std::vector<GridClientUuid>& uuids) {
         for (size_t i = 0; i < uuids.size(); ++i)
             nodeIds.insert(uuids[i].uuid());
     }
@@ -82,7 +79,7 @@ public:
 
 private:
     /** Collection of UUIDs. */
-    std::set<GridUuid> nodeIds;
+    std::set<GridClientUuid> nodeIds;
 };
 
 /**
@@ -120,7 +117,7 @@ struct GridOneOfUuid: public TGridClientNodePredicate {
      *
      * @cacheName The name of the cache to evaluate against.
      */
-    GridOneOfUuid(const std::set<GridUuid>& uuidSet)
+    GridOneOfUuid(const std::set<GridClientUuid>& uuidSet)
             : uuidSet_(uuidSet) {
     }
 
@@ -132,7 +129,7 @@ struct GridOneOfUuid: public TGridClientNodePredicate {
         return uuidSet_.find(node.getNodeId()) == uuidSet_.end();
     }
 
-    const std::set<GridUuid>& uuidSet_;
+    const std::set<GridClientUuid>& uuidSet_;
 };
 
 #endif

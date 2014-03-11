@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import javax.persistence.*;
  * Note that this is a reference implementation for tests only.
  * When running on production systems use concrete key-value types to
  * get better performance.
- *
- * @author @java.author
- * @version @java.version
  */
 @Entity
 @Table(name = "ENTRIES")

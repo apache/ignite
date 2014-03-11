@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -24,82 +24,16 @@ import org.gridgain.grid.util.typedef.*;
  * Note that this interface does not impose or assume any specific thread-safety by its
  * implementations. Each implementation can elect what type of thread-safety it provides,
  * if any.
- *
- * @author @java.author
- * @version @java.version
  * @see P1
  * @see GridFunc
  */
-public abstract class GridAbsPredicate extends GridLambdaAdapter {
+public abstract class GridAbsPredicate {
     /**
      * Predicate body.
      *
      * @return Return value.
      */
     public abstract boolean apply();
-
-    /**
-     * Gets predicate that ignores its argument and returns the same value as this
-     * predicate.
-     *
-     * @param <E> Type of ignore argument.
-     * @return Predicate that ignores its argument and returns the same value as this
-     *      predicate.
-     */
-    public <E> GridPredicate<E> uncurry() {
-        GridPredicate<E> p = new P1<E>() {
-            @Override public boolean apply(E e) {
-                return GridAbsPredicate.this.apply();
-            }
-        };
-
-        p.peerDeployLike(this);
-
-        return p;
-    }
-
-    /**
-     * Gets predicate that ignores its arguments and returns the same value as this
-     * predicate.
-     *
-     * @param <E1> Type of 1st ignore argument.
-     * @param <E2> Type of 2nd ignore argument.
-     * @return Predicate that ignores its arguments and returns the same value as this
-     *      predicate.
-     */
-    public <E1, E2> GridBiPredicate<E1, E2> uncurry2() {
-        GridBiPredicate<E1, E2> p = new P2<E1, E2>() {
-            @Override public boolean apply(E1 e1, E2 e2) {
-                return GridAbsPredicate.this.apply();
-            }
-        };
-
-        p.peerDeployLike(this);
-
-        return p;
-    }
-
-    /**
-     * Gets predicate that ignores its arguments and returns the same value as this
-     * predicate.
-     *
-     * @param <E1> Type of 1st ignore argument.
-     * @param <E2> Type of 2nd ignore argument.
-     * @param <E3> Type of 3d ignore argument.
-     * @return Predicate that ignores its arguments and returns the same value as this
-     *      predicate.
-     */
-    public <E1, E2, E3> GridPredicate3<E1, E2, E3> uncurry3() {
-        GridPredicate3<E1, E2, E3> p = new P3<E1, E2, E3>() {
-            @Override public boolean apply(E1 e1, E2 e2, E3 e3) {
-                return GridAbsPredicate.this.apply();
-            }
-        };
-
-        p.peerDeployLike(this);
-
-        return p;
-    }
 
     /**
      * Gets closure that applies given closure over the result of {@code this} predicate.

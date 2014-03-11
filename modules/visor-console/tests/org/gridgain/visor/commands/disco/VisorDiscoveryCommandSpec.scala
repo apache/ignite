@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -20,9 +20,6 @@ import org.gridgain.grid._
 
 /**
  * Unit test for 'disco' command.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorDiscoveryCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterAll {
     /**

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
@@ -24,9 +23,6 @@ import java.util.*;
 
 /**
  * Transaction completion message.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMessage<K, V> {
     /** Future ID. */

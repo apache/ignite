@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,18 +9,17 @@
 
 package org.gridgain.grid.spi.collision;
 
+import org.gridgain.grid.compute.*;
+
 import java.util.*;
 
 /**
  * Context for resolving collisions. This context contains collections of
  * waiting jobs, active jobs, and held jobs. If continuations are not used
- * (see {@link org.gridgain.grid.compute.GridComputeJobContinuation}), then collection of held jobs will
+ * (see {@link GridComputeJobContinuation}), then collection of held jobs will
  * always be empty. {@link GridCollisionSpi} will manipulate these lists
  * to make sure that only allowed number of jobs are running in parallel or
  * waiting to be executed.
- *
- * @author @java.author
- * @version @java.version
  * @since 3.5
  */
 public interface GridCollisionContext {
@@ -46,9 +45,9 @@ public interface GridCollisionContext {
 
     /**
      * Gets collection of jobs that are currently in {@code held} state. Job can enter
-     * {@code held} state by calling {@link org.gridgain.grid.compute.GridComputeJobContinuation#holdcc()} method at
+     * {@code held} state by calling {@link GridComputeJobContinuation#holdcc()} method at
      * which point job will release all resources and will get suspended. If
-     * {@link org.gridgain.grid.compute.GridComputeJobContinuation job continuations} are not used, then this list
+     * {@link GridComputeJobContinuation job continuations} are not used, then this list
      * will always be empty, but never {@code null}.
      *
      * @return Collection of jobs that are currently in {@code held} state.

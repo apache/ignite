@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,9 +15,6 @@ import java.io.*;
 
 /**
  * {@code Task} command request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientTaskRequest extends GridClientAbstractMessage {
     /** Task name. */

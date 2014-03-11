@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,12 +21,8 @@ import java.util.*;
  * Convenient node predicate as a separate class. It allows to avoid "dragging" enclosing
  * class's state when predicates are created as anonymous classes in stateful enclosing context.
  * This class is also optimized for evaluation of large number of nodes.
- *
- * @author @java.author
- * @version @java.version
- * @param <T> Type of the predicate.
  */
-public class GridNodePredicate<T extends GridNode> extends GridPredicate<T> implements Iterable<UUID> {
+public class GridNodePredicate implements GridPredicate<GridNode>, Iterable<UUID> {
     /** */
     @GridToStringInclude
     private final Set<UUID> ids;

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -35,7 +35,7 @@ import org.jetbrains.annotations.*;
  * cfg.setSecureSessionSpi(spi);
  *
  * // Start grid.
- * GridFactory.start(cfg);
+ * GridGain.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * GridNoopSecureSessionSpi can be configured from Spring XML configuration file:
@@ -52,9 +52,6 @@ import org.jetbrains.annotations.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- *
- * @author @java.author
- * @version @java.version
  * @see GridSecureSessionSpi
  */
 @GridSpiInfo(

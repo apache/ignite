@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -25,7 +25,7 @@ void GridClientTopology::remove(const TNodesSet& deletedNodes) {
         nodes_.erase(*it);
 }
 
-const TGridClientNodePtr GridClientTopology::node(const GridUuid& uuid) const {
+const TGridClientNodePtr GridClientTopology::node(const GridClientUuid& uuid) const {
     boost::shared_lock<boost::shared_mutex> lock(mux_);
 
     for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {

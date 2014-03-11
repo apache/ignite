@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -12,9 +12,9 @@ package org.gridgain.grid.dr.hub.sender.store.memory;
 import org.gridgain.grid.*;
 import org.gridgain.grid.dr.hub.sender.store.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.atomic.*;
@@ -31,29 +31,29 @@ import static org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflow
  * <ul>
  * <li>Maximum number of entries can be stored (see {@link #setMaxSize(int)})</li>
  * <li>Overflow mode defining how store will behave in case of overflow
- *      (see {@link #setOverflowMode(org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflowMode)})</li>
+ *      (see {@link #setOverflowMode(GridDrSenderHubStoreOverflowMode)})</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
  * <pre name="code" class="java">
  * GridDrSenderHubConfiguration cfg = new GridDrSenderHubConfiguration();
  *
- * GridDrFsStore store = new GridDrInMemoryStore();
+ * GridDrSenderHubInMemoryStore store = new GridDrSenderHubInMemoryStore();
  *
  * // Override default overflow mode.
- * store.setOverflowMode(GridDrStoreOverflowMode.REMOVE_OLDEST);
+ * store.setOverflowMode(GridDrSenderHubStoreOverflowMode.REMOVE_OLDEST);
  *
  * // Set in-memory store for sender hub.
  * cfg.setStore(store);
  * </pre>
  * <h2 class="header">Spring Example</h2>
- * GridDrInMemoryStore can be configured from Spring XML configuration file:
+ * GridDrSenderHubInMemoryStore can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="drSenderHubConfiguration"&gt;
  *              &lt;bean class="org.gridgain.grid.dr.hub.sender.GridDrSenderHubConfiguration"&gt;
  *                  &lt;property name="store"&gt;
- *                      &lt;bean class="org.gridgain.grid.dr.hub.sender.store.memory.GridDrInMemoryStore"&gt;
+ *                      &lt;bean class="org.gridgain.grid.dr.hub.sender.store.memory.GridDrSenderHubInMemoryStore"&gt;
  *                          &lt;property name="overflowMode" value="REMOVE_OLDEST"/&gt;
  *                      &lt;/bean&gt;
  *                  &lt;/property&gt;
@@ -67,17 +67,14 @@ import static org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStoreOverflow
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- *
- * @author @java.author
- * @version @java.version
- * @see org.gridgain.grid.dr.hub.sender.store.GridDrSenderHubStore
+ * @see GridDrSenderHubStore
  */
 public class GridDrSenderHubInMemoryStore implements GridDrSenderHubStore, GridLifecycleAware {
     /** */
     private static final int MAX_DATA_CENTERS = 32;
 
     /** */
-    public static final int DFLT_MAX_SIZE = 65536;
+    public static final int DFLT_MAX_SIZE = 8192;
 
     /** */
     public static final GridDrSenderHubStoreOverflowMode DFLT_OVERFLOW_MODE = STOP;

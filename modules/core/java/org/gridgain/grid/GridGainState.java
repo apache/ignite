@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ import org.jetbrains.annotations.*;
  * Possible states of {@link GridGain}. You can register a listener for
  * state change notifications via {@link GridGain#addListener(GridGainListener)}
  * method.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridGainState {
     /**

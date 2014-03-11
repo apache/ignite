@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,8 +10,6 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.partitioned.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
@@ -32,9 +30,6 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 
 /**
  * Responsible for high performance file system.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsProcessor extends GridProcessorAdapter {
     /** Null GGFS name. */
@@ -195,7 +190,7 @@ public class GridGgfsProcessor extends GridProcessorAdapter {
      * @param name Cache name.
      * @return Masked name accounting for {@code nulls}.
      */
-    private String maskName(String name) {
+    private String maskName(@Nullable String name) {
         return name == null ? NULL_NAME : name;
     }
 
@@ -225,9 +220,9 @@ public class GridGgfsProcessor extends GridProcessorAdapter {
             if (F.eq(cfg.getDataCacheName(), cfg.getMetaCacheName()))
                 throw new GridException("Cannot use same cache as both data and meta cache: " + cfg.getName());
 
-            if (!(dataCache.configuration().getAffinityMapper() instanceof GridGgfsGroupDataBlocksMapper))
+            if (!(dataCache.configuration().getAffinityMapper() instanceof GridGgfsGroupDataBlocksKeyMapper))
                 throw new GridException("Invalid GGFS data cache configuration (key affinity mapper class should be " +
-                    GridGgfsGroupDataBlocksMapper.class.getSimpleName() + "): " + cfg);
+                    GridGgfsGroupDataBlocksKeyMapper.class.getSimpleName() + "): " + cfg);
 
             long maxSpaceSize = cfg.getMaxSpaceSize();
 
@@ -248,15 +243,11 @@ public class GridGgfsProcessor extends GridProcessorAdapter {
             }
 
             if (dataCache.configuration().getCacheMode() == PARTITIONED) {
-                GridCacheAffinity aff = dataCache.configuration().getAffinity();
+                int backups = dataCache.configuration().getBackups();
 
-                if (aff instanceof GridCachePartitionedAffinity) {
-                    int backups = ((GridCachePartitionedAffinity)aff).getKeyBackups();
-
-                    if (backups != 0)
-                        throw new GridException("GGFS data cache cannot be used with backups (set backup count " +
-                            "to 0 and restart the grid): " + cfg.getDataCacheName());
-                }
+                if (backups != 0)
+                    throw new GridException("GGFS data cache cannot be used with backups (set backup count " +
+                        "to 0 and restart the grid): " + cfg.getDataCacheName());
             }
 
             if (cfg.getMaxSpaceSize() == 0 && dataCache.configuration().getMemoryMode() == OFFHEAP_VALUES)

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,8 +11,8 @@ package org.gridgain.grid.util;
 
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -31,9 +31,6 @@ import java.util.*;
  * NOTE 1: For the moment inner class running is not supported.
  * <p>
  * NOTE 2: This util class should work fine on Linux, Mac OS and Windows.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridJavaProcess {
     /** Internal protocol message prefix saying that the next text in the outputted line is pid. */
@@ -72,7 +69,7 @@ public final class GridJavaProcess {
      * @param printC Optional closure to be called each time wrapped process prints line to system.out or system.err.
      * @param procKilledC Optional closure to be called when process termination is detected.
      * @param log Log to use.
-     * @return Wrapper around {@link java.lang.Process}
+     * @return Wrapper around {@link Process}
      * @throws Exception If any problem occurred.
      */
     public static GridJavaProcess exec(Class cls, String params, @Nullable GridLogger log,
@@ -89,7 +86,7 @@ public final class GridJavaProcess {
      * @param procKilledC Optional closure to be called when process termination is detected.
      * @param log Log to use.
      * @param jvmArgs JVM arguments to use.
-     * @return Wrapper around {@link java.lang.Process}
+     * @return Wrapper around {@link Process}
      * @throws Exception If any problem occurred.
      */
     public static GridJavaProcess exec(Class cls, String params, @Nullable GridLogger log,

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ import org.gridgain.grid.*;
  * throw checked exception and this class provides a standard idiom on how to wrap and pass an
  * exception up the call chain. It is also frequently used with {@link GridEither} to return
  * either wrapping exception or value from the closure.
- *
- * @author @java.author
- * @version @java.version
  * @see GridEither
  * @see GridFunc#wrap(Throwable)
  */

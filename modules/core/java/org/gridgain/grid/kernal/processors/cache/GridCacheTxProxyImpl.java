@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
@@ -22,9 +21,6 @@ import java.util.concurrent.*;
 
 /**
  * Cache transaction proxy.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externalizable {
     /** Wrapped transaction. */
@@ -168,7 +164,7 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Override public void end() throws GridException {
+    @Override public void close() throws GridException {
         enter();
 
         try {

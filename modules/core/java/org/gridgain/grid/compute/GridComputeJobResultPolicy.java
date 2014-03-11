@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.util.*;
  * This enumeration provides different types of actions following the last
  * received job result. See {@link GridComputeTask#result(GridComputeJobResult, List)} for
  * more details.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridComputeJobResultPolicy {
     /**

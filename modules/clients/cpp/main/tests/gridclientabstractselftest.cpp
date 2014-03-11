@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -60,9 +60,9 @@ public:
     GridClientConfiguration operator()() const {
         GridClientConfiguration clientConfig;
 
-        vector<GridSocketAddress> servers;
+        vector<GridClientSocketAddress> servers;
 
-        servers.push_back(GridSocketAddress("127.0.0.1", TEST_TCP_PORT));
+        servers.push_back(GridClientSocketAddress("127.0.0.1", TEST_TCP_PORT));
 
         clientConfig.servers(servers);
 
@@ -86,9 +86,9 @@ public:
     GridClientConfiguration operator()() const {
         GridClientConfiguration clientConfig;
 
-        vector<GridSocketAddress> routers;
+        vector<GridClientSocketAddress> routers;
 
-        routers.push_back(GridSocketAddress("127.0.0.1", 12100));
+        routers.push_back(GridClientSocketAddress("127.0.0.1", 12100));
 
         clientConfig.routers(routers);
 
@@ -117,9 +117,9 @@ public:
     GridClientConfiguration operator()() const {
         GridClientConfiguration clientConfig;
 
-        vector<GridSocketAddress> servers;
+        vector<GridClientSocketAddress> servers;
 
-        servers.push_back(GridSocketAddress("127.0.0.1", TEST_HTTP_PORT));
+        servers.push_back(GridClientSocketAddress("127.0.0.1", TEST_HTTP_PORT));
 
         clientConfig.servers(servers);
 
@@ -148,9 +148,9 @@ public:
     GridClientConfiguration operator()() const {
         GridClientConfiguration clientConfig;
 
-        vector<GridSocketAddress> routers;
+        vector<GridClientSocketAddress> routers;
 
-        routers.push_back(GridSocketAddress("127.0.0.1", 12200));
+        routers.push_back(GridClientSocketAddress("127.0.0.1", 12200));
 
         clientConfig.routers(routers);
 
@@ -191,7 +191,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testPut, CfgT, TestCfgs, GridClientFactoryFixtu
 
     TGridClientDataPtr data = client->data(CACHE_NAME);
 
-    client->compute()->refreshNode(GridUuid::randomUuid(), true, true);
+    client->compute()->refreshNode(GridClientUuid::randomUuid(), true, true);
 
     multithreaded([&] {
         GridClientVariant key(genRandomUniqueString("key"));
@@ -726,7 +726,7 @@ static void doCheckNodeDetails(TGridClientNodeList nodes, bool includeAttr, bool
     }
 }
 
-static void doRefreshNode(TGridClientComputePtr compute, GridUuid id, bool includeAttr, bool includeMetric) {
+static void doRefreshNode(TGridClientComputePtr compute, GridClientUuid id, bool includeAttr, bool includeMetric) {
     TGridClientNodePtr node = compute->refreshNode(id, includeAttr, includeMetric);
 
     BOOST_CHECK(node->getTcpAddresses().size() > 0);
@@ -898,7 +898,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(testAffinity, CfgT, TestCfgs, GridClientFactory
         BOOST_REQUIRE(srvAffNodeId.hasString());
 
         // Get client affinity node ID.
-        GridUuid cliAffNodeId = data->affinity(GridClientVariant(key));
+        GridClientUuid cliAffNodeId = data->affinity(GridClientVariant(key));
 
         // Ensure they match.
         BOOST_CHECK_EQUAL(srvAffNodeId.getString(), cliAffNodeId.uuid());

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -28,8 +28,7 @@ import java.util.*;
 import static org.gridgain.grid.events.GridEventType.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
     /** Local node ID. */

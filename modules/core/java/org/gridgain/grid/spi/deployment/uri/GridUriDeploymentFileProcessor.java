@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -27,9 +27,6 @@ import static org.gridgain.grid.spi.deployment.uri.GridUriDeploymentSpi.*;
  * Utility class.
  * <p>
  * Provides useful and common functions for URI deployment.
- *
- * @author @java.author
- * @version @java.version
  */
 final class GridUriDeploymentFileProcessor {
     /**
@@ -41,7 +38,7 @@ final class GridUriDeploymentFileProcessor {
 
     /**
      * Method processes given GAR file and extracts all tasks from it which are
-     * either mentioned in GAR descriptor or implements interface {@link org.gridgain.grid.compute.GridComputeTask}
+     * either mentioned in GAR descriptor or implements interface {@link GridComputeTask}
      * if there is no descriptor in file.
      *
      * @param file GAR file with tasks.
@@ -247,10 +244,10 @@ final class GridUriDeploymentFileProcessor {
     }
 
     /**
-     * Check that class may be instantiated as {@link org.gridgain.grid.compute.GridComputeTask} and used
+     * Check that class may be instantiated as {@link GridComputeTask} and used
      * in deployment.
      *
-     * Loaded task class must implement interface {@link org.gridgain.grid.compute.GridComputeTask}.
+     * Loaded task class must implement interface {@link GridComputeTask}.
      * Only non-abstract, non-interfaces and public classes allowed.
      * Inner static classes also allowed for loading.
      *

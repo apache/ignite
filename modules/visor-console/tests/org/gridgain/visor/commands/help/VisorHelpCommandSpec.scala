@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -17,9 +17,6 @@ import org.gridgain.visor._
 
 /**
  * Unit test for 'help' command.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorHelpCommandSpec extends FlatSpec with ShouldMatchers {
     // Pre-initialize command so that help can be registered.

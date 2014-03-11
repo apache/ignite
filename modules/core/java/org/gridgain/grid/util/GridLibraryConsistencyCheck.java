@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,9 +21,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
  * Contains the list with one class from every used library.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLibraryConsistencyCheck {
     /** List that contains by one class from each library. */
@@ -38,7 +35,6 @@ public class GridLibraryConsistencyCheck {
         "org.apache.commons.collections.CollectionUtils",                 // commons-collections-XXX.jar
         "org.apache.commons.configuration.HierarchicalINIConfiguration",  // commons-configuration-XXX.jar
         "org.apache.commons.io.FileUtils",                                // commons-io-XXX.jar
-        "org.apache.commons.jexl2.JexlContext",                           // commons-jexl-XXX.jar
         "org.apache.commons.lang.ArrayUtils",                             // commons-lang-XXX.jar
         "org.apache.commons.logging.LogFactory",                          // commons-logging-XXX.jar
         "org.apache.commons.net.util.Base64",                             // commons-net-XXX.jar

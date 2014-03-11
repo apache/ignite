@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -20,8 +20,7 @@ import java.util.concurrent.*;
 import static org.gridgain.grid.kernal.GridKernalState.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 @GridToStringExclude
 public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {

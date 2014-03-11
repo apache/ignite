@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Adapter for preloading which always assumes that preloading finished.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V> {
     /** Cache context. */
@@ -31,7 +28,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     protected final GridLogger log;
 
     /** Affinity. */
-    protected final GridCacheAffinity aff;
+    protected final GridCacheAffinityFunction aff;
 
     /** Start future (always completed by default). */
     private final GridFuture finFut;

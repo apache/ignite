@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,19 +9,17 @@
 
 package org.gridgain.grid.spi.swapspace;
 
+import org.gridgain.grid.events.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Swap space SPI eviction listener.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridSwapSpaceSpiListener {
     /**
      * Notification for swap space events.
      *
-     * @param evtType Event type. See {@link org.gridgain.grid.events.GridSwapSpaceEvent}
+     * @param evtType Event type. See {@link GridSwapSpaceEvent}
      * @param spaceName Space name for this event or {@code null} for default space.
      * @param keyBytes Key bytes of affected entry. Not {@code null} only for evict notifications.
      */

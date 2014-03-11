@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,7 +17,6 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -28,12 +27,8 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
  * Cache atomic reference implementation.
- *
- * @author @java.author
- * @version @java.version
  */
-public final class GridCacheAtomicReferenceImpl<T> extends GridMetadataAwareAdapter implements
-    GridCacheAtomicReferenceEx<T>, Externalizable {
+public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicReferenceEx<T>, Externalizable {
     /** Deserialization stash. */
     private static final ThreadLocal<GridBiTuple<GridCacheContext, String>> stash =
         new ThreadLocal<GridBiTuple<GridCacheContext, String>>() {
@@ -117,13 +112,6 @@ public final class GridCacheAtomicReferenceImpl<T> extends GridMetadataAwareAdap
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<T> getAsync() throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(getCall, true);
-    }
-
-    /** {@inheritDoc} */
     @Override public void set(T val) throws GridException {
         checkRemoved();
 
@@ -131,71 +119,10 @@ public final class GridCacheAtomicReferenceImpl<T> extends GridMetadataAwareAdap
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> setAsync(T val) throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(internalSet(val), true);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean compareAndSet(T expVal, T newVal) throws GridException {
         checkRemoved();
 
         return CU.outTx(internalCompareAndSet(wrapperPredicate(expVal), wrapperClosure(newVal)), ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean compareAndSet(T expVal, GridClosure<T, T> newValClos) throws GridException {
-        checkRemoved();
-
-        return CU.outTx(internalCompareAndSet(wrapperPredicate(expVal), newValClos), ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean compareAndSet(GridPredicate<T> expValPred, GridClosure<T, T> newValClos)
-        throws GridException {
-        checkRemoved();
-
-        return CU.outTx(internalCompareAndSet(expValPred, newValClos), ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean compareAndSet(GridPredicate<T> expValPred, T newVal) throws GridException {
-        checkRemoved();
-
-        return CU.outTx(internalCompareAndSet(expValPred, wrapperClosure(newVal)), ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> compareAndSetAsync(T expVal, T newVal) throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(internalCompareAndSet(wrapperPredicate(expVal), wrapperClosure(newVal)),
-            true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> compareAndSetAsync(T expVal, GridClosure<T, T> newValClos)
-        throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(internalCompareAndSet(wrapperPredicate(expVal), newValClos), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> compareAndSetAsync(GridPredicate<T> expValPred,
-        GridClosure<T, T> newValClos) throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(internalCompareAndSet(expValPred, newValClos), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> compareAndSetAsync(GridPredicate<T> expValPred, T newVal)
-        throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(internalCompareAndSet(expValPred, wrapperClosure(newVal)), true);
     }
 
     /** {@inheritDoc} */
@@ -277,7 +204,7 @@ public final class GridCacheAtomicReferenceImpl<T> extends GridMetadataAwareAdap
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };
@@ -324,7 +251,7 @@ public final class GridCacheAtomicReferenceImpl<T> extends GridMetadataAwareAdap
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,9 +21,6 @@ import org.gridgain.grid.lang.*;
  * Eviction filter can be configured via {@link GridCacheConfiguration#getEvictionFilter()}
  * configuration property. Default value is {@code null} which means that all
  * cache entries will be tracked by eviction policy.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheEvictionFilter<K, V> {
     /**

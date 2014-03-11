@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -32,9 +32,6 @@ import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 
 /**
  * Near cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
     /** DHT cache. */
@@ -1468,7 +1465,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public List<GridCacheClearAllRunnable<K, V>> splitClearAll() {
-        switch (configuration().getPartitionedDistributionMode()) {
+        switch (configuration().getDistributionMode()) {
             case NEAR_PARTITIONED:
                 GridCacheVersion obsoleteVer = ctx.versions().next();
 

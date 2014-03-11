@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,15 +15,12 @@
 #include "gridgain/gridhasheableobject.hpp"
 #include "gridgain/impl/utils/gridclientbyteutils.hpp"
 
-typedef std::shared_ptr<GridHasheableObject> TGridHasheableObjectPtr;
+typedef std::shared_ptr<GridClientHasheableObject> TGridHasheableObjectPtr;
 
 /**
  * Template class for GridHashealeObject for simple types like int_...
- *
- * @author @cpp.author
- * @version @cpp.version
  */
-template<class T> class GridSimpleTypeHasheable: public GridHasheableObject {
+template<class T> class GridSimpleTypeHasheable: public GridClientHasheableObject {
 protected:
     /**
      * Constructor.
@@ -39,8 +36,11 @@ public:
      *
      * @param bytes Vector to fill.
      */
-    virtual void convertToBytes(std::vector<int8_t>& bytes) const {
-        GridClientByteUtils::valueToBytes(val, bytes, GridClientByteUtils::LITTLE_ENDIAN_ORDER);
+    virtual void convertToBytes(std::vector < int8_t >& bytes) const {
+        bytes.resize(sizeof(val));
+        memset(&bytes[0], 0, sizeof(val));
+
+        GridClientByteUtils::valueToBytes(val, &bytes[0], sizeof(val), GridClientByteUtils::LITTLE_ENDIAN_ORDER);
     }
 
     /**
@@ -82,9 +82,6 @@ protected:
 
 /**
  * Hasheable 64-bit signed integer.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridInt64Hasheable: public GridSimpleTypeHasheable<int64_t> {
 public:
@@ -114,9 +111,6 @@ inline TGridHasheableObjectPtr createHasheable(int64_t val) {
 
 /**
  * Hasheable 32-bit signed integer.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridInt32Hasheable: public GridSimpleTypeHasheable<int32_t> {
 public:

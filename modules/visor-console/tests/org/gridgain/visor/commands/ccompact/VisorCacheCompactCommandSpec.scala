@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -23,8 +23,7 @@ import collection.JavaConversions._
 import org.jetbrains.annotations.Nullable
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 class VisorCacheCompactCommandSpec extends VisorRuntimeBaseSpec(2) {
     /** IP finder. */

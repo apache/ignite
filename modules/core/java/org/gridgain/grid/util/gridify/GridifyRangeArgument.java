@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,9 +21,6 @@ import java.util.*;
  * <p>
  * See {@link Gridify} documentation for more information about execution of
  * {@code gridified} methods.
- *
- * @author @java.author
- * @version @java.version
  * @see GridifySetToValue
  * @see GridifySetToSet
  */

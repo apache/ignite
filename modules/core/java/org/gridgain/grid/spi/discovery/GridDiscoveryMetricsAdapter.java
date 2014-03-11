@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -20,9 +20,6 @@ import java.io.*;
  * <p>
  * Note that whenever adding or removing metric parameters, care
  * must be taken to update {@link GridDiscoveryMetricsHelper} as well.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externalizable {
     /** */

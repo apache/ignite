@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.util.*;
 /**
  * Value descriptor which allows to extract fields from value object of given type.
  * See also {@link GridIndexingSpi#registerType(String, GridIndexingTypeDescriptor)}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridIndexingTypeDescriptor {
     /**

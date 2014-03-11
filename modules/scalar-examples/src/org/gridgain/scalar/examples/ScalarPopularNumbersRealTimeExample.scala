@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -22,12 +22,9 @@ import java.util.Map.Entry
 
 /**
  * Real time popular number counter. In order to run this example, you must start
- * at least one in-memory data grid nodes using command `ggstart.sh examples/config/example-cache-popularcounts.xml`
+ * at least one in-memory data grid nodes using command `ggstart.sh examples/config/example-cache.xml`
  * The counts are kept in cache on all remote nodes. Top `10` counts from each node are then grabbed to produce
  * an overall top `10` list within the grid.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridOnlyAvailableIn(Array(GridProductEdition.DATA_GRID))
 object ScalarPopularNumbersRealTimeExample extends App {
@@ -38,7 +35,7 @@ object ScalarPopularNumbersRealTimeExample extends App {
     // Will generate random numbers to get most popular ones.
     private final val RAND = new Random
 
-    scalar("examples/config/example-cache-popularcounts.xml") {
+    scalar("examples/config/example-cache.xml") {
         val timer = new Timer("query-worker")
 
         try {
@@ -50,7 +47,7 @@ object ScalarPopularNumbersRealTimeExample extends App {
             query(NUM_CNT)
 
             // Clean up after ourselves.
-            grid$.forCache(null).bcastRun(() => grid$.cache(null).clearAll(), null)
+            grid$.forCache("partitioned").bcastRun(() => grid$.cache("partitioned").clearAll(), null)
         }
         finally {
             timer.cancel()
@@ -63,7 +60,7 @@ object ScalarPopularNumbersRealTimeExample extends App {
     def ingest() {
         // Set larger per-node buffer size since our state is relatively small.
         // Reduce parallel operations since we running the whole grid locally under heavy load.
-        val ldr = dataLoader$[Int, Long](null, 2048)
+        val ldr = dataLoader$[Int, Long]("partitioned", 2048)
 
         val f = (i: Long) => if (i == null) 1 else i + 1
 
@@ -89,7 +86,7 @@ object ScalarPopularNumbersRealTimeExample extends App {
      * @param cnt Number of most popular numbers to return.
      */
     def query(cnt: Int) {
-        cache$[Int, Long].get.sqlFields(clause = "select * from Long order by _val desc limit " + cnt).
+        cache$[Int, Long]("partitioned").get.sqlFields(clause = "select * from Long order by _val desc limit " + cnt).
             sortBy(_(1).asInstanceOf[Long]).reverse.take(cnt).foreach(println)
 
         println("------------------")

@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@
 
 /**
  * Client configuration class.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientConfiguration {
 public:
@@ -88,21 +85,21 @@ public:
     void loadBalancer(TGridClientLoadBalancerPtr balancer);
 
     /**
-    * Collection of GridSocketAddress <tt>'host:port'</tt> pairs representing
+    * Collection of GridClientSocketAddress <tt>'host:port'</tt> pairs representing
     * remote grid servers used to establish initial connection to
     * the grid. Once connection is established, GridGain will get
     * a full view on grid topology and will be able to connect to
     * any available remote node.
     *
-    * @return Collection of  GridSocketAddress representing remote
+    * @return Collection of  GridClientSocketAddress representing remote
     * grid servers.
     */
-    std::vector<GridSocketAddress> servers() const;
+    std::vector<GridClientSocketAddress> servers() const;
 
     /**
      * Sets a new collection of servers to communicate with.
      */
-     void servers(const std::vector<GridSocketAddress>& servers);
+     void servers(const std::vector<GridClientSocketAddress>& servers);
 
     /**
     * Returns configuration parameters used to establish the connection to the remote node.
@@ -130,24 +127,24 @@ public:
     void threadPoolSize(size_t size);
 
     /**
-    * Collection of GridSocketAddress <tt>'host:port'</tt> pairs representing
+    * Collection of GridClientSocketAddress <tt>'host:port'</tt> pairs representing
     * routers used to establish initial connection to
     * the grid.
     * This configuration parameter will not be used and
     * direct grid connection will be established if
     * {@link #getServers()} returns empty value.
     *
-    * @return Collection of  GridSocketAddress representing remote
+    * @return Collection of  GridClientSocketAddress representing remote
     * routers.
     */
-    std::vector<GridSocketAddress> routers() const;
+    std::vector<GridClientSocketAddress> routers() const;
 
     /**
      * Sets a new collection of routers to communicate with.
      *
      * @param routers New routers list.
      */
-     void routers(const std::vector<GridSocketAddress>& routers);
+     void routers(const std::vector<GridClientSocketAddress>& routers);
 
      /**
       * Returns a router balancer implementation for this

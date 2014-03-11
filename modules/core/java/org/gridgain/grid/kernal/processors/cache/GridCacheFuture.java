@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,15 +10,11 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.*;
 
 import java.util.*;
 
 /**
  * This interface should be implemented by all distributed futures.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheFuture<R> extends GridFuture<R> {
     /**

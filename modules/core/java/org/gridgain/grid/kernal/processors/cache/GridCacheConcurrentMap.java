@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -30,9 +30,6 @@ import static org.gridgain.grid.cache.GridCacheFlag.*;
 
 /**
  * Concurrent implementation of cache map.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheConcurrentMap<K, V> {
     /** Debug flag. */
@@ -1855,7 +1852,12 @@ public class GridCacheConcurrentMap<K, V> {
         boolean containsKey(K k) {
             GridCacheEntryEx<K, V> e = ctx.cache().peekEx(k);
 
-            return e != null && !e.obsolete() && F.isAll(e.wrap(false), filter);
+            try {
+                return e != null && !e.obsolete() && (!e.deleted() || e.lockedByThread()) && F.isAll(e.wrap(false), filter);
+            }
+            catch (GridCacheEntryRemovedException ignore) {
+                return false;
+            }
         }
 
         /**

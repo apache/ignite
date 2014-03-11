@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.io.*;
  * Record resolver based on new line detection. This resolver can detect new lines based on '\n' or '\r\n' sequences.
  * <p>
  * Note that this resolver cannot be created and has one constant implementations: {@link #NEW_LINE}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsNewLineRecordResolver extends GridGgfsByteDelimiterRecordResolver {
     /**

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Convenience adapter for cache managers.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
     /** Context. */

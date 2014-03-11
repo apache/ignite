@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -41,9 +41,6 @@ import org.hibernate.cache.spi.access.*;
  * &#064;org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
  * public class Entity { ... }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridHibernateEntityRegion extends GridHibernateTransactionalDataRegion implements EntityRegion {
     /**

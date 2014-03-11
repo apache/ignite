@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,7 +14,6 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
@@ -26,9 +25,6 @@ import java.util.*;
 
 /**
  * Near cache prepare response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareResponse<K, V> {
     /** Collection of versions that are pending and less than lock version. */
@@ -160,6 +156,8 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
+        super.prepareMarshal(ctx);
+
         if (ownedVals != null && ownedValsBytes == null) {
             ownedValsBytes = new ArrayList<>(ownedVals.size());
 
@@ -187,13 +185,15 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+        super.finishUnmarshal(ctx, ldr);
+
         if (ownedValsBytes != null && ownedVals == null) {
             ownedVals = new HashMap<>();
 
             for (byte[] bytes : ownedValsBytes) {
                 GridTuple4<K, GridCacheVersion, byte[], Boolean> tup = ctx.marshaller().unmarshal(bytes, ldr);
 
-                V val = tup.get4() ? (V)tup.get3() : (V)ctx.marshaller().unmarshal(tup.get3(), ldr);
+                V val = tup.get4() ? (V)tup.get3() : ctx.marshaller().<V>unmarshal(tup.get3(), ldr);
 
                 ownedVals.put(tup.get1(), F.t(tup.get2(), val, tup.get4() ? null : tup.get3()));
             }

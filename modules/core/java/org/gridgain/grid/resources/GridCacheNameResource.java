@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -43,9 +43,6 @@ import org.gridgain.grid.cache.*;
  * </pre>
  * <p>
  * See {@link GridCacheConfiguration#getName()} for cache configuration details.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

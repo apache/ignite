@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ import java.util.*;
 /**
  * Helper iterator extension which prevents regular element remove and adds removex() method tracking which element
  * was actually removed.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridStreamerWindowIterator<T> implements Iterator<T> {
     /** {@inheritDoc} */

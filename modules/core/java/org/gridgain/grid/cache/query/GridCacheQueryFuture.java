@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,36 +10,34 @@
 package org.gridgain.grid.cache.query;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.lang.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
- * Cache query future returned by query execution. Specifically returned by
- * {@link GridCacheQuery#execute()} or by
- * analogous methods on {@link GridCacheReduceQuery} and {@link GridCacheTransformQuery}.
- * Refer to corresponding query documentation for more information.
- *
- * @author @java.author
- * @version @java.version
- * @see GridCacheQuery
- * @see GridCacheReduceQuery
- * @see GridCacheTransformQuery
+ * Cache query future returned by query execution.
+ * Refer to {@link GridCacheQuery} documentation for more information.
  */
-public interface GridCacheQueryFuture<T> extends GridFuture<Collection<T>>, GridIterable<T> {
+public interface GridCacheQueryFuture<T> extends GridFuture<Collection<T>> {
     /**
-     * Number of elements currently fetched.
+     * Returns number of elements that are already fetched and can
+     * be returned from {@link #next()} method without blocking.
      *
-     * @return Number of elements currently fetched.
+     * @return Number of fetched elements which are available immediately.
+     * @throws GridException In case of error.
      */
-    public int size();
+    public int available() throws GridException;
 
     /**
-     * Tests whether or not next {@link #next()} call will block.
+     * Returns next element from result set.
+     * <p>
+     * This is a blocking call which will wait if there are no
+     * elements available immediately.
      *
-     * @return Whether or not next {@link #next()} call will block.
+     * @return Next fetched element or {@code null} if all the elements.
+     * @throws GridException If failed.
      */
-    public boolean available();
+    @Nullable public T next() throws GridException;
 
     /**
      * Checks if all data is fetched by the query.

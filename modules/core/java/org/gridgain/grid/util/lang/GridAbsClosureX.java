@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ import org.gridgain.grid.util.typedef.*;
  * Convenient abs-closure subclass that allows for thrown grid exception. This class
  * implements {@link #apply()} method that calls {@link #applyx()} method
  * and properly wraps {@link GridException} into {@link GridClosureException} instance.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridAbsClosureX extends GridAbsClosure {
     /** {@inheritDoc} */

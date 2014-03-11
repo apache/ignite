@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,9 +14,6 @@ import java.util.*;
 
 /**
  * Primitive to byte array and backward conversions.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridClientByteUtils {
     /**
@@ -98,7 +95,7 @@ public abstract class GridClientByteUtils {
      * Converts an UUID to byte array.
      *
      * @param uuid UUID value.
-     * @return Encoded into byte array {@link java.util.UUID}.
+     * @return Encoded into byte array {@link UUID}.
      */
     public static byte[] uuidToBytes(UUID uuid) {
         byte[] bytes = new byte[(Long.SIZE >> 3)* 2];

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ import java.util.*;
  * This interface defines basic MBean for all SPI implementations. Every SPI implementation
  * should provide implementation for this MBean interface. Note that SPI implementation can extend this
  * interface as necessary.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridSpiManagementMBean {
     /**

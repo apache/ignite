@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ import java.io.*;
 
 /**
  * This adapter allows for graceful exception when load balancer gets marshalled.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridLoadBalancerAdapter extends GridMetadataAwareAdapter implements GridComputeLoadBalancer,
     Externalizable {

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * Extended cache version which also has additional DR version.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheVersionEx extends GridCacheVersion {
     /** DR version. */

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.lang.annotation.*;
  * the order of declaration in the class. Fields with smaller order value
  * will come before in {@code toString()} output. If order is not specified
  * the {@link Integer#MAX_VALUE} will be used.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

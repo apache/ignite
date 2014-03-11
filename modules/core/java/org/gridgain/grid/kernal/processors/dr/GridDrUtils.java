@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,13 +16,10 @@ import java.io.*;
 
 /**
  * DR utility methods.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrUtils {
     /** Key used to store {@code GridDrPauseInfo} in system cache. */
-    public static final Integer DR_COMMON_KEY = 0;
+    public static final Integer DR_GLOBAL_SYNC = 0;
 
     /** Maximum amount of data centers. */
     public static final int MAX_DATA_CENTERS = 32;

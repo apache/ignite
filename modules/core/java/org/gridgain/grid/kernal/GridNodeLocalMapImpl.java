@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,8 +21,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> implements GridNodeLocalMap<K, V>,
     Externalizable {
@@ -154,7 +153,7 @@ public class GridNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> impleme
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            return GridFactoryEx.gridx(stash.get()).nodeLocalMap();
+            return GridGainEx.gridx(stash.get()).nodeLocalMap();
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

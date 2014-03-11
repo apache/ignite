@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -22,7 +22,7 @@ import java.util
  * ==Starting Remote Nodes==
  * To try this example you should (but don't have to) start remote grid instances.
  * You can start as many as you like by executing the following script:
- * `{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-default.xml`
+ * `{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-compute.xml`
  *
  * Once remote instances are started, you can execute this example from
  * Eclipse, IntelliJ IDEA, or NetBeans (and any other Java IDE) by simply hitting run
@@ -33,9 +33,6 @@ import java.util
  * Note that when running this example on a multi-core box, simply
  * starting additional grid node on the same box will speed up
  * prime number calculation by a factor of 2.
- *
- @author @java.author
- * @version @java.version
  */
 object ScalarPrimeExample {
     /**
@@ -44,7 +41,7 @@ object ScalarPrimeExample {
      * @param args Command like argument (not used).
      */
     def main(args: Array[String]){
-        scalar("examples/config/example-default.xml") {
+        scalar("examples/config/example-compute.xml") {
             val start = System.currentTimeMillis
 
             // Values we want to check for prime.

@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,11 +19,8 @@
 
 /**
  * Provide the implementation of hash-code for the float type.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
-class GridFloatHasheableObject : public GridHasheableObject {
+class GridFloatHasheableObject : public GridClientHasheableObject {
 public:
     /**
      * Public constructor.

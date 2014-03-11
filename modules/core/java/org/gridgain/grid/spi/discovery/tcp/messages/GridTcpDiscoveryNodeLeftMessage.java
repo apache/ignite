@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.util.*;
 /**
  * Sent by node that is stopping to coordinator across the ring,
  * then sent by coordinator across the ring.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridTcpDiscoveryEnsureDelivery
 public class GridTcpDiscoveryNodeLeftMessage extends GridTcpDiscoveryAbstractMessage {

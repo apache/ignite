@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,12 +16,9 @@ import org.gridgain.grid.util.lang.*;
  * Defines {@code alias} for {@link GridBiPredicate} by extending it. Since Java doesn't provide type aliases
  * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
  * concise code in cases when readability won't be sacrificed. For more information see {@link GridBiPredicate}.
- *
- * @author @java.author
- * @version @java.version
  * @param <T1> Type of the first free variable, i.e. the element the closure is called on.
  * @param <T2> Type of the second free variable, i.e. the element the closure is called on.
  * @see GridFunc
  * @see GridBiPredicate
  */
-public abstract class P2<T1, T2> extends GridBiPredicate<T1, T2> { /* No-op. */ }
+public interface P2<T1, T2> extends GridBiPredicate<T1, T2> { /* No-op. */ }

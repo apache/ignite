@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -14,7 +14,7 @@ package org.gridgain.scalar.examples
 import org.gridgain.scalar.scalar
 import scalar._
 import org.gridgain.grid._
-import cache.affinity.GridCacheAffinityMapped
+import cache.affinity.GridCacheAffinityKeyMapped
 import cache.GridCacheName
 import org.jetbrains.annotations.Nullable
 import java.util.concurrent.Callable
@@ -22,7 +22,7 @@ import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
 
 /**
  * Example of how to collocate computations and data in GridGain using
- * `GridCacheAffinityMapped` annotation as opposed to direct API calls. This
+ * `GridCacheAffinityKeyMapped` annotation as opposed to direct API calls. This
  * example will first populate cache on some node where cache is available, and then
  * will send jobs to the nodes where keys reside and print out values for those
  * keys.
@@ -30,14 +30,10 @@ import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
  * Remote nodes should always be started with configuration file which includes
  * cache: `'ggstart.sh examples/config/example-cache.xml'`. Local node can
  * be started with or without cache.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridOnlyAvailableIn(Array(GridProductEdition.DATA_GRID))
 object ScalarCacheAffinityExample1 {
     /** Configuration file name. */
-    //private val CONFIG = "examples/config/example-cache-none.xml" // No cache - remote node with cache is required.
     private val CONFIG = "examples/config/example-cache.xml" // Cache.
 
     /** Name of cache specified in spring configuration. */
@@ -62,7 +58,7 @@ object ScalarCacheAffinityExample1 {
             keys.foreach(key => {
                 val res = grid$.call$(
                     new Callable[String] {
-                        @GridCacheAffinityMapped
+                        @GridCacheAffinityKeyMapped
                         def affinityKey(): String = key
 
                         @GridCacheName

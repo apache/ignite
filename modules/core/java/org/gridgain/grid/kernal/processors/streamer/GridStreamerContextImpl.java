@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -24,9 +24,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Streamer context implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerContextImpl implements GridStreamerContext {
     /** Kernal context. */
@@ -82,7 +79,12 @@ public class GridStreamerContextImpl implements GridStreamerContext {
 
     /** {@inheritDoc} */
     @Override public <E> GridStreamerWindow<E> window(String winName) {
-        return streamer.window(winName);
+        GridStreamerWindow<E> window = streamer.window(winName);
+
+        if (window == null)
+            throw new IllegalArgumentException("Streamer window is not configured: " + winName);
+
+        return window;
     }
 
     /** {@inheritDoc} */

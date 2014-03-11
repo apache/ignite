@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -19,20 +19,17 @@ import events._
 import org.gridgain.grid.util.typedef.X
 import org.gridgain.grid.lang.GridPredicate
 import org.gridgain.grid.kernal.processors.task.GridInternal
-import org.gridgain.grid.util.{GridUtils => U, GridUuid}
-import org.gridgain.scalar._
+import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor._
 import visor._
 import collection.immutable._
 import collection.JavaConversions._
 import scala.util.control.Breaks._
+import org.gridgain.visor.commands.{VisorConsoleUtils => CU}
 
 /**
  * Task execution state.
- *
- * @author @java.author
- * @version @java.version
  */
 private object State extends Enumeration {
     /** Type shortcut. */
@@ -49,9 +46,6 @@ import org.gridgain.visor.commands.tasks.State._
 
 /**
  * Task execution data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class Execution(
     id: GridUuid,
@@ -141,9 +135,6 @@ private case class Execution(
 
 /**
  * Task data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class Task(
     taskName: String,
@@ -239,21 +230,10 @@ private case class Task(
 class VisorContainsFilter(n: Long, s: String) extends GridPredicate[GridEvent] {
     override def apply(e: GridEvent): Boolean = {
         (e.timestamp >= System.currentTimeMillis - n) && (e match {
-            case te: GridTaskEvent => !contains(te.taskName(), s)
-            case je: GridJobEvent => !contains(je.taskName(), s)
+            case te: GridTaskEvent => !CU.containsInTaskName(te.taskName(), te.taskClassName(), s)
+            case je: GridJobEvent => !CU.containsInTaskName(je.taskName(), je.taskClassName(), s)
             case _ => false
         })
-    }
-
-    /**
-     * Tests whether or not this task host has `visor` substring in it.
-     *
-     * @param taskName Task host to check.
-     */
-    private def contains(taskName: String, s: String): Boolean = {
-        assert(taskName != null)
-
-        taskName.toLowerCase.contains(s)
     }
 }
 
@@ -384,9 +364,6 @@ class VisorSessionIdFilter(u: GridUuid) extends GridPredicate[GridEvent] {
  *     visor tasks "-e=@s1"
  *         Traces task execution with ID taken from 's1' memory variable.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorTasksCommand {
     /** Limit for printing tasks and executions. */
@@ -566,12 +543,12 @@ class VisorTasksCommand {
     private def mkData(f: GridPredicate[GridEvent]): (List[Task], List[Execution]) = {
         assert(f != null)
 
-        var evts = grid.events().queryLocal(f).toList
+        var evts = grid.events().localQuery(f).toList
 
         val remote = grid.forRemotes()
 
         if (remote.nodes().size() > 0)
-            evts ++= remote.events().queryRemote(f, 0).get.toList
+            evts ++= remote.events().remoteQuery(f, 0).get.toList
 
         var sMap = Map.empty[GridUuid, Execution] // Execution map.
         var tMap = Map.empty[String, Task] // Task map.
@@ -1142,17 +1119,6 @@ class VisorTasksCommand {
     }
 
     /**
-     * Tests whether or not this task host has `visor` substring in it.
-     *
-     * @param taskName Task host to check.
-     */
-    private def isVisor(taskName: String): Boolean = {
-        assert(taskName != null)
-
-        taskName.toLowerCase.contains("visor")
-    }
-
-    /**
      * Prints list of tasks grouped by nodes.
      *
      * @param f Event filter.
@@ -1386,9 +1352,6 @@ class VisorTasksCommand {
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorTasksCommand {
     addHelp(

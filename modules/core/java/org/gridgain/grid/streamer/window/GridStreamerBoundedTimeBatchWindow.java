@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -24,9 +24,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * Window that accumulates events in batches, and is bounded by time and maximum number of batches.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerBoundedTimeBatchWindow<E> extends GridStreamerWindowAdapter<E> {
     /** Batch size. */

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -26,9 +26,6 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
  * <p>
  * Refer to {@code config/ggfs/default-ggfs-data.xml} or {@code config/ggfs/default-ggfs-client.xml}
  * configuration files under GridGain installation to see sample {@code GGFS} configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsConfiguration {
     /** Default file system user name. */
@@ -192,6 +189,7 @@ public class GridGgfsConfiguration {
         dualModePutExec = cfg.getDualModePutExecutorService();
         dualModePutExecShutdown = cfg.getDualModePutExecutorServiceShutdown();
         fragmentizerConcurrentFiles = cfg.getFragmentizerConcurrentFiles();
+        fragmentizerLocWritesRatio = cfg.getFragmentizerLocalWritesRatio();
         fragmentizerEnabled = cfg.isFragmentizerEnabled();
         fragmentizerThrottlingBlockLen = cfg.getFragmentizerThrottlingBlockLength();
         fragmentizerThrottlingDelay = cfg.getFragmentizerThrottlingDelay();

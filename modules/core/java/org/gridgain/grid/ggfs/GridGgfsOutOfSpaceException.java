@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
  * {@code GGFS} exception that is thrown when it detected out-of-space condition.
  * It is thrown when number of writes written to a {@code GGFS} data nodes exceeds
  * its maximum value (that is configured per-node).
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsOutOfSpaceException extends GridGgfsException {
     /**

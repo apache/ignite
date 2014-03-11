@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,9 +13,6 @@ import java.lang.annotation.*;
 
 /**
  * Assigns version to a field.
- *
- * @author @java.author
- * @version @java.version
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

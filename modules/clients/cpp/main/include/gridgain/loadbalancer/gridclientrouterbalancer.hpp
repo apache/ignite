@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@
 /**
  * Interface that defines a router selection logic for a particular operation
  * (e.g. task run or cache operation in case of pinned mode).
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientRouterBalancer {
 public:
@@ -32,7 +29,7 @@ public:
      * @param addrs Address list to pick router from.
      * @return Index of the next router address to pick from the list.
      */
-    virtual unsigned int balancedRouter(const TGridSocketAddressList& addrs) = 0;
+    virtual unsigned int balancedRouter(const TGridClientSocketAddressList& addrs) = 0;
 };
 
 #endif /* GRIDCLIENTROUTERBALANCER_HPP_ */

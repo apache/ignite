@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Registers and deregisters all ports used by SPI and Manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridPortProcessor extends GridProcessorAdapter {
     /** Collection of records about ports use. */

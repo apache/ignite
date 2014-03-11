@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -24,9 +24,6 @@ import scalar._
 
 /**
  * Ping result container.
- *
- * @author @java.author
- * @version @java.version
  */
 private class Result {
     /** Total pings count. */
@@ -44,9 +41,6 @@ private class Result {
 
 /**
  * Thread that pings one node.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class Pinger(n: GridNode, res: Result) extends Runnable {
     assert(n != null)
@@ -107,9 +101,6 @@ private case class Pinger(n: GridNode, res: Result) extends Runnable {
  *     ping
  *         Pings all nodes in the topology.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorPingCommand {
     /**
@@ -201,9 +192,6 @@ class VisorPingCommand {
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorPingCommand {
     // Adds command's help to visor.

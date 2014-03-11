@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,9 +13,6 @@ import org.gridgain.grid.thread.*;
 
 /**
  * Utility class that allows to ignore back-pressure control for threads that are processing messages.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNioBackPressureControl {
     /** Thread local flag indicating that thread is processing message. */

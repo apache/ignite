@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
@@ -28,9 +29,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  * Transaction entry. Note that it is essential that this class does not override
  * {@link #equals(Object)} method, as transaction entries should use referential
  * equality.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizable, GridOptimizedMarshallable {
     /** */

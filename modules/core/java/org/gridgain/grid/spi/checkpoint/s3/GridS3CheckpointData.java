@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,9 +19,6 @@ import java.io.*;
  * <p>
  * Host name is used by {@link GridS3CheckpointSpi} SPI to give node
  * correct files if it is restarted.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridS3CheckpointData implements Serializable {
     /** Checkpoint data. */

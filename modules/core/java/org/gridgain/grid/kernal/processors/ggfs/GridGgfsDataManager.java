@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,6 +18,7 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.task.*;
@@ -49,9 +50,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
  * Cache based file's data container.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsDataManager extends GridGgfsManager {
     /** GGFS. */
@@ -136,11 +134,11 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
         assert dataCachePrj != null;
 
-        GridCacheAffinityMapper mapper = ggfsCtx.kernalContext().cache()
+        GridCacheAffinityKeyMapper mapper = ggfsCtx.kernalContext().cache()
             .internalCache(ggfsCtx.configuration().getDataCacheName()).configuration().getAffinityMapper();
 
-        grpSize = mapper instanceof GridGgfsGroupDataBlocksMapper ?
-            ((GridGgfsGroupDataBlocksMapper)mapper).groupSize() : 1;
+        grpSize = mapper instanceof GridGgfsGroupDataBlocksKeyMapper ?
+            ((GridGgfsGroupDataBlocksKeyMapper)mapper).groupSize() : 1;
 
         grpBlockSize = ggfsCtx.configuration().getBlockSize() * grpSize;
 
@@ -681,7 +679,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                                 }
                             }
                             finally {
-                                tx.end();
+                                tx.close();
                             }
                         }
                         else
@@ -1135,7 +1133,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             tx.commit();
         }
         finally {
-            tx.end();
+            tx.close();
         }
     }
 
@@ -1558,7 +1556,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * Helper closure to update data in cache.
      */
     @GridInternal
-    private static final class UpdateClosure extends GridClosure<byte[], byte[]> implements Externalizable {
+    private static final class UpdateClosure implements GridClosure<byte[], byte[]>, Externalizable {
         /** Start position in the block to write new data from. */
         private int start;
 

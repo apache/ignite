@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,9 +19,6 @@ import org.jetbrains.annotations.*;
 /**
  * No-op implementation of {@link GridCheckpointSpi}. This is default implementation
  * since {@code 4.5.0} version.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridSpiInfo(
     author = /*@java.spi.author*/"GridGain Systems",

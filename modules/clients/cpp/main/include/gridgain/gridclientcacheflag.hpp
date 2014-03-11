@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -12,9 +12,6 @@
 
 /**
  * Cache projection flags that specify projection behaviour.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 enum GridClientCacheFlag {
     /** Skips store, i.e. no read-through and no write-through behavior. */

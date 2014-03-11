@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -64,9 +64,6 @@ import org.jetbrains.annotations.*;
  *     }
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridComputeJobContinuationAdapter extends GridComputeJobAdapter implements
     GridComputeJobContinuation {

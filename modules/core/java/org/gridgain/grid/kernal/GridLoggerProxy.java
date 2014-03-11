@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -25,8 +25,7 @@ import java.util.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridLoggerProxy extends GridMetadataAwareAdapter implements GridLogger, GridLifecycleAware,
     Externalizable {
@@ -205,7 +204,7 @@ public class GridLoggerProxy extends GridMetadataAwareAdapter implements GridLog
             String gridNameR = t.get1();
             Object ctgrR = t.get2();
 
-            return GridFactoryEx.gridx(gridNameR).log().getLogger(ctgrR);
+            return GridGainEx.gridx(gridNameR).log().getLogger(ctgrR);
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

@@ -17,9 +17,6 @@ import java.util.*;
  * <p>
  * For more information about router configuration and startup refer to {@link GridRouterFactory}
  * documentation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridHttpRouterConfiguration {
     /**
@@ -95,7 +92,7 @@ public class GridHttpRouterConfiguration {
      * Gets SSL context factory that will be used for creating a secure socket layer for out coming connections.
      *
      * @return SslContextFactory instance.
-     * @see org.gridgain.client.ssl.GridSslContextFactory
+     * @see GridSslContextFactory
      */
     @Nullable public GridSslContextFactory getClientSslContextFactory() {
         return clientSslCtxFactory;

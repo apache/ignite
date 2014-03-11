@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.util.*;
  * If implementation of data affinity implements {@link GridClientTopologyListener} interface as well,
  * then affinity will be added to topology listeners on client start before first connection is established
  * and will be removed after last connection is closed.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridClientDataAffinity {
     /**

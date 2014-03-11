@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -12,19 +12,12 @@
 package org.gridgain.scalar.lang
 
 import org.gridgain.grid.lang.{GridBiClosure}
-import org.gridgain.grid.util.lang.GridLambdaAdapter
 
 /**
  * Wrapping Scala function for `GridClosure2`.
- *
- * @author @java.author
- * @version @java.version
  */
-class ScalarClosure2Function[T1, T2, R](val inner: GridBiClosure[T1, T2, R]) extends GridLambdaAdapter
-    with ((T1, T2) => R) {
+class ScalarClosure2Function[T1, T2, R](val inner: GridBiClosure[T1, T2, R]) extends ((T1, T2) => R) {
     assert(inner != null)
-
-    peerDeployLike(inner)
 
     /**
      * Delegates to passed in grid closure.

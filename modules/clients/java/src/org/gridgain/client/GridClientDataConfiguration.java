@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -12,9 +12,6 @@ import org.gridgain.client.balancer.*;
 
 /**
  * Java client data configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientDataConfiguration {
     /** Grid cache name. */
@@ -68,7 +65,7 @@ public class GridClientDataConfiguration {
      * Affinity allows to contact exactly the node where the data is and therefore
      * avoiding extra network hops.
      * <p>
-     * Use {@link GridClientPartitionedAffinity} as default affinity communication to
+     * Use {@link GridClientPartitionAffinity} as default affinity communication to
      * work with remote partitioned caches.
      *
      * @return Cache affinity to use.
@@ -82,7 +79,7 @@ public class GridClientDataConfiguration {
      * Affinity allows to contact exactly the node where the data is and therefore
      * avoiding extra network hops.
      * <p>
-     * Use {@link GridClientPartitionedAffinity} as default affinity communication to
+     * Use {@link GridClientPartitionAffinity} as default affinity communication to
      * work with remote partitioned caches.
      *
      * @param affinity Client data affinity.

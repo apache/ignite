@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * {@code GGFS} output stream to write data into the file system.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridGgfsOutputStream extends OutputStream {
     /**

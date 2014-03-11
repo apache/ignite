@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,15 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.dr.messages.external;
 
-import org.gridgain.grid.util.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridDrExternalBatchResponse implements Externalizable {
     /** Request identifier. */

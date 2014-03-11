@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,9 +13,6 @@ import java.lang.annotation.*;
 
 /**
  * Describes group index.
- *
- * @author @java.author
- * @version @java.version
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
@@ -37,6 +34,7 @@ public @interface GridCacheQueryGroupIndex {
     /**
      * List of group indexes for type.
      */
+    @SuppressWarnings("PublicInnerClass")
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.TYPE})
     public static @interface List {

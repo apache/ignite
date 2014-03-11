@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,9 +21,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * Work batch is an abstraction of the logically grouped tasks.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsFileWorkerBatch {
     /** Completion latch. */

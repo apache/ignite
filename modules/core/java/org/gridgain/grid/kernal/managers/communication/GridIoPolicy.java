@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 /**
  * This enumeration defines different types of communication
  * message processing by the communication manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridIoPolicy {
     /** Public execution pool. */

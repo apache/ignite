@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,12 +16,7 @@ import org.jetbrains.annotations.*;
  * This checked exception gets thrown if attempt to access a removed data structure has been made.
  * <p>
  * Note that data structures throw runtime exceptions out of methods that don't have
- * checked exceptions in the signature. If you prefer to handle checked exceptions,
- * then use methods that end with {@code 'x'}, e.g. {@link GridCacheQueue#addx(Object)}
- * vs. {@link GridCacheQueue#add(Object)}.
- *
- * @author @java.author
- * @version @java.version
+ * checked exceptions in the signature.
  */
 public class GridCacheDataStructureRemovedException extends GridException {
     /**

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -70,9 +70,6 @@ import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
  * <p>
  * For sample client and data node configuration refer to {@code config/ggfs/default-ggfs-client.xml}
  * and {@code config/ggfs/default-ggfs-data.xml} configuration files in GridGain installation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Closeable {
     /** Endpoint type: shared memory. */

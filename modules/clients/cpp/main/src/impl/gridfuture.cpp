@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,9 +13,9 @@
 #include "gridgain/gridclienttypedef.hpp"
 #include "gridgain/gridconf.hpp"
 
-template class GRIDGAIN_API GridFuture<std::vector<std::string> >;
-template class GRIDGAIN_API GridFuture<TGridClientVariantMap>;
-template class GRIDGAIN_API GridFuture<GridClientDataMetrics>;
-template class GRIDGAIN_API GridFuture<GridClientVariant>;
-template class GRIDGAIN_API GridFuture<TGridClientNodePtr>;
-template class GRIDGAIN_API GridFuture<TGridClientNodeList>;
+template class GRIDGAIN_API GridClientFuture<std::vector<std::string> >;
+template class GRIDGAIN_API GridClientFuture<TGridClientVariantMap>;
+template class GRIDGAIN_API GridClientFuture<GridClientDataMetrics>;
+template class GRIDGAIN_API GridClientFuture<GridClientVariant>;
+template class GRIDGAIN_API GridClientFuture<TGridClientNodePtr>;
+template class GRIDGAIN_API GridClientFuture<TGridClientNodeList>;

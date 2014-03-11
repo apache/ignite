@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -33,9 +33,9 @@ static string CREDS = "s3cret";
 GridClientConfiguration clientConfig() {
     GridClientConfiguration clientConfig;
 
-    vector<GridSocketAddress> servers;
+    vector<GridClientSocketAddress> servers;
 
-    servers.push_back(GridSocketAddress(SERVER_ADDRESS, TCP_PORT));
+    servers.push_back(GridClientSocketAddress(SERVER_ADDRESS, TCP_PORT));
 
     clientConfig.servers(servers);
 
@@ -51,7 +51,7 @@ GridClientConfiguration clientConfig() {
 }
 
 BOOST_FIXTURE_TEST_CASE(testDataProjectionCommands, GridClientFactoryFixture1<clientConfig>) {
-    GridUuid clientId = client->id();
+    GridClientUuid clientId = client->id();
     TGridClientDataPtr dataPrj = client->data("partitioned");
 
     // Cache command self tests.

@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -24,9 +24,6 @@ class GridClientConnectionPool;
 
 /**
  * Generic connection class. Current implementations are TCP and HTTP connections.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientConnection: private boost::noncopyable {
 public:

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,19 +15,17 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
  * Future verifying that all remote transactions related to some
  * optimistic transaction were prepared.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompoundIdentityFuture<GridCacheCommittedTxInfo<K, V>>
     implements GridCacheFuture<GridCacheCommittedTxInfo<K, V>> {
@@ -273,7 +271,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
         private UUID nodeId;
 
         /**
-         * Empty constructor required by {@link java.io.Externalizable}
+         * Empty constructor required by {@link Externalizable}
          */
         public MiniFuture() {
             // No-op.
@@ -344,7 +342,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
     /**
      * Single value reducer.
      */
-    private static class SingleReducer<K, V> extends
+    private static class SingleReducer<K, V> implements
         GridReducer<GridCacheCommittedTxInfo<K, V>, GridCacheCommittedTxInfo<K, V>> {
         /** */
         private AtomicReference<GridCacheCommittedTxInfo<K, V>> collected = new AtomicReference<>();

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -22,9 +22,6 @@ import java.util.concurrent.atomic.*;
  * <p>
  * It is guaranteed that window size will never get less then maximum size when poling from this window
  * concurrently from different threads.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerBoundedSizeWindow<E> extends GridStreamerBoundedSizeWindowAdapter<E, E> {
     /** {@inheritDoc} */

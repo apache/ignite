@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 /**
  * Defines different cache transaction isolation levels. See {@link GridCacheTx}
  * documentation for more information about cache transaction isolation levels.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridCacheTxIsolation {
     /** Read committed isolation level. */

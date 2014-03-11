@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -12,9 +12,6 @@ package org.gridgain.grid.dr.hub.receiver;
 /**
  * Data center replication receiver hub load balancing mode. Determines to which receiver hub from the given remote
  * data center the next batch will be sent from the sender hub.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridDrReceiverHubLoadBalancingMode {
     /**

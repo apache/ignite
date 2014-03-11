@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -33,8 +33,7 @@ import static org.gridgain.grid.cache.GridCacheTxState.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<GridCacheTxEx<K, V>>
     implements GridCacheMvccFuture<K, V, GridCacheTxEx<K, V>> {
@@ -211,12 +210,19 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     }
 
     /**
+     * @param nodeId Failed node ID.
+     * @param mappings Remaining mappings.
      * @param e Error.
      */
-    void onError(Throwable e) {
+    void onError(@Nullable UUID nodeId, @Nullable Iterable<GridDistributedTxMapping<K, V>> mappings, Throwable e) {
         if (err.compareAndSet(null, e)) {
             boolean marked = tx.setRollbackOnly();
 
+            if (e instanceof GridCacheTxOptimisticException) {
+                assert nodeId != null : "Missing node ID for optimistic failure exception: " + e;
+
+                tx.removeKeysMapping(nodeId, mappings);
+            }
             if (e instanceof GridCacheTxRollbackException) {
                 if (marked) {
                     try {
@@ -245,7 +251,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                     if (f.futureId().equals(res.miniId())) {
                         assert f.node().id().equals(nodeId);
 
-                        f.onResult(res);
+                        f.onResult(nodeId, res);
                     }
                 }
             }
@@ -397,7 +403,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         assert !m.empty();
 
-        GridNode n = m.node();
+        final GridNode n = m.node();
 
         GridNearTxPrepareRequest<K, V> req = new GridNearTxPrepareRequest<>(
             futId,
@@ -437,7 +443,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 new C2<GridCacheTxEx<K, V>, Exception, GridCacheTxEx<K, V>>() {
                     @Override public GridCacheTxEx<K, V> apply(GridCacheTxEx<K, V> t, Exception ex) {
                         if (ex != null) {
-                            onError(ex);
+                            onError(n.id(), mappings, ex);
 
                             return t;
                         }
@@ -628,21 +634,22 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                 // Fail the whole future (make sure not to remap on different primary node
                 // to prevent multiple lock coordinators).
-                onError(e);
+                onError(null, null, e);
             }
         }
 
         /**
+         * @param nodeId Failed node ID.
          * @param res Result callback.
          */
-        void onResult(GridNearTxPrepareResponse<K, V> res) {
+        void onResult(UUID nodeId, GridNearTxPrepareResponse<K, V> res) {
             if (isDone())
                 return;
 
             if (rcvRes.compareAndSet(false, true)) {
                 if (res.error() != null) {
                     // Fail the whole compound future.
-                    onError(res.error());
+                    onError(nodeId, mappings, res.error());
                 }
                 else {
                     assert F.isEmpty(res.invalidPartitions());
@@ -668,7 +675,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                             }
                             catch (GridException e) {
                                 // Fail the whole compound future.
-                                onError(e);
+                                onError(nodeId, mappings, e);
 
                                 return;
                             }

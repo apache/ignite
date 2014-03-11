@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,9 +14,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * When log debug mode is disabled this exception should be logged in short form - without stack trace.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridInternalException extends GridException {
     /**

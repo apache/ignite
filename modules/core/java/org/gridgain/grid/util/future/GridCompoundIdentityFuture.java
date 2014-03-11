@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,9 +19,6 @@ import java.io.*;
 
 /**
  * Future composed of multiple inner futures.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCompoundIdentityFuture<T> extends GridCompoundFuture<T, T> {
     /** Empty constructor required for {@link Externalizable}. */

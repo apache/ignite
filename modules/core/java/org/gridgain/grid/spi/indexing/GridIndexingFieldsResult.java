@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.spi.indexing;
 
-import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.spi.*;
 
 import java.util.*;
@@ -18,9 +17,6 @@ import java.util.*;
  * Field query result. It is composed of
  * fields metadata and iterator over queried fields.
  * See also {@link GridIndexingSpi#queryFields(String, String, Collection, GridIndexingQueryFilter[])}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridIndexingFieldsResult {
     /**
@@ -28,7 +24,7 @@ public interface GridIndexingFieldsResult {
      *
      * @return Meta data for queried fields.
      */
-    List<GridCacheSqlFieldMetadata> metaData();
+    List<GridIndexingFieldMetadata> metaData();
 
     /**
      * Gets iterator over queried fields.

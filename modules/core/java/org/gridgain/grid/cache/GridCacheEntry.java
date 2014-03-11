@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,6 +14,7 @@ import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.Map.*;
 
 /**
  * This interface provides a rich API for working with individual cache entries. It
@@ -86,9 +87,6 @@ import java.util.*;
  * <h1 class="header">Peer Class Loading</h1>
  * All classes passed into cache API will be automatically deployed to any participating grid nodes.
  * No explicit deployment step is required.
- *
- * @author @java.author
- * @version @java.version
  * @param <K> Key type.
  * @param <V> Value type.
  */
@@ -212,7 +210,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
     /**
      * This method has the same semantic as {@link #get()} method, however it
      * wraps {@link GridException} into {@link GridRuntimeException} if failed in order to
-     * comply with {@link java.util.Map.Entry} interface.
+     * comply with {@link Entry} interface.
      *
      * @return See {@link #get()}
      */
@@ -238,7 +236,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
     /**
      * This method has the same semantic as {@link #set(Object, GridPredicate[])} method, however it
      * wraps {@link GridException} into {@link GridRuntimeException} if failed in order to
-     * comply with {@link java.util.Map.Entry} interface.
+     * comply with {@link Entry} interface.
      *
      * @return See {@link #set(Object, GridPredicate[])}
      */

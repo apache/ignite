@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
 *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
-import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -18,16 +17,13 @@ import java.io.*;
 
 /**
  * Immutable query metrics key used to group metrics.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridCacheQueryMetricsKey implements Externalizable {
     /** */
     private GridCacheQueryType type;
 
     /** */
-    private String clsName;
+    private Class<?> cls;
 
     /** */
     private String clause;
@@ -36,13 +32,13 @@ class GridCacheQueryMetricsKey implements Externalizable {
      * Constructs key.
      *
      * @param type Query type.
-     * @param clsName Query return type.
+     * @param cls Query return type.
      * @param clause Query clause.
      */
     GridCacheQueryMetricsKey(@Nullable GridCacheQueryType type,
-        @Nullable String clsName, @Nullable String clause) {
+        @Nullable Class<?> cls, @Nullable String clause) {
         this.type = type;
-        this.clsName = clsName;
+        this.cls = cls;
         this.clause = clause;
     }
 
@@ -63,8 +59,8 @@ class GridCacheQueryMetricsKey implements Externalizable {
     /**
      * @return Query return type.
      */
-    String className() {
-        return clsName;
+    Class<?> queryClass() {
+        return cls;
     }
 
     /**
@@ -84,20 +80,20 @@ class GridCacheQueryMetricsKey implements Externalizable {
 
         GridCacheQueryMetricsKey oth = (GridCacheQueryMetricsKey)obj;
 
-        return oth.type() == type && F.eq(oth.className(), clsName) && F.eq(oth.clause(), clause);
+        return oth.type() == type && F.eq(oth.queryClass(), cls) && F.eq(oth.clause(), clause);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return (type != null ? type.ordinal() : -1) +
-            31 * (clsName != null ? clsName.hashCode() : 0) +
+            31 * (cls != null ? cls.hashCode() : 0) +
             31 * 31 * (clause != null ? clause.hashCode() : 0);
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeByte(type != null ? type.ordinal() : -1);
-        U.writeString(out, clsName);
+        out.writeObject(cls);
         U.writeString(out, clause);
     }
 
@@ -106,7 +102,7 @@ class GridCacheQueryMetricsKey implements Externalizable {
         byte ord = in.readByte();
 
         type = ord >= 0 ? GridCacheQueryType.fromOrdinal(ord) : null;
-        clsName = U.readString(in);
+        cls = (Class<?>)in.readObject();
         clause = U.readString(in);
     }
 }

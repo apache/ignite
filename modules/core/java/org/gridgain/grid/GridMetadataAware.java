@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -33,9 +33,6 @@ import java.util.concurrent.*;
  * looking that context up from a separate map by a key. For example,
  * an expiration policy used by caches may add some expiration
  * context to cache entries to properly expire them.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridMetadataAware extends Serializable {
     /**

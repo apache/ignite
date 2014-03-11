@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,9 +15,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Simple injector which wraps only one resource object.
- *
- * @author @java.author
- * @version @java.version
  * @param <T> Type of injected resource.
  */
 class GridResourceBasicInjector<T> implements GridResourceInjector {

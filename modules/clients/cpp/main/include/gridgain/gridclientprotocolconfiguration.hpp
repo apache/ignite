@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@
 
 /**
  * Protocol configuration.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientProtocolConfiguration {
 public:
@@ -137,7 +134,7 @@ public:
     /**
      * Returns UUID used to authenticate
      */
-    GridUuid uuid() const;
+    GridClientUuid uuid() const;
 
     /**
      * Gets client credentials to authenticate with.

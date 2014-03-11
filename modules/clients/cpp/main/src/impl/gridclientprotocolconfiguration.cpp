@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -20,7 +20,7 @@ class GridClientProtocolConfiguration::Impl {
 public:
     Impl() : maxConnIdleTime_(DFLT_MAX_CONN_IDLE_TIME), 
         connTimeout_(DFLT_MAX_CONN_TIMEOUT),
-        protType_(DFLT_CLIENT_PROTOCOL), sslEnabled_(false), cred_(""), uuid_(GridUuid::randomUuid()) {
+        protType_(DFLT_CLIENT_PROTOCOL), sslEnabled_(false), cred_(""), uuid_(GridClientUuid::randomUuid()) {
     }
 
     Impl(const Impl& other) : maxConnIdleTime_(other.maxConnIdleTime_), connTimeout_(other.connTimeout_), 
@@ -50,7 +50,7 @@ public:
     string pass_;
 
     /** Client Uuid. */
-    GridUuid uuid_;
+    GridClientUuid uuid_;
 };
 
 
@@ -177,7 +177,7 @@ void GridClientProtocolConfiguration::certificateFilePassword(const string& pass
 /**
 * Returns UUID used to authenticate
 */
-GridUuid GridClientProtocolConfiguration::uuid() const {
+GridClientUuid GridClientProtocolConfiguration::uuid() const {
     return pimpl->uuid_;
 }
 

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -48,9 +48,6 @@ import java.util.*;
  * {@link #affinityExecuteAsync(String, String, Object, Object)} to synchronously
  * or asynchronously execute remote tasks on affinity nodes based on provided
  * affinity keys.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridClientCompute {
     /**

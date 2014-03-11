@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.jetbrains.annotations.*;
@@ -26,9 +25,6 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 
 /**
  * Output stream to store data into grid cache with separate blocks.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridGgfsOutputStreamImpl extends GridGgfsOutputStreamAdapter {
     /** Maximum number of blocks in buffer. */
@@ -429,13 +425,10 @@ class GridGgfsOutputStreamImpl extends GridGgfsOutputStreamAdapter {
 
     /**
      * Helper closure to reserve specified space and update file's length
-     *
-     * @author @java.author
-     * @version @java.version
      */
     @GridInternal
-    private static final class ReserveSpaceClosure extends GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>
-        implements Externalizable {
+    private static final class ReserveSpaceClosure implements GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
+        Externalizable {
         /** Space amount (bytes number) to increase file's length. */
         private long space;
 

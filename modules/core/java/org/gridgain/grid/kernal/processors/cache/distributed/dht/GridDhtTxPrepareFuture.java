@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -29,8 +29,7 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.cache.GridCacheTxState.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<GridCacheTxEx<K, V>>
     implements GridCacheMvccFuture<K, V, GridCacheTxEx<K, V>> {

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -34,9 +34,6 @@ import java.util.*;
  * </ul>
  * <p>
  * Streamer window is configured vis {@link GridStreamerConfiguration#getWindows()} method.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridStreamerWindow<E> extends Iterable<E> {
     /**
@@ -47,25 +44,25 @@ public interface GridStreamerWindow<E> extends Iterable<E> {
     public String name();
 
     /**
-     * Gets default index.
+     * Gets default index, if default index is not configured then
+     * {@link IllegalArgumentException} will be thrown.
      *
      * @param <K> Type of the index key.
      * @param <V> Type of the index value.
-     * @return Index with default name or {@code null}, if such index is
-     *         not configured.
+     * @return Index with default name.
      */
-    @Nullable public <K, V> GridStreamerIndex<E, K, V> index();
+     public <K, V> GridStreamerIndex<E, K, V> index();
 
     /**
-     * Gets index by name.
+     * Gets index by name, if not index with such name was configured then
+     * {@link IllegalArgumentException} will be thrown.
      *
      * @param name Name of the index, if {@code null} then analogous to {@link #index()}.
      * @param <K> Type of the index key.
      * @param <V> Type of the index value.
-     * @return Index with a given name or {@code null}, if such index is
-     *         not configured.
+     * @return Index with a given name.
      */
-    @Nullable public <K, V> GridStreamerIndex<E, K, V> index(@Nullable String name);
+    public <K, V> GridStreamerIndex<E, K, V> index(@Nullable String name);
 
     /**
      * Gets all indexes configured for this window.

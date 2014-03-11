@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -14,10 +14,11 @@ package org.gridgain.scalar.examples
 import org.gridgain.scalar.scalar
 import scalar._
 import org.gridgain.grid.cache._
-import org.gridgain.grid.events.{GridLocalEventListener, GridEventType, GridEvent}
+import org.gridgain.grid.events.{GridEventType, GridEvent}
 import GridEventType._
 import collection.JavaConversions._
 import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
+import org.gridgain.grid.lang.GridPredicate
 
 /**
  * Demonstrates basic In-Memory Data Grid operations with Scalar.
@@ -25,9 +26,6 @@ import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
  * Remote nodes should always be started with configuration file which includes
  * cache: `'ggstart.sh examples/config/example-cache.xml'`. Local node can
  * be started with or without cache.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridOnlyAvailableIn(Array(GridProductEdition.DATA_GRID))
 object ScalarCacheExample extends App {
@@ -120,14 +118,16 @@ object ScalarCacheExample extends App {
         val g = grid$
 
         g *< (() => {
-            val lsnr = new GridLocalEventListener {
-                def onEvent(e: GridEvent) {
+            val lsnr = new GridPredicate[GridEvent] {
+                override def apply(e: GridEvent): Boolean = {
                     println(e.shortDisplay)
+
+                    true
                 }
             }
 
             if (g.nodeLocalMap[String, AnyRef].putIfAbsent("lsnr", lsnr) == null) {
-                g.events().addLocalListener(lsnr,
+                g.events().localListen(lsnr,
                     EVT_CACHE_OBJECT_PUT,
                     EVT_CACHE_OBJECT_READ,
                     EVT_CACHE_OBJECT_REMOVED)

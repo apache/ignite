@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -22,9 +22,6 @@ import java.util.concurrent.*;
 /**
  * This class run some basic network diagnostic tests in the background and
  * reports errors or suspicious results.
- *
- * @author @java.author
- * @version @java.version
  */
 final class GridDiagnostic {
     /** */

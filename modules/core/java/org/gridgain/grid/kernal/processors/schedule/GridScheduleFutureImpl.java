@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -33,9 +33,6 @@ import static java.util.concurrent.TimeUnit.*;
 
 /**
  * Implementation of {@link GridSchedulerFuture} interface.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements GridSchedulerFuture<R>, Externalizable {
     /** Empty time array. */
@@ -141,57 +138,6 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
             }
         }
 
-        private boolean onEnd(CountDownLatch latch, R res, Throwable err) {
-            assert latch != null;
-
-            boolean notifyLsnr = false;
-
-            CountDownLatch resLatchCp = null;
-
-            try {
-                synchronized (mux) {
-                    lastRes = res;
-                    lastErr = err;
-
-                    stats.onEnd();
-
-                    int cnt = stats.getExecutionCount();
-
-                    if (lastLsnrExecCnt != cnt) {
-                        notifyLsnr = true;
-
-                        lastLsnrExecCnt = cnt;
-                    }
-
-                    if ((callCnt == maxCalls && maxCalls > 0) || cancelled) {
-                        done = true;
-
-                        resLatchCp = resLatch;
-
-                        resLatch = null;
-
-                        return false;
-                    }
-
-                    resLatch = new CountDownLatch(1);
-
-                    return true;
-                }
-            }
-            finally {
-                // Unblock all get() invocations.
-                latch.countDown();
-
-                // Make sure that none will be blocked on new latch if this
-                // future will not be executed any more.
-                if (resLatchCp != null)
-                    resLatchCp.countDown();
-
-                if (notifyLsnr)
-                    notifyListeners(res, err);
-            }
-        }
-
         @SuppressWarnings({"ErrorNotRethrown"})
         @Override public void run() {
             CountDownLatch latch = onStart();
@@ -216,7 +162,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
                 U.error(log, "Error occurred while executing scheduled task: " + this, e);
             }
             finally {
-                if (!onEnd(latch, res, err))
+                if (!onEnd(latch, res, err, false))
                     deschedule();
             }
         }
@@ -235,10 +181,8 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
      * @param sched Cron scheduler.
      * @param ctx Kernal context.
      * @param pat Cron pattern.
-     * @throws GridException If pattern was invalid.
      */
-    GridScheduleFutureImpl(Scheduler sched, GridKernalContext ctx, String pat)
-        throws GridException {
+    GridScheduleFutureImpl(Scheduler sched, GridKernalContext ctx, String pat) {
         assert sched != null;
         assert ctx != null;
         assert pat != null;
@@ -247,9 +191,78 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
         this.ctx = ctx;
         this.pat = pat.trim();
 
-        parsePatternParameters();
-
         log = ctx.log(getClass());
+
+        try {
+            parsePatternParameters();
+        }
+        catch (GridException e) {
+            onEnd(resLatch, null, e, true);
+        }
+    }
+
+    /**
+     * @param latch Latch.
+     * @param res Result.
+     * @param err Error.
+     * @return {@code False} if future should be unschedule
+     */
+    private boolean onEnd(CountDownLatch latch, R res, Throwable err, boolean initErr) {
+        assert latch != null;
+
+        boolean notifyLsnr = false;
+
+        CountDownLatch resLatchCp = null;
+
+        try {
+            synchronized (mux) {
+                lastRes = res;
+                lastErr = err;
+
+                if (initErr) {
+                    assert err != null;
+
+                    notifyLsnr = true;
+                }
+                else {
+                    stats.onEnd();
+
+                    int cnt = stats.getExecutionCount();
+
+                    if (lastLsnrExecCnt != cnt) {
+                        notifyLsnr = true;
+
+                        lastLsnrExecCnt = cnt;
+                    }
+                }
+
+                if ((callCnt == maxCalls && maxCalls > 0) || cancelled || initErr) {
+                    done = true;
+
+                    resLatchCp = resLatch;
+
+                    resLatch = null;
+
+                    return false;
+                }
+
+                resLatch = new CountDownLatch(1);
+
+                return true;
+            }
+        }
+        finally {
+            // Unblock all get() invocations.
+            latch.countDown();
+
+            // Make sure that none will be blocked on new latch if this
+            // future will not be executed any more.
+            if (resLatchCp != null)
+                resLatchCp.countDown();
+
+            if (notifyLsnr)
+                notifyListeners(res, err);
+        }
     }
 
     /** {@inheritDoc} */
@@ -280,6 +293,10 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
     void schedule(Callable<R> task) {
         assert task != null;
         assert this.task == null;
+
+        // Done future on this step means that there was error on init.
+        if (isDone())
+            return;
 
         this.task = task;
 
@@ -358,22 +375,29 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
 
             String numOfCallsStr = matcher.group(3);
 
-            if (numOfCallsStr != null)
+            if (numOfCallsStr != null) {
+                int maxCalls0;
+
                 if ("*".equals(numOfCallsStr))
-                    maxCalls = 0;
+                    maxCalls0 = 0;
                 else {
                     try {
-                        maxCalls = Integer.valueOf(numOfCallsStr);
+                        maxCalls0 = Integer.valueOf(numOfCallsStr);
                     }
                     catch (NumberFormatException e) {
                         throw new GridException("Invalid number of calls parameter in schedule pattern [numOfCalls=" +
                             numOfCallsStr + ", pattern=" + pat + ']', e);
                     }
 
-                    if (maxCalls == 0)
-                        throw new GridException("Number of calls must be greater than 0 or must equal to \"*\"" +
-                            " in schedule pattern [numOfCalls=" + maxCalls + ", pattern=" + pat + ']');
+                    if (maxCalls0 <= 0)
+                        throw new GridException("Number of calls must be greater than 0 or must be equal to \"*\"" +
+                            " in schedule pattern [numOfCalls=" + maxCalls0 + ", pattern=" + pat + ']');
                 }
+
+                synchronized (mux) {
+                    maxCalls = maxCalls0;
+                }
+            }
 
             cron = matcher.group(4);
 
@@ -416,8 +440,10 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
         if (isDone() || isCancelled())
             return EMPTY_TIMES;
 
-        if (maxCalls > 0)
-            cnt = Math.min(cnt, maxCalls);
+        synchronized (mux) {
+            if (maxCalls > 0)
+                cnt = Math.min(cnt, maxCalls);
+        }
 
         long[] times = new long[cnt];
 
@@ -540,15 +566,6 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public GridAbsPredicate predicate() {
-        return new PA() {
-            @Override public boolean apply() {
-                return isDone();
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
     @Override public void listenAsync(@Nullable GridInClosure<? super GridFuture<R>> lsnr) {
         if (lsnr != null) {
             Throwable err;
@@ -587,6 +604,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     @Override public <T> GridFuture<T> chain(final GridClosure<? super GridFuture<R>, T> doneCb) {
         final GridFutureAdapter<T> fut = new GridFutureAdapter<T>(ctx, syncNotify) {
             @Override public String toString() {
@@ -782,15 +800,6 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
                 throw U.cast(err);
 
             return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridAbsPredicate predicate() {
-            return new PA() {
-                @Override public boolean apply() {
-                    return isDone();
-                }
-            };
         }
 
         /** {@inheritDoc} */

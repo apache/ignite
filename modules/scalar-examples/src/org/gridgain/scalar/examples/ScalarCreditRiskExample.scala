@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -20,14 +20,11 @@ import scala.util.control.Breaks._
  * Scalar-based Monte-Carlo example.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-default.xml'`.
- *
- * @author @java.author
- * @version @java.version
+ * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
  */
 object ScalarCreditRiskExample {
     def main(args: Array[String]) {
-        scalar("examples/config/example-default.xml") {
+        scalar("examples/config/example-compute.xml") {
             // Create portfolio.
             var portfolio = Seq.empty[Credit]
 
@@ -103,9 +100,6 @@ object ScalarCreditRiskExample {
  * probability on default. Although this model is simplified for the purpose
  * of this example, it is close enough to emulate the real-life credit
  * risk assessment application.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class Credit(
     remAmnt: Double, // Remaining crediting amount.
@@ -129,9 +123,6 @@ private case class Credit(
 
 /**
  * This class abstracts out the calculation of risk for a credit portfolio.
- *
- * @author @java.author
- * @version @java.version
  */
 private class CreditRiskManager {
     /**

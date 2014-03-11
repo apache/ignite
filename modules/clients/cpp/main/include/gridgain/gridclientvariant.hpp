@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,17 +17,17 @@
 #include <gridgain/gridconf.hpp>
 #include <gridgain/gridclientuuid.hpp>
 
+#include <boost/variant.hpp>
+
 /** Forward declaration of class. */
 class GridClientVariantVisitor;
 
 /**
  * Class that replaces java.lang.Object holder for primitive types and string. It can hold boolean, int_*, float, double,
  * string and byte array values.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientVariant {
+
 public:
     /** No-value type. */
     class NullType {
@@ -42,6 +42,34 @@ public:
             return true;
         }
     };
+
+private:
+    class Impl {
+    public:
+        /** Boost typedef for holding multiple types. */
+        typedef boost::variant<GridClientVariant::NullType, bool, int16_t, int32_t, int64_t, double,
+                float, std::string, std::wstring, std::vector<int8_t>, std::vector<GridClientVariant>, GridClientUuid> TVariantType;
+
+        /** Boost variable. */
+        TVariantType var;
+
+        /** Enum for possible types of values. */
+        enum TypeEnum {
+            BOOL_TYPE = 1,
+            SHORT_TYPE,
+            INT_TYPE,
+            LONG_TYPE,
+            DOUBLE_TYPE,
+            FLOAT_TYPE,
+            STRING_TYPE,
+            WIDE_STRING_TYPE,
+            BYTE_ARRAY_TYPE,
+            VARIANT_VECTOR_TYPE,
+            UUID_TYPE
+        };
+    };
+
+public:
 
     /** No-arg constructor - variant with null value is created. */
     GridClientVariant();
@@ -128,7 +156,7 @@ public:
     /**
      * Constructor with UUID argument.
      */
-    GridClientVariant(const GridUuid& val);
+    GridClientVariant(const GridClientUuid& val);
 
     /**
      * Copy constructor.
@@ -366,7 +394,7 @@ public:
      *
      * @param val New value for the variant.
      */
-    void set(const GridUuid& val);
+    void set(const GridClientUuid& val);
 
     /**
      * Checks if this variant holds a UUID value.
@@ -380,7 +408,7 @@ public:
      *
      * @return Value held in the variant.
      */
-    GridUuid getUuid() const;
+    GridClientUuid getUuid() const;
 
     /**
      * Method for visitors.
@@ -418,8 +446,7 @@ public:
     bool hasAnyValue() const;
 
 private:
-    class Impl;
-    Impl* pimpl;
+    Impl pimpl;
 };
 
 /**
@@ -479,7 +506,7 @@ public:
     virtual void visit(const std::vector<GridClientVariant>&) const = 0;
 
     /** */
-    virtual void visit(const GridUuid&) const = 0;
+    virtual void visit(const GridClientUuid&) const = 0;
 };
 
 #endif //GRID_CLIENT_VARIANT_HPP_INCLUDED

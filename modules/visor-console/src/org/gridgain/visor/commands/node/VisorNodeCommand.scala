@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -75,9 +75,6 @@ import scalar._
  *     node "-id8=12345678 -a"
  *         Prints full statistics for specified node.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorNodeCommand {
     /** */
@@ -292,9 +289,6 @@ class VisorNodeCommand {
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorNodeCommand {
     // Adds command's help to visor.

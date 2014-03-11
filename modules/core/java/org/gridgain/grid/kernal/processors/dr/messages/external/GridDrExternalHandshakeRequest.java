@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ import java.io.*;
 /**
  * Request which is sent by sending receiving hub to sender hub on connection in order to
  * identify sender hub data center ID.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrExternalHandshakeRequest implements GridDrExternalProtocolVersionAware, Externalizable {
     /** Data center ID. */

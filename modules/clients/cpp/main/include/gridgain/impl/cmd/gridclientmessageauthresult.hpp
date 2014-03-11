@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,9 +14,6 @@
 
 /**
  * Authentication result message. It's empty because only session token is required.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientMessageAuthenticationResult : public GridClientMessageResult {
 };

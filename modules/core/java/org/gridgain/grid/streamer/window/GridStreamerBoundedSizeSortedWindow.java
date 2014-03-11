@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -20,9 +20,6 @@ import java.util.concurrent.atomic.*;
 /**
  * Size-bounded sorted window. Unlike {@link GridStreamerBoundedSizeWindow}, which limits
  * window only on size, this window also provides events in sorted order.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerBoundedSizeSortedWindow<E>
     extends GridStreamerBoundedSizeWindowAdapter<E, GridStreamerBoundedSizeSortedWindow.Holder<E>> {

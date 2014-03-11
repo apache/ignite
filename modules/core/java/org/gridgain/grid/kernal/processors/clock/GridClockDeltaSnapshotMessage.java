@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
  * Message containing time delta map for all nodes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAdapter {
     /** Snapshot version. */
@@ -208,7 +205,7 @@ public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAd
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 63;
+        return 59;
     }
 
     /** {@inheritDoc} */

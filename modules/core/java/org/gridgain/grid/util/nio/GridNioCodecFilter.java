@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -20,9 +20,6 @@ import java.nio.*;
 /**
  * Filter that transforms byte buffers to user-defined objects and vice-versa
  * with specified {@link GridNioParser}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridNioCodecFilter extends GridNioFilterAdapter {
     /** Parser used. */

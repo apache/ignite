@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
  * Synchronization callback for transaction. You can subscribe to receive transaction
  * state change callbacks by registering transaction synchronization via
  * {@link GridCache#txSynchronize(GridCacheTxSynchronization)} method.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheTxSynchronization {
     /**

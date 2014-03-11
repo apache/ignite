@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@
 
 /**
  * C++ client API.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClient {
 public:
@@ -36,7 +33,7 @@ public:
      *
      * @return Generated client id.
      */
-    virtual GridUuid id() const = 0;
+    virtual GridClientUuid id() const = 0;
 
     /**
      * Gets a data projection for a default grid cache with <tt>null</tt> name.

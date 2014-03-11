@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -20,13 +20,11 @@ import scala.collection._
 import org.gridgain.grid.events.GridEventType
 import GridEventType._
 import JavaConversions._
-import org.gridgain.grid.compute.{GridComputeJob, GridComputeJobAdapter, GridComputeTaskNoReduceSplitAdapter}
+import org.gridgain.grid.compute.{GridComputeJobResult, GridComputeJob, GridComputeJobAdapter, GridComputeTaskSplitAdapter}
+import java.util
 
 /**
  * Unit test for 'tasks' command.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorTasksCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterAll {
     /**
@@ -40,6 +38,7 @@ class VisorTasksCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndA
 
         try {
             val compute = visor.grid.compute()
+
             val fut1 = compute.withName("TestTask1").execute(new TestTask1(), null)
             val fut2 = compute.withName("TestTask1").execute(new TestTask1(), null)
             val fut3 = compute.withName("TestTask1").execute(new TestTask1(), null)
@@ -159,11 +158,8 @@ class VisorTasksCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndA
 
 /**
  * Test task 1.
- *
- * @author @java.author
- * @version @java.version
  */
-private class TestTask1 extends GridComputeTaskNoReduceSplitAdapter[String] {
+private class TestTask1 extends GridComputeTaskSplitAdapter[String, Void] {
     def split(gridSize: Int, arg: String): java.util.Collection[_ <: GridComputeJob] = {
         Iterable.fill(gridSize)(new GridComputeJobAdapter() {
             def execute() = {
@@ -173,15 +169,14 @@ private class TestTask1 extends GridComputeTaskNoReduceSplitAdapter[String] {
             }
         })
     }
+
+    def reduce(results: util.List[GridComputeJobResult]) = null
 }
 
 /**
  * Test task 2.
- *
- * @author @java.author
- * @version @java.version
  */
-private class TestTask2 extends GridComputeTaskNoReduceSplitAdapter[String] {
+private class TestTask2 extends GridComputeTaskSplitAdapter[String, Void] {
     def split(gridSize: Int, arg: String): java.util.Collection[_ <: GridComputeJob] = {
         Iterable.fill(gridSize)(new GridComputeJobAdapter() {
             def execute() = {
@@ -191,15 +186,14 @@ private class TestTask2 extends GridComputeTaskNoReduceSplitAdapter[String] {
             }
         })
     }
+
+    def reduce(results: util.List[GridComputeJobResult]) = null
 }
 
 /**
  * Test task 3 (w/o 'Task' in host for testing '-s' option).
- *
- * @author @java.author
- * @version @java.version
  */
-private class Test3 extends GridComputeTaskNoReduceSplitAdapter[String] {
+private class Test3 extends GridComputeTaskSplitAdapter[String, Void] {
     def split(gridSize: Int, arg: String): java.util.Collection[_ <: GridComputeJob] = {
         Iterable.fill(gridSize)(new GridComputeJobAdapter() {
             def execute() = {
@@ -209,4 +203,6 @@ private class Test3 extends GridComputeTaskNoReduceSplitAdapter[String] {
             }
         })
     }
+
+    def reduce(results: util.List[GridComputeJobResult]) = null
 }

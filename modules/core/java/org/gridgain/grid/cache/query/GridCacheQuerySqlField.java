@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -12,15 +12,9 @@ package org.gridgain.grid.cache.query;
 import java.lang.annotation.*;
 
 /**
- * Annotates fields to SQL query on. All fields that will be involved in SQL where clauses must have
- * this annotation. For more information about cache queries see {@link GridCacheQuery},
- * {@link GridCacheReduceQuery}, or {@link GridCacheTransformQuery} documentation.
- *
- * @author @java.author
- * @version @java.version
+ * Annotates fields for SQL queries. All fields that will be involved in SQL clauses must have
+ * this annotation. For more information about cache queries see {@link GridCacheQuery} documentation.
  * @see GridCacheQuery
- * @see GridCacheReduceQuery
- * @see GridCacheTransformQuery
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

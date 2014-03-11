@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -29,9 +29,6 @@ import static org.gridgain.grid.cache.GridCachePeekMode.*;
 
 /**
  * Partitioned cache entry public API.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V> {
     /**

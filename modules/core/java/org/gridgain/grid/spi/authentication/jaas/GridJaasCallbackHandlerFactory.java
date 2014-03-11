@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ import javax.security.auth.callback.*;
 
 /**
  * Callback handler factory for Jaas login module.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridJaasCallbackHandlerFactory {
     /**

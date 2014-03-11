@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,11 +17,8 @@ import org.gridgain.grid.util.lang.*;
 
 /**
  * Future listener to fill chained future with converted result of the source future.
- *
- * @author @java.author
- * @version @java.version
  */
-public class GridFutureChainListener<T, R> extends GridInClosure<GridFuture<T>> {
+public class GridFutureChainListener<T, R> implements GridInClosure<GridFuture<T>> {
     /** Context. */
     private final GridKernalContext ctx;
 

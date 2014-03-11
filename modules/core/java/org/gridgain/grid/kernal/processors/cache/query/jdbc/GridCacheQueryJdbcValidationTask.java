@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -23,9 +23,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Task to validate connection. Checks that cache with provided name exists in grid.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheQueryJdbcValidationTask extends GridComputeTaskSplitAdapter<String, Boolean> {
     /** {@inheritDoc} */

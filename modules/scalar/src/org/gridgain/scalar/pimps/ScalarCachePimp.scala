@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -31,9 +31,6 @@ import org.gridgain.grid.cache._
  * that Scala pimp is shadowing or with Java package name that your Scala code is importing.
  * Instead of giving two different names to the same function we've decided to simply mark
  * Scala's side method with `$` suffix.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarCachePimp[K, V] extends ScalarCacheProjectionPimp[K, V] with Ordered[GridCache[K, V]] {
     /**
@@ -46,9 +43,6 @@ class ScalarCachePimp[K, V] extends ScalarCacheProjectionPimp[K, V] with Ordered
 
 /**
  * Companion object.
- *
- * @author @java.author
- * @version @java.version
  */
 object ScalarCachePimp {
     /**

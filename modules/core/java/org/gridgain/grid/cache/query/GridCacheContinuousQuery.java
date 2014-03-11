@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -93,18 +93,15 @@ import java.util.*;
  * This will execute query on all nodes that have cache you are working with and notify callback
  * with both data that already exists in cache and further updates.
  * <p>
- * To stop receiving updates call {@link #cancel()} method:
+ * To stop receiving updates call {@link #close()} method:
  * <pre name="code" class="java">
  * qry.cancel();
  * </pre>
  * Note that one query instance can be executed only once. After it's cancelled, it's non-operational.
  * If you need to repeat execution, use {@link GridCacheQueries#createContinuousQuery()} method to create
  * new query.
- *
- * @author @java.author
- * @version @java.version
  */
-public interface GridCacheContinuousQuery<K, V> {
+public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
     /**
      * Default buffer size. Size of {@code 1} means that all entries
      * will be sent to master node immediately (buffering is disabled).
@@ -263,5 +260,5 @@ public interface GridCacheContinuousQuery<K, V> {
      *
      * @throws GridException In case of error.
      */
-    public void cancel() throws GridException;
+    @Override public void close() throws GridException;
 }

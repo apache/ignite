@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,7 +16,6 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -28,12 +27,8 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
  * Cache count down latch implementation.
- *
- * @author @java.author
- * @version @java.version
  */
-public final class GridCacheCountDownLatchImpl extends GridMetadataAwareAdapter implements GridCacheCountDownLatchEx,
-    Externalizable {
+public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatchEx, Externalizable {
     /** Deserialization stash. */
     private static final ThreadLocal<GridBiTuple<GridCacheContext, String>> stash =
         new ThreadLocal<GridBiTuple<GridCacheContext, String>>() {
@@ -156,44 +151,6 @@ public final class GridCacheCountDownLatchImpl extends GridMetadataAwareAdapter 
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> awaitAsync() {
-        return ctx.closures().callLocalSafe(
-            new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
-                    await();
-
-                    return null;
-                }
-            },
-            true
-        );
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> awaitAsync(final long timeout) {
-        return ctx.closures().callLocalSafe(
-            new Callable<Boolean>() {
-                @Override public Boolean call() throws Exception {
-                    return await(timeout);
-                }
-            },
-            true
-        );
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> awaitAsync(final long timeout, final TimeUnit unit) {
-        return ctx.closures().callLocalSafe(
-            new Callable<Boolean>() {
-                @Override public Boolean call() throws Exception {
-                    return await(timeout, unit);
-                }
-            },
-            true
-        );
-    }
-
-    /** {@inheritDoc} */
     @Override public int countDown() throws GridException {
         return CU.outTx(new CountDownCallable(1), ctx);
     }
@@ -208,21 +165,6 @@ public final class GridCacheCountDownLatchImpl extends GridMetadataAwareAdapter 
     /** {@inheritDoc}*/
     @Override public void countDownAll() throws GridException {
         CU.outTx(new CountDownCallable(0), ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Integer> countDownAsync() {
-        return ctx.closures().callLocalSafe(new CountDownCallable(1), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Integer> countDownAsync(int val) {
-        return ctx.closures().callLocalSafe(new CountDownCallable(val), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<?> countDownAllAsync() {
-        return ctx.closures().callLocalSafe(new CountDownCallable(0), true);
     }
 
     /** {@inheritDoc} */
@@ -285,7 +227,7 @@ public final class GridCacheCountDownLatchImpl extends GridMetadataAwareAdapter 
                                 return new CountDownLatch(val.get());
                             }
                             finally {
-                                tx.end();
+                                tx.close();
                             }
                         }
                     },
@@ -399,7 +341,7 @@ public final class GridCacheCountDownLatchImpl extends GridMetadataAwareAdapter 
                 return retVal;
             }
             finally {
-                tx.end();
+                tx.close();
             }
         }
     }

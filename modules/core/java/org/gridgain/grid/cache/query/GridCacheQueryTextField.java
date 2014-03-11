@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,9 +15,6 @@ import java.lang.annotation.*;
  * Annotation for fields or getters to be indexed for full text
  * search using {@code H2 TEXT} indexing. For more information
  * refer to {@link GridCacheQuery} documentation.
- *
- * @author @java.author
- * @version @java.version
  * @see GridCacheQuery
  */
 @Documented

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -27,9 +27,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  *
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Collection<GridCacheEntryInfo<K, V>>>
     implements GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> {
@@ -104,7 +101,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         super(cctx.kernalContext(), CU.<GridCacheEntryInfo<K, V>>collectionsReducer());
 
         assert reader != null;
-        assert cctx != null;
         assert !F.isEmpty(keys);
 
         this.reader = reader;

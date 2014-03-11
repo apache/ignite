@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.streamer.task;
 
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.streamer.*;
@@ -22,11 +23,8 @@ import java.util.*;
 
 /**
  * Streamer query task.
- *
- * @author @java.author
- * @version @java.version
  */
-public class GridStreamerQueryTask<R> extends GridComputeTaskAdapter<Void, Collection<R>> {
+public class GridStreamerQueryTask<R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>> {
     /** Query closure. */
     private GridClosure<GridStreamerContext, R> qryClos;
 
@@ -38,7 +36,7 @@ public class GridStreamerQueryTask<R> extends GridComputeTaskAdapter<Void, Colle
      * @param streamer Streamer.
      */
     public GridStreamerQueryTask(GridClosure<GridStreamerContext, R> qryClos, @Nullable String streamer) {
-        super(qryClos);
+        super(U.peerDeployAware(qryClos));
 
         this.qryClos = qryClos;
         this.streamer = streamer;
@@ -111,16 +109,6 @@ public class GridStreamerQueryTask<R> extends GridComputeTaskAdapter<Void, Colle
             assert s != null;
 
             return qryClos.apply(s.context());
-        }
-
-        /** {@inheritDoc} */
-        @Override public Class<?> deployClass() {
-            return qryClos.deployClass();
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClassLoader classLoader() {
-            return qryClos.classLoader();
         }
 
         /** {@inheritDoc} */

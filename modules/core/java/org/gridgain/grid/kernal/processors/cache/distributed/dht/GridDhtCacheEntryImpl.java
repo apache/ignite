@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -25,9 +25,6 @@ import static org.gridgain.grid.cache.GridCachePeekMode.*;
 
 /**
  * Colocated cache entry public API.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V> {
     /**
@@ -60,7 +57,7 @@ public class GridDhtCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V> {
 
     /** {@inheritDoc} */
     @Override public V peek(@Nullable Collection<GridCachePeekMode> modes) throws GridException {
-        if (modes.contains(NEAR_ONLY))
+        if (!ctx.isReplicated() && modes.contains(NEAR_ONLY))
             return null;
 
         V val = null;

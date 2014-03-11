@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,16 +11,12 @@ package org.gridgain.grid.cache;
 
 import org.gridgain.grid.dr.cache.receiver.*;
 import org.gridgain.grid.dr.cache.sender.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 
 /**
  * Cache metrics used to obtain statistics on cache itself.
  * Use {@link GridCache#metrics()} to obtain metrics for a cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheMetrics extends Serializable {
     /**
@@ -45,7 +41,7 @@ public interface GridCacheMetrics extends Serializable {
     public long readTime();
 
     /**
-     * Gets last time transaction was commited.
+     * Gets last time transaction was committed.
      *
      * @return Last commit time.
      */
@@ -101,18 +97,18 @@ public interface GridCacheMetrics extends Serializable {
     public int txRollbacks();
 
     /**
-     * Gets metrics for data sent during data center replication.
+     * Gets metrics for data sent during data center replication, if data center replication
+     * is not configured then {@link IllegalStateException} will be thrown.
      *
-     * @return Metrics for data sent during data center replication or {@code null}
-     *      if data center replication is not configured.
+     * @return Metrics for data sent during data center replication.
      */
-    @Nullable public GridDrSenderCacheMetrics drSendMetrics();
+    public GridDrSenderCacheMetrics drSendMetrics();
 
     /**
-     * Gets metrics for data received during data center replication.
+     * Gets metrics for data received during data center replication, if data center replication
+     * is not configured then {@link IllegalStateException} will be thrown.
      *
-     * @return Metrics for data received during data center replication or {@code null}
-     *      if data center replication is not configured.
+     * @return Metrics for data received during data center replication.
      */
-    @Nullable public GridDrReceiverCacheMetrics drReceiveMetrics();
+    public GridDrReceiverCacheMetrics drReceiveMetrics();
 }

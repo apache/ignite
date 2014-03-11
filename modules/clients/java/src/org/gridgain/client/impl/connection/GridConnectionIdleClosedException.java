@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,9 +11,6 @@ package org.gridgain.client.impl.connection;
 /**
  * This exception is thrown if client was closed by idle checker thread. This exception should be
  * handled internally and never rethrown to user.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridConnectionIdleClosedException extends GridClientConnectionResetException {
     /**

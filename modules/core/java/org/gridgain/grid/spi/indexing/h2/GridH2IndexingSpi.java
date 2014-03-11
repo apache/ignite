@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
 *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -130,9 +130,6 @@ import static org.h2.result.SortOrder.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- *
- * @author @java.author
- * @version @java.version
  * @see GridIndexingSpi
  */
 @GridSpiInfo(
@@ -594,7 +591,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             log.debug("Context has been initialized.");
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected GridSpiContext getSpiContext() {
         if (ctxInitLatch.getCount() != 0) {
             try {
@@ -752,7 +749,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
             ResultSet rs = res.get2();
 
-            List<GridCacheSqlFieldMetadata> meta;
+            List<GridIndexingFieldMetadata> meta;
 
             try {
                 ResultSetMetaData rsMeta = rs.getMetaData();
@@ -2036,8 +2033,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
     /**
      * Class to store information about group index.
-     *
-     * @author @java.author
      */
     private static class IndexGroup {
         /** */
@@ -2077,8 +2072,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
     /**
      * Information about table in database.
-     *
-     * @author @java.author
      */
     private class TableDescriptor implements GridH2Table.IndexesFactory {
         /** */
@@ -2276,7 +2269,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     /**
      * Field descriptor.
      */
-    private static class SqlFieldMetadata implements GridCacheSqlFieldMetadata {
+    private static class SqlFieldMetadata implements GridIndexingFieldMetadata {
         /** Schema name. */
         private String schemaName;
 

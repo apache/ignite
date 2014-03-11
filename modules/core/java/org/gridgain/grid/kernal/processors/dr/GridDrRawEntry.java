@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Data center entry implementation containing plain and raw keys and values.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrRawEntry<K, V> implements GridDrEntry<K, V>, Map.Entry<K, V>, Externalizable {
     /** Key. */

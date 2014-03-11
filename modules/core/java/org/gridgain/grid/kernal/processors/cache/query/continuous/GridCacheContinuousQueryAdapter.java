@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -28,9 +28,6 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  * Continuous query implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuousQuery<K, V> {
     /** Guard. */
@@ -233,7 +230,7 @@ class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuousQuery<
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel() throws GridException {
+    @Override public void close() throws GridException {
         closeLock.lock();
 
         try {

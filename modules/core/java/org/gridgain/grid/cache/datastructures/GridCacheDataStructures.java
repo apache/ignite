@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,10 +14,11 @@ import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Convenient facade for cache data structures.
- *
- * @author @java.author
- * @version @java.version
+ * Facade for working with distributed cache data structures. All cache data structures are similar
+ * in APIs to {@code 'java.util.concurrent'} package, but all operations on them are grid-aware.
+ * For example, if you increment {@link GridCacheAtomicLong} on one node, another node will
+ * know about the change. Or if you add an element to {@link GridCacheQueue} on one node,
+ * you can poll it on another node.
  */
 public interface GridCacheDataStructures {
     /**
@@ -75,7 +76,6 @@ public interface GridCacheDataStructures {
      * to get a single element off the queue all nodes may have to be queried.
      *
      * @param name Name of queue.
-     * @param type Type of queue.
      * @param cap Capacity of queue, {@code 0} for unbounded queue.
      * @param collocated If {@code true} then all items within the same queue will be collocated on the same node.
      *      Otherwise elements of the same queue maybe be cached on different nodes. If you have lots of relatively
@@ -85,7 +85,7 @@ public interface GridCacheDataStructures {
      * @return Queue with given properties.
      * @throws GridException If remove failed.
      */
-    @Nullable public <T> GridCacheQueue<T> queue(String name, GridCacheQueueType type, int cap, boolean collocated,
+    @Nullable public <T> GridCacheQueue<T> queue(String name, int cap, boolean collocated,
         boolean create) throws GridException;
 
     /**

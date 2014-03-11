@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.discovery.tcp.messages;
 
-import org.gridgain.grid.util.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Base class to implement discovery messages.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable {
     /** Sender of the message (transient). */

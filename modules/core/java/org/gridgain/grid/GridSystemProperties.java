@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@ import javax.net.ssl.*;
 /**
  * Contains constants for all system properties and environmental variables in GridGain. These
  * properties and variables can be used to affect the behavior of GridGain.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridSystemProperties {
     /**
@@ -93,6 +90,11 @@ public final class GridSystemProperties {
      * This property allows to override Jetty local port for REST processor.
      */
     public static final String GG_JETTY_PORT = "GRIDGAIN_JETTY_PORT";
+
+    /**
+     * This property does not allow GridGain to override Jetty log configuration for REST processor.
+     */
+    public static final String GG_JETTY_LOG_NO_OVERRIDE = "GRIDGAIN_JETTY_LOG_NO_OVERRIDE";
 
     /**
      * This property allows to override maximum count of task results stored on one node

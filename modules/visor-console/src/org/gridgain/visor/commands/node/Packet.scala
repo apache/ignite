@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -60,8 +60,5 @@ package org.gridgain.visor.commands
  *     visor node "-id8=12345678 -a"
  *         Prints full statistics for specified node.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 package object node

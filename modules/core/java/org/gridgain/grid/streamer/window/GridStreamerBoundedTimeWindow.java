@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -22,9 +22,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Window which is bounded by size and time interval.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerBoundedTimeWindow<E> extends GridStreamerWindowAdapter<E> {
     /** Window structures holder. */

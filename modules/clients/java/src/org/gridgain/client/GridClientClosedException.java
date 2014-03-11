@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,9 +10,6 @@ package org.gridgain.client;
 
 /**
  * This exception is thrown whenever an attempt is made to use a closed client.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientClosedException extends GridClientException {
     /**

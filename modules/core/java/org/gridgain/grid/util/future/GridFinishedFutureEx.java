@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,9 +11,8 @@ package org.gridgain.grid.util.future;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -23,9 +22,6 @@ import java.util.concurrent.*;
  * Future that is completed at creation time. This future is different from
  * {@link GridFinishedFuture} as it does not take context as a parameter and
  * performs notifications in the same thread.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridFinishedFutureEx<T> implements GridFuture<T>, Externalizable {
     /** Complete value. */
@@ -108,12 +104,6 @@ public class GridFinishedFutureEx<T> implements GridFuture<T>, Externalizable {
     /** {@inheritDoc} */
     @Override public boolean isDone() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("NullableProblems")
-    @Override public GridAbsPredicate predicate() {
-        return F.curry(F.alwaysTrue(), null);
     }
 
     /** {@inheritDoc} */

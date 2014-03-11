@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,9 +15,6 @@ import java.lang.annotation.*;
  * Annotates {@code NO-OP} SPI implementations. {@code NO-OP} implementations are empty implementations
  * and sometimes the system may provide optimizations to remove any overhead that may be involved
  * with SPI invocation.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

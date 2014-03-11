@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -15,9 +15,6 @@ import org.gridgain.visor._
 
 /**
  * Unit test for 'open' command.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorOpenCommandSpec extends VisorRuntimeBaseSpec(3) {
     behavior of "A 'open' visor command"

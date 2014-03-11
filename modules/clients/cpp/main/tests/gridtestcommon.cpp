@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -70,9 +70,9 @@ static int TEST_TCP_ROUTER_PORT = 12100;
 GridClientConfiguration clientConfig() {
     GridClientConfiguration clientConfig;
 
-    vector<GridSocketAddress> routers;
+    vector<GridClientSocketAddress> routers;
 
-    routers.push_back(GridSocketAddress("127.0.0.1", TEST_TCP_ROUTER_PORT));
+    routers.push_back(GridClientSocketAddress("127.0.0.1", TEST_TCP_ROUTER_PORT));
 
     clientConfig.routers(routers);
 
@@ -92,9 +92,9 @@ GridClientConfiguration clientConfig() {
 GridClientConfiguration clientConfig() {
     GridClientConfiguration clientConfig;
 
-    vector<GridSocketAddress> servers;
+    vector<GridClientSocketAddress> servers;
 
-    servers.push_back(GridSocketAddress("127.0.0.1", TEST_TCP_PORT));
+    servers.push_back(GridClientSocketAddress("127.0.0.1", TEST_TCP_PORT));
 
     clientConfig.servers(servers);
 

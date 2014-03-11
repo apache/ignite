@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -36,14 +36,14 @@ import java.util.*;
  * </li>
  * <li>
  *      Priority attribute session key (see {@link #getPriorityAttributeKey()}). Prior to
- *      returning from {@link org.gridgain.grid.compute.GridComputeTask#map(List, Object)} method, task implementation should
- *      set a value into the task session keyed by this attribute key. See {@link org.gridgain.grid.compute.GridComputeTaskSession}
+ *      returning from {@link GridComputeTask#map(List, Object)} method, task implementation should
+ *      set a value into the task session keyed by this attribute key. See {@link GridComputeTaskSession}
  *      for more information about task session.
  * </li>
  * <li>
  *      Priority attribute job context key (see {@link #getJobPriorityAttributeKey()}).
  *      It is used for specifying job priority.
- *      See {@link org.gridgain.grid.compute.GridComputeJobContext} for more information about job context.
+ *      See {@link GridComputeJobContext} for more information about job context.
  * </li>
  * <li>Default priority value (see {@link #getDefaultPriority()}). It is used when no priority is set.</li>
  * <li>
@@ -148,9 +148,6 @@ import java.util.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- *
- * @author @java.author
- * @version @java.version
  */
 @GridSpiInfo(
     author = /*@java.spi.author*/"GridGain Systems",
@@ -280,7 +277,7 @@ public class GridPriorityQueueCollisionSpi extends GridSpiAdapter implements Gri
 
     /**
      * Sets task priority attribute key. This key will be used to look up task
-     * priorities from task context (see {@link org.gridgain.grid.compute.GridComputeTaskSession#getAttribute(Object)}).
+     * priorities from task context (see {@link GridComputeTaskSession#getAttribute(Object)}).
      * <p>
      * If not provided, default value is {@code {@link #DFLT_PRIORITY_ATTRIBUTE_KEY}}.
      *
@@ -293,7 +290,7 @@ public class GridPriorityQueueCollisionSpi extends GridSpiAdapter implements Gri
 
     /**
      * Sets job priority attribute key. This key will be used to look up job
-     * priorities from job context (see {@link org.gridgain.grid.compute.GridComputeJobContext#getAttribute(Object)}).
+     * priorities from job context (see {@link GridComputeJobContext#getAttribute(Object)}).
      * <p>
      * If not provided, default value is {@code {@link #DFLT_JOB_PRIORITY_ATTRIBUTE_KEY}}.
      *

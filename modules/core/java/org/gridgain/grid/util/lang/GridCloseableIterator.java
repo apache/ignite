@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -32,9 +32,6 @@ import org.gridgain.grid.spi.*;
  *     iter.close();
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCloseableIterator<T> extends GridIterator<T>, GridSpiCloseableIterator<T>, AutoCloseable {
     /**

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -23,9 +23,6 @@ import org.jetbrains.annotations.*;
  * <p>
  * {@link #CLOCK} mode will be automatically configured only with {@link GridCacheWriteSynchronizationMode#FULL_SYNC}
  * write synchronization mode, as for other synchronization modes it does not render better performance.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridCacheAtomicWriteOrderMode {
     /**

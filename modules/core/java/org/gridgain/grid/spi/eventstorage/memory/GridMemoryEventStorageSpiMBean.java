@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -20,9 +20,6 @@ import org.gridgain.grid.util.mbean.*;
  * <li>Maximum queue size (see {@link #getExpireCount()})</li>
  * <li>Method that removes all items from queue (see {@link #clearAll()})</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean that provides access to memory event storage SPI configuration.")
 public interface GridMemoryEventStorageSpiMBean extends GridSpiManagementMBean {

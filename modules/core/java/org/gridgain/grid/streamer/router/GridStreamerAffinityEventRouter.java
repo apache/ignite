@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -27,9 +27,6 @@ import java.util.*;
  * Affinity key for collocation of event together on the same node is specified
  * via {@link AffinityEvent#affinityKey()} method. If event does not implement
  * {@link AffinityEvent} interface, then event itself will be used to determine affinity.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerAffinityEventRouter extends GridStreamerEventRouterAdapter {
     /** */

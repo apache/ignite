@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -29,9 +29,6 @@ import static org.gridgain.grid.kernal.GridTopic.*;
 
 /**
  * Continuous queries manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Ordered topic prefix. */
@@ -114,7 +111,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override protected void stop0(boolean cancel) {
+    @Override protected void onKernalStop0(boolean cancel) {
         U.interrupt(threads);
         U.joinThreads(threads, log);
     }

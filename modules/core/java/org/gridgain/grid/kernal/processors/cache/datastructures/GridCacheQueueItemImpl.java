@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -21,9 +21,6 @@ import java.io.*;
  * Note that fields annotated with {@link GridCacheQuerySqlField}
  * annotation will be indexed and can be used in cache queries. Also note that
  * arbitrary {@link #userObject()} put into the queue can also be indexed the same way.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("AbbreviationUsage")
 public class GridCacheQueueItemImpl<T> implements GridCacheQueueItem<T>, GridPeerDeployAware, Externalizable,
@@ -43,10 +40,6 @@ public class GridCacheQueueItemImpl<T> implements GridCacheQueueItem<T>, GridPee
     @GridCacheQuerySqlField
     private long seq;
 
-    /** Item priority. */
-    @GridCacheQuerySqlField
-    private int priority;
-
     /** Enqueue time. */
     private long enqueueTime;
 
@@ -58,10 +51,9 @@ public class GridCacheQueueItemImpl<T> implements GridCacheQueueItem<T>, GridPee
      *
      * @param seq Sequence id in queue.
      * @param qid Queue id.
-     * @param priority Priority of this queue item.
      * @param obj User object being put into queue.
      */
-    public GridCacheQueueItemImpl(String qid, long seq, int priority, T obj) {
+    public GridCacheQueueItemImpl(String qid, long seq, T obj) {
         assert qid != null;
         assert obj != null;
         assert seq > 0;
@@ -70,7 +62,6 @@ public class GridCacheQueueItemImpl<T> implements GridCacheQueueItem<T>, GridPee
         this.obj = obj;
         this.qid = qid;
         this.seq = seq;
-        this.priority = priority;
     }
 
     /**
@@ -161,15 +152,6 @@ public class GridCacheQueueItemImpl<T> implements GridCacheQueueItem<T>, GridPee
         return seq;
     }
 
-    /**
-     * Gets priority of the item.
-     *
-     * @return Priority of the item.
-     */
-    public int priority() {
-        return priority;
-    }
-
     /** {@inheritDoc} */
     @Override public Object clone() throws CloneNotSupportedException {
         GridCacheQueueItemImpl c = (GridCacheQueueItemImpl)super.clone();
@@ -189,7 +171,6 @@ public class GridCacheQueueItemImpl<T> implements GridCacheQueueItem<T>, GridPee
         out.writeInt(id);
         out.writeUTF(qid);
         out.writeLong(seq);
-        out.writeInt(priority);
         out.writeLong(enqueueTime);
         out.writeLong(dequeueTime);
         out.writeObject(obj);
@@ -201,7 +182,6 @@ public class GridCacheQueueItemImpl<T> implements GridCacheQueueItem<T>, GridPee
         id = in.readInt();
         qid = in.readUTF();
         seq = in.readLong();
-        priority = in.readInt();
         enqueueTime = in.readLong();
         dequeueTime = in.readLong();
         obj = (T)in.readObject();

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -33,9 +33,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Handles all swap operations.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Swap manager. */

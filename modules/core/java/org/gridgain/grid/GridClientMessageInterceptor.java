@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import org.jetbrains.annotations.*;
  * Interceptors allow user to transform objects send and received via REST protocols.
  * For example they could be used for customized multi-language marshalling by
  * converting binary object representation received from client to java object.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridClientMessageInterceptor {
     /**

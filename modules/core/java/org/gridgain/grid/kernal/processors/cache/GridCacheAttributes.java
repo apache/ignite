@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.partitioned.*;
+import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -20,15 +20,12 @@ import java.io.*;
 
 import static org.gridgain.grid.cache.GridCacheConfiguration.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCachePartitionedDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 
 /**
  * Cache attributes.
  * <p>
  * This class contains information on a single cache configured on some node.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheAttributes implements Externalizable {
     /** Cache name. */
@@ -80,7 +77,7 @@ public class GridCacheAttributes implements Externalizable {
     private GridCachePreloadMode preloadMode;
 
     /** Partitioned cache mode. */
-    private GridCachePartitionedDistributionMode partDistro;
+    private GridCacheDistributionMode partDistro;
 
     /** Preload batch size. */
     private int preloadBatchSize;
@@ -108,9 +105,6 @@ public class GridCacheAttributes implements Externalizable {
 
     /** Flag indicating whether GridGain should use write-behind behaviour for the cache store. */
     private boolean writeBehindEnabled;
-
-    /** Flag indicating whether GridGain should use primary nodes for persistent store update. */
-    private boolean writeBehindPreferPrimary;
 
     /** Maximum size of write-behind cache. */
     private int writeBehindFlushSize;
@@ -204,7 +198,7 @@ public class GridCacheAttributes implements Externalizable {
         evictSync = cfg.isEvictSynchronized();
         indexingSpiName = cfg.getIndexingSpiName();
         name = cfg.getName();
-        partDistro = GridCacheUtils.synchronizationMode(cfg);
+        partDistro = GridCacheUtils.distributionMode(cfg);
         preloadBatchSize = cfg.getPreloadBatchSize();
         preloadMode = cfg.getPreloadMode();
         qryIdxEnabled = cfg.isQueryIndexEnabled();
@@ -220,19 +214,19 @@ public class GridCacheAttributes implements Externalizable {
         writeBehindFlushFreq  = cfg.getWriteBehindFlushFrequency();
         writeBehindFlushSize = cfg.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cfg.getWriteBehindFlushThreadCount();
-        writeBehindPreferPrimary = cfg.isWriteBehindPreferPrimary();
         writeSyncMode = cfg.getWriteSynchronizationMode();
 
         affMapperClsName = className(cfg.getAffinityMapper());
 
-        GridCacheAffinity aff = cfg.getAffinity();
+        affKeyBackups = cfg.getBackups();
+
+        GridCacheAffinityFunction aff = cfg.getAffinity();
 
         if (aff != null) {
-            if (aff instanceof GridCachePartitionedAffinity) {
-                GridCachePartitionedAffinity aff0 = (GridCachePartitionedAffinity) aff;
+            if (aff instanceof GridCacheConsistentHashAffinityFunction) {
+                GridCacheConsistentHashAffinityFunction aff0 = (GridCacheConsistentHashAffinityFunction) aff;
 
                 affInclNeighbors = aff0.isExcludeNeighbors();
-                affKeyBackups = aff0.getKeyBackups();
                 affReplicas = aff0.getDefaultReplicas();
                 affReplicaCntAttrName = aff0.getReplicaCountAttributeName();
                 affHashIdRslvrClsName = className(aff0.getHashIdResolver());
@@ -282,7 +276,7 @@ public class GridCacheAttributes implements Externalizable {
      * @return {@code True} if near cache is enabled.
      */
     public boolean nearCacheEnabled() {
-        return cacheMode() == PARTITIONED &&
+        return cacheMode() != LOCAL &&
             (partDistro == NEAR_PARTITIONED || partDistro == NEAR_ONLY);
     }
 
@@ -292,7 +286,7 @@ public class GridCacheAttributes implements Externalizable {
      */
     @SuppressWarnings("SimplifiableIfStatement")
     public boolean isAffinityNode() {
-        if (cacheMode() != PARTITIONED)
+        if (cacheMode() == LOCAL)
             return true;
 
         return partDistro == PARTITIONED_ONLY || partDistro == NEAR_PARTITIONED;
@@ -456,7 +450,7 @@ public class GridCacheAttributes implements Externalizable {
     /**
      * @return Partitioned cache mode.
      */
-    public GridCachePartitionedDistributionMode partitionedTaxonomy() {
+    public GridCacheDistributionMode partitionedTaxonomy() {
         return partDistro;
     }
 
@@ -559,13 +553,6 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Flag indicating whether GridGain should use primary nodes for persistent store update.
-     */
-    public boolean writeBehindPreferPrimary() {
-        return writeBehindPreferPrimary;
-    }
-
-    /**
      * @return Maximum size of write-behind cache.
      */
     public int writeBehindFlushSize() {
@@ -654,7 +641,6 @@ public class GridCacheAttributes implements Externalizable {
         out.writeLong(writeBehindFlushFreq);
         out.writeInt(writeBehindFlushSize);
         out.writeInt(writeBehindFlushThreadCnt);
-        out.writeBoolean(writeBehindPreferPrimary);
         U.writeEnum(out, writeSyncMode);
 
         U.writeString(out, affClsName);
@@ -694,7 +680,7 @@ public class GridCacheAttributes implements Externalizable {
         evictSync  = in.readBoolean();
         indexingSpiName = U.readString(in);
         name = U.readString(in);
-        partDistro = U.readEnum(in, GridCachePartitionedDistributionMode.class);
+        partDistro = U.readEnum(in, GridCacheDistributionMode.class);
         preloadBatchSize = in.readInt();
         preloadMode = U.readEnum(in, GridCachePreloadMode.class);
         qryIdxEnabled = in.readBoolean();
@@ -710,7 +696,6 @@ public class GridCacheAttributes implements Externalizable {
         writeBehindFlushFreq = in.readLong();
         writeBehindFlushSize = in.readInt();
         writeBehindFlushThreadCnt = in.readInt();
-        writeBehindPreferPrimary = in.readBoolean();
         writeSyncMode = U.readEnum(in, GridCacheWriteSynchronizationMode.class);
 
         affClsName = U.readString(in);

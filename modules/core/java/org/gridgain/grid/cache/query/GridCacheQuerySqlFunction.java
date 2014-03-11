@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -31,14 +31,11 @@ import java.lang.annotation.*;
  *     indexing.setIndexCustomFunctionClasses(MyFunctions.class);
  *
  *     // And use in queries.
- *     cache.createFieldsQuery("select sqr(2) where sqr(1) = 1");
+ *     cache.queries().createSqlFieldsQuery("select sqr(2) where sqr(1) = 1");
  * </pre>
  * <p>
  * For more information about H2 custom functions please refer to
  * <a href="http://www.h2database.com/html/features.html#user_defined_functions">H2 documentation</a>.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

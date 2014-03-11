@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,7 +15,6 @@ import org.gridgain.grid.dr.cache.receiver.*;
 import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.dr.hub.receiver.*;
 import org.gridgain.grid.dr.hub.sender.*;
-import org.jetbrains.annotations.*;
 
 /**
  * Data center replication (DR) interface.
@@ -46,9 +45,6 @@ import org.jetbrains.annotations.*;
  * <p>
  * This API provides ability to manage DR process on sender cache node as well as get metrics for sender cache,
  * receiver cache, sender hub and receiver hub.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDr {
     /**
@@ -88,93 +84,95 @@ public interface GridDr {
     /**
      * Gets sender cache metrics.
      * <p>
-     * In case node doesn't have cache with the given name or this cache is not sender cache, {@code null} will be
-     * returned.
+     * In case node doesn't have cache with the given name then {@link IllegalArgumentException}
+     * will be thrown, and if this cache is not sender cache then {@link IllegalStateException} will be thrown.
      *
      * @param cacheName Sender cache name.
-     * @return Sender cache metrics or {@code null}.
+     * @return Sender cache metrics.
      */
-    @Nullable public GridDrSenderCacheMetrics senderCacheMetrics(String cacheName);
+    public GridDrSenderCacheMetrics senderCacheMetrics(String cacheName);
 
     /**
      * Gets receiver cache metrics.
      * <p>
-     * In case node doesn't have cache with the given name or this cache is not receiver cache, {@code null} will be
-     * returned.
+     * In case node doesn't have cache with the given name then {@link IllegalArgumentException}
+     * will be thrown, and if this cache is not receiver cache {@link IllegalStateException} will be thrown.
      *
-     * @param cacheName Sender cache name.
-     * @return Sender cache metrics or {@code null}.
+     * @param cacheName Receiver cache name.
+     * @return Receiver cache metrics..
      */
-    @Nullable public GridDrReceiverCacheMetrics receiverCacheMetrics(String cacheName);
+    public GridDrReceiverCacheMetrics receiverCacheMetrics(String cacheName);
 
     /**
      * Gets sender hub incoming data metrics for specified sender cache.
      * <p>
-     * In case node is not sender hub or this sender hub does not work with the given cache, {@code null} will be
-     * returned.
+     * In case node is not sender hub then {@link IllegalStateException} will be thrown,
+     * and if this sender hub does not work with the given cache {@link IllegalArgumentException} will be thrown.
      *
      * @param cacheName Sender cache name.
-     * @return Sender hub incoming data metrics or {@code null}.
+     * @return Sender hub incoming data metrics.
      */
-    @Nullable public GridDrSenderHubInMetrics senderHubInMetrics(String cacheName);
+    public GridDrSenderHubInMetrics senderHubInMetrics(String cacheName);
 
     /**
      * Gets sender hub incoming data metrics aggregated across all caches.
      * <p>
-     * In case node is not sender hub, {@code null} will be returned.
+     * In case node is not sender hub then {@link IllegalStateException} will be thrown.
      *
-     * @return Sender hub incoming data metrics or {@code null}.
+     * @return Sender hub incoming data metrics.
      */
-    @Nullable public GridDrSenderHubInMetrics senderHubAggregatedInMetrics();
+    public GridDrSenderHubInMetrics senderHubAggregatedInMetrics();
 
     /**
      * Gets sender hub outgoing data metrics for specified remote data center ID.
      * <p>
-     * In case node is not sender hub or this sender hub does not work with the given data center, {@code null} will be
-     * returned.
+     * In case node is not sender hub then {@link IllegalStateException} will be thrown,
+     * and if this sender hub does not work with the given data center {@link IllegalArgumentException}
+     * will be thrown.
      *
      * @param dataCenterId Remote data center ID.
-     * @return Sender hub outgoing data metrics or {@code null}.
+     * @return Sender hub outgoing data metrics.
      */
-    @Nullable public GridDrSenderHubOutMetrics senderHubOutMetrics(byte dataCenterId);
+    public GridDrSenderHubOutMetrics senderHubOutMetrics(byte dataCenterId);
 
     /**
      * Gets sender hub outgoing data metrics aggregated across all remote data centers.
      * <p>
-     * In case node is not sender hub, {@code null} will be returned.
+     * In case node is not sender hub then {@link IllegalStateException} will be thrown.
      *
-     * @return Sender hub outgoing data metrics or {@code null}.
+     * @return Sender hub outgoing data metrics.
      */
-    @Nullable public GridDrSenderHubOutMetrics senderHubAggregatedOutMetrics();
+    public GridDrSenderHubOutMetrics senderHubAggregatedOutMetrics();
 
     /**
      * Gets receiver hub incoming data metrics for specified remote data center ID.
      * <p>
-     * In case node is not receiver hub or this receiver hub does not work with the given data center, {@code null} will
-     * be returned.
+     * In case node is not receiver hub then {@link IllegalStateException},
+     * and if this receiver hub does not work with the given data center {@link IllegalArgumentException}
+     * will be thrown.
      *
      * @param dataCenterId Remote data center ID.
-     * @return Receiver hub incoming data metrics or {@code null}.
+     * @return Receiver hub incoming data metrics.
      */
-    @Nullable public GridDrReceiverHubInMetrics receiverHubInMetrics(byte dataCenterId);
+    public GridDrReceiverHubInMetrics receiverHubInMetrics(byte dataCenterId);
 
     /**
      * Gets receiver hub incoming data metrics aggregated across all remote data centers.
      * <p>
-     * In case node is not receiver hub, {@code null} will be returned.
+     * In case node is not receiver hub then {@link IllegalStateException} will be thrown.
      *
-     * @return Receiver hub incoming data metrics or {@code null}.
+     * @return Receiver hub incoming data metrics.
      */
-    @Nullable public GridDrReceiverHubInMetrics receiverHubAggregatedInMetrics();
+    public GridDrReceiverHubInMetrics receiverHubAggregatedInMetrics();
 
     /**
      * Gets receiver hub outgoing data metrics aggregated across all receiver caches.
      * <p>
-     * In case node is not receiver hub, {@code null} will be returned.
+     * In case node is not receiver hub then {@link IllegalStateException} will be thrown.
      *
-     * @return Receiver hub outgoing data metrics or {@code null}.
+     * @return Receiver hub outgoing data metrics.
      */
-    @Nullable public GridDrReceiverHubOutMetrics receiverHubAggregatedOutMetrics();
+    public GridDrReceiverHubOutMetrics receiverHubAggregatedOutMetrics();
 
     /**
      * Reset all sender hub and receiver hub metrics on this node. In case this node is neither sender hub, nor

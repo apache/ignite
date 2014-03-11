@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -25,9 +25,6 @@ import static org.gridgain.grid.cache.GridCachePeekMode.*;
  * <p>
  * Random eviction will provide the best performance over any key set in which every
  * key has the same probability of being accessed.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheRandomEvictionPolicy<K, V> implements GridCacheEvictionPolicy<K, V>,
     GridCacheRandomEvictionPolicyMBean {

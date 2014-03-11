@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -26,9 +26,6 @@ import java.util.*;
  * <p>
  * If this file was not accessed then it is deleted. If file access time is
  * different from modification date new expiration date is set.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridSharedFsTimeoutTask extends GridSpiThread {
     /** Map of files to their access and expiration date. */

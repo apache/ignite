@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,9 +19,6 @@ import java.util.*;
  * distribute session attributes between jobs.
  * <p>
  * By default attributes and checkpoints are disabled for performance reasons.
- *
- * @author @java.author
- * @version @java.version
  * @see GridComputeTaskSession
  * @see GridComputeTaskSession#setAttribute(Object, Object)
  * @see GridComputeTaskSession#setAttributes(Map)

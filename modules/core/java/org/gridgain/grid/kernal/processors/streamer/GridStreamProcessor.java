@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -27,8 +27,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridStreamProcessor extends GridProcessorAdapter {
     /** Streamers map. */
@@ -300,18 +299,23 @@ public class GridStreamProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @return Default no-name streamer or {@code null} if one does not exist.
+     * @return Default no-name streamer.
      */
-    @Nullable public GridStreamer streamer() {
+    public GridStreamer streamer() {
         return streamer(null);
     }
 
     /**
      * @param name Streamer name.
-     * @return Streamer for given name or {@code null} if one does not exist.
+     * @return Streamer for given name.
      */
-    @Nullable public GridStreamer streamer(@Nullable String name) {
-        return map.get(name);
+    public GridStreamer streamer(@Nullable String name) {
+        GridStreamer streamer = map.get(name);
+
+        if (streamer == null)
+            throw new IllegalArgumentException("Streamer is not configured: " + name);
+
+        return streamer;
     }
 
     /**

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,9 +21,6 @@ import java.util.*;
 /**
  * FTP scanner scans directory for new files. Scanned directory defined in URI.
  * Scanner doesn't search files in subfolders.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridUriDeploymentFtpScanner extends GridUriDeploymentScanner {
     /** */

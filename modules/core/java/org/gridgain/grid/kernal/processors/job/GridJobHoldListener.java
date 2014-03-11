@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,9 +14,6 @@ import java.util.*;
 /**
  * Job hold listener to notify job processor on {@code hold}
  * state change.
- *
- * @author @java.author
- * @version @java.version
  */
 interface GridJobHoldListener extends EventListener {
     /**

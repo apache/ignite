@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -23,9 +23,6 @@ import java.util.*;
 
 /**
  * Streamer window adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridStreamerWindowAdapter<E> implements GridLifecycleAware, GridStreamerWindow<E>,
     GridStreamerWindowMBean {
@@ -361,20 +358,22 @@ public abstract class GridStreamerWindowAdapter<E> implements GridLifecycleAware
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K, V> GridStreamerIndex<E, K, V> index() {
+    @Override public <K, V> GridStreamerIndex<E, K, V> index() {
         return index(null);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K, V> GridStreamerIndex<E, K, V> index(@Nullable String name) {
+    @Override public <K, V> GridStreamerIndex<E, K, V> index(@Nullable String name) {
         if (idxsAsMap != null) {
             GridStreamerIndexProvider<E, K, V> idx = (GridStreamerIndexProvider<E, K, V>)idxsAsMap.get(name);
 
-            if (idx != null)
-                return idx.index();
+            if (idx == null)
+                throw new IllegalArgumentException("Streamer index is not configured: " + name);
+
+            return idx.index();
         }
 
-        return null;
+        throw new IllegalArgumentException("Streamer index is not configured: " + name);
     }
 
     /** {@inheritDoc} */
@@ -465,9 +464,6 @@ public abstract class GridStreamerWindowAdapter<E> implements GridLifecycleAware
     /**
      * Window iterator wrapper which prevent returning more elements that existed in the underlying collection by the
      * time of iterator creation.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private class BoundedIterator implements Iterator<E> {
         /** Iterator. */

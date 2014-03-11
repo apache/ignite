@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -22,9 +22,6 @@ import static java.sql.RowIdLifetime.*;
 
 /**
  * JDBC database metadata implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("RedundantCast")
 class GridJdbcDatabaseMetadata implements DatabaseMetaData {

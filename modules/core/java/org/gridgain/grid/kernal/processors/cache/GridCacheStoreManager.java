@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -22,9 +22,6 @@ import java.util.*;
 
 /**
  * Store manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** */
@@ -47,15 +44,32 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws GridException {
-        if (store instanceof GridLifecycleAware)
-            ((GridLifecycleAware)store).start();
+        if (store instanceof GridLifecycleAware) {
+            // Avoid second start() call on store in case when near cache is enabled.
+            if (cctx.config().isWriteBehindEnabled()) {
+                if (!cctx.isNear())
+                    ((GridLifecycleAware)store).start();
+            }
+            else {
+                if (cctx.isNear() || !CU.isNearEnabled(cctx))
+                    ((GridLifecycleAware)store).start();
+            }
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         if (store instanceof GridLifecycleAware) {
             try {
-                ((GridLifecycleAware)store).stop();
+                // Avoid second start() call on store in case when near cache is enabled.
+                if (cctx.config().isWriteBehindEnabled()) {
+                    if (!cctx.isNear())
+                        ((GridLifecycleAware)store).stop();
+                }
+                else {
+                    if (cctx.isNear() || !CU.isNearEnabled(cctx))
+                        ((GridLifecycleAware)store).stop();
+                }
             }
             catch (GridException e) {
                 U.error(log(), "Failed to stop cache store.", e);
@@ -177,7 +191,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 log.debug("Loading all values from store.");
 
             try {
-                store.loadAll(new GridBiInClosure<K, Object>() {
+                store.loadCache(new GridBiInClosure<K, Object>() {
                     @Override public void apply(K k, Object o) {
                         V v;
                         GridCacheVersion ver = null;

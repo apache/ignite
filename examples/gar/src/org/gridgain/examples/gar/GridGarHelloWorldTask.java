@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,7 +11,6 @@ package org.gridgain.examples.gar;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.jetbrains.annotations.*;
 import org.springframework.beans.factory.support.*;
 import org.springframework.beans.factory.xml.*;
 import org.springframework.core.io.*;
@@ -25,12 +24,9 @@ import java.util.*;
  * string into individual words and creates grid jobs for each word.
  * Task class in that example should be placed in GAR file.
  * See {@code GridGarHelloWorldExample} for more details.
- *
- * @author link
- * @version 1.5
  */
 @GridComputeTaskName("GridGarHelloWorldTask")
-public class GridGarHelloWorldTask  extends GridComputeTaskNoReduceSplitAdapter<String> {
+public class GridGarHelloWorldTask  extends GridComputeTaskSplitAdapter<String, Object> {
     /** {@inheritDoc} */
     @Override public Collection<? extends GridComputeJob> split(int gridSize, String arg) throws GridException {
         // Create Spring context.
@@ -58,7 +54,6 @@ public class GridGarHelloWorldTask  extends GridComputeTaskNoReduceSplitAdapter<
                 /*
                  * Simply prints the job's argument.
                  */
-                @Nullable
                 @Override public Serializable execute() {
                     System.out.println(">>>");
                     System.out.println(">>> Printing '" + argument(0) + "' on this node from grid job.");
@@ -71,5 +66,10 @@ public class GridGarHelloWorldTask  extends GridComputeTaskNoReduceSplitAdapter<
         }
 
         return jobs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+        return null;
     }
 }

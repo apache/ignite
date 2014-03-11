@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,12 +19,10 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
+import java.util.*;
 
 /**
  * Information about partitions of all nodes in topology.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstractMessage<K, V> {
     /** */
@@ -34,6 +32,14 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
     /** */
     private byte[] partsBytes;
+
+    private long topVer;
+
+    @GridDirectTransient
+    private Collection<GridNode>[] affAssignment;
+
+    /** */
+    private byte[] affAssignmentBytes;
 
     /**
      * Required by {@link Externalizable}.
@@ -69,6 +75,37 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
         if (parts != null)
             partsBytes = ctx.marshaller().marshal(parts);
+
+        if (affAssignment != null)
+            affAssignmentBytes = ctx.marshaller().marshal(affAssignment);
+    }
+
+    /**
+     * @return Topology version.
+     */
+    public long topologyVersion() {
+        return topVer;
+    }
+
+    /**
+     * @param topVer Topology version.
+     */
+    public void topologyVersion(long topVer) {
+        this.topVer = topVer;
+    }
+
+    /**
+     * @return Affinity assignment for topology version.
+     */
+    public Collection<GridNode>[] affinityAssignment() {
+        return affAssignment;
+    }
+
+    /**
+     * @param affAssignment Affinity assignment for topology version.
+     */
+    public void affinityAssignment(Collection<GridNode>[] affAssignment) {
+        this.affAssignment = affAssignment;
     }
 
     /** {@inheritDoc} */
@@ -77,6 +114,9 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
         if (partsBytes != null)
             parts = ctx.marshaller().unmarshal(partsBytes, ldr);
+
+        if (affAssignmentBytes != null)
+            affAssignment = ctx.marshaller().unmarshal(affAssignmentBytes, ldr);
     }
 
     /** {@inheritDoc} */
@@ -97,6 +137,9 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
         _clone.parts = parts;
         _clone.partsBytes = partsBytes;
+        _clone.topVer = topVer;
+        _clone.affAssignment = affAssignment;
+        _clone.affAssignmentBytes = affAssignmentBytes;
     }
 
     /** {@inheritDoc} */
@@ -116,7 +159,19 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
         switch (commState.idx) {
             case 4:
+                if (!commState.putByteArray(affAssignmentBytes))
+                    return false;
+
+                commState.idx++;
+
+            case 5:
                 if (!commState.putByteArray(partsBytes))
+                    return false;
+
+                commState.idx++;
+
+            case 6:
+                if (!commState.putLong(topVer))
                     return false;
 
                 commState.idx++;
@@ -136,12 +191,30 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
         switch (commState.idx) {
             case 4:
+                byte[] affAssignmentBytes0 = commState.getByteArray();
+
+                if (affAssignmentBytes0 == BYTE_ARR_NOT_READ)
+                    return false;
+
+                affAssignmentBytes = affAssignmentBytes0;
+
+                commState.idx++;
+
+            case 5:
                 byte[] partsBytes0 = commState.getByteArray();
 
                 if (partsBytes0 == BYTE_ARR_NOT_READ)
                     return false;
 
                 partsBytes = partsBytes0;
+
+                commState.idx++;
+
+            case 6:
+                if (buf.remaining() < 8)
+                    return false;
+
+                topVer = commState.getLong();
 
                 commState.idx++;
 

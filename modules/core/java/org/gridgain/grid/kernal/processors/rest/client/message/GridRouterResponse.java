@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -12,8 +12,7 @@ package org.gridgain.grid.kernal.processors.rest.client.message;
 import java.util.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridRouterResponse extends GridClientAbstractMessage {
     /** Raw message. */

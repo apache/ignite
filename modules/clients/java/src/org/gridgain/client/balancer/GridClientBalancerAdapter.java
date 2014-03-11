@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Base class for balancers. Contains common direct connection handling logic.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridClientBalancerAdapter implements GridClientLoadBalancer {
     /** Selects connectable nodes. */
@@ -43,7 +40,7 @@ public abstract class GridClientBalancerAdapter implements GridClientLoadBalance
      * <p>
      * Default value is {@code false}.
      *
-     * @see org.gridgain.client.GridClientNode#connectable()
+     * @see GridClientNode#connectable()
      * @return Prefer direct nodes.
      */
     public boolean isPreferDirectNodes() {

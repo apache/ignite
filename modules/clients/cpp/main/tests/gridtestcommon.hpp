@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -88,7 +88,7 @@ public:
 
 private:
     /** Nodes map. */
-    std::map<GridUuid, GridClientNode> nodes;
+    std::map<GridClientUuid, GridClientNode> nodes;
 
     /** Nodes map mutex. */
     mutable boost::mutex nodesMux;

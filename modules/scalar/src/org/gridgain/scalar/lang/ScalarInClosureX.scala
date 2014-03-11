@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -17,14 +17,9 @@ import org.gridgain.grid.util.lang.GridInClosureX
 
 /**
  * Peer deploy aware adapter for Java's `GridInClosureX`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarInClosureX[T](private val f: T => Unit) extends GridInClosureX[T] {
     assert(f != null)
-
-    peerDeployLike(f)
 
     /**
      * Delegates to passed in function.

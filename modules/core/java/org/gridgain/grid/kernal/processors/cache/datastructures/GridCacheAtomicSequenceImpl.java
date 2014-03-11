@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,7 +18,6 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -32,12 +31,8 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
  * Cache sequence implementation.
- *
- * @author @java.author
- * @version @java.version
  */
-public final class GridCacheAtomicSequenceImpl extends GridMetadataAwareAdapter implements GridCacheAtomicSequenceEx,
-    Externalizable {
+public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenceEx, Externalizable {
     /** De-serialization stash. */
     private static final ThreadLocal<GridBiTuple<GridCacheContext, String>> stash =
         new ThreadLocal<GridBiTuple<GridCacheContext, String>>() {
@@ -154,16 +149,6 @@ public final class GridCacheAtomicSequenceImpl extends GridMetadataAwareAdapter 
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Long> incrementAndGetAsync() throws GridException {
-        return internalUpdateAsync(1, incAndGetCall, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Long> getAndIncrementAsync() throws GridException {
-        return internalUpdateAsync(1, getAndIncCall, false);
-    }
-
-    /** {@inheritDoc} */
     @Override public long addAndGet(long l) throws GridException {
         A.ensure(l > 0, " Parameter mustn't be less then 1: " + l);
 
@@ -171,24 +156,10 @@ public final class GridCacheAtomicSequenceImpl extends GridMetadataAwareAdapter 
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Long> addAndGetAsync(long l) throws GridException {
-        A.ensure(l > 0, " Parameter mustn't be less then 1: " + l);
-
-        return internalUpdateAsync(l, null, true);
-    }
-
-    /** {@inheritDoc} */
     @Override public long getAndAdd(long l) throws GridException {
         A.ensure(l > 0, " Parameter mustn't be less then 1: " + l);
 
         return internalUpdate(l, null, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Long> getAndAddAsync(long l) throws GridException {
-        A.ensure(l > 0, " Parameter mustn't be less then 1: " + l);
-
-        return internalUpdateAsync(l, null, false);
     }
 
     /**
@@ -487,7 +458,7 @@ public final class GridCacheAtomicSequenceImpl extends GridMetadataAwareAdapter 
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };

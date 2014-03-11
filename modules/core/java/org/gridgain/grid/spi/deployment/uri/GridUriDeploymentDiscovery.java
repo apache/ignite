@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -27,9 +27,6 @@ import java.util.jar.*;
  * If JAR file loading is used helper scans JAR file and tries to
  * load all {@link JarEntry} assuming it's a file name.
  * If at least one of them could not be loaded helper fails.
- *
- * @author @java.author
- * @version @java.version
  */
 final class GridUriDeploymentDiscovery {
     /**

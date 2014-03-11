@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,9 +15,6 @@ import java.util.*;
  * Handler for initial data exchange between GridGain nodes. Data exchange
  * is initiated by a new node when it tries to join topology and finishes
  * before it actually joins.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDiscoverySpiDataExchange {
     /**

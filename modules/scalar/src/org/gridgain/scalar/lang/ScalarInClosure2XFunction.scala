@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -11,19 +11,13 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.util.lang.{GridLambdaAdapter, GridInClosure2X}
+import org.gridgain.grid.util.lang.GridInClosure2X
 
 /**
  * Wrapping Scala function for `GridInClosure2X`.
- *
- * @author @java.author
- * @version @java.version
  */
-class ScalarInClosure2XFunction[T1, T2](val inner: GridInClosure2X[T1, T2]) extends GridLambdaAdapter
-    with ((T1, T2) => Unit) {
+class ScalarInClosure2XFunction[T1, T2](val inner: GridInClosure2X[T1, T2]) extends ((T1, T2) => Unit) {
     assert(inner != null)
-
-    peerDeployLike(inner)
 
     /**
      * Delegates to passed in grid closure.

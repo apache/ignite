@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
-import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -18,17 +17,11 @@ import java.io.*;
 
 /**
  * Queue header.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheQueueHeader<T> implements GridCacheInternal, Externalizable, Cloneable {
     /** Queue id. */
     @GridCacheQuerySqlField
     private String qid;
-
-    /** Queue type. */
-    private GridCacheQueueType type;
 
     /** Maximum queue size. */
     private int cap;
@@ -53,33 +46,20 @@ public class GridCacheQueueHeader<T> implements GridCacheInternal, Externalizabl
      * Default constructor.
      *
      * @param qid Name of queue.
-     * @param type Type of queue.
      * @param cap Capacity of queue.
      * @param collocated Collocation flag.
      */
-    public GridCacheQueueHeader(String qid, GridCacheQueueType type, int cap, boolean collocated) {
+    public GridCacheQueueHeader(String qid, int cap, boolean collocated) {
         assert qid != null;
-        assert type != null;
         assert cap > 0;
 
         this.cap = cap;
-        this.type = type;
         this.qid = qid;
         this.collocated = collocated;
     }
 
-    /**
-     * Gets type of queue.
-     *
-     * @return Type of queue.
-     */
-    public GridCacheQueueType type() {
-        return type;
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(type.ordinal());
         out.writeInt(cap);
         out.writeInt(size);
         out.writeLong(seq);
@@ -89,7 +69,6 @@ public class GridCacheQueueHeader<T> implements GridCacheInternal, Externalizabl
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        type = GridCacheQueueType.fromOrdinal(in.readInt());
         cap = in.readInt();
         size = in.readInt();
         seq = in.readLong();
@@ -187,16 +166,12 @@ public class GridCacheQueueHeader<T> implements GridCacheInternal, Externalizabl
 
         GridCacheQueueHeader hdr = (GridCacheQueueHeader)obj;
 
-        return qid.equals(hdr.qid) && type == hdr.type;
+        return qid.equals(hdr.qid);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = qid.hashCode();
-
-        result = 31 * result + type.hashCode();
-
-        return result;
+        return qid.hashCode();
     }
 
     /** {@inheritDoc} */

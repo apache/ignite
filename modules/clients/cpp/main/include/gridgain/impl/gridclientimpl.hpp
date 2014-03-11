@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -24,9 +24,6 @@
 
 /**
  * Client implementation.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientImpl : public GridClient, public GridClientProjectionListener {
 public:
@@ -44,7 +41,7 @@ public:
      *
      * @return Generated client id.
      */
-    virtual GridUuid id() const;
+    virtual GridClientUuid id() const;
 
     /**
      * Gets a data projection for a default grid cache with <tt>null</tt> name.

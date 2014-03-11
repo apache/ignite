@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,17 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.streamer;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.*;
 
 import java.io.*;
 import java.nio.*;
 
 /**
  * Streamer cancel request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapter {
     /** Cancelled future ID. */
@@ -110,6 +107,6 @@ public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapte
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 79;
+        return 75;
     }
 }

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -30,9 +30,6 @@ import static org.gridgain.grid.cache.GridCacheConfiguration.*;
 
 /**
  * Distributed Garbage Collector for cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDgcManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Flag to log trace enabled/disabled message. */
@@ -142,7 +139,7 @@ public class GridCacheDgcManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop0(boolean cancel) {
+    @Override public void onKernalStop0(boolean cancel) {
         if (cctx.config().getCacheMode() == GridCacheMode.LOCAL)
             // No-op for local cache.
             return;
@@ -737,7 +734,7 @@ public class GridCacheDgcManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      *
      */
-    private static class DgcCallable extends GridCallable<Object> {
+    private static class DgcCallable implements GridCallable<Object> {
         /** */
         private final String cacheName;
 

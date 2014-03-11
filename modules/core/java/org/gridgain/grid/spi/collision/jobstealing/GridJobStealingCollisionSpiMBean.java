@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Management MBean for job stealing based collision SPI.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean for job stealing based collision SPI.")
 public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean {

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Email (SMTP) processor. Responsible for sending emails.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridEmailProcessor extends GridProcessorAdapter {
     /** Maximum emails queue size. */

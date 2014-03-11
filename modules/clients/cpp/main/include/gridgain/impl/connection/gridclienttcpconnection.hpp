@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -26,6 +26,12 @@ using org::gridgain::grid::kernal::processors::rest::client::message::ObjectWrap
 
 /** Forward declaration. */
 class GridClientConnectionPool;
+
+/** Forward declaration. */
+class GridClientSyncTcpConnection;
+
+/** Forward declaration. */
+class GridClientRawSyncTcpConnection;
 
 /**
  * This class represents a data packet used in
@@ -94,6 +100,10 @@ public:
 
     friend std::ostream& operator <<(std::ostream& stream, const GridClientTcpPacket& packet);
 
+    friend class GridClientSyncTcpConnection;
+
+    friend class GridClientRawSyncTcpConnection;
+
 private:
     void setData(int8_t* start, int8_t* end);
 
@@ -122,9 +132,6 @@ private:
 
 /**
  * TCP connection class used for sending data and storing session token associated with it in case of secure connection.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientTcpConnection : public GridClientConnection {
 public:
@@ -252,6 +259,94 @@ protected:
      */
     boost::mutex pingMux;
 };
+
+
+/**
+ * Synchronous raw implementation of TCP connection.
+ */
+class  GridClientRawSyncTcpConnection : public GridClientTcpConnection {
+public:
+    /**
+     * Non-SSL TCP connection constructor.
+     *
+     */
+    GridClientRawSyncTcpConnection();
+
+    /**
+     * Destructor.
+     *
+     */
+    ~GridClientRawSyncTcpConnection();
+
+    /**
+     * Connect to a host/port.
+     *
+     * @param pHost Host name.
+     * @param pPort Port to connect to.
+     */
+    virtual void connect(const std::string& host, int port);
+
+    /**
+     * Authenticate client and store session token for later use.
+     *
+     * @param clientId Client ID to authenticate.
+     * @param creds Credentials to use.
+     */
+    virtual void authenticate(const std::string& clientId, const std::string& creds);
+
+    /**
+     * Returns session token associated with this connection.
+     *
+     * @return Session token or empty string if this is not a secure session.
+     */
+    virtual std::string sessionToken();
+
+    /**
+     * Sends a TCP packet over connection and receives a reply.
+     *
+     * @param gridTcpPacket Binary data to send.
+     * @param result Binary response.
+     */
+    virtual void send(const GridClientTcpPacket& gridTcpPacket, GridClientTcpPacket& result);
+
+    /**
+     * Sends a ping packet to the peer.
+     */
+    virtual void sendPing();
+
+    /**
+     * Closes connection.
+     */
+    virtual void close();
+
+
+private:
+    /**
+     * Performs a handshake with server.
+     */
+    virtual void handshake();
+
+    /**
+     * OS socket.
+     */
+    int sock;
+
+    /**
+     * Address to connect to.
+     */
+    std::string address;
+
+    /**
+     * Port to connect to.
+     */
+    int port;
+
+    /**
+     * OS socket address info struct.
+     */
+    struct sockaddr_in server;
+};
+
 
 /**
  * Data for async IO operations, that is passed between

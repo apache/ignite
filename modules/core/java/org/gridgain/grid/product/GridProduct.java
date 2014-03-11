@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,13 +11,12 @@ package org.gridgain.grid.product;
 
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
 /**
- * TODO: Add interface description.
- *
- * @author @java.author
- * @version @java.version
+ * Provides information about current release. Note that enterprise users are also
+ * able to renew license. Instance of {@code GridProduct} is obtained from grid as follows:
+ * <pre name="code" class="java">
+ * GridProduct p = GridGain.grid().product();
+ * </pre>
  */
 public interface GridProduct {
     /**

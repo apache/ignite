@@ -2,6 +2,7 @@ package org.gridgain.grid.spi.checkpoint.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
@@ -72,9 +73,6 @@ import static org.gridgain.grid.events.GridEventType.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- *
- * @author @java.author
- * @version @java.version
  * @see GridCheckpointSpi
  */
 @GridSpiInfo(

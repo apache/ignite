@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,12 +17,9 @@ import org.gridgain.grid.util.typedef.*;
  * Convenient in-closure subclass that allows for thrown grid exception. This class
  * implements {@link #apply(Object)} method that calls {@link #applyx(Object)} method
  * and properly wraps {@link GridException} into {@link GridClosureException} instance.
- *
- * @author @java.author
- * @version @java.version
  * @see CIX1
  */
-public abstract class GridInClosureX<T> extends GridInClosure<T> {
+public abstract class GridInClosureX<T> implements GridInClosure<T> {
     /** {@inheritDoc} */
     @Override public void apply(T t) {
         try {

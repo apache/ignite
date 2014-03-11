@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
@@ -21,9 +20,6 @@ import java.util.*;
 
 /**
  * Committed tx buffer which should be used in synchronous commit mode.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCachePerThreadTxCommitBuffer<K, V> implements GridCacheTxCommitBuffer<K, V> {
     /** Logger. */
@@ -53,9 +49,6 @@ public class GridCachePerThreadTxCommitBuffer<K, V> implements GridCacheTxCommit
     /** {@inheritDoc} */
     @Override public void addCommittedTx(GridCacheTxEx<K, V> tx) {
         long threadId = tx.threadId();
-
-        if (tx instanceof GridReplicatedTxRemote)
-            threadId = ((GridCacheTxRemoteEx)tx).remoteThreadId();
 
         StoreKey key = new StoreKey(tx.eventNodeId(), threadId);
 

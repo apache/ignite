@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -116,7 +116,7 @@ public:
         }
     }
 
-    virtual void visit(const GridUuid& uuid) const {
+    virtual void visit(const GridClientUuid& uuid) const {
         hashCode_ = uuid.hashCode();
 
         uuid.convertToBytes(bytes);

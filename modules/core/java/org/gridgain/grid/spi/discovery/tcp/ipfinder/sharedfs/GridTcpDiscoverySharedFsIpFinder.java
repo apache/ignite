@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -42,9 +42,6 @@ import java.util.concurrent.atomic.*;
  * The directory will contain empty files named like the following 192.168.1.136#1001.
  * <p>
  * Note that this finder is shared by default (see {@link GridTcpDiscoveryIpFinder#isShared()}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAdapter {
     /** Default path for local testing only. */

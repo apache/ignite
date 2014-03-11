@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,9 +13,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Per-thread cache of {@link StringBuilder} instances.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridStringBuilderFactory {
     /** Cache string builders per thread for better performance. */
@@ -54,9 +51,6 @@ public final class GridStringBuilderFactory {
 
     /**
      * Cached builder.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private static class CachedBuilder {
         /** Cached builder. */

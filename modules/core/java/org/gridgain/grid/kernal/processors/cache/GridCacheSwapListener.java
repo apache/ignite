@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 /**
  * Provides ability to listen to swap events in cache which is necessary for preloading.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheSwapListener<K, V> {
     /**

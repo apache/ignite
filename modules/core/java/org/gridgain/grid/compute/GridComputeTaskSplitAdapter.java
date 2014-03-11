@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -53,9 +53,6 @@ import java.util.*;
  *     }
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  * @param <T> Type of the task execution argument.
  * @param <R> Type of the task result returning from {@link GridComputeTask#reduce(List)} method.
  */
@@ -63,22 +60,6 @@ public abstract class GridComputeTaskSplitAdapter<T, R> extends GridComputeTaskA
     /** Load balancer. */
     @GridLoadBalancerResource
     private GridComputeLoadBalancer balancer;
-
-    /**
-     * Empty constructor.
-     */
-    protected GridComputeTaskSplitAdapter() {
-        // No-op.
-    }
-
-    /**
-     * Constructor that receives deployment information for task.
-     *
-     * @param p Deployment information.
-     */
-    protected GridComputeTaskSplitAdapter(GridPeerDeployAware p) {
-        super(p);
-    }
 
     /**
      * This is a simplified version of {@link GridComputeTask#map(List, Object)} method.

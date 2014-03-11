@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.nio.*;
 
 /**
  * Job stealing request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJobStealingRequest extends GridTcpCommunicationMessageAdapter {
     /** Delta. */
@@ -108,7 +105,7 @@ public class GridJobStealingRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 82;
+        return 78;
     }
 
     /** {@inheritDoc} */

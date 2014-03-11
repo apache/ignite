@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ import org.jetbrains.annotations.*;
  * This exception is thrown when user's code throws undeclared runtime exception. By user core it is
  * assumed the code in grid task, grid job or SPI. In most cases it should be an indication of unrecoverable
  * error condition such as assertion, {@link NullPointerException}, {@link OutOfMemoryError}, etc.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridComputeUserUndeclaredException extends GridException {
     /**

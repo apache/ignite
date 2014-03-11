@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,11 +19,8 @@
 
 /**
  * Provide the implementation of hash-code for the double type.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
-class GridDoubleHasheableObject : public GridHasheableObject {
+class GridDoubleHasheableObject : public GridClientHasheableObject {
 public:
     /** Public constructor.
      *

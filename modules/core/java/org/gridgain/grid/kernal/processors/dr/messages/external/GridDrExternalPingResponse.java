@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,9 +15,6 @@ import java.io.*;
 
 /**
  * Ping response from replica.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrExternalPingResponse implements Externalizable {
     /** {@inheritDoc} */

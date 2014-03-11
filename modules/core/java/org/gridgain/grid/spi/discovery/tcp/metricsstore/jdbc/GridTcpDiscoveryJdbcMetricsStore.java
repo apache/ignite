@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -38,9 +38,6 @@ import static java.sql.Connection.*;
  * There are no optional configuration parameters.
  * <p>
  * The database will contain 1 table to hold nodes metrics (<tt>tbl_metrics</tt>).
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryJdbcMetricsStore extends GridTcpDiscoveryMetricsStoreAdapter {
     /** Query to get metrics. */

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,9 +15,6 @@ import org.jetbrains.annotations.*;
 /**
  * Enumeration of all supported caching modes. Cache mode is specified in {@link GridCacheConfiguration}
  * and cannot be changed after cache has started.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridCacheMode {
     /**
@@ -35,7 +32,7 @@ public enum GridCacheMode {
     /**
      * Specifies fully replicated cache behavior. In this mode all the keys are distributed
      * to all participating nodes. User still has affinity control
-     * over subset of nodes for any given key via {@link GridCacheAffinity}
+     * over subset of nodes for any given key via {@link GridCacheAffinityFunction}
      * configuration.
      */
     REPLICATED,
@@ -44,7 +41,7 @@ public enum GridCacheMode {
      * Specifies partitioned cache behaviour. In this mode the overall
      * key set will be divided into partitions and all partitions will be split
      * equally between participating nodes. User has affinity
-     * control over key assignment via {@link GridCacheAffinity}
+     * control over key assignment via {@link GridCacheAffinityFunction}
      * configuration.
      * <p>
      * Note that partitioned cache is always fronted by local

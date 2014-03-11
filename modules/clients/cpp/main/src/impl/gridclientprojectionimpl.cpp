@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -23,21 +23,15 @@ using namespace std;
 
 const static size_t RETRY_CNT = 1;
 
-GridClientProjectionImpl::GridClientProjectionImpl(
-    TGridClientSharedDataPtr pData,
-    GridClientProjectionListener& prjLsnr,
-    TGridClientNodePredicatePtr pFilter):
-        sharedData(pData), prjLsnr(prjLsnr), filter(pFilter), dfltAffinity(new GridClientPartitionedAffinity()) {
+GridClientProjectionImpl::GridClientProjectionImpl(TGridClientSharedDataPtr pData, GridClientProjectionListener& prjLsnr,
+        TGridClientNodePredicatePtr pFilter) : sharedData(pData), prjLsnr(prjLsnr), filter(pFilter),
+        dfltAffinity(new GridClientPartitionAffinity()) {
+
     vector<GridClientDataConfiguration> dataCfg = pData->clientConfiguration().dataConfiguration();
 
     // Read affinity configuration from vector to affinity map.
-    std::transform(
-        dataCfg.begin(),
-        dataCfg.end(),
-        std::inserter(affinityMap, affinityMap.end()),
-        [] (GridClientDataConfiguration& c) {
-            return std::make_pair(c.name(), c.affinity());
-        });
+    std::transform(dataCfg.begin(), dataCfg.end(), std::inserter(affinityMap, affinityMap.end()),
+        [] (GridClientDataConfiguration& c) { return std::make_pair(c.name(), c.affinity()); });
 }
 
 /**
@@ -52,7 +46,7 @@ GridClientProjectionImpl::GridClientProjectionImpl(
  */
 void GridClientProjectionImpl::withReconnectHandling(ClientProjectionClosure& c) const {
     std::set<TGridClientNodePtr> nodesSet;
-    set<GridUuid> seenUuids;
+    set<GridClientUuid> seenUuids;
 
     GridOneOfUuid filter(seenUuids);
 
@@ -94,12 +88,12 @@ void GridClientProjectionImpl::withReconnectHandling(ClientProjectionClosure& c)
  * @throws GridClientException In case of problems.
  */
 void GridClientProjectionImpl::withReconnectHandling(ClientProjectionClosure& c, const std::string& cacheName,
-        const GridHasheableObject& affKey) {
+        const GridClientHasheableObject& affKey) {
 
     // First, we try the affinity node.
     TGridClientNodePtr node = affinityNode(cacheName, affKey);
 
-    set<GridUuid> seenUuids;
+    set<GridClientUuid> seenUuids;
 
     GridClientCompositeFilter<GridClientNode> filter;
 
@@ -137,13 +131,11 @@ void GridClientProjectionImpl::withReconnectHandling(ClientProjectionClosure& c,
 bool GridClientProjectionImpl::processClosure(TGridClientNodePtr node, ClientProjectionClosure& c) const {
     assert(node.get() != NULL);
 
-    std::vector<GridSocketAddress> addrs = sharedData->clientConfiguration().routers();
+    std::vector<GridClientSocketAddress> addrs = sharedData->clientConfiguration().routers();
 
     bool routing = !addrs.empty();
 
     if (!routing) {
-        assert(addrs.empty());
-
         addrs = node->availableAddresses(protocol());
     }
 
@@ -173,17 +165,19 @@ bool GridClientProjectionImpl::processClosure(TGridClientNodePtr node, ClientPro
         }
     }
     else { //no routing
-        for (size_t addrIdx = 0; addrIdx < addrs.size(); ++addrIdx) {
+        int numAddrs = addrs.size();
+
+        for (size_t addrIdx = 0; addrIdx < numAddrs; ++addrIdx) {
             try {
                 c.apply(node, addrs[addrIdx], *exec); //networking here
 
                 return true;
             }
             catch (GridClientConnectionResetException&) {
-            	prjLsnr.onNodeIoFailed(*node);
+                prjLsnr.onNodeIoFailed(*node);
             }
             catch (GridServerUnreachableException&) {
-            	prjLsnr.onNodeIoFailed(*node);
+                prjLsnr.onNodeIoFailed(*node);
             }
         }
     }
@@ -192,7 +186,7 @@ bool GridClientProjectionImpl::processClosure(TGridClientNodePtr node, ClientPro
 }
 
 TGridClientNodePtr GridClientProjectionImpl::affinityNode(const string& cacheName,
-        const GridHasheableObject& affKey) {
+        const GridClientHasheableObject& affKey) {
     TNodesSet nodes;
 
     subProjectionNodes(nodes, GridCacheNameFilter(cacheName));

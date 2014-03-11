@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -34,9 +34,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Manages cache indexing.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     /** */
@@ -371,7 +368,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            GridIndexingQueryFilter<K, V> backupFilter = backupsFilter(includeBackups);
+            GridIndexingQueryFilter<K, V> backupFilter = backupsFilter(space, includeBackups);
 
             return getSpi(spi).queryFields(space, clause, params,
                 backupFilter != null ? F.concat(filters, backupFilter) : filters);
@@ -407,7 +404,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             if (type == null || !type.registered())
                 return new GridEmptyCloseableIterator<>();
 
-            GridIndexingQueryFilter<K, V> backupFilter = backupsFilter(includeBackups);
+            GridIndexingQueryFilter<K, V> backupFilter = backupsFilter(space, includeBackups);
 
             return new GridSpiCloseableIteratorWrapper<>(getSpi(spi).query(space, clause, params, type,
                 backupFilter != null ? F.concat(filters, backupFilter) : filters));
@@ -442,7 +439,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             if (type == null || !type.registered())
                 return new GridEmptyCloseableIterator<>();
 
-            GridIndexingQueryFilter<K, V> backupFilter = backupsFilter(includeBackups);
+            GridIndexingQueryFilter<K, V> backupFilter = backupsFilter(space, includeBackups);
 
             return new GridSpiCloseableIteratorWrapper<>(getSpi(spi).queryText(space, clause, type,
                 backupFilter != null ? F.concat(filters, backupFilter) : filters));
@@ -456,11 +453,12 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param <K> Key type.
      * @param <V> Value type.
      * @return Predicate.
+     * @param spaceName Space name.
      * @param includeBackups Include backups.
      */
     @SuppressWarnings("unchecked")
-    private <K, V> GridIndexingQueryFilter<K, V> backupsFilter(boolean includeBackups) {
-        if (includeBackups)
+    @Nullable private <K, V> GridIndexingQueryFilter<K, V> backupsFilter(String spaceName, boolean includeBackups) {
+        if (includeBackups || ctx.cache().internalCache(spaceName).context().isReplicated())
             return null;
 
         final UUID nodeId = ctx.localNodeId();
@@ -468,7 +466,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         return new GridIndexingQueryFilter<K, V>() {
             @Override public boolean apply(String spaceName, K key, V val) {
                 try {
-                    return nodeId.equals(ctx.affinity().mapKeyToNode(spaceName, key).id());
+                    return ctx.cache().internalCache(spaceName).context().isReplicated() ||
+                        nodeId.equals(ctx.affinity().mapKeyToNode(spaceName, key).id());
                 }
                 catch (GridException e) {
                     throw F.wrap(e);
@@ -1046,10 +1045,15 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      */
     private static class IndexDescriptor implements GridIndexDescriptor {
         /** Fields sorted by order number. */
-        private final Collection<T2<String, Integer>> fields = new PriorityQueue<>(4,
+        private final Collection<T2<String, Integer>> fields = new TreeSet<>(
             new Comparator<T2<String, Integer>>() {
                 @Override public int compare(T2<String, Integer> o1, T2<String, Integer> o2) {
-                    return o1.get2() - o2.get2();
+                    int d = o1.get2() - o2.get2();
+
+                    if (d == 0) // Order is equal, compare field names to avoid replace in Set.
+                        return o1.get1().compareTo(o2.get1());
+
+                    return d;
                 }
             });
 
@@ -1137,6 +1141,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          * @param valType Value type.
          */
         private TypeId(String space, Class<?> valType) {
+            assert valType != null;
+
             this.space = space;
             this.valType = valType;
         }

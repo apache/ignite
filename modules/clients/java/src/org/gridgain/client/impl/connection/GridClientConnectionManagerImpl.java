@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -26,9 +26,6 @@ import static org.gridgain.client.impl.connection.GridClientConnectionCloseReaso
 
 /**
  * Cached connections manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientConnectionManagerImpl implements GridClientConnectionManager {
     /** Class logger. */

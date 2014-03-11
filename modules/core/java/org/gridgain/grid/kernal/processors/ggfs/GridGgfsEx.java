@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,10 +14,7 @@ import org.gridgain.grid.ggfs.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Internal API extension for {@link org.gridgain.grid.ggfs.GridGgfs}.
- *
- * @author @java.author
- * @version @java.version
+ * Internal API extension for {@link GridGgfs}.
  */
 public interface GridGgfsEx extends GridGgfs {
     /**

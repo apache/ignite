@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,6 +14,7 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.streamer.router.*;
@@ -21,6 +22,7 @@ import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -35,8 +37,7 @@ import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridStreamerImpl implements GridStreamerEx, Externalizable {
     /** Number of message send retries. */
@@ -1137,12 +1138,7 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
      * @return Reconstructed object.
      */
     protected Object readResolve() {
-        GridStreamer s = ctx.stream().streamer(name);
-
-        if (s == null)
-            throw new IllegalStateException("Failed to resolve streamer with name: " + name);
-
-        return s;
+        return ctx.stream().streamer(name);
     }
 
     /** {@inheritDoc} */

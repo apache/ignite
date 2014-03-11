@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.io.*;
 /**
  * Internal key that is guaranteed to be mapped on particular partition.
  * This class is used for group-locking transactions that lock the whole partition.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridPartitionLockKey implements GridCacheInternal, Externalizable {
     /** Partition ID. */

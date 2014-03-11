@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -23,9 +23,6 @@ import java.util.concurrent.*;
  * Convenient adapter for {@link GridMetadataAware}.
  * <h2 class="header">Thread Safety</h2>
  * This class provides necessary synchronization for thread-safe access.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings( {"SynchronizeOnNonFinalField"})
 public class GridMetadataAwareAdapter implements GridMetadataAware {

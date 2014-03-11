@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,6 +11,7 @@ package org.gridgain.grid.spi.loadbalancing.roundrobin;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.*;
@@ -24,9 +25,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Load balancer that works in global (not-per-task) mode.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridRoundRobinGlobalLoadBalancer {
     /** SPI context. */

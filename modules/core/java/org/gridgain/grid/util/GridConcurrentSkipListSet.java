@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,9 +21,6 @@ import static java.lang.Boolean.*;
  * methods {@link #firstx()} and {@link #lastx()}, which unlike {@link #first()}
  * and {@link #last()} methods return {@code null} for empty sets instead of
  * throwing {@link NoSuchElementException}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridConcurrentSkipListSet<E> extends GridSerializableSet<E> implements NavigableSet<E>, Cloneable {
     /**

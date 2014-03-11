@@ -62,14 +62,9 @@
         <property name="atomicityMode" value="TRANSACTIONAL"/>
         <property name="queryIndexEnabled" value="false"/>
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-        <property name="affinity">
-            <bean class="org.gridgain.grid.cache.affinity.partitioned.GridCachePartitionedAffinity">
-                <!-- Setup number of backup servers per key. -->
-                <constructor-arg value="0"/>
-            </bean>
-        </property>
+        <property name="backups" value="0"/>
         <property name="affinityMapper">
-            <bean class="org.gridgain.grid.ggfs.GridGgfsGroupDataBlocksMapper">
+            <bean class="org.gridgain.grid.ggfs.GridGgfsGroupDataBlocksKeyMapper">
                 <!-- How many sequential blocks will be stored on the same node. -->
                 <constructor-arg value="512"/>
             </bean>
@@ -93,6 +88,7 @@
                 <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
                     <property name="name" value="ggfs-meta"/>
                     <property name="cacheMode" value="REPLICATED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="queryIndexEnabled" value="false"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                 </bean>

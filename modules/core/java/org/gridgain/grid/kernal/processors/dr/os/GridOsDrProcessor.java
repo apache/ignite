@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,13 +13,9 @@ import org.gridgain.grid.dr.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.dr.*;
-import org.jetbrains.annotations.*;
 
 /**
  * No-op implementation for {@link GridDrProcessor}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridOsDrProcessor extends GridProcessorAdapter implements GridDrProcessor {
     /**
@@ -30,7 +26,7 @@ public class GridOsDrProcessor extends GridProcessorAdapter implements GridDrPro
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDr dr() {
-        return null;
+    @Override public GridDr dr() {
+        throw new IllegalStateException("Data center replication is not supported.");
     }
 }

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,9 +14,6 @@ import org.gridgain.grid.*;
 /**
  * Internal exception thrown when attempted to update range that is no longer present
  * in file affinity map.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsInvalidRangeException extends GridException {
     /**

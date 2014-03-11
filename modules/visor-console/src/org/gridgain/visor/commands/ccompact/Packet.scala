@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -52,8 +52,5 @@ package org.gridgain.visor.commands
  *     visor ccompact "cache"
  *         Compacts entries in cache with name 'cache'.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 package object ccompact

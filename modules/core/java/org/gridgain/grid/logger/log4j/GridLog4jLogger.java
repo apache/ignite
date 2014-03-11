@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -57,9 +57,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
  * It's recommended to use GridGain logger injection instead of using/instantiating
  * logger in your task/job code. See {@link GridLoggerResource} annotation about logger
  * injection.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLog4jLogger extends GridMetadataAwareAdapter implements GridLogger {
     /** Appenders. */

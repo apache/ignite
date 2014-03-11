@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,9 +10,6 @@ package org.gridgain.grid.kernal.processors.rest.client.message;
 
 /**
  * Fictive ping packet.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientPingPacket extends GridClientAbstractMessage {
     /** Ping message. */

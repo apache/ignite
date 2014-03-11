@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -22,9 +22,6 @@ import java.util.*;
 /**
  * Value collection based on provided entries with all remove operations backed
  * by underlying cache.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V> {
     /** Cache context. */

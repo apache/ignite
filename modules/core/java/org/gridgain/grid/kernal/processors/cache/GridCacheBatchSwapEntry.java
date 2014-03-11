@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,16 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.util.*;
+import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 
 /**
  * Entry for batch swap operations.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheBatchSwapEntry<K, V> extends GridCacheSwapEntry<V> {
     /** Key. */

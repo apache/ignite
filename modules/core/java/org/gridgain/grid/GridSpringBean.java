@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -68,9 +68,6 @@ import java.util.*;
  * Grid grid = (Grid)ctx.getBean("mySpringBean");
  * </pre>
  * <p>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, DisposableBean, InitializingBean,
     ApplicationContextAware, Externalizable {
@@ -263,10 +260,17 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forOthers(GridNode node) {
+    @Override public GridProjection forOthers(GridNode node, GridNode... nodes) {
         assert g != null;
 
         return g.forOthers(node);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridProjection forOthers(GridProjection prj) {
+        assert g != null;
+
+        return g.forOthers(prj);
     }
 
     /** {@inheritDoc} */
@@ -277,10 +281,10 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
     }
 
     /** {@inheritDoc} */
-    @Override public GridProjection forAttribute(String n, @Nullable String v) {
+    @Override public GridProjection forAttribute(String name, @Nullable String val) {
         assert g != null;
 
-        return g.forAttribute(n, v);
+        return g.forAttribute(name, val);
     }
 
     /** {@inheritDoc} */
@@ -331,6 +335,13 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
         assert g != null;
 
         return g.nodes();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridNode node() {
+        assert g != null;
+
+        return g.node();
     }
 
     /** {@inheritDoc} */

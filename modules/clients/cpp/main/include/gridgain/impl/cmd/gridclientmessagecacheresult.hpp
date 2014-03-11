@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,9 +14,6 @@
 
 /**
  * Generic cache message result.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientMessageCacheResult : public GridClientMessageResult {
 };

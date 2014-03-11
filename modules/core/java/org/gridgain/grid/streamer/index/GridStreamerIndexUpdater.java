@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@ import org.jetbrains.annotations.*;
  * <p>
  * Updater is provided to index provider in configuration usually via
  * {@link GridStreamerIndexProviderAdapter#setUpdater(GridStreamerIndexUpdater)} method.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridStreamerIndexUpdater<E, K, V> {
     /**

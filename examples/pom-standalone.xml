@@ -66,7 +66,7 @@
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-commons-deps</artifactId>
-            <version>1.1</version>
+            <version>1.2</version>
             <type>pom</type>
         </dependency>
 
@@ -389,7 +389,7 @@
         </dependency>
 
         <dependency>
-            <groupId>net.sf.cron4j</groupId>
+            <groupId>it.sauronsoftware.cron4j</groupId>
             <artifactId>cron4j</artifactId>
             <version>2.2.5</version>
         </dependency>
@@ -423,9 +423,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.romix</groupId>
+            <groupId>com.github.romix</groupId>
             <artifactId>java-concurrent-hash-trie-map</artifactId>
-            <version>0.0.1</version>
+            <version>0.2.0</version>
         </dependency>
     </dependencies>
 
@@ -449,6 +449,9 @@
             </resource>
             <resource>
                 <directory>java</directory>
+            </resource>
+            <resource>
+                <directory>gar</directory>
             </resource>
         </resources>
     </build>

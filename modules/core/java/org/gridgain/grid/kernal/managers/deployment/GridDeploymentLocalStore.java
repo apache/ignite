@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -29,9 +29,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Storage for local deployments.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     /** Deployment cache by class name. */

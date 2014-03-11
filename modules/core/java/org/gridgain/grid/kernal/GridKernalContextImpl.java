@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -60,9 +60,6 @@ import static org.gridgain.grid.kernal.GridKernalState.*;
 
 /**
  * Implementation of kernal context.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridToStringExclude
 public class GridKernalContextImpl extends GridMetadataAwareAdapter implements GridKernalContext, Externalizable {
@@ -711,7 +708,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            return GridFactoryEx.gridx(stash.get()).context();
+            return GridGainEx.gridx(stash.get()).context();
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

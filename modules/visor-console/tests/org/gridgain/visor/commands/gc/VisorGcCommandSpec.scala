@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -19,9 +19,6 @@ import commands.top.VisorTopologyCommand._
 
 /**
  * Unit test for 'gc' command.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorGcCommandSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterAll {
     behavior of "A 'gc' visor command"

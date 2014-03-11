@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -27,9 +27,6 @@ import static org.gridgain.grid.kernal.processors.cache.distributed.dht.GridDhtP
 
 /**
  * Partition topology.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridToStringExclude
 class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, V> {

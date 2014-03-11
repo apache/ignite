@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 
@@ -19,9 +19,6 @@ import java.nio.*;
 
 /**
  * Transaction finish response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V> {
     /** */

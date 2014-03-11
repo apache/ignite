@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -16,9 +16,6 @@ import VisorPingCommand._
 
 /**
  * Unit test for 'ping' command.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorPingCommandSpec extends VisorRuntimeBaseSpec(2) {
     behavior of "A 'ping' visor command"

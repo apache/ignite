@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -16,9 +16,6 @@ import VisorNodeCommand._
 
 /**
  * Unit test for 'node' command.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorNodeCommandSpec extends VisorRuntimeBaseSpec(1) {
     behavior of "A 'node' visor command"

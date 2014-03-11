@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
-import org.gridgain.grid.util.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
@@ -25,9 +25,6 @@ import static org.gridgain.grid.events.GridEventType.*;
  * NOTE: this class should not make use of any cache specific structures,
  * like, for example GridCacheContext, as it may be reused between different
  * caches.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheVersionManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Timestamp used as base time for cache topology version (January 1, 2014). */

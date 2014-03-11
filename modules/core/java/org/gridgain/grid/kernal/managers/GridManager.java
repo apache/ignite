@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@ import java.util.*;
  * This interface defines life-cycle for kernal manager. Managers provide layer of indirection
  * between kernal and SPI modules. Kernel never calls SPI modules directly but
  * rather calls manager that further delegate the apply to specific SPI module.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridToStringExclude
 public interface GridManager extends GridComponent {

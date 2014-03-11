@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -15,14 +15,9 @@ import org.gridgain.grid.lang.GridPredicate
 
 /**
  * Peer deploy aware adapter for Java's `GridPredicate`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarPredicate[T](private val p: T => Boolean) extends GridPredicate[T] {
     assert(p != null)
-
-    peerDeployLike(p)
 
     /**
      * Delegates to passed in function.

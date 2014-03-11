@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -22,9 +22,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * Collection of near local locks acquired by a thread on one topology version.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheExplicitLockSpan<K> extends ReentrantLock {
     /** Topology snapshot. */
@@ -66,7 +63,14 @@ public class GridCacheExplicitLockSpan<K> extends ReentrantLock {
 
             assert this.topSnapshot.topologyVersion() == topSnapshot.topologyVersion();
 
-            ensureDeque(cand.key()).add(cand);
+            Deque<GridCacheMvccCandidate<K>> deque = ensureDeque(cand.key());
+
+            GridCacheMvccCandidate<K> old = F.first(deque);
+
+            deque.add(cand);
+
+            if (old != null && old.owner())
+                cand.setOwner();
 
             return true;
         }

@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,14 +17,11 @@
 
 /**
  *  Provide the unified interface for calculation the hash-code for an object.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
-class GRIDGAIN_API GridHasheableObject {
+class GRIDGAIN_API GridClientHasheableObject {
 public:
     /** Destructor. */
-    virtual ~GridHasheableObject() {};
+    virtual ~GridClientHasheableObject() {};
 
     /**
      * Calculates hash code for the contained object.

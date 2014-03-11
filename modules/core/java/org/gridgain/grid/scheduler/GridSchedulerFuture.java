@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,39 +14,9 @@ import org.gridgain.grid.*;
 import java.util.concurrent.*;
 
 /**
- * Future for cron-based scheduled execution. Any arbitrary work can be scheduled to
- * run on the grid or on the local node via any of the {@code 'Grid.scheduleLocal(...)}
- * methods.
- * <p>
- * In addition to regular scheduling pattern in UNIX cron format with optional prefix <tt>{n1, n2}</tt>
- * where {@code n1} is delay of scheduling in seconds and {@code n2} is the number of executions. Both
- * parameters are optional.
- * <p>
- * Here's an example of scheduling a closure that broadcasts a message
- * to all nodes five times, once every minute, with initial delay in two seconds:
- * <pre name="code" class="java">
- * g.schedule(
- *     new C1() {
- *         &#64;Override public void apply() {
- *             try {
- *                 g.call(BROADCAST, F.println("Hello Node! :)");
- *             }
- *             catch (GridException e) {
- *                 throw new GridClosureException(e);
- *             }
- *         }
- *     }, "{2, 5} * * * * *" // 2 seconds delay with 5 executions only.
- * );
- * </pre>
- * <p>
- * Refer to {@link GridScheduler#scheduleLocal(Callable, String)} and
- * {@link GridScheduler#scheduleLocal(Runnable, String)}
- * methods for more information.
- *
- * @author @java.author
- * @version @java.version
- * @see GridScheduler#scheduleLocal(Runnable, String)
- * @see GridScheduler#scheduleLocal(Callable, String)
+ * Future for cron-based scheduled execution. This future is returned
+ * when calling {@link GridScheduler#scheduleLocal(Callable, String)} or
+ * {@link GridScheduler#scheduleLocal(Runnable, String)} methods.
  */
 public interface GridSchedulerFuture<R> extends GridFuture<R> {
     /**

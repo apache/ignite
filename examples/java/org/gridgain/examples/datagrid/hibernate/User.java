@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -20,9 +20,6 @@ import java.util.*;
  * A user entity class. Represents a user of some public service,
  * having a number of personal information fields as well as a
  * number of posts written.
- *
- * @author @java.author
- * @version @java.version
  */
 @Entity
 class User {

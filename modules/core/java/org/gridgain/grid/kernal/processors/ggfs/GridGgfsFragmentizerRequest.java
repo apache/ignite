@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 
@@ -22,9 +22,6 @@ import java.util.*;
 /**
  * Fragmentizer request. Sent from coordinator to other GGFS nodes when colocated part of file
  * should be fragmented.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
     /** File id. */
@@ -199,6 +196,6 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 74;
+        return 70;
     }
 }

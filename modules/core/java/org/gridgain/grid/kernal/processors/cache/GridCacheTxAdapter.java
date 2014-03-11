@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -39,9 +39,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
  * Managed transaction adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     implements GridCacheTxEx<K, V>, Externalizable {
@@ -721,7 +718,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /**
      *
      */
-    @Override public void end() throws GridException {
+    @Override public void close() throws GridException {
         GridCacheTxState state = state();
 
         if (state != ROLLING_BACK && state != ROLLED_BACK && state != COMMITTING && state != COMMITTED)
@@ -1407,7 +1404,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public void end() {
+        @Override public void close() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

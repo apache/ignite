@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,8 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.nio.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
     /** */
@@ -166,6 +165,6 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 66;
+        return 62;
     }
 }

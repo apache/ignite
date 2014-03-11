@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,6 +11,7 @@ package org.gridgain.grid;
 
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dr.hub.receiver.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.events.*;
@@ -52,6 +53,7 @@ import org.jetbrains.annotations.*;
 
 import javax.management.*;
 import java.lang.management.*;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -69,9 +71,6 @@ import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
  * <p>
  * For more information about grid configuration and startup refer to {@link GridGain}
  * documentation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridConfiguration {
     /** Courtesy notice log category. */
@@ -426,9 +425,6 @@ public class GridConfiguration {
     @SuppressWarnings("RedundantFieldInitialization")
     private long metricsLogFreq = DFLT_METRICS_LOG_FREQ;
 
-    /** Local event listeners. */
-    private Map<GridLocalEventListener, int[]> lsnrs;
-
     /** TCP host. */
     private String restTcpHost;
 
@@ -451,7 +447,7 @@ public class GridConfiguration {
     private int restTcpSndQueueLimit;
 
     /** REST TCP selector count. */
-    private int restTcpSelectorCnt = Runtime.getRuntime().availableProcessors();
+    private int restTcpSelectorCnt = Math.min(4, Runtime.getRuntime().availableProcessors());
 
     /** Idle timeout. */
     private long restIdleTimeout = DFLT_REST_IDLE_TIMEOUT;
@@ -551,7 +547,6 @@ public class GridConfiguration {
         lifeCycleEmailNtf = cfg.isLifeCycleEmailNotification();
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
-        lsnrs = cfg.getLocalEventListeners();
         marsh = cfg.getMarshaller();
         marshLocJobs = cfg.isMarshalLocalJobs();
         mbeanSrv = cfg.getMBeanServer();
@@ -1044,7 +1039,7 @@ public class GridConfiguration {
 
     /**
      * Should return an instance of fully configured thread pool to be used in grid.
-     * This executor service will be in charge of processing {@link org.gridgain.grid.compute.GridComputeJob GridJobs}
+     * This executor service will be in charge of processing {@link GridComputeJob GridJobs}
      * and user messages sent to node.
      * <p>
      * If not provided, new executor service will be created using the following configuration:
@@ -1079,7 +1074,7 @@ public class GridConfiguration {
 
     /**
      * Executor service that is in charge of processing internal and Visor
-     * {@link org.gridgain.grid.compute.GridComputeJob GridJobs}.
+     * {@link GridComputeJob GridJobs}.
      * <p>
      * If not provided, new executor service will be created using the following configuration:
      * <ul>
@@ -1392,7 +1387,7 @@ public class GridConfiguration {
      * execution. This way, a task can be physically deployed only on one node
      * and then internally penetrate to all other nodes.
      * <p>
-     * See {@link org.gridgain.grid.compute.GridComputeTask} documentation for more information about task deployment.
+     * See {@link GridComputeTask} documentation for more information about task deployment.
      *
      * @return {@code true} if peer class loading is enabled, {@code false}
      *      otherwise.
@@ -2321,7 +2316,7 @@ public class GridConfiguration {
     /**
      * Gets flag indicating whether {@code TCP_NODELAY} option should be set for accepted client connections.
      * Setting this option reduces network latency and should be set to {@code true} in majority of cases.
-     * For more information, see {@link java.net.Socket#setTcpNoDelay(boolean)}
+     * For more information, see {@link Socket#setTcpNoDelay(boolean)}
      * <p/>
      * If not specified, default value is {@link #DFLT_TCP_NODELAY}.
      *
@@ -2701,28 +2696,6 @@ public class GridConfiguration {
      */
     public void setMetricsLogFrequency(long metricsLogFreq) {
         this.metricsLogFreq = metricsLogFreq;
-    }
-
-    /**
-     * Gets map of pre-configured local event listeners.
-     * Each listener is mapped to array of event types.
-     *
-     * @return Pre-configured event listeners map.
-     * @see GridEvents#addLocalListener(GridLocalEventListener, int...)
-     * @see GridEventType
-     */
-    @Nullable public Map<GridLocalEventListener, int[]> getLocalEventListeners() {
-        return lsnrs;
-    }
-
-    /**
-     * Sets map of pre-configured local event listeners.
-     * Each listener is mapped to array of event types.
-     *
-     * @param lsnrs Pre-configured event listeners map.
-     */
-    public void setLocalEventListeners(Map<GridLocalEventListener, int[]> lsnrs) {
-        this.lsnrs = lsnrs;
     }
 
     /**

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ import java.util.*;
 /**
  * Management bean that provides general administrative and configuration information
  * about shared file system checkpoints.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean for shared file system based checkpoint SPI.")
 public interface GridSharedFsCheckpointSpiMBean extends GridSpiManagementMBean {

@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -76,8 +76,5 @@ package org.gridgain.visor.commands
  *     visor deploy "-h=uname@host -k=ssh-key.pem -s=/local/path -d=/remote/path"
  *         Copies file or directory to remote host (private key authentication).
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 package object deploy

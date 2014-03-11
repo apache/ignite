@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,11 +9,9 @@
 
 package org.gridgain.grid.lang;
 
-import org.gridgain.grid.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -21,18 +19,9 @@ import java.util.*;
 
 /**
  * Convenience class representing mutable tuple of two values.
- * <h2 class="header">Thread Safety</h2>
- * This class doesn't provide any synchronization for multi-threaded access
- * and it is responsibility of the user of this class to provide outside
- * synchronization, if needed.
- *
- * @author @java.author
- * @version @java.version
- * @see GridFunc#t2()
- * @see GridFunc#t(Object, Object)
  */
 public class GridBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
-    Iterable<Object>, GridPeerDeployAware, Externalizable, Cloneable {
+    Iterable<Object>, Externalizable, Cloneable {
     /** First value. */
     @GridToStringInclude
     private V1 val1;
@@ -137,6 +126,7 @@ public class GridBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     /** {@inheritDoc} */
     @Override public Iterator<Object> iterator() {
         return new Iterator<Object>() {
+            /** */
             private int nextIdx = 1;
 
             @Override public boolean hasNext() {
@@ -266,22 +256,6 @@ public class GridBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         val1 = (V1)in.readObject();
         val2 = (V2)in.readObject();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<?> deployClass() {
-        ClassLoader clsLdr = getClass().getClassLoader();
-
-        for (Object o : this)
-            if (o != null && !F.eq(o.getClass().getClassLoader(), clsLdr))
-                return o.getClass();
-
-        return getClass();
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClassLoader classLoader() {
-        return deployClass().getClassLoader();
     }
 
     /** {@inheritDoc} */

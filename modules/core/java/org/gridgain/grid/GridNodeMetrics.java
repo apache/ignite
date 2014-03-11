@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -30,9 +30,6 @@ import java.io.*;
  * any JMX management console. The simplest way is to use standard {@code jconsole}
  * that comes with JDK as it also provides ability to view any node parameter
  * as a graph.
- *
- * @author @java.author
- * @version @java.version
  * @see GridProjectionMetrics
  */
 public interface GridNodeMetrics extends Serializable {

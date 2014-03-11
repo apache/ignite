@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -26,9 +26,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * Future adapter without kernal context.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implements GridFuture<R>, Externalizable {
     /** Initial state. */
@@ -345,15 +342,6 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
         // Don't check for "valid" here, as "done" flag can be read
         // even in invalid state.
         return endTime != 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridAbsPredicate predicate() {
-        return new PA() {
-            @Override public boolean apply() {
-                return isDone();
-            }
-        };
     }
 
     /** {@inheritDoc} */

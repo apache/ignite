@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,15 +13,16 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.communication.*;
-import org.gridgain.grid.util.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.spi.failover.jobstealing.*;
+import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 
 import java.io.*;
 import java.util.*;
@@ -151,9 +152,6 @@ import static org.gridgain.grid.events.GridEventType.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 @GridSpiInfo(
@@ -209,7 +207,7 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
      * This count is incremented every time the same job gets stolen for
      * execution.
      *
-     * @see org.gridgain.grid.compute.GridComputeJobContext
+     * @see GridComputeJobContext
      */
     public static final String STEALING_ATTEMPT_COUNT_ATTR = "gridgain.stealing.attempt.count";
 

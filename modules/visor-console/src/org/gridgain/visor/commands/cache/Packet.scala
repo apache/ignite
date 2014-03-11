@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -92,8 +92,5 @@ package org.gridgain.visor.commands
  *     visor cache
  *         Prints summary statistics about all caches.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 package object cache

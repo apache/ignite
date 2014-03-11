@@ -1,18 +1,17 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
- */
+*  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+*  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+*  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+*  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+*/
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.lang.*;
+import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.future.*;
 import org.jetbrains.annotations.*;
 
@@ -20,16 +19,13 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Distributed fields query future.
- *
- * @author @java.author
- * @version @java.version
- */
+* Distributed fields query future.
+*/
 public class GridCacheDistributedFieldsQueryFuture
     extends GridCacheDistributedQueryFuture<Object, Object, List<Object>>
-    implements GridCacheFieldsQueryFuture {
+    implements GridCacheQueryMetadataAware {
     /** Meta data future. */
-    private final GridFutureAdapter<List<GridCacheSqlFieldMetadata>> metaFut;
+    private final GridFutureAdapter<List<GridIndexingFieldMetadata>> metaFut;
 
     /**
      * Required by {@link Externalizable}.
@@ -43,23 +39,14 @@ public class GridCacheDistributedFieldsQueryFuture
      * @param reqId Request ID.
      * @param qry Query.
      * @param nodes Nodes.
-     * @param single Single result or not.
-     * @param rmtRdcOnly {@code true} for reduce query when using remote reducer only,
-     *     otherwise it is always {@code false}.
-     * @param pageLsnr Page listener.
-     * @param vis Visitor predicate.
      */
     public GridCacheDistributedFieldsQueryFuture(GridCacheContext<?, ?> ctx, long reqId,
-        GridCacheFieldsQueryBase qry, Iterable<GridNode> nodes, boolean single, boolean rmtRdcOnly,
-        @Nullable GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr,
-        @Nullable GridPredicate<?> vis) {
-        super((GridCacheContext<Object, Object>)ctx, reqId,
-            (GridCacheQueryBaseAdapter<Object, Object, GridCacheQueryBase>)qry, nodes, single, rmtRdcOnly,
-            pageLsnr, vis);
+        GridCacheQueryBean qry, Iterable<GridNode> nodes) {
+        super((GridCacheContext<Object, Object>)ctx, reqId, qry, nodes);
 
         metaFut = new GridFutureAdapter<>(ctx.kernalContext());
 
-        if (!qry.includeMetadata())
+        if (!qry.query().includeMetadata())
             metaFut.onDone();
     }
 
@@ -70,7 +57,7 @@ public class GridCacheDistributedFieldsQueryFuture
      * @param err Error.
      * @param finished Finished or not.
      */
-    public void onPage(@Nullable UUID nodeId, @Nullable List<GridCacheSqlFieldMetadata> metaData,
+    public void onPage(@Nullable UUID nodeId, @Nullable List<GridIndexingFieldMetadata> metaData,
         @Nullable Collection<Map<String, Object>> data, @Nullable Throwable err, boolean finished) {
         if (!metaFut.isDone() && metaData != null)
             metaFut.onDone(metaData);
@@ -95,7 +82,12 @@ public class GridCacheDistributedFieldsQueryFuture
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<List<GridCacheSqlFieldMetadata>> metadata() {
+    @Override public GridFuture<List<GridIndexingFieldMetadata>> metadata() {
         return metaFut;
+    }
+
+    /** {@inheritDoc} */
+    @Override boolean fields() {
+        return true;
     }
 }

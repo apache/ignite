@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@
 
 /**
  * Base class for message closures.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class ClientMessageProjectionClosure : public ClientProjectionClosure {
 public:
@@ -31,6 +28,14 @@ public:
      */
     ClientMessageProjectionClosure(std::string pClientId) :
         clientId(pClientId) {};
+
+    /**
+     * Generic public constructor.
+     *
+     * @param clientId Client id as uuid.
+     */
+    ClientMessageProjectionClosure(GridClientUuid & clientId) :
+        clientId(clientId) {};
 
     /**
      * Fills generic message command fields.
@@ -47,7 +52,7 @@ public:
 
 private:
     /** Client id. */
-    std::string clientId;
+    GridClientUuid clientId;
 };
 
 #endif

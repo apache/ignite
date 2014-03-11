@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -11,19 +11,13 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.lang._
-import org.gridgain.grid.util.lang.{GridLambdaAdapter, GridOutClosureX}
+import org.gridgain.grid.util.lang.{GridOutClosureX}
 
 /**
  * Wrapping Scala function for `GridOutClosureX`.
- *
- * @author @java.author
- * @version @java.version
  */
-class ScalarOutClosureXFunction[R](val inner: GridOutClosureX[R]) extends GridLambdaAdapter with (() => R) {
+class ScalarOutClosureXFunction[R](val inner: GridOutClosureX[R]) extends (() => R) {
     assert(inner != null)
-
-    peerDeployLike(inner)
 
     /**
      * Delegates to passed in grid closure.

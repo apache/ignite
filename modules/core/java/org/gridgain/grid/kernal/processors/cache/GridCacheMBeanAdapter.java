@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,9 +14,6 @@ import org.gridgain.grid.cache.*;
 
 /**
  * Management bean that provides access to {@link GridCache}.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridCacheMBeanAdapter implements GridCacheMBean {
     /** Cache context. */
@@ -158,11 +155,6 @@ class GridCacheMBeanAdapter implements GridCacheMBean {
     /** {@inheritDoc} */
     @Override public boolean isWriteBehindEnabled() {
         return store != null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isWriteBehindPreferPrimary() {
-        return store != null && cctx.config().isWriteBehindPreferPrimary();
     }
 
     /** {@inheritDoc} */

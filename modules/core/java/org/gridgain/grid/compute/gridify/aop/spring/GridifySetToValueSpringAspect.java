@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -31,9 +31,6 @@ import static org.gridgain.grid.util.gridify.GridifyUtils.*;
  * <p>
  * See {@link GridifySetToValue} documentation for more information about execution of
  * {@code gridified} methods.
- *
- * @author @java.author
- * @version @java.version
  * @see GridifySetToValue
  */
 public class GridifySetToValueSpringAspect extends GridifySetToValueAbstractAspect implements MethodInterceptor {

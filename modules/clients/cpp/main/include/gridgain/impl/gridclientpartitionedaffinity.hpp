@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -47,11 +47,8 @@ typedef std::function<GridClientVariant (const GridClientNode&)> GridHashIdResol
  *      filter returns <tt>false</tt>, first backup node for the key will be considered primary.
  * </li>
  * </ul>
- *
- * @author @cpp.author
- * @version @cpp.version
  */
-class GridClientPartitionedAffinity: public GridClientDataAffinity {
+class GridClientPartitionAffinity: public GridClientDataAffinity {
 public:
     /** Default number of partitions. */
     static const int DFLT_PARTITION_CNT = 10000;
@@ -71,10 +68,10 @@ public:
     /**
      * Default constructor.
      */
-    GridClientPartitionedAffinity();
+    GridClientPartitionAffinity();
 
     /** Vitrual destructor. */
-    virtual ~GridClientPartitionedAffinity();
+    virtual ~GridClientPartitionAffinity();
 
     /**
      * Maps the key to the primary node.
@@ -84,7 +81,7 @@ public:
      *
      * @return The affinity node for the given key.
      */
-    virtual TGridClientNodePtr getNode(const TNodesSet& nodes, const GridHasheableObject& key);
+    virtual TGridClientNodePtr getNode(const TNodesSet& nodes, const GridClientHasheableObject& key);
 
     /**
      * Gets default count of virtual replicas on the consistent hash ring.
@@ -218,7 +215,7 @@ private:
      *
      * @return The client node with the matching uuid.
      */
-    TGridClientNodePtr findNode(const GridUuid& id, const TNodesSet& nodes) const;
+    TGridClientNodePtr findNode(const GridClientUuid& id, const TNodesSet& nodes) const;
 
     /** Hasher for this affinity function. */
     GridClientConsistentHashImpl nodeHash;
@@ -236,7 +233,7 @@ private:
     std::string attrName;
 
     /** Nodes IDs. */
-    std::set<GridUuid> addedNodes;
+    std::set<GridClientUuid> addedNodes;
 
     /** Optional backup filter. */
     TGridClientNodePredicatePtr backupFilter;

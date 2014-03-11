@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,9 +19,6 @@ import java.util.*;
 /**
  * Finds configuration files located in {@code GRIDGAIN_HOME} folder
  * and its subfolders.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridConfigurationFinder {
     /** Path to default configuration file. */

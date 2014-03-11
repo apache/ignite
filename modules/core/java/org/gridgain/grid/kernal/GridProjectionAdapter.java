@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -25,8 +25,7 @@ import java.util.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridProjectionAdapter extends GridMetadataAwareAdapter implements GridProjection, Externalizable {
     /** */
@@ -260,6 +259,11 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
+    @Override public GridNode node() {
+        return F.first(nodes());
+    }
+
+    /** {@inheritDoc} */
     @Override public final GridPredicate<GridNode> predicate() {
         return p != null ? p : F.<GridNode>alwaysTrue();
     }
@@ -279,10 +283,10 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forAttribute(String n, @Nullable final String v) {
-        A.notNull(n, "n");
+    @Override public final GridProjection forAttribute(String name, @Nullable final String val) {
+        A.notNull(name, "n");
 
-        return forPredicate(new AttributeFilter(n, v));
+        return forPredicate(new AttributeFilter(name, val));
     }
 
     /** {@inheritDoc} */
@@ -386,23 +390,15 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forOthers(GridNode node) {
+    @Override public final GridProjection forOthers(GridNode node, GridNode... nodes) {
         A.notNull(node, "node");
 
-        return forOthers(node.id());
+        return forOthers(F.concat(false, node.id(), F.nodeIds(Arrays.asList(nodes))));
     }
 
     /** {@inheritDoc} */
-    @Override public final GridProjection forRemotes() {
-        return forOthers(ctx.localNodeId());
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @return New projection.
-     */
-    private GridProjection forOthers(UUID nodeId) {
-        assert nodeId != null;
+    @Override public GridProjection forOthers(GridProjection prj) {
+        A.notNull(prj, "prj");
 
         if (ids != null) {
             guard();
@@ -411,7 +407,9 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
                 Set<UUID> nodeIds = new HashSet<>(ids.size());
 
                 for (UUID id : ids) {
-                    if (!nodeId.equals(id))
+                    GridNode n = node(id);
+
+                    if (n != null && !prj.predicate().apply(n))
                         nodeIds.add(id);
                 }
 
@@ -422,7 +420,40 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
             }
         }
         else
-            return forPredicate(new OthersFilter(nodeId));
+            return forPredicate(F.not(prj.predicate()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public final GridProjection forRemotes() {
+        return forOthers(Collections.singleton(ctx.localNodeId()));
+    }
+
+    /**
+     * @param excludeIds Node IDs.
+     * @return New projection.
+     */
+    private GridProjection forOthers(Collection<UUID> excludeIds) {
+        assert excludeIds != null;
+
+        if (ids != null) {
+            guard();
+
+            try {
+                Set<UUID> nodeIds = new HashSet<>(ids.size());
+
+                for (UUID id : ids) {
+                    if (!excludeIds.contains(id))
+                        nodeIds.add(id);
+                }
+
+                return new GridProjectionAdapter(this, ctx, nodeIds);
+            }
+            finally {
+                unguard();
+            }
+        }
+        else
+            return forPredicate(new OthersFilter(excludeIds));
     }
 
     /** {@inheritDoc} */
@@ -512,7 +543,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            GridKernal g = GridFactoryEx.gridx(gridName);
+            GridKernal g = GridGainEx.gridx(gridName);
 
             return ids != null ? new GridProjectionAdapter(g, g.context(), ids) :
                 p != null ? new GridProjectionAdapter(g, g.context(), p) : g;
@@ -524,7 +555,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
 
     /**
      */
-    private static class CachesFilter extends GridPredicate<GridNode> {
+    private static class CachesFilter implements GridPredicate<GridNode> {
         /** Cache name. */
         private final String cacheName;
 
@@ -556,7 +587,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
 
     /**
      */
-    private static class StreamersFilter extends GridPredicate<GridNode> {
+    private static class StreamersFilter implements GridPredicate<GridNode> {
         /** Streamer name. */
         private final String streamerName;
 
@@ -588,7 +619,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
 
     /**
      */
-    private static class AttributeFilter extends GridPredicate<GridNode> {
+    private static class AttributeFilter implements GridPredicate<GridNode> {
         /** Name. */
         private final String name;
 
@@ -612,7 +643,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
 
     /**
      */
-    private static class DaemonFilter extends GridPredicate<GridNode> {
+    private static class DaemonFilter implements GridPredicate<GridNode> {
         /** {@inheritDoc} */
         @Override public boolean apply(GridNode n) {
             return n.isDaemon();
@@ -621,20 +652,20 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
 
     /**
      */
-    private static class OthersFilter extends GridPredicate<GridNode> {
+    private static class OthersFilter implements GridPredicate<GridNode> {
         /** */
-        private final UUID nodeId;
+        private final Collection<UUID> nodeIds;
 
         /**
-         * @param nodeId Node ID.
+         * @param nodeIds Node IDs.
          */
-        private OthersFilter(UUID nodeId) {
-            this.nodeId = nodeId;
+        private OthersFilter(Collection<UUID> nodeIds) {
+            this.nodeIds = nodeIds;
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(GridNode n) {
-            return !nodeId.equals(n.id());
+            return !nodeIds.contains(n.id());
         }
     }
 }

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -28,9 +28,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Represents single class deployment.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDeployment extends GridMetadataAwareAdapter implements GridDeploymentInfo {
     /** Timestamp. */
@@ -678,8 +675,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
 
         // Need to inspect anonymous classes, callable and runnable instances.
         return f.getName().startsWith("this$") || f.getName().startsWith("val$") ||
-            Callable.class.isAssignableFrom(f.getType()) || Runnable.class.isAssignableFrom(f.getType()) ||
-            GridLambda.class.isAssignableFrom(f.getType());
+            Callable.class.isAssignableFrom(f.getType()) || Runnable.class.isAssignableFrom(f.getType());
     }
 
     /**

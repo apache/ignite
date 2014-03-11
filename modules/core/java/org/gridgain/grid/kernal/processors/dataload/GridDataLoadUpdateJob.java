@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Job to put entries to cache on affinity node.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
     /** */

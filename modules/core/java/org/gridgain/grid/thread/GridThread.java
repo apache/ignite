@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -23,9 +23,6 @@ import java.util.concurrent.atomic.*;
  *      <li>Backing interrupted flag</li>
  * </ul>
  * <b>Note</b>: this class is intended for internal use only.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridThread extends Thread {
     /** Default thread's group. */

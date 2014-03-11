@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -20,13 +20,10 @@ import scalar._
  * on thousands requiring no special configuration or deployment.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-default.xml'`.
- *
- * @author @java.author
- * @version @java.version
+ * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
  */
 object ScalarWorldShortestMapReduce extends App {
-    scalar("examples/config/example-default.xml") {
+    scalar("examples/config/example-compute.xml") {
         val input = "World shortest mapreduce application"
 
         println("Non-space characters count: " +

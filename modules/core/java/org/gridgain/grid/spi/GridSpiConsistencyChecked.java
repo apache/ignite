@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.spi;
 
+import org.gridgain.grid.*;
+
 import java.lang.annotation.*;
 
 /**
@@ -16,10 +18,7 @@ import java.lang.annotation.*;
  * If SPIs are not consistent, then warning will be printed out to the log.
  * <p>
  * Note that SPI consistency courtesy log can also be disabled by disabling
- * {@link org.gridgain.grid.GridConfiguration#COURTESY_LOGGER_NAME} category in log configuration.
- *
- * @author @java.author
- * @version @java.version
+ * {@link GridConfiguration#COURTESY_LOGGER_NAME} category in log configuration.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

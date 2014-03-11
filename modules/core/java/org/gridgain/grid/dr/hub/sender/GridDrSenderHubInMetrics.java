@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -12,9 +12,6 @@ package org.gridgain.grid.dr.hub.sender;
 /**
  * Data center replication sender hub metrics for incoming data, i.e. data transferred from sender caches to
  * sender hub.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDrSenderHubInMetrics {
     /**

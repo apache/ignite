@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -18,9 +18,6 @@ import java.io.*;
 
 /**
  * Atomic reference value.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridCacheAtomicReferenceValue<T> implements GridCacheInternal, GridPeerDeployAware,
     Externalizable, Cloneable {

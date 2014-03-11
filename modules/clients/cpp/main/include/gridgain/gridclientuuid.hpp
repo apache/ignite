@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,41 +14,45 @@
 #include <string>
 #include <functional>
 
+#include <boost/uuid/uuid.hpp>
+
 #include <gridgain/gridhasheableobject.hpp>
 
 /**
  * Globally unique universal identifier.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
-class GRIDGAIN_API GridUuid: public GridHasheableObject {
+class GRIDGAIN_API GridClientUuid: public GridClientHasheableObject {
+    class Impl {
+    public:
+        /** Wrapped Boost uuid. */
+        boost::uuids::uuid uuid_;
+    };
 public:
     /**
      * Public default constructor. Creates an empty UUID.
      */
-    GridUuid();
+    GridClientUuid();
 
     /**
      * Reconstructs UUID from string.
      *
      * @param str String representation of UUID.
      */
-    GridUuid(const char* str);
+    GridClientUuid(const char* str);
 
     /**
      * Reconstructs UUID from string.
      *
      * @param str String representation of UUID.
      */
-    GridUuid(const std::string& str);
+    GridClientUuid(const std::string& str);
 
     /**
      * Copy constructor.
      *
      * @param other Another instance of UUID.
      */
-    GridUuid(const GridUuid& other);
+    GridClientUuid(const GridClientUuid& other);
 
     /**
      * Constructs a new UUID from raw bytes.
@@ -56,14 +60,14 @@ public:
      * @param bytes Raw bytes.
      * @return A new UUID.
      */
-    static GridUuid fromBytes(const std::string& bytes);
+    static GridClientUuid fromBytes(const std::string& bytes);
 
     /**
      * Generates a random UUID.
      *
      * @return New random UUID.
      */
-    static GridUuid randomUuid();
+    static GridClientUuid randomUuid();
 
     /**
      * Assignment operator override.
@@ -71,10 +75,10 @@ public:
      * @param rhs Right-hand side of the assignment operator.
      * @return This instance of the class.
      */
-    GridUuid& operator=(const GridUuid& rhs);
+    GridClientUuid& operator=(const GridClientUuid& rhs);
 
     /** Destructor. */
-    virtual ~GridUuid();
+    virtual ~GridClientUuid();
 
     /**
      * Comparison operator for UUID.
@@ -82,7 +86,7 @@ public:
      * @param other UUID to compare this UUID to.
      * @return <tt>true</tt> if this UUID is less than other, <tt>false</tt> otherwise.
      */
-    bool operator <(const GridUuid& other) const;
+    bool operator <(const GridClientUuid& other) const;
 
     /**
      * Comparison operator for UUID.
@@ -90,7 +94,7 @@ public:
      * @param other UUID to compare this UUID to.
      * @return <tt>true</tt> if this UUID equals another, <tt>false</tt> otherwise.
      */
-    bool operator ==(const GridUuid& other) const;
+    bool operator ==(const GridClientUuid& other) const;
 
     /**
      * Returns hash code for this UUID following Java conventions.
@@ -139,8 +143,7 @@ public:
      */
     void rawBytes(std::vector<int8_t>& bytes) const;
 private:
-    class Impl;
-    Impl* pimpl;
+    Impl pimpl;
 
     /**
      * Prints UUID to stream
@@ -148,10 +151,10 @@ private:
      * @param out Stream to output UUID to.
      * @param u UUID.
      */
-    friend std::ostream& operator<<(std::ostream &out, const GridUuid& u);
+    friend std::ostream& operator<<(std::ostream &out, const GridClientUuid& u);
 };
 
-inline std::ostream& operator<<(std::ostream &out, const GridUuid& u) {
+inline std::ostream& operator<<(std::ostream &out, const GridClientUuid& u) {
     return out << u.uuid();
 }
 
@@ -160,12 +163,12 @@ namespace std {
 /** Hash code for UUID for unordered_map. */
 #ifdef _MSC_VER
 template<> inline
-size_t hash<GridUuid>::operator()(const GridUuid& u) const {
+size_t hash<GridClientUuid>::operator()(const GridClientUuid& u) const {
     return u.hashCode();
 }
 #else
-template<> struct hash<GridUuid> {
-    size_t operator()(GridUuid u) const {
+template<> struct hash<GridClientUuid> {
+    size_t operator()(GridClientUuid u) const {
         return u.hashCode();
     }
 };

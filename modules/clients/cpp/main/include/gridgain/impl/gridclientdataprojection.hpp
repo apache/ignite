@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,9 +19,6 @@
 
 /**
  * GridClientData implementation.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientDataProjectionImpl: public GridClientProjectionImpl, public GridClientData {
 public:
@@ -250,7 +247,7 @@ public:
      * @return Node ID.
      * @throws GridClientException In case of error.
      */
-    virtual GridUuid affinity(const GridClientVariant& key);
+    virtual GridClientUuid affinity(const GridClientVariant& key);
 
     /**
      * Gets metrics for default cache.

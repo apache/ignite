@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,9 +14,6 @@ import java.lang.annotation.*;
 /**
  * This annotation is for all implementations of {@link GridDiscoverySpi} that support
  * topology snapshots history.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Inherited

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.util.*;
 /**
  * This interface defines a set of operations available to failover SPI
  * one a given failed job.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridFailoverContext {
     /**

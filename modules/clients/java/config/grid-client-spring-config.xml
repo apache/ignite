@@ -40,7 +40,7 @@
                 <bean class="org.gridgain.client.GridClientDataConfiguration">
                     <property name="name" value="partitioned"/>
                     <property name="affinity">
-                        <bean class="org.gridgain.client.GridClientPartitionedAffinity"/>
+                        <bean class="org.gridgain.client.GridClientPartitionAffinity"/>
                     </property>
                 </bean>
             </list>

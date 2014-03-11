@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -26,9 +26,6 @@ typedef std::shared_ptr<GridClientCommandExecutor> TGridClientCommandExecutorPtr
 
 /**
  * Common client data.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientSharedData {
 public:
@@ -38,7 +35,7 @@ public:
      * @param cfg Grid client configuration.
      * @param exec Command executor.
      */
-    GridClientSharedData(const GridUuid& pClientId, const GridClientConfiguration& cfg,
+    GridClientSharedData(const GridClientUuid& pClientId, const GridClientConfiguration& cfg,
             std::shared_ptr<GridClientCommandExecutorPrivate> exec) :
             clientId(pClientId), top(new GridClientTopology()), clientCfg(cfg) {
         assert(exec.get() != NULL);
@@ -59,11 +56,20 @@ public:
     }
 
     /**
+     * Returns the unique id of the client.
+     *
+     * @return Client UUID in GridClientUuid form.
+     */
+    GridClientUuid & clientUniqueUuid() {
+        return clientId;
+    }
+
+    /**
      * Method for accessing client UUID.
      *
      * @return Client UUID.
      */
-    GridUuid clientUuid() const {
+    GridClientUuid clientUuid() const {
         return clientId;
     }
 
@@ -118,7 +124,7 @@ public:
      *
      * @return List of host/port pairs.
      */
-    std::vector<GridSocketAddress> servers() const {
+    std::vector<GridClientSocketAddress> servers() const {
         return clientCfg.servers();
     }
 
@@ -131,7 +137,7 @@ public:
 
 protected:
     /** Unique Id of the client */
-    GridUuid clientId;
+    GridClientUuid clientId;
 
     /** Actual version of the topology. */
     TGridClientTopologyPtr top;

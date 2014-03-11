@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,7 +16,7 @@ GridClientRandomRouterBalancer::GridClientRandomRouterBalancer() {
     srand((int)time(NULL));
 }
 
-unsigned int GridClientRandomRouterBalancer::balancedRouter(const TGridSocketAddressList& addrs) {
+unsigned int GridClientRandomRouterBalancer::balancedRouter(const TGridClientSocketAddressList& addrs) {
     size_t n = rand() % addrs.size();
 
     return n;

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,9 +19,6 @@ import java.util.*;
  * Metrics holder.
  *
  * Note that for current active stages we use maximum active stages over last second.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerMetricsHolder implements GridStreamerMetrics {
     /** Max active stages over last minute. */
@@ -251,7 +248,12 @@ public class GridStreamerMetricsHolder implements GridStreamerMetrics {
 
     /** {@inheritDoc} */
     @Override public GridStreamerStageMetrics stageMetrics(String stageName) {
-        return stageMetricsMap.get(stageName);
+        GridStreamerStageMetrics metrics = stageMetricsMap.get(stageName);
+
+        if (metrics == null)
+            throw new IllegalArgumentException("Streamer stage is not configured: " + stageName);
+
+        return metrics;
     }
 
     /** {@inheritDoc} */
@@ -261,7 +263,12 @@ public class GridStreamerMetricsHolder implements GridStreamerMetrics {
 
     /** {@inheritDoc} */
     @Override public GridStreamerWindowMetrics windowMetrics(String winName) {
-        return windowMetricsMap.get(winName);
+        GridStreamerWindowMetrics metrics = windowMetricsMap.get(winName);
+
+        if (metrics == null)
+            throw new IllegalArgumentException("Streamer window is not configured: " + winName);
+
+        return metrics;
     }
 
     /** {@inheritDoc} */

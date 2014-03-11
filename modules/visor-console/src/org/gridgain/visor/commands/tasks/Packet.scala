@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -116,8 +116,5 @@ package org.gridgain.visor.commands
  *     visor tasks "-e=@e1"
  *         Traces task execution with ID taken from 's1' memory variable.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 package object tasks

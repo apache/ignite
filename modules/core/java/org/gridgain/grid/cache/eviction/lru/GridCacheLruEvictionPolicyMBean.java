@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,9 +13,6 @@ import org.gridgain.grid.util.mbean.*;
 
 /**
  * MBean for {@code LRU} eviction policy.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean for LRU cache eviction policy.")
 public interface GridCacheLruEvictionPolicyMBean {

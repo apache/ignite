@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.util.concurrent.locks.*;
  * Provides locked wrappers around given maps and collections. Since {@link ReentrantLock}
  * performs a lot better than standard Java {@code synchronization}, these locked wrappers
  * should perform better as their analogous methods in {@code java.util.Collections} class.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridCollections {
     /**

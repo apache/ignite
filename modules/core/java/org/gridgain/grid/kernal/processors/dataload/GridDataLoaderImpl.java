@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,11 +16,13 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -37,9 +39,6 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
  * Data loader implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
     /** Cache updater. */
@@ -898,11 +897,14 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
                 }
 
                 GridDeployment dep = null;
-
-                GridPeerDeployAware jobPda0 = jobPda;
+                GridPeerDeployAware jobPda0 = null;
 
                 if (ctx.deploy().enabled()) {
                     try {
+                        jobPda0 = jobPda;
+
+                        assert jobPda0 != null;
+
                         dep = ctx.deploy().deploy(jobPda0.deployClass(), jobPda0.classLoader());
                     }
                     catch (GridException e) {
@@ -999,7 +1001,11 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
             if (errBytes != null) {
                 try {
-                    err = ctx.config().getMarshaller().unmarshal(errBytes, jobPda.classLoader());
+                    GridPeerDeployAware jobPda0 = jobPda;
+
+                    err = ctx.config().getMarshaller().unmarshal(
+                        errBytes,
+                        jobPda0 != null ? jobPda0.classLoader() : U.gridClassLoader());
                 }
                 catch (GridException e) {
                     f.onDone(null, new GridException("Failed to unmarshal response.", e));

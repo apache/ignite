@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -24,9 +24,6 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
  * Bundled factory for cache updaters.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDataLoadCacheUpdaters {
     /** */
@@ -264,7 +261,7 @@ public class GridDataLoadCacheUpdaters {
                     tx.commit();
                 }
                 finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         }

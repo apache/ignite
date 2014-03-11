@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -29,9 +29,6 @@ import static org.gridgain.grid.kernal.processors.rest.GridRestResponse.STATUS_F
 /**
  * Jetty REST handler. The following URL format is supported:
  * {@code /gridgain?cmd=cmdName&param1=abc&param2=123}
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJettyRestHandler extends AbstractHandler {
     /** Logger. */

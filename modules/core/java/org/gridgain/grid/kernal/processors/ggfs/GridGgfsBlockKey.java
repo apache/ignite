@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -21,9 +21,6 @@ import java.nio.*;
 
 /**
  * File's binary data block key.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridInternal
 public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
@@ -261,7 +258,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 70;
+        return 66;
     }
 
     /** {@inheritDoc} */

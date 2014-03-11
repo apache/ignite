@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -93,11 +93,27 @@ import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
  * <p/>
  * See <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a> for information on the
  * misspelling.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridKernal extends GridProjectionAdapter implements GridEx, GridKernalMBean {
+    /** Enterprise release flag. */
+    private static final boolean ent;
+
+    /**
+     *
+     */
+    static {
+        boolean ent0;
+
+        try {
+            ent0 = Class.forName("org.gridgain.grid.kernal.breadcrumb") != null;
+        }
+        catch (ClassNotFoundException ignored) {
+            ent0 = false;
+        }
+
+        ent = ent0;
+    }
+
     /** Ant-augmented compatible versions. */
     private static final String COMPATIBLE_VERS = /*@java.compatible.vers*/"";
 
@@ -593,7 +609,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // Spin out SPIs & managers.
         try {
-            GridKernalContextImpl ctx = new GridKernalContextImpl(this, cfg, gw, VER.contains("ent"));
+            GridKernalContextImpl ctx = new GridKernalContextImpl(this, cfg, gw, ent);
 
             nodeLoc = new GridNodeLocalMapImpl(ctx);
 
@@ -1257,9 +1273,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             if (cacheCfg == null)
                 continue; // No cache for the given GGFS configuration.
 
-            GridCacheAffinityMapper affMapper = cacheCfg.getAffinityMapper();
+            GridCacheAffinityKeyMapper affMapper = cacheCfg.getAffinityMapper();
 
-            if (!(affMapper instanceof GridGgfsGroupDataBlocksMapper))
+            if (!(affMapper instanceof GridGgfsGroupDataBlocksKeyMapper))
                 // Do not create GGFS attributes for such a node nor throw error about invalid configuration.
                 // Configuration will be validated later, while starting GridGgfsProcessor.
                 continue;
@@ -1267,7 +1283,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             attrVals.add(new GridGgfsAttributes(
                 ggfsCfg.getName(),
                 ggfsCfg.getBlockSize(),
-                ((GridGgfsGroupDataBlocksMapper)affMapper).groupSize(),
+                ((GridGgfsGroupDataBlocksKeyMapper)affMapper).groupSize(),
                 ggfsCfg.getMetaCacheName(),
                 ggfsCfg.getDataCacheName(),
                 ggfsCfg.getDefaultMode(),
@@ -2272,9 +2288,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         if (!F.isEmpty(cfg.getSegmentationResolvers()))
             F.copy(objs, cfg.getSegmentationResolvers());
 
-        if (!F.isEmpty(cfg.getLocalEventListeners()))
-            objs.addAll(cfg.getLocalEventListeners().keySet());
-
         F.copy(objs, cfg.getClientMessageInterceptor(), cfg.getRestTcpSslContextFactory(),
             cfg.getMarshaller(), cfg.getGridLogger(), cfg.getMBeanServer());
 
@@ -2796,13 +2809,18 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public GridGgfs ggfs(String name) {
+    @Override public GridGgfs ggfs(String name) {
         A.ensure(!F.isEmpty(name), "!F.isEmpty(name)");
 
         guard();
 
         try{
-            return ctx.ggfs().ggfs(name);
+            GridGgfs ggfs = ctx.ggfs().ggfs(name);
+
+            if (ggfs == null)
+                throw new IllegalArgumentException("GGFS is not configured: " + name);
+
+            return ggfs;
         }
         finally {
             unguard();
@@ -2866,7 +2884,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridStreamer streamer(@Nullable String name) {
+    @Override public GridStreamer streamer(@Nullable String name) {
         guard();
 
         try {
@@ -2912,7 +2930,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDr dr() {
+    @Override public GridDr dr() {
         return ctx.dr().dr();
     }
 

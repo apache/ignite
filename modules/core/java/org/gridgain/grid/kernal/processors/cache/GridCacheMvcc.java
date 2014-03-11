@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -25,9 +25,6 @@ import java.util.concurrent.atomic.*;
  * old ones in the pending set, hence preventing lock starvation.
  * See {@link GridCacheVersionManager#next()} for information on how lock IDs are
  * generated to prevent starvation.
- *
- * @author @java.author
- * @version @java.version
  */
 public final class GridCacheMvcc<K> {
     /** Logger reference. */

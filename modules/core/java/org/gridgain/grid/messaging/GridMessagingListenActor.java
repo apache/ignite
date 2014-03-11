@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,13 +19,10 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Actor-base adapter for {@link GridMessaging#localListen(Object, GridBiPredicate)}
- * method. Look at <tt>GridMessagingPingPongExample.java</tt> example class for usage sample.
- *
- * @author @java.author
- * @version @java.version
+ * Convenience actor-base adapter for {@link GridMessaging#localListen(Object, GridBiPredicate)}
+ * method.
  */
-public abstract class GridMessagingListenActor<T> extends GridBiPredicate<UUID, T> {
+public abstract class GridMessagingListenActor<T> implements GridBiPredicate<UUID, T> {
     /** */
     private boolean keepGoing = true;
 

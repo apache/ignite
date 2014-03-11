@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -22,9 +22,6 @@ import java.io.*;
  * Also note that if {@link GridClientConfiguration#isEnableMetricsCache()} property
  * is set to {@code true}, then {@link GridClientNode} will cache the last fetched
  * instance of node metrics.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridClientNodeMetrics extends Serializable {
     /**

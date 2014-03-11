@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -85,9 +85,6 @@ import scala.util.control.Breaks._
  *     visor disco "-t=2m"
  *         Prints discovery events fired during last two minutes sorted chronologically.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorDiscoveryCommand {
     /** */
@@ -265,7 +262,7 @@ class VisorDiscoveryCommand {
         assert(f != null)
         assert(!node.isDaemon)
 
-        var evts = grid.forNode(node).events().queryRemote((e: GridEvent) =>
+        var evts = grid.forNode(node).events().remoteQuery((e: GridEvent) =>
              EVTS_DISCOVERY.contains(e.`type`) && // Only discovery events.
              !e.asInstanceOf[GridDiscoveryEvent].shadow().isDaemon && // Filter out daemons.
              f.apply(e) // Apply timeframe.
@@ -337,9 +334,6 @@ class VisorDiscoveryCommand {
 }
 
 /**
- *
- * @author @java.author
- * @version @java.version
  */
 private case class DiscoEvent(
     evtName: String,
@@ -357,9 +351,6 @@ private case class DiscoEvent(
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorDiscoveryCommand {
     addHelp(

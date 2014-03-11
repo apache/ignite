@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,9 +15,6 @@ import java.util.*;
  * {@code GGFS} file's data block location in the grid. It is used to determine
  * node affinity of a certain file block within the Grid by calling
  * {@link GridGgfs#affinity(GridGgfsPath, long, long)} method.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridGgfsBlockLocation {
     /**

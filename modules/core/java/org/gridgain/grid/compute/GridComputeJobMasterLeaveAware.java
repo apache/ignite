@@ -11,9 +11,6 @@ import org.gridgain.grid.*;
  * Implementing this interface gives you ability to preserve job execution result or its intermediate state
  * which could be reused later. E.g. you can save job execution result to the database or as a checkpoint
  * and reuse it when failed task is being executed again thus avoiding job execution from scratch.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridComputeJobMasterLeaveAware {
     /**

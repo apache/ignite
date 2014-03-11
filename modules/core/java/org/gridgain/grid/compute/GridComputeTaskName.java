@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,9 +15,6 @@ import java.lang.annotation.*;
  * This annotation allows to assign optional name to grid task. If attached to
  * {@link GridComputeTask} implementation GridGain will take this name as a task name
  * instead of default which is grid task's class FQN.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

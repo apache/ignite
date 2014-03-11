@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -34,9 +34,6 @@ import java.util.*;
  * <p>
  * If topology uses metrics store then message makes only one pass and metrics map
  * is always empty. Nodes exchange their metrics using metrics store.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMessage {
     /** Map to store nodes metrics. */

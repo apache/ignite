@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,17 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.*;
 
 import java.io.*;
 import java.nio.*;
 
 /**
  * Fragmentizer response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
     /** File ID. */
@@ -118,6 +115,6 @@ public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 75;
+        return 71;
     }
 }

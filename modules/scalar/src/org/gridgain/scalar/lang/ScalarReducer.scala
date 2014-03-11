@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -16,14 +16,9 @@ import collection._
 
 /**
  * Peer deploy aware adapter for Java's `GridReducer`.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarReducer[E, R](private val r: Seq[E] => R) extends GridReducer[E, R] {
     assert(r != null)
-
-    peerDeployLike(r)
 
     private val buf = new mutable.ListBuffer[E]
 

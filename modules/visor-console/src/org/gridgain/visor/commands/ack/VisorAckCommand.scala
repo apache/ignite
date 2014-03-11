@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -65,9 +65,6 @@ import visor._
  *     ack
  *         Prints local node ID on all nodes in the topology.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorAckCommand {
     /**
@@ -112,11 +109,11 @@ class VisorAckCommand {
             adviseToConnect()
         else
             try
-                grid.forPredicate(f).
-                    withName$("visor-ack").
-                    withNoFailover$().
-                    compute().
-                    run(new VisorAckTask(gg => gg.localNode.id.toString))
+                grid.forPredicate(f)
+                    .compute()
+                    .withName("visor-ack")
+                    .withNoFailover()
+                    .broadcast(new VisorAckTask(gg => gg.localNode.id.toString))
             catch {
                 case _: GridEmptyProjectionException => scold("Topology is empty.")
                 case e: Exception => scold("System error: " + e.getMessage)
@@ -158,11 +155,11 @@ class VisorAckCommand {
             adviseToConnect()
         else
             try
-                grid.forPredicate(f).
-                    withName$("visor-ack").
-                    withNoFailover$().
-                    compute().
-                    run(new VisorAckTask(_ => arg))
+                grid.forPredicate(f)
+                    .compute()
+                    .withName("visor-ack")
+                    .withNoFailover()
+                    .broadcast(new VisorAckTask(_ => arg))
             catch {
                 case _: GridEmptyProjectionException => scold("Topology is empty.")
                 case e: Exception => scold("System error: " + e.getMessage)
@@ -172,9 +169,6 @@ class VisorAckCommand {
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorAckCommand {
     // Adds command's help to visor.

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.streamer;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
@@ -21,8 +20,7 @@ import java.nio.*;
 import java.util.*;
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAdapter {
     /** Force local deployment flag. */
@@ -367,6 +365,6 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 80;
+        return 76;
     }
 }

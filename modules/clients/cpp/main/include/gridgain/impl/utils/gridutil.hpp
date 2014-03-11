@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,9 +13,6 @@
 
 /**
  * Holder class for various utility functions.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridUtil {
 public:
@@ -34,7 +31,16 @@ public:
      * @param v Vector to output.
      * @return Target stream (for chaining).
      */
-    static std::ostream& toStream(std::ostream &out, const std::vector<std::string> &v);
+    static std::ostream& toStream(std::ostream& out, const std::vector<std::string>& v);
+
+    /**
+     * Outputs GridClientSocketAddress representation of a vector to stream.
+     *
+     * @param out Target stream.
+     * @param v Vector to output.
+     * @return Target stream (for chaining).
+     */
+    static std::ostream& toStream(std::ostream& out, const std::vector<GridClientSocketAddress>& v);
 
     /**
      * Returns current system time in milliseconds.

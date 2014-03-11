@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import org.jetbrains.annotations.*;
  * <p>
  * For more information and detailed examples refer to {@link GridLifecycleBean}
  * documentation.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridLifecycleEventType {
     /**

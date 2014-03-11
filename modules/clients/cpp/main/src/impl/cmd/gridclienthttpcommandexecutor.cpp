@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -30,7 +30,7 @@ void GridClientHttpCommandExecutor::stop() {
  * @param msg Message to send.
  * @param respMsg Response message to fill.
  */
-void GridClientHttpCommandExecutor::sendPacket(const GridSocketAddress& host,
+void GridClientHttpCommandExecutor::sendPacket(const GridClientSocketAddress& host,
         const TRequestParams& msg,
         TJson& respMsg) {
     std::shared_ptr<GridClientHttpConnection> conn =
@@ -57,7 +57,7 @@ void GridClientHttpCommandExecutor::sendPacket(const GridSocketAddress& host,
  * @param logCmd Log command to send.
  * @param rslt Log response message to fill.
  */
-void GridClientHttpCommandExecutor::executeLogCmd(const GridSocketAddress& host,
+void GridClientHttpCommandExecutor::executeLogCmd(const GridClientSocketAddress& host,
         GridLogRequestCommand& logCmd, GridClientMessageLogResult& rslt) {
     executeCmd(host, logCmd, rslt);
 }
@@ -70,7 +70,7 @@ void GridClientHttpCommandExecutor::executeLogCmd(const GridSocketAddress& host,
  * @param rslt Topology response message to fill.
  */
 void GridClientHttpCommandExecutor::executeTopologyCmd(
-        const GridSocketAddress& host, GridTopologyRequestCommand& topCmd,
+        const GridClientSocketAddress& host, GridTopologyRequestCommand& topCmd,
         GridClientMessageTopologyResult& rslt) {
 
     executeCmd(host, topCmd, rslt);
@@ -84,7 +84,7 @@ void GridClientHttpCommandExecutor::executeTopologyCmd(
  * @param rslt Cache get response message to fill.
  */
 void GridClientHttpCommandExecutor::executeGetCacheCmd(
-        const GridSocketAddress& host, GridCacheRequestCommand& cacheCmd,
+        const GridClientSocketAddress& host, GridCacheRequestCommand& cacheCmd,
         GridClientMessageCacheGetResult& rslt) {
     executeCmd(host, cacheCmd, rslt);
 }
@@ -97,7 +97,7 @@ void GridClientHttpCommandExecutor::executeGetCacheCmd(
  * @param rslt Cache modify response message to fill.
  */
 void GridClientHttpCommandExecutor::executeModifyCacheCmd(
-        const GridSocketAddress& host, GridCacheRequestCommand& cacheCmd,
+        const GridClientSocketAddress& host, GridCacheRequestCommand& cacheCmd,
         GridClientMessageCacheModifyResult& rslt) {
     executeCmd(host, cacheCmd, rslt);
 }
@@ -110,7 +110,7 @@ void GridClientHttpCommandExecutor::executeModifyCacheCmd(
  * @param rslt Cache metrics response message to fill.
  */
 void GridClientHttpCommandExecutor::executeGetCacheMetricsCmd(
-        const GridSocketAddress& host, GridCacheRequestCommand& cacheCmd,
+        const GridClientSocketAddress& host, GridCacheRequestCommand& cacheCmd,
         GridClientMessageCacheMetricResult& rslt) {
     executeCmd(host, cacheCmd, rslt);
 }
@@ -122,7 +122,7 @@ void GridClientHttpCommandExecutor::executeGetCacheMetricsCmd(
  * @param taskCmd task command to send.
  * @param rslt Task response message to fill.
  */
-void GridClientHttpCommandExecutor::executeTaskCmd(const GridSocketAddress& host,
+void GridClientHttpCommandExecutor::executeTaskCmd(const GridClientSocketAddress& host,
         GridTaskRequestCommand& taskCmd,
         GridClientMessageTaskResult& rslt) {
     executeCmd(host, taskCmd, rslt);
@@ -136,7 +136,7 @@ void GridClientHttpCommandExecutor::executeTaskCmd(const GridSocketAddress& host
  * @param rslt Response message to fill.
  */
 template<class C, class R> void GridClientHttpCommandExecutor::executeCmd(
-        const GridSocketAddress& host, C& cmd, R& rslt) {
+        const GridClientSocketAddress& host, C& cmd, R& rslt) {
     TRequestParams protoMsg;
     TJson respMsg;
 

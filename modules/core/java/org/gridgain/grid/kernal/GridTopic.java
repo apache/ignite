@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.optimized.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -20,9 +20,6 @@ import java.util.*;
 
 /**
  * Communication topic.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridTopic {
     /** */

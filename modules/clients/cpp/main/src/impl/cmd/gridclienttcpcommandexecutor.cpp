@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -29,7 +29,7 @@ using namespace org::gridgain::grid::kernal::processors::rest::client::message;
  * @param logCmd Log command to send.
  * @param rslt Log response message to fill.
  */
-void GridClientTcpCommandExecutor::executeLogCmd(const GridSocketAddress& host, GridLogRequestCommand& logCmd,
+void GridClientTcpCommandExecutor::executeLogCmd(const GridClientSocketAddress& host, GridLogRequestCommand& logCmd,
         GridClientMessageLogResult& rslt) {
     executeCmd(host, logCmd, rslt);
 }
@@ -41,7 +41,7 @@ void GridClientTcpCommandExecutor::executeLogCmd(const GridSocketAddress& host, 
  * @param topCmd Topology command to send.
  * @param rslt Topology response message to fill.
  */
-void GridClientTcpCommandExecutor::executeTopologyCmd(const GridSocketAddress& host, GridTopologyRequestCommand& topCmd,
+void GridClientTcpCommandExecutor::executeTopologyCmd(const GridClientSocketAddress& host, GridTopologyRequestCommand& topCmd,
         GridClientMessageTopologyResult& rslt) {
 
     executeCmd(host, topCmd, rslt);
@@ -54,7 +54,7 @@ void GridClientTcpCommandExecutor::executeTopologyCmd(const GridSocketAddress& h
  * @param cacheCmd Cache command to send.
  * @param rslt Cache get response message to fill.
  */
-void GridClientTcpCommandExecutor::executeGetCacheCmd(const GridSocketAddress& host, GridCacheRequestCommand& cacheCmd,
+void GridClientTcpCommandExecutor::executeGetCacheCmd(const GridClientSocketAddress& host, GridCacheRequestCommand& cacheCmd,
         GridClientMessageCacheGetResult& rslt) {
     executeCmd(host, cacheCmd, rslt);
 }
@@ -66,7 +66,7 @@ void GridClientTcpCommandExecutor::executeGetCacheCmd(const GridSocketAddress& h
  * @param cacheCmd Cache modify command to send.
  * @param rslt Cache modify response message to fill.
  */
-void GridClientTcpCommandExecutor::executeModifyCacheCmd(const GridSocketAddress& host,
+void GridClientTcpCommandExecutor::executeModifyCacheCmd(const GridClientSocketAddress& host,
         GridCacheRequestCommand& cacheCmd, GridClientMessageCacheModifyResult& rslt) {
     executeCmd(host, cacheCmd, rslt);
 }
@@ -78,7 +78,7 @@ void GridClientTcpCommandExecutor::executeModifyCacheCmd(const GridSocketAddress
  * @param cacheCmd Cache metrics command to send.
  * @param rslt Cache metrics response message to fill.
  */
-void GridClientTcpCommandExecutor::executeGetCacheMetricsCmd(const GridSocketAddress& host,
+void GridClientTcpCommandExecutor::executeGetCacheMetricsCmd(const GridClientSocketAddress& host,
         GridCacheRequestCommand& cacheCmd, GridClientMessageCacheMetricResult& rslt) {
     executeCmd(host, cacheCmd, rslt);
 }
@@ -90,7 +90,7 @@ void GridClientTcpCommandExecutor::executeGetCacheMetricsCmd(const GridSocketAdd
  * @param taskCmd task command to send.
  * @param rslt Task response message to fill.
  */
-void GridClientTcpCommandExecutor::executeTaskCmd(const GridSocketAddress& host, GridTaskRequestCommand& taskCmd,
+void GridClientTcpCommandExecutor::executeTaskCmd(const GridClientSocketAddress& host, GridTaskRequestCommand& taskCmd,
         GridClientMessageTaskResult& rslt) {
     executeCmd(host, taskCmd, rslt);
 }
@@ -102,7 +102,7 @@ void GridClientTcpCommandExecutor::executeTaskCmd(const GridSocketAddress& host,
  * @param cmd Command to send.
  * @param rslt Response message to fill.
  */
-template<class C, class R> void GridClientTcpCommandExecutor::executeCmd(const GridSocketAddress& host, C& cmd,
+template<class C, class R> void GridClientTcpCommandExecutor::executeCmd(const GridClientSocketAddress& host, C& cmd,
         R& rslt) {
     ObjectWrapper protoMsg;
 
@@ -158,7 +158,7 @@ void GridClientTcpCommandExecutor::stop() {
  * @param respMsg Protobuf ObjectWrapper response to fill.
  */
 void GridClientTcpCommandExecutor::sendPacket(std::shared_ptr<GridClientTcpConnection> conn,
-	const GridClientTcpPacket& tcpPacket, GridClientTcpPacket& tcpResponse) {
+    const GridClientTcpPacket& tcpPacket, GridClientTcpPacket& tcpResponse) {
     try {
         conn->send(tcpPacket, tcpResponse);
     }

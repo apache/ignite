@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -24,19 +24,19 @@ import java.util.*;
  * APIs for performing a distributed queries across multiple nodes:
  * <ul>
  *      <li>
- *          {@link GridEvents#queryRemote(GridPredicate, long)} -
+ *          {@link GridEvents#remoteQuery(GridPredicate, long)} -
  *          asynchronously querying events occurred on the nodes specified, including remote nodes.
  *      </li>
  *      <li>
- *          {@link GridEvents#queryLocal(GridPredicate)} -
+ *          {@link GridEvents#localQuery(GridPredicate)} -
  *          querying only local events stored on this local node.
  *      </li>
  *      <li>
- *          {@link GridEvents#addLocalListener(GridLocalEventListener, int...)} -
+ *          {@link GridEvents#localListen(GridPredicate, int...)} -
  *          listening to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>
- * User can also wait for events using method {@link GridEvents#waitForLocal(org.gridgain.grid.lang.GridPredicate, int...)}.
+ * User can also wait for events using method {@link GridEvents#waitForLocal(GridPredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
  * Note that by default all events in GridGain are enabled and therefore generated and stored
  * by whatever event storage SPI is configured. GridGain can and often does generate thousands events per seconds
@@ -47,9 +47,6 @@ import java.util.*;
  * by using {@link GridConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- *
- * @author @java.author
- * @version @java.version
  * @see GridEventType#EVT_SECURE_SESSION_VALIDATION_FAILED
  * @see GridEventType#EVT_SECURE_SESSION_VALIDATION_SUCCEEDED
  */

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 
@@ -23,9 +22,6 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
  * This class provides implementation for job sibling.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJobSiblingImpl extends GridMetadataAwareAdapter implements GridComputeJobSibling, Externalizable {
     /** */

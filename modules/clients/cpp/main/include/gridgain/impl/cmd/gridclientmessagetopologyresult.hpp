@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@ typedef std::vector<GridClientNode> TNodesList;
 
 /**
  * Topology result message.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientMessageTopologyResult : public GridClientMessageResult {
 private:

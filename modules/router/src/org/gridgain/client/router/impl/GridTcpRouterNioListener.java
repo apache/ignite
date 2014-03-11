@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -31,9 +31,6 @@ import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
 /**
  * Nio listener for the router. Extracts necessary meta information from messages
  * and delegates their delivery to underlying client.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessage> {
     /** Logger. */

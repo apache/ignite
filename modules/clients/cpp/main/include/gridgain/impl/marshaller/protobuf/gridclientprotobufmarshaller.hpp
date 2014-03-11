@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -33,9 +33,6 @@ using namespace org::gridgain::grid::kernal::processors::rest::client::message;
 
 /**
  * Grid protobuf marshaler.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientProtobufMarshaller {
 public:
@@ -165,7 +162,7 @@ public:
      * @param uuid An UUID to marshal.
      * @param bytes Vector to fill.
      */
-    static void marshal(const GridUuid& uuid, std::vector<int8_t>& bytes);
+    static void marshal(const GridClientUuid& uuid, std::vector<int8_t>& bytes);
 
     /**
      * General unmarshaling function for converting byte array to protobuf message.
@@ -180,12 +177,14 @@ public:
     }
 
     /**
-     * Marshals a Protobuf message to an array of bytes.
+     * Marshals a protobuf message to an array of bytes. Note that memory is allocated using new[] inside the call
+     * and caller is responsible for calling delete[] on the buffer
      *
      * @param msg Message to marshal.
-     * @param bytes Octetstring to write result to.
+     * @param pBuffer - buffer to accept serialized message
+     * @param bufferLength - Length of data packed into buffer. Caller is responsible for calling delete[] on the buffer
      */
-    static void marshalMsg(const ::google::protobuf::Message& msg, std::string& bytes);
+    static void marshalMsg(const ::google::protobuf::Message& msg, int8_t*& pBuffer, unsigned long & bufferLength);
 };
 
 /**

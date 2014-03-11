@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,9 +19,6 @@ import java.nio.*;
 
 /**
  * Internal replication response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrInternalResponse extends GridTcpCommunicationMessageAdapter {
     /** Request id. */
@@ -155,7 +152,7 @@ public class GridDrInternalResponse extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 68;
+        return 64;
     }
 
     /** {@inheritDoc} */

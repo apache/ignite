@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.io.*;
  * Defines {@code alias} for {@link GridTuple} by extending it. Since Java doesn't provide type aliases
  * (like Scala, for example) we resort to these types of measures. This is intended to provide for more
  * concise code in cases when readability won't be sacrificed. For more information see {@link GridTuple}.
- *
- * @author @java.author
- * @version @java.version
  * @param <V> Type of the free variable.
  * @see GridFunc
  * @see GridTuple

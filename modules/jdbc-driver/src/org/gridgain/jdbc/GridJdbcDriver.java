@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -8,6 +8,8 @@
  */
 
 package org.gridgain.jdbc;
+
+import org.gridgain.grid.cache.affinity.*;
 
 import java.sql.*;
 import java.util.*;
@@ -39,7 +41,7 @@ import java.util.logging.*;
  *     <li>
  *         Joins will work correctly only if joined objects are stored in
  *         collocated mode. Refer to
- *         {@link org.gridgain.grid.cache.affinity.GridCacheAffinityKey}
+ *         {@link GridCacheAffinityKey}
  *         javadoc for more details.
  *     </li>
  *     <li>
@@ -219,9 +221,6 @@ import java.util.logging.*;
  *     ...
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("JavadocReference")
 public class GridJdbcDriver implements Driver {
@@ -428,9 +427,6 @@ public class GridJdbcDriver implements Driver {
     /**
      * Extension of {@link DriverPropertyInfo} that adds
      * convenient constructors.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private static class PropertyInfo extends DriverPropertyInfo {
         /**

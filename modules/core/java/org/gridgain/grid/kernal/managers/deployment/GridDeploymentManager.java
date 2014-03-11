@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,7 +17,6 @@ import org.gridgain.grid.kernal.managers.deployment.protocol.gg.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.deployment.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -28,9 +27,6 @@ import static org.gridgain.grid.GridDeploymentMode.*;
 
 /**
  * Deployment manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi> {
     /** Local deployment storage. */

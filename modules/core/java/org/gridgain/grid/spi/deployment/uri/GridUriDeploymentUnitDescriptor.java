@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,10 +9,11 @@
 
 package org.gridgain.grid.spi.deployment.uri;
 
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -22,15 +23,10 @@ import static org.gridgain.grid.spi.deployment.uri.GridUriDeploymentUnitDescript
 
 /**
  * Container for information about tasks and file where classes placed. It also contains tasks instances.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridUriDeploymentUnitDescriptor {
     /**
      * Container type.
-     *
-     * @author @java.author
      */
     @SuppressWarnings({"PackageVisibleInnerClass"}) enum Type {
         /**
@@ -103,7 +99,7 @@ class GridUriDeploymentUnitDescriptor {
     }
 
     /**
-     * Constructs deployment unit descriptor based on timestamp and {@link org.gridgain.grid.compute.GridComputeTask} instances.
+     * Constructs deployment unit descriptor based on timestamp and {@link GridComputeTask} instances.
      *
      * @param tstamp Tasks deployment timestamp.
      * @param clsLdr Class loader.

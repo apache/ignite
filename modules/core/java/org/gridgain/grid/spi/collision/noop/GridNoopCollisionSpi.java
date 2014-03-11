@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -22,9 +22,6 @@ import org.jetbrains.annotations.*;
  * for large amount of small jobs (which is a wide-spread use case). User still can
  * control the number of concurrent jobs by setting maximum thread pool size defined
  * by {@link GridConfiguration#getExecutorService()} configuration property.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridSpiInfo(
     author = /*@java.spi.author*/"GridGain Systems",

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -12,10 +12,10 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
@@ -25,6 +25,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -40,9 +41,6 @@ import static org.gridgain.grid.util.GridConcurrentFactory.*;
 
 /**
  * Cache transaction manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Maximum number of transactions that have completed (initialized to 100K). */
@@ -1921,8 +1919,7 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
          * @param tx Transaction.
          */
         private void commitIfPrepared(GridCacheTxEx<K, V> tx) {
-            assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote ||
-                tx instanceof GridReplicatedTxRemote : tx;
+            assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote  : tx;
             assert !F.isEmpty(tx.transactionNodes());
             assert tx.nearXidVersion() != null;
 
@@ -1944,8 +1941,7 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
          * @param tx Transaction.
          */
         private void commitIfRemotelyCommitted(GridCacheTxEx<K, V> tx) {
-            assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote ||
-                tx instanceof GridReplicatedTxRemote : tx;
+            assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote : tx;
 
             GridCachePessimisticCheckCommittedTxFuture<K, V> fut = new GridCachePessimisticCheckCommittedTxFuture<>(
                 cctx, tx, evtNodeId);
@@ -1967,7 +1963,7 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
         private GridCacheVersion nearVer;
 
         /**
-         * Empty constructor required by {@link java.io.Externalizable}.
+         * Empty constructor required by {@link Externalizable}.
          */
         public CommittedVersion() {
             // No-op.
@@ -2012,7 +2008,7 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * Commit listener. Checks if commit succeeded and rollbacks if case of error.
      */
-    private class CommitListener extends CI1<GridFuture<GridCacheTx>> {
+    private class CommitListener implements CI1<GridFuture<GridCacheTx>> {
         /** Transaction. */
         private final GridCacheTxEx<K, V> tx;
 

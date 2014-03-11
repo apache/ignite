@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -20,9 +20,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
  * Data input based on {@code Unsafe} operations.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridUnsafeDataInput extends InputStream implements GridDataInput {
     /** Unsafe. */

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -39,8 +39,7 @@ import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
  * This implementation supports several selectors and several reading threads.
  *
  * @param <T> Message type.
- * @author @java.author
- * @version @java.version
+ *
  */
 public class GridNioServer<T> {
     /** Default session write timeout. */
@@ -812,7 +811,7 @@ public class GridNioServer<T> {
          * @param gridName Grid name.
          * @param name Worker name.
          * @param log Logger.
-         * @throws org.gridgain.grid.GridException If selector could not be created.
+         * @throws GridException If selector could not be created.
          */
         protected AbstractNioClientWorker(int idx, @Nullable String gridName, String name, GridLogger log)
             throws GridException {

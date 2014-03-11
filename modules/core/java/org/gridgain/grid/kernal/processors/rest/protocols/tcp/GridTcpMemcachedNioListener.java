@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -27,9 +27,6 @@ import static org.gridgain.grid.kernal.processors.rest.protocols.tcp.GridMemcach
 
 /**
  * Handles memcache requests.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<GridMemcachedMessage> {
     /** Logger */

@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -32,14 +32,11 @@ import org.gridgain.grid.compute._
  * the more values it will be cached on remote nodes.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-default.xml'`.
- *
- * @author @java.author
- * @version @java.version
+ * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
  */
 object ScalarContinuationExample {
     def main(args: Array[String]) {
-        scalar("examples/config/example-default.xml") {
+        scalar("examples/config/example-compute.xml") {
             // Calculate fibonacci for N.
             val N: Long = 100
 

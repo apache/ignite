@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,9 +21,6 @@ import java.util.concurrent.locks.*;
  * <p>
  * For a good explanation of what consistent hashing is, you can refer to
  * <a href="http://weblogs.java.net/blog/tomwhite/archive/2007/11/consistent_hash.html">Tom White's Blog</a>.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings("NullableProblems")
 public class GridClientConsistentHash<N> {

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -33,9 +33,6 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
  * <p>
  * <strong>This class is not intended for public use</strong> and has been made
  * <tt>public</tt> due to certain limitations of Java technology.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements GridNode,
     Comparable<GridTcpDiscoveryNode>, Externalizable {

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.spi.failover.*;
-import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -51,9 +50,6 @@ import java.util.concurrent.*;
  * documentation for coding examples on how to inject job context.
  * <p>
  * Attribute names that start with {@code "gridgain:"} are reserved for internal system use.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridComputeJobContext extends GridComputeJobContinuation, GridMetadataAware {
     /**
@@ -62,9 +58,7 @@ public interface GridComputeJobContext extends GridComputeJobContinuation, GridM
      * @return Cache name if job was co-located or {@code null} otherwise.
      * @see #affinityKey()
      * @see GridCompute#affinityCall(String, Object, Callable)
-     * @see GridCompute#affinityCall(String, Collection, Callable)
      * @see GridCompute#affinityRun(String, Object, Runnable)
-     * @see GridCompute#affinityRun(String, Collection, Runnable)
      */
     @Nullable public String cacheName();
 
@@ -74,9 +68,7 @@ public interface GridComputeJobContext extends GridComputeJobContinuation, GridM
      * @return Affinity key if job was co-located or {@code null} otherwise.
      * @see #cacheName()
      * @see GridCompute#affinityCall(String, Object, Callable)
-     * @see GridCompute#affinityCall(String, Collection, Callable)
      * @see GridCompute#affinityRun(String, Object, Runnable)
-     * @see GridCompute#affinityRun(String, Collection, Runnable)
      */
     @Nullable public <T> T affinityKey();
 

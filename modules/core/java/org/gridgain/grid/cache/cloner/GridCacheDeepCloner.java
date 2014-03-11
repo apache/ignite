@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
 *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -27,9 +27,6 @@ import org.gridgain.grid.util.typedef.*;
  * Note that this behavior may not work on some JDKs in which case
  * {@link #cloneValue(Object)} method will result in {@link GridException}
  * being thrown.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDeepCloner implements GridCacheCloner {
     /** */

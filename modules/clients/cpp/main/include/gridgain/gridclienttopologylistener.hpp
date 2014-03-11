@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -20,9 +20,6 @@ class GridClientNode;
  * Since the topology refresh is performed in background, the listeners will not be notified
  * immediately after the node leaves grid. The maximum time window between the remote grid detects
  * topology change and client receives topology update is {@link GridClientConfiguration#getTopologyRefreshFrequency()}.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientTopologyListener {
 public:

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.managers.deployment;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.deployment.*;
@@ -30,9 +31,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 /**
  * Deployment storage for {@link GridDeploymentMode#SHARED} and
  * {@link GridDeploymentMode#CONTINUOUS} modes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     /** Shared deployment cache. */

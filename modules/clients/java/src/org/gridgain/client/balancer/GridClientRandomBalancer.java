@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@ import java.util.*;
  * <p>
  * More strictly, for any non-empty collection of size <tt>n</tt> the probability of selection of any
  * node in this collection will be <tt>1/n</tt>.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientRandomBalancer extends GridClientBalancerAdapter {
     /** Random for node selection. */

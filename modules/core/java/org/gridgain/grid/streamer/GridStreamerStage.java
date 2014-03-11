@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -24,9 +24,6 @@ import java.util.*;
  * Generally, event stage execution graph if fully controlled by return values of
  * this method, while node execution graph is controlled by
  * {@link GridStreamerEventRouter#route(GridStreamerContext, String, Object)} method.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridStreamerStage<IN> {
     /**

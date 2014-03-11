@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -29,9 +29,6 @@ import java.util.*;
  *     factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
  *     // Rest of initialization.
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridSslBasicContextFactory implements GridSslContextFactory {
     /** Default key store type. */

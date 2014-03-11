@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,11 +17,8 @@
 
 /**
  * Provide the implementation of hash-code for GridClientVariant.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
-class GridClientVariantHasheableObject : public GridHasheableObject {
+class GridClientVariantHasheableObject : public GridClientHasheableObject {
 public:
     /**
      * Public constructor.

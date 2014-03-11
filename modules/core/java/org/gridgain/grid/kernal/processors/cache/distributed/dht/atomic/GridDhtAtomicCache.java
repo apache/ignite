@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,8 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.partitioned.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
@@ -44,9 +42,6 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
 /**
  * Non-transactional partitioned cache.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridToStringExclude
 public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
@@ -137,12 +132,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
     @Override public void start() throws GridException {
-        GridCacheAffinity aff = ctx.config().getAffinity();
-
-        if (aff instanceof GridCachePartitionedAffinity)
-            hasBackups = ((GridCachePartitionedAffinity)aff).getKeyBackups() > 0;
-        else
-            hasBackups = true;
+        hasBackups = ctx.config().getBackups() > 0;
 
         preldr = new GridDhtPreloader<>(ctx);
 
@@ -215,7 +205,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws GridException {
         GridTuple<V> val = null;
 
-        if (!modes.contains(NEAR_ONLY)) {
+        if (ctx.isReplicated() || !modes.contains(NEAR_ONLY)) {
             try {
                 val = peek0(true, key, modes, ctx.tm().txx());
             }
@@ -543,6 +533,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         finally {
             holder.unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridDhtFuture<Boolean> lockAllAsyncInternal(@Nullable Collection<? extends K> keys, long timeout,
+        GridCacheTxLocalEx<K, V> txx, boolean isInvalidate, boolean isRead, boolean retval,
+        GridCacheTxIsolation isolation, GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        return new FinishedLockFuture(new UnsupportedOperationException("Locks are not supported for " +
+            "GridCacheAtomicityMode.ATOMIC mode (use GridCacheAtomicityMode.TRANSACTIONAL instead)"));
     }
 
     /**
@@ -1753,6 +1751,30 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtAtomicCache.class, this, super.toString());
+    }
+
+    /**
+     *
+     */
+    private class FinishedLockFuture extends GridFinishedFutureEx<Boolean> implements GridDhtFuture<Boolean> {
+        /**
+         * Empty constructor required by {@link Externalizable}.
+         */
+        public FinishedLockFuture() {
+            // No-op.
+        }
+
+        /**
+         * @param err Error.
+         */
+        private FinishedLockFuture(Throwable err) {
+            super(err);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<Integer> invalidPartitions() {
+            return Collections.emptyList();
+        }
     }
 
     /**

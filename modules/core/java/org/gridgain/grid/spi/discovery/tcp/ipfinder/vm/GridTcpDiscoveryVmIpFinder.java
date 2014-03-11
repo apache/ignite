@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,9 +14,9 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 
 import java.net.*;
 import java.util.*;
@@ -36,9 +36,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
  *      <li>Addresses for initialization (see {@link #setAddresses(Collection)})</li>
  *      <li>Shared flag (see {@link #setShared(boolean)})</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter {
     /** Grid logger. */
@@ -64,7 +61,7 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
 
                     if (!F.isEmpty(s)) {
                         try {
-                            addrsList.add(address(s));
+                            addrsList.addAll(address(s));
                         }
                         catch (GridSpiException e) {
                             throw new GridRuntimeException(e);
@@ -101,13 +98,22 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
      * <p>
      * Addresses may be represented as follows:
      * <ul>
-     *     <li>IP address (i.e. 127.0.0.1, 9.9.9.9, etc);</li>
-     *     <li>IP address and port (i.e. 127.0.0.1:47500, 9.9.9.9:47501, etc);</li>
-     *     <li>Hostname (i.e. host1.com, host2, etc);</li>
-     *     <li>Hostname and port (i.e. host1.com:47500, host2:47502, etc).</li>
+     *     <li>IP address (e.g. 127.0.0.1, 9.9.9.9, etc);</li>
+     *     <li>IP address and port (e.g. 127.0.0.1:47500, 9.9.9.9:47501, etc);</li>
+     *     <li>IP address and port range (e.g. 127.0.0.1:47500..47510, 9.9.9.9:47501..47504, etc);</li>
+     *     <li>Hostname (e.g. host1.com, host2, etc);</li>
+     *     <li>Hostname and port (e.g. host1.com:47500, host2:47502, etc).</li>
+     *     <li>Hostname and port range (e.g. host1.com:47500..47510, host2:47502..47508, etc).</li>
      * </ul>
+     * <p>
      * If port is 0 or not provided then default port will be used (depends on
      * discovery SPI configuration).
+     * <p>
+     * If port range is provided (e.g. host:port1..port2) the following should be considered:
+     * <ul>
+     *     <li>{@code port1 < port2} should be {@code true};</li>
+     *     <li>Both {@code port1} and {@code port2} should be greater than {@code 0}.</li>
+     * </ul>
      *
      * @param addrs Known nodes addresses.
      * @throws GridSpiException If any error occurs.
@@ -120,7 +126,7 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
         Collection<InetSocketAddress> newAddrs = new LinkedHashSet<>();
 
         for (String ipStr : addrs)
-            newAddrs.add(address(ipStr));
+            newAddrs.addAll(address(ipStr));
 
         this.addrs = newAddrs;
     }
@@ -129,10 +135,11 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
      * Creates address from string.
      *
      * @param ipStr Address string.
-     * @return Socket address.
+     * @return Socket addresses (may contain 1 or more addresses if provided string
+     *      includes port range).
      * @throws GridSpiException If failed.
      */
-    private static InetSocketAddress address(String ipStr) throws GridSpiException {
+    private static Collection<InetSocketAddress> address(String ipStr) throws GridSpiException {
         if (ipStr.endsWith(":"))
             ipStr = ipStr.substring(0, ipStr.length() - 1);
         else if (ipStr.indexOf(':') >= 0) {
@@ -142,20 +149,46 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
                 String addrStr = st.nextToken();
                 String portStr = st.nextToken();
 
-                try {
-                    int port = Integer.parseInt(portStr);
+                if (portStr.contains("..")) {
+                    int port1;
+                    int port2;
 
-                    return new InetSocketAddress(addrStr, port);
+                    try {
+                        port1 = Integer.parseInt(portStr.substring(0, portStr.indexOf("..")));
+                        port2 = Integer.parseInt(portStr.substring(portStr.indexOf("..") + 2, portStr.length()));
+
+                        if (port2 < port1 || port1 == port2 || port1 <= 0 || port2 <= 0)
+                            throw new GridSpiException("Failed to parse provided address: " + ipStr);
+
+                        Collection<InetSocketAddress> res = new ArrayList<>(port2 - port1);
+
+                        // Upper bound included.
+                        for (int i = port1; i <= port2; i++)
+                            res.add(new InetSocketAddress(addrStr, i));
+
+                        return res;
+                    }
+                    catch (IllegalArgumentException e) {
+                        throw new GridSpiException("Failed to parse provided address: " + ipStr, e);
+                    }
                 }
-                catch (IllegalArgumentException e) {
-                    throw new GridSpiException("Failed to parse provided address: " + ipStr, e);
+                else {
+                    try {
+                        int port = Integer.parseInt(portStr);
+
+                        return Collections.singleton(new InetSocketAddress(addrStr, port));
+                    }
+                    catch (IllegalArgumentException e) {
+                        throw new GridSpiException("Failed to parse provided address: " + ipStr, e);
+                    }
                 }
             }
             else
                 throw new GridSpiException("Failed to parse provided address: " + ipStr);
         }
+
         // Provided address does not contain port (will use default one).
-        return new InetSocketAddress(ipStr, 0);
+        return Collections.singleton(new InetSocketAddress(ipStr, 0));
     }
 
     /** {@inheritDoc} */

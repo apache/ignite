@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -20,9 +20,6 @@ import java.nio.*;
  * Note that methods of this interface are called within NIO threads and should be as fast as possible. If
  * any of methods throw an exception, corresponding session will be closed and listener will be notified with
  * exception passed in as argument.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridNioParser {
     /**
@@ -36,7 +33,7 @@ public interface GridNioParser {
      * @return Parsed user message or {@code null} if complete message has not been received yet. Note
      *         that in case of returning {@code null} given buffer must be completely read.
      * @throws IOException If exception occurred while reading data.
-     * @throws org.gridgain.grid.GridException If any user-specific error occurred.
+     * @throws GridException If any user-specific error occurred.
      */
     @Nullable public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, GridException;
 
@@ -49,8 +46,8 @@ public interface GridNioParser {
      * @param ses Session on which message is being sent.
      * @param msg Message to encode.
      * @return Buffer containing encoded message.
-     * @throws java.io.IOException If exception occurred while encoding data.
-     * @throws org.gridgain.grid.GridException If any user-specific error occurred while encoding data.
+     * @throws IOException If exception occurred while encoding data.
+     * @throws GridException If any user-specific error occurred while encoding data.
      */
     public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, GridException;
 }

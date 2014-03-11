@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@ import java.util.*;
 
 /**
  * JDBC prepared statement implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridJdbcPreparedStatement extends GridJdbcStatement implements PreparedStatement {
     /** SQL query. */

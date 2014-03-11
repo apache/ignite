@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -29,7 +29,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCachePartitionedDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
@@ -37,9 +37,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
  * Cache utility methods.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheUtils {
     /** Flag to turn off DHT cache for debugging purposes. */
@@ -521,16 +518,16 @@ public class GridCacheUtils {
      * @return {@code True} if local node is affinity node (i.e. will store partitions).
      */
     public static boolean isAffinityNode(GridCacheConfiguration cfg) {
-        if (cfg.getCacheMode() != PARTITIONED)
+        if (cfg.getCacheMode() == LOCAL)
             return true;
 
-        GridCachePartitionedDistributionMode partTax = cfg.getPartitionedDistributionMode();
+        GridCacheDistributionMode partTax = cfg.getDistributionMode();
 
         if (partTax == null)
-            partTax = synchronizationMode(cfg);
+            partTax = distributionMode(cfg);
 
-        return partTax == GridCachePartitionedDistributionMode.PARTITIONED_ONLY ||
-            partTax == GridCachePartitionedDistributionMode.NEAR_PARTITIONED;
+        return partTax == GridCacheDistributionMode.PARTITIONED_ONLY ||
+            partTax == GridCacheDistributionMode.NEAR_PARTITIONED;
     }
 
     /**
@@ -599,11 +596,11 @@ public class GridCacheUtils {
      */
     @SuppressWarnings("SimplifiableIfStatement")
     public static boolean isNearEnabled(GridCacheConfiguration cfg) {
-        if (cfg.getCacheMode() != PARTITIONED)
+        if (cfg.getCacheMode() == LOCAL)
             return false;
 
-        return cfg.getPartitionedDistributionMode() == NEAR_PARTITIONED ||
-            cfg.getPartitionedDistributionMode() == GridCachePartitionedDistributionMode.NEAR_ONLY;
+        return cfg.getDistributionMode() == NEAR_PARTITIONED ||
+            cfg.getDistributionMode() == GridCacheDistributionMode.NEAR_ONLY;
     }
 
     /**
@@ -612,9 +609,9 @@ public class GridCacheUtils {
      * @param cfg Configuration.
      * @return Partitioned cache mode.
      */
-    public static GridCachePartitionedDistributionMode synchronizationMode(GridCacheConfiguration cfg) {
-        return cfg.getPartitionedDistributionMode() != null ?
-            cfg.getPartitionedDistributionMode() : GridCachePartitionedDistributionMode.PARTITIONED_ONLY;
+    public static GridCacheDistributionMode distributionMode(GridCacheConfiguration cfg) {
+        return cfg.getDistributionMode() != null ?
+            cfg.getDistributionMode() : GridCacheDistributionMode.PARTITIONED_ONLY;
     }
 
     /**
@@ -1505,7 +1502,7 @@ public class GridCacheUtils {
             tx.commit();
         }
         finally {
-            tx.end();
+            tx.close();
         }
 
     }

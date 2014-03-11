@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -10,20 +10,21 @@
  */
 package org.gridgain.visor.commands.cclear
 
+import java.util.UUID
+import org.jetbrains.annotations.Nullable
+import scala.collection.JavaConversions._
+import scala.util.control.Breaks._
 import org.gridgain.scalar._
 import scalar._
+import org.gridgain.grid.kernal.GridEx
+import org.gridgain.grid.kernal.processors.task.GridInternal
+import org.gridgain.grid.util.typedef._
+import org.gridgain.grid.util.scala.impl
+import org.gridgain.grid.resources._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import visor._
-import org.gridgain.grid._
-import org.gridgain.grid.kernal.GridEx
-import resources._
-import java.util.UUID
-import scala.util.control.Breaks._
-import org.jetbrains.annotations.Nullable
-import org.gridgain.grid.util.typedef._
-import util.scala.impl
-import org.gridgain.grid.kernal.processors.task.GridInternal
+import org.gridgain.grid.lang.GridCallable
 
 /**
  * ==Overview==
@@ -66,9 +67,6 @@ import org.gridgain.grid.kernal.processors.task.GridInternal
  *     visor cclear "cache"
  *         Clears cache with name 'cache'.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorCacheClearCommand {
     /**
@@ -118,14 +116,14 @@ class VisorCacheClearCommand {
                 .compute()
                 .withName("visor-cclear-task")
                 .withNoFailover()
-                .call(new ClearClosure(caches))
+                .broadcast(new ClearClosure(caches))
                 .get
 
             val t = VisorTextTable()
 
             t #= ("Node ID8(@)", "Cache Size Before", "Cache Size After")
 
-            t += (nodeId8(res._1), res._2, res._3)
+            res.foreach(r => t += (nodeId8(r._1), r._2, r._3))
 
             t.render()
         }
@@ -145,16 +143,13 @@ class VisorCacheClearCommand {
 }
 
 /**
- *
- * @author @java.author
- * @version @java.version
  */
 @GridInternal
-class ClearClosure(val cacheName: String) extends CO[(UUID, Int, Int)] {
+class ClearClosure(val cacheName: String) extends GridCallable[(UUID, Int, Int)] {
     @GridInstanceResource
     private val g: GridEx = null
 
-    @impl def apply(): (UUID, Int, Int) = {
+    @impl def call(): (UUID, Int, Int) = {
         val c = g.cachex[AnyRef, AnyRef](cacheName)
 
         val oldSize = c.size
@@ -167,9 +162,6 @@ class ClearClosure(val cacheName: String) extends CO[(UUID, Int, Int)] {
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorCacheClearCommand {
     addHelp(

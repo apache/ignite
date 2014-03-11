@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,7 +11,6 @@ package org.gridgain.grid.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.jta.*;
-import org.gridgain.grid.util.*;
 
 import java.util.*;
 
@@ -58,8 +57,7 @@ import java.util.*;
  *  message is sent without waiting for reply. If it is necessary to know whenever remote nodes have committed
  *  as well, synchronous commit or synchronous rollback should be enabled via
  *  {@link GridCacheConfiguration#setWriteSynchronizationMode}
- *  or by setting proper flags on cache projection, such as {@link GridCacheFlag#SYNC_COMMIT} /
- *  {@link GridCacheFlag#SYNC_ROLLBACK}.
+ *  or by setting proper flags on cache projection, such as {@link GridCacheFlag#SYNC_COMMIT}.
  *  <p>
  *  Note that in this mode, optimistic failures are only possible in conjunction with
  *  {@link GridCacheTxIsolation#SERIALIZABLE} isolation level. In all other cases, optimistic
@@ -88,11 +86,9 @@ import java.util.*;
  * <h1 class="header">Usage</h1>
  * You can use cache transactions as follows:
  * <pre name="code" class="java">
- * GridCache&lt;String, Integer&gt; cache = G.grid().cache();
- * ...
- * GridCacheTx tx = cache.txStart();
+ * GridCache&lt;String, Integer&gt; cache = GridGain.grid().cache();
  *
- * try {
+ * try (GridCacheTx tx = cache.txStart()) {
  *     // Perform transactional operations.
  *     Integer v1 = cache.get("k1");
  *     Integer old1 = cache.put("k2", 2);
@@ -102,30 +98,9 @@ import java.util.*;
  *     // Commit the transaction.
  *     tx.commit();
  * }
- * finally {
- *     tx.end(); // Rollback, if was not committed.
- * }
  * </pre>
- * Or, the same logic as above can be executed by passing one or more closures to any of
- * the {@code 'GridCache.inTx(..)'} methods as follows:
- * <pre name="code" class="java">
- * GridCache&lt;String, Integer&gt; cache = G.grid().cache();
- * ...
- * cache.inTx(new CI1&lt;GridCacheProjection&lt;String, Integer&gt;&gt;() {
- *    &#64;Override public void apply(GridCacheProjection&lt;String, Integer&gt; cache) {
- *       // Perform transactional operations.
- *       Integer v1 = cache.get("k1");
- *       Integer old1 = cache.put("k2", 2);
- *
- *       cache.removex("k3");
- *    }
- * }
- * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
-public interface GridCacheTx extends GridMetadataAware {
+public interface GridCacheTx extends GridMetadataAware, AutoCloseable {
     /**
      * Gets unique identifier for this transaction.
      *
@@ -241,11 +216,11 @@ public interface GridCacheTx extends GridMetadataAware {
     public void commit() throws GridException;
 
     /**
-     * Rolls back transaction if it has not been committed.
+     * Ends the transaction. Transaction will be rolled back if it has not been committed.
      *
      * @throws GridException If transaction could not be gracefully ended.
      */
-    public void end() throws GridException;
+    @Override public void close() throws GridException;
 
     /**
      * Asynchronously commits this transaction by initiating {@code two-phase-commit} process.

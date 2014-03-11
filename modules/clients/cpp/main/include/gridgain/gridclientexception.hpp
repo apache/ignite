@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@
 
 /**
  * Basic class for all exceptions in client.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 #ifdef _MSC_VER
 class GRIDGAIN_API GridClientException : 

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@ import org.gridgain.grid.util.typedef.internal.*;
  * <p>
  * See {@link Gridify} documentation for more information about execution of
  * {@code gridified} methods.
- *
- * @author @java.author
- * @version @java.version
  * @see Gridify
  */
 public class GridifyArgumentAdapter implements GridifyArgument {

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -48,9 +48,6 @@ import java.util.*;
  * <b>Note</b>: Tomcat is not shipped with GridGain. If you don't have Tomcat, you need to
  * download it separately. See <a target=_blank href="http://tomcat.apache.org/">http://tomcat.apache.org/</a> for
  * more information.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTomcatStartup implements LifecycleListener {
     /** */

@@ -25,12 +25,9 @@
     Please refer to javadoc for more details.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:util="http://www.springframework.org/schema/util"
-    xsi:schemaLocation="http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
-        http://www.springframework.org/schema/util
-        http://www.springframework.org/schema/util/spring-util-2.0.xsd">
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
 
     <description>Main Spring file for router configuration.</description>
 
@@ -104,7 +101,7 @@
         <!--
         <property name="sslContextFactory">
             <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
-                <property name="keyStoreFilePath" value="examples/keystore/client.jks"/>
+                <property name="keyStoreFilePath" value="PATH_TO_KEYSTORE/client.jks"/>
                 <property name="keyStorePassword" value="123456"/>
             </bean>
         </property>
@@ -153,7 +150,7 @@
         <!--
         <property name="clientSslContextFactory">
             <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
-                <property name="keyStoreFilePath" value="examples/keystore/client.jks"/>
+                <property name="keyStoreFilePath" value="PATH_TO_KEYSTORE/client.jks"/>
                 <property name="keyStorePassword" value="123456"/>
             </bean>
         </property>

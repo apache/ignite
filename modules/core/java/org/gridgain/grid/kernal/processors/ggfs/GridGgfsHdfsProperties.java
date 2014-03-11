@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@ import static org.gridgain.grid.ggfs.GridGgfs.*;
 
 /**
  * HDFS properties.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridGgfsHdfsProperties {
     /** Username. */
@@ -36,7 +33,7 @@ class GridGgfsHdfsProperties {
      * Constructor.
      *
      * @param props Properties.
-     * @throws org.gridgain.grid.GridException In case of error.
+     * @throws GridException In case of error.
      */
     GridGgfsHdfsProperties(Map<String, String> props) throws GridException {
         usrName = props.get(PROP_USER_NAME);

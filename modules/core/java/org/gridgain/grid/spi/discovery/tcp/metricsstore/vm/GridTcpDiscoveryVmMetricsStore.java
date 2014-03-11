@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -27,9 +27,6 @@ import java.util.*;
  * <ul>
  *     <li>Metrics expire time (see {@link #setMetricsExpireTime(int)}).</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryVmMetricsStore extends GridTcpDiscoveryMetricsStoreAdapter {
     /** Metrics. */

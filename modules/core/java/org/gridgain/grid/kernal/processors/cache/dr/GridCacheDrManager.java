@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.util.*;
 
 /**
  * Replication manager class which processes all replication events.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
     /**

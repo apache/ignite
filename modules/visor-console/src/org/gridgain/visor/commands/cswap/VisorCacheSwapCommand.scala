@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -25,6 +25,7 @@ import org.jetbrains.annotations.Nullable
 import org.gridgain.grid.util.typedef._
 import util.scala.impl
 import org.gridgain.grid.kernal.processors.task.GridInternal
+import org.gridgain.grid.lang.GridCallable
 
 /**
  * ==Overview==
@@ -67,9 +68,6 @@ import org.gridgain.grid.kernal.processors.task.GridInternal
  *     cswap "cache"
  *         Swaps entries in cache with name 'cache'.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorCacheSwapCommand {
     /**
@@ -118,13 +116,13 @@ class VisorCacheSwapCommand {
             val res = prj.compute()
                 .withName("visor-cswap-task")
                 .withNoFailover()
-                .call(new SwapCommand(caches)).get
+                .broadcast(new SwapCommand(caches)).get
 
             val t = VisorTextTable()
 
             t #= ("Node ID8(@)", "Entries Swapped", "Cache Size Before", "Cache Size After")
 
-            t += (nodeId8(res._1), res._2, res._3, res._4)
+            res.foreach(r => t += (nodeId8(r._1), r._2, r._3, r._4))
 
             t.render()
         }
@@ -144,15 +142,14 @@ class VisorCacheSwapCommand {
 }
 
 /**
- * @author @java.author
- * @version @java.version
+ *
  */
 @GridInternal
-class SwapCommand(val cacheName: String) extends CO[(UUID, Int, Int, Int)] {
+class SwapCommand(val cacheName: String) extends GridCallable[(UUID, Int, Int, Int)] {
     @GridInstanceResource
     private val g: Grid = null
 
-    @impl def apply(): (UUID, Int, Int, Int) = {
+    @impl def call(): (UUID, Int, Int, Int) = {
         val c = g.asInstanceOf[GridEx].cachex[AnyRef, AnyRef](cacheName)
 
         val oldSize = c.size
@@ -165,9 +162,6 @@ class SwapCommand(val cacheName: String) extends CO[(UUID, Int, Int, Int)] {
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorCacheSwapCommand {
     addHelp(

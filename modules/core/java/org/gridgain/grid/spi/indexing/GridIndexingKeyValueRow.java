@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.util.*;
  * method. Key-value queries are different from fields query in a way that they
  * return the whole cached value, not its individual fields.
  * See also {@link GridIndexingSpi#query(String, String, Collection, GridIndexingTypeDescriptor, GridIndexingQueryFilter[])}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridIndexingKeyValueRow<K, V> {
     /**

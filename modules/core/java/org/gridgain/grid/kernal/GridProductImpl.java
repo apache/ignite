@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,13 +17,10 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * {@link GridProduct} implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridProductImpl implements GridProduct {
     /** Ant-augmented version number. */
-    static final String VER = /*@java.version*/"ent-x.x.x";
+    static final String VER = /*@java.version*/"x.x.x";
 
     /** Ant-augmented build number. */
     static final long BUILD = /*@java.build*/0;

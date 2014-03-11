@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,9 +13,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Helper wrapper containing StringBuilder and additional values. Stored as a thread-lcal variable.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridToStringThreadLocal {
     /** */

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -41,9 +41,6 @@ import java.util.concurrent.*;
  * There is no point to explicitly configure {@code GridLocalDeploymentSpi}
  * with {@link GridConfiguration} as it is used by default and has no
  * configuration parameters.
- *
- * @author @java.author
- * @version @java.version
  * @see GridDeploymentSpi
  */
 @GridSpiInfo(

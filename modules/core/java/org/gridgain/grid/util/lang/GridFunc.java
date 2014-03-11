@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -24,6 +24,7 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.math.*;
 import java.util.*;
+import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -44,9 +45,6 @@ import java.util.concurrent.atomic.*;
  * <p>
  * Also note, that in all methods with predicates, null predicate has a {@code true} meaning. So does
  * the empty predicate array.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridFunc {
     /** */
@@ -95,8 +93,8 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridOutClosure<?> DEQUE_FACTORY = new CO<ConcurrentLinkedDeque8>() {
-        @Override public ConcurrentLinkedDeque8 apply() {
+    private static final GridCallable<?> DEQUE_FACTORY = new GridCallable<ConcurrentLinkedDeque8>() {
+        @Override public ConcurrentLinkedDeque8 call() {
             return new ConcurrentLinkedDeque8();
         }
 
@@ -148,8 +146,8 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridOutClosure<?> LIST_FACTORY = new CO<List>() {
-        @Override public List apply() {
+    private static final GridCallable<?> LIST_FACTORY = new GridCallable<List>() {
+        @Override public List call() {
             return new ArrayList();
         }
 
@@ -159,8 +157,8 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridOutClosure<?> LINKED_LIST_FACTORY = new CO<LinkedList>() {
-        @Override public LinkedList apply() {
+    private static final GridCallable<?> LINKED_LIST_FACTORY = new GridCallable<LinkedList>() {
+        @Override public LinkedList call() {
             return new LinkedList();
         }
 
@@ -170,8 +168,8 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridOutClosure<?> SET_FACTORY = new CO<Set>() {
-        @Override public Set apply() {
+    private static final GridCallable<?> SET_FACTORY = new GridCallable<Set>() {
+        @Override public Set call() {
             return new HashSet();
         }
 
@@ -181,8 +179,8 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridOutClosure<AtomicInteger> ATOMIC_INT_FACTORY = new CO<AtomicInteger>() {
-        @Override public AtomicInteger apply() {
+    private static final GridCallable<AtomicInteger> ATOMIC_INT_FACTORY = new GridCallable<AtomicInteger>() {
+        @Override public AtomicInteger call() {
             return new AtomicInteger(0);
         }
 
@@ -192,8 +190,8 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridOutClosure<AtomicLong> ATOMIC_LONG_FACTORY = new CO<AtomicLong>() {
-        @Override public AtomicLong apply() {
+    private static final GridCallable<AtomicLong> ATOMIC_LONG_FACTORY = new GridCallable<AtomicLong>() {
+        @Override public AtomicLong call() {
             return new AtomicLong(0);
         }
 
@@ -203,8 +201,8 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridOutClosure<AtomicBoolean> ATOMIC_BOOL_FACTORY = new CO<AtomicBoolean>() {
-        @Override public AtomicBoolean apply() {
+    private static final GridCallable<AtomicBoolean> ATOMIC_BOOL_FACTORY = new GridCallable<AtomicBoolean>() {
+        @Override public AtomicBoolean call() {
             return new AtomicBoolean();
         }
 
@@ -214,8 +212,8 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridOutClosure<?> ATOMIC_REF_FACTORY = new CO<AtomicReference>() {
-        @Override public AtomicReference apply() {
+    private static final GridCallable<?> ATOMIC_REF_FACTORY = new GridCallable<AtomicReference>() {
+        @Override public AtomicReference call() {
             return new AtomicReference();
         }
 
@@ -225,8 +223,8 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridOutClosure<?> MAP_FACTORY = new CO<Map>() {
-        @Override public Map apply() {
+    private static final GridCallable<?> MAP_FACTORY = new GridCallable<Map>() {
+        @Override public Map call() {
             return new HashMap();
         }
 
@@ -236,8 +234,8 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridOutClosure<?> CONCURRENT_MAP_FACTORY = new CO<ConcurrentMap>() {
-        @Override public ConcurrentMap apply() {
+    private static final GridCallable<?> CONCURRENT_MAP_FACTORY = new GridCallable<ConcurrentMap>() {
+        @Override public ConcurrentMap call() {
             return new ConcurrentHashMap8();
         }
 
@@ -247,8 +245,8 @@ public class GridFunc {
     };
 
     /** */
-    private static final GridOutClosure<?> CONCURRENT_SET_FACTORY = new CO<GridConcurrentHashSet>() {
-        @Override public GridConcurrentHashSet apply() {
+    private static final GridCallable<?> CONCURRENT_SET_FACTORY = new GridCallable<GridConcurrentHashSet>() {
+        @Override public GridConcurrentHashSet call() {
             return new GridConcurrentHashSet();
         }
 
@@ -599,11 +597,6 @@ public class GridFunc {
         A.notNull(mtdName, "mtdName");
 
         return new C1<T, R>() {
-            {
-                if (!isEmpty(args))
-                    peerDeployLike(U.peerDeployAware0(args));
-            }
-
             private Method mtd;
 
             @SuppressWarnings("unchecked")
@@ -641,11 +634,6 @@ public class GridFunc {
         A.notNull(mtdName, "mtdName");
 
         return new CI1<T>() {
-            {
-                if (args != null)
-                    peerDeployLike(U.peerDeployAware0(args));
-            }
-
             private Method mtd;
 
             @Override public void apply(T t) {
@@ -683,11 +671,6 @@ public class GridFunc {
         A.notNull(o, "o", mtdName, "mtdName");
 
         return new CO<R>() {
-            {
-                if (args != null)
-                    peerDeployLike(U.peerDeployAware0(args));
-            }
-
             private Method mtd;
 
             @SuppressWarnings("unchecked")
@@ -724,15 +707,7 @@ public class GridFunc {
         A.notNull(o, "o", mtdName, "mtdName");
 
         return new CA() {
-            {
-                if (o != null && args != null)
-                    peerDeployLike(U.peerDeployAware0(flat0(o, args)));
-                else if (o != null && args == null)
-                    peerDeployLike(o);
-                else if (o == null && args != null)
-                    peerDeployLike(U.peerDeployAware0(args));
-            }
-
+            /** */
             private Method mtd;
 
             @SuppressWarnings("unchecked")
@@ -772,15 +747,7 @@ public class GridFunc {
         A.notNull(cls, "cls", mtdName, "mtdName");
 
         return new CO<R>() {
-            {
-                if (cls != null && args != null)
-                    peerDeployLike(U.peerDeployAware0(flat0(cls, args)));
-                else if (cls != null && args == null)
-                    peerDeployLike(cls);
-                else if (cls == null && args != null)
-                    peerDeployLike(U.peerDeployAware0(args));
-            }
-
+            /** */
             private Method mtd;
 
             @SuppressWarnings("unchecked")
@@ -817,15 +784,7 @@ public class GridFunc {
         A.notNull(cls, "cls", mtdName, "mtdName");
 
         return new CA() {
-            {
-                if (cls != null && args != null)
-                    peerDeployLike(U.peerDeployAware0(flat0(cls, args)));
-                else if (cls != null && args == null)
-                    peerDeployLike(cls);
-                else if (cls == null && args != null)
-                    peerDeployLike(U.peerDeployAware0(args));
-            }
-
+            /** */
             private Method mtd;
 
             @SuppressWarnings("unchecked")
@@ -1563,9 +1522,9 @@ public class GridFunc {
      * Note that this method doesn't create a new collection but simply iterates over the input one.
      *
      * @param res Collection of grid job res.
-     * @param <T> Type of the data item to cast to. See {@link org.gridgain.grid.compute.GridComputeJobResult#getData()} method.
+     * @param <T> Type of the data item to cast to. See {@link GridComputeJobResult#getData()} method.
      * @return Collections of data items casted to type {@code T}.
-     * @see org.gridgain.grid.compute.GridComputeJobResult#getData()
+     * @see GridComputeJobResult#getData()
      */
     public static <T> Collection<T> jobResults(@Nullable Collection<? extends GridComputeJobResult> res) {
         if (isEmpty(res))
@@ -2508,11 +2467,6 @@ public class GridFunc {
         assert nodeIds != null;
 
         return new P1<T>() {
-            {
-                if (nodeIds != null)
-                    peerDeployLike(nodeIds);
-            }
-
             @Override public boolean apply(GridNode e) {
                 return nodeIds.contains(e.id());
             }
@@ -2583,11 +2537,6 @@ public class GridFunc {
         assert nodeIds != null;
 
         return new P1<UUID>() {
-            {
-                if (nodeIds != null)
-                    peerDeployLike(nodeIds);
-            }
-
             @Override public boolean apply(UUID id) {
                 return nodeIds.contains(id);
             }
@@ -2634,7 +2583,7 @@ public class GridFunc {
      * @return Predicates that evaluates to {@code true} for each node in given collection.
      */
     public static GridPredicate<GridNode> nodeForNodes(@Nullable Collection<? extends GridNode> nodes) {
-        return new GridNodePredicate<>(nodeIds(nodes));
+        return new GridNodePredicate(nodeIds(nodes));
     }
 
     /**
@@ -2647,7 +2596,7 @@ public class GridFunc {
      * @return Predicates that evaluates to {@code true} for each node in given collection.
      */
     public static GridPredicate<GridNode> nodeForNodes(GridNode... nodes) {
-        return new GridNodePredicate<>(nodes);
+        return new GridNodePredicate(nodes);
     }
 
     /**
@@ -2782,119 +2731,6 @@ public class GridFunc {
     }
 
     /**
-     * Converts collection of out closures to the read only collection of grid jobs.
-     *
-     * @param c Closure collection to convert.
-     * @return Read only collection of grid job where each job wraps corresponding closure
-     *      from input collection.
-     */
-    public static <T extends Callable<?>> Collection<GridComputeJob> outJobs(@Nullable Collection<? extends T> c) {
-        return isEmpty(c) ? Collections.<GridComputeJob>emptyList() : viewReadOnly(c, new C1<T, GridComputeJob>() {
-            @Override public GridComputeJob apply(T e) {
-                return job(e);
-            }
-        });
-    }
-
-    /**
-     * Converts collection of absolute closures to the read only collection of grid jobs.
-     *
-     * @param c Closure collection to convert.
-     * @return Read only collection of grid job where each job wraps corresponding closure
-     *      from input collection.
-     */
-    public static <T extends Runnable> Collection<GridComputeJob> absJobs(@Nullable Collection<? extends T> c) {
-        return isEmpty(c) ? Collections.<GridComputeJob>emptyList() : viewReadOnly(c, new C1<T, GridComputeJob>() {
-            @Override public GridComputeJob apply(T e) {
-                return job(e);
-            }
-        });
-    }
-
-    /**
-     * Converts array of out closures to the collection of grid jobs.
-     *
-     * @param c Closure array to convert.
-     * @return Collection of grid job where each job wraps corresponding closure from input array.
-     */
-    public static Collection<GridComputeJob> outJobs(@Nullable Callable<?>... c) {
-        return isEmpty(c) ? Collections.<GridComputeJob>emptyList() : transform(c, new C1<Callable<?>, GridComputeJob>() {
-            @Override public GridComputeJob apply(Callable<?> e) {
-                return job(e);
-            }
-        });
-    }
-
-    /**
-     * Converts array of out closures to the collection of grid jobs.
-     *
-     * @param c Closure array to convert.
-     * @return Collection of grid job where each job wraps corresponding closure from input array.
-     */
-    public static Collection<GridComputeJob> absJobs(@Nullable Runnable... c) {
-        return isEmpty(c) ? Collections.<GridComputeJob>emptyList() : transform(c, new C1<Runnable, GridComputeJob>() {
-            @Override public GridComputeJob apply(Runnable e) {
-                return job(e);
-            }
-        });
-    }
-
-    /**
-     * Converts given closure to a grid job.
-     *
-     * @param c Closure to convert to grid job.
-     * @return Grid job made out of closure.
-     */
-    public static GridComputeJob job(final Callable<?> c) {
-        A.notNull(c, "job");
-
-        if (c instanceof GridComputeJob) {
-            return (GridComputeJob) c;
-        }
-
-        return new GridComputeJobAdapter() {
-            {
-                setPeerDeployAware(U.peerDeployAware(c));
-            }
-
-            @Override public Object execute() {
-                try {
-                    return c.call();
-                }
-                catch (Exception e) {
-                    throw new GridRuntimeException(e);
-                }
-            }
-        };
-    }
-
-    /**
-     * Converts given closure to a grid job.
-     *
-     * @param r Closure to convert to grid job.
-     * @return Grid job made out of closure.
-     */
-    public static GridComputeJob job(final Runnable r) {
-        A.notNull(r, "job");
-
-        if (r instanceof GridComputeJob)
-            return (GridComputeJob)r;
-
-        return new GridComputeJobAdapter() {
-            {
-                peerDeployLike(U.peerDeployAware(r));
-            }
-
-            @Nullable
-            @Override public Object execute() {
-                r.run();
-
-                return null;
-            }
-        };
-    }
-
-    /**
      * Converts given future into the closure. When result closure's {@code apply}
      * method is called it will call {@link Future#get()} method.
      *
@@ -2906,10 +2742,6 @@ public class GridFunc {
         A.notNull(fut, "fut");
 
         return new CO<T>() {
-            {
-                peerDeployLike(U.peerDeployAware(fut));
-            }
-
             @Override public T apply() {
                 //noinspection CatchGenericClass
                 try {
@@ -2932,32 +2764,8 @@ public class GridFunc {
      */
     public static <E1, E2> GridPredicate<GridBiTuple<E1, E2>> as0(final GridBiPredicate<? super E1, ? super E2> p) {
         return new P1<GridBiTuple<E1, E2>>() {
-            {
-                peerDeployLike(p);
-            }
-
             @Override public boolean apply(GridBiTuple<E1, E2> e) {
                 return p.apply(e.get1(), e.get2());
-            }
-        };
-    }
-
-    /**
-     * Converts predicate with tuple of two values to a predicate with separate two values.
-     *
-     * @param p Predicate to convert.
-     * @param <E1> Type of the 1st value.
-     * @param <E2> Type of the 2nd value.
-     * @return Converted predicate.
-     */
-    private static <E1, E2> GridBiPredicate<E1, E2> asP2(final GridPredicate<GridBiTuple<? super E1, ? super E2>> p) {
-        return new P2<E1, E2>() {
-            {
-                peerDeployLike(p);
-            }
-
-            @Override public boolean apply(E1 e1, E2 e2) {
-                return p.apply(F.t(e1, e2));
             }
         };
     }
@@ -3056,10 +2864,6 @@ public class GridFunc {
      */
     public static <T, R> GridOutClosure<R> curry(final GridClosure<? super T, R> f, final T e) {
         return new GridOutClosure<R>() {
-            {
-                peerDeployLike(f);
-            }
-
             @Override public R apply() {
                 return f.apply(e);
             }
@@ -3078,10 +2882,6 @@ public class GridFunc {
      */
     public static <T1, T2, R> GridClosure<T2, R> curry(final GridBiClosure<? super T1, ? super T2, R> f, final T1 e) {
         return new GridClosure<T2, R>() {
-            {
-                peerDeployLike(f);
-            }
-
             @Override public R apply(T2 t) {
                 return f.apply(e, t);
             }
@@ -3098,10 +2898,6 @@ public class GridFunc {
      */
     public static <T> GridAbsPredicate curry(final GridPredicate<? super T> f, final T e) {
         return new GridAbsPredicate() {
-            {
-                peerDeployLike(f);
-            }
-
             @Override public boolean apply() {
                 return f.apply(e);
             }
@@ -3118,10 +2914,6 @@ public class GridFunc {
      */
     public static <T> GridAbsClosure curry(final GridInClosure<? super T> f, final T e) {
         return new GridAbsClosure() {
-            {
-                peerDeployLike(f);
-            }
-
             @Override public void apply() {
                 f.apply(e);
             }
@@ -3456,10 +3248,6 @@ public class GridFunc {
      */
     public static GridAbsClosure as(@Nullable final Runnable r) {
         return new CA() {
-            {
-                peerDeployLike(U.peerDeployAware(r));
-            }
-
             @Override public void apply() {
                 if (r != null)
                     r.run();
@@ -3500,10 +3288,6 @@ public class GridFunc {
         A.notNull(c, "c");
 
         return new CO<R>() {
-            {
-                peerDeployLike(U.peerDeployAware(c));
-            }
-
             @Override public R apply() {
                 try {
                     return c.call();
@@ -4289,8 +4073,8 @@ public class GridFunc {
      *      time its {@link GridOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridOutClosure<ConcurrentLinkedDeque8<T>> newDeque() {
-        return (GridOutClosure<ConcurrentLinkedDeque8<T>>)DEQUE_FACTORY;
+    public static <T> GridCallable<ConcurrentLinkedDeque8<T>> newDeque() {
+        return (GridCallable<ConcurrentLinkedDeque8<T>>)DEQUE_FACTORY;
     }
 
     /**
@@ -4302,8 +4086,8 @@ public class GridFunc {
      *      time its {@link GridOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridOutClosure<List<T>> newList() {
-        return (GridOutClosure<List<T>>)LIST_FACTORY;
+    public static <T> GridCallable<List<T>> newList() {
+        return (GridCallable<List<T>>)LIST_FACTORY;
     }
 
     /**
@@ -4314,7 +4098,7 @@ public class GridFunc {
      * @return Factory closure that creates new {@link AtomicInteger} instance
      *      initialized to {@code zero} every time its {@link GridOutClosure#apply()} method is called.
      */
-    public static GridOutClosure<AtomicInteger> newAtomicInt() {
+    public static GridCallable<AtomicInteger> newAtomicInt() {
         return ATOMIC_INT_FACTORY;
     }
 
@@ -4326,7 +4110,7 @@ public class GridFunc {
      * @return Factory closure that creates new {@link AtomicLong} instance
      *      initialized to {@code zero} every time its {@link GridOutClosure#apply()} method is called.
      */
-    public static GridOutClosure<AtomicLong> newAtomicLong() {
+    public static GridCallable<AtomicLong> newAtomicLong() {
         return ATOMIC_LONG_FACTORY;
     }
 
@@ -4340,8 +4124,8 @@ public class GridFunc {
      *      initialized to {@code null} every time its {@link GridOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridOutClosure<AtomicReference<T>> newAtomicRef() {
-        return (GridOutClosure<AtomicReference<T>>)ATOMIC_REF_FACTORY;
+    public static <T> GridCallable<AtomicReference<T>> newAtomicRef() {
+        return (GridCallable<AtomicReference<T>>)ATOMIC_REF_FACTORY;
     }
 
     /**
@@ -4352,7 +4136,7 @@ public class GridFunc {
      * @return Factory closure that creates new {@link AtomicBoolean} instance
      *      initialized to {@code false} every time its {@link GridOutClosure#apply()} method is called.
      */
-    public static GridOutClosure<AtomicBoolean> newAtomicBoolean() {
+    public static GridCallable<AtomicBoolean> newAtomicBoolean() {
         return ATOMIC_BOOL_FACTORY;
     }
 
@@ -4365,8 +4149,8 @@ public class GridFunc {
      *         GridOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridOutClosure<LinkedList<T>> newLinkedList() {
-        return (GridOutClosure<LinkedList<T>>)LINKED_LIST_FACTORY;
+    public static <T> GridCallable<LinkedList<T>> newLinkedList() {
+        return (GridCallable<LinkedList<T>>)LINKED_LIST_FACTORY;
     }
 
     /**
@@ -4378,8 +4162,8 @@ public class GridFunc {
      *      its {@link GridOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridOutClosure<Set<T>> newSet() {
-        return (GridOutClosure<Set<T>>)SET_FACTORY;
+    public static <T> GridCallable<Set<T>> newSet() {
+        return (GridCallable<Set<T>>)SET_FACTORY;
     }
 
     /**
@@ -4392,8 +4176,8 @@ public class GridFunc {
      *      time its {@link GridOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
-    public static <K, V> GridOutClosure<Map<K, V>> newMap() {
-        return (GridOutClosure<Map<K, V>>)MAP_FACTORY;
+    public static <K, V> GridCallable<Map<K, V>> newMap() {
+        return (GridCallable<Map<K, V>>)MAP_FACTORY;
     }
 
     /**
@@ -4406,8 +4190,8 @@ public class GridFunc {
      *      time its {@link GridOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
-    public static <K, V> GridOutClosure<ConcurrentMap<K, V>> newCMap() {
-        return (GridOutClosure<ConcurrentMap<K, V>>)CONCURRENT_MAP_FACTORY;
+    public static <K, V> GridCallable<ConcurrentMap<K, V>> newCMap() {
+        return (GridCallable<ConcurrentMap<K, V>>)CONCURRENT_MAP_FACTORY;
     }
 
     /**
@@ -4418,8 +4202,8 @@ public class GridFunc {
      *      time its {@link GridOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
-    public static <E> GridOutClosure<Set<E>> newCSet() {
-        return (GridOutClosure<Set<E>>)CONCURRENT_SET_FACTORY;
+    public static <E> GridCallable<Set<E>> newCSet() {
+        return (GridCallable<Set<E>>)CONCURRENT_SET_FACTORY;
     }
 
     /**
@@ -4436,124 +4220,6 @@ public class GridFunc {
      */
     public static <T> GridIterable<T> iterable(Iterable<? extends T> c, GridPredicate<? super T>... p) {
         return new GridIterableAdapter<>(F.iterator0(c, false, p));
-    }
-
-    /**
-     * Gets closure that wraps access to the given collection. Every time resulting
-     * closure is called it will return the next element in the input collection.
-     *
-     * @param c Input collection.
-     * @param cyclic Determines whether input collection will rewind when end is reached
-     *      and start again from the beginning - or {@link NoSuchElementException} exception
-     *      is thrown.
-     * @param <T> Type of the collection.
-     * @return Out closure that wraps access to input collection.
-     * @see #jobProducer(org.gridgain.grid.compute.GridComputeJob[], boolean)
-     */
-    public static <T> GridOutClosure<T> producer(final Iterable<? extends T> c, final boolean cyclic) {
-        A.notNull(c, "c");
-
-        return new CO<T>() {
-            private Iterator<? extends T> iter = c.iterator();
-
-            {
-                peerDeployLike(U.peerDeployAware0(c));
-            }
-
-            @Override public T apply() {
-                if (!iter.hasNext()) {
-                    if (cyclic) {
-                        iter = c.iterator();
-                    }
-                    else {
-                        throw new NoSuchElementException();
-                    }
-                }
-
-                return iter.next();
-            }
-        };
-    }
-
-    /**
-     * Gets closure that wraps access to the given collection. Every time resulting
-     * closure is called it will return the next element in the input collection.
-     *
-     * @param c Input collection.
-     * @param cyclic Determines whether input collection will rewind when end is reached
-     *      and start again from the beginning - or {@link NoSuchElementException} exception
-     *      is thrown.
-     * @param <T> Type of the collection.
-     * @return Out closure that wraps access to input collection.
-     * @see #jobProducer(org.gridgain.grid.compute.GridComputeJob[], boolean)
-     */
-    public static <T> GridOutClosure<T> producer(T[] c, boolean cyclic) {
-        A.notNull(c, "c");
-
-        return producer(asList(c), cyclic);
-    }
-
-    /**
-     * Gets closure that wraps access to the given collection of {@link org.gridgain.grid.compute.GridComputeJob} instances.
-     * Every time resulting closure is called it will return the next job in the input collection.
-     * Note that this method will wrap job from input collection using {@link org.gridgain.grid.compute.GridComputeJobWrapper}
-     * class before returning it. It is convenient when the resulting closure is used to produce
-     * jobs that server as map's keys.
-     *
-     * @param c Input jobs array.
-     * @param cyclic Determines whether input collection will rewind when end is reached and start
-     *      again from the beginning - or {@link NoSuchElementException} exception is thrown.
-     * @return Out closure that wraps access to input collection.
-     * @see #producer(Object[], boolean)
-     * @see #producer(Iterable, boolean)
-     */
-    public static GridOutClosure<GridComputeJob> jobProducer(GridComputeJob[] c, boolean cyclic) {
-        A.notNull(c, "c");
-
-        return jobProducer(asList(c), cyclic);
-    }
-
-    /**
-     * Gets closure that wraps access to the given collection of {@link org.gridgain.grid.compute.GridComputeJob} instances.
-     * Every time resulting closure is called it will return the next job in the input collection.
-     * Note that this method will wrap job from input collection using {@link org.gridgain.grid.compute.GridComputeJobWrapper}
-     * class before returning it. It is convenient when the resulting closure is used to produce
-     * jobs that server as map's keys.
-     *
-     * @param jobs Input jobs collection.
-     * @param cyclic Determines whether input collection will rewind when end is reached and
-     *      start again from the beginning - or {@link NoSuchElementException} exception is thrown.
-     * @return Out closure that wraps access to input collection.
-     * @see #producer(Object[], boolean)
-     * @see #producer(Iterable, boolean)
-     */
-    public static GridOutClosure<GridComputeJob> jobProducer(final Iterable<? extends GridComputeJob> jobs, final boolean cyclic) {
-        A.notNull(jobs, "jobs");
-
-        return new CO<GridComputeJob>() {
-            private Iterator<? extends GridComputeJob> iter = jobs.iterator();
-
-            {
-                Iterator<? extends GridComputeJob> t = jobs.iterator();
-
-                if (t.hasNext()) {
-                    peerDeployLike(t.next());
-                }
-            }
-
-            @Override public GridComputeJob apply() {
-                if (!iter.hasNext()) {
-                    if (cyclic) {
-                        iter = jobs.iterator();
-                    }
-                    else {
-                        throw new NoSuchElementException();
-                    }
-                }
-
-                return new GridComputeJobWrapper(iter.next(), true);
-            }
-        };
     }
 
     /**
@@ -4812,12 +4478,6 @@ public class GridFunc {
      */
     public static <T> GridPredicate<T> not(@Nullable final GridPredicate<? super T>... p) {
         return isAlwaysFalse(p) ? F.<T>alwaysTrue() : isAlwaysTrue(p) ? F.<T>alwaysFalse() : new P1<T>() {
-            {
-                if (!isEmpty(p)) {
-                    peerDeployLike(U.peerDeployAware0((Object[])p));
-                }
-            }
-
             @Override public boolean apply(T t) {
                 return !isAll(t, p);
             }
@@ -4835,12 +4495,6 @@ public class GridFunc {
      */
     public static <T> GridPredicate<T> equalTo(@Nullable final T target) {
         return new P1<T>() {
-            {
-                if (target != null) {
-                    peerDeployLike(target);
-                }
-            }
-
             @Override public boolean apply(T t) {
                 return eq(t, target);
             }
@@ -4858,12 +4512,6 @@ public class GridFunc {
      */
     public static <T> GridPredicate<T> notEqualTo(@Nullable final T target) {
         return new P1<T>() {
-            {
-                if (target != null) {
-                    peerDeployLike(target);
-                }
-            }
-
             @Override public boolean apply(T t) {
                 return !eq(t, target);
             }
@@ -4882,12 +4530,6 @@ public class GridFunc {
         A.notNull(cls, "cls");
 
         return new P1<T>() {
-            {
-                if (cls != null) {
-                    peerDeployLike(cls);
-                }
-            }
-
             @Override public boolean apply(T t) {
                 return t != null && cls.isAssignableFrom(t.getClass());
             }
@@ -4907,12 +4549,6 @@ public class GridFunc {
         A.notNull(cls, "cls");
 
         return new P1<T>() {
-            {
-                if (cls != null) {
-                    peerDeployLike(cls);
-                }
-            }
-
             @Override public boolean apply(T t) {
                 return t == null || !cls.isAssignableFrom(t.getClass());
             }
@@ -5046,10 +4682,6 @@ public class GridFunc {
         }
         else {
             return new P1<T>() {
-                {
-                    peerDeployLike(U.peerDeployAware0(ps));
-                }
-
                 @Override public boolean apply(T t) {
                     for (GridPredicate<? super T> p : ps) {
                         if (!p.apply(t)) {
@@ -5134,20 +4766,6 @@ public class GridFunc {
         }
         else {
             return new P1<T>() {
-                {
-                    if (!e1 && e2) {
-                        peerDeployLike(U.peerDeployAware0((Object[])p1));
-                    }
-                    else if (e1 && !e2) {
-                        peerDeployLike(U.peerDeployAware0((Object[])p2));
-                    }
-                    else {
-                        assert !e1 && !e2;
-
-                        peerDeployLike(U.peerDeployAware0(flat0(p1,p2)));
-                    }
-                }
-
                 @Override public boolean apply(T t) {
                     if (!e1) {
                         assert p1 != null;
@@ -5218,10 +4836,6 @@ public class GridFunc {
         }
         else {
             return new P1<T>() {
-                {
-                    peerDeployLike(U.peerDeployAware0((Object[])ps));
-                }
-
                 @Override public boolean apply(T t) {
                     assert ps != null;
 
@@ -5268,10 +4882,6 @@ public class GridFunc {
             }
             else {
                 return new P1<T>() {
-                    {
-                        peerDeployLike(U.peerDeployAware0(ps));
-                    }
-
                     @Override public boolean apply(T t) {
                         for (GridPredicate<? super T> p : ps) {
                             if (p != null && p.apply(t))
@@ -5360,20 +4970,6 @@ public class GridFunc {
         }
         else {
             return new P1<T>() {
-                {
-                    if (!e1 && e2) {
-                        peerDeployLike(U.peerDeployAware0((Object[])p1));
-                    }
-                    else if (e1 && !e2) {
-                        peerDeployLike(U.peerDeployAware0((Object[])p2));
-                    }
-                    else {
-                        assert !e1 && !e2;
-
-                        peerDeployLike(U.peerDeployAware0(flat0(p1, p2)));
-                    }
-                }
-
                 @Override public boolean apply(T t) {
                     if (!e1) {
                         assert p1 != null;
@@ -5435,10 +5031,6 @@ public class GridFunc {
                 }
                 else {
                     return new P1<T>() {
-                        {
-                            peerDeployLike(U.peerDeployAware0((Object[])ps));
-                        }
-
                         @Override public boolean apply(T t) {
                             assert ps != null;
 
@@ -5472,10 +5064,6 @@ public class GridFunc {
         A.notNull(p, "p", f, "f");
 
         return isAlwaysFalse(p) ? F.<X>alwaysFalse() : isAlwaysTrue(p) ? F.<X>alwaysTrue() : new P1<X>() {
-            {
-                peerDeployLike(U.peerDeployAware0(p, f));
-            }
-
             @Override public boolean apply(X x) {
                 return p.apply(f.apply(x));
             }
@@ -5492,12 +5080,7 @@ public class GridFunc {
      */
     public static <T1, R> GridClosure<T1, R> constant1(@Nullable final R val) {
         return new C1<T1, R>() {
-            {
-                peerDeployLike(U.peerDeployAware(val));
-            }
-
-            @Nullable
-            @Override public R apply(T1 t1) {
+            @Nullable @Override public R apply(T1 t1) {
                 return val;
             }
         };
@@ -5514,12 +5097,7 @@ public class GridFunc {
      */
     public static <T1, T2, R> GridBiClosure<T1, T2, R> constant2(@Nullable final R val) {
         return new C2<T1, T2, R>() {
-            {
-                peerDeployLike(U.peerDeployAware(val));
-            }
-
-            @Nullable
-            @Override public R apply(T1 t1, T2 t2) {
+            @Nullable @Override public R apply(T1 t1, T2 t2) {
                 return val;
             }
         };
@@ -5537,12 +5115,7 @@ public class GridFunc {
      */
     public static <T1, T2, T3, R> GridClosure3<T1, T2, T3, R> constant3(@Nullable final R val) {
         return new C3<T1, T2, T3, R>() {
-            {
-                peerDeployLike(U.peerDeployAware(val));
-            }
-
-            @Nullable
-            @Override public R apply(T1 t1, T2 t2, T3 t3) {
+            @Nullable @Override public R apply(T1 t1, T2 t2, T3 t3) {
                 return val;
             }
         };
@@ -5557,12 +5130,7 @@ public class GridFunc {
      */
     public static <R> GridOutClosure<R> constant(@Nullable final R val) {
         return new CO<R>() {
-            {
-                peerDeployLike(U.peerDeployAware(val));
-            }
-
-            @Nullable
-            @Override public R apply() {
+            @Nullable @Override public R apply() {
                 return val;
             }
         };
@@ -5579,10 +5147,6 @@ public class GridFunc {
         A.notNull(cls, "cls");
 
         return new CO<T>() {
-            {
-                peerDeployLike(U.peerDeployAware(cls));
-            }
-
             @Override public T apply() {
                 try {
                     return cls.newInstance();
@@ -5624,10 +5188,6 @@ public class GridFunc {
         A.notNull(c, "c");
 
         return new GridAbsPredicate() {
-            {
-                peerDeployLike(U.peerDeployAware(c));
-            }
-
             @Override public boolean apply() {
                 try {
                     return c.call();
@@ -5649,10 +5209,6 @@ public class GridFunc {
         A.notNull(c, "c");
 
         return new P1<T>() {
-            {
-                peerDeployLike(U.peerDeployAware(c));
-            }
-
             @Override public boolean apply(T t) {
                 return c.apply(t);
             }
@@ -5669,10 +5225,6 @@ public class GridFunc {
         A.notNull(c, "c");
 
         return new P2<T1, T2>() {
-            {
-                peerDeployLike(U.peerDeployAware(c));
-            }
-
             @Override public boolean apply(T1 t1, T2 t2) {
                 return c.apply(t1, t2);
             }
@@ -5690,10 +5242,6 @@ public class GridFunc {
         A.notNull(c, "c");
 
         return new P3<T1, T2, T3>() {
-            {
-                peerDeployLike(U.peerDeployAware(c));
-            }
-
             @Override public boolean apply(T1 t1, T2 t2, T3 t3) {
                 return c.apply(t1, t2, t3);
             }
@@ -5710,10 +5258,6 @@ public class GridFunc {
         A.notNull(p, "p");
 
         return new CO<Boolean>() {
-            {
-                peerDeployLike(U.peerDeployAware(p));
-            }
-
             @Override public Boolean apply() {
                 return p.apply();
             }
@@ -5731,10 +5275,6 @@ public class GridFunc {
         A.notNull(p, "p");
 
         return new C1<X, Boolean>() {
-            {
-                peerDeployLike(U.peerDeployAware(p));
-            }
-
             @Override public Boolean apply(X x) {
                 return p.apply(x);
             }
@@ -5753,10 +5293,6 @@ public class GridFunc {
         A.notNull(p, "p");
 
         return new C2<X1, X2, Boolean>() {
-            {
-                peerDeployLike(U.peerDeployAware(p));
-            }
-
             @Override public Boolean apply(X1 x1, X2 x2) {
                 return p.apply(x1, x2);
             }
@@ -5777,10 +5313,6 @@ public class GridFunc {
         A.notNull(p, "p");
 
         return new C3<X1, X2, X3, Boolean>() {
-            {
-                peerDeployLike(U.peerDeployAware(p));
-            }
-
             @Override public Boolean apply(X1 x1, X2 x2, X3 x3) {
                 return p.apply(x1, x2, x3);
             }
@@ -5805,10 +5337,6 @@ public class GridFunc {
         A.notNull(f, "f", g, "g");
 
         return new C1<D, C>() {
-            {
-                peerDeployLike(U.peerDeployAware0(f, g));
-            }
-
             @Override public C apply(D a) {
                 return g.apply(f.apply(a));
             }
@@ -5828,10 +5356,6 @@ public class GridFunc {
         A.notNull(m, "m");
 
         return new C1<K, V>() {
-            {
-                peerDeployLike(U.peerDeployAware(m));
-            }
-
             @Override public V apply(K k) {
                 return m.get(k);
             }
@@ -5856,10 +5380,6 @@ public class GridFunc {
         A.notNull(m, "m");
 
         return new C1<K, V>() {
-            {
-                peerDeployLike(U.peerDeployAware0(m, c));
-            }
-
             @Nullable
             @Override public V apply(K k) {
                 return returnIfAbsent(m, k, c);
@@ -5893,10 +5413,6 @@ public class GridFunc {
      */
     public static <T> GridPredicate<T> in(@Nullable final Collection<? extends T> c) {
         return isEmpty(c) ? GridFunc.<T>alwaysFalse() : new P1<T>() {
-            {
-                peerDeployLike(U.peerDeployAware0(c));
-            }
-
             @Override public boolean apply(T t) {
                 assert c != null;
 
@@ -5917,10 +5433,6 @@ public class GridFunc {
      */
     public static <T> GridPredicate<T> notIn(@Nullable final Collection<? extends T> c) {
         return isEmpty(c) ? GridFunc.<T>alwaysTrue() : new P1<T>() {
-            {
-                peerDeployLike(U.peerDeployAware0(c));
-            }
-
             @Override public boolean apply(T t) {
                 assert c != null;
 
@@ -6200,15 +5712,6 @@ public class GridFunc {
     public static <T extends GridMetadataAware> GridPredicate<T> metaEntry(
         @Nullable final Collection<? extends Map.Entry<String, ?>> meta) {
         return isEmpty(meta) ? GridFunc.<T>alwaysFalse() : new P1<T>() {
-            {
-                peerDeployLike(U.peerDeployAware0(transform(meta, new C1<Map.Entry<String, ?>, Object>() {
-                    @Nullable
-                    @Override public Object apply(Map.Entry<String, ?> e) {
-                        return e == null ? null : e.getValue();
-                    }
-                })));
-            }
-
             @Override public boolean apply(T e) {
                 assert meta != null;
 
@@ -6234,7 +5737,7 @@ public class GridFunc {
      * @see #meta(String...)
      * @see #meta(Iterable)
      * @see #meta(String, Object)
-     * @see #metaEntry(java.util.Map.Entry[])
+     * @see #metaEntry(Entry[])
      * @see #metaEntry(Collection)
      */
     public static <T extends GridMetadataAware> GridPredicate<T> meta(@Nullable Map<String, ?> meta) {
@@ -6257,7 +5760,7 @@ public class GridFunc {
      * @param <T> Type of returned predicate.
      * @return Predicate that accepts subclass of {@link GridMetadataAware} interface
      *      and evaluates to {@code true} if it contains given metadata.
-     * @see #metaEntry(java.util.Map.Entry[])
+     * @see #metaEntry(Entry[])
      * @see #meta(String...)
      * @see #meta(Iterable)
      */
@@ -7448,21 +6951,6 @@ public class GridFunc {
     }
 
     /**
-     * Special version of {@link #t(Object, Object)} method that is tailored for
-     * {@code with(...)} method in JEXL-based predicates to set up the external context for JEXL evaluation.
-     *
-     * @param var Name of variable in JEXL context.
-     * @param val Variable value in JEXL context.
-     * @return Newly created tuple.
-     * @see GridJexlPredicate
-     * @see GridBiJexlPredicate
-     * @see GridJexlPredicate3
-     */
-    public static GridBiTuple<String, Object> jexl(String var, @Nullable Object val) {
-        return new GridBiTuple<>(var, val);
-    }
-
-    /**
      * Factory method returning new empty tuple.
      *
      * @param <V1> Type of the 1st tuple parameter.
@@ -7612,90 +7100,6 @@ public class GridFunc {
      */
     public static <V1, V2, V3, V4, V5, V6> GridTuple6<V1, V2, V3, V4, V5, V6> t6() {
         return new GridTuple6<>();
-    }
-
-    /**
-     * Utility shortcut for creating JEXL predicate.
-     *
-     * @param expr JEXL boolean expression. Note that non-boolean return value will
-     *      evaluate this predicate to {@code false}.
-     * @param <T> Type of the free variable, i.e. the element the closure is called on.
-     * @return Newly created JEXL predicate.
-     */
-    public static <T> GridJexlPredicate<T> x1(String expr) {
-        return new GridJexlPredicate<>(expr);
-    }
-
-    /**
-     * Utility shortcut for creating JEXL predicate.
-     *
-     * @param expr JEXL boolean expression. Note that non-boolean return value will evaluate
-     *      this predicate to {@code false}.
-     * @param var1 Name of the 1st bound variable in JEXL expression.
-     * @param var2 Name of the 2nd bound variable in JEXL expression.
-     * @param <T1> Type of the 1st free variable, i.e. the element the closure is called on.
-     * @param <T2> Type of the 2nd free variable, i.e. the element the closure is called on.
-     * @return Newly created JEXL predicate.
-     */
-    public static <T1, T2> GridBiJexlPredicate<T1, T2> x2(String expr, String var1, String var2) {
-        return new GridBiJexlPredicate<>(expr, var1, var2);
-    }
-
-    /**
-     * Utility shortcut for creating JEXL predicate.
-     *
-     * @param expr JEXL boolean expression. Note that non-boolean return value will evaluate
-     *      this predicate to {@code false}.
-     * @param var1 Name of the 1st bound variable in JEXL expression.
-     * @param var2 Name of the 2nd bound variable in JEXL expression.
-     * @param var3 Name of the 3rd bound variable in JEXL expression.
-     * @param <T1> Type of the 1st free variable, i.e. the element the closure is called on.
-     * @param <T2> Type of the 2nd free variable, i.e. the element the closure is called on.
-     * @param <T3> Type of the 3rd free variable, i.e. the element the closure is called on.
-     * @return Newly created JEXL predicate.
-     */
-    public static <T1, T2, T3> GridJexlPredicate3<T1, T2, T3> x3(String expr, String var1, String var2, String var3) {
-        return new GridJexlPredicate3<>(expr, var1, var2, var3);
-    }
-
-    /**
-     * Utility shortcut for creating JEXL predicate.
-     *
-     * @param expr JEXL boolean expression. Note that non-boolean return value will evaluate
-     *      this predicate to {@code false}.
-     * @param <T1> Type of the 1st free variable, i.e. the element the closure is called on.
-     * @param <T2> Type of the 2nd free variable, i.e. the element the closure is called on.
-     * @return Newly created JEXL predicate.
-     */
-    public static <T1, T2> GridBiJexlPredicate<T1, T2> x2(String expr) {
-        return new GridBiJexlPredicate<>(expr);
-    }
-
-    /**
-     * Utility shortcut for creating JEXL predicate.
-     *
-     * @param expr JEXL boolean expression. Note that non-boolean return value will evaluate
-     *      this predicate to {@code false}.
-     * @param <T1> Type of the 1st free variable, i.e. the element the closure is called on.
-     * @param <T2> Type of the 2nd free variable, i.e. the element the closure is called on.
-     * @param <T3> Type of the 3rd free variable, i.e. the element the closure is called on.
-     * @return Newly created JEXL predicate.
-     */
-    public static <T1, T2, T3> GridJexlPredicate3<T1, T2, T3> x3(String expr) {
-        return new GridJexlPredicate3<>(expr);
-    }
-
-    /**
-     * Utility shortcut for creating JEXL predicate.
-     *
-     * @param expr JEXL boolean expression. Note that non-boolean return value
-     *      will evaluate this predicate to {@code false}.
-     * @param var Name of the bound variable in JEXL expression.
-     * @param <T> Type of the free variable, i.e. the element the closure is called on.
-     * @return Newly created JEXL predicate.
-     */
-    public static <T> GridJexlPredicate<T> x1(String expr, String var) {
-        return new GridJexlPredicate<>(expr, var);
     }
 
     /**
@@ -7937,11 +7341,6 @@ public class GridFunc {
     public static <T> GridPredicate<T> contains(@Nullable final Collection<T> c) {
         return c == null || c.isEmpty() ? GridFunc.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T t) {
-                {
-                    if (c != null)
-                        peerDeployLike(U.peerDeployAware0(c));
-                }
-
                 return c.contains(t);
             }
         };
@@ -7958,11 +7357,6 @@ public class GridFunc {
      */
     public static <T> GridPredicate<T> notContains(@Nullable final Collection<T> c) {
         return c == null || c.isEmpty() ? GridFunc.<T>alwaysTrue() : new P1<T>() {
-            {
-                if (c != null)
-                    peerDeployLike(U.peerDeployAware0(c));
-            }
-
             @Override public boolean apply(T t) {
                 return !c.contains(t);
             }
@@ -7970,22 +7364,17 @@ public class GridFunc {
     }
 
     /**
-     * Gets utility predicate that accepts {@link java.util.Map.Entry} value and compares
+     * Gets utility predicate that accepts {@link Entry} value and compares
      * its value to the given value.
      *
      * @param val Value to compare entry's value.
      * @param <K> Map key type.
      * @param <V> Map value type.
-     * @return Predicate that accepts {@link java.util.Map.Entry} value and compares its value
+     * @return Predicate that accepts {@link Entry} value and compares its value
      *      to the given value.
      */
     public static <K, V> GridPredicate<Map.Entry<K, V>> mapValue(@Nullable final V val) {
         return new P1<Map.Entry<K, V>>() {
-            {
-                if (val != null)
-                    peerDeployLike(U.peerDeployAware(val));
-            }
-
             @Override public boolean apply(Map.Entry<K, V> e) {
                 return e.getValue().equals(val);
             }
@@ -8004,11 +7393,6 @@ public class GridFunc {
      */
     public static <K, V> GridPredicate<Map.Entry<K, V>> mapKey(@Nullable final K key) {
         return new P1<Map.Entry<K, V>>() {
-            {
-                if (key != null)
-                    peerDeployLike(U.peerDeployAware(key));
-            }
-
             @Override public boolean apply(Map.Entry<K, V> e) {
                 return e.getKey().equals(key);
             }
@@ -8259,22 +7643,22 @@ public class GridFunc {
     /**
      * Curries collection of closures with given collection of arguments.
      *
-     * @param in Collection to curry.
+     * @param closures Collection to curry.
      * @param args Collection of arguments to curry with.
      * @param <T> Type of closure argument.
      * @param <R> Type of closure return value.
      * @return Collection of curried closures.
      */
-    public static <T, R> Collection<GridOutClosure<R>> curry(Collection<? extends GridClosure<? super T, R>> in,
+    public static <T, R> Collection<GridOutClosure<R>> curry(Collection<? extends GridClosure<? super T, R>> closures,
         Collection<? extends T> args) {
-        A.notNull(in, "in", args, "args");
-        A.ensure(in.size() == args.size(), "in.size() == args.size()");
+        A.notNull(closures, "in", args, "args");
+        A.ensure(closures.size() == args.size(), "closures.size() == args.size()");
 
-        Collection<GridOutClosure<R>> ret = new ArrayList<>(in.size());
+        Collection<GridOutClosure<R>> ret = new ArrayList<>(closures.size());
 
         Iterator<? extends T> iter = args.iterator();
 
-        for (GridClosure<? super T, R> c : in) {
+        for (GridClosure<? super T, R> c : closures) {
             ret.add(curry(c, iter.next()));
         }
 
@@ -8416,30 +7800,8 @@ public class GridFunc {
     }
 
     /**
-     * Curries collection of closures with given argument.
-     *
-     * @param iter Collection to curry.
-     * @param arg Argument to curry with.
-     * @param <T1> Type of 1st closure argument.
-     * @param <T2> Type of 2nd closure argument.
-     * @param <T3> Type of 3rd closure argument.
-     * @param <R> Type of closure return value.
-     * @return Read only collection of curried closures.
-     */
-    public static <T1, T2, T3, R> Collection<GridBiClosure<T2, T3, R>> curry3(
-        Collection<? extends GridClosure3<? super T1, T2, T3, R>> iter, final T1 arg) {
-        A.notNull(iter, "iter", arg, "arg");
-
-        return viewReadOnly(iter, new C1<GridClosure3<? super T1, T2, T3, R>, GridBiClosure<T2, T3, R>>() {
-            @Override public GridBiClosure<T2, T3, R> apply(GridClosure3<? super T1, T2, T3, R> c) {
-                return c.curry(arg);
-            }
-        });
-    }
-
-    /**
      * Gets closure that returns key for an entry. The closure internally
-     * delegates to {@link java.util.Map.Entry#getKey()} method.
+     * delegates to {@link Entry#getKey()} method.
      *
      * @param <K> Key type.
      * @return Closure that returns key for an entry.
@@ -8451,7 +7813,7 @@ public class GridFunc {
 
     /**
      * Gets closure that returns key for cache entry. The closure internally
-     * delegates to {@link java.util.Map.Entry#getKey()} method.
+     * delegates to {@link Entry#getKey()} method.
      *
      * @param <K> Key type.
      * @return Closure that returns key for an entry.
@@ -8463,7 +7825,7 @@ public class GridFunc {
 
     /**
      * Gets closure that returns value for an entry. The closure internally
-     * delegates to {@link java.util.Map.Entry#getValue()} method.
+     * delegates to {@link Entry#getValue()} method.
      *
      * @param <V> Value type.
      * @return Closure that returns key for an entry.
@@ -8514,10 +7876,6 @@ public class GridFunc {
         @Nullable final Collection<? extends K> keys) {
         return isEmpty(keys) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
             new GridPredicate<GridCacheEntry<K, V>>() {
-                {
-                    peerDeployLike(U.peerDeployAware0(keys));
-                }
-
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     return keys != null && keys.contains(e.getKey());
                 }
@@ -8687,10 +8045,6 @@ public class GridFunc {
         @Nullable final Collection<? extends V> vals) {
         return isEmpty(vals) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
             new GridPredicate<GridCacheEntry<K, V>>() {
-                {
-                    peerDeployLike(U.peerDeployAware0(vals));
-                }
-
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     try {
                         V v = e.get();
@@ -8742,10 +8096,6 @@ public class GridFunc {
         @Nullable final Collection<? extends V> vals) {
         return isEmpty(vals) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
             new GridPredicate<GridCacheEntry<K, V>>() {
-                {
-                    peerDeployLike(U.peerDeployAware0(vals));
-                }
-
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     V v = e.peek();
 
@@ -8793,17 +8143,6 @@ public class GridFunc {
     public static <K, V> GridPredicate<GridCacheEntry<K, V>> cacheContainsGet(@Nullable final Map<K, V> map) {
         return isEmpty(map) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
             new GridPredicate<GridCacheEntry<K, V>>() {
-                {
-                    if (map != null) {
-                        Collection<Object> objs = new ArrayList<>(map.size() * 2);
-
-                        objs.addAll(map.keySet());
-                        objs.addAll(map.values());
-
-                        peerDeployLike(U.peerDeployAware0(objs));
-                    }
-                }
-
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     assert map != null;
 
@@ -8831,17 +8170,6 @@ public class GridFunc {
         @Nullable final Map<K, V> map) {
         return isEmpty(map) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
             new GridPredicate<GridCacheEntry<K, V>>() {
-                {
-                    if (map != null) {
-                        Collection<Object> objs = new ArrayList<>(map.size() * 2);
-
-                        objs.addAll(map.keySet());
-                        objs.addAll(map.values());
-
-                        peerDeployLike(U.peerDeployAware0(objs));
-                    }
-                }
-
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     assert map != null;
 
@@ -8868,19 +8196,6 @@ public class GridFunc {
         @Nullable final Collection<? extends Map.Entry<K, V>> entries) {
         return isEmpty(entries) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
             new GridPredicate<GridCacheEntry<K, V>>() {
-                {
-                    if (entries != null) {
-                        Collection<Object> objs = new ArrayList<>(entries.size() * 2);
-
-                        for (Map.Entry<K, V> e : entries) {
-                            objs.add(e.getKey());
-                            objs.add(e.getValue());
-                        }
-
-                        peerDeployLike(U.peerDeployAware0(objs));
-                    }
-                }
-
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     try {
                         K k = e.getKey();
@@ -8919,19 +8234,6 @@ public class GridFunc {
         @Nullable final Collection<? extends Map.Entry<K, V>> entries) {
         return isEmpty(entries) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
             new GridPredicate<GridCacheEntry<K, V>>() {
-                {
-                    if (entries != null) {
-                        Collection<Object> objs = new ArrayList<>(entries.size() * 2);
-
-                        for (Map.Entry<K, V> e : entries) {
-                            objs.add(e.getKey());
-                            objs.add(e.getValue());
-                        }
-
-                        peerDeployLike(U.peerDeployAware0(objs));
-                    }
-                }
-
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     K k = e.getKey();
                     V v = e.peek();
@@ -9004,10 +8306,6 @@ public class GridFunc {
         return isEmpty(ps) || isAlwaysTrue(ps) ? F.<GridCacheEntry<K, V>>alwaysTrue() :
             isAlwaysFalse(ps) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
             new GridPredicate<GridCacheEntry<K, V>>() {
-                {
-                    peerDeployLike(U.peerDeployAware0((Object[])ps));
-                }
-
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     return F.isAll(e.getKey(), ps);
                 }
@@ -9027,10 +8325,6 @@ public class GridFunc {
         return isEmpty(ps) || isAlwaysTrue(ps) ? F.<GridCacheEntry<K, V>>alwaysTrue() :
             isAlwaysFalse(ps) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
             new GridPredicate<GridCacheEntry<K, V>>() {
-                {
-                    peerDeployLike(U.peerDeployAware0((Object[])ps));
-                }
-
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     try {
                         V v = e.get();
@@ -9057,10 +8351,6 @@ public class GridFunc {
         return isEmpty(ps) || isAlwaysTrue(ps) ? F.<GridCacheEntry<K, V>>alwaysTrue() :
             isAlwaysFalse(ps) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
             new GridPredicate<GridCacheEntry<K, V>>() {
-                {
-                    peerDeployLike(U.peerDeployAware0((Object[])ps));
-                }
-
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     V v = e.peek();
 
@@ -9201,10 +8491,6 @@ public class GridFunc {
         @Nullable final GridPredicate<GridNode>... p) {
         return isEmpty(p) || isAlwaysTrue(p) ? F.<GridEvent>alwaysTrue() : isAlwaysFalse(p) ? F.<GridEvent>alwaysFalse() :
             new GridPredicate<GridEvent>() {
-                {
-                    peerDeployLike(U.peerDeployAware0((Object[])p));
-                }
-
                 @Override public boolean apply(GridEvent e) {
                     assert e != null;
 
@@ -9230,10 +8516,6 @@ public class GridFunc {
      */
     public static GridPredicate<GridEvent> eventNode(@Nullable final Collection<? extends GridNode> nodes) {
         return isEmpty(nodes) ? F.<GridEvent>alwaysFalse() : new GridPredicate<GridEvent>() {
-            {
-                peerDeployLike(U.peerDeployAware0(nodes));
-            }
-
             @Override public boolean apply(GridEvent e) {
                 assert e != null;
 

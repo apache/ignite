@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * Concurrent weak hash set implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridConcurrentWeakHashSet<E> implements Set<E> {
     /** Empty array. */

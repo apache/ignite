@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -61,8 +61,5 @@ package org.gridgain.visor.commands
  *     visor vvm
  *         Opens VisualVM connected to all nodes.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 package object vvm

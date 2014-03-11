@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.util.*;
 /**
  * Unbounded window which holds all events. Events can be evicted manually from window
  * via any of the {@code dequeue(...)} methods.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridStreamerUnboundedWindow<E> extends GridStreamerWindowAdapter<E> {
     /** Events. */

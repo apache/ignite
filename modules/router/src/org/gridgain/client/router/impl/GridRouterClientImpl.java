@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -22,9 +22,6 @@ import static org.gridgain.client.util.GridClientUtils.*;
 
 /**
  * A {@link GridClient} router implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridRouterClientImpl implements GridClient {
     /** Decorated client implementation. */

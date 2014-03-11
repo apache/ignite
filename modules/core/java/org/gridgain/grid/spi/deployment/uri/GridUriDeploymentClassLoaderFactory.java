@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -23,9 +23,6 @@ import java.util.*;
  * class/resource was not found scans all JAR files.
  * It is assumed that all libraries are in the {@link #DFLT_LIBS_DIR_PATH}
  * directory.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridUriDeploymentClassLoaderFactory {
     /** Libraries directory default value (value is {@code lib}). */

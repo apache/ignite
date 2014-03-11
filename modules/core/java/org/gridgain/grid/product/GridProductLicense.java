@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@ import java.util.*;
  * GridGain license descriptor. GridGain license is available for
  * information purposes and is checked automatically by GridGain software.
  * License descriptor can be obtains by calling {@link GridProduct#license()} method.
- *
- * @author @java.author
- * @version @java.version
  * @see GridProduct#license()
  */
 public interface GridProductLicense extends Serializable {

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -20,9 +20,6 @@ import org.jetbrains.annotations.*;
  * </ul>
  * Also, some flags, like {@link #LOCAL}, or {@link #READ} may be implicitly set whenever
  * creating new projections and passing entries to predicate filters.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridCacheFlag {
     /**
@@ -63,9 +60,6 @@ public enum GridCacheFlag {
 
     /** Synchronous commit. */
     SYNC_COMMIT,
-
-    /** Synchronous rollback. */
-    SYNC_ROLLBACK,
 
     /**
      * Switches a cache projection to work in {@code 'invalidation'} mode.

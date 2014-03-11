@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,9 +15,6 @@ import java.util.*;
 /**
  * Synchronized map for cache values that is safe to update in-place. Main reason for this map
  * is to provide snapshot-guarantee for serialization and keep concurrent iterators.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridSynchronizedMap<K, V> extends ConcurrentHashMap8<K, V> implements Externalizable {
     /** {@inheritDoc} */

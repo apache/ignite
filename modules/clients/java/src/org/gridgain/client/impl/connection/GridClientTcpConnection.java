@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -38,9 +38,6 @@ import static org.gridgain.grid.kernal.processors.rest.client.message.GridClient
 /**
  * This class performs request to grid over tcp protocol. Serialization is performed with marshaller
  * provided.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientTcpConnection extends GridClientConnection {
     /** Logger */

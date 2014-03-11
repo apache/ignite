@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,9 +19,6 @@ import java.util.*;
  * GGFS attributes.
  * <p>
  * This class contains information on a single GGFS configured on some node.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsAttributes implements Externalizable {
     /** GGFS name. */
@@ -30,7 +27,7 @@ public class GridGgfsAttributes implements Externalizable {
     /** File's data block size (bytes). */
     private int blockSize;
 
-    /** Size of the group figured in {@link GridGgfsGroupDataBlocksMapper}. */
+    /** Size of the group figured in {@link GridGgfsGroupDataBlocksKeyMapper}. */
     private int grpSize;
 
     /** Meta cache name. */
@@ -51,7 +48,7 @@ public class GridGgfsAttributes implements Externalizable {
     /**
      * @param ggfsName GGFS name.
      * @param blockSize File's data block size (bytes).
-     * @param grpSize Size of the group figured in {@link GridGgfsGroupDataBlocksMapper}.
+     * @param grpSize Size of the group figured in {@link GridGgfsGroupDataBlocksKeyMapper}.
      * @param metaCacheName Meta cache name.
      * @param dataCacheName Data cache name.
      * @param dfltMode Default mode.
@@ -91,7 +88,7 @@ public class GridGgfsAttributes implements Externalizable {
     }
 
     /**
-     * @return Size of the group figured in {@link GridGgfsGroupDataBlocksMapper}.
+     * @return Size of the group figured in {@link GridGgfsGroupDataBlocksKeyMapper}.
      */
     public int groupSize() {
         return grpSize;

@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -33,9 +33,6 @@ import scala.Tuple2
  * It is very important to review this class as it defines what `implicit` conversions
  * will take place when using Scalar. Note that object `scalar` mixes in this
  * trait and therefore brings with it all implicits into the scope.
- *
- * @author @java.author
- * @version @java.version
  */
 trait ScalarConversions {
     /**

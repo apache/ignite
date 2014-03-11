@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -24,9 +24,6 @@ import java.lang.annotation.*;
  * will not be peer-loaded but will simply be locally class loaded. It may appear
  * as if it was successfully peer-loaded when in fact it was simply already
  * available on the remote node.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

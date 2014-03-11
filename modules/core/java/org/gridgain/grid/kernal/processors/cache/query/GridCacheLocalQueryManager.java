@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
@@ -21,16 +20,13 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  * Local query manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected boolean onPageReady(
         boolean loc,
-        GridCacheQueryInfo<K, V> qryInfo,
+        GridCacheQueryInfo qryInfo,
         Collection<?> data,
         boolean finished, Throwable e) {
         GridCacheQueryFutureAdapter fut = qryInfo.localQueryFuture();
@@ -47,8 +43,8 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
 
     /** {@inheritDoc} */
     @Override protected boolean onFieldsPageReady(boolean loc,
-        GridCacheQueryInfo<K, V> qryInfo,
-        @Nullable List<GridCacheSqlFieldMetadata> metaData,
+        GridCacheQueryInfo qryInfo,
+        @Nullable List<GridIndexingFieldMetadata> metaData,
         @Nullable Collection<List<GridIndexingEntity<?>>> entities,
         @Nullable Collection<?> data,
         boolean finished,
@@ -75,37 +71,18 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridCacheQueryFuture<R> queryLocal(GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry,
-        boolean single, boolean rmtRdcOnly, @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr,
-        @Nullable GridPredicate<?> vis) {
-        return queryLocal(qry, single, rmtRdcOnly, pageLsnr, vis, false);
-    }
-
-    /**
-     * @param qry Query.
-     * @param single {@code true} if single result requested, {@code false} if multiple.
-     * @param rmtRdcOnly {@code true} for reduce query when using remote reducer only,
-     *      otherwise it is always {@code false}.
-     * @param pageLsnr Page listener.
-     * @param vis Visitor Predicate.
-     * @param sync Whether to execute synchronously.
-     * @return Iterator over query results. Note that results become available as they come.
-     */
-    private <R> GridCacheQueryFuture<R> queryLocal(GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry,
-        boolean single, boolean rmtRdcOnly, @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr,
-        @Nullable GridPredicate<?> vis, boolean sync) {
+    @Override public GridCacheQueryFuture<?> queryLocal(GridCacheQueryBean qry) {
         assert cctx.config().getCacheMode() == LOCAL;
 
         if (log.isDebugEnabled())
             log.debug("Executing query on local node: " + qry);
 
-        GridCacheLocalQueryFuture<K, V, R> fut =
-            new GridCacheLocalQueryFuture<>(cctx, qry, single, rmtRdcOnly, pageLsnr, vis);
+        GridCacheLocalQueryFuture<K, V, ?> fut = new GridCacheLocalQueryFuture<>(cctx, qry);
 
         try {
-            validateQuery(qry);
+            qry.query().validate();
 
-            fut.execute(sync);
+            fut.execute();
         }
         catch (GridException e) {
             fut.onDone(e);
@@ -115,53 +92,31 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridCacheQueryFuture<R> queryDistributed(
-        GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry, Collection<GridNode> nodes, boolean single,
-        boolean rmtOnly, @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr, @Nullable GridPredicate<?> vis) {
+    @Override public GridCacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Collection<GridNode> nodes) {
         assert cctx.config().getCacheMode() == LOCAL;
 
         throw new GridRuntimeException("Distributed queries are not available for local cache " +
-            "(use 'GridCacheQuery.execute(grid.localNode())' instead) [cacheName=" + cctx.name() + ']');
+            "(use 'GridCacheQuery.execute(grid.forLocal())' instead) [cacheName=" + cctx.name() + ']');
     }
 
     /** {@inheritDoc} */
-    @Override public void loadPage(long id, GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry,
-        Collection<GridNode> nodes, boolean all) {
+    @Override public void loadPage(long id, GridCacheQueryAdapter<?> qry, Collection<GridNode> nodes, boolean all) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheFieldsQueryFuture queryFieldsLocal(GridCacheFieldsQueryBase qry, boolean single,
-        boolean rmtOnly, @Nullable GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr,
-        @Nullable GridPredicate<?> vis) {
-        return queryFieldsLocal(qry, single, rmtOnly, pageLsnr, vis, false);
-    }
-
-    /**
-     * @param qry Query.
-     * @param single {@code true} if single result requested, {@code false} if multiple.
-     * @param rmtOnly {@code true} for reduce query when using remote reducer only,
-     *      otherwise it is always {@code false}.
-     * @param pageLsnr Page listener.
-     * @param vis Visitor predicate.
-     * @param sync Whether to execute synchronously.
-     * @return Iterator over query results. Note that results become available as they come.
-     */
-    private GridCacheFieldsQueryFuture queryFieldsLocal(GridCacheFieldsQueryBase qry, boolean single,
-        boolean rmtOnly, @Nullable GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr,
-        @Nullable GridPredicate<?> vis, boolean sync) {
+    @Override public GridCacheQueryFuture<?> queryFieldsLocal(GridCacheQueryBean qry) {
         assert cctx.config().getCacheMode() == LOCAL;
 
         if (log.isDebugEnabled())
             log.debug("Executing query on local node: " + qry);
 
-        GridCacheLocalFieldsQueryFuture fut = new GridCacheLocalFieldsQueryFuture(
-            cctx, qry, single, rmtOnly, pageLsnr, vis);
+        GridCacheLocalFieldsQueryFuture fut = new GridCacheLocalFieldsQueryFuture(cctx, qry);
 
         try {
-            validateQuery(qry);
+            qry.query().validate();
 
-            fut.execute(sync);
+            fut.execute();
         }
         catch (GridException e) {
             fut.onDone(e);
@@ -171,12 +126,11 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheFieldsQueryFuture queryFieldsDistributed(GridCacheFieldsQueryBase qry,
-        Collection<GridNode> nodes, boolean single, boolean rmtOnly,
-        @Nullable GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr, @Nullable GridPredicate<?> vis) {
+    @Override public GridCacheQueryFuture<?> queryFieldsDistributed(GridCacheQueryBean qry,
+        Collection<GridNode> nodes) {
         assert cctx.config().getCacheMode() == LOCAL;
 
         throw new GridRuntimeException("Distributed queries are not available for local cache " +
-            "(use 'GridCacheQuery.execute(grid.localNode())' instead) [cacheName=" + cctx.name() + ']');
+            "(use 'GridCacheQuery.execute(grid.forLocal())' instead) [cacheName=" + cctx.name() + ']');
     }
 }

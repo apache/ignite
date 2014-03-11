@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,9 +13,6 @@ import java.io.*;
 
 /**
  * GGFS input stream descriptor - includes stream id and length.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsInputStreamDescriptor implements Externalizable {
     /** Stream id. */

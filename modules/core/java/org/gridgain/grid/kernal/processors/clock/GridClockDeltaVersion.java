@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,9 +15,6 @@ import java.io.*;
 
 /**
  * Version for time delta snapshot.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClockDeltaVersion implements Comparable<GridClockDeltaVersion>, Externalizable {
     /** Snapshot local version. */

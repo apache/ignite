@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -23,9 +23,6 @@ import java.util.concurrent._
 
 /**
  * Host data.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class Host(
     name: String,
@@ -52,9 +49,6 @@ private case class Host(
 
 /**
  * Runnable that copies file or directory.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class Copier(
     host: Host,
@@ -261,9 +255,6 @@ private case class Copier(
  *     visor deploy "-h=uname@host -k=ssh-key.pem -s=/local/path -d=remote/path"
  *         Copies file or directory to remote host (private key authentication).
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorDeployCommand {
     /** Default port. */
@@ -481,9 +472,6 @@ class VisorDeployCommand {
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorDeployCommand {
     addHelp(

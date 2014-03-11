@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ import static org.gridgain.grid.dr.cache.receiver.GridDrReceiverCacheConflictRes
 
 /**
  * Data center replication receiver cache configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrReceiverCacheConfiguration {
     /** Default data center replication receiver cache conflict resolver mode. */

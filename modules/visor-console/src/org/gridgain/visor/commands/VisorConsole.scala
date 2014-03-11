@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -50,9 +50,6 @@ import vvm.VisorVvmCommand
 
 /**
  * Command line Visor.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorConsole extends App {
     /** Ant-augmented version number. */

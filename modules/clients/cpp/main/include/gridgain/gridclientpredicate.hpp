@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,9 +19,6 @@
  * implementations. Each implementation can elect what type of thread-safety it provides,
  * if any.
  * @param <E1> Type of the free variable, i.e. the element the predicate is called on.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 template <class E1> class GridClientPredicate {
 public:

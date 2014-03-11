@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,6 +18,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 import org.springframework.aop.framework.*;
@@ -31,9 +32,6 @@ import java.util.concurrent.*;
 
 /**
  * Processor for all Grid and task/job resources.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridResourceProcessor extends GridProcessorAdapter {
     /** */

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -23,9 +23,6 @@ import java.util.concurrent.*;
 /**
  * Resource container contains caches for classes used for injection.
  * Caches used to improve the efficiency of standard Java reflection mechanism.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridResourceIoc {
     /** Task class resource mapping. Used to efficiently cleanup resources related to class loader. */

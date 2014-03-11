@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -26,9 +26,6 @@ import java.util.concurrent.atomic.*;
  *
  * Note that this class consumes an entire thread inside {@link #serve()} method
  * in order to serve one {@link GridIpcEndpoint}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIpcToNioAdapter<T> {
     /** */

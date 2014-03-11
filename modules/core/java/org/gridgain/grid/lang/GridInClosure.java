@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,25 +9,18 @@
 
 package org.gridgain.grid.lang;
 
-import org.gridgain.grid.util.lang.*;
+import java.io.*;
 
 /**
- * Defines a convenient {@code side-effect only} closure, i.e. the closure that has {@code void} return type.
- * <h2 class="header">Thread Safety</h2>
- * Note that this interface does not impose or assume any specific thread-safety by its
- * implementations. Each implementation can elect what type of thread-safety it provides,
- * if any.
+ * Closure with one in-parameter and void return type.
  *
- * @author @java.author
- * @version @java.version
- * @param <E1> Type of the free variable, i.e. the element the closure is called or closed on.
- * @see GridFunc
+ * @param <E> Type of closure argument.
  */
-public abstract class GridInClosure<E1> extends GridLambdaAdapter {
+public interface GridInClosure<E> extends Serializable {
     /**
-     * In-closure body.
+     * Closure body.
      *
-     * @param t Bound free variable, i.t. the element the closure is called or closed on.
+     * @param e Closure argument.
      */
-    public abstract void apply(E1 t);
+    public void apply(E e);
 }

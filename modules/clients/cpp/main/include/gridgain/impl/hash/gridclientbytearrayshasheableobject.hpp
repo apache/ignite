@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,11 +16,8 @@
 
 /**
  * Hashable object wrapping byte array.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
-class GridByteArrayHasheableObject : public GridHasheableObject {
+class GridByteArrayHasheableObject : public GridClientHasheableObject {
 public:
     /**
      * Public constructor.

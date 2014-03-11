@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -37,9 +37,6 @@ typedef boost::property_tree::ptree TJson;
 
 /**
  * Grid JSON marshaler.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientJsonMarshaller {
 private:

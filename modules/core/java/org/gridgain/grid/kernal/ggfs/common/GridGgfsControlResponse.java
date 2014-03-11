@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -23,9 +23,6 @@ import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsIpcCommand.*;
 
 /**
  * GGFS path command response.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsControlResponse extends GridGgfsMessage {
     /** Generic error (not GGFS) while performing operations. */

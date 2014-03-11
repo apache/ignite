@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -42,9 +42,6 @@ import java.util.concurrent.locks.*;
  * <p/>
  * Since write operations to the cache store are deferred, transaction support is lost; no
  * transaction objects are passed to the underlying store.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, GridLifecycleAware {
     /** Default write cache initial capacity. */
@@ -353,9 +350,9 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
      * @param args {@inheritDoc}
      * @throws GridException {@inheritDoc}
      */
-    @Override public void loadAll(GridBiInClosure<K, V> clo, @Nullable Object... args)
+    @Override public void loadCache(GridBiInClosure<K, V> clo, @Nullable Object... args)
         throws GridException {
-        store.loadAll(clo, args);
+        store.loadCache(clo, args);
     }
 
     /** {@inheritDoc} */

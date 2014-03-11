@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -16,9 +16,6 @@ import org.gridgain.visor.visor
 
 /**
  * Command implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 trait VisorConsoleCommand {
     /**

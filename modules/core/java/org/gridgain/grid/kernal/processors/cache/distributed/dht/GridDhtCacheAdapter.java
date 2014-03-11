@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -29,7 +29,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCachePartitionedDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheTxState.*;
@@ -40,9 +40,6 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
 /**
  * DHT cache adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdapter<K, V> {
     /** Topology. */
@@ -711,7 +708,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         if (tx == null && !req.explicitLock()) {
             U.warn(log, "Received finish request for completed transaction (the message may be too late " +
                 "and transaction could have been DGCed by now) [commit=" + req.commit() +
-                ", xid=" + req.version().asGridUuid() + ']');
+                ", xid=" + req.version() + ']');
 
             // Always send finish response.
             GridCacheMessage<K, V> res = new GridNearTxFinishResponse<>(req.version(), req.threadId(), req.futureId(),
@@ -1586,20 +1583,28 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param req Request.
      */
     protected final void processDhtLockRequest(final UUID nodeId, final GridDhtLockRequest<K, V> req) {
-        if (beforePessimisticLock == null)
+        GridFuture<Object> keyFut = F.isEmpty(req.keys()) ? null :
+            ctx.dht().dhtPreloader().request(req.keys(), req.topologyVersion());
+
+        if (beforePessimisticLock != null) {
+            keyFut = keyFut == null ?
+                beforePessimisticLock.apply(req.keys(), req.inTx()) :
+                new GridEmbeddedFuture<>(true, keyFut,
+                    new C2<Object, Exception, GridFuture<Object>>() {
+                        @Override public GridFuture<Object> apply(Object o, Exception e) {
+                            return beforePessimisticLock.apply(req.keys(), req.inTx());
+                        }
+                    }, ctx.kernalContext());
+        }
+
+        if (keyFut == null || keyFut.isDone())
             processDhtLockRequest0(nodeId, req);
         else {
-            GridFuture<Object> fut = beforePessimisticLock.apply(req.keys(), req.inTx());
-
-            if (fut != null) {
-                fut.listenAsync(new CI1<GridFuture<Object>>() {
-                    @Override public void apply(GridFuture<Object> t) {
-                        processDhtLockRequest0(nodeId, req);
-                    }
-                });
-            }
-            else
-                processDhtLockRequest0(nodeId, req);
+            keyFut.listenAsync(new CI1<GridFuture<Object>>() {
+                @Override public void apply(GridFuture<Object> t) {
+                    processDhtLockRequest0(nodeId, req);
+                }
+            });
         }
     }
 
@@ -2287,7 +2292,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                     // calls and won't be serialized. We are also including DHT version.
                                     res.addValueBytes(
                                         val,
-                                        ret && ctx.sendValueBytes() ? e.valueBytes(null).getIfMarshaled() : null,
+                                        ret ? e.valueBytes(null).getIfMarshaled() : null,
                                         filterPassed,
                                         ver,
                                         mappedVer,
@@ -2512,7 +2517,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         Collection<GridNode> nearNodes = null;
 
         if (!F.isEmpty(readers)) {
-            nearNodes = ctx.discovery().nodes(readers, F0.<UUID>not(F.idForNodeId(nodeId)));
+            nearNodes = ctx.discovery().nodes(readers, F0.not(F.idForNodeId(nodeId)));
 
             if (log.isDebugEnabled())
                 log.debug("Mapping entry to near nodes [nodes=" + U.toShortString(nearNodes) + ", entry=" + cached +
@@ -2830,7 +2835,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public List<GridCacheClearAllRunnable<K, V>> splitClearAll() {
-        GridCachePartitionedDistributionMode mode = configuration().getPartitionedDistributionMode();
+        GridCacheDistributionMode mode = configuration().getDistributionMode();
 
         return (mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED) ? super.splitClearAll() :
             Collections.<GridCacheClearAllRunnable<K, V>>emptyList();

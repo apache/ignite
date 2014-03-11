@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -76,9 +76,6 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
  * Collection of utility methods used throughout the system.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"UnusedReturnValue", "UnnecessaryFullyQualifiedName"})
 public abstract class GridUtils {
@@ -5281,6 +5278,7 @@ public abstract class GridUtils {
         final Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
 
         return new GridPeerDeployAware() {
+            /** */
             private ClassLoader ldr;
 
             @Override public Class<?> deployClass() {

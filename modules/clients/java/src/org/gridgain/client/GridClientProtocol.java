@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,9 +11,6 @@ package org.gridgain.client;
 
 /**
  * Protocol that will be used when client connections are created.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridClientProtocol {
     /** Communication via HTTP protocol. */

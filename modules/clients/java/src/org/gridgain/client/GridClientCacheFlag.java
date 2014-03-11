@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,9 +11,6 @@ package org.gridgain.client;
 
 /**
  * Cache projection flags that specify projection behaviour.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridClientCacheFlag {
     /** Skips store, i.e. no read-through and no write-through behavior. */
@@ -24,9 +21,6 @@ public enum GridClientCacheFlag {
 
     /** Synchronous commit. */
     SYNC_COMMIT,
-
-    /** Synchronous rollback. */
-    SYNC_ROLLBACK,
 
     /**
      * Switches a cache projection to work in {@code 'invalidation'} mode.

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
 *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,16 +9,13 @@
 
 package org.gridgain.grid.spi.indexing;
 
-import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Convenience adapter for {@link GridIndexingKeyValueRow}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridIndexingKeyValueRowAdapter<K, V> implements GridIndexingKeyValueRow<K, V> {
     /** Key. */

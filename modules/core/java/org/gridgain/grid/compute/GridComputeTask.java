@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.compute;
 
-import org.gridgain.grid.compute.gridify.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.spi.failover.*;
 import org.jetbrains.annotations.*;
+
 import java.io.*;
 import java.util.*;
 
@@ -225,18 +225,6 @@ import java.util.*;
  * </pre>
  * </li>
  * </ul>
- * Refer to corresponding adapter documentation for more information.
- * <p>
- * <h1 class="header">Examples</h1>
- * Many task example usages are available on GridGain <a href="http://www.gridgain.com/documentation/" target="github">website</a>.
- * To see example on how to use {@code GridComputeTask} for basic split/aggregate logic refer to
- * <a href="https://github.com/gridgain/gridgain/tree/master/examples/java/org/gridgain/examples/helloworld/api30" target="github">HelloWorld Task Example</a>.
- * For example on how to use {@code GridComputeTask} with automatic grid-enabling via
- * {@link Gridify @Gridify} annotation refer to
- * <a href="https://github.com/gridgain/gridgain/tree/master/examples/java/org/gridgain/examples/helloworld/gridify/basic" target="github">Gridify HelloWorld Example</a>.
- *
- * @author @java.author
- * @version @java.version
  * @param <T> Type of the task argument that is passed into {@link GridComputeTask#map(List, Object)} method.
  * @param <R> Type of the task result returning from {@link GridComputeTask#reduce(List)} method.
  */

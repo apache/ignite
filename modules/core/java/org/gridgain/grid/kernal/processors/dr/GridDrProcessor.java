@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,17 +11,13 @@ package org.gridgain.grid.kernal.processors.dr;
 
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.kernal.processors.*;
-import org.jetbrains.annotations.*;
 
 /**
  * Data center replication processor.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDrProcessor<K, V> extends GridProcessor {
     /**
      * @return DR public view.
      */
-    @Nullable public GridDr dr();
+    public GridDr dr();
 }

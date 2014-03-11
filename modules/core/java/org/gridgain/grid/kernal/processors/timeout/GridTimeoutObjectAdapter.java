@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,14 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.timeout;
 
-import org.gridgain.grid.util.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Default implementation for {@link GridTimeoutObject}.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridTimeoutObjectAdapter implements GridTimeoutObject {
     /** Timeout ID. */

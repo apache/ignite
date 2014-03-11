@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,13 +16,10 @@
 
 #include "gridgain/gridclientnode.hpp"
 
-class GridUuid;
+class GridClientUuid;
 
 /**
  * Topology holder class.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientTopology {
 public:
@@ -45,7 +42,7 @@ public:
      * @param uuid Node id.
      * @return Shared pointer to a node.
      */
-    const TGridClientNodePtr node(const GridUuid& uuid) const;
+    const TGridClientNodePtr node(const GridClientUuid& uuid) const;
 
     /**
      * Empties the topology cache. Next topology event will repopulate the cache with the current grid nodes.

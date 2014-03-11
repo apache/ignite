@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -42,9 +42,9 @@ static string CREDS = "s3cret";
 GridClientConfiguration clientConfig1() {
     GridClientConfiguration clientConfig;
 
-    vector<GridSocketAddress> servers;
+    vector<GridClientSocketAddress> servers;
 
-    servers.push_back(GridSocketAddress(SERVER_ADDRESS, TEST_TCP_PORT));
+    servers.push_back(GridClientSocketAddress(SERVER_ADDRESS, TEST_TCP_PORT));
 
     clientConfig.servers(servers);
 
@@ -60,7 +60,7 @@ GridClientConfiguration clientConfig1() {
 GridClientConfiguration clientConfig2() {
     GridClientConfiguration clientConfig;
 
-    vector<GridSocketAddress> servers;
+    vector<GridClientSocketAddress> servers;
 
     GridClientProtocolConfiguration protoCfg;
 
@@ -70,7 +70,7 @@ GridClientConfiguration clientConfig2() {
 
     clientConfig.protocolConfiguration(protoCfg);
 
-    servers.push_back(GridSocketAddress(SERVER_ADDRESS, TEST_TCP_PORT));
+    servers.push_back(GridClientSocketAddress(SERVER_ADDRESS, TEST_TCP_PORT));
 
     clientConfig.servers(servers);
 
@@ -85,7 +85,7 @@ BOOST_FIXTURE_TEST_CASE(clientCacheExample, GridClientFactoryFixture1<clientConf
     BOOST_REQUIRE(nodes.size() > 0);
 
     // Random node ID.
-    GridUuid randNodeId = nodes[0]->getNodeId();
+    GridClientUuid randNodeId = nodes[0]->getNodeId();
 
     // Get client projection of grid partitioned cache.
     TGridClientDataPtr rmtCache = client->data(CACHE_NAME);
@@ -102,7 +102,7 @@ BOOST_FIXTURE_TEST_CASE(clientCacheExample, GridClientFactoryFixture1<clientConf
 
         rmtCache->put(i, v);
 
-        GridUuid nodeId = rmtCache->affinity(i);
+        GridClientUuid nodeId = rmtCache->affinity(i);
 
         keys.push_back(i);
     }
@@ -122,12 +122,12 @@ BOOST_FIXTURE_TEST_CASE(clientCacheExample, GridClientFactoryFixture1<clientConf
 
     TGridBoolFuturePtr futPut = prj->putAsync((int32_t) 0, "new value for 0");
 
-    unordered_map<GridUuid, TGridClientVariantMap> keyVals;
+    unordered_map<GridClientUuid, TGridClientVariantMap> keyVals;
 
     GridClientVariant key0 = GridClientVariant((int32_t)0);
 
     for (int32_t i = 0; i < KEYS_CNT; i++) {
-        GridUuid nodeId = rmtCache->affinity((int32_t)0);
+        GridClientUuid nodeId = rmtCache->affinity((int32_t)0);
 
         TGridClientVariantMap* m;
 
@@ -167,7 +167,7 @@ BOOST_FIXTURE_TEST_CASE(clientCacheExample, GridClientFactoryFixture1<clientConf
     // requests by affinity nodes to ensure least amount of network trips.
     for (auto iter = keyVals.begin();
             iter != keyVals.end(); ++iter) {
-       GridUuid uuid = iter->first;
+       GridClientUuid uuid = iter->first;
 
        TGridClientVariantMap m = iter->second;
 
@@ -239,18 +239,6 @@ BOOST_FIXTURE_TEST_CASE(clientCacheExample, GridClientFactoryFixture1<clientConf
     futMetrics->get();
 }
 
-class GridUuidNodePredicate : public GridClientPredicate<GridClientNode> {
-    private:
-        GridUuid uu;
-    public:
-        GridUuidNodePredicate(const GridUuid& u) : uu(u) {
-        }
-
-        bool apply(const GridClientNode& node) const {
-            return node.getNodeId() == uu;
-        }
-};
-
 BOOST_FIXTURE_TEST_CASE(clientComputeExample, GridClientFactoryFixture1<clientConfig2>) {
     TGridClientComputePtr clientCompute = client->compute();
 
@@ -258,25 +246,20 @@ BOOST_FIXTURE_TEST_CASE(clientComputeExample, GridClientFactoryFixture1<clientCo
 
     BOOST_REQUIRE(nodes.size() > 0);
 
-    GridUuid randNodeId = nodes[0]->getNodeId();
+    GridClientUuid randNodeId = nodes[0]->getNodeId();
 
     TGridClientNodePtr p = clientCompute->node(randNodeId);
 
     TGridClientComputePtr prj = clientCompute->projection(*p);
 
-    vector<GridUuid> uuids;
+    vector<GridClientUuid> uuids;
 
     uuids.push_back(randNodeId);
 
     nodes = prj->nodes(uuids);
 
-    // Nodes may also be filtered with predicate. Here
-    // we create projection which only contains local node.
-    GridUuidNodePredicate* uuidNodePredicate = new GridUuidNodePredicate(randNodeId);
-
-    TGridClientNodePredicatePtr predFullPtr(uuidNodePredicate);
-
-    nodes = prj->nodes(predFullPtr);
+    std::function < bool(const GridClientNode&) > filter = [&randNodeId](const GridClientNode& n) { return n.getNodeId() == randNodeId; };
+    nodes = prj->nodes(filter);
 
     // Information about nodes may be refreshed explicitly.
     TGridClientNodePtr clntNode = prj->refreshNode(randNodeId, true, true);
@@ -288,7 +271,7 @@ BOOST_FIXTURE_TEST_CASE(clientComputeExample, GridClientFactoryFixture1<clientCo
     // Nodes may also be refreshed by IP address.
     string clntAddr = SERVER_ADDRESS;
 
-    vector<GridSocketAddress> addrs = clntNode->availableAddresses(TCP);
+    vector<GridClientSocketAddress> addrs = clntNode->availableAddresses(TCP);
 
     if (addrs.size() > 0)
         clntAddr = addrs[0].host();

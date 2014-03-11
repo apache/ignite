@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -47,9 +47,6 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
  * &#064;org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
  * public class Entity { ... }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStrategyAdapter {
     /** */
@@ -205,7 +202,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
                 tx.commit();
             }
             finally {
-                tx.end();
+                tx.close();
             }
 
             assert cache.tx() == null;

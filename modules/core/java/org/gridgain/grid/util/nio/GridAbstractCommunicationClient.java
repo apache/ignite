@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Implements basic lifecycle for communication clients.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridAbstractCommunicationClient implements GridCommunicationClient {
     /** Time when this client was last used. */

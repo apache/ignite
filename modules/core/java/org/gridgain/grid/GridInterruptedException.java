@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,9 +11,6 @@ package org.gridgain.grid;
 
 /**
  * This exception is used to wrap standard {@link InterruptedException} into {@link GridException}.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"TypeMayBeWeakened"})
 public class GridInterruptedException extends GridException {

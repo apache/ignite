@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,9 +19,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * Exchange ID.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDhtPartitionExchangeId implements Comparable<GridDhtPartitionExchangeId>, Externalizable {
     /** Node ID. */

@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -22,6 +22,7 @@ import collection.immutable._
 import scala.util.control.Breaks._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import visor._
+import org.gridgain.grid.lang.GridPredicate
 
 /**
  * ==Overview==
@@ -120,9 +121,6 @@ import visor._
  *     alert "-r -t=900 -cc=gte4 -cl=gt50"
  *         Notify every 15 min if grid has >= 4 CPUs and > 50% CPU load.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorAlertCommand {
     /** Default alert frequency. */
@@ -144,7 +142,7 @@ class VisorAlertCommand {
     private val guard = new AtomicBoolean(false)
 
     /** Node metric update listener. */
-    private var lsnr: GridLocalEventListener = null
+    private var lsnr: GridPredicate[GridEvent] = null
 
     /**
      * Prints error message and advise.
@@ -351,8 +349,8 @@ class VisorAlertCommand {
         if (guard.compareAndSet(false, true)) {
             assert(lsnr == null)
 
-            lsnr = new GridLocalEventListener {
-                def onEvent(evt: GridEvent) {
+            lsnr = new GridPredicate[GridEvent] {
+                override def apply(evt: GridEvent): Boolean = {
                     val discoEvt = evt.asInstanceOf[GridDiscoveryEvent]
 
                     val node = grid.node(discoEvt.eventNodeId)
@@ -370,7 +368,7 @@ class VisorAlertCommand {
                             }
                             catch {
                                 // In case of exception (like an empty projection) - simply return.
-                                case _: Throwable => return
+                                case _: Throwable => return true
                             }
 
                             if (nb && gb) {
@@ -432,10 +430,12 @@ class VisorAlertCommand {
                                 }
                             }
                         })
+
+                    true
                 }
             }
 
-            grid.events().addLocalListener(lsnr, EVT_NODE_METRICS_UPDATED)
+            grid.events().localListen(lsnr, EVT_NODE_METRICS_UPDATED)
         }
     }
 
@@ -446,7 +446,7 @@ class VisorAlertCommand {
         if (guard.compareAndSet(true, false)) {
             assert(lsnr != null)
 
-            assert(grid.events().removeLocalListener(lsnr))
+            assert(grid.events().stopLocalListen(lsnr))
 
             lsnr = null
         }
@@ -683,9 +683,6 @@ class VisorAlertCommand {
 
 /**
  * Visor alert.
- *
- * @author @java.author
- * @version @java.version
  */
 sealed private case class Alert(
     id: String,
@@ -705,9 +702,6 @@ sealed private case class Alert(
 
 /**
  * Snapshot of the sent alert.
- *
- * @author @java.author
- * @version @java.version
  */
 private case class SentAlert(
     id: String,
@@ -727,9 +721,6 @@ private case class SentAlert(
 
 /**
  * Statistics holder for visor alert.
- *
- * @author @java.author
- * @version @java.version
  */
 sealed private case class Stats(
     var cnt: Int = 0,
@@ -739,9 +730,6 @@ sealed private case class Stats(
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorAlertCommand {
     addHelp(

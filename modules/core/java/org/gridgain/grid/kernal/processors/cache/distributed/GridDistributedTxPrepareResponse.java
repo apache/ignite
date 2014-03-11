@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -23,9 +23,6 @@ import java.util.*;
 
 /**
  * Response to prepare request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseMessage<K, V> {
     /** Collections of local lock candidates. */
@@ -236,6 +233,6 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDistributedTxPrepareResponse.class, this, "err",
-            err == null ? "" : err.toString(), "super", super.toString());
+            err == null ? "null" : err.toString(), "super", super.toString());
     }
 }

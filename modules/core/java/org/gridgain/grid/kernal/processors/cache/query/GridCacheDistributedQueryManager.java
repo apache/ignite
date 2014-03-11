@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.events.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
@@ -29,9 +30,6 @@ import static org.gridgain.grid.kernal.GridTopic.*;
 
 /**
  * Distributed query manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManager<K, V> {
     /** */
@@ -133,7 +131,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param req Query request.
      */
     @SuppressWarnings("unchecked")
-    @Override void processQueryRequest(UUID sndId, GridCacheQueryRequest<K, V> req) {
+    @Override void processQueryRequest(UUID sndId, GridCacheQueryRequest req) {
         if (req.cancel()) {
             cancelIds.add(new CancelMessageId(req.id(), sndId));
 
@@ -144,17 +142,18 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         }
         else {
             if (!cancelIds.contains(new CancelMessageId(req.id(), sndId))) {
-                GridCacheQueryResponse res = null;
+                if (!F.eq(req.cacheName(), cctx.name())) {
+                    GridCacheQueryResponse res = new GridCacheQueryResponse(req.id(),
+                        new GridException("Received request for incorrect cache [expected=" + cctx.name() +
+                            ", actual=" + req.cacheName()));
 
-                if (!F.eq(req.cacheName(), cctx.name()))
-                    res = new GridCacheQueryResponse(req.id(), req.queryId(), true,
-                        req.fields() && req.fieldsReducer() == null);
-
-                if (res == null) {
+                    sendQueryResponse(sndId, res, 0);
+                }
+                else {
                     threads.put(req.id(), Thread.currentThread());
 
                     try {
-                        GridCacheQueryInfo<K, V> info = distributedQueryInfo(sndId, req, req.fields());
+                        GridCacheQueryInfo info = distributedQueryInfo(sndId, req);
 
                         if (req.fields())
                             runFieldsQuery(info);
@@ -164,15 +163,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     catch (Throwable e) {
                         U.error(log(), "Failed to run query.", e);
 
-                        sendQueryResponse(sndId, new GridCacheQueryResponse(req.id(), req.queryId(),
-                            e.getCause()), 0);
+                        sendQueryResponse(sndId, new GridCacheQueryResponse(req.id(), e.getCause()), 0);
                     }
                     finally {
                         threads.remove(req.id());
                     }
                 }
-                else
-                    sendQueryResponse(sndId, res, 0);
             }
         }
     }
@@ -180,55 +176,47 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     /**
      * @param sndId Sender node id.
      * @param req Query request.
-     * @param fields Whether to run fields query.
      * @return Query info.
+     * @throws ClassNotFoundException If class not found.
      */
-    @SuppressWarnings("unchecked")
-    private GridCacheQueryInfo<K, V> distributedQueryInfo(UUID sndId, GridCacheQueryRequest req, boolean fields) {
-        GridPredicate<GridCacheEntry<K, V>> prjPred =
-            req.projectionFilter() == null ? F.<GridCacheEntry<K, V>>alwaysTrue() : req.projectionFilter();
+    private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest<K, V> req)
+        throws ClassNotFoundException {
+        GridPredicate<GridCacheEntry<Object, Object>> prjPred = req.projectionFilter() == null ?
+            F.<GridCacheEntry<Object, Object>>alwaysTrue() : req.projectionFilter();
 
-        GridClosure<V, Object> trans = (GridClosure<V, Object>)req.transformer();
+        GridReducer<Object, Object> rdc = req.reducer();
+        GridClosure<Object, Object> trans = req.transformer();
 
-        GridReducer<Map.Entry<K, V>, Object> rdc = (GridReducer<Map.Entry<K, V>, Object>)req.reducer();
-
-        GridReducer<List<Object>, Object> fieldsRdc = (GridReducer<List<Object>, Object>)req.fieldsReducer();
-
-        GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry = fields ?
-            new GridCacheFieldsQueryAdapter(cctx, req.clause(),
-                (GridPredicate)prjPred,
-                req.cloneValues() ? EnumSet.of(GridCacheFlag.CLONE) : EnumSet.noneOf(GridCacheFlag.class)) :
+        GridCacheQueryAdapter<?> qry =
             new GridCacheQueryAdapter<>(
                 cctx,
-                req.queryId(),
-                req.type(),
-                req.clause(),
-                null,
-                req.className(),
                 prjPred,
-                req.cloneValues() ? EnumSet.of(GridCacheFlag.CLONE) : EnumSet.noneOf(GridCacheFlag.class)
+                req.type(),
+                log,
+                req.pageSize(),
+                0,
+                false,
+                req.includeBackups(),
+                false,
+                null,
+                req.keyValueFilter(),
+                U.forName(req.className(), cctx.deploy().globalLoader()),
+                req.clause(),
+                req.includeMetaData()
             );
 
-        qry.init(req.keyFilter(), req.valueFilter(), req.beforeCallback(), req.afterCallback(), req.arguments(),
-            req.includeBackups());
-
-        return new GridCacheQueryInfo<>(
+        return new GridCacheQueryInfo(
             false,
-            req.single(),
             prjPred,
             trans,
             rdc,
-            fieldsRdc,
             qry,
-            req.pageSize(),
-            req.cloneValues(),
-            req.includeBackups(),
             null,
             sndId,
             req.id(),
             req.includeMetaData(),
-            req.visitor(),
-            req.allPages()
+            req.allPages(),
+            req.arguments()
         );
     }
 
@@ -314,18 +302,22 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     @Override protected void removeQueryIterator(@Nullable UUID sndId, long reqId) {
         super.removeQueryIterator(sndId, reqId);
 
-        Object topic = topic(sndId, reqId);
+        if (sndId != null) {
+            Object topic = topic(sndId, reqId);
 
-        cctx.io().removeMessageId(topic);
+            cctx.io().removeMessageId(topic);
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected void removeFieldsQueryResult(@Nullable UUID sndId, long reqId) {
         super.removeFieldsQueryResult(sndId, reqId);
 
-        Object topic = topic(sndId, reqId);
+        if (sndId != null) {
+            Object topic = topic(sndId, reqId);
 
-        cctx.io().removeMessageId(topic);
+            cctx.io().removeMessageId(topic);
+        }
     }
 
     /**
@@ -342,7 +334,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         GridCacheQueryFutureAdapter fut = getQueryFuture(res.requestId());
 
         if (fut != null)
-            if (fut instanceof GridCacheDistributedFieldsQueryFuture)
+            if (res.fields())
                 ((GridCacheDistributedFieldsQueryFuture)fut).onPage(
                     sndId, res.metadata(), res.data(), res.error(), res.isFinished());
             else
@@ -389,9 +381,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean onPageReady(boolean loc, GridCacheQueryInfo<K, V> qryInfo,
+    @Override protected boolean onPageReady(boolean loc, GridCacheQueryInfo qryInfo,
         Collection<?> data, boolean finished, Throwable e) {
-        GridCacheQueryFutureAdapter<K, V, ?> fut = qryInfo.localQueryFuture();
+        GridCacheLocalQueryFuture<?, ?, ?> fut = qryInfo.localQueryFuture();
 
         if (loc)
             assert fut != null;
@@ -401,7 +393,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 fut.onPage(null, null, e, true);
             else
                 sendQueryResponse(qryInfo.senderId(),
-                    new GridCacheQueryResponse<K, V>(qryInfo.requestId(), qryInfo.query().id(), e),
+                    new GridCacheQueryResponse<K, V>(qryInfo.requestId(), e),
                     qryInfo.query().timeout());
 
             return true;
@@ -410,8 +402,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         if (loc)
             fut.onPage(null, data, null, finished);
         else {
-            GridCacheQueryResponse<K, V> res = new GridCacheQueryResponse<>(qryInfo.requestId(),
-                qryInfo.query().id(), false, false);
+            GridCacheQueryResponse<K, V> res = new GridCacheQueryResponse<>(qryInfo.requestId(), false, false);
 
             res.data(data);
             res.finished(finished);
@@ -424,8 +415,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean onFieldsPageReady(boolean loc, GridCacheQueryInfo<K, V> qryInfo,
-        @Nullable List<GridCacheSqlFieldMetadata> metadata,
+    @Override protected boolean onFieldsPageReady(boolean loc, GridCacheQueryInfo qryInfo,
+        @Nullable List<GridIndexingFieldMetadata> metadata,
         @Nullable Collection<List<GridIndexingEntity<?>>> entities,
         @Nullable Collection<?> data,
         boolean finished, @Nullable Throwable e) {
@@ -439,7 +430,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             }
             else
                 sendQueryResponse(qryInfo.senderId(),
-                    new GridCacheQueryResponse<K, V>(qryInfo.requestId(), qryInfo.query().id(), e),
+                    new GridCacheQueryResponse<K, V>(qryInfo.requestId(), e),
                     qryInfo.query().timeout());
 
             return true;
@@ -451,12 +442,11 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             fut.onPage(null, metadata, data, null, finished);
         }
         else {
-            GridCacheQueryResponse<K, V> res = new GridCacheQueryResponse<>(qryInfo.requestId(),
-                qryInfo.query().id(), false, qryInfo.fieldsReducer() == null);
+            GridCacheQueryResponse<K, V> res = new GridCacheQueryResponse<>(qryInfo.requestId(), finished,
+                qryInfo.reducer() == null);
 
             res.metadata(metadata);
             res.data(entities != null ? entities : data);
-            res.finished(finished);
 
             if (!sendQueryResponse(qryInfo.senderId(), res, qryInfo.query().timeout()))
                 return false;
@@ -466,37 +456,18 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridCacheQueryFuture<R> queryLocal(GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry,
-        boolean single, boolean rmtRdcOnly, @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr,
-        @Nullable GridPredicate<?> vis) {
-        return queryLocal(qry, single, rmtRdcOnly, pageLsnr, vis, false);
-    }
-
-    /**
-     * @param qry Query.
-     * @param single {@code true} if single result requested, {@code false} if multiple.
-     * @param rmtRdcOnly {@code true} for reduce query when using remote reducer only,
-     *      otherwise it is always {@code false}.
-     * @param pageLsnr Page listener.
-     * @param vis Visitor Predicate.
-     * @param sync Whether to execute synchronously.
-     * @return Iterator over query results. Note that results become available as they come.
-     */
-    private <R> GridCacheQueryFuture<R> queryLocal(GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry,
-        boolean single, boolean rmtRdcOnly, @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr,
-        @Nullable GridPredicate<?> vis, boolean sync) {
+    @Override public GridCacheQueryFuture<?> queryLocal(GridCacheQueryBean qry) {
         assert cctx.config().getCacheMode() != LOCAL;
 
         if (log.isDebugEnabled())
             log.debug("Executing query on local node: " + qry);
 
-        GridCacheLocalQueryFuture<K, V, R> fut =
-            new GridCacheLocalQueryFuture<>(cctx, qry, single, rmtRdcOnly, pageLsnr, vis);
+        GridCacheLocalQueryFuture<K, V, ?> fut = new GridCacheLocalQueryFuture<>(cctx, qry);
 
         try {
-            validateQuery(qry);
+            qry.query().validate();
 
-            fut.execute(sync);
+            fut.execute();
         }
         catch (GridException e) {
             fut.onDone(e);
@@ -507,9 +478,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <R> GridCacheQueryFuture<R> queryDistributed(
-        GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry, Collection<GridNode> nodes, boolean single,
-        boolean rmtOnly, @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr, @Nullable GridPredicate<?> vis) {
+    @Override public GridCacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Collection<GridNode> nodes) {
         assert cctx.config().getCacheMode() != LOCAL;
 
         if (log.isDebugEnabled())
@@ -517,36 +486,28 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         long reqId = cctx.io().nextIoId();
 
-        final GridCacheDistributedQueryFuture<K, V, R> fut =
-            new GridCacheDistributedQueryFuture<>(cctx, reqId, qry, nodes, single, rmtOnly, pageLsnr, vis);
+        final GridCacheDistributedQueryFuture<K, V, ?> fut =
+            new GridCacheDistributedQueryFuture<>(cctx, reqId, qry, nodes);
 
         try {
-            validateQuery(qry);
+            qry.query().validate();
 
-            GridCacheQueryRequest<K, V> req = new GridCacheQueryRequest<>(
+            String clsName = qry.query().queryClass() != null ? qry.query().queryClass().getName() : null;
+
+            GridCacheQueryRequest req = new GridCacheQueryRequest(
                 reqId,
                 cctx.name(),
-                qry.id(),
-                qry.type(),
+                qry.query().type(),
                 false,
-                qry.clause(),
-                qry.className(),
-                qry.remoteKeyFilter(),
-                qry.remoteValueFilter(),
-                qry.beforeCallback(),
-                qry.afterCallback(),
-                qry.projectionFilter(),
-                qry instanceof GridCacheReduceQueryAdapter ?
-                    ((GridCacheReduceQueryAdapter)qry).remoteReducer() : null,
-                null,
-                qry instanceof GridCacheTransformQueryAdapter ?
-                    ((GridCacheTransformQueryAdapter)qry).remoteTransformer() : null,
-                vis,
-                qry.pageSize(),
-                qry.cloneValues(),
-                qry.includeBackups(),
+                qry.query().clause(),
+                clsName,
+                qry.query().scanFilter(),
+                qry.query().projectionFilter(),
+                qry.reducer(),
+                qry.transform(),
+                qry.query().pageSize(),
+                qry.query().includeBackups(),
                 qry.arguments(),
-                single,
                 false);
 
             addQueryFuture(req.id(), fut);
@@ -571,8 +532,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
-    @Override public void loadPage(long id, GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry,
-        Collection<GridNode> nodes, boolean all) {
+    @Override public void loadPage(long id, GridCacheQueryAdapter<?> qry, Collection<GridNode> nodes, boolean all) {
         assert cctx.config().getCacheMode() != LOCAL;
         assert qry != null;
         assert nodes != null;
@@ -583,7 +543,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         try {
             GridCacheQueryRequest<K, V> req = new GridCacheQueryRequest<>(id, cctx.name(), qry.pageSize(),
-                qry.cloneValues(), qry.includeBackups(), qry instanceof GridCacheFieldsQueryBase, all);
+                qry.includeBackups(), fut.fields(), all);
 
             sendRequest(fut, req, nodes);
         }
@@ -593,37 +553,18 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheFieldsQueryFuture queryFieldsLocal(GridCacheFieldsQueryBase qry, boolean single,
-        boolean rmtOnly, @Nullable GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr,
-        @Nullable GridPredicate<?> vis) {
-        return queryFieldsLocal(qry, single, rmtOnly, pageLsnr, vis, false);
-    }
-
-    /**
-     * @param qry Query.
-     * @param single {@code true} if single result requested, {@code false} if multiple.
-     * @param rmtOnly {@code true} for reduce query when using remote reducer only,
-     *      otherwise it is always {@code false}.
-     * @param pageLsnr Page listener.
-     * @param vis Visitor predicate.
-     * @param sync Whether to execute synchronously.
-     * @return Iterator over query results. Note that results become available as they come.
-     */
-    private GridCacheFieldsQueryFuture queryFieldsLocal(GridCacheFieldsQueryBase qry, boolean single,
-        boolean rmtOnly, @Nullable GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr,
-        @Nullable GridPredicate<?> vis, boolean sync) {
+    @Override public GridCacheQueryFuture<?> queryFieldsLocal(GridCacheQueryBean qry) {
         assert cctx.config().getCacheMode() != LOCAL;
 
         if (log.isDebugEnabled())
             log.debug("Executing query on local node: " + qry);
 
-        GridCacheLocalFieldsQueryFuture fut = new GridCacheLocalFieldsQueryFuture(
-            cctx, qry, single, rmtOnly, pageLsnr, vis);
+        GridCacheLocalFieldsQueryFuture fut = new GridCacheLocalFieldsQueryFuture(cctx, qry);
 
         try {
-            validateQuery(qry);
+            qry.query().validate();
 
-            fut.execute(sync);
+            fut.execute();
         }
         catch (GridException e) {
             fut.onDone(e);
@@ -634,9 +575,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridCacheFieldsQueryFuture queryFieldsDistributed(GridCacheFieldsQueryBase qry,
-        Collection<GridNode> nodes, boolean single, boolean rmtOnly,
-        @Nullable GridBiInClosure<UUID, Collection<List<Object>>> pageLsnr, @Nullable GridPredicate<?> vis) {
+    @Override public GridCacheQueryFuture<?> queryFieldsDistributed(GridCacheQueryBean qry,
+        Collection<GridNode> nodes) {
         assert cctx.config().getCacheMode() != LOCAL;
 
         if (log.isDebugEnabled())
@@ -645,35 +585,26 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         long reqId = cctx.io().nextIoId();
 
         final GridCacheDistributedFieldsQueryFuture fut =
-            new GridCacheDistributedFieldsQueryFuture(cctx, reqId, qry, nodes, single, rmtOnly, pageLsnr, vis);
+            new GridCacheDistributedFieldsQueryFuture(cctx, reqId, qry, nodes);
 
         try {
-            validateQuery(qry);
+            qry.query().validate();
 
             GridCacheQueryRequest req = new GridCacheQueryRequest(
                 reqId,
                 cctx.name(),
-                qry.id(),
-                qry.type(),
+                qry.query().type(),
                 true,
-                qry.clause(),
-                qry.className(),
-                qry.remoteKeyFilter(),
-                qry.remoteValueFilter(),
-                qry.beforeCallback(),
-                qry.afterCallback(),
-                qry.projectionFilter(),
+                qry.query().clause(),
                 null,
-                qry instanceof GridCacheReduceFieldsQueryAdapter ?
-                    ((GridCacheReduceFieldsQueryAdapter)qry).remoteReducer() : null,
                 null,
-                vis,
-                qry.pageSize(),
-                qry.cloneValues(),
-                qry.includeBackups(),
+                qry.query().projectionFilter(),
+                qry.reducer(),
+                qry.transform(),
+                qry.query().pageSize(),
+                qry.query().includeBackups(),
                 qry.arguments(),
-                single,
-                qry.includeMetadata());
+                qry.query().includeMetadata());
 
             addQueryFuture(req.id(), fut);
 
@@ -732,6 +663,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         if (locNode != null) {
             cctx.closures().callLocalSafe(new Callable<Object>() {
                 @Override public Object call() throws Exception {
+                    req.beforeLocalExecution(cctx);
+
                     processQueryRequest(locNodeId, req);
 
                     return null;

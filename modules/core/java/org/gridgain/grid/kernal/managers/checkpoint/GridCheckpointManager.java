@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -34,9 +34,6 @@ import static org.gridgain.grid.util.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * This class defines a checkpoint manager.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "deprecation"})
 public class GridCheckpointManager extends GridManagerAdapter<GridCheckpointSpi> {

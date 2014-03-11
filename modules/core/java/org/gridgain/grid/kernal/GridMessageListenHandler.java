@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -21,9 +22,6 @@ import java.util.*;
 
 /**
  * Continuous handler for message subscription.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridMessageListenHandler implements GridContinuousHandler {
     /** */
@@ -67,7 +65,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public boolean register(UUID nodeId, UUID routineId, final GridKernalContext ctx) throws GridException {
-        ctx.io().listenAsync(topic, pred);
+        ctx.io().addUserMessageListener(topic, pred);
 
         return true;
     }
@@ -79,7 +77,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public void unregister(UUID routineId, GridKernalContext ctx) {
-        // No-op.
+        ctx.io().removeUserMessageListener(topic, pred);
     }
 
     /** {@inheritDoc} */

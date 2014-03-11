@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@ import static org.gridgain.grid.spi.indexing.h2.opt.GridLuceneOutputStream.*;
 
 /**
  * A memory-resident {@link IndexInput} implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLuceneInputStream extends IndexInput {
     /** */

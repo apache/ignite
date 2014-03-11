@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,6 +11,8 @@ package org.gridgain.grid.spi.securesession;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.spi.securesession.noop.*;
+import org.gridgain.grid.spi.securesession.rememberme.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -19,16 +21,16 @@ import org.jetbrains.annotations.*;
  * authenticated only once and upon successful authentication get issued a secure session token
  * to reuse for consequent requests (very much the same way like HTTP sessions work).
  * <p>
- * The default secure session SPI is {@link org.gridgain.grid.spi.securesession.noop.GridNoopSecureSessionSpi}
+ * The default secure session SPI is {@link GridNoopSecureSessionSpi}
  * which permits any request.
  * <p>
  * Gridgain provides the following {@code GridSecureSessionSpi} implementations:
  * <ul>
  * <li>
- *     {@link org.gridgain.grid.spi.securesession.noop.GridNoopSecureSessionSpi} - permits any request.
+ *     {@link GridNoopSecureSessionSpi} - permits any request.
  * </li>
  * <li>
- *     {@link org.gridgain.grid.spi.securesession.rememberme.GridRememberMeSecureSessionSpi} -
+ *     {@link GridRememberMeSecureSessionSpi} -
  *     validates client session with remember-me session token.
  * </li>
  * </ul>
@@ -44,9 +46,6 @@ import org.jetbrains.annotations.*;
  * via {@link Grid#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridSecureSessionSpi extends GridSpi, GridSpiJsonConfigurable {
     /**

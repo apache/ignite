@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.*;
 
 import java.io.*;
 import java.nio.*;
@@ -19,9 +19,6 @@ import java.util.*;
 
 /**
  * GGFS write blocks message.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
     /** File id. */
@@ -243,6 +240,6 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 71;
+        return 67;
     }
 }

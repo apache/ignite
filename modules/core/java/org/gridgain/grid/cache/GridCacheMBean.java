@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,9 +13,6 @@ import org.gridgain.grid.util.mbean.*;
 
 /**
  * This interface defines JMX view on {@link GridCache}.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean that provides access to cache descriptor.")
 public interface GridCacheMBean {
@@ -194,15 +191,6 @@ public interface GridCacheMBean {
      */
     @GridMBeanDescription("True if write-behind is enabled for this cache.")
     public boolean isWriteBehindEnabled();
-
-    /**
-     * Returns {@code true} if write-behind is configured to update cache store on DHT primary
-     * nodes instead of near nodes.
-     *
-     * @return {@code True} if write-behind uses DHT primary nodes for store updates.
-     */
-    @GridMBeanDescription("True if write-behind uses primary nodes for store updates.")
-    public boolean isWriteBehindPreferPrimary();
 
     /**
      * Gets the maximum size of the write-behind buffer. When the count of unique keys

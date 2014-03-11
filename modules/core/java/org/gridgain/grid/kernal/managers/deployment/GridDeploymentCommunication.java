@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.typedef.*;
@@ -31,9 +32,6 @@ import static org.gridgain.grid.kernal.GridTopic.*;
 /**
  * Communication helper class. Provides request and response sending methods.
  * It uses communication manager as a way of sending and receiving requests.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridToStringExclude
 class GridDeploymentCommunication {

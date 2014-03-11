@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,9 +21,6 @@ import java.io.*;
  * <p>
  * Under the covers it simply puts job's {@code GridGgfsInputStream} position to range start and wraps in into
  * {@link GridFixedSizeInputStream} limited to range length.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridGgfsInputStreamJobAdapter extends GridGgfsJobAdapter {
     /** {@inheritDoc} */

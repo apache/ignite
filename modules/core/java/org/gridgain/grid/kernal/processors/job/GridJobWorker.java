@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.job;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
@@ -20,7 +20,6 @@ import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
@@ -36,9 +35,6 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
  * Job worker.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /** Per-thread held flag. */
@@ -796,8 +792,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     }
 
     /**
-     * If the job implements {@link org.gridgain.grid.compute.GridComputeJobMasterLeaveAware#onMasterNodeLeft} interface then invoke
-     * {@link org.gridgain.grid.compute.GridComputeJobMasterLeaveAware#onMasterNodeLeft(org.gridgain.grid.compute.GridComputeTaskSession)} method.
+     * If the job implements {@link GridComputeJobMasterLeaveAware#onMasterNodeLeft} interface then invoke
+     * {@link GridComputeJobMasterLeaveAware#onMasterNodeLeft(GridComputeTaskSession)} method.
      *
      * @return {@code True} if master leave has been handled (either by this call or before).
      */

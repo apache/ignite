@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -24,9 +24,6 @@ import java.util.concurrent.*;
  * {@link #throttleTimeout} number of minutes.
  * Note that not only error messages are checked for duplicates, but also exception
  * classes.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridLogThrottle {
     /** Default throttle timeout in milliseconds (value is <tt>5 * 60 * 1000</tt>). */

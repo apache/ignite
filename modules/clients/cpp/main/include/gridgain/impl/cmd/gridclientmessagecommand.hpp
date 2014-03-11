@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,9 +14,6 @@
 
 /**
  * Generic grid message command.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientMessageCommand : public GridClientMessage {
 public:

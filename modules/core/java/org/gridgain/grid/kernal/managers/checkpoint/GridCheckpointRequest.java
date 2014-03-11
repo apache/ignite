@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,9 +9,8 @@
 
 package org.gridgain.grid.kernal.managers.checkpoint;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.spi.communication.tcp.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -19,9 +18,6 @@ import java.nio.*;
 
 /**
  * This class defines checkpoint request.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
     /** */

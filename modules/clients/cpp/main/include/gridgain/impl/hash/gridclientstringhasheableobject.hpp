@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,11 +19,8 @@
 
 /**
  * Provide the implementation of hash-code for the string object.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
-class GridStringHasheableObject : public GridHasheableObject {
+class GridStringHasheableObject : public GridClientHasheableObject {
 public:
     /**
      * Public constructor.
@@ -62,11 +59,8 @@ protected:
 
 /**
  * Provide the implementation of hash-code for the string object.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
-class GridWideStringHasheableObject : public GridHasheableObject {
+class GridWideStringHasheableObject : public GridClientHasheableObject {
 public:
     /**
      * Public constructor.

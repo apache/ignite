@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.dr.hub.sender;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.dr.hub.receiver.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -16,9 +17,6 @@ import static org.gridgain.grid.dr.hub.receiver.GridDrReceiverHubLoadBalancingMo
 
 /**
  * Data center replication sender hub connection configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridDrSenderHubConnectionConfiguration {
     /** Default receiver hub load balancing policy. */
@@ -99,7 +97,7 @@ public class GridDrSenderHubConnectionConfiguration {
      * Gets local network interface name form with remote data center is reachable.
      * <p>
      * By default is set to {@code null} meaning that sender hub will be bound to the same interface as the grid itself
-     * (see {@link org.gridgain.grid.GridConfiguration#getLocalHost()})
+     * (see {@link GridConfiguration#getLocalHost()})
      *
      * @return Local network interface name form with remote data center is reachable.
      */

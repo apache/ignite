@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,16 +9,15 @@
 
 package org.gridgain.grid.spi.deployment;
 
+import org.gridgain.grid.compute.*;
+
 /**
  * Generic abstraction over deployed resource containing resource's name, class and corresponding class loader.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDeploymentResource {
     /**
      * Gets resource name, either class name or alias name, such as alias
-     * specified by {@link org.gridgain.grid.compute.GridComputeTaskName} annotation.
+     * specified by {@link GridComputeTaskName} annotation.
      *
      * @return Resource name.
      */

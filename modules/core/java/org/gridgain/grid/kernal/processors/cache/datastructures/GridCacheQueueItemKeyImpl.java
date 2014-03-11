@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
 *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,9 +19,7 @@ import java.io.*;
  * and is not known to public API. It is responsible for data affinity of a queued item
  * when used in {@code PARTITIONED} cache mode. In particular, all items belonging to the
  * same queue will be stored on the same node or distributed through grid nodes -
- * hence the {@link GridCacheAffinityMapped} annotation on {@link GridCacheQueueItemKeyImpl#affinityKey} method.
- *
- * @author GridGain
+ * hence the {@link GridCacheAffinityKeyMapped} annotation on {@link GridCacheQueueItemKeyImpl#affinityKey} method.
  */
 public class GridCacheQueueItemKeyImpl implements Externalizable, GridCacheQueueItemKey {
     /** Sequence id in queue. */
@@ -50,7 +48,7 @@ public class GridCacheQueueItemKeyImpl implements Externalizable, GridCacheQueue
     }
 
     /**
-     * Required by {@link java.io.Externalizable}.
+     * Required by {@link Externalizable}.
      */
     public GridCacheQueueItemKeyImpl() {
         // No-op.
@@ -100,7 +98,7 @@ public class GridCacheQueueItemKeyImpl implements Externalizable, GridCacheQueue
     }
 
     /** {@inheritDoc} */
-    @GridCacheAffinityMapped
+    @GridCacheAffinityKeyMapped
     @Override public String affinityKey() {
         return colloc ? qid : qid + "_" + seq;
     }

@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -6,6 +6,7 @@
  *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
+
 #include "gridgain/impl/utils/gridclientdebug.hpp"
 
 #include <iostream>
@@ -112,15 +113,15 @@ void GridClientJsonMarshaller::unwrap(const TJson& json, GridClientMessageTopolo
 
     TNodesList nodeBeans;
 
-	boost::asio::io_service ioSrvc;
+    boost::asio::io_service ioSrvc;
     boost::asio::ip::tcp::resolver resolver(ioSrvc);
 
     BOOST_FOREACH(const TJson::value_type &i, json.get_child("response")) {
         GridClientNode nb;
-        GridNodeMarshallerHelper helper(nb);
+        GridClientNodeMarshallerHelper helper(nb);
         TGridClientVariantMap caches;
-        std::vector<std::string> tcpAddrs;
-        std::vector<std::string> jettyAddrs;
+
+        std::vector<GridClientSocketAddress> tcpAddrs, jettyAddrs;
 
         TJson pt = i.second;
 
@@ -133,76 +134,88 @@ void GridClientJsonMarshaller::unwrap(const TJson& json, GridClientMessageTopolo
         if (!defaultCacheMode.empty())
             caches[""] = defaultCacheMode;
 
+        int tcpport = -1, jettyport = -1;
+
         if (pt.count("jettyPort") > 0)
-            helper.setJettyPort(pt.get("jettyPort", -1));
+            jettyport = pt.get("jettyPort", -1);
 
         if (pt.count("tcpPort") > 0)
-            helper.setTcpPort(pt.get("tcpPort", -1));
+            tcpport = pt.get("tcpPort", -1);
 
         BOOST_FOREACH(const TJson::value_type &j, pt.get_child("caches"))
             caches[j.first.data()] = j.second.data();
 
-		BOOST_FOREACH(const TJson::value_type &j, pt.get_child("tcpHostNames"))
-		{
-    		std::string newTCPAddressHostname = j.second.data();
-			if (newTCPAddressHostname.size())
-			{
-				boost::asio::ip::tcp::resolver::query queryHostname(newTCPAddressHostname, boost::lexical_cast<std::string>(pt.get("tcpPort", -1)));
-				boost::system::error_code ec;
-				boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryHostname,ec);
-				if (!ec)
-					tcpAddrs.push_back(newTCPAddressHostname);
-				else
-					GG_LOG_ERROR("Error resolving hostname: %s, %s",newTCPAddressHostname.c_str(), ec.message().c_str());
-			}
+        BOOST_FOREACH(const TJson::value_type &j, pt.get_child("tcpHostNames")) {
+            if (j.second.data().size()) {
+                GridClientSocketAddress newTCPAddress = GridClientSocketAddress(j.second.data(), tcpport);
+
+                boost::asio::ip::tcp::resolver::query queryHostname(newTCPAddress.host(),
+                    boost::lexical_cast<std::string>(pt.get("tcpPort", -1)));
+
+                boost::system::error_code ec;
+
+                boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryHostname, ec);
+
+                if (!ec)
+                    tcpAddrs.push_back(newTCPAddress);
+                else
+                    GG_LOG_ERROR("Error resolving hostname: %s, %s", newTCPAddress.host().c_str(), ec.message().c_str());
+            }
         }
 
-        BOOST_FOREACH(const TJson::value_type &j, pt.get_child("tcpAddresses"))
-        {
-        	std::string newTCPAddressIp = j.second.data();
+        BOOST_FOREACH(const TJson::value_type &j, pt.get_child("tcpAddresses")) {
+            if (j.second.data().size()) {
+                GridClientSocketAddress newTCPAddress = GridClientSocketAddress(j.second.data(), tcpport);
 
-			if (newTCPAddressIp.size())
-			{
-				boost::asio::ip::tcp::resolver::query queryIp(newTCPAddressIp, boost::lexical_cast<std::string>(pt.get("tcpPort", -1)));
-				boost::system::error_code ec;
-				boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryIp,ec);
-				if (!ec)
-					tcpAddrs.push_back(newTCPAddressIp);
-				else
-					GG_LOG_ERROR("Error resolving hostname: %s, %s",newTCPAddressIp.c_str(), ec.message().c_str());
-			}
+                boost::asio::ip::tcp::resolver::query queryIp(newTCPAddress.host(),
+                    boost::lexical_cast<std::string>(pt.get("tcpPort", -1)));
+
+                boost::system::error_code ec;
+
+                boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryIp, ec);
+
+                if (!ec)
+                    tcpAddrs.push_back(newTCPAddress);
+                else
+                    GG_LOG_ERROR("Error resolving hostname: %s, %s", newTCPAddress.host().c_str(), ec.message().c_str());
+            }
         }
 
-		BOOST_FOREACH(const TJson::value_type &j, pt.get_child("jettyHostNames"))
-		{
-    		std::string newJettyAddressHostname = j.second.data();
-    		if (newJettyAddressHostname.size())
-    		{
-        	    boost::asio::ip::tcp::resolver::query queryHostname(newJettyAddressHostname, boost::lexical_cast<std::string>(pt.get("jettyPort", -1)));
-        	    boost::system::error_code ec;
-       	    	boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryHostname,ec);
-       	    	if (!ec)
-       	    		jettyAddrs.push_back(newJettyAddressHostname);
-       	    	else
-       	    		GG_LOG_ERROR("Error resolving hostname: %s, %s",newJettyAddressHostname.c_str(), ec.message().c_str());
-    		}
+        BOOST_FOREACH(const TJson::value_type &j, pt.get_child("jettyHostNames")) {
+            if (j.second.data().size()) {
+                GridClientSocketAddress newJettyAddress = GridClientSocketAddress(j.second.data(), jettyport);
+
+                boost::asio::ip::tcp::resolver::query queryHostname(newJettyAddress.host(),
+                    boost::lexical_cast<std::string>(pt.get("jettyPort", -1)));
+
+                boost::system::error_code ec;
+
+                boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryHostname, ec);
+
+                if (!ec)
+                    jettyAddrs.push_back(newJettyAddress);
+                else
+                    GG_LOG_ERROR("Error resolving hostname: %s, %s", newJettyAddress.host().c_str(), ec.message().c_str());
+            }
         }
 
-        BOOST_FOREACH(const TJson::value_type &j, pt.get_child("jettyAddresses"))
-        {
-        	std::string newJettyAddressIp = j.second.data();
+        BOOST_FOREACH(const TJson::value_type &j, pt.get_child("jettyAddresses")) {
+            if (j.second.data().size()) {
+                GridClientSocketAddress newJettyAddress = GridClientSocketAddress(j.second.data(), jettyport);
 
-    		if (newJettyAddressIp.size())
-    		{
-        	    boost::asio::ip::tcp::resolver::query queryIp(newJettyAddressIp, boost::lexical_cast<std::string>(pt.get("jettyPort", -1)));
-        	    boost::system::error_code ec;
-       	    	boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryIp,ec);
-       	    	if (!ec)
-       	    		jettyAddrs.push_back(newJettyAddressIp);
-       	    	else
-       	    		GG_LOG_ERROR("Error resolving hostname: %s, %s",newJettyAddressIp.c_str(), ec.message().c_str());
-    		}
-		}
+                boost::asio::ip::tcp::resolver::query queryIp(newJettyAddress.host(),
+                    boost::lexical_cast<std::string>(pt.get("jettyPort", -1)));
+
+                boost::system::error_code ec;
+
+                boost::asio::ip::tcp::resolver::iterator endpoint_iter = resolver.resolve(queryIp, ec);
+
+                if (!ec)
+                    jettyAddrs.push_back(newJettyAddress);
+                else
+                    GG_LOG_ERROR("Error resolving hostname: %s, %s", newJettyAddress.host().c_str(), ec.message().c_str());
+            }
+        }
 
         helper.setCaches(caches);
         helper.setTcpAddresses(tcpAddrs);

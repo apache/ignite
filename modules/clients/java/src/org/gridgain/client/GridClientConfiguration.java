@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,6 +16,7 @@ import org.gridgain.client.marshaller.protobuf.*;
 import org.gridgain.client.ssl.*;
 import org.jetbrains.annotations.*;
 
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -23,9 +24,6 @@ import static org.apache.commons.lang.StringUtils.*;
 
 /**
  * Java client configuration.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientConfiguration {
     /** Default client protocol. */
@@ -263,7 +261,7 @@ public class GridClientConfiguration {
     /**
      * Gets flag indicating whether {@code TCP_NODELAY} flag should be enabled for outgoing connections.
      * This flag reduces communication latency and in the majority of cases should be set to true. For more
-     * information, see {@link java.net.Socket#setTcpNoDelay(boolean)}
+     * information, see {@link Socket#setTcpNoDelay(boolean)}
      * <p>
      * If not set, default value is {@link #DFLT_TCP_NODELAY}
      *
@@ -775,7 +773,7 @@ public class GridClientConfiguration {
             return null;
 
         if ("partitioned".equals(affinity))
-            return new GridClientPartitionedAffinity();
+            return new GridClientPartitionAffinity();
 
         return newInstance(GridClientDataAffinity.class, affinity);
     }

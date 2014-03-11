@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,9 +14,6 @@ import java.util.*;
 /**
  * Simple class descriptor containing simple and fully qualified class names as well as
  * the list of class fields.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridToStringClassDescriptor {
     /** */

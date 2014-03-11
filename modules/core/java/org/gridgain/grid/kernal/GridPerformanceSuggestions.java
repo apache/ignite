@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -20,9 +20,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
 
 /**
  * Grid performance suggestions.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridPerformanceSuggestions {
     /** */
@@ -64,8 +61,8 @@ public class GridPerformanceSuggestions {
             return;
 
         if (!F.isEmpty(perfs) && !suppressed.containsAll(perfs)) {
-            U.quietAndInfo(log, "Performance suggestions for grid '" +
-                (gridName == null ? "<default>" : '\'' + gridName + '\'') + "' (fix if possible)");
+            U.quietAndInfo(log, "Performance suggestions for grid" +
+                (gridName == null ? "" : '\'' + gridName + '\'') + " (fix if possible)");
             U.quietAndInfo(log, "To disable, set -D" + GG_PERFORMANCE_SUGGESTIONS_DISABLED + "=true");
 
             for (String s : perfs)

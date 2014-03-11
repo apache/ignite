@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,9 +11,6 @@ package org.gridgain.grid.kernal.processors.dr;
 
 /**
  * Data center replication type.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridDrType {
     /** Do not replicate that entry. */

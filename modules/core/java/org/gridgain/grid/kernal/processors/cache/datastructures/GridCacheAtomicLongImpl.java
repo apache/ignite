@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,7 +17,6 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.GridLogger;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -28,12 +27,8 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
  * Cache atomic long implementation.
- *
- * @author @java.author
- * @version @java.version
  */
-public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter implements GridCacheAtomicLongEx,
-    Externalizable {
+public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Externalizable {
     /** Deserialization stash. */
     private static final ThreadLocal<GridBiTuple<GridCacheContext, String>> stash =
         new ThreadLocal<GridBiTuple<GridCacheContext, String>>() {
@@ -98,7 +93,7 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
 
                 throw e;
             } finally {
-                tx.end();
+                tx.close();
             }
         }
     };
@@ -129,7 +124,7 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
 
                 throw e;
             } finally {
-                tx.end();
+                tx.close();
             }
         }
     };
@@ -160,7 +155,7 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
 
                 throw e;
             } finally {
-                tx.end();
+                tx.close();
             }
         }
     };
@@ -191,7 +186,7 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
 
                 throw e;
             } finally {
-                tx.end();
+                tx.close();
             }
         }
     };
@@ -239,24 +234,10 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Long> getAsync() throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(getCall, true);
-    }
-
-    /** {@inheritDoc} */
     @Override public long incrementAndGet() throws GridException {
         checkRemoved();
 
         return CU.outTx(incAndGetCall, ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Long> incrementAndGetAsync() throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(incAndGetCall, true);
     }
 
     /** {@inheritDoc} */
@@ -267,24 +248,10 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Long> getAndIncrementAsync() throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(getAndIncCall, true);
-    }
-
-    /** {@inheritDoc} */
     @Override public long addAndGet(long l) throws GridException {
         checkRemoved();
 
         return CU.outTx(internalAddAndGet(l), ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Long> addAndGetAsync(long l) throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(internalAddAndGet(l), true);
     }
 
     /** {@inheritDoc} */
@@ -295,24 +262,10 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Long> getAndAddAsync(long l) throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(internalGetAndAdd(l), true);
-    }
-
-    /** {@inheritDoc} */
     @Override public long decrementAndGet() throws GridException {
         checkRemoved();
 
         return CU.outTx(decAndGetCall, ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Long> decrementAndGetAsync() throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(decAndGetCall, true);
     }
 
     /** {@inheritDoc} */
@@ -323,13 +276,6 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Long> getAndDecrementAsync() throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(getAndDecCall, true);
-    }
-
-    /** {@inheritDoc} */
     @Override public long getAndSet(long l) throws GridException {
         checkRemoved();
 
@@ -337,28 +283,10 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<Long> getAndSetAsync(long l) throws GridException {
-        checkRemoved();
-
-        return ctx.closures().callLocalSafe(internalGetAndSet(l), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean compareAndSet(long l, GridPredicate<Long> p, GridPredicate<Long>... ps)
+    @Override public boolean compareAndSet(long expVal, long newVal)
         throws GridException {
         checkRemoved();
-        A.notNull(p, "p");
-
-        return CU.outTx(internalCompareAndSet(l, p, ps), ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridFuture<Boolean> compareAndSetAsync(long l, GridPredicate<Long> p, GridPredicate<Long>... ps)
-        throws GridException {
-        checkRemoved();
-        A.notNull(p, "p");
-
-        return ctx.closures().callLocalSafe(internalCompareAndSet(l, p, ps), true);
+        return CU.outTx(internalCompareAndSet(expVal, newVal), ctx);
     }
 
     /**
@@ -423,7 +351,7 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };
@@ -461,7 +389,7 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };
@@ -499,24 +427,21 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };
     }
 
     /**
-     * Method returns callable for execution {@link #compareAndSet(long,GridPredicate,GridPredicate[])}
+     * Method returns callable for execution {@link #compareAndSet(long, long)}
      * operation in async and sync mode.
      *
-     * @param l Value will be added to atomic long.
-     * @param p  Predicate contains conditions which will be checked.
-     *      Argument of predicate is current atomic long value.
-     * @param ps Additional predicates can be used optional .
+     * @param expVal Expected atomic long value.
+     * @param newVal New atomic long value.
      * @return Callable for execution in async and sync mode.
      */
-    private Callable<Boolean> internalCompareAndSet(final long l, final GridPredicate<Long> p,
-        final GridPredicate<Long>... ps) {
+    private Callable<Boolean> internalCompareAndSet(final long expVal, final long newVal) {
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 GridCacheTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
@@ -527,13 +452,10 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
                     if (val == null)
                         throw new GridException("Failed to find atomic long with given name: " + name);
 
-                    boolean retVal = p.apply(val.get());
-
-                    for (GridPredicate<Long> p : ps)
-                        retVal &= p.apply(val.get());
+                    boolean retVal = val.get() == expVal;
 
                     if (retVal) {
-                        val.set(l);
+                        val.set(newVal);
 
                         atomicView.put(key, val);
 
@@ -547,7 +469,7 @@ public final class GridCacheAtomicLongImpl extends GridMetadataAwareAdapter impl
 
                     throw e;
                 } finally {
-                    tx.end();
+                    tx.close();
                 }
             }
         };

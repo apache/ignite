@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -11,11 +11,11 @@ package org.gridgain.grid.spi.eventstorage.memory;
 
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.eventstorage.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -42,7 +42,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  * <ul>
  * <li>Event queue size (see {@link #setExpireCount(long)})</li>
  * <li>Event time-to-live value (see {@link #setExpireAgeMs(long)})</li>
- * <li>{@link #setFilter(org.gridgain.grid.lang.GridPredicate)} - Event filter that should be used for decision to accept event.</li>
+ * <li>{@link #setFilter(GridPredicate)} - Event filter that should be used for decision to accept event.</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
  * GridMemoryEventStorageSpi is used by default and should be explicitly configured only
@@ -53,11 +53,6 @@ import static org.gridgain.grid.events.GridEventType.*;
  *
  * // Init own events size.
  * spi.setExpireCount(2000);
- *
- * GridJexlPredicate<GridEvent> filter = new GridJexlPredicate<GridEvent>("event.taskName == 'task'", "event");
- *
- * // Add filter.
- * spi.setFilter(filter);
  *
  * GridConfiguration cfg = new GridConfiguration();
  *
@@ -75,15 +70,6 @@ import static org.gridgain.grid.events.GridEventType.*;
  *         &lt;property name="discoverySpi"&gt;
  *             &lt;bean class="org.gridgain.grid.spi.eventStorage.memory.GridMemoryEventStorageSpi"&gt;
  *                 &lt;property name="expireCount" value="2000"/&gt;
- *                 &lt;property name="filter"&gt;
- *                     &lt;bean class="org.gridgain.grid.lang.GridJexlPredicate"&gt;
- *                         &lt;property name="expression"&gt;
- *                             &lt;value&gt;
- *                                 &lt;![CDATA[elem.taskName == 'task']]&gt;
- *                             &lt;/value&gt;
- *                         &lt;/property&gt;
- *                     &lt;/bean&gt;
- *                 &lt;/property&gt;
  *             &lt;/bean&gt;
  *         &lt;/property&gt;
  *         ...
@@ -93,9 +79,6 @@ import static org.gridgain.grid.events.GridEventType.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- *
- * @author @java.author
- * @version @java.version
  * @see GridEventStorageSpi
  */
 @GridSpiInfo(
@@ -141,7 +124,6 @@ public class GridMemoryEventStorageSpi extends GridSpiAdapter implements GridEve
      * Sets filter for events to be recorded.
      *
      * @param filter Filter to use.
-     * @see GridJexlPredicate
      */
     @GridSpiConfiguration(optional = true)
     public void setFilter(GridPredicate<GridEvent> filter) {
@@ -227,12 +209,12 @@ public class GridMemoryEventStorageSpi extends GridSpiAdapter implements GridEve
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridEvent> localEvents(GridPredicate<? super GridEvent> p) {
+    @Override public <T extends GridEvent> Collection<T> localEvents(GridPredicate<T> p) {
         A.notNull(p, "p");
 
         cleanupQueue();
 
-        return F.retain(evts, true, p);
+        return F.retain((Collection<T>)evts, true, p);
     }
 
     /** {@inheritDoc} */

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.swapspace.*;
@@ -31,9 +32,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 
 /**
  * This class provides convenient adapter for SPI implementations.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean, GridSpiJsonConfigurable {
     /** Instance of SPI annotation. */
@@ -567,9 +565,6 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
 
     /**
      * Temporarily SPI context.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private static class GridDummySpiContext implements GridSpiContext {
         /** */

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@ import java.io.*;
 
 /**
  * Return value for cases where both, value and success flag need to be returned.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheReturn<V> implements Externalizable, GridOptimizedMarshallable {
     /** */

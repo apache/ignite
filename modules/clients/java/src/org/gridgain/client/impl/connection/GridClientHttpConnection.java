@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -26,9 +26,6 @@ import java.util.logging.*;
 
 /**
  * Java client implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridClientHttpConnection extends GridClientConnection {
     /** Logger. */

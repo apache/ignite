@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ import java.lang.reflect.*;
 /**
  * Wrapper for data where resource should be injected.
  * Bean contains {@link Field} and {@link Annotation} for that class field.
- *
- * @author @java.author
- * @version @java.version
  */
 class GridResourceField {
     /** Field where resource should be injected. */

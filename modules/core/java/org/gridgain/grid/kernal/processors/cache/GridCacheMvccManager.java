@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
@@ -32,9 +33,6 @@ import static org.gridgain.grid.util.GridConcurrentFactory.*;
 
 /**
  * Manages lock order within a thread.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Maxim number of removed locks. */

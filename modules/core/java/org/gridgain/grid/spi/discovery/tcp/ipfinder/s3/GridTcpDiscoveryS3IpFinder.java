@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -52,9 +52,6 @@ import java.util.concurrent.atomic.*;
  * or home network tests.
  * <p>
  * Note that this finder is shared by default (see {@link GridTcpDiscoveryIpFinder#isShared()}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryS3IpFinder extends GridTcpDiscoveryIpFinderAdapter {
     /** Delimiter to use in S3 entries name. */

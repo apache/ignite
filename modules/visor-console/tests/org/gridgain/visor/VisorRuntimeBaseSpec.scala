@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -17,9 +17,6 @@ import org.gridgain.grid.{GridGain => G}
 
 /**
  * Base abstract class for unit tests requiring Visor runtime.
- *
- * @author @java.author
- * @version @java.version
  */
 abstract class VisorRuntimeBaseSpec(private[this] val num: Int) extends FlatSpec with ShouldMatchers
     with BeforeAndAfterAll {

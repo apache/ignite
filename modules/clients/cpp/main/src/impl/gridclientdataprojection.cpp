@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -29,11 +29,15 @@ public:
             : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
     }
 
+    CacheRequestProjectionClosure(GridClientUuid & clientId, GridCacheRequestCommand& cacheCmd)
+            : ClientMessageProjectionClosure(clientId), cmd(cacheCmd) {
+    }
+
     CacheRequestProjectionClosure(std::string clientId, GridCacheRequestCommand& cacheCmd)
             : ClientMessageProjectionClosure(clientId.c_str()), cmd(cacheCmd) {
     }
 
-    virtual void apply(TGridClientNodePtr node, GridSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
+    virtual void apply(TGridClientNodePtr node, GridClientSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
         fillRequestHeader(cmd, node);
 
         cmdExecutor.executeModifyCacheCmd(connParams, cmd, rslt);
@@ -61,7 +65,7 @@ public:
             : ClientMessageProjectionClosure(clientId.c_str()), cmd(cacheCmd) {
     }
 
-    virtual void apply(TGridClientNodePtr node, GridSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
+    virtual void apply(TGridClientNodePtr node, GridClientSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
         fillRequestHeader(cmd, node);
 
         cmdExecutor.executeGetCacheMetricsCmd(connParams, cmd, rslt);
@@ -88,7 +92,7 @@ public:
 
     }
 
-    virtual void apply(TGridClientNodePtr node, GridSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
+    virtual void apply(TGridClientNodePtr node, GridClientSocketAddress connParams, GridClientCommandExecutor& cmdExecutor) {
         fillRequestHeader(cmd, node);
 
         cmdExecutor.executeGetCacheCmd(connParams, cmd, rslt);
@@ -143,14 +147,13 @@ bool GridClientDataProjectionImpl::put(const GridClientVariant& key, const GridC
     if (invalidated) throw GridClientClosedException();
 
     GridCacheRequestCommand cmd(GridCacheRequestCommand::PUT);
-    GridCacheRequestCommand::TKeyValueMap keyValues;
 
     cmd.setKey(key);
     cmd.setValue(val);
     cmd.setCacheName(prjCacheName);
     cmd.setFlags(prjFlags);
 
-    CacheRequestProjectionClosure c(clientUniqueId(), cmd);
+    CacheRequestProjectionClosure c(clientUniqueUuid(), cmd);
 
     this->withReconnectHandling(c, prjCacheName, GridClientVariantHasheableObject(key));
 
@@ -490,7 +493,7 @@ TGridClientFutureDataMetrics GridClientDataProjectionImpl::metricsAsync() {
     return res;
 }
 
-GridUuid GridClientDataProjectionImpl::affinity(const GridClientVariant& key) {
+GridClientUuid GridClientDataProjectionImpl::affinity(const GridClientVariant& key) {
     return affinityNode(prjCacheName, GridClientVariantHasheableObject(key))->getNodeId();
 }
 

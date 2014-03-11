@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -47,13 +47,10 @@ import org.gridgain.grid.lang.*;
  * <ul>
  *     <li>{@link GridCacheDataStructures#atomicLong(String, long, boolean)}</li>
  * </ul>
- *
- * @author @java.author
- * @version @java.version
  * @see GridCacheDataStructures#atomicStamped(String, Object, Object, boolean)
  * @see GridCacheDataStructures#removeAtomicStamped(String)
  */
-public interface GridCacheAtomicStamped<T, S> extends GridMetadataAware{
+public interface GridCacheAtomicStamped<T, S> {
     /**
      * Name of atomic stamped.
      *
@@ -70,14 +67,6 @@ public interface GridCacheAtomicStamped<T, S> extends GridMetadataAware{
     public GridBiTuple<T, S> get() throws GridException;
 
     /**
-     * Gets both current value and current stamp of atomic stamped asynchronously.
-     *
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<GridBiTuple<T, S>> getAsync() throws GridException;
-
-    /**
      * Unconditionally sets the value and the stamp.
      *
      * @param val Value.
@@ -85,16 +74,6 @@ public interface GridCacheAtomicStamped<T, S> extends GridMetadataAware{
      * @throws GridException If operation failed.
      */
     public void set(T val, S stamp) throws GridException;
-
-    /**
-     * Unconditionally sets the value and the stamp asynchronously.
-     *
-     * @param val Value.
-     * @param stamp Stamp.
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Boolean> setAsync(T val, S stamp) throws GridException;
 
     /**
      * Conditionally sets the new value and new stamp. They will be set if {@code expVal}
@@ -110,111 +89,6 @@ public interface GridCacheAtomicStamped<T, S> extends GridMetadataAware{
     public boolean compareAndSet(T expVal, T newVal, S expStamp, S newStamp) throws GridException;
 
     /**
-     * Conditionally sets the new value and new stamp. They will be set if {@code expVal}
-     * and {@code expStamp} are equal to current value and current stamp respectively.
-     *
-     * @param expVal Expected value.
-     * @param newValClos Closure which generates new value.
-     * @param expStamp Expected stamp.
-     * @param newStampClos Closure which generates new stamp value.
-     * @return Result of operation execution. If {@code true} than  value and stamp will be updated.
-     * @throws GridException If operation failed.
-     */
-    public boolean compareAndSet(T expVal, GridClosure<T, T> newValClos, S expStamp,
-        GridClosure<S, S> newStampClos) throws GridException;
-
-    /**
-     * Conditionally sets the new value and new stamp. They will be set if
-     * {@code expValPred} and {@code expStampPred} both evaluate to {@code true}.
-     *
-     * @param expValPred Predicate which should evaluate to {@code true} for value to be set.
-     * @param newValClos Closure which generates new value.
-     * @param expStampPred Predicate which should evaluate to {@code true} for value to be set
-     * @param newStampClos Closure which generates new stamp value.
-     * @return Result of operation execution. If {@code true} than  value and stamp will be updated.
-     * @throws GridException If operation failed.
-     */
-    public boolean compareAndSet(GridPredicate<T> expValPred, GridClosure<T, T> newValClos,
-        GridPredicate<S> expStampPred, GridClosure<S, S> newStampClos) throws GridException;
-
-    /**
-     * Conditionally sets the new value and new stamp. They will be set if {@code expValPred}
-     * and {@code expStampPred} both evaluate to {@code true}.
-     *
-     * @param expValPred Predicate which should evaluate to {@code true} for value to be set
-     * @param newVal New value.
-     * @param expStampPred Predicate which should evaluate to {@code true} for value to be set
-     * @param newStamp New stamp.
-     * @return Result of operation execution. If {@code true} than  value and stamp will be updated.
-     * @throws GridException If operation failed.
-     */
-    public boolean compareAndSet(GridPredicate<T> expValPred, T newVal,
-        GridPredicate<S> expStampPred, S newStamp) throws GridException;
-
-    /**
-     * Conditionally asynchronously sets the new value and new stamp. They will be set if
-     * {@code expVal} and {@code expStamp} are equal to current value and
-     * current stamp respectively.
-     *
-     * @param expVal Expected value.
-     * @param newVal New value.
-     * @param expStamp Expected stamp.
-     * @param newStamp New stamp.
-     * @return Future that completes once calculation has finished. If {@code true} than value and
-     *      stamp will be updated.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Boolean> compareAndSetAsync(T expVal, T newVal, S expStamp, S newStamp)
-        throws GridException;
-
-    /**
-     * Conditionally asynchronously sets the new value and new stamp. They will be set if
-     * {@code expVal} and {@code expStamp} are equal to current value and current
-     * stamp respectively.
-     *
-     * @param expVal Expected value.
-     * @param newValClos Closure generates new value.
-     * @param expStamp Expected stamp.
-     * @param newStampClos Closure generates new stamp value.
-     * @return Future that completes once calculation has finished. If {@code true} than  value
-     *      and stamp will be updated.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Boolean> compareAndSetAsync(T expVal, GridClosure<T, T> newValClos, S expStamp,
-        GridClosure<S, S> newStampClos) throws GridException;
-
-    /**
-     * Conditionally asynchronously sets the new value and new stamp. They will be set if
-     * {@code expValPred} and {@code expStampPred} both evaluate to {@code true}.
-     *
-     * @param expValPred Predicate which should evaluate to {@code true} for value to be set
-     * @param newValClos Closure generates new value.
-     * @param expStampPred Predicate which should evaluate to {@code true} for value to be set
-     * @param newStampClos Closure generates new stamp value.
-     * @return Future that completes once calculation has finished. If {@code true} than value and
-     *      stamp will be updated.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Boolean> compareAndSetAsync(GridPredicate<T> expValPred,
-        GridClosure<T, T> newValClos, GridPredicate<S> expStampPred, GridClosure<S, S> newStampClos)
-        throws GridException;
-
-    /**
-     * Conditionally asynchronously sets the new value and new stamp. They will be set if
-     * {@code expValPred} and {@code expStampPred} are true.
-     *
-     * @param expValPred Predicate which should evaluate to {@code true} for value to be set.
-     * @param newVal New value.
-     * @param expStampPred Predicate which should evaluate to {@code true} for value to be set.
-     * @param newStamp New stamp.
-     * @return Future that completes once calculation has finished. If {@code true} than
-     *      value and stamp will be updated.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<Boolean> compareAndSetAsync(GridPredicate<T> expValPred, T newVal,
-        GridPredicate<S> expStampPred, S newStamp) throws GridException;
-
-    /**
      * Gets current stamp.
      *
      * @return Current stamp.
@@ -223,28 +97,12 @@ public interface GridCacheAtomicStamped<T, S> extends GridMetadataAware{
     public S stamp() throws GridException;
 
     /**
-     * Gets current stamp asynchronously.
-     *
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<S> stampAsync() throws GridException;
-
-    /**
      * Gets current value.
      *
      * @return Current value.
      * @throws GridException If operation failed.
      */
     public T value() throws GridException;
-
-    /**
-     * Gets current value asynchronously.
-     *
-     * @return Future that completes once calculation has finished.
-     * @throws GridException If operation failed.
-     */
-    public GridFuture<T> valueAsync() throws GridException;
 
     /**
      * Gets status of atomic.

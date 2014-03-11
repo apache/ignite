@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Continuous processor message.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
     /** Message type. */
@@ -202,7 +199,7 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 64;
+        return 60;
     }
 
     /** {@inheritDoc} */

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -39,9 +39,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
  * <p>
  * Note that scripts {@code ${GRIDGAIN_HOME}/bin/ggstart.{sh|bat}} shipped with GridGain use
  * this startup and you can use them as an example.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"CallToSystemExit"})
 public final class GridCommandLineStartup {

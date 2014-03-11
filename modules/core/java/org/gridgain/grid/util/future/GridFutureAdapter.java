@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,10 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -27,9 +25,6 @@ import java.util.concurrent.locks.*;
 
 /**
  * Future adapter.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements GridFuture<R>, Externalizable {
     /** Logger reference. */
@@ -407,15 +402,6 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     public boolean isFailed() {
         // Must read endTime first.
         return endTime != 0 && err != null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridAbsPredicate predicate() {
-        return new PA() {
-            @Override public boolean apply() {
-                return isDone();
-            }
-        };
     }
 
     /** {@inheritDoc} */

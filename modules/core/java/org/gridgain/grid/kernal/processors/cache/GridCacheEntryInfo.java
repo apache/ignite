@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -19,9 +19,6 @@ import java.io.*;
 
 /**
  * Entry information that gets passed over wire.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheEntryInfo<K, V> implements Externalizable {
     /** Cache key. */
@@ -210,10 +207,10 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
 
         keyBytesSent = depEnabled || key == null;
 
-        if (valBytes == null && val != null && !valIsByteArr && ctx.sendValueBytes())
+        if (valBytes == null && val != null && !valIsByteArr)
             valBytes = CU.marshal(ctx, val);
 
-        valBytesSent = (valBytes != null && ctx.sendValueBytes() && !valIsByteArr) || val == null;
+        valBytesSent = (valBytes != null && !valIsByteArr) || val == null;
     }
 
     /**

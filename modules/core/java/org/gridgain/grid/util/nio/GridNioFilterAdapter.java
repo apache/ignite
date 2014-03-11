@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,9 +14,6 @@ import org.gridgain.grid.*;
 /**
  * Class that defines the piece for application-to-network and vice-versa data conversions
  * (protocol transformations, encryption, etc.)
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridNioFilterAdapter implements GridNioFilter {
     /** Filter name. */

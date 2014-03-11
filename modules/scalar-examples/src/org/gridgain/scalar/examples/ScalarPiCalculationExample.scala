@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -21,17 +21,14 @@ import scala.math._
  * or any explicit deployment.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-default.xml'`.
- *
- * @author @java.author
- * @version @java.version
+ * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
  */
 object ScalarPiCalculationExample {
     /** Number of iterations per node. */
     private val N = 10000
 
     def main(args: Array[String]) {
-        scalar("examples/config/example-default.xml") {
+        scalar("examples/config/example-compute.xml") {
             val jobs = for (i <- 0 until grid$.nodes().size()) yield () => calcPi(i * N)
 
             println("Pi estimate: " + grid$.reduce$[Double, Double](jobs, _.sum, null))

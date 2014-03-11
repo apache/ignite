@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -12,7 +12,6 @@ package org.gridgain.grid.compute;
 import org.gridgain.grid.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.checkpoint.*;
-import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -93,9 +92,6 @@ import java.util.*;
  * To see example on how to use {@code GridComputeTaskSession} refer to
  * <a href="https://github.com/gridgain/gridgain/tree/master/examples/java/org/gridgain/examples/helloworld/gridify/session" target="github">HelloWorld Distributed Task Session Example</a>
  * on GitHub.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridComputeTaskSession {
     /**

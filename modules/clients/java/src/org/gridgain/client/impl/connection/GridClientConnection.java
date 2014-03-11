@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,9 +21,6 @@ import static org.gridgain.client.impl.connection.GridClientConnectionCloseReaso
 /**
  * Facade for all possible network communications between client and server. Introduced to hide
  * protocol implementation (TCP, HTTP) from client code.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridClientConnection {
     /** Topology */
@@ -103,9 +100,6 @@ public abstract class GridClientConnection {
 
         if (flagSet.contains(GridClientCacheFlag.SYNC_COMMIT))
             bits |= 1 << 2;
-
-        if (flagSet.contains(GridClientCacheFlag.SYNC_ROLLBACK))
-            bits |= 1 << 3;
 
         if (flagSet.contains(GridClientCacheFlag.INVALIDATE))
             bits |= 1 << 4;

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,8 +10,6 @@
 package org.gridgain.grid.compute;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -58,57 +56,10 @@ import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
  * }
  * </pre>
  * For more information refer to {@link GridComputeTask} documentation.
- *
- * @author @java.author
- * @version @java.version
  * @param <T> Type of the task argument.
  * @param <R> Type of the task result returning from {@link GridComputeTask#reduce(List)} method.
  */
-public abstract class GridComputeTaskAdapter<T, R> implements GridComputeTask<T, R>, GridPeerDeployAware {
-    /** Peer deploy aware class. */
-    private transient volatile GridPeerDeployAware pda;
-
-    /** {@inheritDoc} */
-    @Override public Class<?> deployClass() {
-        if (pda == null)
-            pda = U.detectPeerDeployAware(this);
-
-        return pda.deployClass();
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClassLoader classLoader() {
-        if (pda == null)
-            pda = U.detectPeerDeployAware(this);
-
-        return pda.classLoader();
-    }
-
-    /**
-     * Empty constructor.
-     */
-    protected GridComputeTaskAdapter() {
-        // No-op.
-    }
-
-    /**
-     * Constructor that receives deployment information for task.
-     *
-     * @param pda Deployment information.
-     */
-    protected GridComputeTaskAdapter(@Nullable GridPeerDeployAware pda) {
-        setPeerDeployAware(pda);
-    }
-
-    /**
-     * Sets deployment information for this task.
-     *
-     * @param pda Deployment information.
-     */
-    public void setPeerDeployAware(@Nullable GridPeerDeployAware pda) {
-        this.pda = pda;
-    }
-
+public abstract class GridComputeTaskAdapter<T, R> implements GridComputeTask<T, R> {
     /**
      * Default implementation which will wait for all jobs to complete before
      * calling {@link #reduce(List)} method.
@@ -132,7 +83,10 @@ public abstract class GridComputeTaskAdapter<T, R> implements GridComputeTask<T,
         // Try to failover if result is failed.
         if (e != null) {
             // Don't failover user's code errors.
-            if (e instanceof GridComputeExecutionRejectedException || e instanceof GridTopologyException)
+            if (e instanceof GridComputeExecutionRejectedException ||
+                e instanceof GridTopologyException ||
+                // Failover exception is always wrapped.
+                e.hasCause(GridComputeJobFailoverException.class))
                 return FAILOVER;
 
             throw new GridException("Remote job threw user exception (override or implement GridComputeTask.result(..) " +

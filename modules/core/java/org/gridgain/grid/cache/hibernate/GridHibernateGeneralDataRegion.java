@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@ import org.jetbrains.annotations.*;
 /**
  * Implementation of {@link GeneralDataRegion}. This interface defines common contract for {@link QueryResultsRegion}
  * and {@link TimestampsRegion}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridHibernateGeneralDataRegion extends GridHibernateRegion implements GeneralDataRegion {
     /**

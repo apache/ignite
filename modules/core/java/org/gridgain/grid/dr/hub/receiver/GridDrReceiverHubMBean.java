@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,9 +13,6 @@ import org.gridgain.grid.util.mbean.*;
 
 /**
  * This interface defines JMX view on data center replication receiver hub.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean that provides access to receiver hub descriptor.")
 public interface GridDrReceiverHubMBean {
@@ -114,14 +111,6 @@ public interface GridDrReceiverHubMBean {
      */
     @GridMBeanDescription("DR data loader per node buffer size.")
     public int getPerNodeBufferSize();
-
-    /**
-     * Gets data center replication data loader per operation keys count.
-     *
-     * @return Per operation keys count.
-     */
-    @GridMBeanDescription("DR data loader per operation keys count.")
-    public int getPerOperationKeysCount();
 
     /**
      * Gets per node parallel load operations.

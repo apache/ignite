@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -29,11 +29,39 @@ import static org.gridgain.grid.spi.GridPortProtocol.*;
 
 /**
  * Jetty REST protocol implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridJettyRestProtocol extends GridRestProtocolAdapter {
+    /**
+     *
+     */
+    static {
+        if (!Boolean.getBoolean(GridSystemProperties.GG_JETTY_LOG_NO_OVERRIDE)) {
+            String ctgrJetty = "org.eclipse.jetty";                         // WARN for this category.
+            String ctgrJettyUtil = "org.eclipse.jetty.util.log";            // ERROR for this...
+            String ctgrJettyUtilComp = "org.eclipse.jetty.util.component";  // ...and this.
+
+            try {
+                Class<?> logCls = Class.forName("org.apache.log4j.Logger");
+
+                Object logJetty = logCls.getMethod("getLogger", String.class).invoke(logCls, ctgrJetty);
+                Object logJettyUtil = logCls.getMethod("getLogger", String.class).invoke(logCls, ctgrJettyUtil);
+                Object logJettyUtilComp = logCls.getMethod("getLogger", String.class).invoke(logCls, ctgrJettyUtilComp);
+
+                Class<?> lvlCls = Class.forName("org.apache.log4j.Level");
+
+                Object warnLvl = lvlCls.getField("WARN").get(null);
+                Object errLvl = lvlCls.getField("ERROR").get(null);
+
+                logJetty.getClass().getMethod("setLevel", lvlCls).invoke(logJetty, warnLvl);
+                logJettyUtil.getClass().getMethod("setLevel", lvlCls).invoke(logJetty, errLvl);
+                logJettyUtilComp.getClass().getMethod("setLevel", lvlCls).invoke(logJetty, errLvl);
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
+        }
+    }
+
     /** Default Jetty configuration file path. */
     public static final String DFLT_CFG_PATH = "config/rest/rest-jetty.xml";
 
@@ -139,16 +167,6 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         con.setPort(currPort);
         port = currPort;
-    }
-
-    /**
-     * Gets "on" or "off" string for given boolean value.
-     *
-     * @param b Boolean value to convert.
-     * @return Result string.
-     */
-    private String onOff(boolean b) {
-        return b ? "on" : "off";
     }
 
     /**

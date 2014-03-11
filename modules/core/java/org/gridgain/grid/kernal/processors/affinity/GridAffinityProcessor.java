@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.*;
@@ -33,9 +34,6 @@ import static org.gridgain.grid.kernal.processors.affinity.GridAffinityUtils.*;
 
 /**
  * Data affinity processor.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridAffinityProcessor extends GridProcessorAdapter {
     /** Affinity map cleanup delay (ms). */
@@ -63,7 +61,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             if (affMap.isEmpty())
                 return; // Skip empty affinity map.
 
-            GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
+            final GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
             // Clean up affinity functions if such cache no more exists.
             if (evtType == EVT_NODE_FAILED || evtType == EVT_NODE_LEFT) {
@@ -82,17 +80,21 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
             // Cleanup outdated caches.
             for (GridFuture<GridAffinityCache> f : affMap.values()) {
-                try {
-                    GridAffinityCache affCache = f.get();
+                f.listenAsync(new CI1<GridFuture<GridAffinityCache>>() {
+                    @Override public void apply(GridFuture<GridAffinityCache> f) {
+                        try {
+                            GridAffinityCache affCache = f.get();
 
-                    if (affCache != null)
-                        affCache.cleanUpCache(discoEvt.topologyVersion());
-                }
-                catch (GridException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to get affinity cache [discoEvt=" + discoEvt +
-                            ", err=" + e.getMessage() + ']');
-                }
+                            if (affCache != null)
+                                affCache.cleanUpCache(discoEvt.topologyVersion());
+                        }
+                        catch (GridException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to get affinity cache [discoEvt=" + discoEvt +
+                                    ", err=" + e.getMessage() + ']');
+                        }
+                    }
+                });
             }
         }
     };
@@ -233,9 +235,10 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         if (U.hasCache(loc, cacheName)) {
             GridCache<K, ?> cache = ctx.cache().cache(cacheName);
 
-            GridCacheAffinity a = cache.configuration().getAffinity();
-            GridCacheAffinityMapper m = cache.configuration().getAffinityMapper();
-            GridAffinityCache affCache = new GridAffinityCache(ctx, cacheName, a, m);
+            GridCacheAffinityFunction a = cache.configuration().getAffinity();
+            GridCacheAffinityKeyMapper m = cache.configuration().getAffinityMapper();
+            GridAffinityCache affCache = new GridAffinityCache(ctx, cacheName, a, m,
+                cache.configuration().getBackups());
 
             GridFuture<GridAffinityCache> old = affMap.putIfAbsent(maskNull(cacheName),
                 new GridFinishedFuture<>(ctx, affCache));
@@ -316,9 +319,13 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
                 affMap.remove(maskNull(cacheName), fut0);
 
                 fut0.onDone(new GridException("Failed to get affinity mapping from node: " + n, e));
+
+                break;
             }
             catch (RuntimeException | Error e) {
                 fut0.onDone(new GridException("Failed to get affinity mapping from node: " + n, e));
+
+                break;
             }
         }
 
@@ -326,7 +333,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Requests {@link GridCacheAffinity} and {@link GridCacheAffinityMapper} from remote node.
+     * Requests {@link GridCacheAffinityFunction} and {@link GridCacheAffinityKeyMapper} from remote node.
      *
      * @param cacheName Name of cache on which affinity is requested.
      * @param n Node from which affinity is requested.
@@ -335,17 +342,17 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     private GridAffinityCache affinityFromNode(@Nullable String cacheName, GridNode n)
         throws GridException {
-        GridTuple3<GridAffinityMessage, GridAffinityMessage, GridException> t = ctx.closure()
+        GridTuple4<GridAffinityMessage, GridAffinityMessage, Integer, GridException> t = ctx.closure()
             .callAsyncNoFailover(BALANCE, affinityJob(cacheName), F.asList(n), true/*system pool*/).get();
 
         // Throw exception if remote node failed to deploy result.
-        GridException err = t.get3();
+        GridException err = t.get4();
 
         if (err != null)
             throw err;
 
-        GridCacheAffinityMapper m = (GridCacheAffinityMapper)unmarshall(ctx, n.id(), t.get1());
-        GridCacheAffinity a = (GridCacheAffinity)unmarshall(ctx, n.id(), t.get2());
+        GridCacheAffinityKeyMapper m = (GridCacheAffinityKeyMapper)unmarshall(ctx, n.id(), t.get1());
+        GridCacheAffinityFunction a = (GridCacheAffinityFunction)unmarshall(ctx, n.id(), t.get2());
 
         assert a != null;
         assert m != null;
@@ -354,7 +361,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         a.reset();
         m.reset();
 
-        return new GridAffinityCache(ctx, cacheName, a, m);
+        return new GridAffinityCache(ctx, cacheName, a, m, t.get3());
     }
 
     /**

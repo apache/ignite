@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -59,9 +59,6 @@ import static java.util.concurrent.TimeUnit.*;
  * @param <K> Key type.
  * @param <V> Value type.
  * @param <I> Input type.
- *
- * @author @java.author
- * @version @java.version
  */
 public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCacheStore<K, V> {
     /**
@@ -114,7 +111,7 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
     @Nullable protected abstract GridBiTuple<K, V> parse(I rec, @Nullable Object... args);
 
     /** {@inheritDoc} */
-    @Override public void loadAll(GridBiInClosure<K, V> c, @Nullable Object... args)
+    @Override public void loadCache(GridBiInClosure<K, V> c, @Nullable Object... args)
         throws GridException {
         ExecutorService exec = new ThreadPoolExecutor(
             threadsCnt,

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -27,9 +27,6 @@ import java.nio.*;
  * <p>
  * It expects that first 4 bytes in stream are {@link U#GG_HEADER}. If beginning of a stream,
  * isn't equal to these bytes than exception will be thrown.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridBufferedParser implements GridNioParser {
     /** Buffer metadata key. */

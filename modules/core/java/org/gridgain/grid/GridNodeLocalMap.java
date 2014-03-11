@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -24,9 +24,6 @@ import java.util.concurrent.*;
  * so it is fairly trivial to use.
  * <p>
  * You can get an instance of {@code GridNodeLocal} by calling {@link Grid#nodeLocalMap()} method.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridNodeLocalMap<K, V> extends ConcurrentMap<K, V>, GridMetadataAware {
     /**

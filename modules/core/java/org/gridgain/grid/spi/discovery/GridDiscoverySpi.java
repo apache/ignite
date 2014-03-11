@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -35,9 +35,6 @@ import java.util.*;
  * via {@link Grid#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDiscoverySpi extends GridSpi, GridSpiJsonConfigurable {
     /**

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -25,9 +25,6 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Future composed of multiple inner futures.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     /** Futures. */
@@ -293,7 +290,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     /**
      * Listener for futures.
      */
-    private class Listener extends GridInClosure<GridFuture<T>> {
+    private class Listener implements GridInClosure<GridFuture<T>> {
         /** {@inheritDoc} */
         @Override public void apply(GridFuture<T> fut) {
             pending.remove(fut);

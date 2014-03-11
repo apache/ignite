@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,11 +14,8 @@
 
 /**
  * Grid host + port address holder.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
-class GridSocketAddress {
+class GridClientSocketAddress {
 public:
     /**
      * Public constructor.
@@ -26,14 +23,14 @@ public:
      * @param host Host address.
      * @param port Host port.
      */
-    GridSocketAddress(const std::string& host, int port) : host_(host), port_(port) {}
+    GridClientSocketAddress(const std::string& host, int port) : host_(host), port_(port) {}
 
     /**
      * Copy constructor.
      *
      * @param peer Address to copy data from.
      */
-    GridSocketAddress(const GridSocketAddress& peer) : host_(peer.host_), port_(peer.port_) {}
+    GridClientSocketAddress(const GridClientSocketAddress& peer) : host_(peer.host_), port_(peer.port_) {}
 
     /**
      * Getter method for the host.

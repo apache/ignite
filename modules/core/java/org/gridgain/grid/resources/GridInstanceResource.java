@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,7 +10,7 @@
 package org.gridgain.grid.resources;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.compute.*;
 
 import java.lang.annotation.*;
 
@@ -21,10 +21,10 @@ import java.lang.annotation.*;
  * <p>
  * Grid instance can be injected into instances of following classes:
  * <ul>
- * <li>{@link org.gridgain.grid.compute.GridComputeTask}</li>
- * <li>{@link org.gridgain.grid.compute.GridComputeJob}</li>
+ * <li>{@link GridComputeTask}</li>
+ * <li>{@link GridComputeJob}</li>
  * <li>{@link GridLifecycleBean}</li>
- * <li>{@link GridLambda} - includes all closures and predicates that can run on grid.</li>
+ * <li>All closures and predicates that can run on grid.</li>
  * <li>{@link GridUserResource @GridUserResource}</li>
  * </ul>
  * <p>
@@ -50,9 +50,6 @@ import java.lang.annotation.*;
  *     ...
  * }
  * </pre>
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -22,9 +22,6 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinde
 
 /**
  * Unit test for alert commands.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorAlertCommandSpec extends VisorRuntimeBaseSpec(1) {
     /** */

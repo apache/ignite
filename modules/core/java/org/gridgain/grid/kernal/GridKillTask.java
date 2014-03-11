@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.util.typedef.*;
 
@@ -20,12 +20,9 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
  * Special kill task that never fails over jobs.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridInternal
-class GridKillTask extends GridComputeTaskNoReduceAdapter<Boolean> {
+class GridKillTask extends GridComputeTaskAdapter<Boolean, Void> {
     /** Restart flag. */
     private boolean restart;
 
@@ -60,11 +57,13 @@ class GridKillTask extends GridComputeTaskNoReduceAdapter<Boolean> {
         return GridComputeJobResultPolicy.WAIT;
     }
 
+    /** {@inheritDoc} */
+    @Override public Void reduce(List<GridComputeJobResult> results) throws GridException {
+        return null;
+    }
+
     /**
      * Kill job.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private class GridKillJob extends GridComputeJobAdapter {
         /** {@inheritDoc} */

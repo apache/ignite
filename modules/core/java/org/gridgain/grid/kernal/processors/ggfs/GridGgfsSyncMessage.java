@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.nio.*;
 
 /**
  * Basic sync message.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
     /** Coordinator node order. */
@@ -148,6 +145,6 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 76;
+        return 72;
     }
 }

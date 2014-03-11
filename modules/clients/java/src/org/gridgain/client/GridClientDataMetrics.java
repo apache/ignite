@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ import java.io.*;
  * Cache metrics can be fetched from server either for the whole cache or for
  * specific entry via any of the {@code metrics(...)} methods available on
  * {@link GridClientData} API.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridClientDataMetrics extends Serializable {
     /**

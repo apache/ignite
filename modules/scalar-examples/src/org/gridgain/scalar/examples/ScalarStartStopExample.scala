@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -17,9 +17,6 @@ import org.gridgain.grid.Grid
 
 /**
  * Demonstrates various starting and stopping ways of grid using Scalar.
- *
- * @author @java.author
- * @version @java.version
  */
 object ScalarStartStopExample {
     /**

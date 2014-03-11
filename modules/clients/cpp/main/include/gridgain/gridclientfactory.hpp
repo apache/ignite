@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,13 +13,10 @@
 #include <gridgain/gridconf.hpp>
 
 class GridClientConfiguration;
-class GridUuid;
+class GridClientUuid;
 
 /**
  * Factory implementation.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientFactory {
 public:
@@ -50,7 +47,7 @@ public:
      *      closing (however, no new requests will be accepted). If <tt>false</tt>, client will be
      *      closed immediately and all ongoing requests will be failed.
      */
-    static void stop(const GridUuid& clientId, bool wait = true);
+    static void stop(const GridClientUuid& clientId, bool wait = true);
 };
 
 #endif

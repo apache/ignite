@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,9 +18,6 @@
 
 /**
  * A data projection of grid client. Contains various methods for cache operations and metrics retrieval.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientData {
 public:
@@ -231,7 +228,7 @@ public:
      * @return Node ID.
      * @throws GridClientException In case of error.
      */
-    virtual GridUuid affinity(const GridClientVariant& key) = 0;
+    virtual GridClientUuid affinity(const GridClientVariant& key) = 0;
 
     /**
      * Gets metrics for this cache.

@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -55,8 +55,5 @@ package org.gridgain.visor.commands
  *     config
  *         Starts command in interactive mode.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 package object config

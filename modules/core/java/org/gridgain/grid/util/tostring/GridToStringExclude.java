@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,9 +15,6 @@ import java.lang.annotation.*;
  * Attach this annotation to a field or a class to indicate that this field or fields of this
  * class <b>should not</b> be included in {@code toString()} output. This annotation allows
  * to override default inclusion policy.
- *
- * @author @java.author
- * @version @java.version
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

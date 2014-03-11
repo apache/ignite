@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
 *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,19 +10,18 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
-import org.jetbrains.annotations.*;
+import org.gridgain.grid.marshaller.*;
+import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.io.*;
 import java.util.*;
 
 /**
  * Local query future.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdapter<K, V, R> {
     /** */
@@ -41,30 +40,18 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     /**
      * @param ctx Context.
      * @param qry Query.
-     * @param single Single result or not.
-     * @param rmtRdcOnly {@code true} for reduce query when using remote reducer only,
-     *      otherwise it is always {@code false}.
-     * @param pageLsnr Page listener.
-     * @param vis Visitor predicate.
      */
-    protected GridCacheLocalQueryFuture(GridCacheContext<K, V> ctx,
-        GridCacheQueryBaseAdapter<K, V, GridCacheQueryBase> qry, boolean single, boolean rmtRdcOnly,
-        @Nullable GridBiInClosure<UUID, Collection<R>> pageLsnr, @Nullable GridPredicate<?> vis) {
-        super(ctx, qry, true, single, rmtRdcOnly, pageLsnr);
+    protected GridCacheLocalQueryFuture(GridCacheContext<K, V> ctx, GridCacheQueryBean qry) {
+        super(ctx, qry, true);
 
-        run = new LocalQueryRunnable<>(ctx.queries(), this, single, vis);
+        run = new LocalQueryRunnable<>();
     }
 
     /**
      * Executes query runnable.
-     *
-     * @param sync Whether to execute synchronously.
      */
-    void execute(boolean sync) {
-        if (sync)
-            run.run();
-        else
-            fut = ctx.closure().runLocalSafe(run, true);
+    void execute() {
+        fut = ctx.closure().runLocalSafe(run, true);
     }
 
     /** {@inheritDoc} */
@@ -86,5 +73,57 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     /** {@inheritDoc} */
     @Override protected void loadAllPages() {
         // No-op.
+    }
+
+    /** */
+    private class LocalQueryRunnable<K, V, R> implements GridPlainRunnable {
+        /** {@inheritDoc} */
+        @Override public void run() {
+            try {
+                qry.query().validate();
+
+                if (fields())
+                    cctx.queries().runFieldsQuery(localQueryInfo());
+                else
+                    cctx.queries().runQuery(localQueryInfo());
+            }
+            catch (Throwable e) {
+                onDone(e);
+            }
+        }
+
+        /**
+         * @return Query info.
+         * @throws GridException In case of error.
+         */
+        @SuppressWarnings({"unchecked"})
+        private GridCacheQueryInfo localQueryInfo() throws GridException {
+            GridCacheQueryBean qry = query();
+
+            GridPredicate<GridCacheEntry<Object, Object>> prjPred = qry.query().projectionFilter() == null ?
+                F.<GridCacheEntry<Object, Object>>alwaysTrue() : qry.query().projectionFilter();
+
+            GridMarshaller marsh = cctx.marshaller();
+
+            GridReducer<Object, Object> rdc = qry.reducer() != null ?
+                marsh.<GridReducer<Object, Object>>unmarshal(marsh.marshal(qry.reducer()), null) : null;
+
+            GridClosure<Object, Object> trans = qry.transform() != null ?
+                marsh.<GridClosure<Object, Object>>unmarshal(marsh.marshal(qry.transform()), null) : null;
+
+            return new GridCacheQueryInfo(
+                true,
+                prjPred,
+                trans,
+                rdc,
+                qry.query(),
+                GridCacheLocalQueryFuture.this,
+                null,
+                -1,
+                qry.query().includeMetadata(),
+                true,
+                qry.arguments()
+            );
+        }
     }
 }

@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -16,9 +16,6 @@ import VisorTopologyCommand._
 
 /**
  * Unit test for topology commands.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorTopologyCommandSpec extends VisorRuntimeBaseSpec(2) {
     behavior of "A 'top' visor command"

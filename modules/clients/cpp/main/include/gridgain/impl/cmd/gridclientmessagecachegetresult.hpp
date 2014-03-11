@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ typedef std::map<GridClientVariant, GridClientVariant> TCacheValuesMap;
 
 /**
  * Cache get result message.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientMessageCacheGetResult : public GridClientMessageCacheResult {
 public:

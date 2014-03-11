@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ import java.security.*;
 
 /**
  * Binary data signer based on the java security {@link MessageDigest}.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridRememberMeSigningConverter implements GridRememberMeConverter {
     /** Hashing algorithm. */

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ import org.gridgain.grid.util.mbean.*;
 /**
  * Management bean that provides general administrative and configuration information
  * about jdbc checkpoint SPI.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridMBeanDescription("MBean that provides information about jdbc checkpoint SPI.")
 public interface GridJdbcCheckpointSpiMBean extends GridSpiManagementMBean {

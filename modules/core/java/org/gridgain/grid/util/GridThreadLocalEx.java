@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,8 +10,9 @@
 package org.gridgain.grid.util;
 
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.worker.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -19,10 +20,7 @@ import java.util.*;
 /**
  * Thread local that auto resets upon leaving thread context. This thread local is different
  * from {@link GridThreadLocal} as it inherits thread local values from the parent
- * {@link org.gridgain.grid.util.worker.GridWorker} thread.
- *
- * @author @java.author
- * @version @java.version
+ * {@link GridWorker} thread.
  */
 public class GridThreadLocalEx<T> extends ThreadLocal<T> {
     /** Thread context for non-worker threads. */

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,9 +21,6 @@ import java.util.*;
 
 /**
  * Session implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 @SuppressWarnings({"deprecation", "NonSerializableObjectBoundToHttpSession"})
 class GridWebSession implements HttpSession, Externalizable {

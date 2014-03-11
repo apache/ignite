@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -101,9 +101,6 @@ import kernal.GridNodeAttributes._
  *     top
  *         Prints full topology.
  * }}}
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorTopologyCommand {
     /**
@@ -352,9 +349,6 @@ class VisorTopologyCommand {
 
 /**
  * Companion object that does initialization of the command.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorTopologyCommand {
     // Adds command's help to visor.

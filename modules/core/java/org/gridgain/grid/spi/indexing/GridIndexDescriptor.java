@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ import java.util.*;
  * information about fields, order, uniqueness, and specified
  * whether this is SQL or Text index.
  * See also {@link GridIndexingTypeDescriptor#indexes()}.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridIndexDescriptor {
     /**

@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -15,13 +15,11 @@
 #include <cassert>
 #include <cstdint>
 #include <cstddef>
+#include <cstring>
 
 /**
  *
  * Utilities for converting simple types to byte array and back.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 namespace GridClientByteUtils {
 

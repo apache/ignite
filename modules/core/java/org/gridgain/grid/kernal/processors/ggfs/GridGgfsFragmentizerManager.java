@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.communication.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.typedef.*;
@@ -32,9 +33,6 @@ import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileAffinityRange
 
 /**
  * GGFS fragmentizer manager.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsFragmentizerManager extends GridGgfsManager {
     /** Message offer wait interval. */

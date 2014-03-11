@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -24,9 +24,6 @@ import java.util.concurrent.locks.*;
  * <p>
  * For a good explanation of what consistent hashing is, you can refer to
  * <a href="http://weblogs.java.net/blog/tomwhite/archive/2007/11/consistent_hash.html">Tom White's Blog</a>.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridConsistentHash<N> {
     /** Prime number. */
@@ -511,7 +508,6 @@ public class GridConsistentHash<N> {
 
         int hash = hash(key);
 
-        List<N> ret = new ArrayList<>(cnt);
         Collection<N> failed = new GridLeanSet<>();
 
         rw.readLock().lock();
@@ -521,6 +517,8 @@ public class GridConsistentHash<N> {
                 return Collections.emptyList();
 
             int size = nodes.size();
+
+            List<N> ret = new ArrayList<>(Math.min(cnt, size));
 
             // Move clock-wise starting from selected position.
             for (SortedSet<N> set : circle.tailMap(hash, true).values()) { // Circle tail.

@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -14,7 +14,7 @@
 #include <gridgain/gridconf.hpp>
 #include <gridgain/gridclientnode.hpp>
 
-class GridHasheableObject;
+class GridClientHasheableObject;
 
 /**
  * Interface that will determine which node should be connected by the client when
@@ -23,9 +23,6 @@ class GridHasheableObject;
  * If implementation of data affinity implements {@link GridClientTopologyListener} interface as well,
  * then affinity will be added to topology listeners on client start before firs connection is established
  * and will be removed after last connection is closed.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GRIDGAIN_API GridClientDataAffinity {
 public:
@@ -43,7 +40,7 @@ public:
       *
       * @return Affinity nodes for the given partition.
       */
-      virtual TGridClientNodePtr getNode(const TNodesSet& nodes, const GridHasheableObject& key) = 0;
+      virtual TGridClientNodePtr getNode(const TNodesSet& nodes, const GridClientHasheableObject& key) = 0;
 
 };
 

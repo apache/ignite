@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -17,9 +17,6 @@ import java.util.*;
 /**
  * Message telling joining node that it has loopback problem (misconfiguration).
  * This means that remote node is configured to use loopback address, but joining node is not, or vise versa.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridTcpDiscoveryLoopbackProblemMessage extends GridTcpDiscoveryAbstractMessage {
     /** Remote node addresses. */

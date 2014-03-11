@@ -101,7 +101,7 @@
                         Disable near cache. For better performance use colocated
                         closure execution to execute logic and transactions on the grid.
                     -->
-                    <property name="partitionedDistributionMode" value="PARTITIONED_ONLY"/>
+                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
 
                     <!--
                         Initial cache size. Should be about 150% of the number
@@ -121,11 +121,7 @@
                         This shows how to configure number of backups. The best performance
                         is achieved with 0 backup copies.
                     -->
-                    <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.partitioned.GridCachePartitionedAffinity">
-                            <property name="keyBackups" value="0"/>
-                        </bean>
-                    </property>
+                    <property name="backups" value="0"/>
                 </bean>
 
                 <!--
@@ -146,7 +142,7 @@
                         Disable near cache. For better performance use colocated
                         closure execution to execute logic and transactions on the grid.
                     -->
-                    <property name="partitionedDistributionMode" value="PARTITIONED_ONLY"/>
+                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
 
                     <!--
                         Initial cache size. Should be about 150% of the number
@@ -172,11 +168,7 @@
                         This shows how to configure number of backups. The best performance
                         is achieved with 0 backup copies.
                     -->
-                    <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.partitioned.GridCachePartitionedAffinity">
-                            <property name="keyBackups" value="0"/>
-                        </bean>
-                    </property>
+                    <property name="backups" value="0"/>
                 </bean>
 
                 <!--

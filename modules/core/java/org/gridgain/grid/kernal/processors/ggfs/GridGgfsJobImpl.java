@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,9 +21,6 @@ import java.io.*;
 
 /**
  * GGFS job implementation.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsJobImpl implements GridComputeJob, GridInternalWrapper<GridGgfsJob> {
     /** GGFS job. */
@@ -73,10 +70,6 @@ public class GridGgfsJobImpl implements GridComputeJob, GridInternalWrapper<Grid
     /** {@inheritDoc} */
     @Override public Object execute() throws GridException {
         GridGgfs ggfs = grid.ggfs(ggfsName);
-
-        if (ggfs == null)
-            throw new GridException("Failed to find GGFS with given name on local node [ggfsName=" + ggfsName +
-                ", locNode=" + grid.localNode() + ']');
 
         try (GridGgfsInputStream in = ggfs.open(path)) {
             GridGgfsFileRange split = new GridGgfsFileRange(path, start, len);

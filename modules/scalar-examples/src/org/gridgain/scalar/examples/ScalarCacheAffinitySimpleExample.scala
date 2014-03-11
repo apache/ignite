@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -29,9 +29,6 @@ import org.gridgain.grid.product.{GridOnlyAvailableIn, GridProductEdition}
  * Remote nodes should always be started with configuration file which includes
  * cache: `'ggstart.sh examples/config/example-cache.xml'`. Local node can
  * be started with or without cache.
- *
- * @author @java.author
- * @version @java.version
  */
 @GridOnlyAvailableIn(Array(GridProductEdition.DATA_GRID))
 object ScalarCacheAffinitySimpleExample extends App {

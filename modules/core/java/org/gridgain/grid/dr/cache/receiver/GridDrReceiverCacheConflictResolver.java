@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -16,9 +16,6 @@ package org.gridgain.grid.dr.cache.receiver;
  * and this conflict cannot be resolved automatically for some reason.
  * <p>
  * You can inject any resources in implementation of this interface.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridDrReceiverCacheConflictResolver<K, V> {
     /**

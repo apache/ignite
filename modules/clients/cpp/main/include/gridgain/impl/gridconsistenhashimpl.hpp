@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -26,7 +26,7 @@ public:
      * @param id ID.
      * @param hashID Hash ID.
      */
-    NodeInfo(const GridUuid& id, const std::shared_ptr<GridHasheableObject>& hashId): mId(id), mHashId(hashId) {}
+    NodeInfo(const GridClientUuid& id, const std::shared_ptr<GridClientHasheableObject>& hashId): mId(id), mHashId(hashId) {}
 
     /**
      * Copy constructor.
@@ -71,30 +71,27 @@ public:
     /**
      * @return ID.
      */
-    GridUuid id() const {
+    GridClientUuid id() const {
         return mId;
     }
 
     /**
      * @return Hash ID.
      */
-    std::shared_ptr<GridHasheableObject> hashId() const {
+    std::shared_ptr<GridClientHasheableObject> hashId() const {
         return mHashId;
     }
 
 private:
     /** ID. */
-    GridUuid mId;
+    GridClientUuid mId;
 
     /** Hash ID. */
-    std::shared_ptr<GridHasheableObject> mHashId;
+    std::shared_ptr<GridClientHasheableObject> mHashId;
 };
 
 /**
  * Implementation of GridClientConsistentHash.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientConsistentHashImpl {
 public:
@@ -142,7 +139,7 @@ public:
      * @param inc Node IDs to include.
      * @return Node.
      */
-    virtual NodeInfo node(const GridHasheableObject& value, const std::set<NodeInfo>& inc) const;
+    virtual NodeInfo node(const GridClientHasheableObject& value, const std::set<NodeInfo>& inc) const;
 
     /**
      * Gets the total of the unique nodes.
@@ -176,7 +173,7 @@ public:
      * @param key Object to calculate hash for.
      * @return Hash code.
      */
-    int32_t hash(const GridHasheableObject& key) const;
+    int32_t hash(const GridClientHasheableObject& key) const;
 
 private:
     /**

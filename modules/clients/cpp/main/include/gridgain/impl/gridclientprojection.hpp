@@ -1,4 +1,4 @@
-// @cpp.file.header
+/* @cpp.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -23,9 +23,6 @@ class ClientProjectionClosure;
 
 /**
  * Implementation of client projection.
- *
- * @author @cpp.author
- * @version @cpp.version
  */
 class GridClientProjectionImpl {
 public:
@@ -67,12 +64,12 @@ public:
      * @throws GridClientException In case of problems.
      */
     void withReconnectHandling(ClientProjectionClosure& c, const std::string& cacheName,
-            const GridHasheableObject& affKey);
+            const GridClientHasheableObject& affKey);
 
 protected:
 
     /** Gets the primary node for the given cache and the affinity key */
-    TGridClientNodePtr affinityNode(const std::string& cacheName, const GridHasheableObject& affKey);
+    TGridClientNodePtr affinityNode(const std::string& cacheName, const GridClientHasheableObject& affKey);
 
     /** Gets the current node to be used for processing. */
     TGridClientNodePtr balancedNode() const;
@@ -86,13 +83,18 @@ protected:
         return sharedData->clientUniqueId();
     }
 
+    /** Returns the unique ID of the client. */
+    GridClientUuid& clientUniqueUuid() {
+        return sharedData->clientUniqueUuid();
+    }
+
     /** Returns the actual list of the nodes in the current topology. */
     TNodesSet topologyNodes() const {
         return sharedData->topology()->nodes();
     }
 
     /** Returns the definition of the node by the given uuid. */
-    TGridClientNodePtr node(const GridUuid& uuid) const {
+    TGridClientNodePtr node(const GridClientUuid& uuid) const {
         return sharedData->topology()->node(uuid);
     }
 

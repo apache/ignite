@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -10,16 +10,12 @@
 package org.gridgain.grid.compute;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.*;
 
 import java.util.*;
 
 /**
  * Job sibling interface defines a job from the same split. In other words a sibling is a job returned
  * from the same {@link GridComputeTask#map(List, Object)} method invocation.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface GridComputeJobSibling extends GridMetadataAware {
     /**

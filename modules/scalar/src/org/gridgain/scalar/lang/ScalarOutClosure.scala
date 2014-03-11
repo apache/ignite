@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -12,22 +12,25 @@
 package org.gridgain.scalar.lang
 
 import org.gridgain.grid.lang.GridOutClosure
+import java.util.concurrent.Callable
 
 /**
  * Peer deploy aware adapter for Java's `GridOutClosure`.
- *
- * @author @java.author
- * @version @java.version
  */
-class ScalarOutClosure[R](private val f: () => R) extends GridOutClosure[R] {
+class ScalarOutClosure[R](private val f: () => R) extends GridOutClosure[R] with Callable[R] {
     assert(f != null)
-
-    peerDeployLike(f)
 
     /**
      * Delegates to passed in function.
      */
     def apply: R = {
+        f()
+    }
+
+    /**
+     * Delegates to passed in function.
+     */
+    def call: R = {
         f()
     }
 }

@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -20,9 +20,6 @@ import java.io.*;
 
 /**
  * Adapter for cache metrics.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable {
     /** Create time. */
@@ -104,8 +101,8 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         misses = m.misses();
         txCommits = m.txCommits();
         txRollbacks = m.txRollbacks();
-        drSndMetrics = (GridDrSenderCacheMetricsAdapter)m.drSendMetrics();
-        drRcvMetrics = (GridDrReceiverCacheMetricsAdapter)m.drReceiveMetrics();
+        drSndMetrics = ((GridCacheMetricsAdapter)m).drSndMetrics;
+        drRcvMetrics = ((GridCacheMetricsAdapter)m).drRcvMetrics;
     }
 
     /**
@@ -171,7 +168,10 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDrSenderCacheMetrics drSendMetrics() {
+    @Override public GridDrSenderCacheMetrics drSendMetrics() {
+        if (drSndMetrics == null)
+            throw new IllegalStateException("Data center replication is not configured.");
+
         return drSndMetrics;
     }
 
@@ -183,7 +183,10 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDrReceiverCacheMetrics drReceiveMetrics() {
+    @Override public GridDrReceiverCacheMetrics drReceiveMetrics() {
+        if (drRcvMetrics == null)
+            throw new IllegalStateException("Data center replication is not configured.");
+
         return drRcvMetrics;
     }
 
@@ -292,6 +295,18 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
 
         if (delegate != null)
             delegate.onSenderCacheEntryFiltered();
+    }
+
+    /**
+     * Callback for replication pause state changed.
+     *
+     * @param pauseReason Pause reason or {@code null} if replication is not paused.
+     */
+    public void onPauseStateChanged(@Nullable GridDrPauseReason pauseReason) {
+        drSndMetrics.onPauseStateChanged(pauseReason);
+
+        if (delegate != null)
+            delegate.onPauseStateChanged(pauseReason);
     }
 
     /**

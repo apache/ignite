@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -29,9 +29,6 @@ import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsIpcCommand.*;
  * GGFS client. Responsible for sending and receiving messages.
  *
  * In prototype version, mostly goes pseudo-code.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsHadoop implements GridGgfsHadoopIpcIoListener {
     /** Expected result is boolean. */

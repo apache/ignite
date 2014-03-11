@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ________               ______                    ______   _______
@@ -17,16 +17,10 @@ import org.gridgain.grid.util.typedef.internal._
 /**
  * ==Overview==
  * Provides `ASCII`-based table with minimal styling support.
- *
- * @author @java.author
- * @version @java.version
  */
 class ScalarTextTable {
     /**
      * Cell style.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private sealed case class Style(
         var leftPad: Int = 1, // >= 0
@@ -46,9 +40,6 @@ class ScalarTextTable {
 
     /**
      * Cell style.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private object Style {
         /**
@@ -81,9 +72,6 @@ class ScalarTextTable {
 
     /**
      * Cell holder.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private sealed case class Cell(style: Style, lines: Seq[String]) {
         assert(style != null)
@@ -107,9 +95,6 @@ class ScalarTextTable {
 
     /**
      * Margin holder.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private sealed case class Margin(
         top: Int = 0,
@@ -513,9 +498,6 @@ class ScalarTextTable {
 
 /**
  * Static context.
- *
- * @author @java.author
- * @version @java.version
  */
 object ScalarTextTable {
     /**

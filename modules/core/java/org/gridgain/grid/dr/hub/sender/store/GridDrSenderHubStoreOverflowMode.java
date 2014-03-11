@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -13,9 +13,6 @@ import org.jetbrains.annotations.*;
 
 /**
  * Data center replication sender hub store overflow mode.
- *
- * @author @java.author
- * @version @java.version
  */
 public enum GridDrSenderHubStoreOverflowMode {
     /** Removes oldest entries. */

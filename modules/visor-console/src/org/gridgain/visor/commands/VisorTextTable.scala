@@ -1,4 +1,4 @@
-// @scala.file.header
+/* @scala.file.header */
 
 /*
  * ___    _________________________ ________
@@ -18,16 +18,10 @@ import VisorTextTable._
 /**
  * ==Overview==
  * Provides `ASCII`-based table with minimal styling support.
- *
- * @author @java.author
- * @version @java.version
  */
 class VisorTextTable {
     /**
      * Cell style.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private sealed class Style(
         var leftPad: Int = 1, // >= 0
@@ -47,9 +41,6 @@ class VisorTextTable {
 
     /**
      * Cell style.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private object Style {
         /**
@@ -85,9 +76,6 @@ class VisorTextTable {
 
     /**
      * Cell holder.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private sealed case class Cell(style: Style, lines: Seq[String]) {
         assert(style != null)
@@ -111,9 +99,6 @@ class VisorTextTable {
 
     /**
      * Margin holder.
-     *
-     * @author @java.author
-     * @version @java.version
      */
     private sealed case class Margin(
         top: Int = 0,
@@ -522,9 +507,6 @@ class VisorTextTable {
 
 /**
  * Static context.
- *
- * @author @java.author
- * @version @java.version
  */
 object VisorTextTable {
     /** Table header horizontal line. */

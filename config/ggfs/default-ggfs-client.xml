@@ -17,8 +17,8 @@
     When starting a standalone GridGain node, you need to execute the following command:
     {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} path-to-this-file/default-ggfs-client.xml
 
-    When starting GridGain from Java IDE, pass path to this file into GridFactory:
-    GridFactory.start("path-to-this-file/default-ggfs-data.xml");
+    When starting GridGain from Java IDE, pass path to this file into GridGain:
+    GridGain.start("path-to-this-file/default-ggfs-data.xml");
 
     NOTE:
     ====
@@ -67,6 +67,6 @@
                 <constructor-arg value="1000"/>
             </bean>
         </property>
-        <property name="partitionedDistributionMode" value="NEAR_ONLY"/>
+        <property name="distributionMode" value="NEAR_ONLY"/>
     </bean>
 </beans>

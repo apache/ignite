@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -12,9 +12,6 @@ package org.gridgain.grid.ggfs;
 /**
  * Exception thrown when GridGain detects that remote HDFS version differs from version of HDFS libraries
  * in GridGain classpath.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridGgfsInvalidHdfsVersionException extends GridGgfsException {
     /**
