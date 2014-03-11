@@ -38,6 +38,7 @@ import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
+import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
 /**
@@ -64,6 +65,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** Pending  */
     private ConcurrentHashMap8<UUID, DeferredResponseBuffer> pendingResponses = new ConcurrentHashMap8<>();
+
+    /** */
+    private GridAtomicNearCache<K, V> near;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -144,12 +148,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
-        ctx.io().addHandler(GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse<K, V>>() {
-            @Override public void apply(UUID nodeId, GridNearGetResponse<K, V> res) {
-                processNearGetResponse(nodeId, res);
-            }
-        });
-
         ctx.io().addHandler(GridNearAtomicUpdateRequest.class, new CI2<UUID, GridNearAtomicUpdateRequest<K, V>>() {
             @Override public void apply(UUID nodeId, GridNearAtomicUpdateRequest<K, V> req) {
                 processNearAtomicUpdateRequest(nodeId, req);
@@ -180,13 +178,26 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     processDhtAtomicDeferredUpdateResponse(nodeId, res);
                 }
             });
+
+        if (near == null) {
+            ctx.io().addHandler(GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse<K, V>>() {
+                @Override public void apply(UUID nodeId, GridNearGetResponse<K, V> res) {
+                    processNearGetResponse(nodeId, res);
+                }
+            });
+        }
+    }
+
+    /**
+     * @param near Near cache.
+     */
+    public void near(GridAtomicNearCache<K, V> near) {
+        this.near = near;
     }
 
     /** {@inheritDoc} */
     @Override public GridNearCache<K, V> near() {
-        assert false : "Should not be called.";
-
-        return null;
+        return near;
     }
 
     /**
@@ -785,8 +796,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         try {
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
-            List<GridCacheMapEntry<K, V>> locked = lockEntries(keys, req.topologyVersion());
-            Collection<GridBiTuple<GridCacheEntryEx<K, V>, GridCacheVersion>> deleted = null;
+            List<GridDhtCacheEntry<K, V>> locked = lockEntries(keys, req.topologyVersion());
+            Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted = null;
 
             try {
                 topology().readLock();
@@ -818,7 +829,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             // This method can only be used when there are no replicated entries in the batch.
                             deleted = updateWithBatch(nodeId, req, res, locked, ver, dhtFut, replicate);
                         else {
-                            GridBiTuple<GridCacheReturn<V>, Collection<GridBiTuple<GridCacheEntryEx<K, V>, GridCacheVersion>>> t =
+                            GridBiTuple<GridCacheReturn<V>, Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>>> t =
                                 updateSingle(nodeId, req, res, locked, ver, dhtFut, replicate);
 
                             retVal = t.get1();
@@ -851,7 +862,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     assert !deleted.isEmpty();
                     assert ctx.deferredDelete();
 
-                    for (GridBiTuple<GridCacheEntryEx<K, V>, GridCacheVersion> e : deleted)
+                    for (GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion> e : deleted)
                         ctx.onDeferredDelete(e.get1(), e.get2());
                 }
 
@@ -897,11 +908,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @return Deleted entries.
      * @throws GridCacheEntryRemovedException Should not be thrown.
      */
-    @Nullable private Collection<GridBiTuple<GridCacheEntryEx<K, V>, GridCacheVersion>> updateWithBatch(
+    @Nullable private Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> updateWithBatch(
         UUID nodeId,
         GridNearAtomicUpdateRequest<K, V> req,
         GridNearAtomicUpdateResponse<K, V> res,
-        List<GridCacheMapEntry<K, V>> locked,
+        List<GridDhtCacheEntry<K, V>> locked,
         GridCacheVersion ver,
         @Nullable GridDhtAtomicUpdateFuture<K, V> dhtFut,
         boolean replicate
@@ -913,12 +924,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         Map<K, V> putMap = null;
         Collection<K> rmvKeys = null;
-        Collection<GridBiTuple<GridCacheEntryEx<K, V>, GridCacheVersion>> deleted = null;
-        List<GridCacheMapEntry<K, V>> filtered = new ArrayList<>(size);
+        Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted = null;
+        List<GridDhtCacheEntry<K, V>> filtered = new ArrayList<>(size);
         GridCacheOperation op = req.operation();
 
         for (int i = 0; i < locked.size(); i++) {
-            GridCacheMapEntry<K, V> entry = locked.get(i);
+            GridDhtCacheEntry<K, V> entry = locked.get(i);
 
             try {
                 if (!checkFilter(entry, req, res)) {
@@ -1050,17 +1061,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @return Return value.
      * @throws GridCacheEntryRemovedException Should be never thrown.
      */
-    private GridBiTuple<GridCacheReturn<V>, Collection<GridBiTuple<GridCacheEntryEx<K, V>, GridCacheVersion>>> updateSingle(
+    private GridBiTuple<GridCacheReturn<V>, Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>>> updateSingle(
         UUID nodeId,
         GridNearAtomicUpdateRequest<K, V> req,
         GridNearAtomicUpdateResponse<K, V> res,
-        List<GridCacheMapEntry<K, V>> locked,
+        List<GridDhtCacheEntry<K, V>> locked,
         GridCacheVersion ver,
         @Nullable GridDhtAtomicUpdateFuture<K, V> dhtFut,
         boolean replicate
     ) throws GridCacheEntryRemovedException {
         GridCacheReturn<V> retVal = null;
-        Collection<GridBiTuple<GridCacheEntryEx<K, V>, GridCacheVersion>> deleted = null;
+        Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted = null;
 
         List<K> keys = req.keys();
 
@@ -1073,7 +1084,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             // We are holding java-level locks on entries at this point.
             // No GridCacheEntryRemovedException can be thrown.
             try {
-                GridCacheEntryEx<K, V> entry = locked.get(i);
+                GridDhtCacheEntry<K, V> entry = locked.get(i);
 
                 GridCacheVersion newDrVer = req.drVersion(i);
                 long newDrTtl = req.drTtl(i);
@@ -1167,8 +1178,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @return Deleted entries.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Nullable private Collection<GridBiTuple<GridCacheEntryEx<K, V>, GridCacheVersion>> updatePartialBatch(
-        List<GridCacheMapEntry<K, V>> entries,
+    @Nullable private Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> updatePartialBatch(
+        List<GridDhtCacheEntry<K, V>> entries,
         final GridCacheVersion ver,
         UUID nodeId,
         @Nullable Map<K, V> putMap,
@@ -1177,7 +1188,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final GridNearAtomicUpdateRequest<K, V> req,
         final GridNearAtomicUpdateResponse<K, V> res,
         boolean replicate,
-        @Nullable Collection<GridBiTuple<GridCacheEntryEx<K, V>, GridCacheVersion>> deleted
+        @Nullable Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted
     ) {
         assert putMap == null ^ rmvKeys == null;
 
@@ -1221,7 +1232,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             // Avoid iterator creation.
             for (int i = 0; i < entries.size(); i++) {
-                GridCacheEntryEx<K, V> entry = entries.get(i);
+                GridDhtCacheEntry<K, V> entry = entries.get(i);
 
                 assert Thread.holdsLock(entry);
 
@@ -1301,7 +1312,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      *      locks are released.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private List<GridCacheMapEntry<K, V>> lockEntries(List<K> keys, long topVer)
+    private List<GridDhtCacheEntry<K, V>> lockEntries(List<K> keys, long topVer)
         throws GridDhtInvalidPartitionException {
         if (keys.size() == 1) {
             K key = keys.get(0);
@@ -1314,11 +1325,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (entry.obsolete())
                     UNSAFE.monitorExit(entry);
                 else
-                    return Collections.<GridCacheMapEntry<K, V>>singletonList(entry);
+                    return Collections.singletonList(entry);
             }
         }
         else {
-            List<GridCacheMapEntry<K, V>> locked = new ArrayList<>(keys.size());
+            List<GridDhtCacheEntry<K, V>> locked = new ArrayList<>(keys.size());
 
             while (true) {
                 for (K key : keys) {
@@ -1356,7 +1367,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      *
      * @param locked Locked entries.
      */
-    private void unlockEntries(Collection<GridCacheMapEntry<K, V>> locked) {
+    private void unlockEntries(Collection<GridDhtCacheEntry<K, V>> locked) {
         // Process deleted entries before locks release.
         assert ctx.deferredDelete();
 
@@ -1637,21 +1648,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 // Ignore.
             }
             catch (GridException e) {
-                if (res != null)
-                    res.addFailedKey(key, new GridException("Failed to update key on backup node: " + key, e));
-                else
-                    U.error(log, "Failed to update key on backup node: " + key, e);
+                res.addFailedKey(key, new GridException("Failed to update key on backup node: " + key, e));
             }
         }
 
+        if (isNearEnabled(cacheCfg))
+            ((GridAtomicNearCache<K, V>)near()).processDhtAtomicUpdateRequest(nodeId, req, res);
+
         try {
-            if (res != null) {
-                if (res.failedKeys() != null || req.writeSynchronizationMode() == FULL_SYNC)
-                    ctx.io().send(nodeId, res);
-                else {
-                    // No failed keys and sync mode is not FULL_SYNC, thus sending deferred response.
-                    sendDeferredUpdateResponse(nodeId, req.futureVersion());
-                }
+            if (res.failedKeys() != null || req.writeSynchronizationMode() == FULL_SYNC)
+                ctx.io().send(nodeId, res);
+            else {
+                // No failed keys and sync mode is not FULL_SYNC, thus sending deferred response.
+                sendDeferredUpdateResponse(nodeId, req.futureVersion());
             }
         }
         catch (GridTopologyException ignored) {

@@ -214,6 +214,13 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     public abstract GridNearCache<K, V> near();
 
     /**
+     * @return Near cache for transactional mode.
+     */
+    private GridTxNearCache<K, V> nearTx() {
+        return (GridTxNearCache<K, V>)near();
+    }
+
+    /**
      * @return Partition topology.
      */
     public GridDhtPartitionTopology<K, V> topology() {
@@ -1429,7 +1436,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             res = new GridDhtTxPrepareResponse<>(req.version(), req.futureId(), req.miniId());
 
             // Start near transaction first.
-            nearTx = isNearEnabled(cacheCfg) ? near().startRemoteTx(ctx.deploy().globalLoader(), nodeId, req) : null;
+            nearTx = isNearEnabled(cacheCfg) ? nearTx().startRemoteTx(ctx.deploy().globalLoader(), nodeId, req) : null;
             dhtTx = startRemoteTx(nodeId, req, res);
 
             // Set evicted keys from near transaction.
@@ -1534,7 +1541,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             }
 
             if (isNearEnabled(cacheCfg) && nearTx == null && !F.isEmpty(req.nearWrites()) && req.groupLock())
-                nearTx = near().startRemoteTxForFinish(nodeId, req);
+                nearTx = nearTx().startRemoteTxForFinish(nodeId, req);
         }
         catch (GridCacheTxRollbackException e) {
             if (log.isDebugEnabled())
@@ -1635,7 +1642,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             res = new GridDhtLockResponse<>(req.version(), req.futureId(), req.miniId(), cnt);
 
             dhtTx = startRemoteTx(nodeId, req, res);
-            nearTx = isNearEnabled(cacheCfg) ? near().startRemoteTx(nodeId, req) : null;
+            nearTx = isNearEnabled(cacheCfg) ? nearTx().startRemoteTx(nodeId, req) : null;
 
             if (nearTx != null) {
                 // This check allows to avoid extra serialization.
@@ -1743,7 +1750,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         clearLocks(nodeId, req);
 
         if (isNearEnabled(cacheCfg))
-            near().clearLocks(nodeId, req);
+            nearTx().clearLocks(nodeId, req);
     }
 
     /**

@@ -386,7 +386,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 GridNode primary = null;
 
                 if (v == null && allowLocRead) {
-                    GridDhtCache<K, V> dht = cache().dht();
+                    GridDhtCacheAdapter<K, V> dht = cache().dht();
 
                     try {
                         entry = dht.context().isSwapOrOffheapEnabled() ? dht.entryEx(key) : dht.peekEx(key);
@@ -500,7 +500,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     /**
      * @return DHT cache.
      */
-    private GridDhtCache<K, V> dht() {
+    private GridDhtCacheAdapter<K, V> dht() {
         return cache().dht();
     }
 

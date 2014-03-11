@@ -1448,9 +1448,23 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (hadVal) {
                     assert !deletedUnlocked();
 
-                    deletedUnlocked(true);
+                    if (cctx.deferredDelete()) {
+                        deletedUnlocked(true);
 
-                    enqueueVer = newVer;
+                        enqueueVer = newVer;
+                    }
+                    else {
+                        if (!markObsolete(newVer)) {
+                            if (log.isDebugEnabled())
+                                log.debug("Entry could not be marked obsolete (it is still used): " + this);
+                        }
+                        else {
+                            recordNodeId(affNodeId);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Entry was marked obsolete: " + this);
+                        }
+                    }
                 }
                 else {
                     boolean new0 = isNew();

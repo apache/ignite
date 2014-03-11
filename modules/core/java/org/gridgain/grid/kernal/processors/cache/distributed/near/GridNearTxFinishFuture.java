@@ -345,7 +345,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     /**
      * @return DHT cache.
      */
-    private GridDhtCache<K, V> dht() {
+    private GridDhtCacheAdapter<K, V> dht() {
         return cctx.near().dht();
     }
 

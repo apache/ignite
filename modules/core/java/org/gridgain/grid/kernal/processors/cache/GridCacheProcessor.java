@@ -293,10 +293,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (cc.getCacheMode() == PARTITIONED || cc.getCacheMode() == REPLICATED) {
-            if (isNearEnabled(cc) && cc.getAtomicityMode() == ATOMIC)
-                throw new GridException("Cannot start cache with ATOMIC atomicity mode and near-enabled" +
-                    " partition distribution mode [cacheName=" + cc.getName() + ']');
-
             if (cc.getAtomicityMode() == ATOMIC && cc.getWriteSynchronizationMode() == FULL_ASYNC)
                 U.warn(log, "Cache write synchronization mode is set to FULL_ASYNC. All single-key 'put' and " +
                     "'remove' operations will return 'null', all 'putx' and 'removex' operations will return" +
@@ -671,8 +667,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
                 case PARTITIONED:
                 case REPLICATED: {
-                    if (isNearEnabled(cfg))
-                        cache = new GridNearCache(cacheCtx);
+                    if (isNearEnabled(cfg)) {
+                        switch (cfg.getAtomicityMode()) {
+                            case TRANSACTIONAL: {
+                                cache = new GridTxNearCache(cacheCtx);
+
+                                break;
+                            }
+                            case ATOMIC: {
+                                cache = new GridAtomicNearCache(cacheCtx);
+
+                                break;
+                            }
+
+                            default: {
+                                assert false : "Invalid cache atomicity mode: " + cfg.getAtomicityMode();
+                            }
+                        }
+                    }
                     else {
                         switch (cfg.getAtomicityMode()) {
                             case TRANSACTIONAL: {
@@ -779,17 +791,42 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ttlMgr,
                     drMgr);
 
-                assert cache instanceof GridNearCache;
 
-                GridNearCache near = (GridNearCache)cache;
-                GridDhtCache dht = !isAffinityNode(cfg) ?
-                    new GridDhtCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx)) :
-                    new GridDhtCache(cacheCtx);
+                GridDhtCacheAdapter dht;
+
+                if (cfg.getAtomicityMode() == TRANSACTIONAL) {
+                    assert cache instanceof GridTxNearCache;
+
+                    GridTxNearCache near = (GridTxNearCache)cache;
+
+                    GridDhtCache dhtCache = !isAffinityNode(cfg) ?
+                        new GridDhtCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx)) :
+                        new GridDhtCache(cacheCtx);
+
+                    dhtCache.near(near);
+
+                    near.dht(dhtCache);
+
+                    dht = dhtCache;
+                }
+                else {
+                    assert cache instanceof GridAtomicNearCache;
+
+                    assert cfg.getAtomicityMode() == ATOMIC;
+
+                    GridAtomicNearCache near = (GridAtomicNearCache)cache;
+
+                    GridDhtAtomicCache dhtCache = isAffinityNode(cfg) ? new GridDhtAtomicCache(cacheCtx) :
+                        new GridDhtAtomicCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
+
+                    dhtCache.near(near);
+
+                    near.dht(dhtCache);
+
+                    dht = dhtCache;
+                }
 
                 cacheCtx.cache(dht);
-
-                near.dht(dht);
-                dht.near(near);
 
                 // Start managers.
                 for (GridCacheManager mgr : dhtManagers(cacheCtx))
@@ -1144,7 +1181,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         // Start DHT cache as well.
         if (isNearEnabled(ctx)) {
-            GridDhtCache dht = ctx.near().dht();
+            GridDhtCacheAdapter dht = ctx.near().dht();
 
             GridCacheContext<?, ?> dhtCtx = dht.context();
 
@@ -1240,7 +1277,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheContext ctx = cache.context();
 
             if (isNearEnabled(ctx)) {
-                GridDhtCache dht = ctx.near().dht();
+                GridDhtCacheAdapter dht = ctx.near().dht();
 
                 if (dht != null) {
                     GridCacheContext<?, ?> dhtCtx = dht.context();
@@ -1280,7 +1317,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheContext ctx = cache.context();
 
             if (isNearEnabled(ctx)) {
-                GridDhtCache dht = ctx.near().dht();
+                GridDhtCacheAdapter dht = ctx.near().dht();
 
                 // Check whether dht cache has been started.
                 if (dht != null) {

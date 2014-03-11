@@ -443,6 +443,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return Near cache for transactional mode.
+     */
+    public GridTxNearCache<K, V> nearTx() {
+        return (GridTxNearCache<K, V>)cache;
+    }
+
+    /**
      * @return Cache gateway.
      */
     public GridCacheGateway<K, V> gate() {

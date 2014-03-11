@@ -87,7 +87,7 @@ public class GridDhtCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * @param near Near cache.
      */
-    public void near(GridNearCache<K, V> near) {
+    public void near(GridTxNearCache<K, V> near) {
         this.near = near;
     }
 }

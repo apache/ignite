@@ -331,7 +331,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     private void undoLocks(boolean dist) {
         // Transactions will undo during rollback.
         if (dist && tx == null)
-            cctx.near().removeLocks(lockVer, keys);
+            cctx.nearTx().removeLocks(lockVer, keys);
         else {
             if (tx != null) {
                 if (tx.setRollbackOnly()) {
@@ -1151,7 +1151,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     /**
      * @return DHT cache.
      */
-    private GridDhtCache<K, V> dht() {
+    private GridDhtCacheAdapter<K, V> dht() {
         return cctx.near().dht();
     }
 
