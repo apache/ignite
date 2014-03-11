@@ -77,6 +77,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<GridIndexingFieldsResult>>> fieldsQryRes =
         new ConcurrentHashMap8<>();
 
+    /** */
+    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
+
     /** {@inheritDoc} */
     @Override public void start0() throws GridException {
         idxMgr = cctx.kernalContext().indexing();
@@ -121,10 +124,26 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
+        busyLock.block();
+
         if (cancel)
             onCancelAtStop();
         else
             onWaitAtStop();
+    }
+
+    /**
+     * @return {@code True} if entered busy state.
+     */
+    private boolean enterBusy() {
+        return busyLock.enterBusy();
+    }
+
+    /**
+     *  Leaves busy state.
+     */
+    private void leaveBusy() {
+        busyLock.leaveBusy();
     }
 
     /**
@@ -146,7 +165,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws GridException If failed.
      */
     public long size(Class<?> valType) throws GridException {
-        return idxMgr.size(spi, space, valType);
+        if (!enterBusy())
+            throw new IllegalStateException("Failed to get size (grid is stopping).");
+
+        try {
+            return idxMgr.size(spi, space, valType);
+        }
+        finally {
+            leaveBusy();
+        }
     }
 
     /**
@@ -156,7 +183,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
     public GridFuture<?> rebuildIndexes(Class<?> valType) {
-        return idxMgr.rebuildIndexes(spi, space, valType);
+        if (!enterBusy())
+            throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
+
+        try {
+            return idxMgr.rebuildIndexes(spi, space, valType);
+        }
+        finally {
+            leaveBusy();
+        }
     }
 
     /**
@@ -165,7 +200,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
     public GridFuture<?> rebuildAllIndexes() {
-        return idxMgr.rebuildAllIndexes(spi);
+        if (!enterBusy())
+            throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
+
+        try {
+            return idxMgr.rebuildAllIndexes(spi);
+        }
+        finally {
+            leaveBusy();
+        }
     }
 
     /**
@@ -209,7 +252,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws GridSpiException If failed.
      */
     public void onSwap(String swapSpaceName, K key) throws GridSpiException {
-        idxMgr.onSwap(spi, space, swapSpaceName, key);
+        if (!enterBusy())
+            return; // Ignore index update when node is stopping.
+
+        try {
+            idxMgr.onSwap(spi, space, swapSpaceName, key);
+        }
+        finally {
+            leaveBusy();
+        }
     }
 
     /**
@@ -221,7 +272,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws GridSpiException If failed.
      */
     public void onUnswap(K key, V val, byte[] valBytes) throws GridSpiException {
-        idxMgr.onUnswap(spi, space, key, val, valBytes);
+        if (!enterBusy())
+            return; // Ignore index update when node is stopping.
+
+        try {
+            idxMgr.onUnswap(spi, space, key, val, valBytes);
+        }
+        finally {
+            leaveBusy();
+        }
     }
 
     /**
@@ -244,10 +303,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (!cctx.config().isQueryIndexEnabled() && !(key instanceof GridCacheInternal))
             return; // No-op.
 
-        if (val == null)
-            val = cctx.marshaller().unmarshal(valBytes, cctx.deploy().globalLoader());
+        if (!enterBusy())
+            return; // Ignore index update when node is stopping.
 
-        idxMgr.store(spi, space, key, keyBytes, val, valBytes, CU.versionToBytes(ver), expirationTime);
+        try {
+            if (val == null)
+                val = cctx.marshaller().unmarshal(valBytes, cctx.deploy().globalLoader());
+
+            idxMgr.store(spi, space, key, keyBytes, val, valBytes, CU.versionToBytes(ver), expirationTime);
+        }
+        finally {
+            leaveBusy();
+        }
     }
 
     /**
@@ -263,7 +330,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (!cctx.config().isQueryIndexEnabled() && !(key instanceof GridCacheInternal))
             return false; // No-op.
 
-        return idxMgr.remove(spi, space, key, keyBytes);
+        if (!enterBusy())
+            return false; // Ignore index update when node is stopping.
+
+        try {
+            return idxMgr.remove(spi, space, key, keyBytes);
+        }
+        finally {
+            leaveBusy();
+        }
     }
 
     /**
@@ -272,11 +347,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param ldr Class loader to undeploy.
      */
     public void onUndeploy(ClassLoader ldr) {
+        if (!enterBusy())
+            return; // Ignore index update when node is stopping.
+
         try {
             idxMgr.onUndeploy(space, ldr);
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
+        }
+        finally {
+            leaveBusy();
         }
     }
 
@@ -482,161 +563,173 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     protected void runFieldsQuery(GridCacheQueryInfo qryInfo) {
         assert qryInfo != null;
 
-        if (log.isDebugEnabled())
-            log.debug("Running query: " + qryInfo);
+        if (!enterBusy()) {
+            if (cctx.localNodeId().equals(qryInfo.senderId()))
+                throw new IllegalStateException("Failed to process query request (grid is stopping).");
 
-        boolean rmvRes = true;
+            return; // Ignore remote requests when when node is stopping.
+        }
 
         try {
-            // Preparing query closures.
-            GridPredicate<GridCacheEntry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
-            GridClosure<List<?>, Object> trans = (GridClosure<List<?>, Object>)qryInfo.transformer();
-            GridReducer<List<?>, Object> rdc = (GridReducer<List<?>, Object>)qryInfo.reducer();
-
-            injectResources(prjFilter);
-            injectResources(trans);
-            injectResources(rdc);
-
-            GridCacheQueryAdapter<?> qry = qryInfo.query();
-
-            int pageSize = qry.pageSize();
-
-            Collection<Object> data = null;
-            Collection<List<GridIndexingEntity<?>>> entities = null;
-
-            if (qryInfo.local() || rdc != null || cctx.isLocalNode(qryInfo.senderId()))
-                data = new ArrayList<>(pageSize);
-            else
-                entities = new ArrayList<>(pageSize);
-
-            GridIndexingFieldsResult res = qryInfo.local() ?
-                executeFieldsQuery(qry, qryInfo.arguments(), qryInfo.local()) :
-                fieldsQueryResult(qryInfo);
-
-            // If metadata needs to be returned to user and cleaned from internal fields - copy it.
-            List<GridIndexingFieldMetadata> meta = qryInfo.includeMetaData() ?
-                (res.metaData() != null ? new ArrayList<>(res.metaData()) : null) :
-                res.metaData();
-
-            BitSet ignored = new BitSet();
-
-            // Filter internal fields.
-            if (meta != null) {
-                Iterator<GridIndexingFieldMetadata> metaIt = meta.iterator();
-
-                int i = 0;
-
-                while (metaIt.hasNext()) {
-                    if (IGNORED_FIELDS.contains(metaIt.next().fieldName())) {
-                        ignored.set(i);
-
-                        if (qryInfo.includeMetaData())
-                            metaIt.remove();
-                    }
-
-                    i++;
-                }
-            }
-
-            if (!qryInfo.includeMetaData())
-                meta = null;
-
-            GridCloseableIterator<List<GridIndexingEntity<?>>> it =
-                new GridSpiCloseableIteratorWrapper<>(res.iterator());
-
             if (log.isDebugEnabled())
-                log.debug("Received fields iterator [iterHasNext=" + it.hasNext() + ']');
+                log.debug("Running query: " + qryInfo);
 
-            if (!it.hasNext()) {
-                if (rdc != null)
-                    data = Collections.singletonList(rdc.reduce());
+            boolean rmvRes = true;
 
-                onFieldsPageReady(qryInfo.local(), qryInfo, meta, entities, data, true, null);
+            try {
+                // Preparing query closures.
+                GridPredicate<GridCacheEntry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
+                GridClosure<List<?>, Object> trans = (GridClosure<List<?>, Object>)qryInfo.transformer();
+                GridReducer<List<?>, Object> rdc = (GridReducer<List<?>, Object>)qryInfo.reducer();
 
-                return;
-            }
+                injectResources(prjFilter);
+                injectResources(trans);
+                injectResources(rdc);
 
-            int cnt = 0;
-            boolean metaSent = false;
+                GridCacheQueryAdapter<?> qry = qryInfo.query();
 
-            while (!Thread.currentThread().isInterrupted() && it.hasNext()) {
-                List<GridIndexingEntity<?>> row = it.next();
+                int pageSize = qry.pageSize();
 
-                // Query is cancelled.
-                if (row == null) {
-                    onPageReady(qryInfo.local(), qryInfo, null, true, null);
+                Collection<Object> data = null;
+                Collection<List<GridIndexingEntity<?>>> entities = null;
 
-                    break;
-                }
+                if (qryInfo.local() || rdc != null || cctx.isLocalNode(qryInfo.senderId()))
+                    data = new ArrayList<>(pageSize);
+                else
+                    entities = new ArrayList<>(pageSize);
+
+                GridIndexingFieldsResult res = qryInfo.local() ?
+                    executeFieldsQuery(qry, qryInfo.arguments(), qryInfo.local()) :
+                    fieldsQueryResult(qryInfo);
+
+                // If metadata needs to be returned to user and cleaned from internal fields - copy it.
+                List<GridIndexingFieldMetadata> meta = qryInfo.includeMetaData() ?
+                    (res.metaData() != null ? new ArrayList<>(res.metaData()) : null) :
+                    res.metaData();
+
+                BitSet ignored = new BitSet();
 
                 // Filter internal fields.
-                Iterator<GridIndexingEntity<?>> rowIt = row.iterator();
+                if (meta != null) {
+                    Iterator<GridIndexingFieldMetadata> metaIt = meta.iterator();
 
-                int i = 0;
+                    int i = 0;
 
-                while (rowIt.hasNext()) {
-                    rowIt.next();
+                    while (metaIt.hasNext()) {
+                        if (IGNORED_FIELDS.contains(metaIt.next().fieldName())) {
+                            ignored.set(i);
 
-                    if (ignored.get(i++))
-                        rowIt.remove();
+                            if (qryInfo.includeMetaData())
+                                metaIt.remove();
+                        }
+
+                        i++;
+                    }
                 }
 
-                if ((qryInfo.local() || rdc != null || cctx.isLocalNode(qryInfo.senderId()))) {
-                    List<Object> fields = new ArrayList<>(row.size());
+                if (!qryInfo.includeMetaData())
+                    meta = null;
 
-                    for (GridIndexingEntity<?> ent : row)
-                        fields.add(ent.value());
+                GridCloseableIterator<List<GridIndexingEntity<?>>> it =
+                    new GridSpiCloseableIteratorWrapper<>(res.iterator());
 
-                    // Reduce.
-                    if (rdc != null) {
-                        if (!rdc.collect(fields))
-                            break;
+                if (log.isDebugEnabled())
+                    log.debug("Received fields iterator [iterHasNext=" + it.hasNext() + ']');
+
+                if (!it.hasNext()) {
+                    if (rdc != null)
+                        data = Collections.singletonList(rdc.reduce());
+
+                    onFieldsPageReady(qryInfo.local(), qryInfo, meta, entities, data, true, null);
+
+                    return;
+                }
+
+                int cnt = 0;
+                boolean metaSent = false;
+
+                while (!Thread.currentThread().isInterrupted() && it.hasNext()) {
+                    List<GridIndexingEntity<?>> row = it.next();
+
+                    // Query is cancelled.
+                    if (row == null) {
+                        onPageReady(qryInfo.local(), qryInfo, null, true, null);
+
+                        break;
+                    }
+
+                    // Filter internal fields.
+                    Iterator<GridIndexingEntity<?>> rowIt = row.iterator();
+
+                    int i = 0;
+
+                    while (rowIt.hasNext()) {
+                        rowIt.next();
+
+                        if (ignored.get(i++))
+                            rowIt.remove();
+                    }
+
+                    if ((qryInfo.local() || rdc != null || cctx.isLocalNode(qryInfo.senderId()))) {
+                        List<Object> fields = new ArrayList<>(row.size());
+
+                        for (GridIndexingEntity<?> ent : row)
+                            fields.add(ent.value());
+
+                        // Reduce.
+                        if (rdc != null) {
+                            if (!rdc.collect(fields))
+                                break;
+                        }
+                        else
+                            data.add(fields);
                     }
                     else
-                        data.add(fields);
+                        entities.add(row);
+
+                    if (rdc == null && ((!qryInfo.allPages() && ++cnt == pageSize) || !it.hasNext())) {
+                        onFieldsPageReady(qryInfo.local(), qryInfo, !metaSent ? meta : null,
+                            entities, data, !it.hasNext(), null);
+
+                        if (it.hasNext())
+                            rmvRes = false;
+
+                        if (!qryInfo.allPages())
+                            return;
+                    }
                 }
-                else
-                    entities.add(row);
 
-                if (rdc == null && ((!qryInfo.allPages() && ++cnt == pageSize) || !it.hasNext())) {
-                    onFieldsPageReady(qryInfo.local(), qryInfo, !metaSent ? meta : null,
-                        entities, data, !it.hasNext(), null);
-
-                    if (it.hasNext())
-                        rmvRes = false;
-
-                    if (!qryInfo.allPages())
-                        return;
+                if (rdc != null) {
+                    onFieldsPageReady(qryInfo.local(), qryInfo, meta, null,
+                        Collections.singletonList(rdc.reduce()), true, null);
                 }
             }
+            catch (GridException e) {
+                if (log.isDebugEnabled() || !e.hasCause(SQLException.class))
+                    U.error(log, "Failed to run fields query [qry=" + qryInfo + ", node=" + cctx.nodeId() + ']', e);
+                else {
+                    if (e.hasCause(SQLException.class))
+                        U.error(log, "Failed to run fields query [node=" + cctx.nodeId() +
+                            ", msg=" + e.getCause(SQLException.class).getMessage() + ']');
+                    else
+                        U.error(log, "Failed to run fields query [node=" + cctx.nodeId() +
+                            ", msg=" + e.getMessage() + ']');
+                }
 
-            if (rdc != null) {
-                onFieldsPageReady(qryInfo.local(), qryInfo, meta, null,
-                    Collections.singletonList(rdc.reduce()), true, null);
+                onFieldsPageReady(qryInfo.local(), qryInfo, null, null, null, true, e);
             }
-        }
-        catch (GridException e) {
-            if (log.isDebugEnabled() || !e.hasCause(SQLException.class))
-                U.error(log, "Failed to run fields query [qry=" + qryInfo + ", node=" + cctx.nodeId() + ']', e);
-            else {
-                if (e.hasCause(SQLException.class))
-                    U.error(log, "Failed to run fields query [node=" + cctx.nodeId() +
-                        ", msg=" + e.getCause(SQLException.class).getMessage() + ']');
-                else
-                    U.error(log, "Failed to run fields query [node=" + cctx.nodeId() +
-                        ", msg=" + e.getMessage() + ']');
+            catch (Throwable e) {
+                U.error(log, "Failed to run fields query [qry=" + qryInfo + ", node=" + cctx.nodeId() + "]", e);
+
+                onFieldsPageReady(qryInfo.local(), qryInfo, null, null, null, true, e);
             }
-
-            onFieldsPageReady(qryInfo.local(), qryInfo, null, null, null, true, e);
-        }
-        catch (Throwable e) {
-            U.error(log, "Failed to run fields query [qry=" + qryInfo + ", node=" + cctx.nodeId() + "]", e);
-
-            onFieldsPageReady(qryInfo.local(), qryInfo, null, null, null, true, e);
+            finally {
+                if (rmvRes)
+                    removeFieldsQueryResult(qryInfo.senderId(), qryInfo.requestId());
+            }
         }
         finally {
-            if (rmvRes)
-                removeFieldsQueryResult(qryInfo.senderId(), qryInfo.requestId());
+            leaveBusy();
         }
     }
 
@@ -649,139 +742,151 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     protected <R> void runQuery(GridCacheQueryInfo qryInfo) {
         assert qryInfo != null;
 
-        boolean loc = qryInfo.local();
+        if (!enterBusy()) {
+            if (cctx.localNodeId().equals(qryInfo.senderId()))
+                throw new IllegalStateException("Failed to process query request (grid is stopping).");
 
-        if (log.isDebugEnabled())
-            log.debug("Running query: " + qryInfo);
-
-        boolean rmvIter = true;
+            return; // Ignore remote requests when when node is stopping.
+        }
 
         try {
-            // Preparing query closures.
-            GridPredicate<GridCacheEntry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
-            GridClosure<Map.Entry<K, V>, Object> trans = (GridClosure<Map.Entry<K, V>, Object>)qryInfo.transformer();
-            GridReducer<Map.Entry<K, V>, Object> rdc = (GridReducer<Map.Entry<K, V>, Object>)qryInfo.reducer();
-
-            injectResources(prjFilter);
-            injectResources(trans);
-            injectResources(rdc);
-
-            GridCacheQueryAdapter<?> qry = qryInfo.query();
-
-            int pageSize = qry.pageSize();
-
-            boolean incBackups = qry.includeBackups();
-
-            GridCloseableIterator<GridIndexingKeyValueRow<K, V>> iter =
-                loc ? executeQuery(qry, qryInfo.arguments(), loc) : queryIterator(qryInfo);
-
-            GridCacheAdapter<K, V> cache = cctx.cache();
+            boolean loc = qryInfo.local();
 
             if (log.isDebugEnabled())
-                log.debug("Received index iterator [iterHasNext=" + iter.hasNext() +
-                    ", cacheSize=" + cache.size() + ']');
+                log.debug("Running query: " + qryInfo);
 
-            int cnt = 0;
+            boolean rmvIter = true;
 
-            boolean stop = false;
-            boolean pageSent = false;
+            try {
+                // Preparing query closures.
+                GridPredicate<GridCacheEntry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
+                GridClosure<Map.Entry<K, V>, Object> trans = (GridClosure<Map.Entry<K, V>, Object>)qryInfo.transformer();
+                GridReducer<Map.Entry<K, V>, Object> rdc = (GridReducer<Map.Entry<K, V>, Object>)qryInfo.reducer();
 
-            Collection<Object> data = new ArrayList<>(pageSize);
+                injectResources(prjFilter);
+                injectResources(trans);
+                injectResources(rdc);
 
-            while (!Thread.currentThread().isInterrupted() && iter.hasNext()) {
-                GridIndexingKeyValueRow<K, V> row = iter.next();
+                GridCacheQueryAdapter<?> qry = qryInfo.query();
 
-                // Query is cancelled.
-                if (row == null) {
-                    onPageReady(loc, qryInfo, null, true, null);
+                int pageSize = qry.pageSize();
 
-                    break;
-                }
+                boolean incBackups = qry.includeBackups();
 
-                K key = row.key().value();
+                GridCloseableIterator<GridIndexingKeyValueRow<K, V>> iter =
+                    loc ? executeQuery(qry, qryInfo.arguments(), loc) : queryIterator(qryInfo);
 
-                // Filter backups for SCAN queries. Other types are filtered in indexing manager.
-                if (!cctx.isReplicated() && cctx.config().getCacheMode() != LOCAL && qry.type() == SCAN &&
-                    !incBackups && !cctx.affinity().primary(cctx.localNode(), key)) {
-                    if (log.isDebugEnabled())
-                        log.debug("Ignoring backup element [row=" + row +
-                            ", cacheMode=" + cctx.config().getCacheMode() + ", incBackups=" + incBackups +
-                            ", primary=" + cctx.affinity().primary(cctx.localNode(), key) + ']');
-
-                    continue;
-                }
-
-                GridIndexingEntity<V> v = row.value();
-
-                assert v != null && v.hasValue();
-
-                V val = v.value();
+                GridCacheAdapter<K, V> cache = cctx.cache();
 
                 if (log.isDebugEnabled())
-                    log.debug("Record [key=" + key + ", val=" + val + ", incBackups=" +
-                        incBackups + "priNode=" + U.id8(CU.primaryNode(cctx, key).id()) +
-                        ", node=" + U.id8(cctx.grid().localNode().id()) + ']');
+                    log.debug("Received index iterator [iterHasNext=" + iter.hasNext() +
+                        ", cacheSize=" + cache.size() + ']');
 
-                if (val == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Unsuitable record value: " + val);
+                int cnt = 0;
 
-                    continue;
-                }
+                boolean stop = false;
+                boolean pageSent = false;
 
-                // Reduce.
-                if (rdc != null) {
-                    if (!rdc.collect(F.t(key, val)) || !iter.hasNext()) {
-                        onPageReady(loc, qryInfo, Collections.singletonList(rdc.reduce()), true, null);
+                Collection<Object> data = new ArrayList<>(pageSize);
 
-                        pageSent = true;
+                while (!Thread.currentThread().isInterrupted() && iter.hasNext()) {
+                    GridIndexingKeyValueRow<K, V> row = iter.next();
+
+                    // Query is cancelled.
+                    if (row == null) {
+                        onPageReady(loc, qryInfo, null, true, null);
 
                         break;
                     }
-                    else
+
+                    K key = row.key().value();
+
+                    // Filter backups for SCAN queries. Other types are filtered in indexing manager.
+                    if (!cctx.isReplicated() && cctx.config().getCacheMode() != LOCAL && qry.type() == SCAN &&
+                        !incBackups && !cctx.affinity().primary(cctx.localNode(), key)) {
+                        if (log.isDebugEnabled())
+                            log.debug("Ignoring backup element [row=" + row +
+                                ", cacheMode=" + cctx.config().getCacheMode() + ", incBackups=" + incBackups +
+                                ", primary=" + cctx.affinity().primary(cctx.localNode(), key) + ']');
+
                         continue;
-                }
+                    }
 
-                data.add(trans != null ? trans.apply(F.t(key, val)) :
-                    !loc ? new GridCacheQueryResponseEntry<>(key, val) : F.t(key, val));
+                    GridIndexingEntity<V> v = row.value();
 
-                if (!loc) {
-                    if (++cnt == pageSize || !iter.hasNext()) {
-                        boolean finished = !iter.hasNext();
+                    assert v != null && v.hasValue();
 
-                        onPageReady(loc, qryInfo, data, finished, null);
+                    V val = v.value();
 
-                        pageSent = true;
+                    if (log.isDebugEnabled())
+                        log.debug("Record [key=" + key + ", val=" + val + ", incBackups=" +
+                            incBackups + "priNode=" + U.id8(CU.primaryNode(cctx, key).id()) +
+                            ", node=" + U.id8(cctx.grid().localNode().id()) + ']');
 
-                        if (!finished)
-                            rmvIter = false;
+                    if (val == null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Unsuitable record value: " + val);
 
-                        if (!qryInfo.allPages())
-                            return;
+                        continue;
+                    }
 
-                        data = new ArrayList<>(pageSize);
+                    // Reduce.
+                    if (rdc != null) {
+                        if (!rdc.collect(F.t(key, val)) || !iter.hasNext()) {
+                            onPageReady(loc, qryInfo, Collections.singletonList(rdc.reduce()), true, null);
 
-                        if (stop)
-                            break; // while
+                            pageSent = true;
+
+                            break;
+                        }
+                        else
+                            continue;
+                    }
+
+                    data.add(trans != null ? trans.apply(F.t(key, val)) :
+                        !loc ? new GridCacheQueryResponseEntry<>(key, val) : F.t(key, val));
+
+                    if (!loc) {
+                        if (++cnt == pageSize || !iter.hasNext()) {
+                            boolean finished = !iter.hasNext();
+
+                            onPageReady(loc, qryInfo, data, finished, null);
+
+                            pageSent = true;
+
+                            if (!finished)
+                                rmvIter = false;
+
+                            if (!qryInfo.allPages())
+                                return;
+
+                            data = new ArrayList<>(pageSize);
+
+                            if (stop)
+                                break; // while
+                        }
                     }
                 }
-            }
 
-            if (!pageSent) {
-                if (rdc == null)
-                    onPageReady(loc, qryInfo, data, true, null);
-                else
-                    onPageReady(loc, qryInfo, Collections.singletonList(rdc.reduce()), true, null);
+                if (!pageSent) {
+                    if (rdc == null)
+                        onPageReady(loc, qryInfo, data, true, null);
+                    else
+                        onPageReady(loc, qryInfo, Collections.singletonList(rdc.reduce()), true, null);
+                }
             }
-        }
-        catch (Throwable e) {
-            U.error(log, "Failed to run query [qry=" + qryInfo + ", node=" + cctx.nodeId() + "]", e);
+            catch (Throwable e) {
+                U.error(log, "Failed to run query [qry=" + qryInfo + ", node=" + cctx.nodeId() + "]", e);
 
-            onPageReady(loc, qryInfo, null, true, e);
+                onPageReady(loc, qryInfo, null, true, e);
+            }
+            finally {
+                if (rmvIter)
+                    removeQueryIterator(qryInfo.senderId(), qryInfo.requestId());
+            }
         }
         finally {
-            if (rmvIter)
-                removeQueryIterator(qryInfo.senderId(), qryInfo.requestId());
+            leaveBusy();
         }
     }
 
