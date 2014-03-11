@@ -15,19 +15,19 @@
 
 #include "gridgain/gridclienttypedef.hpp"
 
-class GridUuid;
+class GridClientUuid;
 class GridClientNodeMetricsBean;
 
-class GridNodeMarshallerHelper {
+class GridClientNodeMarshallerHelper {
 public:
-    GridNodeMarshallerHelper(const GridClientNode& node) : node_(node){}
+    GridClientNodeMarshallerHelper(const GridClientNode& node) : node_(node){}
 
     /**
      * Sets node ID.
      *
      * @param pNodeId Node ID.
      */
-    void setNodeId(const GridUuid& pNodeId);
+    void setNodeId(const GridClientUuid& pNodeId);
 
     /**
      * Sets node consistent ID.
@@ -41,14 +41,14 @@ public:
      *
      * @param pIntAddrs List of address strings.
      */
-    void setTcpAddresses(std::vector < GridSocketAddress >& pIntAddrs);
+    void setTcpAddresses(std::vector < GridClientSocketAddress >& pIntAddrs);
 
     /**
      * Sets REST HTTP server addresses.
      *
      * @param pExtAddrs List of address strings.
      */
-    void setJettyAddresses(std::vector < GridSocketAddress >& pExtAddrs);
+    void setJettyAddresses(std::vector < GridClientSocketAddress >& pExtAddrs);
 
     /**
      * Sets metrics.
@@ -83,14 +83,14 @@ public:
      *
      * @param routerAddress Router address.
      */
-    void setRouterJettyAddress(GridSocketAddress& routerAddress);
+    void setRouterJettyAddress(GridClientSocketAddress& routerAddress);
 
     /**
      * Sets the router HTTP address.
      *
      * @param routerAddress Router address.
      */
-    void setRouterTcpAddress(GridSocketAddress& routerAddress);
+    void setRouterTcpAddress(GridClientSocketAddress& routerAddress);
 
     /**
      * Sets the number of replicas for this node.

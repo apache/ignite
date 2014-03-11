@@ -14,7 +14,7 @@
 #include <gridgain/gridconf.hpp>
 #include <gridgain/gridclientnode.hpp>
 
-class GridHasheableObject;
+class GridClientHasheableObject;
 
 /**
  * Interface that will determine which node should be connected by the client when
@@ -40,7 +40,7 @@ public:
       *
       * @return Affinity nodes for the given partition.
       */
-      virtual TGridClientNodePtr getNode(const TNodesSet& nodes, const GridHasheableObject& key) = 0;
+      virtual TGridClientNodePtr getNode(const TNodesSet& nodes, const GridClientHasheableObject& key) = 0;
 
 };
 

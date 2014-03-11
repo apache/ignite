@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(testIdleConnection) {
 
     GridClientConnectionPool pool(cfg);
 
-    GridSocketAddress serverAddr = cfg.servers()[0];
+    GridClientSocketAddress serverAddr = cfg.servers()[0];
 
     std::shared_ptr<GridClientTcpConnection> conn =
             pool.rentTcpConnection(serverAddr.host(), serverAddr.port());
@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(testIdleConnection2) {
 
     GridClientConnectionPool pool(cfg);
 
-    GridSocketAddress serverAddr = cfg.servers()[0];
+    GridClientSocketAddress serverAddr = cfg.servers()[0];
 
     std::shared_ptr<GridClientTcpConnection> conn =
             pool.rentTcpConnection(serverAddr.host(), serverAddr.port());

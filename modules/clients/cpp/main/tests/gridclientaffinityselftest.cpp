@@ -47,9 +47,9 @@ TNodesSet buildNodeSet(const char* ids[], int cnt) {
 
     for (int i = 0; i < cnt; ++i) {
         GridClientNode node;
-        GridNodeMarshallerHelper helper(node);
+        GridClientNodeMarshallerHelper helper(node);
 
-        helper.setNodeId(GridUuid(nodeUuids[i]));
+        helper.setNodeId(GridClientUuid(nodeUuids[i]));
 
         nodes.insert(node);
     }
@@ -112,15 +112,15 @@ BOOST_AUTO_TEST_CASE(testSimplePartitionedAffinity) {
     TNodesSet nodes(buildNodeSet(nodeUuids, (signed) (sizeof(nodeUuids) / sizeof(*nodeUuids))));
 
     BOOST_CHECK_EQUAL(
-            GridUuid(nodeUuids[0]),
+            GridClientUuid(nodeUuids[0]),
             aff.getNode(nodes, GridClientVariantHasheableObject(GridClientVariant(keyNames[0])))->getNodeId());
 
     BOOST_CHECK_EQUAL(
-            GridUuid(nodeUuids[0]),
+            GridClientUuid(nodeUuids[0]),
             aff.getNode(nodes, GridClientVariantHasheableObject(GridClientVariant(keyNames[1])))->getNodeId());
 
     BOOST_CHECK_EQUAL(
-            GridUuid(nodeUuids[1]),
+            GridClientUuid(nodeUuids[1]),
             aff.getNode(nodes, GridClientVariantHasheableObject(GridClientVariant(intKeyNames[0])))->getNodeId());
 }
 
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(testCacheProjection) {
     GridClientConfiguration clientCfg(affinityClientConfiguration());
 
     TGridClientSharedDataPtr sharedData(
-            new GridClientSharedData(GridUuid::randomUuid(), clientCfg,
+            new GridClientSharedData(GridClientUuid::randomUuid(), clientCfg,
                     std::shared_ptr<GridClientCommandExecutorPrivate>(
                             new GridClientTcpCommandExecutor(
                                     boost::shared_ptr<GridClientConnectionPool>(new GridClientConnectionPool(
@@ -138,9 +138,9 @@ BOOST_AUTO_TEST_CASE(testCacheProjection) {
     {
         // node 1 hosts the caches "cacheOne" and "cacheTwo"
         GridClientNode node;
-        GridNodeMarshallerHelper helper(node);
+        GridClientNodeMarshallerHelper helper(node);
 
-        helper.setNodeId(GridUuid(nodeUuids[0]));
+        helper.setNodeId(GridClientUuid(nodeUuids[0]));
 
         TGridClientVariantMap cacheNames;
         cacheNames.insert(make_pair(GridClientVariant("cacheOne"), GridClientVariant("REPLICATED")));
@@ -153,9 +153,9 @@ BOOST_AUTO_TEST_CASE(testCacheProjection) {
     {
         // node 2 only hosts the cache "cacheOne"
         GridClientNode node;
-        GridNodeMarshallerHelper helper(node);
+        GridClientNodeMarshallerHelper helper(node);
 
-        helper.setNodeId(GridUuid(nodeUuids[1]));
+        helper.setNodeId(GridClientUuid(nodeUuids[1]));
 
         TGridClientVariantMap cacheNames;
         cacheNames.insert(make_pair(GridClientVariant("cacheOne"), GridClientVariant("REPLICATED")));
@@ -179,9 +179,9 @@ BOOST_AUTO_TEST_CASE(testCacheProjection) {
             tp,
             std::set<GridClientCacheFlag>()));
 
-    BOOST_CHECK_EQUAL(GridUuid(nodeUuids[0]), cache1->affinity(GridClientVariant(keyNames[0])));
-    BOOST_CHECK_EQUAL(GridUuid(nodeUuids[0]), cache1->affinity(GridClientVariant(keyNames[1])));
-    BOOST_CHECK_EQUAL(GridUuid(nodeUuids[1]), cache1->affinity(GridClientVariant(intKeyNames[0])));
+    BOOST_CHECK_EQUAL(GridClientUuid(nodeUuids[0]), cache1->affinity(GridClientVariant(keyNames[0])));
+    BOOST_CHECK_EQUAL(GridClientUuid(nodeUuids[0]), cache1->affinity(GridClientVariant(keyNames[1])));
+    BOOST_CHECK_EQUAL(GridClientUuid(nodeUuids[1]), cache1->affinity(GridClientVariant(intKeyNames[0])));
 
     unique_ptr<GridClientDataProjectionImpl> cache2(
         new GridClientDataProjectionImpl(
@@ -193,16 +193,16 @@ BOOST_AUTO_TEST_CASE(testCacheProjection) {
             std::set<GridClientCacheFlag>()));
 
     // Both keys must map to the same node.
-    BOOST_CHECK_EQUAL(GridUuid(nodeUuids[0]), cache2->affinity(GridClientVariant(keyNames[0])));
-    BOOST_CHECK_EQUAL(GridUuid(nodeUuids[0]), cache2->affinity(GridClientVariant(keyNames[1])));
-    BOOST_CHECK_EQUAL(GridUuid(nodeUuids[0]), cache2->affinity(GridClientVariant(intKeyNames[0])));
+    BOOST_CHECK_EQUAL(GridClientUuid(nodeUuids[0]), cache2->affinity(GridClientVariant(keyNames[0])));
+    BOOST_CHECK_EQUAL(GridClientUuid(nodeUuids[0]), cache2->affinity(GridClientVariant(keyNames[1])));
+    BOOST_CHECK_EQUAL(GridClientUuid(nodeUuids[0]), cache2->affinity(GridClientVariant(intKeyNames[0])));
 }
 
 BOOST_AUTO_TEST_CASE(testCacheTopologyChange) {
     GridClientConfiguration clientCfg(affinityClientConfiguration());
 
     TGridClientSharedDataPtr sharedData(
-            new GridClientSharedData(GridUuid::randomUuid(), clientCfg,
+            new GridClientSharedData(GridClientUuid::randomUuid(), clientCfg,
                     std::shared_ptr<GridClientCommandExecutorPrivate>(
                             new GridClientTcpCommandExecutor(
                                     boost::shared_ptr<GridClientConnectionPool>(new GridClientConnectionPool(
@@ -212,9 +212,9 @@ BOOST_AUTO_TEST_CASE(testCacheTopologyChange) {
     {
         // Initial topology with just one node.
         GridClientNode node;
-        GridNodeMarshallerHelper helper(node);
+        GridClientNodeMarshallerHelper helper(node);
 
-        helper.setNodeId(GridUuid(nodeUuids[0]));
+        helper.setNodeId(GridClientUuid(nodeUuids[0]));
 
         TGridClientVariantMap cacheNames;
         cacheNames.insert(make_pair(GridClientVariant("cacheOne"), GridClientVariant("REPLICATED")));
@@ -239,15 +239,15 @@ BOOST_AUTO_TEST_CASE(testCacheTopologyChange) {
             std::set<GridClientCacheFlag>()));
 
     // Both keys must map to the same node.
-    BOOST_CHECK(GridUuid(nodeUuids[0])==cache->affinity(GridClientVariant(keyNames[0])));
-    BOOST_CHECK(GridUuid(nodeUuids[0])==cache->affinity(GridClientVariant(keyNames[1])));
+    BOOST_CHECK(GridClientUuid(nodeUuids[0])==cache->affinity(GridClientVariant(keyNames[0])));
+    BOOST_CHECK(GridClientUuid(nodeUuids[0])==cache->affinity(GridClientVariant(keyNames[1])));
 
     {
         // Now add a new node.
         GridClientNode node;
-        GridNodeMarshallerHelper helper(node);
+        GridClientNodeMarshallerHelper helper(node);
 
-        helper.setNodeId(GridUuid(nodeUuids[1]));
+        helper.setNodeId(GridClientUuid(nodeUuids[1]));
 
         TGridClientVariantMap cacheNames;
         cacheNames.insert(make_pair(GridClientVariant("cacheOne"), GridClientVariant("REPLICATED")));
@@ -259,9 +259,9 @@ BOOST_AUTO_TEST_CASE(testCacheTopologyChange) {
     sharedData->topology()->update(nodes);
 
     // Now keys map to different nodes.
-    BOOST_CHECK_EQUAL(GridUuid(nodeUuids[0]), cache->affinity(GridClientVariant(keyNames[0])));
-    BOOST_CHECK_EQUAL(GridUuid(nodeUuids[0]), cache->affinity(GridClientVariant(keyNames[1])));
-    BOOST_CHECK_EQUAL(GridUuid(nodeUuids[1]), cache->affinity(GridClientVariant(intKeyNames[0])));
+    BOOST_CHECK_EQUAL(GridClientUuid(nodeUuids[0]), cache->affinity(GridClientVariant(keyNames[0])));
+    BOOST_CHECK_EQUAL(GridClientUuid(nodeUuids[0]), cache->affinity(GridClientVariant(keyNames[1])));
+    BOOST_CHECK_EQUAL(GridClientUuid(nodeUuids[1]), cache->affinity(GridClientVariant(intKeyNames[0])));
 }
 
 /**
@@ -273,9 +273,9 @@ BOOST_AUTO_TEST_CASE(testCacheTopologyChange) {
  */
 GridClientNode createNode(string nodeId, int replicaCnt) {
     GridClientNode node;
-    GridNodeMarshallerHelper helper(node);
+    GridClientNodeMarshallerHelper helper(node);
 
-    helper.setNodeId(GridUuid(nodeId));
+    helper.setNodeId(GridClientUuid(nodeId));
     helper.setReplicaCount(replicaCnt);
 
     return node;
@@ -327,8 +327,8 @@ BOOST_AUTO_TEST_CASE(testPartitionedAffinity) {
                 i != data.end(); i++) {
             int nodeIdx = i->second;
 
-            GridUuid exp = nodes[nodeIdx].getNodeId();
-            GridUuid act = aff.getNode(nodesSet, i->first)->getNodeId();
+            GridClientUuid exp = nodes[nodeIdx].getNodeId();
+            GridClientUuid act = aff.getNode(nodesSet, i->first)->getNodeId();
 
             BOOST_CHECK_EQUAL( exp, act );
         }
@@ -357,8 +357,8 @@ BOOST_AUTO_TEST_CASE(testPartitionedAffinity) {
 
         for (auto i = data.begin();
                 i != data.end(); i++) {
-            GridUuid exp = nodes[i->second].getNodeId();
-            GridUuid act = aff.getNode(nodesSet, i->first)->getNodeId();
+            GridClientUuid exp = nodes[i->second].getNodeId();
+            GridClientUuid act = aff.getNode(nodesSet, i->first)->getNodeId();
 
             BOOST_CHECK_EQUAL( exp, act );
         }
@@ -394,8 +394,8 @@ BOOST_AUTO_TEST_CASE(testPartitionedAffinity) {
 
         for (auto i = data.begin();
                 i != data.end(); i++) {
-            GridUuid exp = nodes[i->second].getNodeId();
-            GridUuid act = aff.getNode(nodesSet, i->first)->getNodeId();
+            GridClientUuid exp = nodes[i->second].getNodeId();
+            GridClientUuid act = aff.getNode(nodesSet, i->first)->getNodeId();
 
             BOOST_CHECK_EQUAL( exp, act );
         }
@@ -417,8 +417,8 @@ BOOST_AUTO_TEST_CASE(testPartitionedAffinity) {
 
         for (auto i = data.begin();
                 i != data.end(); i++) {
-            GridUuid exp = nodes[i->second].getNodeId();
-            GridUuid act = aff.getNode(nodesSet, i->first)->getNodeId();
+            GridClientUuid exp = nodes[i->second].getNodeId();
+            GridClientUuid act = aff.getNode(nodesSet, i->first)->getNodeId();
 
             BOOST_CHECK_EQUAL( exp, act );
         }

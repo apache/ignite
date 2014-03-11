@@ -15,7 +15,7 @@
 
 /** Forward declaration. */
 class GridClientConnectionPool;
-class GridSocketAddress;
+class GridClientSocketAddress;
 
 namespace org {
 namespace gridgain {
@@ -46,7 +46,7 @@ public:
      * @param logRequest Log request command.
      * @param result Log request result.
      */
-    virtual void executeLogCmd(const GridSocketAddress& nodeHost,
+    virtual void executeLogCmd(const GridClientSocketAddress& nodeHost,
             GridLogRequestCommand& logRequest, GridClientMessageLogResult& result);
 
     /**
@@ -56,7 +56,7 @@ public:
      * @param topologyRequest Topology request command.
      * @param result Topology request result.
      */
-    virtual void executeTopologyCmd(const GridSocketAddress& nodeHost,
+    virtual void executeTopologyCmd(const GridClientSocketAddress& nodeHost,
             GridTopologyRequestCommand& topologyRequest, GridClientMessageTopologyResult& result);
 
     /**
@@ -66,7 +66,7 @@ public:
      * @param cacheCmd Cache get request command.
      * @param result Cache get request result.
      */
-    virtual void executeGetCacheCmd(const GridSocketAddress& nodeHost,
+    virtual void executeGetCacheCmd(const GridClientSocketAddress& nodeHost,
             GridCacheRequestCommand& cacheCmd, GridClientMessageCacheGetResult&);
 
     /**
@@ -76,7 +76,7 @@ public:
      * @param cacheCmd Cache modify request command.
      * @param result Cache modify request result.
      */
-    virtual void executeModifyCacheCmd(const GridSocketAddress& nodeHost,
+    virtual void executeModifyCacheCmd(const GridClientSocketAddress& nodeHost,
             GridCacheRequestCommand& cacheCmd, GridClientMessageCacheModifyResult&);
 
     /**
@@ -86,7 +86,7 @@ public:
      * @param cacheCmd Cache metrics request command.
      * @param result Cache metrics request result.
      */
-    virtual void executeGetCacheMetricsCmd(const GridSocketAddress& nodeHost,
+    virtual void executeGetCacheMetricsCmd(const GridClientSocketAddress& nodeHost,
             GridCacheRequestCommand& cacheCmd, GridClientMessageCacheMetricResult&);
 
     /**
@@ -96,7 +96,7 @@ public:
      * @param taskCmd task request command.
      * @param result task request result.
      */
-    virtual void executeTaskCmd(const GridSocketAddress& nodeHost, GridTaskRequestCommand& taskCmd,
+    virtual void executeTaskCmd(const GridClientSocketAddress& nodeHost, GridTaskRequestCommand& taskCmd,
             GridClientMessageTaskResult&);
 
     /**
@@ -123,7 +123,7 @@ private:
      * @param cmd Command to send.
      * @param response Response to fill.
      */
-    template <class C, class R> void executeCmd(const GridSocketAddress& nodeHost, C& cmd, R& response);
+    template <class C, class R> void executeCmd(const GridClientSocketAddress& nodeHost, C& cmd, R& response);
 
     /** Connection pool. */
     boost::shared_ptr<GridClientConnectionPool> connPool;

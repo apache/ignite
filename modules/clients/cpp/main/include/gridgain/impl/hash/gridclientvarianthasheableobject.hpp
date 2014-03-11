@@ -18,7 +18,7 @@
 /**
  * Provide the implementation of hash-code for GridClientVariant.
  */
-class GridClientVariantHasheableObject : public GridHasheableObject {
+class GridClientVariantHasheableObject : public GridClientHasheableObject {
 public:
     /**
      * Public constructor.

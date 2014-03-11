@@ -116,7 +116,7 @@ public:
         }
     }
 
-    virtual void visit(const GridUuid& uuid) const {
+    virtual void visit(const GridClientUuid& uuid) const {
         hashCode_ = uuid.hashCode();
 
         uuid.convertToBytes(bytes);
