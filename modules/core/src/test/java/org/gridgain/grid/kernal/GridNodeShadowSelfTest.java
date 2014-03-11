@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
-import com.sun.org.apache.commons.collections.*;
+import org.apache.commons.collections.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
@@ -63,13 +63,13 @@ public class GridNodeShadowSelfTest extends GridCommonAbstractTest {
                 Map<String, Object> shAttrs = sh.attributes();
 
                 for (Map.Entry<String, Object> e : node.attributes().entrySet()) {
-                    Object value = e.getValue();
+                    Object val = e.getValue();
 
-                    if (value != null) {
-                        if (value.getClass().isArray())
-                            assertTrue(Arrays.equals((Object[])value, (Object[])shAttrs.get(e.getKey())));
+                    if (val != null) {
+                        if (val.getClass().isArray())
+                            assertTrue(Arrays.equals((Object[])val, (Object[])shAttrs.get(e.getKey())));
                         else
-                            assertEquals(value, shAttrs.get(e.getKey()));
+                            assertEquals(val, shAttrs.get(e.getKey()));
                     }
                     else
                         assertNull(shAttrs.get(e.getKey()));
