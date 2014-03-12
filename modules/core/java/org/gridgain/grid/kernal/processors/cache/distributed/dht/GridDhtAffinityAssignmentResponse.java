@@ -31,12 +31,6 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
     /** Affinity assignment bytes. */
     private byte[] affAssignmentBytes;
 
-    /** {@inheritDoc} */
-    @Override public byte directType() {
-        // TODO: implement.
-        return 0;
-    }
-
     /**
      * Empty constructor.
      */
@@ -65,6 +59,11 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
      */
     public List<List<GridNode>> affinityAssignment() {
         return affAssignment;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 80;
     }
 
     /** {@inheritDoc} */

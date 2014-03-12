@@ -297,6 +297,12 @@ public class GridTcpCommunicationMessageFactory {
             case 78:
                 return new GridJobStealingRequest();
 
+            case 79:
+                return new GridDhtAffinityAssignmentRequest<>();
+
+            case 80:
+                return new GridDhtAffinityAssignmentResponse<>();
+
             default:
                 return createCustom(type);
         }

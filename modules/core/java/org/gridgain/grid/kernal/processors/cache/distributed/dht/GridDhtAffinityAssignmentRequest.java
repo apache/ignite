@@ -35,10 +35,16 @@ public class GridDhtAffinityAssignmentRequest<K, V> extends GridCacheMessage<K, 
         this.topVer = topVer;
     }
 
+    /**
+     * @return Requested topology version.
+     */
+    public long topologyVersion() {
+        return topVer;
+    }
+
     /** {@inheritDoc} */
     @Override public byte directType() {
-        // TODO: implement.
-        return 0;
+        return 79;
     }
 
     /** {@inheritDoc} */

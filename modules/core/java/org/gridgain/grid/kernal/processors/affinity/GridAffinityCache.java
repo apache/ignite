@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.*;
  */
 public class GridAffinityCache {
     /** Node order comparator. */
-    private static final Comparator<GridNode> nodeCmp = new NodeOrderComparator();
+    private static final Comparator<GridNode> nodeCmp = new GridNodeOrderComparator();
 
     /** Cache name. */
     private final String cacheName;
@@ -138,6 +138,16 @@ public class GridAffinityCache {
         for (Iterator<Long> it = affCache.keySet().iterator(); it.hasNext(); )
             if (it.next() < topVer)
                 it.remove();
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @return Affinity assignment.
+     */
+    public List<List<GridNode>> assignments(long topVer) {
+        CachedAffinity aff = cachedAffinity(topVer);
+
+        return aff.assignment;
     }
 
     /**
@@ -447,16 +457,6 @@ public class GridAffinityCache {
                 return false;
 
             return topVer == ((CachedAffinity)o).topVer;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class NodeOrderComparator implements Comparator<GridNode>, Serializable {
-        /** {@inheritDoc} */
-        @Override public int compare(GridNode n1, GridNode n2) {
-            return n1.order() < n2.order() ? -1 : n1.order() > n2.order() ? 1 : 0;
         }
     }
 }

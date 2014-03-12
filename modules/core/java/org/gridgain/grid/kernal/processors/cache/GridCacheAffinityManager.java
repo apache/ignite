@@ -74,6 +74,17 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
     }
 
     /**
+     * Gets affinity ready future, a future that will be completed after affinity with given
+     * topology version is calculated.
+     *
+     * @param topVer Topology version to affinity for.
+     * @return Affinity ready future.
+     */
+    public GridFuture<Long> affinityReadyFuture(long topVer) {
+        return aff.readyFuture(topVer);
+    }
+
+    /**
      * Clean up outdated cache items.
      *
      * @param topVer Actual topology version, older versions will be removed.
@@ -90,6 +101,14 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      */
     public void initializeAffinity(long topVer, List<List<GridNode>> affAssignment) {
         aff.initialize(topVer, affAssignment);
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @return Affinity assignments.
+     */
+    public List<List<GridNode>> assignments(long topVer) {
+        return aff.assignments(topVer);
     }
 
     /**
