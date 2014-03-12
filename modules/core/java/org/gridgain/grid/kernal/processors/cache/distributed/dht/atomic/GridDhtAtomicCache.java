@@ -666,7 +666,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 while (true) {
                     try {
-                        entry = ctx.isSwapEnabled() ? entryEx(key) : peekEx(key);
+                        entry = ctx.isSwapOrOffheapEnabled() ? entryEx(key) : peekEx(key);
 
                         // If our DHT cache do has value, then we peek it.
                         if (entry != null) {
