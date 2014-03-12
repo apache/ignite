@@ -18,9 +18,7 @@
     <description>Main Spring file for grid configuration.</description>
 
     <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
-        <!--
-            Specify list of GGFS configurations here.
-        -->
+        <!-- Specify list of GGFS configurations here. -->
         <property name="ggfsConfiguration">
             <list>
                 <bean class="org.gridgain.grid.ggfs.GridGgfsConfiguration">
@@ -59,52 +57,12 @@
         -->
         <property name="cacheConfiguration">
             <list>
-                <!--
-                    GGFS data cache.
-                -->
+                <!-- GGFS data cache. -->
                 <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
                     <property name="name" value="ggfs-data"/>
-
                     <property name="cacheMode" value="PARTITIONED"/>
-
-                    <!--
-                        GGFS requires that data cache works in TRANSACTIONAL mode.
-                     -->
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-                    <!--
-                        GGFS requires that data cache works in FULL_SYNC synchronization mode.
-                    -->
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-
-                    <!--
-                        Disable near cache as it's not needed for GGFS.
-                    -->
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
-
-                    <!--
-                        Initial cache size. Should be about 150% of the number
-                        of entries you are planning to have to avoid resizing.
-                        Change accordingly to your application requirements.
-                    -->
-                    <property name="startSize" value="1500000"/>
-
-                    <!--
-                        For better performance set this property to false in case
-                        cache queries are not used.
-                        Default value is true.
-                    -->
-                    <property name="queryIndexEnabled" value="false"/>
-
-                    <!--
-                        This shows how to configure number of backups. The best performance
-                        is achieved with 0 backup copies.
-                    -->
-                    <property name="backups" value="0"/>
-
-                    <!--
-                        This shows how to configure number of blocks in row will be stored on the same node.
-                    -->
                     <property name="affinityMapper">
                         <bean class="org.gridgain.grid.ggfs.GridGgfsGroupDataBlocksKeyMapper">
                             <constructor-arg value="512"/>
@@ -112,115 +70,14 @@
                     </property>
                 </bean>
 
-                <!--
-                    GGFS meta cache.
-                -->
+                <!-- GGFS meta cache. -->
                 <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
                     <property name="name" value="ggfs-meta"/>
-
                     <property name="cacheMode" value="REPLICATED"/>
-
-                    <!--
-                        GGFS requires that meta cache works in TRANSACTIONAL mode.
-                     -->
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-                    <!--
-                        GGFS requires that meta cache works in FULL_SYNC synchronization mode.
-                    -->
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-
-                    <!--
-                        Initial cache size. Should be about 150% of the number
-                        of entries you are planning to have to avoid resizing.
-                        Change accordingly to your application requirements.
-                    -->
-                    <property name="startSize" value="1500000"/>
-
-                    <!--
-                        For better performance set this property to false in case
-                        cache queries are not used.
-                        Default value is true.
-                    -->
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
             </list>
-        </property>
-
-        <!--
-            Uncomment this to provide TCP discovery SPI (Amazon EC2).
-        -->
-        <!--
-        <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
-                <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.s3.GridTcpDiscoveryS3IpFinder">
-                        <property name="awsCredentials">
-                            <bean class="com.amazonaws.auth.BasicAWSCredentials">
-                                <constructor-arg value="YOUR_ACCESS_KEY_ID" />
-                                <constructor-arg value="YOUR_SECRET_ACCESS_KEY" />
-                            </bean>
-                        </property>
-                        <property name="bucketName" value="YOUR_BUCKET_NAME_IP_FINDER"/>
-                    </bean>
-                </property>
-                <property name="heartbeatFrequency" value="2000"/>
-            </bean>
-        </property>
-        -->
-
-        <!--
-            Uncomment this to provide TCP discovery SPI (Local network).
-
-            If path to shared file system is not explicitly provided,
-            then only local nodes will be able to discover each other.
-        -->
-        <!--
-        <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
-                <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs.GridTcpDiscoverySharedFsIpFinder">
-                        <property name="path" value="work/disco/tcp"/>
-                    </bean>
-                </property>
-            </bean>
-        </property>
-        -->
-
-        <!--
-            TCP discovery SPI configuration with multicast-based IP finder.
-            Use the addresses list to provide IP addresses of initial nodes in the grid
-            (at least one address must be provided).
-
-            Note:
-            =====
-            If running in distributed environment, you should change IP addresses to the actual IP addresses
-            of the servers on your network. Not all addresses need to be specified, only the addresses
-            of one or more servers which will always be started first.
-        -->
-        <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
-                <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.GridTcpDiscoveryMulticastIpFinder">
-                        <!--
-                            In addition to addresses received via multicast this finder can work with pre-configured
-                            list of addresses (e.g., you can use it if multicast is disabled in your network).
-
-                            If running in distributed environment, you should change IP addresses to the actual IP
-                            addresses of the servers on your network. Not all addresses need to be specified, only
-                            the addresses of one or more servers which will always be started first.
-                        -->
-                        <!--
-                        <property name="addresses">
-                            <list>
-                                <value>host1:port1</value>
-                                <value>host2:port2</value>
-                            </list>
-                        </property>
-                        -->
-                    </bean>
-                </property>
-            </bean>
         </property>
     </bean>
 </beans>

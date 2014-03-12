@@ -59,6 +59,5 @@
     </bean>
     -->
 
-    <bean id="cacheCfg" class="org.gridgain.grid.cache.GridCacheConfiguration" parent="cacheCfgBase">
-    </bean>
+    <bean id="cacheCfg" class="org.gridgain.grid.cache.GridCacheConfiguration" parent="cacheCfgBase"/>
 </beans>

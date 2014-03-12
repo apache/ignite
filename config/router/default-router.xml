@@ -40,79 +40,6 @@
           scope="singleton">
 
         <property name="logger" ref="router.log" />
-
-        <!--
-            Uncomment to specify local bind host for Tcp router.
-        -->
-        <!--
-        <property name="host" value="1.2.3.4"/>
-        -->
-
-        <!--
-            Uncomment to specify local bind port for Tcp router.
-        -->
-        <!--
-        <property name="port" value="1234"/>
-        -->
-
-        <!--
-            Uncomment to allow router use wider port range than default.
-        -->
-        <!--
-        <property name="portRange" value="100"/>
-        -->
-
-        <!--
-            Uncomment to specify list of remote grid nodes to connect.
-        -->
-        <!--
-        <property name="servers">
-            <list>
-                <value>1.2.3.4:1234</value>
-                <value>5.6.7.8:5678</value>
-            </list>
-        </property>
-        -->
-
-        <!--
-            Uncomment disable 'no delay' tcp option.
-        -->
-        <!--
-        <property name="noDelay" value="false"/>
-        -->
-
-        <!--
-            Uncomment to require a valid SSL certificate from clients.
-        -->
-        <!--
-        <property name="sslClientAuth" value="true"/>
-        -->
-
-        <!--
-            Uncomment to require a valid SSL certificate from clients.
-        -->
-        <!--
-        <property name="sslClientAuth" value="true"/>
-        -->
-
-        <!--
-            Uncomment provide Ssl context.
-        -->
-        <!--
-        <property name="sslContextFactory">
-            <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
-                <property name="keyStoreFilePath" value="PATH_TO_KEYSTORE/client.jks"/>
-                <property name="keyStorePassword" value="123456"/>
-            </bean>
-        </property>
-        -->
-
-        <!--
-            Uncomment to specify credentials for grid connection.
-        -->
-        <!--
-        <property name="credentials" value="123456"/>
-        -->
     </bean>
 
     <!--
@@ -124,44 +51,6 @@
           scope="singleton">
 
         <property name="logger" ref="router.log"/>
-
-        <!--
-            Uncomment to specify alternative Jetty configuration..
-        -->
-        <!--
-        <property name="jettyConfigurationPath" value="config/my-router-jetty.xml"/>
-        -->
-
-        <!--
-            Uncomment to specify list of remote grid nodes to connect.
-        -->
-        <!--
-        <property name="servers">
-            <list>
-                <value>1.2.3.4:1234</value>
-                <value>5.6.7.8:5678</value>
-            </list>
-        </property>
-        -->
-
-        <!--
-            Uncomment provide Ssl context.
-        -->
-        <!--
-        <property name="clientSslContextFactory">
-            <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
-                <property name="keyStoreFilePath" value="PATH_TO_KEYSTORE/client.jks"/>
-                <property name="keyStorePassword" value="123456"/>
-            </bean>
-        </property>
-        -->
-
-        <!--
-            Uncomment to specify credentials for grid connection.
-        -->
-        <!--
-        <property name="credentials" value="123456"/>
-        -->
     </bean>
 
     <!--
