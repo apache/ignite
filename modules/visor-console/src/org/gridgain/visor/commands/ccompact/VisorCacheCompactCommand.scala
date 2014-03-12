@@ -41,7 +41,7 @@ import org.gridgain.grid.lang.GridCallable
  * ====Specification====
  * {{{
  *     ccompact
- *     ccompact "<cache-name>"
+ *     ccompact -c=<cache-name>
  * }}}
  *
  * ====Arguments====
@@ -55,7 +55,7 @@ import org.gridgain.grid.lang.GridCallable
  * {{{
  *     ccompact
  *         Compacts entries in default cache.
- *     ccompact "cache"
+ *     ccompact -c=cache
  *         Compacts entries in cache with name 'cache'.
  * }}}
  */
@@ -77,19 +77,23 @@ class VisorCacheCompactCommand {
      * Compacts entries in cache.
      *
      * ===Examples===
-     * <ex>ccompact "cache"</ex>
+     * <ex>ccompact -c=cache</ex>
      * Compacts entries in cache with name 'cache'.
      *
-     * @param cacheName Cache name.
+     * @param args Command arguments.
      */
-    def ccompact(@Nullable cacheName: String) = breakable {
+    def ccompact(@Nullable args: String) = breakable {
         if (!isConnected)
             adviseToConnect()
         else {
-            if (cacheName != null && cacheName.isEmpty)
+            val argLst = parseArgs(args)
+
+            val cacheArg = argValue("c", argLst)
+
+            if (cacheArg.isEmpty)
                 scold("Cache name is empty.").^^
 
-            val caches = getVariable(cacheName)
+            val caches = getVariable(cacheArg.get)
 
             val prj = grid.forCache(caches)
 
@@ -159,7 +163,7 @@ object VisorCacheCompactCommand {
         shortInfo = "Compacts all entries in cache on all nodes.",
         spec = List(
             "ccompact",
-            "ccompact <cache-name>"
+            "ccompact -c=<cache-name>"
         ),
         args = List(
             "<cache-name>" -> List(
@@ -170,8 +174,8 @@ object VisorCacheCompactCommand {
         ),
         examples = List(
             "ccompact" -> "Compacts entries in default cache.",
-            "ccompact cache" -> "Compacts entries in cache with name 'cache'.",
-            "ccompact @c0" -> "Compacts cache with name taken from 'c0' memory variable."
+            "ccompact -c=cache" -> "Compacts entries in cache with name 'cache'.",
+            "ccompact -c=@c0" -> "Compacts cache with name taken from 'c0' memory variable."
         ),
         ref = VisorConsoleCommand(cmd.ccompact, cmd.ccompact)
     )

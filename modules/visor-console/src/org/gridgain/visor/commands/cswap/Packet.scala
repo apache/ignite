@@ -25,7 +25,7 @@ package org.gridgain.visor.commands
  * ====Specification====
  * {{{
  *     cswap
- *     cswap "<cache-name>"
+ *     cswap -c=<cache-name>
  * }}}
  *
  * ====Arguments====
@@ -39,7 +39,7 @@ package org.gridgain.visor.commands
  * {{{
  *     cswap
  *         Swaps entries in default cache.
- *     cswap "cache"
+ *     cswap -c=cache
  *         Swaps entries in cache with name 'cache'.
  * }}}
  */

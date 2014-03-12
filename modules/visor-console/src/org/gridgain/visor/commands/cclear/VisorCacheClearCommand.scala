@@ -39,7 +39,7 @@ import org.gridgain.grid.lang.GridCallable
  * ====Specification====
  * {{{
  *     cclear
- *     cclear "<cache-name>"
+ *     cclear -c=<cache-name>
  * }}}
  *
  * ====Arguments====
@@ -53,7 +53,7 @@ import org.gridgain.grid.lang.GridCallable
  * {{{
  *     cclear
  *         Clears default cache.
- *     cclear "cache"
+ *     cclear -c=cache
  *         Clears cache with name 'cache'.
  * }}}
  */
@@ -75,19 +75,23 @@ class VisorCacheClearCommand {
      * Clears cache by its name.
      *
      * ===Examples===
-     * <ex>cclear "cache"</ex>
+     * <ex>cclear -c=cache</ex>
      * Clears cache with name 'cache'.
      *
-     * @param cacheName Cache name.
+     * @param args Command arguments.
      */
-    def cclear(@Nullable cacheName: String) = breakable {
+    def cclear(@Nullable args: String) = breakable {
         if (!isConnected)
             adviseToConnect()
         else {
-            if (cacheName != null && cacheName.isEmpty)
+            val argLst = parseArgs(args)
+
+            val cacheArg = argValue("c", argLst)
+
+            if (cacheArg.isEmpty)
                 scold("Cache name is empty.").^^
 
-            val caches = getVariable(cacheName)
+            val caches = getVariable(cacheArg.get)
 
             val prj = grid.forCache(caches)
 
@@ -158,10 +162,10 @@ object VisorCacheClearCommand {
         shortInfo = "Clears all entries from cache on all nodes.",
         spec = Seq(
             "cclear",
-            "cclear <cache-name>"
+            "cclear -c=<cache-name>"
         ),
         args = Seq(
-            "<cache-name>" -> Seq(
+            "-c=<cache-name>" -> Seq(
                 "Name of the cache.",
                 "If not specified, default cache will be cleared.",
                 "Note you can also use '@c0' ... '@cn' variables as shortcut to <cache-name>."
@@ -169,8 +173,8 @@ object VisorCacheClearCommand {
         ),
         examples = Seq(
             "cclear" -> "Clears default cache.",
-            "cclear cache" -> "Clears cache with name 'cache'.",
-            "cclear @c0" -> "Clears cache with name taken from 'c0' memory variable."
+            "cclear -c=cache" -> "Clears cache with name 'cache'.",
+            "cclear -c=@c0" -> "Clears cache with name taken from 'c0' memory variable."
         ),
         ref = VisorConsoleCommand(cmd.cclear, cmd.cclear)
     )

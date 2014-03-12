@@ -25,7 +25,7 @@ package org.gridgain.visor.commands
  * ====Specification====
  * {{{
  *     cclear
- *     cclear "<cache-name>"
+ *     cclear -c=<cache-name>
  * }}}
  *
  * ====Arguments====
@@ -39,7 +39,7 @@ package org.gridgain.visor.commands
  * {{{
  *     cclear
  *         Clears default cache.
- *     cclear "cache"
+ *     cclear -c=cache
  *         Clears cache with name 'cache'.
  * }}}
  */

@@ -25,7 +25,7 @@ package org.gridgain.visor.commands
  * ====Specification====
  * {{{
  *     ccompact
- *     ccompact "<cache-name>"
+ *     ccompact -c=<cache-name>
  * }}}
  *
  * ====Arguments====
@@ -39,7 +39,7 @@ package org.gridgain.visor.commands
  * {{{
  *     ccompact
  *         Compacts entries in default cache.
- *     ccompact "cache"
+ *     ccompact -c=cache
  *         Compacts entries in cache with name 'cache'.
  * }}}
  */
