@@ -22,6 +22,8 @@ import org.gridgain.grid.util.typedef.CAX
 import org.gridgain.visor._
 import org.gridgain.visor.commands._
 import org.gridgain.visor.visor._
+import org.gridgain.grid.cache.GridCacheMode
+import org.gridgain.grid.GridException
 
 /**
  * ==Overview==
@@ -220,10 +222,10 @@ class VisorCacheScanCommand {
 
                         return
                 }
-            
+
             if (res.rows.isEmpty) {
                 println("Cache is empty")
-                
+
                 return
             }
 
@@ -236,9 +238,9 @@ class VisorCacheScanCommand {
 
                     t.render()
             }
-            
+
             render()
-            
+
             while (res.hasMore) {
                 ask("\nFetch more objects (y/n) [y]:", "y") match {
                     case "y" | "Y" =>
@@ -270,7 +272,7 @@ class VisorCacheScanCommand {
 object VisorScanCache {
     type VisorScanStorageValType = (GridCacheQueryFuture[JavaMap.Entry[Object, Object]], JavaMap.Entry[Object, Object],
         Int, Boolean)
-    
+
     type VisorScanResult = (String, String, String, String)
 
     final val SCAN_QRY_KEY = "VISOR_CONSOLE_SCAN_CACHE"
@@ -333,19 +335,23 @@ private class VisorScanCacheTask extends VisorConsoleOneNodeTask[VisorScanCacheT
         try {
             val c = g.cache[Object, Object](arg.cacheName)
 
-            val fut = c.queries().createScanQuery(null)
-                .pageSize(arg.pageSize)
-                .projection(g.forNodeIds(arg.proj))
-                .execute()
+            if (c.configuration().getCacheMode == GridCacheMode.LOCAL && arg.proj.size > 1)
+                Left(new GridException("Distributed queries are not available for caches with LOCAL caching mode. " +
+                    "Please specify only one node to query."))
+            else {
+                val fut = c.queries().createScanQuery(null)
+                    .pageSize(arg.pageSize)
+                    .projection(g.forNodeIds(arg.proj))
+                    .execute()
 
+                val (rows, next) = fetchRows(fut, null, arg.pageSize)
 
-            val (rows, next) = fetchRows(fut, null, arg.pageSize)
+                g.nodeLocalMap[String, VisorScanStorageValType]().put(nodeLclKey, (fut, next, arg.pageSize, false))
 
-            g.nodeLocalMap[String, VisorScanStorageValType]().put(nodeLclKey, (fut, next, arg.pageSize, false))
+                scheduleRemoval(g, nodeLclKey)
 
-            scheduleRemoval(g, nodeLclKey)
-
-            Right(new VisorScanCacheResult(g.localNode().id(), nodeLclKey, rows, next != null))
+                Right(new VisorScanCacheResult(g.localNode().id(), nodeLclKey, rows, next != null))
+            }
         }
         catch {
             case e: Exception => Left(e)
