@@ -14,7 +14,9 @@ import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -52,6 +54,9 @@ public class GridAffinityCache {
     /** Discovery manager. */
     private final GridKernalContext ctx;
 
+    /** Ready futures. */
+    private ConcurrentMap<Long, AffinityReadyFuture> readyFuts = new ConcurrentHashMap8<>();
+
     /**
      * Constructs affinity cached calculations.
      *
@@ -85,6 +90,11 @@ public class GridAffinityCache {
 
         affCache.put(topVer, assignment);
         head.set(assignment);
+
+        for (Map.Entry<Long, AffinityReadyFuture> entry : readyFuts.entrySet()) {
+            if (entry.getKey() >= topVer)
+                entry.getValue().onDone(topVer);
+        }
     }
 
     /**
@@ -111,6 +121,11 @@ public class GridAffinityCache {
                 break;
         }
 
+        for (Map.Entry<Long, AffinityReadyFuture> entry : readyFuts.entrySet()) {
+            if (entry.getKey() >= topVer)
+                entry.getValue().onDone(topVer);
+        }
+
         return updated.assignment;
     }
 
@@ -123,6 +138,27 @@ public class GridAffinityCache {
         for (Iterator<Long> it = affCache.keySet().iterator(); it.hasNext(); )
             if (it.next() < topVer)
                 it.remove();
+    }
+
+    /**
+     * Gets future that will be completed after topology with version {@code topVer} is calculated.
+     *
+     * @param topVer Topology version to await for.
+     * @return Future that will be completed after affinity for topology version {@code topVer} is calculated.
+     */
+    public GridFuture<Long> readyFuture(long topVer) {
+        CachedAffinity aff = head.get();
+
+        if (aff.topologyVersion() >= topVer)
+            return new GridFinishedFutureEx<>(topVer);
+
+        GridFutureAdapter<Long> fut = F.addIfAbsent(readyFuts, topVer,
+            new AffinityReadyFuture(ctx));
+
+        if (head.get().topologyVersion() >= topVer)
+            fut.onDone(topVer);
+
+        return fut;
     }
 
     /**
@@ -230,6 +266,34 @@ public class GridAffinityCache {
         Collections.sort(sorted, nodeCmp);
 
         return sorted;
+    }
+
+    /**
+     * Affinity ready future. Will remove itself from ready futures map.
+     */
+    private class AffinityReadyFuture extends GridFutureAdapter<Long> {
+        /**
+         * Empty constructor required by {@link Externalizable}.
+         */
+        public AffinityReadyFuture() {
+        }
+
+        /**
+         * @param ctx Kernal context.
+         */
+        private AffinityReadyFuture(GridKernalContext ctx) {
+            super(ctx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err) {
+            boolean done = super.onDone(res, err);
+
+            if (done)
+                readyFuts.remove(res, this);
+
+            return done;
+        }
     }
 
     /**
