@@ -15,6 +15,7 @@ import org.gridgain.grid.dr.cache.receiver.*;
 import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.dr.hub.receiver.*;
 import org.gridgain.grid.dr.hub.sender.*;
+import org.jetbrains.annotations.*;
 
 /**
  * Data center replication (DR) interface.
@@ -112,7 +113,7 @@ public interface GridDr {
      * @param cacheName Sender cache name.
      * @return Sender hub incoming data metrics.
      */
-    public GridDrSenderHubInMetrics senderHubInMetrics(String cacheName);
+    public GridDrSenderHubInMetrics senderHubInMetrics(@Nullable String cacheName);
 
     /**
      * Gets sender hub incoming data metrics aggregated across all caches.
@@ -124,19 +125,38 @@ public interface GridDr {
     public GridDrSenderHubInMetrics senderHubAggregatedInMetrics();
 
     /**
-     * Gets sender hub outgoing data metrics for specified remote data center ID.
+     * Gets sender hub outgoing data metrics for the given remote data center ID and cache name.
      * <p>
-     * In case node is not sender hub then {@link IllegalStateException} will be thrown,
-     * and if this sender hub does not work with the given data center {@link IllegalArgumentException}
-     * will be thrown.
+     * In case node is not sender hub then {@link IllegalStateException} will be thrown.
      *
-     * @param dataCenterId Remote data center ID.
+     * @param destDataCenterId Remote data center ID.
+     * @param cacheName Cache name.
      * @return Sender hub outgoing data metrics.
      */
-    public GridDrSenderHubOutMetrics senderHubOutMetrics(byte dataCenterId);
+    public GridDrSenderHubOutMetrics senderHubOutMetrics(byte destDataCenterId, @Nullable String cacheName);
 
     /**
-     * Gets sender hub outgoing data metrics aggregated across all remote data centers.
+     * Gets sender hub outgoing data metrics aggregated across all cache names for the given remote data center ID.
+     * <p>
+     * In case node is not sender hub then {@link IllegalStateException} will be thrown.
+     *
+     * @param destDataCenterId Remote data center ID.
+     * @return Sender hub outgoing data metrics.
+     */
+    public GridDrSenderHubOutMetrics senderHubAggregatedOutMetrics(byte destDataCenterId);
+
+    /**
+     * Gets sender hub outgoing data metrics aggregated across all remote data centers for the given cache name.
+     * <p>
+     * In case node is not sender hub then {@link IllegalStateException} will be thrown.
+     *
+     * @param cacheName Cache name.
+     * @return Sender hub outgoing data metrics.
+     */
+    public GridDrSenderHubOutMetrics senderHubAggregatedOutMetrics(@Nullable String cacheName);
+
+    /**
+     * Gets sender hub outgoing data metrics aggregated across all remote data centers and cache names.
      * <p>
      * In case node is not sender hub then {@link IllegalStateException} will be thrown.
      *
@@ -145,25 +165,52 @@ public interface GridDr {
     public GridDrSenderHubOutMetrics senderHubAggregatedOutMetrics();
 
     /**
-     * Gets receiver hub incoming data metrics for specified remote data center ID.
-     * <p>
-     * In case node is not receiver hub then {@link IllegalStateException},
-     * and if this receiver hub does not work with the given data center {@link IllegalArgumentException}
-     * will be thrown.
+     * Gets receiver hub incoming data metrics for the given remote data center and cache name.
      *
-     * @param dataCenterId Remote data center ID.
+     * @param srcDataCenterId Remote data center ID.
+     * @param cacheName Cache name.
      * @return Receiver hub incoming data metrics.
      */
-    public GridDrReceiverHubInMetrics receiverHubInMetrics(byte dataCenterId);
+    public GridDrReceiverHubInMetrics receiverHubInMetrics(byte srcDataCenterId, @Nullable String cacheName);
 
     /**
-     * Gets receiver hub incoming data metrics aggregated across all remote data centers.
+     * Gets receiver hub incoming data metrics aggregated across all cache names for the given remote data center.
+     * <p>
+     * In case node is not receiver hub then {@link IllegalStateException} will be thrown.
+     *
+     * @param srcDataCenterId Remote data center ID.
+     * @return Receiver hub incoming data metrics.
+     */
+    public GridDrReceiverHubInMetrics receiverHubAggregatedInMetrics(byte srcDataCenterId);
+
+    /**
+     * Gets receiver hub incoming data metrics aggregated across all remote data centers for the given cache name.
+     * <p>
+     * In case node is not receiver hub then {@link IllegalStateException} will be thrown.
+     *
+     * @param cacheName Cache name.
+     * @return Receiver hub incoming data metrics.
+     */
+    public GridDrReceiverHubInMetrics receiverHubAggregatedInMetrics(@Nullable String cacheName);
+
+    /**
+     * Gets receiver hub incoming data metrics aggregated across all remote data centers and cache names.
      * <p>
      * In case node is not receiver hub then {@link IllegalStateException} will be thrown.
      *
      * @return Receiver hub incoming data metrics.
      */
     public GridDrReceiverHubInMetrics receiverHubAggregatedInMetrics();
+
+    /**
+     * Gets receiver hub outgoing data metrics for the given cache name.
+     * <p>
+     * In case node is not receiver hub then {@link IllegalStateException} will be thrown.
+     *
+     * @param cacheName Cache name.
+     * @return Receiver hub outgoing data metrics.
+     */
+    public GridDrReceiverHubOutMetrics receiverHubOutMetrics(@Nullable String cacheName);
 
     /**
      * Gets receiver hub outgoing data metrics aggregated across all receiver caches.

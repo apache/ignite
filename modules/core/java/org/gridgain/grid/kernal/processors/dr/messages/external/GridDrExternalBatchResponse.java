@@ -13,34 +13,25 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
-
 /**
  *
  */
-public class GridDrExternalBatchResponse implements Externalizable {
+public class GridDrExternalBatchResponse {
     /** Request identifier. */
     private GridUuid reqId;
 
-    /** Exception which occurred during request processing. */
-    private Throwable err;
+    /** Error message. */
+    private String errMsg;
 
     /**
      * @param reqId Batch ID.
-     * @param err Error occurred during request processing.
+     * @param errMsg Error message.
      */
-    public GridDrExternalBatchResponse(GridUuid reqId, @Nullable Throwable err) {
+    public GridDrExternalBatchResponse(GridUuid reqId, @Nullable String errMsg) {
         assert reqId != null;
 
         this.reqId = reqId;
-        this.err = err;
-    }
-
-    /**
-     * {@link Externalizable} support.
-     */
-    public GridDrExternalBatchResponse() {
-        // No-op.
+        this.errMsg = errMsg;
     }
 
     /**
@@ -51,22 +42,10 @@ public class GridDrExternalBatchResponse implements Externalizable {
     }
 
     /**
-     * @return Error occurred during request processing.
+     * @return Error message.
      */
-    @Nullable public Throwable error() {
-        return err;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, reqId);
-        out.writeObject(err);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        reqId = U.readGridUuid(in);
-        err = (Throwable)in.readObject();
+    @Nullable public String errorMessage() {
+        return errMsg;
     }
 
     /** {@inheritDoc} */

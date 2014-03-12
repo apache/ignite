@@ -11,45 +11,31 @@ package org.gridgain.grid.kernal.processors.dr.messages.external;
 
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.*;
-
 /**
  * Request which is sent by sending receiving hub to sender hub on connection in order to
  * identify sender hub data center ID.
  */
-public class GridDrExternalHandshakeRequest implements GridDrExternalProtocolVersionAware, Externalizable {
+public class GridDrExternalHandshakeRequest {
     /** Data center ID. */
     private byte dataCenterId;
 
-    /** DR protocol version. */
+    /** Protocol version. */
     private String protoVer;
 
     /** Marshaller class name. */
     private String marshClsName;
 
     /**
-     * {@link Externalizable} support.
-     */
-    public GridDrExternalHandshakeRequest() {
-        // No-op.
-    }
-
-    /**
      * Standard constructor.
      *
      * @param dataCenterId Data center ID.
-     * @param protoVer DR protocol version.
+     * @param protoVer Protocol version.
      * @param marshClsName Marshaller class name.
      */
     public GridDrExternalHandshakeRequest(byte dataCenterId, String protoVer, String marshClsName) {
         this.dataCenterId = dataCenterId;
         this.protoVer = protoVer;
         this.marshClsName = marshClsName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String protocolVersion() {
-        return protoVer;
     }
 
     /**
@@ -62,24 +48,17 @@ public class GridDrExternalHandshakeRequest implements GridDrExternalProtocolVer
     }
 
     /**
+     * @return Protocol version.
+     */
+    public String protocolVersion() {
+        return protoVer;
+    }
+
+    /**
      * @return Marshaller class name.
      */
     public String marshallerClassName() {
         return marshClsName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeByte(dataCenterId);
-        U.writeString(out, protoVer);
-        U.writeString(out, marshClsName);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        dataCenterId = in.readByte();
-        protoVer = U.readString(in);
-        marshClsName = U.readString(in);
     }
 
     /** {@inheritDoc} */
