@@ -15,16 +15,6 @@ package org.gridgain.visor.commands
  * ==Overview==
  * Visor 'cscan' command implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to properly
- * import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.cscan.VisorCacheScanCommand._
- * </ex>
- * Note that `VisorCacheScanCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +------------------------------------------------------+
@@ -34,20 +24,29 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     cscan
- *     cscan "<cache-name>"
+ *     cscan {-id=<node-id>|-id8=<node-id8>} {-p=<page size>} -c=<cache name>
  * }}}
  *
  * ====Arguments====
  * {{{
+ *     <node-id>
+ *         Full node ID.
+ *     <node-id8>
+ *         Node ID8.
+ *     <page size>
+ *         Number of object to fetch from cache at once.
  *     <cache-name>
  *         Name of the cache.
  * }}}
  *
  * ====Examples====
  * {{{
- *     cscan "cache"
- *         List of all object in cache with name 'cache'.
+ *    cscan -c=cache
+ *        List entries from cache with name 'cache' from all nodes with this cache.
+ *    cscan -p=50 -c=@c0
+ *        List entries from cache with name taken from 'c0' memory variable with page of 50 items from all nodes with this cache.
+ *    cscan -id8=12345678 -c=cache
+ *        List entries from cache with name 'cache' and node '12345678' ID8.
  * }}}
  */
 package object cscan

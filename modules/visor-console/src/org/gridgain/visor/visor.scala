@@ -412,7 +412,7 @@ object visor extends VisorTag {
             "open -cpath=/gg/config/mycfg.xml -g=mygrid" ->
                 "Connects visor to 'mygrid' grid using configuration from provided Spring file."
         ),
-        ref = VisorConsoleCommand(open, open(_, true))
+        ref = VisorConsoleCommand(open, open(_))
     )
 
     addHelp(

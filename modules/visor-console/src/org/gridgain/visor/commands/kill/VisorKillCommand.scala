@@ -11,7 +11,6 @@
 
 package org.gridgain.visor.commands.kill
 
-import org.gridgain.grid.util.lang.{GridFunc => F}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.VisorConsoleCommand
 import visor._
@@ -21,22 +20,11 @@ import scala.util.control.Breaks._
 import org.gridgain.scalar._
 import scalar._
 import java.util.{UUID, Collections}
-import java.util
 import scala.collection.JavaConversions._
 
 /**
  * ==Overview==
  * Contains Visor command `kill` implementation.
- *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.kill.VisorKillCommand._
- * </ex>
- * Note that `VisorKillCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
  *
  * ==Help==
  * {{{

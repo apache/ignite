@@ -18,7 +18,6 @@ import org.gridgain.scalar._
 import scalar._
 import org.gridgain.grid.kernal.GridEx
 import org.gridgain.grid.kernal.processors.task.GridInternal
-import org.gridgain.grid.util.typedef._
 import org.gridgain.grid.util.scala.impl
 import org.gridgain.grid.resources._
 import org.gridgain.visor._
@@ -29,16 +28,6 @@ import org.gridgain.grid.lang.GridCallable
 /**
  * ==Overview==
  * Visor 'cclear' command implementation.
- *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to properly
- * import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.cclear.VisorCacheClearCommand._
- * </ex>
- * Note that `VisorCacheClearCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
  *
  * ==Help==
  * {{{

@@ -15,16 +15,6 @@ package org.gridgain.visor.commands
  * ==Overview==
  * Contains Visor command `kill` implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.kill.VisorKillCommand._
- * </ex>
- * Note that `VisorKillCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +--------------------------------+

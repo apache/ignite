@@ -29,16 +29,6 @@ import org.gridgain.grid.GridException
  * ==Overview==
  * Visor 'cscan' command implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to properly
- * import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.cscan.VisorCacheScanCommand._
- * </ex>
- * Note that `VisorCacheScanCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +------------------------------------------------------+
@@ -48,20 +38,29 @@ import org.gridgain.grid.GridException
  *
  * ====Specification====
  * {{{
- *     cscan
- *     cscan "<cache-name>"
+ *     cscan {-id=<node-id>|-id8=<node-id8>} {-p=<page size>} -c=<cache name>
  * }}}
  *
  * ====Arguments====
  * {{{
+ *     <node-id>
+ *         Full node ID.
+ *     <node-id8>
+ *         Node ID8.
+ *     <page size>
+ *         Number of object to fetch from cache at once.
  *     <cache-name>
  *         Name of the cache.
  * }}}
  *
  * ====Examples====
  * {{{
- *     cscan "cache"
- *         List all entries in cache with name 'cache'.
+ *    cscan -c=cache
+ *        List entries from cache with name 'cache' from all nodes with this cache.
+ *    cscan -p=50 -c=@c0
+ *        List entries from cache with name taken from 'c0' memory variable with page of 50 items from all nodes with this cache.
+ *    cscan -id8=12345678 -c=cache
+ *        List entries from cache with name 'cache' and node '12345678' ID8.
  * }}}
  */
 class VisorCacheScanCommand {
@@ -442,14 +441,12 @@ object VisorCacheScanCommand {
         args = Seq(
             "-id=<node-id>" -> Seq(
                 "Full node ID.",
-                "Either '-id' or '-id8' can be specified.",
-                "If called without the arguments - starts in interactive mode."
+                "Either '-id' or '-id8' can be specified."
             ),
             "-id8=<node-id8>" -> Seq(
                 "Node ID8.",
                 "Note that either '-id8' or '-id' can be specified and " +
-                    "you can also use '@n0' ... '@nn' variables as shortcut to <node-id8>.",
-                "If called without the arguments - starts in interactive mode."
+                    "you can also use '@n0' ... '@nn' variables as shortcut to <node-id8>."
             ),
             "-p=<page size>" -> Seq(
                 "Number of object to fetch from cache at once.",
@@ -462,8 +459,9 @@ object VisorCacheScanCommand {
             )
         ),
         examples = Seq(
-            "cscan -c=cache" -> "List entries from cache with name 'cache'.",
-            "cscan -p=50 -c=@c0" -> "List entries from cache with name taken from 'c0' memory variable with page of 50 items.",
+            "cscan -c=cache" -> "List entries from cache with name 'cache' from all nodes with this cache.",
+            "cscan -p=50 -c=@c0" -> ("List entries from cache with name taken from 'c0' memory variable" +
+                " with page of 50 items from all nodes with this cache."),
             "cscan -id8=12345678 -c=cache" -> "List entries from cache with name 'cache' and node '12345678' ID8."
         ),
         ref = VisorConsoleCommand(cmd.cscan, cmd.cscan)
