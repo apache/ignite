@@ -894,19 +894,71 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
                         double cpuLoadPct = m.getCurrentCpuLoad() * 100;
                         double avgCpuLoadPct = m.getAverageCpuLoad() * 100;
+                        double gcPct = m.getCurrentGcCpuLoad() * 100;
 
                         long heapUsed = m.getHeapMemoryUsed();
                         long heapMax = m.getHeapMemoryMaximum();
 
-                        double heapUsedPct = heapUsed * 100.0 / heapMax;
+                        long heapUsedInMBytes = heapUsed / 1024 / 1024;
+                        long heapCommInMBytes = m.getHeapMemoryCommitted() / 1024 / 1024;
+
+                        double freeHeapPct = heapMax > 0 ? (heapMax - heapUsed) * 100 / heapMax : -1;
+
+                        int hosts = 0;
+                        int nodes = 0;
+                        int cpus = 0;
+
+                        try {
+                            GridProjectionMetrics metrics = metrics();
+
+                            hosts = metrics.getTotalHosts();
+                            nodes = metrics.getTotalNodes();
+                            cpus = metrics.getTotalCpus();
+                        }
+                        catch (GridException ignore) {
+                        }
+
+                        int pubPoolActiveThreads = 0;
+                        int pubPoolIdleThreads = 0;
+
+                        ExecutorService pubExec = cfg.getExecutorService();
+
+                        if (pubExec instanceof ThreadPoolExecutor) {
+                            ThreadPoolExecutor exec = (ThreadPoolExecutor)pubExec;
+
+                            int poolSize = exec.getPoolSize();
+
+                            pubPoolActiveThreads = Math.min(poolSize, exec.getActiveCount());
+                            pubPoolIdleThreads = poolSize - pubPoolActiveThreads;
+                        }
+
+                        int sysPoolActiveThreads = 0;
+                        int sysPoolIdleThreads = 0;
+
+                        ExecutorService sysExec = cfg.getSystemExecutorService();
+
+                        if (sysExec instanceof ThreadPoolExecutor) {
+                            ThreadPoolExecutor exec = (ThreadPoolExecutor)sysExec;
+
+                            int poolSize = exec.getPoolSize();
+
+                            sysPoolActiveThreads = Math.min(poolSize, exec.getActiveCount());
+                            sysPoolIdleThreads = poolSize - sysPoolActiveThreads;
+                        }
 
                         SB sb = new SB();
 
-                        sb.a("Metrics [").
-                            a("curCpuLoad=").a(dblFmt.format(cpuLoadPct)).a("%").
-                            a(", avgCpuLoad=").a(dblFmt.format(avgCpuLoadPct)).a("%").
-                            a(", heapUsed=").a(dblFmt.format(heapUsedPct)).a("%").
-                            a("]");
+                        sb.a("H/N/C [hosts=").a(hosts).a(", nodes=").a(nodes).a(", CPUs=").a(cpus).a("],  ").
+                            a("CPU [curr=").a(dblFmt.format(cpuLoadPct)).a("%, avg=").
+                            a(dblFmt.format(avgCpuLoadPct)).a("%, GC=").a(dblFmt.format(gcPct)).a("%],  ").
+                            a("Heap [used=").a(dblFmt.format(heapUsedInMBytes)).a("MB, free=").
+                            a(dblFmt.format(freeHeapPct)).
+                            a("%, comm=").a(dblFmt.format(heapCommInMBytes)).a("MB],  ").
+                            a("Public thread pool [active=").a(pubPoolActiveThreads).
+                            a(", idle=").a(pubPoolIdleThreads).a("],  ").
+                            a("System thread pool [active=").a(sysPoolActiveThreads).
+                            a(", idle=").a(sysPoolIdleThreads).a("],  ").
+                            a("Queue [size=").a(m.getQueueSize()).a("]");
 
                         log.info(sb.toString());
                     }

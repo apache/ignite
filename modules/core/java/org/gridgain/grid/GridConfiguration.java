@@ -185,7 +185,7 @@ public class GridConfiguration {
     public static final long DFLT_SEG_CHK_FREQ = 10000;
 
     /** Default frequency of metrics log print out. */
-    public static final long DFLT_METRICS_LOG_FREQ = 0;
+    public static final long DFLT_METRICS_LOG_FREQ = 30000;
 
     /** Default TCP server port. */
     public static final int DFLT_TCP_PORT = 11211;
@@ -2676,8 +2676,6 @@ public class GridConfiguration {
      * Gets frequency of metrics log print out.
      * <p>
      * If {@code 0}, metrics print out is disabled.
-     * <p>
-     * Metrics log print out is disabled by default.
      *
      * @return Frequency of metrics log print out.
      */
@@ -2689,8 +2687,6 @@ public class GridConfiguration {
      * Sets frequency of metrics log print out.
      * <p>
      * If {@code 0}, metrics print out is disabled.
-     * <p>
-     * Metrics log print out is disabled by default.
      *
      * @param metricsLogFreq Frequency of metrics log print out.
      */

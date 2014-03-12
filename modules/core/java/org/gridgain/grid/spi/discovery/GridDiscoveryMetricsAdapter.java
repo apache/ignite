@@ -172,6 +172,9 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
     /** */
     private long rcvdBytesCnt = -1;
 
+    /** */
+    private int queueSize = -1;
+
     /** {@inheritDoc} */
     @Override public long getLastUpdateTime() {
         return lastUpdateTime;
@@ -649,6 +652,11 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
         return rcvdBytesCnt;
     }
 
+    /** {@inheritDoc} */
+    @Override public int getQueueSize() {
+        return queueSize;
+    }
+
     /**
      * Sets available processors.
      *
@@ -865,6 +873,15 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
         this.rcvdBytesCnt = rcvdBytesCnt;
     }
 
+    /**
+     * Sets queue size.
+     *
+     * @param queueSize Queue size.
+     */
+    public void setQueueSize(int queueSize) {
+        this.queueSize = queueSize;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(maxActiveJobs);
@@ -916,6 +933,7 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
         out.writeLong(sentBytesCnt);
         out.writeInt(rcvdMsgsCnt);
         out.writeLong(rcvdBytesCnt);
+        out.writeInt(queueSize);
     }
 
     /** {@inheritDoc} */
@@ -971,6 +989,7 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
         sentBytesCnt = in.readLong();
         rcvdMsgsCnt = in.readInt();
         rcvdBytesCnt = in.readLong();
+        queueSize = in.readInt();
     }
 
     /** {@inheritDoc} */
@@ -1015,6 +1034,7 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
             nonHeapUsed == other.nonHeapUsed &&
             peakThreadCnt == other.peakThreadCnt &&
             rcvdBytesCnt == other.rcvdBytesCnt &&
+            queueSize == other.queueSize &&
             rcvdMsgsCnt == other.rcvdMsgsCnt &&
             sentBytesCnt == other.sentBytesCnt &&
             sentMsgsCnt == other.sentMsgsCnt &&

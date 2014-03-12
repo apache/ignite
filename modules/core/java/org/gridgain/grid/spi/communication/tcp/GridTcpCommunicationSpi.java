@@ -1010,6 +1010,16 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public int getQueueSize() {
+        int res = 0;
+
+        for (GridCommunicationClient client : clients.values())
+            res += client.queueSize();
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
     @Override public void resetMetrics() {
         // Can't use 'reset' method because it is not thread-safe
         // according to javadoc.

@@ -289,6 +289,11 @@ public class GridLocalNodeMetrics implements GridNodeMetricsMBean {
     }
 
     /** {@inheritDoc} */
+    @Override public int getQueueSize() {
+        return node.metrics().getQueueSize();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridLocalNodeMetrics.class, this);
     }

@@ -65,7 +65,8 @@ public final class GridDiscoveryMetricsHelper {
         4/*sent messages count*/ +
         8/*sent bytes count*/ +
         4/*received messages count*/ +
-        8/*received bytes count*/;
+        8/*received bytes count*/ +
+        4/*queue size*/;
 
     /**
      * Enforces singleton.
@@ -133,6 +134,7 @@ public final class GridDiscoveryMetricsHelper {
         off = U.longToBytes(metrics.getSentBytesCount(), data, off);
         off = U.intToBytes(metrics.getReceivedMessagesCount(), data, off);
         off = U.longToBytes(metrics.getReceivedBytesCount(), data, off);
+        off = U.intToBytes(metrics.getQueueSize(), data, off);
 
         assert off - start == METRICS_SIZE : "Invalid metrics size [expected=" + METRICS_SIZE + ", actual=" +
             (off - start) + ']';
@@ -345,6 +347,10 @@ public final class GridDiscoveryMetricsHelper {
         metrics.setReceivedBytesCount(U.bytesToLong(data, off));
 
         off += 8;
+
+        metrics.setQueueSize(U.bytesToInt(data, off));
+
+        off += 4;
 
         assert off - start == METRICS_SIZE : "Invalid metrics size [expected=" + METRICS_SIZE + ", actual=" +
             (off - start) + ']';

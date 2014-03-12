@@ -528,6 +528,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                 nm.setSentBytesCount(io.getSentBytesCount());
                 nm.setReceivedMessagesCount(io.getReceivedMessagesCount());
                 nm.setReceivedBytesCount(io.getReceivedBytesCount());
+                nm.setQueueSize(io.getQueueSize());
 
                 return nm;
             }

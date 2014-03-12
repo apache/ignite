@@ -1477,6 +1477,15 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         return getSpi().getReceivedBytesCount();
     }
 
+    /**
+     * Gets queue size.
+     *
+     * @return Queue size.
+     */
+    public int getQueueSize() {
+        return getSpi().getQueueSize();
+    }
+
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
