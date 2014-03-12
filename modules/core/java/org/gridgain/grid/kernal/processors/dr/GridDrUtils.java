@@ -146,7 +146,7 @@ public class GridDrUtils {
             System.arraycopy(U.GG_HEADER, 0, out.internalArray(), 0, U.GG_HEADER.length);
             out.offset(U.GG_HEADER.length);
 
-            out.writeInt(size - 4 - U.GG_HEADER.length);
+            writeSize(out, size - 4 - U.GG_HEADER.length);
             out.writeByte(TYP_HND_REQ);
             out.writeByte(req.dataCenterId());
             U.writeString(out, req.protocolVersion());
@@ -212,7 +212,7 @@ public class GridDrUtils {
         GridUnsafeDataOutput out = new GridUnsafeDataOutput(size);
 
         try {
-            out.writeInt(size - 4);
+            writeSize(out, size - 4);
             out.writeByte(TYP_BATCH_REQ);
             U.writeGridUuid(out, req.requestId());
             U.writeString(out, cacheName);
@@ -258,6 +258,19 @@ public class GridDrUtils {
         catch (IOException e) {
             throw new GridException("Failed to marshal DR batch response.", e);
         }
+    }
+
+    /**
+     * Write request size.
+     *
+     * @param out Output.
+     * @param size Size.
+     * @throws IOException If failed.
+     */
+    private static void writeSize(GridUnsafeDataOutput out, int size) throws IOException {
+        U.intToBytes(size, out.internalArray(), out.offset());
+
+        out.offset(out.offset() + 4);
     }
 
     /**
@@ -326,7 +339,7 @@ public class GridDrUtils {
         in.bytes(data, data.length);
 
         try {
-            in.skipBytes(4); // Skip length.
+            in.skipBytes(5); // Skip length and type.
 
             return F.t(U.readGridUuid(in), U.readString(in), in.readInt(), in.readInt());
         }
