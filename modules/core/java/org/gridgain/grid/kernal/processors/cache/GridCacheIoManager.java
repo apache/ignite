@@ -178,7 +178,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
             unmarshall(nodeId, cacheMsg);
 
-            if (CU.allowForStartup(cacheMsg))
+            if (cacheMsg.allowForStartup())
                 processMessage(nodeId, cacheMsg, c);
             else {
                 GridFuture<?> startFut = cctx.preloader().startFuture();

@@ -33,10 +33,11 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
     /** */
     private byte[] partsBytes;
 
+    /** Topology version. */
     private long topVer;
 
     @GridDirectTransient
-    private Collection<GridNode>[] affAssignment;
+    private List<List<GridNode>> affAssignment;
 
     /** */
     private byte[] affAssignmentBytes;
@@ -53,13 +54,16 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
      * @param parts Partitions.
      * @param lastVer Last version.
      */
-    GridDhtPartitionsFullMessage(GridDhtPartitionExchangeId id, GridDhtPartitionFullMap parts,
-        @Nullable GridCacheVersion lastVer) {
+    GridDhtPartitionsFullMessage(@Nullable GridDhtPartitionExchangeId id, GridDhtPartitionFullMap parts,
+        @Nullable GridCacheVersion lastVer, long topVer, List<List<GridNode>> affAssignment) {
         super(id, lastVer);
 
         assert parts != null;
+        assert id == null || topVer == id.topologyVersion();
 
         this.parts = parts;
+        this.topVer = topVer;
+        this.affAssignment = affAssignment;
     }
 
     /**
@@ -97,14 +101,14 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
     /**
      * @return Affinity assignment for topology version.
      */
-    public Collection<GridNode>[] affinityAssignment() {
+    public List<List<GridNode>> affinityAssignment() {
         return affAssignment;
     }
 
     /**
      * @param affAssignment Affinity assignment for topology version.
      */
-    public void affinityAssignment(Collection<GridNode>[] affAssignment) {
+    public void affinityAssignment(List<List<GridNode>> affAssignment) {
         this.affAssignment = affAssignment;
     }
 

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -79,6 +80,26 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      */
     public void cleanUpCache(long topVer) {
         aff.cleanUpCache(topVer);
+    }
+
+    /**
+     * Initializes affinity for joined node.
+     *
+     * @param topVer Topology version.
+     * @param affAssignment Affinity assignment for this topology version.
+     */
+    public void initializeAffinity(long topVer, List<List<GridNode>> affAssignment) {
+        aff.initialize(topVer, affAssignment);
+    }
+
+    /**
+     * Calculates affinity cache for given topology version.
+     *
+     * @param topVer Topology version to calculate affinity for.
+     * @param discoEvt Discovery event that causes this topology change.
+     */
+    public List<List<GridNode>> calculateAffinity(long topVer, GridDiscoveryEvent discoEvt) {
+        return aff.calculate(topVer, discoEvt);
     }
 
     /**

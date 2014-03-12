@@ -10,24 +10,25 @@
 package org.gridgain.grid.cache.affinity.partition;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 
 /**
- * FIXDOC: Add class description.
+ * Fair affinity function which tries to ensure that all nodes get equal number of partitions with
+ * minimum amount of reassignments between existing nodes.
  *
  * @author @java.author
  * @version @java.version
  */
-public class GridCachePartitionFairAffinity {
+public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction {
     /** Ascending comparator. */
     private static final Comparator<PartitionSet> ASC_CMP = new PartitionSetComparator(false);
 
@@ -37,38 +38,34 @@ public class GridCachePartitionFairAffinity {
     /** */
     private int parts;
 
-    /** */
-    private int keyBackups;
-
     private static final GridLogger log = new GridLog4jLogger();
 
-    public GridCachePartitionFairAffinity(int parts, int keyBackups) {
+    public GridCachePartitionFairAffinity(int parts) {
         this.parts = parts;
-        this.keyBackups = keyBackups;
     }
 
-    public List<GridNode>[] assignPartitions(List<GridNode>[] prevAssignment,
-        List<GridNode> topSnapshot, GridDiscoveryEvent evt) {
-
-//        if (prevAssignment != null)
+    /** {@inheritDoc} */
+    @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext ctx) {
+        List<GridNode> topSnapshot = ctx.currentTopologySnapshot();
+        //        if (prevAssignment != null)
 //            U.debug(log, "Assigning partitions: " + Arrays.asList(prevAssignment) + ", topSnapshot=" + topSnapshot);
 
         if (topSnapshot.size() == 1) {
-            GridNode primary = F.first(topSnapshot);
+            GridNode primary = topSnapshot.get(0);
 
-            List<GridNode>[] assignments = createEmpty(1);
+            List<List<GridNode>> assignments = new ArrayList<>(parts);
 
             for (int i = 0; i < parts; i++)
-                assignments[i].add(primary);
+                assignments.add(Collections.singletonList(primary));
 
             return assignments;
         }
 
-        GridBiTuple<List<GridNode>[], Map<UUID, PartitionSet>> cp = createCopy(prevAssignment, evt, topSnapshot);
+        GridBiTuple<List<List<GridNode>>, Map<UUID, PartitionSet>> cp = createCopy(ctx, topSnapshot);
 
-        List<GridNode>[] assignment = cp.get1();
+        List<List<GridNode>> assignment = cp.get1();
 
-        int tiers = Math.min(keyBackups + 1, topSnapshot.size());
+        int tiers = Math.min(ctx.backups() + 1, topSnapshot.size());
 
         // Per tier pending partitions.
         Map<Integer, Queue<Integer>> pendingParts = new HashMap<>();
@@ -82,7 +79,7 @@ public class GridCachePartitionFairAffinity {
             Queue<Integer> pending = pendingParts.get(tier);
 
             for (int part = 0; part < parts; part++) {
-                if (fullMap.assignments[part].size() < tier + 1) {
+                if (fullMap.assignments.get(part).size() < tier + 1) {
                     if (pending == null) {
                         pending = new LinkedList<>();
 
@@ -110,6 +107,26 @@ public class GridCachePartitionFairAffinity {
 //        U.debug(log, ">>>>> Assigned partitions: " + Arrays.asList(fullMap.assignments));
 
         return fullMap.assignments;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reset() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partitions() {
+        return parts;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition(Object key) {
+        return U.safeAbs(key.hashCode()) % parts;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeNode(UUID nodeId) {
+        // No-op.
     }
 
     private void assignPending(int tier, Map<Integer, Queue<Integer>> pendingMap, FullAssignmentMap fullMap,
@@ -372,16 +389,18 @@ public class GridCachePartitionFairAffinity {
     }
 
     @SuppressWarnings("unchecked")
-    private GridBiTuple<List<GridNode>[], Map<UUID, PartitionSet>> createCopy(List<GridNode>[] prevAssignment,
-        GridDiscoveryEvent discoEvt, Iterable<GridNode> topSnapshot) {
+    private GridBiTuple<List<List<GridNode>>, Map<UUID, PartitionSet>> createCopy(
+        GridCacheAffinityFunctionContext ctx, Iterable<GridNode> topSnapshot) {
+        GridDiscoveryEvent discoEvt = ctx.discoveryEvent();
+
         UUID leftNodeId = discoEvt.type() == GridEventType.EVT_NODE_JOINED ? null : discoEvt.eventNodeId();
 
-        List<GridNode>[] cp = new List[prevAssignment.length];
+        List<List<GridNode>> cp = new ArrayList<>(parts);
 
         Map<UUID, PartitionSet> parts = new HashMap<>();
 
-        for (int part = 0; part < prevAssignment.length; part++) {
-            List<GridNode> partNodes = prevAssignment[part];
+        for (int part = 0; part < this.parts; part++) {
+            List<GridNode> partNodes = ctx.previousAssignment(part);
 
             List<GridNode> partNodesCp = new ArrayList<>(partNodes.size());
 
@@ -401,7 +420,7 @@ public class GridCachePartitionFairAffinity {
                 }
             }
 
-            cp[part] = partNodesCp;
+            cp.add(partNodesCp);
         }
 
         if (leftNodeId == null) {
@@ -520,12 +539,12 @@ public class GridCachePartitionFairAffinity {
         }
     }
 
-    private static Map<UUID, PartitionSet> assignments(int tier, List<GridNode>[] prevAssignment,
+    private static Map<UUID, PartitionSet> assignments(int tier, List<List<GridNode>> prevAssignment,
         List<GridNode> topSnapshot) {
         Map<UUID, PartitionSet> tmp = new LinkedHashMap<>();
 
-        for (int part = 0; part < prevAssignment.length; part++) {
-            List<GridNode> nodes = prevAssignment[part];
+        for (int part = 0; part < prevAssignment.size(); part++) {
+            List<GridNode> nodes = prevAssignment.get(part);
 
             assert nodes instanceof RandomAccess;
 
@@ -566,9 +585,9 @@ public class GridCachePartitionFairAffinity {
 
         private Map<UUID, PartitionSet> fullMap;
 
-        private List<GridNode>[] assignments;
+        private List<List<GridNode>> assignments;
 
-        private FullAssignmentMap(int tiers, List<GridNode>[] assignments, List<GridNode> topSnapshot) {
+        private FullAssignmentMap(int tiers, List<List<GridNode>> assignments, List<GridNode> topSnapshot) {
             this.assignments = assignments;
 
             tierMaps = new Map[tiers];
@@ -590,7 +609,7 @@ public class GridCachePartitionFairAffinity {
 
                 fullMap.get(nodeId).add(part);
 
-                List<GridNode> assignment = assignments[part];
+                List<GridNode> assignment = assignments.get(part);
 
                 if (assignment.size() <= tier)
                     assignment.add(node);
@@ -633,13 +652,13 @@ public class GridCachePartitionFairAffinity {
                     if (tierMaps[t].get(nodeId).contains(part)) {
 //                        U.debug(log, "Contains!");
 
-                        GridNode oldNode = assignments[part].get(tier);
+                        GridNode oldNode = assignments.get(part).get(tier);
 
                         assert oldNode != null;
 
                         // Move partition from level t to tier.
-                        assignments[part].set(tier, node);
-                        assignments[part].set(t, null);
+                        assignments.get(part).set(tier, node);
+                        assignments.get(part).set(t, null);
 
                         tierMaps[tier].get(oldNode.id()).remove(part);
                         tierMaps[tier].get(nodeId).add(part);

@@ -11,8 +11,10 @@ package org.gridgain.grid.kernal.processors.affinity;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
+import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.io.*;
 import java.util.*;
@@ -69,6 +71,47 @@ public class GridAffinityCache {
         partsCnt = aff.partitions();
         affCache = new ConcurrentLinkedHashMap<>();
         head = new AtomicReference<>(new CachedAffinity(-1));
+    }
+
+    /**
+     * Initializes affinity with given topology version and assignment. The assignment is calculated on remote nodes
+     * and brought to local node on partition map exchange.
+     *
+     * @param topVer Topology version.
+     * @param affAssignment Affinity assignment for topology version.
+     */
+    public void initialize(long topVer, List<List<GridNode>> affAssignment) {
+        CachedAffinity assignment = new CachedAffinity(topVer, affAssignment);
+
+        affCache.put(topVer, assignment);
+        head.set(assignment);
+    }
+
+    /**
+     * Calculates affinity cache for given topology version.
+     *
+     * @param topVer Topology version to calculate affinity cache for.
+     * @param discoEvt Discovery event that caused this topology version change.
+     */
+    public List<List<GridNode>> calculate(long topVer, GridDiscoveryEvent discoEvt) {
+        CachedAffinity updated = new CachedAffinity(topVer);
+
+        updated.calculate(discoEvt);
+
+        updated = F.addIfAbsent(affCache, topVer, updated);
+
+        // Update top version, if required.
+        while (true) {
+            CachedAffinity headItem = head.get();
+
+            if (headItem.topologyVersion() >= topVer)
+                break;
+
+            if (head.compareAndSet(headItem, updated))
+                break;
+        }
+
+        return updated.assignment;
     }
 
     /**
@@ -163,31 +206,12 @@ public class GridAffinityCache {
             cache = affCache.get(topVer);
 
             if (cache == null) {
-                CachedAffinity old = affCache.putIfAbsent(topVer, cache = new CachedAffinity(topVer));
-
-                if (old == null) {
-                    cache.calculate(); // Calculate cached affinity.
-
-                    // Update top version, if required.
-                    while (true) {
-                        CachedAffinity headItem = head.get();
-
-                        if (headItem.topologyVersion() >= topVer)
-                            break;
-
-                        if (head.compareAndSet(headItem, cache))
-                            break;
-                    }
-                }
-                else
-                    cache = old;
+                throw new IllegalStateException("Getting affinity for topology version earlier than affinity is " +
+                    "calculated [topVer=" + topVer + ", head=" + head.get().topologyVersion() + ']');
             }
-
-            cache.await(); // Waits for cached affinity calculations complete.
         }
 
         assert cache != null && cache.topologyVersion() == topVer : "Invalid cached affinity: " + cache;
-        assert cache.latch.getCount() == 0 : "Expects cache calculations complete: " + cache;
 
         return cache;
     }
@@ -216,22 +240,13 @@ public class GridAffinityCache {
         private final long topVer;
 
         /** Collection of calculated affinity nodes. */
-        private List<List<GridNode>> arr;
+        private List<List<GridNode>> assignment;
 
         /** Map of primary node partitions. */
         private final Map<UUID, Set<Integer>> primary;
 
         /** Map of backup node partitions. */
         private final Map<UUID, Set<Integer>> backup;
-
-        /** Calculations latch. */
-        private final CountDownLatch latch = new CountDownLatch(1);
-
-        /** Flag to check cache is calculated. */
-        private final AtomicBoolean calculated = new AtomicBoolean();
-
-        /** Calculation's exception. */
-        private volatile GridRuntimeException e;
 
         /**
          * Constructs cached affinity calculations item.
@@ -242,6 +257,16 @@ public class GridAffinityCache {
             this.topVer = topVer;
             primary = new HashMap<>();
             backup = new HashMap<>();
+        }
+
+        private CachedAffinity(long topVer, List<List<GridNode>> assignment) {
+            this.topVer = topVer;
+            this.assignment = assignment;
+
+            primary = new HashMap<>();
+            backup = new HashMap<>();
+
+            initPrimaryBackupMaps();
         }
 
         /**
@@ -258,12 +283,10 @@ public class GridAffinityCache {
          * @return Affinity nodes.
          */
         public Collection<GridNode> get(int part) {
-            assert latch.getCount() == 0 && calculated.get() : "Affinity cache is not calculated yet.";
+            assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
+                " [part=" + part + ", partitions=" + assignment.size() + ']';
 
-            assert part >= 0 && part < arr.size() : "Affinity partition is out of range" +
-                " [part=" + part + ", partitions=" + arr.size() + ']';
-
-            return arr.get(part);
+            return assignment.get(part);
         }
 
         /**
@@ -292,72 +315,57 @@ public class GridAffinityCache {
 
         /**
          * Calculates affinity cache.
+         *
+         * @param discoEvt Discovery event.
          */
-        public void calculate() {
-            if (calculated.compareAndSet(false, true)) {
-                try {
-                    // Temporary mirrors with modifiable partition's collections.
-                    Map<UUID, Set<Integer>> tmpPrm = new HashMap<>();
-                    Map<UUID, Set<Integer>> tmpBkp = new HashMap<>();
+        public void calculate(GridDiscoveryEvent discoEvt) {
+            CachedAffinity prev = affCache.get(topVer - 1);
 
-                    // Resolve nodes snapshot for specified topology version.
-                    Collection<GridNode> nodes = ctx.discovery().cacheAffinityNodes(cacheName, topVer);
+            // Resolve nodes snapshot for specified topology version.
+            Collection<GridNode> nodes = ctx.discovery().cacheAffinityNodes(cacheName, topVer);
 
-                    arr = aff.assignPartitions(
-                        new GridCacheAffinityFunctionContextImpl(sort(nodes), topVer, backups));
+            List<GridNode> sorted = sort(nodes);
 
-                    for (int partsCnt = arr.size(), p = 0; p < partsCnt; p++) {
-                        // Use the first node as primary, other - backups.
-                        Map<UUID, Set<Integer>> tmp = tmpPrm;
-                        Map<UUID, Set<Integer>> map = primary;
+            assert prev != null || (sorted.size() == 1 && sorted.get(0).equals(ctx.grid().localNode()));
 
-                        for (GridNode node : arr.get(p)) {
-                            UUID id = node.id();
+            List<List<GridNode>> prevAssignment = prev == null ? null : prev.assignment;
 
-                            Set<Integer> set = tmp.get(id);
+            assignment = aff.assignPartitions(
+                new GridCacheAffinityFunctionContextImpl(sorted, prevAssignment, discoEvt, topVer, backups));
 
-                            if (set == null) {
-                                tmp.put(id, set = new HashSet<>());
-                                map.put(id, Collections.unmodifiableSet(set));
-                            }
-
-                            set.add(p);
-
-                            // Use the first node as primary, other - backups.
-                            tmp = tmpBkp;
-                            map = backup;
-                        }
-                    }
-                }
-                catch (RuntimeException | Error e) {
-                    this.e = new GridRuntimeException("Failed to calculate affinity cache" +
-                        " [topVer=" + topVer + ", partitions=" + partitions() + ']', e);
-
-                    throw e;
-                } finally {
-                    latch.countDown();
-                }
-            }
-            else
-                await();
+            initPrimaryBackupMaps();
         }
 
         /**
-         * Waits for affinity calculations complete.
+         * Initializes primary and backup maps.
          */
-        public void await() {
-            try {
-                if (latch.getCount() > 0)
-                    latch.await();
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+        private void initPrimaryBackupMaps() {
+            // Temporary mirrors with modifiable partition's collections.
+            Map<UUID, Set<Integer>> tmpPrm = new HashMap<>();
+            Map<UUID, Set<Integer>> tmpBkp = new HashMap<>();
 
-                throw new GridRuntimeException("Failed to wait for affinity calculations.", e);
-            }
+            for (int partsCnt = assignment.size(), p = 0; p < partsCnt; p++) {
+                // Use the first node as primary, other - backups.
+                Map<UUID, Set<Integer>> tmp = tmpPrm;
+                Map<UUID, Set<Integer>> map = primary;
 
-            if (e != null)
-                throw e;
+                for (GridNode node : assignment.get(p)) {
+                    UUID id = node.id();
+
+                    Set<Integer> set = tmp.get(id);
+
+                    if (set == null) {
+                        tmp.put(id, set = new HashSet<>());
+                        map.put(id, Collections.unmodifiableSet(set));
+                    }
+
+                    set.add(p);
+
+                    // Use the first node as primary, other - backups.
+                    tmp = tmpBkp;
+                    map = backup;
+                }
+            }
         }
 
         /** {@inheritDoc} */
