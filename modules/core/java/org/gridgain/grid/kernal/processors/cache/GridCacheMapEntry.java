@@ -1431,6 +1431,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 drReplicate(drType, updated, valBytes, newVer);
 
+                recordNodeId(affNodeId);
+
                 if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT))
                     cctx.events().addEvent(partition(), key, evtNodeId, null,
                         newVer, EVT_CACHE_OBJECT_PUT, updated, updated != null, old,
@@ -1448,23 +1450,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (hadVal) {
                     assert !deletedUnlocked();
 
-                    if (cctx.deferredDelete()) {
-                        deletedUnlocked(true);
+                    deletedUnlocked(true);
 
-                        enqueueVer = newVer;
-                    }
-                    else {
-                        if (!markObsolete(newVer)) {
-                            if (log.isDebugEnabled())
-                                log.debug("Entry could not be marked obsolete (it is still used): " + this);
-                        }
-                        else {
-                            recordNodeId(affNodeId);
-
-                            if (log.isDebugEnabled())
-                                log.debug("Entry was marked obsolete: " + this);
-                        }
-                    }
+                    enqueueVer = newVer;
                 }
                 else {
                     boolean new0 = isNew();
@@ -1483,6 +1471,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 update(null, null, 0, 0, newVer);
 
                 drReplicate(drType, null, null, newVer);
+
+                recordNodeId(affNodeId);
 
                 if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED))
                     cctx.events().addEvent(partition(), key, evtNodeId, null, newVer,

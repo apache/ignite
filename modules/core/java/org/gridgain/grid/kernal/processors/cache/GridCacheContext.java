@@ -382,7 +382,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if entries should not be deleted from cache immediately.
      */
     public boolean deferredDelete() {
-        return isDht() || isDhtAtomic() || isColocated();
+        return isDht() || isDhtAtomic() || isColocated() || (isNear() && atomic());
     }
 
     /**

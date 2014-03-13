@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.lang.*;
@@ -214,6 +215,8 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
 
         try {
             Collection<UUID> readers = entry.readers();
+
+            log.info("Add dht update " + entry.key() + " " + readers + " " + cctx.localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
 
             if (!F.isEmpty(readers)) {
                 for (UUID nodeId : readers) {

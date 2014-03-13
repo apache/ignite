@@ -2561,20 +2561,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /**
-     * @param key Key to remove.
-     * @param ver Version to remove.
-     */
-    public void removeVersionedEntry(K key, GridCacheVersion ver) {
-        GridCacheEntryEx<K, V> entry = peekEx(key);
-
-        if (entry == null)
-            return;
-
-        if (entry.markObsoleteVersion(ver))
-            removeEntry(entry);
-    }
-
-    /**
      * @param nodeId Node ID.
      * @param ver Version.
      * @param keys Keys.

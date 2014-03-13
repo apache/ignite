@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
@@ -114,6 +115,9 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     /** Fast map flag. */
     private final boolean fastMap;
 
+    /** Near cache flag. */
+    private final boolean nearEnabled;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -127,6 +131,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         filter = null;
         syncMode = null;
         op = null;
+        nearEnabled = false;
     }
 
     /**
@@ -186,6 +191,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
         fastMap = F.isEmpty(filter) && op != TRANSFORM && cctx.config().getWriteSynchronizationMode() == FULL_SYNC &&
             cctx.config().getAtomicWriteOrderMode() == CLOCK;
+
+        nearEnabled = CU.isNearEnabled(cctx);
     }
 
     /** {@inheritDoc} */
@@ -306,6 +313,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             assert singleNodeId.equals(nodeId) : "Invalid response received for single-node mapped future " +
                 "[singleNodeId=" + singleNodeId + ", nodeId=" + nodeId + ", res=" + res + ']';
 
+            updateNear(singleReq, res);
+
             if (res.error() != null)
                 onDone(addFailedKeys(res.failedKeys(), res.error()));
             else {
@@ -317,17 +326,81 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         else {
             GridNearAtomicUpdateRequest<K, V> req = mappings.get(nodeId);
 
-            if (res.error() != null)
-                addFailedKeys(req.keys(), res.error());
-            else {
-                // req can be null if onResult is being processed concurrently with onNodeLeft.
-                if (req != null && req.fastMap() && req.hasPrimary())
-                    opRes = res.returnValue();
+            if (req != null) { // req can be null if onResult is being processed concurrently with onNodeLeft.
+                updateNear(req, res);
+
+                if (res.error() != null)
+                    addFailedKeys(req.keys(), res.error());
+                else {
+                    if (req.fastMap() && req.hasPrimary())
+                        opRes = res.returnValue();
+                }
+
+                mappings.remove(nodeId);
             }
 
-            mappings.remove(nodeId);
-
             checkComplete();
+        }
+    }
+
+    /**
+     * Adds updates for near cache.
+     *
+     * @param req Update request.
+     * @param res Update response.
+     */
+    private void updateNear(GridNearAtomicUpdateRequest<K, V> req, GridNearAtomicUpdateResponse<K, V> res) {
+        if (!nearEnabled || ctx.localNodeId().equals(req.nodeId()))
+            return;
+
+        GridAtomicNearCache<K, V> near = (GridAtomicNearCache<K, V>)cctx.dht().near();
+
+        Collection<K> failed = res.failedKeys();
+        List<Integer> nearValsIdxs = res.nearValuesIndexes();
+        List<Integer> skipped = res.skippedIndexes();
+
+        int nearValIdx = 0;
+
+        for (int i = 0; i < req.keys().size(); i++) {
+            if (skipped != null && skipped.contains(i))
+                continue;
+
+            K key = req.keys().get(i);
+
+            if (failed != null && failed.contains(key))
+                continue;
+
+            GridCacheVersion ver = req.updateVersion();
+
+            if (ver == null)
+                ver = res.version();
+
+            assert ver != null;
+
+            V val = null;
+            byte[] valBytes = null;
+
+            if (nearValsIdxs != null && nearValsIdxs.contains(i)) {
+                val = res.nearValue(nearValIdx);
+                valBytes = res.nearValueBytes(nearValIdx);
+            }
+            else {
+                assert req.operation() != TRANSFORM;
+
+                if (req.operation() != DELETE) {
+                    val = req.value(i);
+                    valBytes = req.valueBytes(i);
+                }
+            }
+
+            try {
+                near.processNearAtomicUpdateResponse(ver, key, val, valBytes, 0L, req.nodeId());
+            }
+            catch (GridException e) {
+                res.addFailedKey(key, new GridException("Failed to update key in near cache: " + key, e));
+            }
+
+            nearValIdx++;
         }
     }
 

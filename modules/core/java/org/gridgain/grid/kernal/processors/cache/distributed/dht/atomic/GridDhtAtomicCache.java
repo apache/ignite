@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
@@ -807,11 +808,26 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     // partition exchange will wait for near update future.
                     if (topology().topologyVersion() == req.topologyVersion() ||
                         ctx.config().getAtomicWriteOrderMode() == CLOCK) {
+                        GridNode node = ctx.discovery().node(nodeId);
+
+                        if (node == null) {
+                            U.warn(log, "Node originated update request left grid: " + nodeId);
+
+                            return;
+                        }
+
+                        // TODO
+                        boolean updateNear = U.hasNearCache(node, name());
+
                         GridCacheVersion ver = req.updateVersion();
 
-                        if (ver == null)
+                        if (ver == null) {
                             // Assign next version for update inside entries lock.
                             ver = ctx.versions().next(req.topologyVersion());
+
+                            if (updateNear)
+                                res.version(ver);
+                        }
 
                         assert ver != null : "Got null version for update request: " + req;
 
@@ -827,10 +843,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         if (batchStoreUpdate() && keys.size() > 1 && cacheCfg.getDrReceiverConfiguration() == null)
                             // This method can only be used when there are no replicated entries in the batch.
-                            deleted = updateWithBatch(nodeId, req, res, locked, ver, dhtFut, replicate);
+                            deleted = updateWithBatch(updateNear, nodeId, req, res, locked, ver, dhtFut, replicate);
                         else {
                             GridBiTuple<GridCacheReturn<V>, Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>>> t =
-                                updateSingle(nodeId, req, res, locked, ver, dhtFut, replicate);
+                                updateSingle(nodeId, updateNear, req, res, locked, ver, dhtFut, replicate);
 
                             retVal = t.get1();
                             deleted = t.get2();
@@ -909,6 +925,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @throws GridCacheEntryRemovedException Should not be thrown.
      */
     @Nullable private Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> updateWithBatch(
+        boolean updateNear,
         UUID nodeId,
         GridNearAtomicUpdateRequest<K, V> req,
         GridNearAtomicUpdateResponse<K, V> res,
@@ -928,6 +945,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         List<GridDhtCacheEntry<K, V>> filtered = new ArrayList<>(size);
         GridCacheOperation op = req.operation();
 
+        int firstEntryIdx = 0;
+
         for (int i = 0; i < locked.size(); i++) {
             GridDhtCacheEntry<K, V> entry = locked.get(i);
 
@@ -936,6 +955,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     if (log.isDebugEnabled())
                         log.debug("Entry did not pass the filter (will skip write) [entry=" + entry +
                             ", filter=" + Arrays.toString(req.filter()) + ", res=" + res + ']');
+
+                    if (updateNear)
+                        res.addSkippedIndex(i);
 
                     continue;
                 }
@@ -953,6 +975,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         // Update previous batch.
                         if (putMap != null) {
                             deleted = updatePartialBatch(
+                                updateNear,
+                                firstEntryIdx,
                                 filtered,
                                 ver,
                                 nodeId,
@@ -963,6 +987,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 res,
                                 replicate,
                                 deleted);
+
+                            firstEntryIdx = i + 1;
 
                             putMap = null;
 
@@ -979,6 +1005,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         // Update previous batch.
                         if (rmvKeys != null) {
                             deleted = updatePartialBatch(
+                                updateNear,
+                                firstEntryIdx,
                                 filtered,
                                 ver,
                                 nodeId,
@@ -989,6 +1017,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 res,
                                 replicate,
                                 deleted);
+
+                            firstEntryIdx = i + 1;
 
                             rmvKeys = null;
 
@@ -1031,6 +1061,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         // Store final batch.
         if (putMap != null || rmvKeys != null) {
             deleted = updatePartialBatch(
+                updateNear,
+                firstEntryIdx,
                 filtered,
                 ver,
                 nodeId,
@@ -1052,6 +1084,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * Updates locked entries one-by-one.
      *
      * @param nodeId Originating node ID.
+     * @param updateNear {@code True} if originating node has near cache.
      * @param req Update request.
      * @param res Update response.
      * @param locked Locked entries.
@@ -1063,6 +1096,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     private GridBiTuple<GridCacheReturn<V>, Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>>> updateSingle(
         UUID nodeId,
+        boolean updateNear,
         GridNearAtomicUpdateRequest<K, V> req,
         GridNearAtomicUpdateResponse<K, V> res,
         List<GridDhtCacheEntry<K, V>> locked,
@@ -1100,12 +1134,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 byte[] newValBytes = req.valueBytes(i);
 
+                Object writeVal = req.writeValue(i);
+
                 GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                     ver,
                     nodeId,
                     locNodeId,
                     op,
-                    req.writeValue(i),
+                    writeVal,
                     newValBytes,
                     primary && storeEnabled(),
                     req.returnValue(),
@@ -1121,7 +1157,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     newDrVer,
                     true);
 
-                if (dhtFut != null) {
+                assert dhtFut != null;
+
+                log.info("Update single " + entry.key() + " " + writeVal + " " + ctx.localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
+
+                boolean near = updateNear && primary;
+
+                if (dhtFut != null || near) {
                     if (updRes.sendToDht()) { // Send to backups even in case of remove-remove scenarios.
                         GridDrReceiverConflictContextImpl ctx = updRes.drConflictContext();
 
@@ -1135,10 +1177,35 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             newValBytes = null; // Value has been changed.
                         }
 
-                        dhtFut.addWriteEntry(entry, updRes.newValue(), newValBytes, drExpireTime >= 0L ? ttl : -1L,
-                            drExpireTime, newDrVer, drExpireTime < 0L ? ttl : 0L);
+                        if (dhtFut != null)
+                            dhtFut.addWriteEntry(entry, updRes.newValue(), newValBytes, drExpireTime >= 0L ? ttl : -1L,
+                                drExpireTime, newDrVer, drExpireTime < 0L ? ttl : 0L);
+
+                        if (near) {
+                            if (!U.nodeIds(context().affinity().nodes(entry.partition(), req.topologyVersion())).contains(nodeId)) {
+                                // If stored the same value as in request, do not need to send it back.
+                                if (op == TRANSFORM || writeVal != updRes.newValue()) {
+                                    log.info("Add near1: " + entry.key() + " " + nodeId + " " + context().localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
+
+                                    res.addNearValue(i, updRes.newValue(), newValBytes);
+                                }
+
+                                log.info("Add reader1: " + entry.key() + " " + nodeId + " " + context().localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
+
+                                GridFuture<Boolean> f = entry.addReader(nodeId, req.messageId());
+
+                                assert entry.readers().contains(nodeId);
+
+                                assert f == null : f;
+                            }
+                            else
+                                res.addSkippedIndex(i);
+                        }
                     }
                     else {
+                        if (near)
+                            res.addSkippedIndex(i);
+
                         if (log.isDebugEnabled())
                             log.debug("Entry did not pass the filter or conflict resolution (will skip write) " +
                                 "[entry=" + entry + ", filter=" + Arrays.toString(req.filter()) + ']');
@@ -1179,6 +1246,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Nullable private Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> updatePartialBatch(
+        boolean updateNear,
+        int firstEntryIdx,
         List<GridDhtCacheEntry<K, V>> entries,
         final GridCacheVersion ver,
         UUID nodeId,
@@ -1251,6 +1320,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     boolean primary = !req.fastMap() || ctx.affinity().primary(ctx.localNode(), entry.key(),
                         req.topologyVersion());
 
+                    assert dhtFut != null;
+
+                    log.info("Update batch " + entry.key() + " " + writeVal + " " + ctx.localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
+
                     GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                         ver,
                         nodeId,
@@ -1286,6 +1359,32 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         byte[] valBytes = valBytesTuple.getIfMarshaled();
 
                         dhtFut.addWriteEntry(entry, writeVal, valBytes, -1, -1, null, req.ttl());
+                    }
+
+                    if (updateNear && primary) {
+                        if (!U.nodeIds(context().affinity().nodes(entry.partition(), req.topologyVersion())).contains(nodeId)) {
+                            if (req.operation() == TRANSFORM) {
+                                int idx = firstEntryIdx + i;
+
+                                GridCacheValueBytes valBytesTuple = entry.valueBytes();
+
+                                byte[] valBytes = valBytesTuple.getIfMarshaled();
+
+                                log.info("Add near2: " + entry.key() + " " + nodeId + " " + context().localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
+
+                                res.addNearValue(idx, writeVal, valBytes);
+                            }
+
+                            log.info("Add reader2: " + entry.key() + " " + nodeId + " " + context().localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
+
+                            GridFuture<Boolean> f = entry.addReader(nodeId, req.messageId());
+
+                            assert entry.readers().contains(nodeId) : nodeId;
+
+                            assert f == null : f;
+                        }
+                        else
+                            res.addSkippedIndex(firstEntryIdx + i);
                     }
                 }
                 catch (GridCacheEntryRemovedException e) {
@@ -1656,7 +1755,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             ((GridAtomicNearCache<K, V>)near()).processDhtAtomicUpdateRequest(nodeId, req, res);
 
         try {
-            if (res.failedKeys() != null || req.writeSynchronizationMode() == FULL_SYNC)
+            if (res.failedKeys() != null || res.nearEvicted() != null || req.writeSynchronizationMode() == FULL_SYNC)
                 ctx.io().send(nodeId, res);
             else {
                 // No failed keys and sync mode is not FULL_SYNC, thus sending deferred response.

@@ -11,10 +11,13 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -31,6 +34,9 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
  * Near cache for atomic cache.
  */
 public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
+    /** Remove queue. */
+    private GridCircularBuffer<T2<K, GridCacheVersion>> rmvQueue;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -42,6 +48,23 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
      */
     public GridAtomicNearCache(GridCacheContext<K, V> ctx) {
         super(ctx);
+
+        // TODO: find optimal size.
+        rmvQueue = new GridCircularBuffer<>(1024 * 1024);
+    }
+
+    private void onDeferredDelete(K key, GridCacheVersion ver) throws GridException {
+        try {
+            T2<K, GridCacheVersion> evicted = rmvQueue.add(new T2<>(key, ver));
+
+            if (evicted != null)
+                removeVersionedEntry(evicted.get1(), evicted.get2());
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new GridInterruptedException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -53,6 +76,64 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
         });
     }
 
+    public void processNearAtomicUpdateResponse(GridCacheVersion ver, K key, @Nullable V val, @Nullable byte[] valBytes,
+        Long ttl, UUID nodeId) throws GridException {
+        try {
+            while (true) {
+                GridCacheEntryEx<K, V> entry = null;
+
+                try {
+                    entry = entryEx(key);
+
+                    GridCacheOperation op = (val != null || valBytes != null) ? UPDATE : DELETE;
+
+                    log.info("Update near: " + key + " " + val + " " + valBytes + " " + ctx.localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
+
+                    assert !context().affinity().nodes(entry.partition()).contains(ctx.localNode()) : key;
+
+                    GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
+                        ver,
+                        nodeId,
+                        nodeId,
+                        op,
+                        val,
+                        valBytes,
+                        /*write-through*/false,
+                        /*retval*/false,
+                        ttl,
+                        /*event*/true,
+                        /*metrics*/true,
+                        /*primary*/false,
+                        /*check version*/true,
+                        CU.<K, V>empty(),
+                        DR_NONE,
+                        -1,
+                        -1,
+                        null,
+                        false);
+
+                    if (updRes.removeVersion() != null)
+                        onDeferredDelete(entry.key(), updRes.removeVersion());
+
+                    break; // While.
+                }
+                catch (GridCacheEntryRemovedException ignored) {
+                    if (log.isDebugEnabled())
+                        log.debug("Got removed entry while updating backup value (will retry): " + key);
+
+                    entry = null;
+                }
+                finally {
+                    if (entry != null)
+                        ctx.evicts().touch(entry);
+                }
+            }
+        }
+        catch (GridDhtInvalidPartitionException ignored) {
+            // Ignore.
+        }
+    }
+
     /**
      * @param nodeId Sender node ID.
      * @param req Dht atomic update request.
@@ -61,6 +142,8 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
     public void processDhtAtomicUpdateRequest(UUID nodeId, GridDhtAtomicUpdateRequest<K, V> req,
         GridDhtAtomicUpdateResponse<K, V> res) {
         GridCacheVersion ver = req.writeVersion();
+
+        assert ver != null;
 
         for (int i = 0; i < req.nearSize(); i++) {
             K key = req.nearKey(i);
@@ -71,6 +154,8 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
                         GridCacheEntryEx<K, V> entry = peekEx(key);
 
                         if (entry == null) {
+                            log.info("Near evicted: " + key + " " + ctx.localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
+
                             res.addNearEvicted(key, req.nearKeyBytes(i));
 
                             break;
@@ -81,7 +166,11 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
 
                         GridCacheOperation op = (val != null || valBytes != null) ? UPDATE : DELETE;
 
-                        entry.innerUpdate(
+                        log.info("Update near reader: " + key + " " + val + " " + valBytes + " " + ctx.localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
+
+                        assert !context().affinity().nodes(entry.partition()).contains(ctx.localNode()) : key;
+
+                        GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                             ver,
                             nodeId,
                             nodeId,
@@ -102,8 +191,8 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
                             null,
                             false);
 
-                        if (entry.obsolete())
-                            removeEntry(entry);
+                        if (updRes.removeVersion() != null)
+                            onDeferredDelete(entry.key(), updRes.removeVersion());
 
                         break;
                     }
