@@ -347,7 +347,7 @@ object VisorStartCommand {
         ),
         args = List(
             "-f=<path>" -> List(
-                "Path to INI file that contains topology specification.",
+                "Path to INI file that contains topology specification."
             ),
             "-h=<hostname>" -> List(
                 "Hostname where to start nodes.",

@@ -21,8 +21,7 @@ import java.util.*;
 public class GridHttpRouterConfiguration {
     /**
      * Default value for {@code #getServers} property.
-     * Connects to the default HTTP rest server configuration defined in
-     * {@code GRIDGAIN_HOME/config/rest/rest-jetty.xml}
+     * Connects to the default HTTP rest server configuration.
      */
     public static final Collection<String> DFLT_SERVERS = Collections.singleton("127.0.0.1:8080");
 
