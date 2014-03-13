@@ -39,6 +39,7 @@ import org.gridgain.visor.commands.{VisorTextTable, VisorConsoleCommand}
 import org.gridgain.grid.resources.GridInstanceResource
 import org.gridgain.grid.kernal.processors.task.GridInternal
 import org.gridgain.grid.util.scala.impl
+import org.gridgain.grid.cache._
 
 /**
  * Holder for command help information.
@@ -1401,7 +1402,8 @@ object visor extends VisorTag {
                         log4jTup = U.addLog4jNoOpLogger()
 
                     // Streamer and cache configurations should be excluded from config.
-                    U.applicationContext(url, "streamerConfiguration", "cacheConfiguration")
+                    U.applicationContext(url, Arrays.asList(classOf[GridConfiguration].getName,
+                      classOf[GridCacheConfiguration].getName), "streamerConfiguration", "cacheConfiguration")
                 }
                 catch {
                     case e: BeansException => throw new GE("Failed to instantiate Spring " +

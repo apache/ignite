@@ -7838,33 +7838,39 @@ public abstract class GridUtils {
      * For example, {@code streamerConfiguration} can be excluded from the configs that Visor uses.
      *
      * @param cfgUrl Resource where config file is located.
+     * @param includedBeanClasses The list of beans that should be loaded, if {@code null} then all beans are loaded.
      * @param excludedProps Properties to be excluded.
      * @return Spring application context.
      */
-    public static ApplicationContext applicationContext(URL cfgUrl, final String... excludedProps) {
+    public static ApplicationContext applicationContext(URL cfgUrl,
+        @Nullable final Collection<String> includedBeanClasses, final String... excludedProps) {
         GenericApplicationContext springCtx = new GenericApplicationContext();
 
-        if (excludedProps != null && excludedProps.length != 0) {
-            BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
-                @Override public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
-                    throws BeansException {
-                    for (String beanName : beanFactory.getBeanDefinitionNames()) {
-                        BeanDefinition def = beanFactory.getBeanDefinition(beanName);
+        BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
+            @Override public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
+                throws BeansException {
+                for (String beanName : beanFactory.getBeanDefinitionNames()) {
+                    BeanDefinition def = beanFactory.getBeanDefinition(beanName);
 
-                        MutablePropertyValues vals = def.getPropertyValues();
+                    if (includedBeanClasses != null && !includedBeanClasses.contains(def.getBeanClassName())) {
+                        ((DefaultListableBeanFactory)beanFactory).removeBeanDefinition(beanName);
 
-                        for (PropertyValue val : new ArrayList<>(vals.getPropertyValueList())) {
-                            for (String excludedProp : excludedProps) {
-                                if (val.getName().equals(excludedProp))
-                                    vals.removePropertyValue(val);
-                            }
+                        continue;
+                    }
+
+                    MutablePropertyValues vals = def.getPropertyValues();
+
+                    for (PropertyValue val : new ArrayList<>(vals.getPropertyValueList())) {
+                        for (String excludedProp : excludedProps) {
+                            if (val.getName().equals(excludedProp))
+                                vals.removePropertyValue(val);
                         }
                     }
                 }
-            };
+            }
+        };
 
-            springCtx.addBeanFactoryPostProcessor(postProc);
-        }
+        springCtx.addBeanFactoryPostProcessor(postProc);
 
         new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(cfgUrl));
 
