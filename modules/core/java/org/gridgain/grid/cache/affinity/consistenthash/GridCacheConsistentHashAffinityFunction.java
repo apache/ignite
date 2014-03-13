@@ -434,11 +434,13 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
                 }
             }
             else {
-                selected = new ArrayList<>(1 + backups);
+                int primaryAndBackups = backups + 1;
+
+                selected = new ArrayList<>(primaryAndBackups);
 
                 final Collection<NodeInfo> selected0 = selected;
 
-                List<NodeInfo> ids = nodeHash.nodes(part, backups + 1, new P1<NodeInfo>() {
+                List<NodeInfo> ids = nodeHash.nodes(part, primaryAndBackups, new P1<NodeInfo>() {
                     @Override public boolean apply(NodeInfo id) {
                         GridNode n = lookup.get(id);
 
@@ -447,13 +449,21 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
 
                         Collection<UUID> neighbors = neighbors(n);
 
-                        if (!F.containsAny(selected0, neighbors)) {
-                            selected0.add(id);
+                        for (NodeInfo id0 : selected0) {
+                            GridNode n0 = lookup.get(id0);
 
-                            return true;
+                            if (n0 == null)
+                                return false;
+
+                            Collection<UUID> neighbors0 = neighbors(n0);
+
+                            if (F.containsAny(neighbors0, neighbors))
+                                return false;
                         }
 
-                        return false;
+                        selected0.add(id);
+
+                        return true;
                     }
                 });
 
