@@ -15,15 +15,15 @@
     GridGain Spring configuration file.
 
     When starting a standalone GridGain node, you need to execute the following command:
-    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} path-to-this-file/default-ggfs-data.xml
+    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} path-to-this-file/default-config-ggfs.xml
 
     When starting GridGain from Java IDE, pass path to this file into GridGain:
-    GridGain.start("path-to-this-file/default-ggfs-data.xml");
+    GridGain.start("path-to-this-file/default-config-ggfs.xml");
 
     NOTE:
     ====
     This configuration file should be used with data nodes only. For nodes not
-    responsible for caching files, such as submitter or job-scheduler nodes, use 'default-ggfs-client.xml'.
+    responsible for caching files, such as submitter or job-scheduler nodes, use 'default-config-ggfs-client.xml'.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

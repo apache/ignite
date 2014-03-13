@@ -24,7 +24,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
  * {@code GGFS} configuration is provided via {@link GridConfiguration#getGgfsConfiguration()}
  * method.
  * <p>
- * Refer to {@code config/ggfs/default-ggfs-data.xml} or {@code config/ggfs/default-ggfs-client.xml}
+ * Refer to {@code config/hadoop/default-config-ggfs.xml} or {@code config/hadoop/default-config-ggfs-client.xml}
  * configuration files under GridGain installation to see sample {@code GGFS} configuration.
  */
 public class GridGgfsConfiguration {
