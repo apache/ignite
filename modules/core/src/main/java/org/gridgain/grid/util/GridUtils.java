@@ -2358,12 +2358,12 @@ public abstract class GridUtils {
         String home = getGridGainHome();
 
         if (home != null) {
-            File file = new File(home, path);
+            File file = new File(home, "os/" + path);
 
             if (file.exists())
                 return file;
 
-            file = new File(home, "os/" + path);
+            file = new File(home, path);
 
             if (file.exists())
                 return file;
