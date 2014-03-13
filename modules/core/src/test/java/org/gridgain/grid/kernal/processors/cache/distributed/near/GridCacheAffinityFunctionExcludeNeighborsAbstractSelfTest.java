@@ -12,6 +12,8 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.internal.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -29,20 +31,31 @@ import static org.gridgain.grid.cache.GridCachePreloadMode.*;
  */
 @SuppressWarnings({"PointlessArithmeticExpression", "FieldCanBeLocal"})
 public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest extends GridCommonAbstractTest {
-    /** Grid count. */
-    private int grids = 3;
-
     /** Number of backups. */
     private int backups = 2;
+
+    /** */
+    private int gridInstanceNum;
 
     /** */
     private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected GridConfiguration getConfiguration(final String gridName) throws Exception {
         GridConfiguration c = super.getConfiguration(gridName);
 
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi() {
+            @Override public void setNodeAttributes(Map<String, Object> attrs, GridProductVersion ver) {
+                super.setNodeAttributes(attrs, ver);
+
+                // Set unique mac addresses for every group of three nodes.
+                String macAddrs = "MOCK_MACS_" + (gridInstanceNum / 3);
+
+                attrs.put(GridNodeAttributes.ATTR_MACS, macAddrs);
+
+                gridInstanceNum++;
+            }
+        };
 
         spi.setIpFinder(ipFinder);
 
@@ -89,15 +102,14 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
      * @throws Exception If failed.
      */
     public void testAffinityMultiNode() throws Exception {
-        grids = 9;
-        backups = 2;
+        int grids = 9;
 
         startGrids(grids);
 
         try {
             Object key = 12345;
 
-            final int mod = 3;
+            int copies = backups + 1;
 
             for (int i = 0; i < grids; i++) {
                 final Grid g = grid(i);
@@ -106,9 +118,8 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
 
                 List<GridTcpDiscoveryNode> top = new ArrayList<>();
 
-                for (GridNode node : g.nodes()) {
+                for (GridNode node : g.nodes())
                     top.add((GridTcpDiscoveryNode) node);
-                }
 
                 Collections.sort(top);
 
@@ -126,15 +137,14 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
 
                 info("Affinity picture for grid [i=" + i + ", aff=" + U.toShortString(affNodes));
 
-                assertEquals(backups + 1, affNodes.size());
+                assertEquals(copies, affNodes.size());
 
-                Collection<Long> orders = new ArrayList<>(mod);
+                Set<String> macs = new HashSet<>();
 
-                for (GridNode n : affNodes) {
-                    assert !orders.contains(n.order() % mod);
+                for (GridNode node : affNodes)
+                    macs.add((String)node.attribute(GridNodeAttributes.ATTR_MACS));
 
-                    orders.add(n.order() % mod);
-                }
+                assertEquals(copies, macs.size());
             }
         }
         finally {

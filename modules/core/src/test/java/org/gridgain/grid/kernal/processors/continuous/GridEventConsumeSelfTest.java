@@ -31,6 +31,12 @@ import static org.gridgain.grid.events.GridEventType.*;
  * Event consume test.
  */
 public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final String PRJ_PRED_CLS_NAME = "org.gridgain.grid.tests.p2p.GridEventConsumeProjectionPredicate";
+
+    /** */
+    private static final String FILTER_CLS_NAME = "org.gridgain.grid.tests.p2p.GridEventConsumeFilter";
+
     /** Grids count. */
     private static final int GRID_CNT = 3;
 
@@ -716,6 +722,54 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
+        }
+        finally {
+            stopGrid("anotherGrid1");
+            stopGrid("anotherGrid2");
+
+            grid(0).events().stopRemoteListen(consumeId).get();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    // TODO: GG-6730
+    public void _testNodeJoinWithP2P() throws Exception {
+        final Collection<UUID> nodeIds = new HashSet<>();
+        final AtomicInteger cnt = new AtomicInteger();
+        final CountDownLatch latch = new CountDownLatch(GRID_CNT + 1);
+
+        ClassLoader ldr = getExternalClassLoader();
+
+        GridPredicate<GridNode> prjPred = (GridPredicate<GridNode>)ldr.loadClass(PRJ_PRED_CLS_NAME).newInstance();
+        GridPredicate<GridEvent> filter = (GridPredicate<GridEvent>)ldr.loadClass(FILTER_CLS_NAME).newInstance();
+
+        UUID consumeId = grid(0).forPredicate(prjPred).events().remoteListen(new P2<UUID, GridEvent>() {
+            @Override public boolean apply(UUID nodeId, GridEvent evt) {
+                info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
+
+                assertEquals(EVT_JOB_STARTED, evt.type());
+
+                nodeIds.add(nodeId);
+                cnt.incrementAndGet();
+                latch.countDown();
+
+                return true;
+            }
+        }, filter, EVT_JOB_STARTED).get();
+
+        try {
+            assertNotNull(consumeId);
+
+            startGrid("anotherGrid");
+
+            grid(0).compute().broadcast(F.noop());
+
+            assert latch.await(2, SECONDS);
+
+            assertEquals(GRID_CNT + 1, nodeIds.size());
+            assertEquals(GRID_CNT + 1, cnt.get());
         }
         finally {
             stopGrid("anotherGrid1");
