@@ -55,7 +55,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
      * @param lastVer Last version.
      */
     GridDhtPartitionsFullMessage(@Nullable GridDhtPartitionExchangeId id, GridDhtPartitionFullMap parts,
-        @Nullable GridCacheVersion lastVer, long topVer, List<List<GridNode>> affAssignment) {
+        @Nullable GridCacheVersion lastVer, long topVer) {
         super(id, lastVer);
 
         assert parts != null;
@@ -63,7 +63,6 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
         this.parts = parts;
         this.topVer = topVer;
-        this.affAssignment = affAssignment;
     }
 
     /**

@@ -28,6 +28,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
+@GridCacheCentralizedAffinityFunction
 public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction {
     /** Ascending comparator. */
     private static final Comparator<PartitionSet> ASC_CMP = new PartitionSetComparator(false);

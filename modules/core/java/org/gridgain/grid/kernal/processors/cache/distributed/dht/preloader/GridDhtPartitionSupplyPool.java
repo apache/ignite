@@ -245,7 +245,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                 cctx.mvcc().finishLocks(d.partitions(), d.topologyVersion()).get();
 
                 for (Integer part : d.partitions()) {
-                    GridDhtLocalPartition<K, V> loc = top.localPartition(part, -1, false);
+                    GridDhtLocalPartition<K, V> loc = top.localPartition(part, d.topologyVersion(), false);
 
                     if (loc == null || loc.state() != OWNING || !loc.reserve()) {
                         // Reply with partition of "-1" to let sender know that

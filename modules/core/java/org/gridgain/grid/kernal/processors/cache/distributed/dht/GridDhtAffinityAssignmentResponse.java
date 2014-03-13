@@ -47,6 +47,11 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
         this.affAssignment = affAssignment;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean allowForStartup() {
+        return true;
+    }
+
     /**
      * @return Topology version.
      */

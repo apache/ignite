@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -105,9 +106,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
     /** Last committed cache version before next topology version use. */
     private AtomicReference<GridCacheVersion> lastVer = new AtomicReference<>();
-
-    /** Affinity assignment. */
-    private List<List<GridNode>> affAssignment;
 
     /**
      * Messages received on non-coordinator are stored in case if this node
@@ -269,7 +267,10 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * Rechecks topology.
      */
-    private void initTopology() {
+    private void initTopology() throws GridException {
+        // TODO-gg-7663
+        U.debug(log, "Initializing topology");
+
         // Grab all alive remote nodes with order of equal or less than last joined node.
         rmtNodes = new ConcurrentLinkedQueue<>(CU.aliveRemoteNodes(cctx, exchId.topologyVersion()));
 
@@ -281,8 +282,34 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             onReceive(m.getKey(), m.getValue());
         }
 
-        if (canCalculateAffinity())
-            affAssignment = cctx.affinity().calculateAffinity(exchId.topologyVersion(), discoEvt);
+        if (canCalculateAffinity()) {
+            // TODO-gg-7663
+            U.debug(log, "Will recalculate affinity");
+
+            cctx.affinity().calculateAffinity(exchId.topologyVersion(), discoEvt);
+        }
+        else {
+            // TODO-gg-7663
+            U.debug(log, "Will request affinity from remote node.");
+
+            // Fetch affinity assignment from remote node.
+            GridDhtAssignmentFetchFuture<K, V> fetchFut =
+                new GridDhtAssignmentFetchFuture<>(cctx, exchId.topologyVersion(), CU.affinityNodes(cctx));
+
+            fetchFut.init();
+
+            List<List<GridNode>> affAssignment = fetchFut.get();
+
+            // TODO-gg-7663
+            U.debug(log, "Going to initialize affinity assignment [locNodeId=" + cctx.localNodeId() +
+                ", topVer=" + exchId.topologyVersion() + ']');
+
+            cctx.affinity().initializeAffinity(exchId.topologyVersion(), affAssignment);
+
+            // TODO-gg-7663
+            U.debug(log, "Initialized affinity from remote node [locNodeId=" + cctx.localNodeId() +
+                ", topVer=" + exchId.topologyVersion() + ']');
+        }
 
         // If this is the oldest node.
         if (oldestNode.get().id().equals(cctx.nodeId())) {
@@ -298,6 +325,12 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @return {@code True} if local node can calculate affinity on it's own for this partition map exchange.
      */
     private boolean canCalculateAffinity() {
+        GridCacheAffinityFunction affFunc = cctx.config().getAffinity();
+
+        // Do not request affinity from remote nodes if affinity function is not centralized.
+        if (!U.hasAnnotation(affFunc, GridCacheCentralizedAffinityFunction.class))
+            return true;
+
         // If local node did not initiate exchange or local node is the only cache node in grid.
         Collection<GridNode> affNodes = CU.affinityNodes(cctx, exchId.topologyVersion());
 
@@ -401,6 +434,10 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 return;
 
             try {
+                // TODO-gg-7663
+                U.debug(log, "Initializing exchange future [locNodeId=" + cctx.localNodeId() +
+                    ", topVer=" + exchId.topologyVersion() + ", discoEvt=" + discoEvt + ']');
+
                 // Wait for event to occur to make sure that discovery
                 // will return corresponding nodes.
                 U.await(evtLatch);
@@ -530,7 +567,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     private void sendAllPartitions(Collection<? extends GridNode> nodes, GridDhtPartitionExchangeId id,
         GridDhtPartitionFullMap partMap) throws GridException {
         GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(id, partMap, lastVer.get(),
-            id.topologyVersion(), affAssignment);
+            id.topologyVersion());
 
         if (log.isDebugEnabled())
             log.debug("Sending full partition map [nodeIds=" + F.viewReadOnly(nodes, F.node2id()) +
@@ -583,14 +620,8 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
     /** {@inheritDoc} */
     @Override public boolean onDone(Long res, Throwable err) {
-        if (err == null) {
+        if (err == null)
             cctx.affinity().cleanUpCache(res);
-
-            // If local node could not recalculate affinity on init, save assignment from remote node.
-            if (!canCalculateAffinity())
-                cctx.affinity().initializeAffinity(exchId.topologyVersion(), affAssignment);
-            // Otherwise, affinity was already calculated.
-        }
 
         if (super.onDone(res, err) && !dummy && !forcePreload) {
             if (exchId.event() == GridEventType.EVT_NODE_FAILED || exchId.event() == GridEventType.EVT_NODE_LEFT)
@@ -741,8 +772,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             log.debug("Received full partition map from node [nodeId=" + nodeId + ", msg=" + msg + ']');
 
         assert exchId.topologyVersion() == msg.topologyVersion();
-
-        affAssignment = msg.affinityAssignment();
 
         initFut.listenAsync(new CI1<GridFuture<Boolean>>() {
             @Override public void apply(GridFuture<Boolean> t) {

@@ -130,6 +130,9 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
                 GridNode node = availableNodes.poll();
 
                 try {
+                    // TODO-gg-7663
+                    U.debug(log, "Sending request to remote node: " + node);
+
                     ctx.io().send(node, new GridDhtAffinityAssignmentRequest<K, V>(topVer));
 
                     // Close window for listener notification.

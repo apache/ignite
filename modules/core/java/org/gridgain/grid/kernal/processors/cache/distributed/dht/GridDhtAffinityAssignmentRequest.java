@@ -35,6 +35,11 @@ public class GridDhtAffinityAssignmentRequest<K, V> extends GridCacheMessage<K, 
         this.topVer = topVer;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean allowForStartup() {
+        return true;
+    }
+
     /**
      * @return Requested topology version.
      */

@@ -556,8 +556,14 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
         final GridDhtAffinityAssignmentRequest<K, V> req) {
         final long topVer = req.topologyVersion();
 
+        // TODO-gg-7663
+        U.debug(log, "Processing affinity assignment request: " + node + ", req=" + req);
+
         cctx.affinity().affinityReadyFuture(req.topologyVersion()).listenAsync(new CI1<GridFuture<Long>>() {
             @Override public void apply(GridFuture<Long> fut) {
+                // TODO-gg-7663
+                U.debug(log, "Affinity is ready for topology: " + topVer);
+
                 List<List<GridNode>> assignment = cctx.affinity().assignments(topVer);
 
                 try {
@@ -575,6 +581,9 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param res Response.
      */
     private void processAffinityAssignmentResponse(GridNode node, GridDhtAffinityAssignmentResponse<K, V> res) {
+        // TODO-gg-7663
+        U.debug(log, "Processing affinity assignment response:" + node);
+
         for (GridDhtAssignmentFetchFuture<K, V> fut : pendingAssignmentFetchFuts.values())
             fut.onResponse(node, res);
     }
@@ -714,7 +723,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      */
     private boolean sendAllPartitions(Collection<? extends GridNode> nodes, GridDhtPartitionFullMap map)
         throws GridException {
-        GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(null, map, null, -1, null);
+        GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(null, map, null, -1);
 
         if (log.isDebugEnabled())
             log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
