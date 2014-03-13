@@ -57,6 +57,6 @@
         Logger with the same configuration as in default grid instances.
     -->
     <bean id="router.log" class="org.gridgain.grid.logger.log4j.GridLog4jLogger">
-        <constructor-arg type="java.lang.String" value="config/log4j/gridgain-log4j.xml"/>
+        <constructor-arg type="java.lang.String" value="config/gridgain-log4j.xml"/>
     </bean>
 </beans>
