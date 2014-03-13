@@ -499,8 +499,7 @@ public class GridGainEx {
         ApplicationContext springCtx;
 
         try {
-            springCtx = U.applicationContext(springCfgUrl,
-                Arrays.asList(GridConfiguration.class.getName(), GridCacheConfiguration.class.getName()));
+            springCtx = U.applicationContext(springCfgUrl);
         }
         catch (BeansException e) {
             throw new GridException("Failed to instantiate Spring XML application context [springUrl=" +

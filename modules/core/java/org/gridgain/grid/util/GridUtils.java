@@ -7838,12 +7838,10 @@ public abstract class GridUtils {
      * For example, {@code streamerConfiguration} can be excluded from the configs that Visor uses.
      *
      * @param cfgUrl Resource where config file is located.
-     * @param includedBeanClasses The list of beans that should be loaded, if {@code null} then all beans are loaded.
      * @param excludedProps Properties to be excluded.
      * @return Spring application context.
      */
-    public static ApplicationContext applicationContext(URL cfgUrl,
-        @Nullable final Collection<String> includedBeanClasses, final String... excludedProps) {
+    public static ApplicationContext applicationContext(URL cfgUrl, final String... excludedProps) {
         GenericApplicationContext springCtx = new GenericApplicationContext();
 
         BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
@@ -7852,7 +7850,10 @@ public abstract class GridUtils {
                 for (String beanName : beanFactory.getBeanDefinitionNames()) {
                     BeanDefinition def = beanFactory.getBeanDefinition(beanName);
 
-                    if (includedBeanClasses != null && !includedBeanClasses.contains(def.getBeanClassName())) {
+                    try {
+                        Class.forName(def.getBeanClassName());
+                    }
+                    catch (ClassNotFoundException e) {
                         ((DefaultListableBeanFactory)beanFactory).removeBeanDefinition(beanName);
 
                         continue;
