@@ -47,14 +47,14 @@
 
     <!-- Example of how to configure IPC endpoint using shared memory (overrides default). -->
     <!--
-    <bean id="ggfsCfg" class="org.gridgain.grid.ggfs.GridGgfsConfigurationt="ggfsCfgBase">
+    <bean id="ggfsCfg" class="org.gridgain.grid.ggfs.GridGgfsConfiguration" parent="ggfsCfgBase">
         <property name="ipcEndpointConfiguration" value="{type:'shmem', port:'10500'}"/>
     </bean>
     -->
 
     <!-- Example of how to configure IPC endpoint using TCP loopback interface (overrides default). -->
     <!--
-    <bean id="ggfsCfg" class="org.gridgain.grid.ggfs.GridGgfsConfigurationt="ggfsCfgBase">
+    <bean id="ggfsCfg" class="org.gridgain.grid.ggfs.GridGgfsConfiguration" parent="ggfsCfgBase">
         <property name="ipcEndpointConfiguration" value="{type:'127.0.0.1', port:'10500'}"/>
     </bean>
     -->
