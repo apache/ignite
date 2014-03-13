@@ -16,6 +16,8 @@ import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.dr.hub.receiver.*;
 import org.gridgain.grid.dr.hub.sender.*;
 
+import java.util.*;
+
 /**
  * Data center replication (DR) interface.
  * <p>
@@ -57,29 +59,62 @@ public interface GridDr {
      * transfer for the given cache and data center had been already in progress when this method was called,
      * then no new state transfer for this (cache name, data center) pair will be initiated and returned future
      * will "join" existing state transfer.
+     * <p>
+     * In case node doesn't have cache with the given name then {@link IllegalArgumentException}
+     * will be thrown, and if this cache is not sender cache or grid is stopping then {@link IllegalStateException}
+     * will be thrown.
      *
      * @param cacheName Sender cache name.
      * @param dataCenterId Remote data center IDs for which full state transfer was requested.
      * @return Future that will be completed when all required data is transferred from sender caches to sender hubs.
-     * @throws GridException If state transfer initiation failed.
      */
-    public GridFuture<?> senderCacheDrStateTransfer(String cacheName, byte... dataCenterId) throws GridException;
+    public GridFuture<?> senderCacheDrStateTransfer(String cacheName, byte... dataCenterId);
+
+    /**
+     * List all currently active state transfer for the given sender cache.
+     * <p>
+     * In case node doesn't have cache with the given name then {@link IllegalArgumentException}
+     * will be thrown, and if this cache is not sender cache or grid is stopping then {@link IllegalStateException}
+     * will be thrown.
+     *
+     * @param cacheName Cache name.
+     * @return All currently active state transfers.
+     */
+    public Collection<GridDrStateTransfer> senderCacheDrListStateTransfers(String cacheName);
 
     /**
      * Pauses data center replication for particular sender cache.
+     * <p>
+     * In case node doesn't have cache with the given name then {@link IllegalArgumentException}
+     * will be thrown, and if this cache is not sender cache or grid is stopping then {@link IllegalStateException}
+     * will be thrown.
      *
      * @param cacheName Sender cache name.
-     * @throws GridException If failed to pause replication.
      */
-    public void senderCacheDrPause(String cacheName) throws GridException;
+    public void senderCacheDrPause(String cacheName);
 
     /**
      * Resumes data center replication for particular sender cache.
+     * <p>
+     * In case node doesn't have cache with the given name then {@link IllegalArgumentException}
+     * will be thrown, and if this cache is not sender cache or grid is stopping then {@link IllegalStateException}
+     * will be thrown.
      *
      * @param cacheName Cache name.
-     * @throws GridException If failed to resume replication.
      */
-    public void senderCacheDrResume(String cacheName)throws GridException;
+    public void senderCacheDrResume(String cacheName);
+
+    /**
+     * Check whether data center replication for the given cache is paused.
+     * <p>
+     * In case node doesn't have cache with the given name then {@link IllegalArgumentException}
+     * will be thrown, and if this cache is not sender cache or grid is stopping then {@link IllegalStateException}
+     * will be thrown.
+     *
+     * @param cacheName Cache name.
+     * @return {@code True} in case data center replication is paused for the given cache.
+     */
+    public boolean isSenderCacheDrPaused(String cacheName);
 
     /**
      * Gets sender cache metrics.

@@ -812,7 +812,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         GridCacheReturn<V> retVal = null;
 
-                        boolean replicate = ctx.isReplicationEnabled();
+                        boolean replicate = ctx.isDrEnabled();
 
                         if (batchStoreUpdate() && keys.size() > 1 && cacheCfg.getDrReceiverConfiguration() == null)
                             // This method can only be used when there are no replicated entries in the batch.
@@ -1578,7 +1578,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         // Always send update reply.
         GridDhtAtomicUpdateResponse<K, V> res = new GridDhtAtomicUpdateResponse<>(req.futureVersion());
 
-        Boolean replicate = ctx.isReplicationEnabled();
+        Boolean replicate = ctx.isDrEnabled();
 
         for (int i = 0; i < req.size(); i++) {
             K key = req.key(i);

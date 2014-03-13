@@ -1505,7 +1505,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      */
     private void drReplicate(GridDrType drType, @Nullable V val, @Nullable byte[] valBytes, GridCacheVersion ver)
         throws GridException{
-        if (cctx.isReplicationEnabled() && drType != DR_NONE && !isInternal()) {
+        if (cctx.isDrEnabled() && drType != DR_NONE && !isInternal()) {
             GridDrSenderCacheConfiguration drSndCfg = cctx.config().getDrSenderConfiguration();
 
             GridDrSenderCacheEntryFilter<K, V> drFilter = drSndCfg != null ?

@@ -429,7 +429,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         // Version for all loaded entries.
         final GridCacheVersion ver0 = ctx.versions().next(topology().topologyVersion());
 
-        final boolean replicate = ctx.isReplicationEnabled();
+        final boolean replicate = ctx.isDrEnabled();
 
         ctx.store().loadCache(new CI3<K, V, GridCacheVersion>() {
             @Override public void apply(K key, V val, @Nullable GridCacheVersion ver) {

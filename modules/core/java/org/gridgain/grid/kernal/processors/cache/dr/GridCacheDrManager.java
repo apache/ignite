@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.dr;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 
@@ -44,24 +45,41 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
     public void partitionEvicted(int part);
 
     /**
+     * Initiate state transfer.
+     *
      * @param dataCenterIds Target data center IDs.
      * @return Future that will be completed when all state transfer batches are sent.
      */
-    public GridFuture<?> fullStateTransfer(Collection<Byte> dataCenterIds);
+    public GridFuture<?> stateTransfer(Collection<Byte> dataCenterIds);
+
+    /**
+     * List currently active state transfers.
+     *
+     * @return List of currently active state transfers.
+     * @throws GridException If failed.
+     */
+    public Collection<GridDrStateTransfer> listStateTransfers() throws GridException;
 
     /**
      * Pauses data center replication.
      *
      * @throws GridException If failed.
      */
-    public void pauseReplication() throws GridException;
+    public void pause() throws GridException;
 
     /**
      * Resumes data center replication.
      *
      * @throws GridException If failed.
      */
-    public void resumeReplication() throws GridException;
+    public void resume() throws GridException;
+
+    /**
+     * Check whether data center replication is paused.
+     *
+     * @return {@code True} if paused.
+     */
+    public boolean isPaused();
 
     /**
      * @return Count of keys enqueued for data center replication.
