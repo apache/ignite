@@ -11,14 +11,36 @@
     Version: @xml.file.version
 -->
 
-<!--
-    Default grid configuration for development.
--->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
-    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
-        <!-- All defaults. -->
-    </bean>
+                           http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+    <description>Main Spring file for grid configuration.</description>
+
+    <!--
+        Import default Data Grid configuration. If you want to use default GGFS or streaming configuration
+        uncomment one of imports instead.
+    -->
+    <import resource="datagrid/default-config-datagrid.xml"/>
+
+    <!--
+        Use this import if you want to configure Compute only.
+    -->
+    <!--
+    <import resource="compute/default-config-compute.xml"/>
+    -->
+
+    <!--
+        Use this import if you want to configure GGFS.
+    -->
+    <!--
+    <import resource="ggfs/default-config-ggfs.xml"/>
+    -->
+
+    <!--
+        Use this import if you want to configure streaming.
+    -->
+    <!--
+    <import resource="streaming/default-config-streaming.xml"/>
+    -->
 </beans>

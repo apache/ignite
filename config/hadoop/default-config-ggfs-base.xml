@@ -60,7 +60,6 @@
         <property name="name" value="ggfs-data"/>
         <property name="cacheMode" value="PARTITIONED"/>
         <property name="atomicityMode" value="TRANSACTIONAL"/>
-        <property name="queryIndexEnabled" value="false"/>
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
         <property name="backups" value="0"/>
         <property name="affinityMapper">
@@ -89,7 +88,6 @@
                     <property name="name" value="ggfs-meta"/>
                     <property name="cacheMode" value="REPLICATED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="queryIndexEnabled" value="false"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                 </bean>
             </list>
@@ -106,14 +104,6 @@
             </list>
         </property>
 
-        <!--
-            Disable rest access to this node.
-        -->
-        <property name="restEnabled" value="false"/>
-
-        <!--
-            Explicitly set to local host address.
-        -->
         <property name="localHost" value="127.0.0.1"/>
 
         <!--
@@ -126,11 +116,6 @@
                     <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
-                                <!--
-                                    List all IP/port configurations that potentially
-                                    can be started first in examples. We are assuming
-                                    grid of size 10 or less.
-                                -->
                                 <value>127.0.0.1:47500..47509</value>
                             </list>
                         </property>

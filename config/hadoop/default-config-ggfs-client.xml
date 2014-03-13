@@ -39,7 +39,7 @@
         such as job submitter or job scheduler.
     </description>
 
-    <import resource="default-ggfs-base.xml"/>
+    <import resource="default-config-ggfs-base.xml"/>
 
     <!--
         Default configuration using TCP-based communication on Windows and

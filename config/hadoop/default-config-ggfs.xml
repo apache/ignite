@@ -37,7 +37,7 @@
         Spring file for grid configuration with GGFS to be used on data nodes.
     </description>
 
-    <import resource="default-ggfs-base.xml"/>
+    <import resource="default-config-ggfs-base.xml"/>
 
     <!--
         Default configuration using TCP-based communication on Windows and

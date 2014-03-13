@@ -12,7 +12,7 @@
 -->
 
 <!--
-    Grid configuration using TCP discovery and local VM IP finder and metrics store.
+    Grid configuration using TCP discovery and local VM IP finder.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -23,14 +23,6 @@
         Grid configuration.
     -->
     <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
-        <!--
-            Uncomment to specify non-default grid instance name.
-            By default, grid name will be null.
-        -->
-        <!--
-        <property name="gridName" value="mygrid"/>
-        -->
-
         <!--
             Specify local bind address for all GridGain components.
 
@@ -63,54 +55,5 @@
                 </property>
             </bean>
         </property>
-
-        <!--
-            Uncomment to provide custom configuration for TCP communication SPI.
-            Note that TCP communication SPI is used by default, so there is no need
-            to uncomment this section if you don't plan to change any default
-            configuration properties.
-        -->
-        <!--
-        <property name="communicationSpi">
-            <bean class="org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi">
-                <property name="json"
-                    value="{directBuffer: 'false', localAddress='1.2.3.4', localPort: 47100, localPortRange: 100}"/>
-            </bean>
-        </property>
-        -->
-
-        <!--
-            Uncomment to provide custom configuration for TCP discovery SPI (predefined addresses) with
-            local metrics store. Please note that with this store metrics exchange will work only within single VM.
-        -->
-        <!--
-        <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
-                <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
-                        <property name="addresses">
-                            <list>
-                                <value>YOUR_IP_ADDRESS:47500</value>
-                            </list>
-                        </property>
-                    </bean>
-                </property>
-                <property name="metricsStore">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.metricsstore.vm.GridTcpDiscoveryVmMetricsStore"/>
-                </property>
-            </bean>
-        </property>
-        -->
-
-        <!--
-            Configuration for TCP discovery SPI (predefined addresses) without metrics store using JSON configuration.
-        -->
-        <!--
-        <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
-                <property name="json" value="{heartbeatFrequency: 5000; networkTimeout: 4000; ipFinder: {addresses: ['1.2.3.4:47500']; @class:'org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder'}}"/>
-            </bean>
-        </property>
-        -->
     </bean>
 </beans>
