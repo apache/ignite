@@ -70,6 +70,9 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Deployment enabled. */
     private boolean depEnabled;
 
+    /** IO policy. */
+    private GridIoPolicy plc;
+
     /** Message listener. */
     private GridMessageListener lsnr = new GridMessageListener() {
         @SuppressWarnings("unchecked")
@@ -117,6 +120,8 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
             topic = TOPIC_CACHE.topic(cacheName);
 
         cctx.gridIO().addMessageListener(gridTopic != null ? gridTopic : topic, lsnr);
+
+        plc = CU.isDrSystemCache(cctx.name()) ? DR_POOL : SYSTEM_POOL;
     }
 
     /** {@inheritDoc} */
@@ -321,11 +326,11 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     msg0 = (GridCacheMessage<K, V>)msg.clone();
 
                 if (gridTopic != null)
-                    cctx.gridIO().send(node, gridTopic, msg0, SYSTEM_POOL);
+                    cctx.gridIO().send(node, gridTopic, msg0, plc);
                 else {
                     assert topic != null;
 
-                    cctx.gridIO().send(node, topic, msg0, SYSTEM_POOL);
+                    cctx.gridIO().send(node, topic, msg0, plc);
                 }
 
                 return;
@@ -399,11 +404,11 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     msg0 = (GridCacheMessage<K, V>)msg.clone();
 
                 if (gridTopic != null)
-                    cctx.gridIO().send(nodesView, gridTopic, msg0, SYSTEM_POOL);
+                    cctx.gridIO().send(nodesView, gridTopic, msg0, plc);
                 else {
                     assert topic != null;
 
-                    cctx.gridIO().send(nodesView, topic, msg0, SYSTEM_POOL);
+                    cctx.gridIO().send(nodesView, topic, msg0, plc);
                 }
 
                 boolean added = false;
@@ -514,7 +519,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
             try {
                 cnt++;
 
-                cctx.gridIO().sendOrderedMessage(node, topic, msgId, msg, SYSTEM_POOL, timeout, false);
+                cctx.gridIO().sendOrderedMessage(node, topic, msgId, msg, plc, timeout, false);
 
                 if (log.isDebugEnabled())
                     log.debug("Sent ordered cache message [topic=" + topic + ", msg=" + msg +
