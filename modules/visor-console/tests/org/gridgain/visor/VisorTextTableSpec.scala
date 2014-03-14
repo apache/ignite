@@ -11,6 +11,7 @@
 
 package org.gridgain.visor
 
+import org.scalatest.matchers._
 import org.scalatest._
 import collection._
 import org.gridgain.visor.commands.VisorTextTable
