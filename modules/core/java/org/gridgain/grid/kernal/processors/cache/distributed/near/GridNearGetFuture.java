@@ -522,7 +522,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
             for (GridCacheEntryInfo<K, V> info : infos) {
                 // Entries available locally in DHT should not be loaded into near cache for reading.
-                if (!ctx.localNodeId().equals(nodeId)) {
+                if (!cctx.cache().affinity().isPrimaryOrBackup(cctx.localNode(), info.key())) {
                     try {
                         GridNearCacheEntry<K, V> entry = cache().entryExx(info.key());
 

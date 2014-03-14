@@ -66,26 +66,26 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
     /** Serialized keys that should be remapped. */
     private byte[] remapKeysBytes;
 
-    /** */
+    /** Indexes of keys for which values were generated on primary node (used if originating node has near cache). */
     @GridDirectCollection(int.class)
     private List<Integer> nearValsIdxs;
 
-    /** */
+    /** Indexes of keys for which update was skipped (used if originating node has near cache). */
     @GridDirectCollection(int.class)
-    private List<Integer> skippedIdxs;
+    private List<Integer> nearSkipIdxs;
 
-    /** Values to update. */
+    /** Values generated on primary node which should be put to originating node's near cache. */
     @GridToStringInclude
     @GridDirectTransient
     private List<V> nearVals;
 
-    /** Value bytes. */
+    /** Serialized values generated on primary node which should be put to originating node's near cache. */
     @GridToStringInclude
     @GridDirectCollection(GridCacheValueBytes.class)
     private List<GridCacheValueBytes> nearValBytes;
 
-    /** */
-    private GridCacheVersion ver;
+    /** Version generated on primary node to be used for originating node's near cache update. */
+    private GridCacheVersion nearVer;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -190,33 +190,56 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
         nearValBytes.add(valBytes != null ? GridCacheValueBytes.marshaled(valBytes) : null);
     }
 
-    public void version(GridCacheVersion ver) {
-        this.ver = ver;
+    /**
+     * @param nearVer Version generated on primary node to be used for originating node's near cache update.
+     */
+    public void nearVersion(GridCacheVersion nearVer) {
+        this.nearVer = nearVer;
     }
 
-    public GridCacheVersion version() {
-        return ver;
+    /**
+     * @return Version generated on primary node to be used for originating node's near cache update.
+     */
+    public GridCacheVersion nearVersion() {
+        return nearVer;
     }
 
+    /**
+     * @param keyIdx Index of key for which update was skipped
+     */
     public void addSkippedIndex(int keyIdx) {
-        if (skippedIdxs == null)
-            skippedIdxs = new ArrayList<>();
+        if (nearSkipIdxs == null)
+            nearSkipIdxs = new ArrayList<>();
 
-        skippedIdxs.add(keyIdx);
+        nearSkipIdxs.add(keyIdx);
     }
 
+    /**
+     * @return Indexes of keys for which update was skipped
+     */
     @Nullable public List<Integer> skippedIndexes() {
-        return skippedIdxs;
+        return nearSkipIdxs;
     }
 
+    /**
+     * @return Indexes of keys for which values were generated on primary node.
+     */
    @Nullable public List<Integer> nearValuesIndexes() {
         return nearValsIdxs;
    }
 
+    /**
+     * @param idx Index.
+     * @return Value generated on primary node which should be put to originating node's near cache.
+     */
     @Nullable public V nearValue(int idx) {
         return nearVals.get(idx);
     }
 
+    /**
+     * @param idx Index.
+     * @return Serialized value generated on primary node which should be put to originating node's near cache.
+     */
     @Nullable public byte[] nearValueBytes(int idx) {
         if (nearValBytes != null) {
             GridCacheValueBytes valBytes0 = nearValBytes.get(idx);
@@ -339,10 +362,10 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
         _clone.remapKeys = remapKeys;
         _clone.remapKeysBytes = remapKeysBytes;
         _clone.nearValsIdxs = nearValsIdxs;
-        _clone.skippedIdxs = skippedIdxs;
+        _clone.nearSkipIdxs = nearSkipIdxs;
         _clone.nearVals = nearVals;
         _clone.nearValBytes = nearValBytes;
-        _clone.ver = ver;
+        _clone.nearVer = nearVer;
     }
 
     /** {@inheritDoc} */
@@ -446,12 +469,12 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 commState.idx++;
 
             case 9:
-                if (skippedIdxs != null) {
+                if (nearSkipIdxs != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(skippedIdxs.size()))
+                        if (!commState.putInt(nearSkipIdxs.size()))
                             return false;
 
-                        commState.it = skippedIdxs.iterator();
+                        commState.it = nearSkipIdxs.iterator();
                     }
 
                     while (commState.it.hasNext() || commState.cur != NULL) {
@@ -473,7 +496,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 commState.idx++;
 
             case 10:
-                if (!commState.putCacheVersion(ver))
+                if (!commState.putCacheVersion(nearVer))
                     return false;
 
                 commState.idx++;
@@ -609,8 +632,8 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 }
 
                 if (commState.readSize >= 0) {
-                    if (skippedIdxs == null)
-                        skippedIdxs = new ArrayList<>(commState.readSize);
+                    if (nearSkipIdxs == null)
+                        nearSkipIdxs = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (buf.remaining() < 4)
@@ -618,7 +641,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
                         int _val = commState.getInt();
 
-                        skippedIdxs.add((Integer)_val);
+                        nearSkipIdxs.add((Integer) _val);
 
                         commState.readItems++;
                     }
@@ -635,7 +658,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 if (ver0 == CACHE_VER_NOT_READ)
                     return false;
 
-                ver = ver0;
+                nearVer = ver0;
 
                 commState.idx++;
 

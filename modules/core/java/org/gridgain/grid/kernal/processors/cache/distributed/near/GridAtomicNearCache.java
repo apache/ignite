@@ -53,20 +53,6 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
         rmvQueue = new GridCircularBuffer<>(1024 * 1024);
     }
 
-    private void onDeferredDelete(K key, GridCacheVersion ver) throws GridException {
-        try {
-            T2<K, GridCacheVersion> evicted = rmvQueue.add(new T2<>(key, ver));
-
-            if (evicted != null)
-                removeVersionedEntry(evicted.get1(), evicted.get2());
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new GridInterruptedException(e);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public void start() throws GridException {
         ctx.io().addHandler(GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse<K, V>>() {
@@ -76,6 +62,15 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
         });
     }
 
+    /**
+     * @param ver Version.
+     * @param key Key.
+     * @param val Value.
+     * @param valBytes Value bytes.
+     * @param ttl Time to live.
+     * @param nodeId Node ID.
+     * @throws GridException If failed.
+     */
     public void processNearAtomicUpdateResponse(GridCacheVersion ver, K key, @Nullable V val, @Nullable byte[] valBytes,
         Long ttl, UUID nodeId) throws GridException {
         try {
@@ -458,5 +453,24 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
     @Override public void unlockAll(@Nullable Collection<? extends K> keys,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         dht.unlockAll(keys, filter);
+    }
+
+    /**
+     * @param key Removed key.
+     * @param ver Removed version.
+     * @throws GridException If failed.
+     */
+    private void onDeferredDelete(K key, GridCacheVersion ver) throws GridException {
+        try {
+            T2<K, GridCacheVersion> evicted = rmvQueue.add(new T2<>(key, ver));
+
+            if (evicted != null)
+                removeVersionedEntry(evicted.get1(), evicted.get2());
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new GridInterruptedException(e);
+        }
     }
 }

@@ -344,14 +344,19 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     }
 
     /**
-     * Adds updates for near cache.
+     * Updates near cache.
      *
      * @param req Update request.
      * @param res Update response.
      */
     private void updateNear(GridNearAtomicUpdateRequest<K, V> req, GridNearAtomicUpdateResponse<K, V> res) {
-        if (!nearEnabled || ctx.localNodeId().equals(req.nodeId()))
+        if (!nearEnabled || !req.hasPrimary())
             return;
+
+        /*
+         * Choose value to be stored in near cache: first check key is not in failed and not in skipped list,
+         * then check if value was generated on primary node, if not then use value sent in request.
+         */
 
         GridAtomicNearCache<K, V> near = (GridAtomicNearCache<K, V>)cctx.dht().near();
 
@@ -362,25 +367,28 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         int nearValIdx = 0;
 
         for (int i = 0; i < req.keys().size(); i++) {
-            if (skipped != null && skipped.contains(i))
+            if (F.contains(skipped, i)) {
+                nearValIdx++;
+
                 continue;
+            }
 
             K key = req.keys().get(i);
 
-            if (failed != null && failed.contains(key))
+            if (F.contains(failed, key))
                 continue;
 
             GridCacheVersion ver = req.updateVersion();
 
             if (ver == null)
-                ver = res.version();
+                ver = res.nearVersion();
 
             assert ver != null;
 
             V val = null;
             byte[] valBytes = null;
 
-            if (nearValsIdxs != null && nearValsIdxs.contains(i)) {
+            if (F.contains(nearValsIdxs, i)) {
                 val = res.nearValue(nearValIdx);
                 valBytes = res.nearValueBytes(nearValIdx);
             }
@@ -411,7 +419,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      * @param remap Boolean flag indicating if this is partial future remap.
      * @param oldNodeId Old node ID if remap.
      */
-    private void mapOnTopology(final Collection<? extends K> keys, final boolean remap, final UUID oldNodeId) {
+    private void mapOnTopology(final Collection<? extends K> keys, final boolean remap,
+        @Nullable final UUID oldNodeId) {
         cache.topology().readLock();
 
         GridDiscoveryTopologySnapshot snapshot = null;
@@ -549,7 +558,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             Collection<GridNode> primaryNodes = mapKey(key, topVer, fastMap);
 
             // One key and no backups.
-            assert primaryNodes.size() == 1;
+            assert primaryNodes.size() == 1 : primaryNodes;
 
             GridNode primary = F.first(primaryNodes);
 

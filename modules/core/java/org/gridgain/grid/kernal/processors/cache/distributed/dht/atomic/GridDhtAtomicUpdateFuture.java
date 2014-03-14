@@ -58,8 +58,8 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
     @GridToStringInclude
     private ConcurrentMap<UUID, GridDhtAtomicUpdateRequest<K, V>> mappings = new ConcurrentHashMap8<>();
 
-    /** */
-    private List<GridDhtCacheEntry<K, V>> nearEntries;
+    /** Entries with readers. */
+    private Map<K, GridDhtCacheEntry<K, V>> nearReadersEntries;
 
     /** Update request. */
     private GridNearAtomicUpdateRequest<K, V> updateReq;
@@ -211,37 +211,60 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
             }
 
             updateReq.addWriteValue(entry.key(), entry.keyBytes(), val, valBytes, drTtl, drExpireTime, drVer);
+
+            log.info("Add dht update " + entry.key() + " " + cctx.localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
         }
 
-        try {
-            Collection<UUID> readers = entry.readers();
+        /*
+        for (UUID nodeId : mappings.keySet()) {
+            GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
 
-            log.info("Add dht update " + entry.key() + " " + readers + " " + cctx.localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
+            log.info("Req1: " + nodeId + " " + updateReq.keys() + ", near: " + updateReq.nearKeys);
+        }
+        */
+    }
 
-            if (!F.isEmpty(readers)) {
-                for (UUID nodeId : readers) {
-                    GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
+    /**
+     * @param readers Entry readers.
+     * @param entry Entry.
+     * @param val Value.
+     * @param valBytes Value bytes.
+     * @param ttl Time to live.
+     */
+    public void addNearWriteEntries(Iterable<UUID> readers, GridDhtCacheEntry<K, V> entry, @Nullable V val,
+        @Nullable byte[] valBytes, long ttl) {
+        GridCacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
 
-                    if (updateReq == null) {
-                        updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl);
+        keys.add(entry.key());
 
-                        mappings.put(nodeId, updateReq);
-                    }
+        long topVer = updateReq.topologyVersion();
 
-                    if (nearEntries == null)
-                        nearEntries = new ArrayList<>();
+        for (UUID nodeId : readers) {
+            GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
 
-                    nearEntries.add(entry);
+            if (updateReq == null) {
+                updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl);
 
-                    updateReq.addNearWriteValue(entry.key(), entry.keyBytes(), val, valBytes);
-                }
+                mappings.put(nodeId, updateReq);
             }
-        }
-        catch (GridCacheEntryRemovedException e) {
-            assert false : "Entry cannot become obsolete while holding lock.";
 
-            e.printStackTrace();
+            if (nearReadersEntries == null)
+                nearReadersEntries = new HashMap<>();
+
+            nearReadersEntries.put(entry.key(), entry);
+
+            updateReq.addNearWriteValue(entry.key(), entry.keyBytes(), val, valBytes);
+
+            log.info("Add readers update " + entry.key() + " " + readers + " " + cctx.localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
         }
+
+        /*
+        for (UUID nodeId : mappings.keySet()) {
+            GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
+
+            log.info("Req2: " + nodeId + " " + updateReq.keys() + ", near: " + updateReq.nearKeys);
+        }
+        */
     }
 
     /** {@inheritDoc} */
@@ -267,6 +290,8 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                 try {
                     if (log.isDebugEnabled())
                         log.debug("Sending DHT atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
+
+                    log.info("Sending: " + req.keys() + ", near: " + req.nearKeys);
 
                     cctx.io().send(req.nodeId(), req);
                 }
@@ -307,17 +332,15 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
             this.updateRes.addFailedKeys(updateRes.failedKeys(), updateRes.error());
 
         if (!F.isEmpty(updateRes.nearEvicted())) {
-            if (nearEntries != null) {
-                for (K key : updateRes.nearEvicted()) {
-                    try {
-                        for (GridDhtCacheEntry<K, V> entry : nearEntries) {
-                            if (key.equals(entry.key()))
-                                entry.removeReader(nodeId, updateRes.messageId());
-                        }
-                    }
-                    catch (GridCacheEntryRemovedException e) {
-                        e.printStackTrace();
-                    }
+            for (K key : updateRes.nearEvicted()) {
+                GridDhtCacheEntry<K, V> entry = nearReadersEntries.get(key);
+
+                try {
+                    entry.removeReader(nodeId, updateRes.messageId());
+                }
+                catch (GridCacheEntryRemovedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Near readers entry was removed [entry=" + entry + ", err=" + e + ']');
                 }
             }
         }

@@ -81,7 +81,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /** Keys to update. */
     @GridToStringInclude
     @GridDirectTransient
-    private List<K> nearKeys;
+    public List<K> nearKeys;
 
     /** Key bytes. */
     @GridToStringInclude
