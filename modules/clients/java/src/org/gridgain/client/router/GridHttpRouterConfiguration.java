@@ -26,7 +26,7 @@ public class GridHttpRouterConfiguration {
     public static final Collection<String> DFLT_SERVERS = Collections.singleton("127.0.0.1:8080");
 
     /** Default value for {@link #getJettyConfigurationPath()} property. */
-    public static final String DFLT_CFG_PATH = "config/router/router-jetty.xml";
+    public static final String DFLT_CFG_PATH = "clients/java/config/router/router-jetty.xml";
 
     /** Default value for {@link #getConnectionsTotal()} property. */
     public static final int DFLT_CONNECTIONS_TOTAL = 200;
