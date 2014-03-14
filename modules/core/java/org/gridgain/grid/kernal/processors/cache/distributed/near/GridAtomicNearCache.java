@@ -49,7 +49,7 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
     public GridAtomicNearCache(GridCacheContext<K, V> ctx) {
         super(ctx);
 
-        // TODO: find optimal size.
+        // TODO: 6312 (find optimal size).
         rmvQueue = new GridCircularBuffer<>(1024 * 1024);
     }
 

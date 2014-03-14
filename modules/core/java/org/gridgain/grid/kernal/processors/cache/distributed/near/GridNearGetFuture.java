@@ -521,32 +521,32 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             GridCacheVersion ver = F.isEmpty(infos) ? null : cctx.versions().next();
 
             for (GridCacheEntryInfo<K, V> info : infos) {
-                // Entries available locally in DHT should not be loaded into near cache for reading.
-                if (!cctx.cache().affinity().isPrimaryOrBackup(cctx.localNode(), info.key())) {
-                    try {
+                try {
+                    info.unmarshalValue(cctx, cctx.deploy().globalLoader());
+
+                    // Entries available locally in DHT should not be loaded into near cache for reading.
+                    if (!cctx.cache().affinity().isPrimaryOrBackup(cctx.localNode(), info.key())) {
                         GridNearCacheEntry<K, V> entry = cache().entryExx(info.key());
 
                         GridCacheVersion saved = savedVers.get(info.key());
-
-                        info.unmarshalValue(cctx, cctx.deploy().globalLoader());
 
                         // Load entry into cache.
                         entry.loadedValue(tx, nodeId, info.value(), info.valueBytes(), ver, info.version(), saved,
                             info.ttl(), info.expireTime(), true);
                     }
-                    catch (GridCacheEntryRemovedException ignore) {
-                        if (log.isDebugEnabled())
-                            log.debug("Got removed entry while processing get response (will not retry).");
-                    }
-                    catch (GridException e) {
-                        // Fail.
-                        onDone(e);
 
-                        return Collections.emptyMap();
-                    }
+                    map.put(info.key(), info.value());
                 }
+                catch (GridCacheEntryRemovedException ignore) {
+                    if (log.isDebugEnabled())
+                        log.debug("Got removed entry while processing get response (will not retry).");
+                }
+                catch (GridException e) {
+                    // Fail.
+                    onDone(e);
 
-                map.put(info.key(), info.value());
+                    return Collections.emptyMap();
+                }
             }
         }
 
