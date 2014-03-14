@@ -112,7 +112,7 @@ public class StreamingPopularNumbersExample {
                         System.err.println("Default streamer not found (is example-streamer.xml " +
                             "configuration used on all nodes?)");
                     else {
-                        GridStreamer streamer = g.streamer("pop-numbers");
+                        GridStreamer streamer = g.streamer("popular-numbers");
 
                         System.out.println("Clearing number counters from streamer.");
 
