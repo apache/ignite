@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.cache.affinity.partition;
+package org.gridgain.grid.cache.affinity.fair;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
