@@ -67,7 +67,6 @@ private case class Result(
  * {{{
  *     -f=<path>
  *         Path to INI file that contains topology specification.
- *         See sample file for details: GRIDGAIN_HOME/config/visor/start-nodes.ini.
  *     -h=<hostname>
  *         Hostname where to start nodes.
  *
@@ -348,8 +347,7 @@ object VisorStartCommand {
         ),
         args = List(
             "-f=<path>" -> List(
-                "Path to INI file that contains topology specification.",
-                "See sample file for details: GRIDGAIN_HOME/config/visor/start-nodes.ini."
+                "Path to INI file that contains topology specification."
             ),
             "-h=<hostname>" -> List(
                 "Hostname where to start nodes.",
