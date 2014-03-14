@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<!--
+    GridGain Spring configuration file.
+
+    When starting a standalone GridGain node, you need to execute the following command:
+    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} path-to-this-file/default-config-ggfs.xml
+
+    When starting GridGain from Java IDE, pass path to this file into GridGain:
+    GridGain.start("path-to-this-file/default-config-ggfs.xml");
+
+    NOTE:
+    ====
+    This configuration file should be used with data nodes only. For nodes not
+    responsible for caching files, such as submitter or job-scheduler nodes, use 'default-config-ggfs-client.xml'.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+    <!--
+        Configuration below demonstrates how to setup a GridGain node.
+    -->
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+        <!-- Cache configurations. -->
+        <property name="cacheConfiguration">
+            <list>
+                <!--
+                    Uncomment line below to enable LOCAL cache.
+                -->
+                <!--
+                <ref bean="localCacheCfg"/>
+                -->
+
+                <!--
+                    Uncomment line below to enable REPLICATED cache.
+                -->
+                <!--
+                <ref bean="replicatedCacheCfg"/>
+                -->
+
+                <!--
+                    Uncomment line below to enable PARTITIONED cache.
+                -->
+                <!--
+                <ref bean="partitionedCacheCfg"/>
+                -->
+
+                <!--
+                    Uncomment line below to configure GGFS caches
+                    (to enable GGFS you also have to uncomment
+                    GGFS configuration below).
+                -->
+                <!--
+                <ref bean="ggfsDataCacheCfg"/>
+                <ref bean="ggfsMetaCacheCfg"/>
+                -->
+            </list>
+        </property>
+
+        <!-- GGFS configurations. -->
+        <property name="ggfsConfiguration">
+            <list>
+                <!--
+                    Uncomment line below to enable GGFS (you also
+                    have to uncomment GGFS caches configuration above).
+                -->
+                <!--
+                <ref bean="ggfsCfg"/>
+                -->
+            </list>
+        </property>
+
+        <!-- Streamer configurations. -->
+        <property name="streamerConfiguration">
+            <list>
+                <!--
+                    Specify list of streamer configurations here.
+                -->
+            </list>
+        </property>
+    </bean>
+
+    <!--
+        Local cache configuration.
+    -->
+    <bean id="localCacheCfg" class="org.gridgain.grid.cache.GridCacheConfiguration">
+        <property name="name" value="partitioned"/>
+        <property name="cacheMode" value="PARTITIONED"/>
+    </bean>
+
+    <!--
+        Replicated cache configuration.
+    -->
+    <bean id="replicatedCacheCfg" class="org.gridgain.grid.cache.GridCacheConfiguration">
+        <property name="name" value="replicated"/>
+        <property name="cacheMode" value="REPLICATED"/>
+    </bean>
+
+    <!--
+        Partitioned cache configuration.
+    -->
+    <bean id="partitionedCacheCfg" class="org.gridgain.grid.cache.GridCacheConfiguration">
+        <property name="name" value="local"/>
+        <property name="cacheMode" value="LOCAL"/>
+    </bean>
+
+    <!--
+        GGFS data cache configuration.
+    -->
+    <bean id="ggfsDataCacheCfg" class="org.gridgain.grid.cache.GridCacheConfiguration">
+        <property name="name" value="ggfs-data"/>
+        <property name="cacheMode" value="PARTITIONED"/>
+        <property name="atomicityMode" value="TRANSACTIONAL"/>
+        <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+        <property name="backups" value="0"/>
+        <property name="affinityMapper">
+            <bean class="org.gridgain.grid.ggfs.GridGgfsGroupDataBlocksKeyMapper">
+                <!-- How many sequential blocks will be stored on the same node. -->
+                <constructor-arg value="512"/>
+            </bean>
+        </property>
+    </bean>
+
+    <!--
+        GGFS meta cache configuration.
+    -->
+    <bean id="ggfsMetaCacheCfg" class="org.gridgain.grid.cache.GridCacheConfiguration">
+        <property name="name" value="ggfs-meta"/>
+        <property name="cacheMode" value="REPLICATED"/>
+        <property name="atomicityMode" value="TRANSACTIONAL"/>
+        <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+    </bean>
+
+    <!--
+        GGFS configuration.
+    -->
+    <bean id="ggfsCfg" class="org.gridgain.grid.ggfs.GridGgfsConfiguration">
+        <property name="name" value="ggfs"/>
+        <property name="metaCacheName" value="ggfs-meta"/>
+        <property name="dataCacheName" value="ggfs-data"/>
+
+        <!-- Must correlate with cache affinity mapper. -->
+        <property name="blockSize" value="#{128 * 1024}"/>
+        <property name="perNodeBatchSize" value="512"/>
+        <property name="perNodeParallelBatchCount" value="16"/>
+
+        <property name="prefetchBlocks" value="32"/>
+    </bean>
+</beans>
