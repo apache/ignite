@@ -343,6 +343,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         assert m != null;
 
         // Bring to initial state.
+        f.reset();
         m.reset();
 
         return new AffinityInfo(f, m, t.get3());
