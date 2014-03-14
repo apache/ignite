@@ -414,8 +414,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // That's why Java sucks...
         return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
-            @Override
-            public String apply(Map.Entry<String, ?> e) {
+            @Override public String apply(Map.Entry<String, ?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });

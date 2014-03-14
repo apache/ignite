@@ -112,6 +112,8 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         String cacheName = cctx.name();
 
+        plc = CU.isDrSystemCache(cacheName) ? DR_POOL : SYSTEM_POOL;
+
         depEnabled = cctx.gridDeploy().enabled();
 
         if (F.isEmpty(cacheName))
@@ -120,8 +122,6 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
             topic = TOPIC_CACHE.topic(cacheName);
 
         cctx.gridIO().addMessageListener(gridTopic != null ? gridTopic : topic, lsnr);
-
-        plc = CU.isDrSystemCache(cctx.name()) ? DR_POOL : SYSTEM_POOL;
     }
 
     /** {@inheritDoc} */
