@@ -15,6 +15,7 @@ import org.gridgain.grid.dr.cache.receiver.*;
 import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.dr.hub.receiver.*;
 import org.gridgain.grid.dr.hub.sender.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -105,16 +106,16 @@ public interface GridDr {
     public void senderCacheDrResume(String cacheName);
 
     /**
-     * Check whether data center replication for the given cache is paused.
+     * Gets information about data center replication pause.
      * <p>
      * In case node doesn't have cache with the given name then {@link IllegalArgumentException}
      * will be thrown, and if this cache is not sender cache or grid is stopping then {@link IllegalStateException}
      * will be thrown.
      *
      * @param cacheName Cache name.
-     * @return {@code True} in case data center replication is paused for the given cache.
+     * @return Sender cache pause state or {@code null} in case data center replication is not paused.
      */
-    public boolean isSenderCacheDrPaused(String cacheName);
+    @Nullable public GridDrPause senderCacheDrPauseState(String cacheName);
 
     /**
      * Gets sender cache metrics.

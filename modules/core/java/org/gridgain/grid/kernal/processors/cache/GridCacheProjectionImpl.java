@@ -1186,8 +1186,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDrPaused() {
-        return cache.isDrPaused();
+    @Nullable @Override public GridDrPause drPauseState() {
+        return cache.drPauseState();
     }
 
     /** {@inheritDoc} */

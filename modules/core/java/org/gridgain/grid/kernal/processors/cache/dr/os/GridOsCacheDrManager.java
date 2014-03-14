@@ -14,6 +14,7 @@ import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.dr.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -82,8 +83,8 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPaused() {
-        return true;
+    @Nullable @Override public GridDrPause drPauseState() {
+        return null;
     }
 
     /** {@inheritDoc} */

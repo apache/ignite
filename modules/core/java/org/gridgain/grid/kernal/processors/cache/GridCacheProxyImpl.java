@@ -1902,11 +1902,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDrPaused() {
+    @Nullable @Override public GridDrPause drPauseState() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.isDrPaused();
+            return delegate.drPauseState();
         }
         finally {
             gate.leave(prev);

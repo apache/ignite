@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.dr.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -75,11 +76,11 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
     public void resume() throws GridException;
 
     /**
-     * Check whether data center replication is paused.
+     * Get DR pause state.
      *
-     * @return {@code True} if paused.
+     * @return DR pause state.
      */
-    public boolean isPaused();
+    @Nullable public GridDrPause drPauseState();
 
     /**
      * @return Count of keys enqueued for data center replication.

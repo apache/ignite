@@ -3864,10 +3864,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDrPaused() {
+    @Nullable @Override public GridDrPause drPauseState() {
         checkDrEnabled();
 
-        return ctx.dr().isPaused();
+        return ctx.dr().drPauseState();
     }
 
     /**

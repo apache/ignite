@@ -391,9 +391,9 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
     public void drResume();
 
     /**
-     * Check whether DR is paused.
+     * Get DR pause state.
      *
-     * @return {@code True} if paused.
+     * @return DR pause state.
      */
-    public boolean isDrPaused();
+    @Nullable public GridDrPause drPauseState();
 }

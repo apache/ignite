@@ -1542,8 +1542,8 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDrPaused() {
-        return dht.isDrPaused();
+    @Nullable @Override public GridDrPause drPauseState() {
+        return dht.drPauseState();
     }
 
     /**
