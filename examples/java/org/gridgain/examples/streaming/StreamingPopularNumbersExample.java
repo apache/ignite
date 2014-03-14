@@ -56,7 +56,7 @@ public class StreamingPopularNumbersExample {
         };
 
     /** Reducer selecting first POPULAR_NUMBERS_CNT values. */
-    private static class PupularNumbersReducer implements GridReducer<Collection<GridStreamerIndexEntry<Integer, Integer, Long>>,
+    private static class PopularNumbersReducer implements GridReducer<Collection<GridStreamerIndexEntry<Integer, Integer, Long>>,
         Collection<GridStreamerIndexEntry<Integer, Integer, Long>>> {
         /** */
         private List<GridStreamerIndexEntry<Integer, Integer, Long>> sorted = new ArrayList<>();
@@ -112,7 +112,7 @@ public class StreamingPopularNumbersExample {
                         System.err.println("Default streamer not found (is example-streamer.xml " +
                             "configuration used on all nodes?)");
                     else {
-                        GridStreamer streamer = g.streamer("pop-numbers");
+                        GridStreamer streamer = g.streamer("popular-numbers");
 
                         System.out.println("Clearing number counters from streamer.");
 
@@ -169,7 +169,7 @@ public class StreamingPopularNumbersExample {
                         },
                         // The reducer will always execute locally, on the same node
                         // that submitted the query.
-                        new PupularNumbersReducer());
+                        new PopularNumbersReducer());
 
                     for (GridStreamerIndexEntry<Integer, Integer, Long> cntr : col)
                         System.out.printf("%3d=%d\n", cntr.key(), cntr.value());
