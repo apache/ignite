@@ -1299,7 +1299,7 @@ public class GridGainEx {
             GridLogger cfgLog = cfg.getGridLogger();
 
             if (cfgLog == null) {
-                URL url = U.resolveGridGainUrl("config/log4j/gridgain-log4j.xml");
+                URL url = U.resolveGridGainUrl("config/gridgain-log4j.xml");
 
                 cfgLog = url == null || GridLog4jLogger.isConfigured() ? new GridLog4jLogger() :
                     new GridLog4jLogger(url);
