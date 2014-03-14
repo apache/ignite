@@ -21,6 +21,8 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
+
 /**
  * Future that fetches affinity assignment from remote cache nodes.
  */
@@ -135,7 +137,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
                     U.debug(log, "Sending request to remote node: " + node);
 
                     ctx.io().send(node, new GridDhtAffinityAssignmentRequest<K, V>(topVer),
-                        GridIoPolicy.MANAGEMENT_POOL);
+                        AFFINITY_POOL);
 
                     // Close window for listener notification.
                     if (ctx.discovery().node(node.id()) == null) {
