@@ -1215,7 +1215,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (hasNear) {
                     if (primary && updRes.sendToDht() &&
                         !U.nodeIds(context().affinity().nodes(entry.partition(), topVer)).contains(nodeId)) {
-                        long ttl = updRes.newTtl(); // TODO: send ttl back?
+                        long ttl = updRes.newTtl(); // TODO: 6312 send ttl back?
 
                         GridDrReceiverConflictContextImpl ctx = updRes.drConflictContext();
 
