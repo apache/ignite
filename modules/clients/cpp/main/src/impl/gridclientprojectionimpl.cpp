@@ -46,7 +46,7 @@ GridClientProjectionImpl::GridClientProjectionImpl(TGridClientSharedDataPtr pDat
  */
 void GridClientProjectionImpl::withReconnectHandling(ClientProjectionClosure& c) const {
     std::set<TGridClientNodePtr> nodesSet;
-    set<GridUuid> seenUuids;
+    set<GridClientUuid> seenUuids;
 
     GridOneOfUuid filter(seenUuids);
 
@@ -88,12 +88,12 @@ void GridClientProjectionImpl::withReconnectHandling(ClientProjectionClosure& c)
  * @throws GridClientException In case of problems.
  */
 void GridClientProjectionImpl::withReconnectHandling(ClientProjectionClosure& c, const std::string& cacheName,
-        const GridHasheableObject& affKey) {
+        const GridClientHasheableObject& affKey) {
 
     // First, we try the affinity node.
     TGridClientNodePtr node = affinityNode(cacheName, affKey);
 
-    set<GridUuid> seenUuids;
+    set<GridClientUuid> seenUuids;
 
     GridClientCompositeFilter<GridClientNode> filter;
 
@@ -131,7 +131,7 @@ void GridClientProjectionImpl::withReconnectHandling(ClientProjectionClosure& c,
 bool GridClientProjectionImpl::processClosure(TGridClientNodePtr node, ClientProjectionClosure& c) const {
     assert(node.get() != NULL);
 
-    std::vector<GridSocketAddress> addrs = sharedData->clientConfiguration().routers();
+    std::vector<GridClientSocketAddress> addrs = sharedData->clientConfiguration().routers();
 
     bool routing = !addrs.empty();
 
@@ -186,7 +186,7 @@ bool GridClientProjectionImpl::processClosure(TGridClientNodePtr node, ClientPro
 }
 
 TGridClientNodePtr GridClientProjectionImpl::affinityNode(const string& cacheName,
-        const GridHasheableObject& affKey) {
+        const GridClientHasheableObject& affKey) {
     TNodesSet nodes;
 
     subProjectionNodes(nodes, GridCacheNameFilter(cacheName));

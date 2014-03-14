@@ -203,8 +203,8 @@ int main(int argc, const char** argv) {
 
     GridClientConfiguration cfg = clientConfig();
 
-    std::vector<GridSocketAddress> servers;
-    servers.push_back(GridSocketAddress(vm["host"].as<string>(), vm["port"].as<int>()));
+    std::vector<GridClientSocketAddress> servers;
+    servers.push_back(GridClientSocketAddress(vm["host"].as<string>(), vm["port"].as<int>()));
 
     cfg.servers(servers);
 

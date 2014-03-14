@@ -33,7 +33,7 @@ public:
      *
      * @return Generated client id.
      */
-    virtual GridUuid id() const = 0;
+    virtual GridClientUuid id() const = 0;
 
     /**
      * Gets a data projection for a default grid cache with <tt>null</tt> name.

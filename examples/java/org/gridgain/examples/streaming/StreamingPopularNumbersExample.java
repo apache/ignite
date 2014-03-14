@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.streaming;
 
+import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.product.*;
@@ -29,10 +30,10 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * is set to {@code 10,000}.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-streaming.xml'}.
+ * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-streamer.xml'}.
  * <p>
  * Alternatively you can run {@link StreamingNodeStartup} in another JVM which will start GridGain node
- * with {@code examples/config/example-streaming.xml} configuration.
+ * with {@code examples/config/example-streamer.xml} configuration.
  */
 @GridOnlyAvailableIn(STREAMING)
 public class StreamingPopularNumbersExample {
@@ -105,14 +106,14 @@ public class StreamingPopularNumbersExample {
 
             // Reset all streamers on all nodes to make sure that
             // consecutive executions start from scratch.
-            g.compute().run(new Runnable() {
+            g.compute().broadcast(new Runnable() {
                 @Override public void run() {
-                    GridStreamer streamer = g.streamer("popular-numbers");
-
-                    if (streamer == null)
+                    if (!ExamplesUtils.hasStreamer(g, "popular-numbers"))
                         System.err.println("Default streamer not found (is example-streamer.xml " +
                             "configuration used on all nodes?)");
                     else {
+                        GridStreamer streamer = g.streamer("popular-numbers");
+
                         System.out.println("Clearing number counters from streamer.");
 
                         streamer.reset();

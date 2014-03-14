@@ -48,7 +48,7 @@ private:
     public:
         /** Boost typedef for holding multiple types. */
         typedef boost::variant<GridClientVariant::NullType, bool, int16_t, int32_t, int64_t, double,
-                float, std::string, std::wstring, std::vector<int8_t>, std::vector<GridClientVariant>, GridUuid> TVariantType;
+                float, std::string, std::wstring, std::vector<int8_t>, std::vector<GridClientVariant>, GridClientUuid> TVariantType;
 
         /** Boost variable. */
         TVariantType var;
@@ -156,7 +156,7 @@ public:
     /**
      * Constructor with UUID argument.
      */
-    GridClientVariant(const GridUuid& val);
+    GridClientVariant(const GridClientUuid& val);
 
     /**
      * Copy constructor.
@@ -394,7 +394,7 @@ public:
      *
      * @param val New value for the variant.
      */
-    void set(const GridUuid& val);
+    void set(const GridClientUuid& val);
 
     /**
      * Checks if this variant holds a UUID value.
@@ -408,7 +408,7 @@ public:
      *
      * @return Value held in the variant.
      */
-    GridUuid getUuid() const;
+    GridClientUuid getUuid() const;
 
     /**
      * Method for visitors.
@@ -506,7 +506,7 @@ public:
     virtual void visit(const std::vector<GridClientVariant>&) const = 0;
 
     /** */
-    virtual void visit(const GridUuid&) const = 0;
+    virtual void visit(const GridClientUuid&) const = 0;
 };
 
 #endif //GRID_CLIENT_VARIANT_HPP_INCLUDED

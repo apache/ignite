@@ -42,13 +42,13 @@ public:
     GridClientProtocolConfiguration protoCfg;
 
     /** Initial list of servers to connect to. */
-    vector<GridSocketAddress> srvrs;
+    vector<GridClientSocketAddress> srvrs;
 
     /** Number of threads in the client thread pool. */
     size_t threadPoolSize;
 
     /** List of routers to connect to. */
-    vector<GridSocketAddress> routers;
+    vector<GridClientSocketAddress> routers;
 
     TGridClientRouterBalancerPtr routerBalancer;
 
@@ -142,23 +142,23 @@ void GridClientConfiguration::loadBalancer(TGridClientLoadBalancerPtr balancer) 
 }
 
 /**
-* Collection of GridSocketAddress {@code 'host:port'} pairs representing
+* Collection of GridClientSocketAddress {@code 'host:port'} pairs representing
 * remote grid servers used to establish initial connection to
 * the grid. Once connection is established, GridGain will get
 * a full view on grid topology and will be able to connect to
 * any available remote node.
 *
-* @return Collection of  GridSocketAddress representing remote
+* @return Collection of  GridClientSocketAddress representing remote
 * grid servers.
 */
-std::vector<GridSocketAddress> GridClientConfiguration::servers() const {
+std::vector<GridClientSocketAddress> GridClientConfiguration::servers() const {
     return pimpl->srvrs;
 }
 
 /**
 * Sets a new collection of servers to communicate with.
 */
-void GridClientConfiguration::servers(const vector<GridSocketAddress>& servers) {
+void GridClientConfiguration::servers(const vector<GridClientSocketAddress>& servers) {
     pimpl->srvrs = servers;
 }
 
@@ -194,17 +194,17 @@ void GridClientConfiguration::threadPoolSize(size_t size) {
 }
 
 /**
- * Collection of GridSocketAddress <tt>'host:port'</tt> pairs representing
+ * Collection of GridClientSocketAddress <tt>'host:port'</tt> pairs representing
  * routers used to establish initial connection to
  * the grid.
  * This configuration parameter will not be used and
  * direct grid connection will be established if
  * {@link #getServers()} returns empty value.
  *
- * @return Collection of  GridSocketAddress representing remote
+ * @return Collection of  GridClientSocketAddress representing remote
  * routers.
  */
-std::vector<GridSocketAddress> GridClientConfiguration::routers() const {
+std::vector<GridClientSocketAddress> GridClientConfiguration::routers() const {
     return pimpl->routers;
 }
 
@@ -213,7 +213,7 @@ std::vector<GridSocketAddress> GridClientConfiguration::routers() const {
  *
  * @param routers New routers list.
  */
-void GridClientConfiguration::routers(const std::vector<GridSocketAddress>& routers) {
+void GridClientConfiguration::routers(const std::vector<GridClientSocketAddress>& routers) {
     pimpl->routers = routers;
 }
 
