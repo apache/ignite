@@ -31,7 +31,7 @@ import java.util.*;
  * <h1 class="header">GGFS Configuration</h1>
  * The simplest way to run a GridGain node with configured file system is to pass
  * special configuration file included in GridGain distribution to {@code ggstart.sh} or
- * {@code ggstart.bat} scripts, like this: {@code ggstart.sh config/hadoop/default-config-ggfs.xml}
+ * {@code ggstart.bat} scripts, like this: {@code ggstart.sh config/hadoop/default-config.xml}
  * <p>
  * {@code GGFS} can be started as a data node or as a client node. Data node is responsible for
  * caching data, while client node is responsible for basic file system operations and accessing
