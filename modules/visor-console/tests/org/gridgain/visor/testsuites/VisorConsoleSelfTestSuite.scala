@@ -16,6 +16,7 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.Suites
 import org.gridgain.grid.GridSystemProperties._
+import org.gridgain.visor.{VisorTextTableSpec, VisorScalarSpec}
 import org.gridgain.visor.commands.ack.VisorAckCommandSpec
 import org.gridgain.visor.commands.alert.VisorAlertCommandSpec
 import org.gridgain.visor.commands.cache.VisorCacheCommandSpec
@@ -44,6 +45,8 @@ import org.gridgain.visor.commands.VisorArgListSpec
  */
 @RunWith(classOf[JUnitRunner])
 class VisorConsoleSelfTestSuite extends Suites (
+    new VisorScalarSpec,
+    new VisorTextTableSpec,
     new VisorAckCommandSpec,
     new VisorAlertCommandSpec,
     new VisorCacheCommandSpec,
