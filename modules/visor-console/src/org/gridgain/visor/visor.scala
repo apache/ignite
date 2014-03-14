@@ -39,7 +39,6 @@ import org.gridgain.visor.commands.{VisorTextTable, VisorConsoleCommand}
 import org.gridgain.grid.resources.GridInstanceResource
 import org.gridgain.grid.kernal.processors.task.GridInternal
 import org.gridgain.grid.util.scala.impl
-import org.gridgain.grid.cache._
 
 /**
  * Holder for command help information.
