@@ -11,12 +11,13 @@ package org.gridgain.grid.kernal.processors.affinity;
 
 import org.gridgain.grid.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * Cached affinity calculations.
  */
-class GridAffinityAssignment {
+class GridAffinityAssignment implements Serializable {
     /** Topology version. */
     private final long topVer;
 
