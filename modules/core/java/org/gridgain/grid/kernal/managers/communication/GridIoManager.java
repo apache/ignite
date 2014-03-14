@@ -456,7 +456,8 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
 
                 case PUBLIC_POOL:
                 case SYSTEM_POOL:
-                case MANAGEMENT_POOL: {
+                case MANAGEMENT_POOL:
+                case DR_POOL: {
                     if (msg.isOrdered())
                         processOrderedMessage(node, msg, plc, msgC);
                     else
