@@ -12,8 +12,9 @@ package org.gridgain.grid.cache.affinity;
 import java.lang.annotation.*;
 
 /**
- * Annotation marker which identifies affinity function that requires previous affinity state to calculate new
- * affinity state.
+ * Annotation marker which identifies affinity function that must be calculated on one centralized node
+ * instead of independently on each node. In many cases it happens because it requires previous affinity state
+ * in order to calculate new one.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

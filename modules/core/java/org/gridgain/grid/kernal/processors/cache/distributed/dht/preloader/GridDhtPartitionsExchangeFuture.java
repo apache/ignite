@@ -115,7 +115,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         new ConcurrentHashMap8<>();
 
     /** */
-    @SuppressWarnings( {"FieldCanBeLocal", "UnusedDeclaration"})
+    @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
     @GridToStringInclude
     private volatile GridFuture<?> partReleaseFut;
 
@@ -284,13 +284,14 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
         if (canCalculateAffinity()) {
             // TODO-gg-7663
-            U.debug(log, "Will recalculate affinity");
+            U.debug(log, "Will recalculate affinity [locNodeId=" + cctx.localNodeId() + ", exchId=" + exchId + ']');
 
             cctx.affinity().calculateAffinity(exchId.topologyVersion(), discoEvt);
         }
         else {
             // TODO-gg-7663
-            U.debug(log, "Will request affinity from remote node.");
+            U.debug(log, "Will request affinity from remote node [locNodeId=" + cctx.localNodeId() +
+                ", exchId=" + exchId + ']');
 
             // Fetch affinity assignment from remote node.
             GridDhtAssignmentFetchFuture<K, V> fetchFut =

@@ -72,6 +72,9 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
     /** Internal management pool. */
     private ExecutorService mgmtPool;
 
+    /** Affinity assignment executor service. */
+    private ExecutorService affPool;
+
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
 
@@ -156,6 +159,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         p2pPool = ctx.config().getPeerClassLoadingExecutorService();
         sysPool = ctx.config().getSystemExecutorService();
         mgmtPool = ctx.config().getManagementExecutorService();
+        affPool = Executors.newFixedThreadPool(1);
 
         getSpi().setListener(commLsnr = new GridCommunicationListener<Serializable>() {
             @Override public void onMessage(UUID nodeId, Serializable msg, GridRunnable msgC) {
@@ -348,6 +352,8 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
 
         busyLock.writeLock();
 
+        U.shutdownNow(getClass(), affPool, log);
+
         boolean interrupted = false;
 
         while (workersCnt.sum() != 0) {
@@ -486,6 +492,8 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
                 return pubPool;
             case MANAGEMENT_POOL:
                 return mgmtPool;
+            case AFFINITY_POOL:
+                return affPool;
 
             default: {
                 assert false : "Invalid communication policy: " + plc;

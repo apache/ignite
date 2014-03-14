@@ -635,15 +635,16 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
                     if (tierMaps[t].get(nodeId).contains(part)) {
                         GridNode oldNode = assignments.get(part).get(tier);
 
-                        assert oldNode != null;
-
                         // Move partition from level t to tier.
                         assignments.get(part).set(tier, node);
                         assignments.get(part).set(t, null);
 
-                        tierMaps[tier].get(oldNode.id()).remove(part);
+                        if (oldNode != null) {
+                            tierMaps[tier].get(oldNode.id()).remove(part);
+                            fullMap.get(oldNode.id()).remove(part);
+                        }
+
                         tierMaps[tier].get(nodeId).add(part);
-                        fullMap.get(oldNode.id()).remove(part);
                         tierMaps[t].get(nodeId).remove(part);
 
                         Queue<Integer> pending = pendingParts.get(t);

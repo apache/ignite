@@ -351,7 +351,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
         @Nullable GridCacheVersion drVer) {
         checkInternal(key);
 
-        GridNearCacheEntry<K, V> cached = cctx.near().entryExx(key);
+        GridNearCacheEntry<K, V> cached = cctx.near().entryExx(key, topologyVersion());
 
         GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cctx, this, NOOP, val, 0L, -1L, cached, drVer);
 

@@ -298,6 +298,18 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @throws GridTopologyException If receiver left.
      */
     public void send(GridNode node, GridCacheMessage<K, V> msg) throws GridException {
+        send(node, msg, SYSTEM_POOL);
+    }
+
+    /**
+     * Sends communication message.
+     *
+     * @param node Node to send the message to.
+     * @param msg Message to send.
+     * @throws GridException If sending failed.
+     * @throws GridTopologyException If receiver left.
+     */
+    public void send(GridNode node, GridCacheMessage<K, V> msg, GridIoPolicy plc) throws GridException {
         onSend(msg, node.id());
 
         if (log.isDebugEnabled())
@@ -321,11 +333,11 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     msg0 = (GridCacheMessage<K, V>)msg.clone();
 
                 if (gridTopic != null)
-                    cctx.gridIO().send(node, gridTopic, msg0, SYSTEM_POOL);
+                    cctx.gridIO().send(node, gridTopic, msg0, plc);
                 else {
                     assert topic != null;
 
-                    cctx.gridIO().send(node, topic, msg0, SYSTEM_POOL);
+                    cctx.gridIO().send(node, topic, msg0, plc);
                 }
 
                 return;

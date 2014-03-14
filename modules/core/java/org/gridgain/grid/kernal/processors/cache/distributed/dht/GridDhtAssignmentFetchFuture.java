@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.logger.*;
@@ -133,7 +134,8 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
                     // TODO-gg-7663
                     U.debug(log, "Sending request to remote node: " + node);
 
-                    ctx.io().send(node, new GridDhtAffinityAssignmentRequest<K, V>(topVer));
+                    ctx.io().send(node, new GridDhtAffinityAssignmentRequest<K, V>(topVer),
+                        GridIoPolicy.MANAGEMENT_POOL);
 
                     // Close window for listener notification.
                     if (ctx.discovery().node(node.id()) == null) {

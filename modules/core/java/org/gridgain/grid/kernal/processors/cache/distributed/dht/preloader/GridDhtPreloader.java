@@ -29,6 +29,7 @@ import java.util.concurrent.locks.*;
 
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
+import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 import static org.gridgain.grid.util.GridConcurrentFactory.*;
 
 /**
@@ -567,7 +568,8 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
                 List<List<GridNode>> assignment = cctx.affinity().assignments(topVer);
 
                 try {
-                    cctx.io().send(node, new GridDhtAffinityAssignmentResponse<K, V>(topVer, assignment));
+                    cctx.io().send(node, new GridDhtAffinityAssignmentResponse<K, V>(topVer, assignment),
+                        AFFINITY_POOL);
                 }
                 catch (GridException e) {
                     U.error(log, "Failed to send affinity assignment response to remote node [node=" + node + ']', e);

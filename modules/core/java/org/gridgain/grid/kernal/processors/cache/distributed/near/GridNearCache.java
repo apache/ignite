@@ -187,6 +187,15 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
 
     /**
      * @param key Key.
+     * @param topVer Topology version.
+     * @return Entry.
+     */
+    public GridNearCacheEntry<K, V> entryExx(K key, long topVer) {
+        return (GridNearCacheEntry<K, V>)entryEx(key, topVer);
+    }
+
+    /**
+     * @param key Key.
      * @return Entry.
      */
     @Nullable public GridNearCacheEntry<K, V> peekExx(K key) {

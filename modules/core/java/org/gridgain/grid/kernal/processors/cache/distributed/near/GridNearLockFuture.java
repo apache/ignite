@@ -765,7 +765,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                         GridNearCacheEntry<K, V> entry = null;
 
                         try {
-                            entry = cctx.near().entryExx(key);
+                            entry = cctx.near().entryExx(key, topVer);
 
                             if (!cctx.isAll(entry.wrap(false), filter)) {
                                 if (log.isDebugEnabled())
@@ -988,7 +988,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                             for (K k : mappedKeys) {
                                 while (true) {
-                                    GridNearCacheEntry<K, V> entry = cctx.near().entryExx(k);
+                                    GridNearCacheEntry<K, V> entry = cctx.near().entryExx(k, req.topologyVersion());
 
                                     try {
                                         GridTuple3<GridCacheVersion, V, byte[]> oldValTup = valMap.get(entry.key());
@@ -1318,9 +1318,11 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                 int i = 0;
 
+                long topVer = topSnapshot.get().topologyVersion();
+
                 for (K k : keys) {
                     while (true) {
-                        GridNearCacheEntry<K, V> entry = cctx.near().entryExx(k);
+                        GridNearCacheEntry<K, V> entry = cctx.near().entryExx(k, topVer);
 
                         try {
                             if (res.dhtVersion(i) == null) {
