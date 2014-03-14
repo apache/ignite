@@ -26,14 +26,14 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
     private static final int MAX_PARTITION_KEY_ATTEMPT_RATIO = 10;
 
     /** Affinity cached function. */
-    private GridAffinityCache aff;
+    private GridAffinityAssignmentCache aff;
 
     /** Affinity keys. */
     private GridPartitionLockKey[] partAffKeys;
 
     /** {@inheritDoc} */
     @Override public void start0() throws GridException {
-        aff = new GridAffinityCache(cctx.kernalContext(), cctx.namex(), cctx.config().getAffinity(),
+        aff = new GridAffinityAssignmentCache(cctx, cctx.namex(), cctx.config().getAffinity(),
             cctx.config().getAffinityMapper(), cctx.config().getBackups());
 
         // Generate internal keys for partitions.
@@ -69,6 +69,13 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
     }
 
     /** {@inheritDoc} */
+    @Override protected void onKernalStart0() throws GridException {
+        if (cctx.isLocal())
+            // No discovery event needed for local affinity.
+            aff.calculate(1, null);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         aff = null;
     }
@@ -81,6 +88,8 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @return Affinity ready future.
      */
     public GridFuture<Long> affinityReadyFuture(long topVer) {
+        assert !cctx.isLocal();
+
         return aff.readyFuture(topVer);
     }
 
@@ -90,6 +99,8 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Actual topology version, older versions will be removed.
      */
     public void cleanUpCache(long topVer) {
+        assert !cctx.isLocal();
+
         aff.cleanUpCache(topVer);
     }
 
@@ -100,6 +111,8 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param affAssignment Affinity assignment for this topology version.
      */
     public void initializeAffinity(long topVer, List<List<GridNode>> affAssignment) {
+        assert !cctx.isLocal();
+
         aff.initialize(topVer, affAssignment);
     }
 
@@ -108,6 +121,9 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @return Affinity assignments.
      */
     public List<List<GridNode>> assignments(long topVer) {
+        if (cctx.isLocal())
+            topVer = 1;
+
         return aff.assignments(topVer);
     }
 
@@ -118,6 +134,8 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param discoEvt Discovery event that causes this topology change.
      */
     public List<List<GridNode>> calculateAffinity(long topVer, GridDiscoveryEvent discoEvt) {
+        assert !cctx.isLocal();
+
         return aff.calculate(topVer, discoEvt);
     }
 
@@ -199,6 +217,9 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @return Affinity nodes.
      */
     public Collection<GridNode> nodes(int part, long topVer) {
+        if (cctx.isLocal())
+            topVer = 1;
+
         return aff.nodes(part, topVer);
     }
 
@@ -344,7 +365,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @return Partitions for which given node is primary.
      */
     public Set<Integer> primaryPartitions(UUID nodeId) {
-        return aff.primaryPartitions(nodeId, topologyVersion());
+        return primaryPartitions(nodeId, topologyVersion());
     }
 
     /**
@@ -353,6 +374,9 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @return Partitions for which given node is primary.
      */
     public Set<Integer> primaryPartitions(UUID nodeId, long topVer) {
+        if (cctx.isLocal())
+            topVer = 1;
+
         return aff.primaryPartitions(nodeId, topVer);
     }
 
@@ -362,6 +386,9 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @return Partitions for which given node is backup.
      */
     public Set<Integer> backupPartitions(UUID nodeId, long topVer) {
+        if (cctx.isLocal())
+            topVer = 1;
+
         return aff.backupPartitions(nodeId, topVer);
     }
 
