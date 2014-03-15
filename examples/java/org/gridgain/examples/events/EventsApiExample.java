@@ -9,13 +9,14 @@
 
 package org.gridgain.examples.events;
 
+import org.gridgain.examples.compute.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.examples.compute.*;
+import org.gridgain.grid.resources.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.gridgain.grid.events.GridEventType.*;
 
@@ -56,39 +57,31 @@ public class EventsApiExample {
      * @throws GridException If failed.
      */
     private static void localListen() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        GridPredicate<GridEvent> p = new GridPredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
-                GridTaskEvent taskEvt = (GridTaskEvent)evt;
-
-                System.out.println();
-                System.out.println("Got event notification [evt=" + evt.name() + ", taskName=" + taskEvt.taskName() + ']');
-
-                latch.countDown();
-
-                return true;
-            }
-        };
+        System.out.println();
+        System.out.println(">>> Local event listener example.");
 
         Grid g = GridGain.grid();
 
+        GridPredicate<GridTaskEvent> lsnr = new GridPredicate<GridTaskEvent>() {
+            @Override public boolean apply(GridTaskEvent evt) {
+                System.out.println("Received task event [evt=" + evt.name() + ", taskName=" + evt.taskName() + ']');
+
+                return true; // Return true to continue listening.
+            }
+        };
+
         // Register event listener for all local task execution events.
-        g.events().localListen(p, EVTS_TASK_EXECUTION);
+        g.events().localListen(lsnr, EVTS_TASK_EXECUTION);
 
         // Generate task events.
-        g.compute().withName("example-local-event-task").run(new GridRunnable() {
+        g.compute().withName("example-event-task").run(new GridRunnable() {
             @Override public void run() {
-                System.out.println();
                 System.out.println("Executing sample job.");
             }
         }).get();
 
-        // Wait for the listener to be notified.
-        latch.await();
-
-        // Unregister event listener.
-        g.events().stopLocalListen(p, EVTS_TASK_EXECUTION);
+        // Unsubscribe local task event listener.
+        g.events().stopLocalListen(lsnr);
     }
 
     /**
@@ -97,48 +90,46 @@ public class EventsApiExample {
      * @throws GridException If failed.
      */
     private static void remoteListen() throws GridException {
+        System.out.println();
+        System.out.println(">>> Remote event listener example.");
+
+        // This optional local callback is called for each event notification
+        // that passed remote predicate listener.
+        GridBiPredicate<UUID, GridTaskEvent> locLsnr = new GridBiPredicate<UUID, GridTaskEvent>() {
+            @Override public boolean apply(UUID nodeId, GridTaskEvent evt) {
+                // Remote filter only accepts tasks whose name being with "good-task" prefix.
+                assert evt.taskName().startsWith("good-task");
+
+                System.out.println("Received task event [evt=" + evt.name() + ", taskName=" + evt.taskName());
+
+                return true; // Return true to continue listening.
+            }
+        };
+
+        // Remote filter which only accepts tasks whose name being with "good-task" prefix.
+        GridPredicate<GridTaskEvent> rmtLsnr = new GridPredicate<GridTaskEvent>() {
+            @Override public boolean apply(GridTaskEvent evt) {
+                return evt.taskName().startsWith("good-task");
+            }
+        };
+
         Grid g = GridGain.grid();
 
-        // Register remote event listeners on all nodes.
-        GridFuture<?> fut = g.events().remoteListen(
-            // This optional local callback is called for each event notification
-            // that passed remote predicate filter.
-            new GridBiPredicate<UUID, GridEvent>() {
-                @Override public boolean apply(UUID nodeId, GridEvent evt) {
-                    GridTaskEvent taskEvt = (GridTaskEvent) evt;
-
-                    System.out.println();
-                    System.out.println("Received event [evt=" + evt.name() + ", taskName=" + taskEvt.taskName());
-
-                    return true; // Return true to continue listening.
-                }
-            },
-            // Remote filter which only accepts events for tasks that have names ending with digit greater than 4.
-            new GridPredicate<GridEvent>() {
-                @Override public boolean apply(GridEvent evt) {
-                    GridTaskEvent taskEvt = (GridTaskEvent)evt;
-
-                    int lastDigit = Integer.parseInt(taskEvt.taskName().substring(taskEvt.taskName().length() - 1));
-
-                    return lastDigit > 4;
-                }
-            },
-            // Types of events for which listeners are registered.
-            EVTS_TASK_EXECUTION);
+        // Register event listeners on all nodes to listen only for task events.
+        GridFuture<?> fut = g.events().remoteListen(locLsnr, rmtLsnr, EVTS_TASK_EXECUTION);
 
         // Wait until event listeners are subscribed on all nodes.
         fut.get();
 
-        int keyCnt = 20;
-
         // Generate task events.
-        for (int i = 0; i < keyCnt; i++) {
-            final int i0 = i;
+        for (int i = 0; i < 10; i++) {
+            g.compute().withName(i < 5 ? "good-task-" + i : "bad-task-" + i).run(new GridRunnable() {
+                // Auto-inject task session.
+                @GridTaskSessionResource
+                private GridComputeTaskSession ses;
 
-            g.compute().withName("example-remote-event-task" + i0).run(new GridRunnable() {
                 @Override public void run() {
-                    System.out.println();
-                    System.out.println("Executing sample job " + i0 + ".");
+                    System.out.println("Executing sample job for task: " + ses.getTaskName());
                 }
             }).get();
         }
