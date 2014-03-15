@@ -29,7 +29,7 @@ import org.jetbrains.annotations.*;
  *          &lt;bean class="org.gridgain.grid.logger.jcl.GridJclLogger"&gt;
  *              &lt;constructor-arg type="org.apache.commons.logging.Log"&gt;
  *                  &lt;bean class="org.apache.commons.logging.impl.Log4JLogger"&gt;
- *                      &lt;constructor-arg type="java.lang.String" value="config/log4j/gridgain-log4j.xml"/&gt;
+ *                      &lt;constructor-arg type="java.lang.String" value="config/gridgain-log4j.xml"/&gt;
  *                  &lt;/bean&gt;
  *              &lt;/constructor-arg&gt;
  *          &lt;/bean&gt;
@@ -48,7 +48,7 @@ import org.jetbrains.annotations.*;
  * <pre name="code" class="java">
  *      GridConfiguration cfg = new GridConfiguration();
  *      ...
- *      GridLogger log = new GridJclLogger(new Log4JLogger("config/log4j/gridgain-log4j.xml"));
+ *      GridLogger log = new GridJclLogger(new Log4JLogger("config/gridgain-log4j.xml"));
  *      ...
  *      cfg.setGridLogger(log);
  * </pre>
