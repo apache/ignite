@@ -116,7 +116,7 @@ public class EventsApiExample {
             // Remote filter which only accepts events for tasks that have names ending with digit greater than 4.
             new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
-                    GridTaskEvent taskEvt = (GridTaskEvent) evt;
+                    GridTaskEvent taskEvt = (GridTaskEvent)evt;
 
                     int lastDigit = Integer.parseInt(taskEvt.taskName().substring(taskEvt.taskName().length() - 1));
 
