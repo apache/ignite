@@ -6888,7 +6888,7 @@ public abstract class GridUtils {
      * @param cacheName Cache name.
      * @return Attributes.
      */
-    public static @Nullable GridCacheAttributes cacheAttributes(GridNode n, @Nullable String cacheName) {
+    @Nullable public static GridCacheAttributes cacheAttributes(GridNode n, @Nullable String cacheName) {
         for (GridCacheAttributes a : cacheAttributes(n)) {
             if (F.eq(a.cacheName(), cacheName))
                 return a;
@@ -7853,8 +7853,8 @@ public abstract class GridUtils {
                     try {
                         Class.forName(def.getBeanClassName());
                     }
-                    catch (ClassNotFoundException e) {
-                        ((DefaultListableBeanFactory)beanFactory).removeBeanDefinition(beanName);
+                    catch (ClassNotFoundException ignored) {
+                        ((BeanDefinitionRegistry)beanFactory).removeBeanDefinition(beanName);
 
                         continue;
                     }
