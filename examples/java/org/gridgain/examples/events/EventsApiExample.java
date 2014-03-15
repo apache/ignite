@@ -115,7 +115,7 @@ public class EventsApiExample {
 
         Grid g = GridGain.grid();
 
-        // Register event listeners on all nodes to listen only for task events.
+        // Register event listeners on all nodes to listen for task events.
         GridFuture<?> fut = g.events().remoteListen(locLsnr, rmtLsnr, EVTS_TASK_EXECUTION);
 
         // Wait until event listeners are subscribed on all nodes.
