@@ -33,7 +33,6 @@
     <modules>
         <module>modules/core</module>
         <module>modules/clients</module>
-        <module>modules/router</module>
         <module>examples</module>
         <module>modules/scalar</module>
         <module>modules/scalar-examples</module>
