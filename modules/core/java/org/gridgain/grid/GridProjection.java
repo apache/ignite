@@ -25,12 +25,19 @@ import java.util.*;
  * Grid projection allows to group grid nodes into various subgroups to perform distributed
  * operations on them. All {@code 'forXXX(...)'} methods will create a child grid projection
  * from existing projection. If you create a new projection from current one, then the resulting
- * projection will include a subset of nodes from current projection. For example, the following
- * code snippet will create a projection over a random remote node:
+ * projection will include a subset of nodes from current projection. The following code snippet
+ * shows how to create and nest grid projections:
  * <pre name="code" class="java">
  * Grid g = GridGain.grid();
  *
- * GridProjection randomRemoteNodeProjection = g.forRemotes().forRandom();
+ * // Projection over remote nodes.
+ * GridProjection remoteNodes = g.forRemotes();
+ *
+ * // Projection over random remote node.
+ * GridProjection randomNode = remoteNodes.forRandom();
+ *
+ * // Projection over all nodes with cache named "myCache" enabled.
+ * GridProjection cacheNodes = g.forCache("myCache");
  * </pre>
  * <h1 class="header">Features</h1>
  * Grid projection provides the following functionality over the underlying group of nodes:
