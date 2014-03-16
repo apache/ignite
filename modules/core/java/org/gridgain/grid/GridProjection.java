@@ -38,6 +38,9 @@ import java.util.*;
  *
  * // Projection over all nodes with cache named "myCache" enabled.
  * GridProjection cacheNodes = g.forCache("myCache");
+ *
+ * // Projection over all nodes that have user attribute "group" set to value "worker".
+ * GridProjection workerNodes = g.forAttribute("group", "worker");
  * </pre>
  * <h1 class="header">Features</h1>
  * Grid projection provides the following functionality over the underlying group of nodes:
