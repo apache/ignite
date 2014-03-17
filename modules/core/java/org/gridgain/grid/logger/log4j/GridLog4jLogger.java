@@ -37,7 +37,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
  * <pre name="code" class="xml">
  *      &lt;property name="gridLogger"&gt;
  *          &lt;bean class="org.gridgain.grid.logger.log4j.GridLog4jLogger"&gt;
- *              &lt;constructor-arg type="java.lang.String" value="config/log4j/gridgain-log4j.xml"/&gt;
+ *              &lt;constructor-arg type="java.lang.String" value="config/gridgain-log4j.xml"/&gt;
  *          &lt;/bean>
  *      &lt;/property&gt;
  * </pre>

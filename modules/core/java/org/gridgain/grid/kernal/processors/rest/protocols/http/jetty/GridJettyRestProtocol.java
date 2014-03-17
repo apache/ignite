@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.rest.protocols.http.jetty;
 
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.*;
+import org.eclipse.jetty.util.thread.*;
 import org.eclipse.jetty.xml.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
@@ -19,6 +20,7 @@ import org.gridgain.grid.kernal.processors.rest.protocols.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 import org.xml.sax.*;
 
 import java.io.*;
@@ -62,9 +64,6 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         }
     }
 
-    /** Default Jetty configuration file path. */
-    public static final String DFLT_CFG_PATH = "config/rest/rest-jetty.xml";
-
     /** Jetty handler. */
     private GridJettyRestHandler jettyHnd;
 
@@ -105,15 +104,22 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         String jettyPath = ctx.config().getRestJettyPath();
 
-        if (jettyPath == null)
-            jettyPath = DFLT_CFG_PATH;
+        final URL cfgUrl;
 
-        final URL cfgUrl = U.resolveGridGainUrl(jettyPath);
+        if (jettyPath == null) {
+            cfgUrl = null;
 
-        if (cfgUrl == null)
-            throw new GridSpiException("Invalid Jetty configuration file: " + jettyPath);
-        else if (log.isDebugEnabled())
-            log.debug("Jetty configuration file: " + cfgUrl);
+            if (log.isDebugEnabled())
+                log.debug("Jetty configuration file is not provided, using defaults.");
+        }
+        else {
+            cfgUrl = U.resolveGridGainUrl(jettyPath);
+
+            if (cfgUrl == null)
+                throw new GridSpiException("Invalid Jetty configuration file: " + jettyPath);
+            else if (log.isDebugEnabled())
+                log.debug("Jetty configuration file: " + cfgUrl);
+        }
 
         loadJettyConfiguration(cfgUrl);
 
@@ -225,30 +231,65 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      * @param cfgUrl URL to load configuration from.
      * @throws GridException if load failed.
      */
-    private void loadJettyConfiguration(URL cfgUrl) throws GridException {
-        XmlConfiguration cfg;
+    private void loadJettyConfiguration(@Nullable URL cfgUrl) throws GridException {
+        if (cfgUrl == null) {
+            HttpConfiguration httpCfg = new HttpConfiguration();
 
-        try {
-            cfg = new XmlConfiguration(cfgUrl);
-        }
-        catch (FileNotFoundException e) {
-            throw new GridSpiException("Failed to find configuration file: " + cfgUrl, e);
-        }
-        catch (SAXException e) {
-            throw new GridSpiException("Failed to parse configuration file: " + cfgUrl, e);
-        }
-        catch (IOException e) {
-            throw new GridSpiException("Failed to load configuration file: " + cfgUrl, e);
-        }
-        catch (Exception e) {
-            throw new GridSpiException("Failed to start HTTP server with configuration file: " + cfgUrl, e);
-        }
+            httpCfg.setSecureScheme("https");
+            httpCfg.setSecurePort(8443);
+            httpCfg.setSendServerVersion(true);
+            httpCfg.setSendDateHeader(true);
 
-        try {
-            httpSrv = (Server)cfg.configure();
+            String srvPortStr = System.getProperty(GG_JETTY_PORT, "8080");
+
+            int srvPort;
+
+            try {
+                srvPort = Integer.valueOf(srvPortStr);
+            }
+            catch (NumberFormatException ignore) {
+                throw new GridException("Failed to start Jetty server because GRIDGAIN_JETTY_PORT system property " +
+                    "cannot be cast to integer: " + srvPortStr);
+            }
+
+            httpSrv = new Server(new QueuedThreadPool(20, 200));
+
+            ServerConnector srvConn = new ServerConnector(httpSrv, new HttpConnectionFactory(httpCfg));
+
+            srvConn.setHost(System.getProperty(GG_JETTY_HOST, "localhost"));
+            srvConn.setPort(srvPort);
+            srvConn.setIdleTimeout(30000L);
+            srvConn.setReuseAddress(true);
+
+            httpSrv.addConnector(srvConn);
+
+            httpSrv.setStopAtShutdown(false);
         }
-        catch (Exception e) {
-            throw new GridException("Failed to start Jetty HTTP server.", e);
+        else {
+            XmlConfiguration cfg;
+
+            try {
+                cfg = new XmlConfiguration(cfgUrl);
+            }
+            catch (FileNotFoundException e) {
+                throw new GridSpiException("Failed to find configuration file: " + cfgUrl, e);
+            }
+            catch (SAXException e) {
+                throw new GridSpiException("Failed to parse configuration file: " + cfgUrl, e);
+            }
+            catch (IOException e) {
+                throw new GridSpiException("Failed to load configuration file: " + cfgUrl, e);
+            }
+            catch (Exception e) {
+                throw new GridSpiException("Failed to start HTTP server with configuration file: " + cfgUrl, e);
+            }
+
+            try {
+                httpSrv = (Server)cfg.configure();
+            }
+            catch (Exception e) {
+                throw new GridException("Failed to start Jetty HTTP server.", e);
+            }
         }
 
         assert httpSrv != null;
