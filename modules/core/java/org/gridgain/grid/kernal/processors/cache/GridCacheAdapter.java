@@ -3847,7 +3847,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             ctx.dr().pause();
         }
         catch (GridException e) {
-            throw new IllegalStateException("Failed to pause data center replication because grid is stopping.");
+            throw new IllegalStateException(e.getMessage());
         }
     }
 
@@ -3859,7 +3859,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             ctx.dr().resume();
         }
         catch (GridException e) {
-            throw new IllegalStateException("Failed to resume data center replication because grid is stopping.");
+            throw new IllegalStateException(e.getMessage());
         }
     }
 
