@@ -270,14 +270,6 @@ public interface GridCacheMBean {
     public int getWriteBehindBufferSize();
 
     /**
-     * Gets current size of continuous query queue.
-     *
-     * @return Current size of continuous query queue.
-     */
-    @GridMBeanDescription("Current size of continuous query queue.")
-    public int getContinuousQueryQueueSize();
-
-    /**
      * Gets count of keys enqueued for data center replication.
      *
      * @return Count of keys enqueued for data center replication.

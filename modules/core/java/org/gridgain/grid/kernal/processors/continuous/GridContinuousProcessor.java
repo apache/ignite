@@ -528,7 +528,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     public GridFuture<?> stopRoutine(UUID routineId) {
         assert routineId != null;
 
-        boolean doStop = true;
+        boolean doStop = false;
 
         StopFuture fut = stopFuts.get(routineId);
 
@@ -536,14 +536,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (fut == null) {
             StopFuture old = stopFuts.putIfAbsent(routineId, fut = new StopFuture(ctx));
 
-            if (old != null) {
+            if (old != null)
                 fut = old;
-
-                doStop = false;
-            }
+            else
+                doStop = true;
         }
-        else
-            doStop = false;
 
         if (doStop) {
             // Unregister routine locally.
@@ -1109,8 +1106,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         /** Time interval. */
         private final long interval;
 
+        /** Lock. */
+        private final ReadWriteLock lock = new ReentrantReadWriteLock();
+
         /** Buffer. */
-        private Collection<Object> buf;
+        private ConcurrentLinkedDeque8<Object> buf;
 
         /** Last send time. */
         private long lastSndTime = U.currentTimeMillis();
@@ -1138,7 +1138,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             this.interval = interval;
             this.autoUnsubscribe = autoUnsubscribe;
 
-            buf = new ArrayList<>(bufSize);
+            buf = new ConcurrentLinkedDeque8<>();
         }
 
         /**
@@ -1148,44 +1148,65 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         @Nullable Collection<Object> add(@Nullable Object obj) {
             Collection<Object> toSnd = null;
 
-            synchronized (this) {
-                buf.add(obj);
+            if (buf.sizex() >= bufSize - 1) {
+                lock.writeLock().lock();
 
-                if (buf.size() == bufSize) {
+                try {
+                    buf.add(obj);
+
                     toSnd = buf;
 
-                    buf = new ArrayList<>(bufSize);
+                    buf = new ConcurrentLinkedDeque8<>();
 
                     if (interval > 0)
                         lastSndTime = U.currentTimeMillis();
                 }
+                finally {
+                    lock.writeLock().unlock();
+                }
+            }
+            else {
+                lock.readLock().lock();
+
+                try {
+                    buf.add(obj);
+                }
+                finally {
+                    lock.readLock().unlock();
+                }
             }
 
-            return toSnd;
+            return toSnd != null ? new ArrayList<>(toSnd) : null;
         }
 
         /**
          * @return Tuple with objects to sleep (or {@code null} if there is nothing to
          *      send for now) and time interval after next check is needed.
          */
+        @SuppressWarnings("TooBroadScope")
         GridBiTuple<Collection<Object>, Long> checkInterval() {
             assert interval > 0;
 
             Collection<Object> toSnd = null;
-
-            long now = U.currentTimeMillis();
             long diff;
 
-            synchronized (this) {
+            long now = U.currentTimeMillis();
+
+            lock.writeLock().lock();
+
+            try {
                 diff = now - lastSndTime;
 
                 if (diff >= interval && !buf.isEmpty()) {
                     toSnd = buf;
 
-                    buf = new ArrayList<>(bufSize);
+                    buf = new ConcurrentLinkedDeque8<>();
 
                     lastSndTime = now;
                 }
+            }
+            finally {
+                lock.writeLock().unlock();
             }
 
             return F.t(toSnd, diff < interval ? interval - diff : interval);
