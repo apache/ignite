@@ -25,7 +25,7 @@ import java.util.*;
  * key which should be used for affinity. The key returned from
  * {@link GridCacheAffinityKeyMapper#affinityKey(Object)} method is then passed to
  * {@link #partition(Object) partition(Object)} method to find out the partition for the key.
- * Independently, on each topology change partition-to-node mapping is calculated using
+ * On each topology change, partition-to-node mapping is calculated using
  * {@link #assignPartitions(GridCacheAffinityFunctionContext)} method, which assigns a collection
  * of nodes to each partition.
  * This collection of nodes is used for node affinity. In {@link GridCacheMode#REPLICATED REPLICATED}

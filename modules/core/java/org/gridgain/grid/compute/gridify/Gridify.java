@@ -125,7 +125,8 @@ import java.lang.annotation.*;
  *      {@code -javaagent:${GRIDGAIN_HOME}/libs/aspectjweaver-1.7.2.jar}
  * </li>
  * <li>
- *      Classpath should contain the {@code ${GRIDGAIN_HOME}/config/aop/aspectj} folder.
+ *      META-INF/aop.xml file should be created and specified on the classpath.
+ *      The file should contain Gridify aspects and needed weaver options.
  * </li>
  * </ul>
  * <p>
