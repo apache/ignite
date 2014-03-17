@@ -1008,7 +1008,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Excludes prior to this call.
      */
     public GridCachePeekMode[] excludePeekModes(@Nullable GridCachePeekMode[] modes) {
-        if (isDht())
+        if (nearContext())
             return dht().near().context().excludePeekModes(modes);
 
         GridCachePeekMode[] oldModes = peekModeExcl.get();
@@ -1022,7 +1022,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Peek mode excludes.
      */
     public GridCachePeekMode[] peekModeExcludes() {
-        return isDht() ? dht().near().context().peekModeExcludes() : peekModeExcl.get();
+        return nearContext() ? dht().near().context().peekModeExcludes() : peekModeExcl.get();
     }
 
     /**
@@ -1032,7 +1032,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean peekModeExcluded(GridCachePeekMode mode) {
         assert mode != null;
 
-        if (isDht())
+        if (nearContext())
             return dht().near().context().peekModeExcluded(mode);
 
         GridCachePeekMode[] excl = peekModeExcl.get();
@@ -1066,7 +1066,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param prj Flags to set.
      */
     void projectionPerCall(@Nullable GridCacheProjectionImpl<K, V> prj) {
-        if (isDht())
+        if (nearContext())
             dht().near().context().prjPerCall.set(prj);
         else
             prjPerCall.set(prj);
@@ -1077,7 +1077,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Projection per call.
      */
     public GridCacheProjectionImpl<K, V> projectionPerCall() {
-        return isDht() ? dht().near().context().prjPerCall.get() : prjPerCall.get();
+        return nearContext() ? dht().near().context().prjPerCall.get() : prjPerCall.get();
     }
 
     /**
@@ -1088,7 +1088,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean hasFlag(GridCacheFlag flag) {
         assert flag != null;
 
-        if (isDht())
+        if (nearContext())
             return dht().near().context().hasFlag(flag);
 
         GridCacheProjectionImpl<K, V> prj = prjPerCall.get();
@@ -1107,7 +1107,33 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean hasAnyFlags(GridCacheFlag[] flags) {
         assert !F.isEmpty(flags);
 
-        if (isDht())
+        if (nearContext())
+            return dht().near().context().hasAnyFlags(flags);
+
+        GridCacheProjectionImpl<K, V> prj = prjPerCall.get();
+
+        if (prj == null && F.isEmpty(forcedFlags.get()))
+            return false;
+
+        for (GridCacheFlag f : flags)
+            if (hasFlag(f))
+                return true;
+
+        return false;
+    }
+
+
+
+    /**
+     * Checks whether any of the given flags is set.
+     *
+     * @param flags Flags to check.
+     * @return {@code true} if any of the given flags is set.
+     */
+    public boolean hasAnyFlags(Collection<GridCacheFlag> flags) {
+        assert !F.isEmpty(flags);
+
+        if (nearContext())
             return dht().near().context().hasAnyFlags(flags);
 
         GridCacheProjectionImpl<K, V> prj = prjPerCall.get();
@@ -1123,27 +1149,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Checks whether any of the given flags is set.
-     *
-     * @param flags Flags to check.
-     * @return {@code true} if any of the given flags is set.
+     * @return {@code True} if need check near cache context.
      */
-    public boolean hasAnyFlags(Collection<GridCacheFlag> flags) {
-        assert !F.isEmpty(flags);
-
-        if (isDht())
-            return dht().near().context().hasAnyFlags(flags);
-
-        GridCacheProjectionImpl<K, V> prj = prjPerCall.get();
-
-        if (prj == null && F.isEmpty(forcedFlags.get()))
-            return false;
-
-        for (GridCacheFlag f : flags)
-            if (hasFlag(f))
-                return true;
-
-        return false;
+    private boolean nearContext() {
+        return isDht() || (isDhtAtomic() && dht().near() != null);
     }
 
     /**
