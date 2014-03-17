@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.discovery;
 
-import com.sun.jdmk.comm.*;
+import mx4j.tools.adaptor.http.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.spi.*;
@@ -412,7 +412,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends G
      * @throws Exception If failed.
      */
     private MBeanServer getMBeanServer(int idx) throws Exception {
-        CommunicatorServer adaptor = new HtmlAdaptorServer();
+        HttpAdaptor adaptor = new HttpAdaptor();
 
         MBeanServer srv = MBeanServerFactory.createMBeanServer();
 

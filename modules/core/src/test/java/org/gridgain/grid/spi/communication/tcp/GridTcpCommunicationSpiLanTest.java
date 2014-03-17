@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.communication.tcp;
 
-import com.sun.jdmk.comm.*;
+import mx4j.tools.adaptor.http.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
@@ -236,7 +236,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<GridTcpC
      * @throws Exception If failed.
      */
     private MBeanServer getMBeanServer() throws Exception {
-        CommunicatorServer mbeanAdaptor = new HtmlAdaptorServer();
+        HttpAdaptor mbeanAdaptor = new HttpAdaptor();
 
         MBeanServer mbeanSrv = MBeanServerFactory.createMBeanServer();
 

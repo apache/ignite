@@ -91,11 +91,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.sun.jdmk</groupId>
-            <artifactId>jmxtools</artifactId>
-            <scope>system</scope>
-            <version>1.2.1</version>
-            <systemPath>${env.GRIDGAIN_HOME}/libs/test/jmxtools-1.2.1.jar</systemPath>
+            <groupId>mx4j</groupId>
+            <artifactId>mx4j-tools</artifactId>
+            <version>3.0.1</version>
         </dependency>
     </dependencies>
 
