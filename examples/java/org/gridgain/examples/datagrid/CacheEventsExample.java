@@ -42,40 +42,40 @@ public class CacheEventsExample {
             System.out.println();
             System.out.println(">>> Cache events example started.");
 
-            GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+            final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
-            // Subscribe to events on every node that has cache running.
-            GridFuture<UUID> fut = GridGain.grid().forCache(CACHE_NAME).events().remoteListen(
-                new GridBiPredicate<UUID, GridCacheEvent>() {
-                    @Override public boolean apply(UUID uuid, GridCacheEvent evt) {
-                        System.out.println("Received event [evt=" + evt.name() + ", key=" + evt.key() +
-                            ", oldVal=" + evt.oldValue() + ", newVal=" + evt.newValue());
+            // This optional local callback is called for each event notification
+            // that passed remote predicate listener.
+            GridBiPredicate<UUID, GridCacheEvent> locLsnr = new GridBiPredicate<UUID, GridCacheEvent>() {
+                @Override public boolean apply(UUID uuid, GridCacheEvent evt) {
+                    System.out.println("Received event [evt=" + evt.name() + ", key=" + evt.key() +
+                        ", oldVal=" + evt.oldValue() + ", newVal=" + evt.newValue());
 
-                        return true; // Continue listening.
-                    }
-                },
-                // Only accept events for keys that are greater or equal than 10
-                // and if local node is primary for this key.
-                new GridPredicate<GridCacheEvent>() {
-                    @Override public boolean apply(GridCacheEvent evt) {
-                        System.out.println("Cache event [name=" + evt.name() + ", key=" + evt.key() + ']');
+                    return true; // Continue listening.
+                }
+            };
 
-                        int key = evt.key();
+            // Remote listener which only accepts events for keys that are
+            // greater or equal than 10 and if event node is primary for this key.
+            GridPredicate<GridCacheEvent> rmtLsnr = new GridPredicate<GridCacheEvent>() {
+                @Override public boolean apply(GridCacheEvent evt) {
+                    System.out.println("Cache event [name=" + evt.name() + ", key=" + evt.key() + ']');
 
-                        return key >= 10 && g.cache(CACHE_NAME).affinity().isPrimary(g.localNode(), key);
-                    }
-                },
-                EVT_CACHE_OBJECT_PUT,
-                EVT_CACHE_OBJECT_READ,
-                EVT_CACHE_OBJECT_REMOVED);
+                    int key = evt.key();
+
+                    return key >= 10 && cache.affinity().isPrimary(g.localNode(), key);
+                }
+            };
+
+            // Subscribe to specified cache events on all nodes that have cache running.
+            GridFuture<UUID> fut = g.forCache(CACHE_NAME).events().remoteListen(locLsnr, rmtLsnr,
+                EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
 
             // Wait until event listeners are subscribed on all nodes.
             fut.get();
 
-            int keyCnt = 20;
-
-            // Generate events.
-            for (int i = 0; i < keyCnt; i++)
+            // Generate cache events.
+            for (int i = 0; i < 20; i++)
                 cache.putx(i, Integer.toString(i));
 
             // Wait for a while while callback is notified about remaining puts.
