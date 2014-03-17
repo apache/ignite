@@ -18,7 +18,6 @@ import java.io.*;
  * Data center replication pause value object.
  */
 public class GridDrPause implements Externalizable {
-
     /** Reason of DR pause {@code null} if not paused. */
     private GridDrPauseReason reason;
 

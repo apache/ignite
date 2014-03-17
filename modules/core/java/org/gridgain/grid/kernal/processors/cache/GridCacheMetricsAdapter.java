@@ -299,12 +299,13 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      * Callback for replication pause state changed.
      *
      * @param pauseReason Pause reason or {@code null} if replication is not paused.
+     * @param errMsg Error message.
      */
-    public void onPauseStateChanged(@Nullable GridDrPauseReason pauseReason) {
-        drSndMetrics.onPauseStateChanged(pauseReason);
+    public void onPauseStateChanged(@Nullable GridDrPauseReason pauseReason, @Nullable String errMsg) {
+        drSndMetrics.onPauseStateChanged(pauseReason, errMsg);
 
         if (delegate != null)
-            delegate.onPauseStateChanged(pauseReason);
+            delegate.onPauseStateChanged(pauseReason, errMsg);
     }
 
     /**

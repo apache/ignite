@@ -42,7 +42,7 @@ class GridCacheDrSenderMetricsAdapter implements GridDrSenderCacheMetrics, Exter
     private volatile long backupQueueSize;
 
     /** Reason of replication pause. */
-    private volatile GridDrPauseReason pauseReason;
+    private volatile GridDrPause pause;
 
     /**
      * No-args constructor.
@@ -62,7 +62,7 @@ class GridCacheDrSenderMetricsAdapter implements GridDrSenderCacheMetrics, Exter
         entriesAcked.add(m.entriesAcked());
         batchesFailed.add(m.batchesFailed());
         backupQueueSize = m.backupQueueSize();
-        pauseReason = m.pauseReason();
+        pause = m.pauseState();
     }
 
         /** {@inheritDoc} */
@@ -101,8 +101,8 @@ class GridCacheDrSenderMetricsAdapter implements GridDrSenderCacheMetrics, Exter
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDrPauseReason pauseReason() {
-        return pauseReason;
+    @Nullable @Override public GridDrPause pauseState() {
+        return pause;
     }
 
     /**
@@ -156,9 +156,12 @@ class GridCacheDrSenderMetricsAdapter implements GridDrSenderCacheMetrics, Exter
      * Callback for replication pause state changed.
      *
      * @param pauseReason Pause reason or {@code null} if replication is not paused.
+     * @param errMsg Error message.
      */
-    public void onPauseStateChanged(@Nullable GridDrPauseReason pauseReason) {
-        this.pauseReason = pauseReason;
+    public void onPauseStateChanged(@Nullable GridDrPauseReason pauseReason, @Nullable String errMsg) {
+        assert pauseReason == null && errMsg == null || pauseReason != null;
+
+        this.pause = pauseReason != null ? new GridDrPause(pauseReason, errMsg) : null;
     }
 
     /**
@@ -183,7 +186,7 @@ class GridCacheDrSenderMetricsAdapter implements GridDrSenderCacheMetrics, Exter
         out.writeLong(entriesAcked.longValue());
         out.writeInt(batchesFailed.intValue());
         out.writeLong(backupQueueSize);
-        U.writeEnum(out, pauseReason);
+        out.writeObject(pause);
     }
 
     /** {@inheritDoc} */
@@ -195,7 +198,7 @@ class GridCacheDrSenderMetricsAdapter implements GridDrSenderCacheMetrics, Exter
         entriesAcked.add(in.readLong());
         batchesFailed.add(in.readInt());
         backupQueueSize = in.readLong();
-        pauseReason = U.readEnum(in, GridDrPauseReason.class);
+        pause = (GridDrPause)in.readObject();
     }
 
     /** {@inheritDoc} */
