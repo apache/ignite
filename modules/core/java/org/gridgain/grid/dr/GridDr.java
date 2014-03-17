@@ -107,8 +107,8 @@ public interface GridDr {
     /**
      * Gets sender hub incoming data metrics for specified sender cache.
      * <p>
-     * In case node is not sender hub then {@link IllegalStateException} will be thrown,
-     * and if this sender hub does not work with the given cache {@link IllegalArgumentException} will be thrown.
+     * In case node is not sender hub then {@link IllegalStateException} will be thrown.
+     * If this sender hub does not work with the given cache {@link IllegalArgumentException} will be thrown.
      *
      * @param cacheName Sender cache name.
      * @return Sender hub incoming data metrics.
@@ -127,7 +127,8 @@ public interface GridDr {
     /**
      * Gets sender hub outgoing data metrics for the given remote data center ID and cache name.
      * <p>
-     * In case node is not sender hub then {@link IllegalStateException} will be thrown.
+     * In case node is not sender hub then {@link IllegalStateException} will be thrown. If this sender hub does not
+     * work with the given data center or cache {@link IllegalArgumentException} will be thrown.
      *
      * @param destDataCenterId Remote data center ID.
      * @param cacheName Cache name.
@@ -138,7 +139,8 @@ public interface GridDr {
     /**
      * Gets sender hub outgoing data metrics aggregated across all cache names for the given remote data center ID.
      * <p>
-     * In case node is not sender hub then {@link IllegalStateException} will be thrown.
+     * In case node is not sender hub then {@link IllegalStateException} will be thrown. If this sender hub does not
+     * work with the given data center {@link IllegalArgumentException} will be thrown.
      *
      * @param destDataCenterId Remote data center ID.
      * @return Sender hub outgoing data metrics.
@@ -148,7 +150,8 @@ public interface GridDr {
     /**
      * Gets sender hub outgoing data metrics aggregated across all remote data centers for the given cache name.
      * <p>
-     * In case node is not sender hub then {@link IllegalStateException} will be thrown.
+     * In case node is not sender hub then {@link IllegalStateException} will be thrown. If this sender hub does not
+     * work with the given cache {@link IllegalArgumentException} will be thrown.
      *
      * @param cacheName Cache name.
      * @return Sender hub outgoing data metrics.
@@ -166,6 +169,8 @@ public interface GridDr {
 
     /**
      * Gets receiver hub incoming data metrics for the given remote data center and cache name.
+     * <p>
+     * In case node is not receiver hub then {@link IllegalStateException} will be thrown.
      *
      * @param srcDataCenterId Remote data center ID.
      * @param cacheName Cache name.

@@ -136,7 +136,7 @@ public class GridDrUtils {
      */
     public static byte[] marshal(GridDrExternalHandshakeRequest req) throws GridException {
         // 16 = 4 (size) + 1 (type) + 1 (data center ID) + 1 (proto string flag) + 4 (proto string len) +
-        //      1 (marsh class string flag) + 4 (marsh class string name).
+        //      1 (marsh class string flag) + 4 (marsh class string len).
         int size = 16 + U.GG_HEADER.length + req.protocolVersion().length() + req.marshallerClassName().length();
 
         GridUnsafeDataOutput out = new GridUnsafeDataOutput(size);
