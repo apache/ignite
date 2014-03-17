@@ -67,11 +67,11 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  *  </li>
  *  <li>
  *      {@link #isolated(boolean)} - defines if data loader will assume that there are no other concurrent
- *      updates and choose appropriate data loader.
+ *      updates and allow data loader choose most optimal concurrent implementation.
  *  </li>
  *  <li>
- *      {@link #updater(GridDataLoadCacheUpdater)} - defines how cache will be updated with loaded entries. It allows to implement
- *      custom logic to update cache in the most effective and flexible way.
+ *      {@link #updater(GridDataLoadCacheUpdater)} - defines how cache will be updated with loaded entries.
+ *      It allows to provide user-defined custom logic to update the cache in the most effective and flexible way.
  *  </li>
  *  <li>
  *      {@link #deployClass(Class)} - optional deploy class for peer deployment. All classes

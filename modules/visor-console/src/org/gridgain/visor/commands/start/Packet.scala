@@ -34,7 +34,6 @@ package org.gridgain.visor.commands
  * {{{
  *     -f=<path>
  *         Path to INI file that contains topology specification.
- *         See sample file for details: GRIDGAIN_HOME/config/visor/start-nodes.ini.
  *     -h=<hostname>
  *         Hostname where to start nodes.
  *

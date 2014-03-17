@@ -59,10 +59,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
-import org.springframework.beans.factory.xml.*;
 import org.springframework.context.*;
-import org.springframework.context.support.*;
-import org.springframework.core.io.*;
 
 import javax.management.*;
 import java.io.*;
@@ -499,14 +496,10 @@ public class GridGainEx {
      */
     public static GridBiTuple<Collection<GridConfiguration>, ? extends ApplicationContext> loadConfigurations(URL springCfgUrl)
         throws GridException {
-        GenericApplicationContext springCtx;
+        ApplicationContext springCtx;
 
         try {
-            springCtx = new GenericApplicationContext();
-
-            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(springCfgUrl));
-
-            springCtx.refresh();
+            springCtx = U.applicationContext(springCfgUrl);
         }
         catch (BeansException e) {
             throw new GridException("Failed to instantiate Spring XML application context [springUrl=" +
@@ -1296,7 +1289,7 @@ public class GridGainEx {
             GridLogger cfgLog = cfg.getGridLogger();
 
             if (cfgLog == null) {
-                URL url = U.resolveGridGainUrl("config/log4j/gridgain-log4j.xml");
+                URL url = U.resolveGridGainUrl("config/gridgain-log4j.xml");
 
                 cfgLog = url == null || GridLog4jLogger.isConfigured() ? new GridLog4jLogger() :
                     new GridLog4jLogger(url);
