@@ -24,7 +24,7 @@ import java.util.*;
  * synchronization, if needed.
  * @see GridFunc#tv(Object...)
  */
-public class GridTupleV implements Iterable<Object>, GridPeerDeployAware, Externalizable, Cloneable {
+public class GridTupleV implements Iterable<Object>, Externalizable, Cloneable {
     /** Tuple values. */
     @GridToStringInclude
     private Object[] vals;
@@ -159,22 +159,6 @@ public class GridTupleV implements Iterable<Object>, GridPeerDeployAware, Extern
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         vals = U.readArray(in);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<?> deployClass() {
-        ClassLoader clsLdr = getClass().getClassLoader();
-
-        for (Object o : this)
-            if (o != null && !F.eq(o.getClass().getClassLoader(), clsLdr))
-                return o.getClass();
-
-        return getClass();
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClassLoader classLoader() {
-        return deployClass().getClassLoader();
     }
 
     /** {@inheritDoc} */
