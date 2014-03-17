@@ -192,7 +192,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         evictSync = cfg.isEvictSynchronized() && (cctx.isColocated() || cctx.isDht()) && !cctx.isSwapOrOffheapEnabled();
 
-        nearSync = cfg.isEvictNearSynchronized() && cctx.isDht() && isNearEnabled(cctx);
+        nearSync = cfg.isEvictNearSynchronized() && !cctx.isNear() && isNearEnabled(cctx);
 
         if (cctx.isDht() && !nearSync && evictSync && isNearEnabled(cctx))
             throw new GridException("Illegal configuration (may lead to data inconsistency) " +
@@ -878,7 +878,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             warnFirstEvict();
 
         if (evictSyncAgr) {
-            assert cctx.isDht() || cctx.isColocated(); // Make sure cache is not NEAR.
+            assert !cctx.isNear(); // Make sure cache is not NEAR.
 
             if (entry.wrap(false).backup() && evictSync)
                 // Do not track backups if evicts are synchronized.

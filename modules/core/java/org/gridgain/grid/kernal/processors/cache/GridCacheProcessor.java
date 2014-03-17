@@ -792,38 +792,46 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     drMgr);
 
 
-                GridDhtCacheAdapter dht;
+                GridDhtCacheAdapter dht = null;
 
-                if (cfg.getAtomicityMode() == TRANSACTIONAL) {
-                    assert cache instanceof GridTxNearCache;
+                switch (cfg.getAtomicityMode()) {
+                    case TRANSACTIONAL: {
+                        assert cache instanceof GridTxNearCache;
 
-                    GridTxNearCache near = (GridTxNearCache)cache;
+                        GridTxNearCache near = (GridTxNearCache)cache;
 
-                    GridDhtCache dhtCache = !isAffinityNode(cfg) ?
-                        new GridDhtCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx)) :
-                        new GridDhtCache(cacheCtx);
+                        GridDhtCache dhtCache = !isAffinityNode(cfg) ?
+                            new GridDhtCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx)) :
+                            new GridDhtCache(cacheCtx);
 
-                    dhtCache.near(near);
+                        dhtCache.near(near);
 
-                    near.dht(dhtCache);
+                        near.dht(dhtCache);
 
-                    dht = dhtCache;
-                }
-                else {
-                    assert cache instanceof GridAtomicNearCache;
+                        dht = dhtCache;
 
-                    assert cfg.getAtomicityMode() == ATOMIC;
+                        break;
+                    }
+                    case ATOMIC: {
+                        assert cache instanceof GridAtomicNearCache;
 
-                    GridAtomicNearCache near = (GridAtomicNearCache)cache;
+                        GridAtomicNearCache near = (GridAtomicNearCache)cache;
 
-                    GridDhtAtomicCache dhtCache = isAffinityNode(cfg) ? new GridDhtAtomicCache(cacheCtx) :
-                        new GridDhtAtomicCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
+                        GridDhtAtomicCache dhtCache = isAffinityNode(cfg) ? new GridDhtAtomicCache(cacheCtx) :
+                            new GridDhtAtomicCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
 
-                    dhtCache.near(near);
+                        dhtCache.near(near);
 
-                    near.dht(dhtCache);
+                        near.dht(dhtCache);
 
-                    dht = dhtCache;
+                        dht = dhtCache;
+
+                        break;
+                    }
+
+                    default: {
+                        assert false : "Invalid cache atomicity mode: " + cfg.getAtomicityMode();
+                    }
                 }
 
                 cacheCtx.cache(dht);

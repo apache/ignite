@@ -926,6 +926,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param locked Locked entries.
      * @param ver Assigned version.
      * @param dhtFut Optional DHT future.
+     * @param completionCb Completion callback to invoke when future is completed.
      * @param replicate Whether replication is enabled.
      * @return Deleted entries.
      * @throws GridCacheEntryRemovedException Should not be thrown.
@@ -1177,8 +1178,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     newDrVer,
                     true);
 
-                log.info("Update single " + entry.key() + " " + writeVal + " " + ctx.localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
-
                 Collection<UUID> readers = checkReaders ? entry.readers() : null;
 
                 if (dhtFut == null && !F.isEmpty(readers))
@@ -1223,17 +1222,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             newValBytes = null;
 
                         // If put the same value as in request then do not need to send it back.
-                        if (op == TRANSFORM || writeVal != updRes.newValue()) {
-                            log.info("Add near1: " + entry.key() + " " + nodeId + " " + context().localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
-
+                        if (op == TRANSFORM || writeVal != updRes.newValue())
                             res.addNearValue(i, updRes.newValue(), newValBytes);
-                        }
-
-                        log.info("Add reader1: " + entry.key() + " " + nodeId + " " + context().localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
 
                         GridFuture<Boolean> f = entry.addReader(nodeId, req.messageId());
-
-                        assert entry.readers().contains(nodeId);
 
                         assert f == null : f;
                     }
@@ -1382,9 +1374,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     Collection<UUID> readers = checkReaders ? entry.readers() : null;
 
-                    log.info("Update batch " + entry.key() + " " + writeVal +
-                        " " + ctx.localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME) + " " + readers);
-
                     if (dhtFut == null && !F.isEmpty(readers))
                         dhtFut = createDhtFuture(ver, req, res, completionCb, true);
 
@@ -1410,16 +1399,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                                 byte[] valBytes = valBytesTuple.getIfMarshaled();
 
-                                log.info("Add near2: " + entry.key() + " " + nodeId + " " + context().localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
-
                                 res.addNearValue(idx, writeVal, valBytes);
                             }
 
-                            log.info("Add reader2: " + entry.key() + " " + nodeId + " " + context().localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
-
                             GridFuture<Boolean> f = entry.addReader(nodeId, req.messageId());
-
-                            assert entry.readers().contains(nodeId) : nodeId;
 
                             assert f == null : f;
                         }
@@ -1726,8 +1709,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private void processDhtAtomicUpdateRequest(UUID nodeId, GridDhtAtomicUpdateRequest<K, V> req) {
         if (log.isDebugEnabled())
             log.debug("Processing dht atomic update request [nodeId=" + nodeId + ", req=" + req + ']');
-
-        log.info("Dht atomic update request " + req.keys() + ", near: " + req.nearKeys + " " + ctx.localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
 
         GridCacheVersion ver = req.writeVersion();
 

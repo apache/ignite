@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.lang.*;
@@ -211,17 +210,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
             }
 
             updateReq.addWriteValue(entry.key(), entry.keyBytes(), val, valBytes, drTtl, drExpireTime, drVer);
-
-            log.info("Add dht update " + entry.key() + " " + cctx.localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
         }
-
-        /*
-        for (UUID nodeId : mappings.keySet()) {
-            GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
-
-            log.info("Req1: " + nodeId + " " + updateReq.keys() + ", near: " + updateReq.nearKeys);
-        }
-        */
     }
 
     /**
@@ -254,17 +243,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
             nearReadersEntries.put(entry.key(), entry);
 
             updateReq.addNearWriteValue(entry.key(), entry.keyBytes(), val, valBytes);
-
-            log.info("Add readers update " + entry.key() + " " + readers + " " + cctx.localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
         }
-
-        /*
-        for (UUID nodeId : mappings.keySet()) {
-            GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
-
-            log.info("Req2: " + nodeId + " " + updateReq.keys() + ", near: " + updateReq.nearKeys);
-        }
-        */
     }
 
     /** {@inheritDoc} */
@@ -290,8 +269,6 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                 try {
                     if (log.isDebugEnabled())
                         log.debug("Sending DHT atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
-
-                    log.info("Sending: " + req.keys() + ", near: " + req.nearKeys);
 
                     cctx.io().send(req.nodeId(), req);
                 }

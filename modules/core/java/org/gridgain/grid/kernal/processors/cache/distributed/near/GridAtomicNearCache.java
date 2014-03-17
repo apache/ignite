@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
@@ -50,7 +49,7 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
         super(ctx);
 
         // TODO: 6312 (find optimal size).
-        rmvQueue = new GridCircularBuffer<>(1024 * 1024);
+        rmvQueue = new GridCircularBuffer<>(1024 * 1024 * 4);
     }
 
     /** {@inheritDoc} */
@@ -81,10 +80,6 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
                     entry = entryEx(key);
 
                     GridCacheOperation op = (val != null || valBytes != null) ? UPDATE : DELETE;
-
-                    log.info("Update near: " + key + " " + val + " " + valBytes + " " + ctx.localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
-
-                    assert !context().affinity().nodes(entry.partition()).contains(ctx.localNode()) : key;
 
                     GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                         ver,
@@ -149,8 +144,6 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
                         GridCacheEntryEx<K, V> entry = peekEx(key);
 
                         if (entry == null) {
-                            log.info("Near evicted: " + key + " " + ctx.localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
-
                             res.addNearEvicted(key, req.nearKeyBytes(i));
 
                             break;
@@ -160,10 +153,6 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
                         byte[] valBytes = req.nearValueBytes(i);
 
                         GridCacheOperation op = (val != null || valBytes != null) ? UPDATE : DELETE;
-
-                        log.info("Update near reader: " + key + " " + val + " " + valBytes + " " + ctx.localNode().attribute(GridNodeAttributes.ATTR_GRID_NAME));
-
-                        assert !context().affinity().nodes(entry.partition()).contains(ctx.localNode()) : key;
 
                         GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                             ver,
