@@ -2237,7 +2237,9 @@ public class GridConfiguration {
      * XML configuration file. {@code Jetty} is used to support REST over HTTP protocol for
      * accessing GridGain APIs remotely.
      * <p>
-     * By default, {@code Jetty} configuration file is located under {@code GRIDGAIN_HOME/config/rest/rest-jetty.xml}.
+     * If not provided, Jetty instance with default configuration will be started picking
+     * {@link GridSystemProperties#GG_JETTY_HOST} and {@link GridSystemProperties#GG_JETTY_PORT}
+     * as host and port respectively.
      *
      * @return Path to {@code JETTY} XML configuration file.
      * @see GridSystemProperties#GG_JETTY_HOST
