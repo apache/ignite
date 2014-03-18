@@ -26,7 +26,7 @@ import java.util.*;
  * @see GridFunc#t5()
  * @see GridFunc#t(Object, Object, Object, Object, Object)
  */
-public class GridTuple6<V1, V2, V3, V4, V5, V6> implements Iterable<Object>, GridPeerDeployAware, Externalizable,
+public class GridTuple6<V1, V2, V3, V4, V5, V6> implements Iterable<Object>, Externalizable,
     Cloneable {
     /** Value 1. */
     @GridToStringInclude
@@ -276,22 +276,6 @@ public class GridTuple6<V1, V2, V3, V4, V5, V6> implements Iterable<Object>, Gri
         v4 = (V4)in.readObject();
         v5 = (V5)in.readObject();
         v6 = (V6)in.readObject();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<?> deployClass() {
-        ClassLoader clsLdr = getClass().getClassLoader();
-
-        for (Object o : this)
-            if (o != null && !F.eq(o.getClass().getClassLoader(), clsLdr))
-                return o.getClass();
-
-        return getClass();
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClassLoader classLoader() {
-        return deployClass().getClassLoader();
     }
 
     /** {@inheritDoc} */
