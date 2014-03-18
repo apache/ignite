@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
-import org.gridgain.grid.util.typedef.internal.*;
+
+import java.io.*;
 
 /**
  * Defines a convenient absolute, i.e. {@code no-arg} and {@code no return value} closure. This closure
@@ -26,7 +26,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * {@link GridComputeJobAdapter}.
  * @see GridFunc
  */
-public abstract class GridAbsClosure implements Runnable, GridComputeJob {
+public abstract class GridAbsClosure implements Runnable, Serializable {
     /**
      * Absolute closure body.
      */
@@ -39,38 +39,5 @@ public abstract class GridAbsClosure implements Runnable, GridComputeJob {
      */
     @Override public final void run() {
         apply();
-    }
-
-    /**
-     * Does nothing by default. Child classes may override this method
-     * to provide implementation-specific cancellation logic.
-     * <p>
-     * Note that this method is here only to support {@link GridComputeJob} interface
-     * and only makes sense whenever this class is used as grid job or is
-     * executed via any of {@link GridProjection} methods.
-     * <p>
-     * {@inheritDoc}
-     */
-    @Override public void cancel() {
-        // No-op.
-    }
-
-    /**
-     * Delegates to {@link #apply()} method.
-     * <p>
-     * {@inheritDoc}
-     *
-     * @return {@inheritDoc}
-     * @throws GridException {@inheritDoc}
-     */
-    @Override public final Object execute() throws GridException {
-        try {
-            apply();
-        }
-        catch (Throwable e) {
-            throw U.cast(e);
-        }
-
-        return null;
     }
 }

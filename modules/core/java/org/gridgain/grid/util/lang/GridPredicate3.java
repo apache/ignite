@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 
 /**
@@ -37,7 +36,7 @@ import org.gridgain.grid.util.typedef.*;
  * @see P3
  * @see GridFunc
  */
-public abstract class GridPredicate3<E1, E2, E3> {
+public interface GridPredicate3<E1, E2, E3> {
     /**
      * Predicate body.
      *
@@ -47,47 +46,4 @@ public abstract class GridPredicate3<E1, E2, E3> {
      * @return Return value.
      */
     public abstract boolean apply(E1 e1, E2 e2, E3 e3);
-
-    /**
-     * Gets closure that applies given closure over the result of {@code this} predicate.
-     *
-     * @param c Closure.
-     * @param <A> Return type of new closure.
-     * @return New closure.
-     */
-    public <A> GridClosure3<E1, E2, E3, A> andThen(final GridClosure<Boolean, A> c) {
-        return new GridClosure3<E1, E2, E3, A>() {
-            @Override public A apply(E1 e1, E2 e2, E3 e3) {
-                return c.apply(GridPredicate3.this.apply(e1, e2, e3));
-            }
-        };
-    }
-
-    /**
-     * Gets closure that applies given closure over the result of {@code this} predicate.
-     *
-     * @param c Closure.
-     * @return New closure.
-     */
-    public GridInClosure3<E1, E2, E3> andThen(final GridInClosure<Boolean> c) {
-        return new GridInClosure3<E1, E2, E3>() {
-            @Override public void apply(E1 e1, E2 e2, E3 e3) {
-                c.apply(GridPredicate3.this.apply(e1, e2, e3));
-            }
-        };
-    }
-
-    /**
-     * Gets predicate that applies given predicate over the result of {@code this} predicate.
-     *
-     * @param c Predicate.
-     * @return New predicate.
-     */
-    public GridPredicate3<E1, E2, E3> andThen(final GridPredicate<Boolean> c) {
-        return new GridPredicate3<E1, E2, E3>() {
-            @Override public boolean apply(E1 e1, E2 e2, E3 e3) {
-                return c.apply(GridPredicate3.this.apply(e1, e2, e3));
-            }
-        };
-    }
 }
