@@ -66,27 +66,14 @@ import java.util.Map.*;
  * a previous value may involve a network trip or a persistent store lookup and should be
  * avoided whenever not needed.
  * <h1 class="header">Predicate Filters</h1>
- * All filters passed into methods on this API are checked <b>atomically</b>. In other words the
- * value returned by the methods is guaranteed to be consistent with the filters passed in.
+ * All filters passed into methods on this API are checked <b>atomically</b>. In other words the value
+ * of cache entry is guaranteed not to change throughout the cache operation.
  * <h1 class="header">Transactions</h1>
  * Cache API supports distributed transactions. All {@code 'get(..)'}, {@code 'put(..)'}, {@code 'replace(..)'},
- * and {@code 'remove(..)'} operations are transactional and will participate in an ongoing transaction,
- * if any. Other methods like {@code 'peek(..)'} may
- * be transaction-aware, i.e. check in-transaction entries first, but will not affect the current
- * state of transaction. See {@link GridCacheTx} documentation for more information
+ * and {@code 'remove(..)'} operations are transactional and will participate in an ongoing transaction.
+ * Other methods like {@code 'peek(..)'} may be transaction-aware, i.e. check in-transaction entries first, but
+ * will not affect the current state of transaction. See {@link GridCacheTx} documentation for more information
  * about transactions.
- * <h1 class="header">Null Keys or Values</h1>
- * Neither {@code null} keys or values are allowed to be stored in cache. If a {@code null} value
- * happens to be in cache (e.g. after invalidation or remove), then cache will treat this case
- * as there is no value at all.
- * <p>
- * All API method with {@link Nullable @Nullable} annotation on method parameters
- * or return values either accept or may return a {@code null} value. Parameters that do not
- * have this annotation cannot be {@code null} and invoking method with a {@code null} parameter
- * in this case will result in {@link NullPointerException}.
- * <h1 class="header">Peer Class Loading</h1>
- * All classes passed into cache API will be automatically deployed to any participating grid nodes.
- * No explicit deployment step is required.
  * @param <K> Key type.
  * @param <V> Value type.
  */
@@ -564,7 +551,6 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
 
     /**
      * Gets size of serialized key and value in addition to any overhead added by {@code GridGain} itself.
-     * <p>
      *
      * @return size in bytes.
      * @throws GridException If failed to evaluate entry size.
