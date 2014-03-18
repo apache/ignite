@@ -230,8 +230,6 @@ class GridUpdateNotifier {
                     "p=" + gridName)
                     .openConnection();
 
-                log.info("!! Url: " + conn.getURL());
-
                 if (!isCancelled()) {
                     // Timeout after 3 seconds.
                     conn.setConnectTimeout(3000);
