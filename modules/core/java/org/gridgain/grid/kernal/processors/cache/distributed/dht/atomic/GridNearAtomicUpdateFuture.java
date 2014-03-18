@@ -367,11 +367,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         int nearValIdx = 0;
 
         for (int i = 0; i < req.keys().size(); i++) {
-            if (F.contains(skipped, i)) {
-                nearValIdx++;
-
+            if (F.contains(skipped, i))
                 continue;
-            }
 
             K key = req.keys().get(i);
 
@@ -391,6 +388,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             if (F.contains(nearValsIdxs, i)) {
                 val = res.nearValue(nearValIdx);
                 valBytes = res.nearValueBytes(nearValIdx);
+
+                nearValIdx++;
             }
             else {
                 assert req.operation() != TRANSFORM;
@@ -407,8 +406,6 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             catch (GridException e) {
                 res.addFailedKey(key, new GridException("Failed to update key in near cache: " + key, e));
             }
-
-            nearValIdx++;
         }
     }
 

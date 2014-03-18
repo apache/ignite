@@ -789,7 +789,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ttlMgr,
                     drMgr);
 
-
                 GridDhtCacheAdapter dht = null;
 
                 switch (cfg.getAtomicityMode()) {
