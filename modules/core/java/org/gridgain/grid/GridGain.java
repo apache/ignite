@@ -37,7 +37,7 @@ import java.util.*;
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
  * {@link GridConfiguration} to override some default configuration. Below is an
- * example on how to start grid with <strong>URI deployment</strong>.
+ * example on how to start grid with custom configuration for <strong>URI deployment</strong>.
  * <pre name="code" class="java">
  * GridConfiguration cfg = new GridConfiguration();
  *
@@ -59,9 +59,6 @@ import java.util.*;
  *     &lt;property name="userAttributes"&gt;
  *         &lt;map&gt;
  *             &lt;entry key="group" value="worker"/&gt;
- *             &lt;entry key="grid.node.benchmark"&gt;
- *                 &lt;bean class="org.gridgain.grid.benchmarks.GridLocalNodeBenchmark" init-method="start"/&gt;
- *             &lt;/entry&gt;
  *         &lt;/map&gt;
  *     &lt;/property&gt;
  *     ...
@@ -73,7 +70,7 @@ import java.util.*;
  * absolute or relative to GRIDGAIN_HOME.
  * <pre name="code" class="java">
  * ...
- * G.start("/path/to/spring/xml/file.xml");
+ * GridGain.start("/path/to/spring/xml/file.xml");
  * ...
  * </pre>
  * You can also instantiate grid directly from Spring without using {@code GridGain}.
