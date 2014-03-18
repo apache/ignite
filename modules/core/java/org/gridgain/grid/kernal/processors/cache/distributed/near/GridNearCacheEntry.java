@@ -115,9 +115,16 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
                     synchronized (this) {
                         checkObsolete();
 
-                        if (isNew()) {
+                        if (isNew() || !valid(-1)) {
                             // Version does not change for load ops.
                             update(e.value(), e.valueBytes(), e.expireTime(), e.ttl(), e.isNew() ? ver : e.version());
+
+                            if (cctx.deferredDelete()) {
+                                boolean deleted = val == null && valBytes == null;
+
+                                if (deleted != deletedUnlocked())
+                                    deletedUnlocked(deleted);
+                            }
 
                             recordNodeId(cctx.affinity().primary(key, topVer).id());
 
@@ -255,22 +262,6 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isNew() throws GridCacheEntryRemovedException {
-        assert Thread.holdsLock(this);
-
-        checkObsolete();
-
-        return isStartVersion() || !valid(-1);
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized boolean isNewLocked() throws GridCacheEntryRemovedException {
-        checkObsolete();
-
-        return isStartVersion() || !valid(-1);
-    }
-
     /**
      * @return ID of primary node from which this value was loaded.
      */
@@ -327,7 +318,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         GridCacheVersion ver, GridCacheVersion dhtVer, @Nullable GridCacheVersion expVer, long ttl, long expireTime,
         boolean evt)
         throws GridException, GridCacheEntryRemovedException {
-        if (valBytes != null && val == null && isNewLocked())
+        if (valBytes != null && val == null && (isNewLocked() || !valid(-1)))
             val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
 
         synchronized (this) {
@@ -348,6 +339,13 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
                 // Change entry only if dht version has changed.
                 if (!dhtVer.equals(dhtVersion())) {
                     update(val, valBytes, expireTime, ttl, ver);
+
+                    if (cctx.deferredDelete()) {
+                        boolean deleted =  val == null && valBytes == null;
+
+                        if (deleted != deletedUnlocked())
+                            deletedUnlocked(deleted);
+                    }
 
                     recordDhtVersion(dhtVer);
 

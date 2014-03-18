@@ -393,7 +393,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                         // If near cache does not have value, then we peek DHT cache.
                         if (entry != null) {
-                            boolean isNew = entry.isNewLocked();
+                            boolean isNew = entry.isNewLocked() || !entry.valid(-1);
 
                             v = entry.innerGet(tx, /*swap*/true, /*read-through*/false, /*fail-fast*/true,
                                 /*unmarshal*/true, /*update-metrics*/false, !isNear, filters);

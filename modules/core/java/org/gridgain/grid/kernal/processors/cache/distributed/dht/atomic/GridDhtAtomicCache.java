@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
@@ -1155,6 +1154,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 Object writeVal = req.writeValue(i);
 
+                Collection<UUID> readers = checkReaders ? F.view(entry.readers(), F.notEqualTo(nodeId)) : null;
+
                 GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                     ver,
                     nodeId,
@@ -1175,8 +1176,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     newDrExpireTime,
                     newDrVer,
                     true);
-
-                Collection<UUID> readers = checkReaders ? entry.readers() : null;
 
                 if (dhtFut == null && !F.isEmpty(readers))
                     dhtFut = createDhtFuture(ver, req, res, completionCb, true);
@@ -1223,7 +1222,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (op == TRANSFORM || writeVal != updRes.newValue())
                             res.addNearValue(i, updRes.newValue(), newValBytes);
 
-                        if (updRes.removeVersion() == null) {
+                        if (updRes.newValue() != null || newValBytes != null) {
                             GridFuture<Boolean> f = entry.addReader(nodeId, req.messageId());
 
                             assert f == null : f;
@@ -1349,6 +1348,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     boolean primary = !req.fastMap() || ctx.affinity().primary(ctx.localNode(), entry.key(),
                         req.topologyVersion());
 
+                    Collection<UUID> readers = checkReaders ? F.view(entry.readers(), F.notEqualTo(nodeId)) : null;
+
                     GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                         ver,
                         nodeId,
@@ -1371,8 +1372,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         false);
 
                     result.addDeleted(entry, updRes, entries);
-
-                    Collection<UUID> readers = checkReaders ? entry.readers() : null;
 
                     if (dhtFut == null && !F.isEmpty(readers))
                         dhtFut = createDhtFuture(ver, req, res, completionCb, true);
@@ -1402,7 +1401,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 res.addNearValue(idx, writeVal, valBytes);
                             }
 
-                            if (updRes.removeVersion() == null) {
+                            if (writeVal != null || !entry.valueBytes().isNull()) {
                                 GridFuture<Boolean> f = entry.addReader(nodeId, req.messageId());
 
                                 assert f == null : f;

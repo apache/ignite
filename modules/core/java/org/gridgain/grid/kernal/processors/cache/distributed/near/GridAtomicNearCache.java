@@ -109,7 +109,7 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     if (log.isDebugEnabled())
-                        log.debug("Got removed entry while updating backup value (will retry): " + key);
+                        log.debug("Got removed entry while updating near cache value (will retry): " + key);
 
                     entry = null;
                 }
@@ -134,6 +134,19 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
         GridCacheVersion ver = req.writeVersion();
 
         assert ver != null;
+
+        // TODO: 6312 (remove entry if near node became primary or backup, discuss better fix).
+        for (int i = 0; i < req.size(); i++) {
+            K key = req.key(i);
+
+            GridCacheEntryEx<K, V> entry = peekEx(key);
+
+            if (entry == null)
+                continue;
+
+            if (entry.markObsolete(ver))
+                removeEntry(entry);
+        }
 
         for (int i = 0; i < req.nearSize(); i++) {
             K key = req.nearKey(i);
