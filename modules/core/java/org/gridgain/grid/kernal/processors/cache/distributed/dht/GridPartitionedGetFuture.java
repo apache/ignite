@@ -378,13 +378,13 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
                         // If our DHT cache do has value, then we peek it.
                         if (entry != null) {
-                            boolean isNew = entry.isNewLocked();
+                            boolean isNew = entry.isNewLocked(topVer);
 
                             V v = entry.innerGet(tx, /*swap*/true, /*read-through*/false, /*fail-fast*/true,
-                                /*unmarshal*/true, /**update-metrics*/true, true, filters);
+                                /*unmarshal*/true, /**update-metrics*/true, true, topVer, filters);
 
                             if (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))
-                                colocated.context().evicts().touch(entry);
+                                colocated.context().evicts().touch(entry, topVer);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {
@@ -441,7 +441,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     log.debug("Filter validation failed for entry: " + e);
 
                 if (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))
-                    colocated.context().evicts().touch(entry);
+                    colocated.context().evicts().touch(entry, topVer);
 
                 break;
             }

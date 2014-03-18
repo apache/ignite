@@ -567,6 +567,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                 GridDrType drType = cctx.isReplicationEnabled() ? DR_PRIMARY : DR_NONE;
 
+                long topVer = topologyVersion();
+
                 /*
                  * Commit to cache. Note that for 'near' transaction we loop through all the entries.
                  */
@@ -681,6 +683,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             txEntry.ttl(),
                                             evt,
                                             metrics,
+                                            topVer,
                                             txEntry.filters(),
                                             cached.detached() ? DR_NONE : drType,
                                             txEntry.drExpireTime(),
@@ -698,6 +701,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                                 txEntry.ttl(),
                                                 false,
                                                 metrics,
+                                                topVer,
                                                 CU.<K, V>empty(),
                                                 DR_NONE,
                                                 txEntry.drExpireTime(),
@@ -712,6 +716,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             false,
                                             evt,
                                             metrics,
+                                            topVer,
                                             txEntry.filters(),
                                             cached.detached()  ? DR_NONE : drType,
                                             near() ? null : explicitVer);
@@ -725,15 +730,16 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                                 false,
                                                 false,
                                                 metrics,
+                                                topVer,
                                                 CU.<K, V>empty(),
                                                 DR_NONE,
                                                 null);
                                     }
                                     else if (op == RELOAD) {
-                                        cached.innerReload(CU.<K, V>empty());
+                                        cached.innerReload(topVer, CU.<K, V>empty());
 
                                         if (nearCached != null)
-                                            nearCached.innerReload(CU.<K, V>empty());
+                                            nearCached.innerReload(topVer, CU.<K, V>empty());
                                     }
                                     else if (op == READ) {
                                         assert near();
@@ -950,6 +956,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
         Collection<K> lockKeys = null;
 
+        long topVer = topologyVersion();
+
         // In this loop we cover only read-committed or optimistic transactions.
         // Transactions that are pessimistic and not read-committed are covered
         // outside of this loop.
@@ -981,7 +989,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         while (true) {
                             try {
                                 val = txEntry.cached().innerGet(this, true, /*no read-through*/false, true, true, true,
-                                    true, filter);
+                                    true, topVer, filter);
 
                                 if (val != null) {
                                     if (!readCommitted())
@@ -1007,7 +1015,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     txEntry.readValue(e.<V>value());
                             }
                             catch (GridCacheEntryRemovedException ignored) {
-                                txEntry.cached(entryEx(key, topologyVersion()), txEntry.keyBytes());
+                                txEntry.cached(entryEx(key, topVer), txEntry.keyBytes());
                             }
                         }
                     }
@@ -1030,7 +1038,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         cached = null;
                     }
                     else
-                        entry = entryEx(key, topologyVersion());
+                        entry = entryEx(key, topVer);
 
                     try {
                         GridCacheVersion ver = entry.version();
@@ -1039,7 +1047,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                         if (!pessimistic() || readCommitted() || groupLock()) {
                             // This call will check for filter.
-                            val = entry.innerGet(this, true, /*no read-through*/false, true, true, true, true, filter);
+                            val = entry.innerGet(this, true, /*no read-through*/false, true, true, true, true,
+                                topVer, filter);
 
                             if (val != null)
                                 map.put(key, val);
@@ -1216,7 +1225,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             assert set || !pessimistic();
 
                             if (readCommitted() || groupLock()) {
-                                cctx.evicts().touch(e);
+                                cctx.evicts().touch(e, topologyVersion());
 
                                 if (pass && visibleVal != null)
                                     map.put(key, visibleVal);
@@ -1286,7 +1295,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 txEntry.cached();
 
                             if (entry != null)
-                                cctx.evicts().touch(entry);
+                                cctx.evicts().touch(entry, topologyVersion());
                         }
                     }
 
@@ -1346,7 +1355,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 try {
                                     V val = cached.innerGet(GridCacheTxLocalAdapter.this, swapEnabled,
                                         /*read-through*/false, /*fail-fast*/true, /*unmarshal*/true,
-                                        /*metrics*/true, /*events*/true, filter);
+                                        /*metrics*/true, /*events*/true, topologyVersion(), filter);
 
                                     // If value is in cache and passed the filter.
                                     if (val != null) {
@@ -1776,7 +1785,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     //Should read through if filter is specified.
                                     old = entry.innerGet(this, /*swap*/false, /*read-through*/readThrough,
                                         /*fail-fast*/false, retval, /*metrics*/retval,
-                                        /*events*/retval, CU.<K, V>empty());
+                                        /*events*/retval, topologyVersion(), CU.<K, V>empty());
                                 }
                                 catch (GridCacheFilterFailedException e) {
                                     e.printStackTrace();
@@ -1802,7 +1811,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 }
 
                                 if (readCommitted() || old == null)
-                                    cctx.evicts().touch(entry);
+                                    cctx.evicts().touch(entry, topologyVersion());
 
                                 break; // While.
                             }
@@ -1812,7 +1821,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 drExpireTime, drVer);
 
                             if (!implicit() && readCommitted())
-                                cctx.evicts().touch(entry);
+                                cctx.evicts().touch(entry, topologyVersion());
 
                             if (groupLock() && !lockOnly)
                                 txEntry.groupLockEntry(true);
@@ -1936,6 +1945,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         boolean retval,
         GridPredicate<GridCacheEntry<K, V>>[] filter
     ) throws GridException {
+        long topVer = topologyVersion();
+
         for (K k : keys) {
             GridCacheTxEntry<K, V> txEntry = entry(k);
 
@@ -1973,7 +1984,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     // Entry should have been unswapped by now.
                                     v = cached.innerGet(this, /*swap*/ false, /*read-through*/retval,
                                          /*failFast*/false, /*unmarshal*/retval, /*metrics*/true, /*event*/!dht(),
-                                        CU.<K, V>empty());
+                                        topVer, CU.<K, V>empty());
                             }
                             catch (GridCacheFilterFailedException e) {
                                 e.printStackTrace();

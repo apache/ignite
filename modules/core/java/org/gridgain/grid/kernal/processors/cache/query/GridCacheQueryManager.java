@@ -688,6 +688,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             Collection<Object> data = new ArrayList<>(pageSize);
 
+            long topVer = cctx.discovery().topologyVersion();
+
             while (!Thread.currentThread().isInterrupted() && iter.hasNext()) {
                 GridIndexingKeyValueRow<K, V> row = iter.next();
 
@@ -702,11 +704,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 // Filter backups for SCAN queries. Other types are filtered in indexing manager.
                 if (!cctx.isReplicated() && cctx.config().getCacheMode() != LOCAL && qry.type() == SCAN &&
-                    !incBackups && !cctx.affinity().primary(cctx.localNode(), key)) {
+                    !incBackups && !cctx.affinity().primary(cctx.localNode(), key, topVer)) {
                     if (log.isDebugEnabled())
                         log.debug("Ignoring backup element [row=" + row +
                             ", cacheMode=" + cctx.config().getCacheMode() + ", incBackups=" + incBackups +
-                            ", primary=" + cctx.affinity().primary(cctx.localNode(), key) + ']');
+                            ", primary=" + cctx.affinity().primary(cctx.localNode(), key, topVer) + ']');
 
                     continue;
                 }
@@ -719,7 +721,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 if (log.isDebugEnabled())
                     log.debug("Record [key=" + key + ", val=" + val + ", incBackups=" +
-                        incBackups + "priNode=" + U.id8(CU.primaryNode(cctx, key).id()) +
+                        incBackups + "priNode=" + U.id8(cctx.affinity().primary(key, topVer).id()) +
                         ", node=" + U.id8(cctx.grid().localNode().id()) + ']');
 
                 if (val == null) {

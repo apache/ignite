@@ -632,7 +632,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @return {@code False} if partition has become invalid during preloading.
          * @throws GridInterruptedException If interrupted.
          */
-        private boolean preloadEntry(GridNode pick, int p, GridCacheEntryInfo<K, V> entry)
+        private boolean preloadEntry(GridNode pick, int p, GridCacheEntryInfo<K, V> entry, long topVer)
             throws GridException, GridInterruptedException {
             try {
                 GridCacheEntryEx<K, V> cached = null;
@@ -662,9 +662,10 @@ public class GridDhtPartitionDemandPool<K, V> {
                             entry.ttl(),
                             entry.expireTime(),
                             true,
+                            topVer,
                             cctx.isReplicationEnabled() ? DR_PRELOAD : DR_NONE
                         )) {
-                            cctx.evicts().touch(cached); // Start tracking.
+                            cctx.evicts().touch(cached, topVer); // Start tracking.
 
                             if (cctx.events().isRecordable(EVT_CACHE_PRELOAD_OBJECT_LOADED) && !cached.isInternal())
                                 cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(),
@@ -869,7 +870,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                                                     continue;
                                                 }
 
-                                                if (!preloadEntry(node, p, entry)) {
+                                                if (!preloadEntry(node, p, entry, topVer)) {
                                                     invalidParts.add(p);
 
                                                     if (log.isDebugEnabled())
@@ -921,7 +922,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                         // Only request partitions based on latest topology version.
                         missed.addAll(F.view(s.supply().missed(), new P1<Integer>() {
                             @Override public boolean apply(Integer p) {
-                                return cctx.affinity().localNode(p);
+                                return cctx.affinity().localNode(p, topVer);
                             }
                         }));
 

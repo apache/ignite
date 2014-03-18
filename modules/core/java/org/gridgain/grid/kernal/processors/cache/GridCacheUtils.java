@@ -1210,7 +1210,7 @@ public class GridCacheUtils {
         if (cfg.getCacheMode() != PARTITIONED)
             return ctx.localNode();
 
-        GridNode primary = ctx.affinity().primary(key);
+        GridNode primary = ctx.affinity().primary(key, ctx.discovery().topologyVersion());
 
         assert primary != null;
 

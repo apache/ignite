@@ -143,11 +143,6 @@ public class GridDhtCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheEntryEx<K, V> entryEx(boolean touch) {
-        return dht().entryExx(key, /*allow detached*/true, touch);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isLocked() {
         // Check colocated explicit locks.
         return ctx.mvcc().isLockedByThread(key, -1);

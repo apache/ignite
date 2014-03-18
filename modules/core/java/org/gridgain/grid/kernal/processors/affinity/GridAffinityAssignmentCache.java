@@ -14,9 +14,11 @@ import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -58,6 +60,8 @@ public class GridAffinityAssignmentCache {
     /** Ready futures. */
     private ConcurrentMap<Long, AffinityReadyFuture> readyFuts = new ConcurrentHashMap8<>();
 
+    private GridLogger log;
+
     /**
      * Constructs affinity cached calculations.
      *
@@ -73,6 +77,8 @@ public class GridAffinityAssignmentCache {
         this.affMapper = affMapper;
         this.cacheName = cacheName;
         this.backups = backups;
+
+        log = ctx.logger(GridAffinityAssignmentCache.class);
 
         partsCnt = aff.partitions();
         affCache = new ConcurrentLinkedHashMap<>();
@@ -105,6 +111,8 @@ public class GridAffinityAssignmentCache {
      * @param discoEvt Discovery event that caused this topology version change.
      */
     public List<List<GridNode>> calculate(long topVer, GridDiscoveryEvent discoEvt) {
+        U.debug(log, "Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() + ']');
+
         GridAffinityAssignment prev = affCache.get(topVer - 1);
 
         List<GridNode> sorted;
@@ -140,8 +148,12 @@ public class GridAffinityAssignmentCache {
         }
 
         for (Map.Entry<Long, AffinityReadyFuture> entry : readyFuts.entrySet()) {
-            if (entry.getKey() >= topVer)
+            if (entry.getKey() <= topVer) {
+                U.debug(log, "Completing topology ready future (calculated affinity) [locNodeId=" + ctx.localNodeId() +
+                    ", futVer=" + entry.getKey() + ", topVer=" + topVer + ']');
+
                 entry.getValue().onDone(topVer);
+            }
         }
 
         return updated.assignment();
@@ -177,14 +189,24 @@ public class GridAffinityAssignmentCache {
     public GridFuture<Long> readyFuture(long topVer) {
         GridAffinityAssignment aff = head.get();
 
-        if (aff.topologyVersion() >= topVer)
+        if (aff.topologyVersion() >= topVer) {
+            U.debug(log, "Returning finished future for readyFuture [head=" + aff.topologyVersion() +
+                ", topVer=" + topVer + ']');
+
             return new GridFinishedFutureEx<>(topVer);
+        }
 
         GridFutureAdapter<Long> fut = F.addIfAbsent(readyFuts, topVer,
             new AffinityReadyFuture(ctx.kernalContext()));
 
-        if (head.get().topologyVersion() >= topVer)
+        aff = head.get();
+
+        if (aff.topologyVersion() >= topVer) {
+            U.debug(log, "Completing topology ready future right away [head=" + aff.topologyVersion() +
+                ", topVer=" + topVer + ']');
+
             fut.onDone(topVer);
+        }
 
         return fut;
     }
@@ -283,9 +305,13 @@ public class GridAffinityAssignmentCache {
             return;
 
         try {
-            System.out.println("WIll wait for topology version: " + topVer);
+            U.debug(log, "Will wait for topology version [locNodeId=" + ctx.localNodeId() +
+                ", topVer=" + topVer + ']');
 
             readyFuture(topVer).get();
+
+            U.debug(log, "Finished waiting for topology version [locNodeId=" + ctx.localNodeId() +
+                ", topVer=" + topVer + ']');
         }
         catch (GridException e) {
             throw new GridRuntimeException("Failed to wait for affinity ready future for topology version: " + topVer,
@@ -317,6 +343,7 @@ public class GridAffinityAssignmentCache {
          * Empty constructor required by {@link Externalizable}.
          */
         public AffinityReadyFuture() {
+            // No-op.
         }
 
         /**

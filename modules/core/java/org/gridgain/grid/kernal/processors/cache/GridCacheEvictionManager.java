@@ -750,7 +750,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
     /**
      * @param e Entry for eviction policy notification.
      */
-    public void touch(GridCacheEntryEx<K, V> e) {
+    public void touch(GridCacheEntryEx<K, V> e, long topVer) {
         if (e.detached() || e.isInternal())
             return;
 
@@ -778,7 +778,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         // Don't track non-primary entries if evicts are synchronized.
         if ((cctx.isDht() || cctx.isColocated()) && evictSync &&
-            !cctx.affinity().primary(cctx.localNode(), e.partition()))
+            !cctx.affinity().primary(cctx.localNode(), e.partition(), topVer))
             return;
 
         if (!busyLock.enterBusy())
@@ -1278,7 +1278,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         if (cctx.config().getCacheMode() == REPLICATED) {
             if (evictSync) {
                 backups = new HashSet<>(
-                    F.view(cctx.affinity().nodes(entry.partition()), F.remoteNodes(cctx.localNodeId())));
+                    F.view(cctx.affinity().nodes(entry.partition(), topVer), F.remoteNodes(cctx.localNodeId())));
             }
             else
                 backups = Collections.emptySet();
@@ -1423,7 +1423,8 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             GridNode loc = cctx.localNode();
 
             // Initialize.
-            primaryParts.addAll(cctx.affinity().primaryPartitions(cctx.localNodeId()));
+            primaryParts.addAll(cctx.affinity().primaryPartitions(cctx.localNodeId(),
+                cctx.discovery().topologyVersion()));
 
             while (!isCancelled()) {
                 GridDiscoveryEvent evt = evts.take();
@@ -1436,7 +1437,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                     if (!evts.isEmpty())
                         break;
 
-                    if (!cctx.affinity().primary(loc, it.next()))
+                    if (!cctx.affinity().primary(loc, it.next(), evt.topologyVersion()))
                         it.remove();
                 }
 
@@ -1448,7 +1449,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                     if (!evts.isEmpty())
                         break;
 
-                    if (part.primary() && primaryParts.add(part.id())) {
+                    if (part.primary(evt.topologyVersion()) && primaryParts.add(part.id())) {
                         if (log.isDebugEnabled())
                             log.debug("Touching partition entries: " + part);
 

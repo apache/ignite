@@ -191,13 +191,15 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public void unlockAll(Collection<? extends K> keys,
         GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        long topVer = ctx.discovery().topologyVersion();
+
         for (K key : keys) {
             GridLocalCacheEntry<K, V> entry = peekExx(key);
 
             if (entry != null && ctx.isAll(entry, filter)) {
                 entry.releaseLocal();
 
-                ctx.evicts().touch(entry);
+                ctx.evicts().touch(entry, topVer);
             }
         }
     }

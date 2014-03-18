@@ -74,6 +74,8 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean valid(long topVer) {
+        assert topVer > 0;
+
         UUID primaryNodeId = this.primaryNodeId;
 
         if (primaryNodeId == null)
@@ -86,9 +88,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         }
 
         // Make sure that primary node is alive before returning this value.
-        GridNode primary = topVer > 0 ?
-            cctx.affinity().primary(key(), topVer) :
-            cctx.affinity().primary(key());
+        GridNode primary = cctx.affinity().primary(key(), topVer);
 
         if (primary != null && primary.id().equals(primaryNodeId))
             return true;
@@ -115,7 +115,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
                     synchronized (this) {
                         checkObsolete();
 
-                        if (isNew()) {
+                        if (isNew(topVer)) {
                             // Version does not change for load ops.
                             update(e.value(), e.valueBytes(), e.expireTime(), e.ttl(), e.isNew() ? ver : e.version());
 
@@ -256,19 +256,19 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isNew() throws GridCacheEntryRemovedException {
+    @Override public boolean isNew(long topVer) throws GridCacheEntryRemovedException {
         assert Thread.holdsLock(this);
 
         checkObsolete();
 
-        return isStartVersion() || !valid(-1);
+        return isStartVersion() || !valid(topVer);
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized boolean isNewLocked() throws GridCacheEntryRemovedException {
+    @Override public synchronized boolean isNewLocked(long topVer) throws GridCacheEntryRemovedException {
         checkObsolete();
 
-        return isStartVersion() || !valid(-1);
+        return isStartVersion() || !valid(topVer);
     }
 
     /**
@@ -325,9 +325,9 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     @SuppressWarnings({"RedundantTypeArguments"})
     public boolean loadedValue(@Nullable GridCacheTx tx, UUID primaryNodeId, V val, byte[] valBytes,
         GridCacheVersion ver, GridCacheVersion dhtVer, @Nullable GridCacheVersion expVer, long ttl, long expireTime,
-        boolean evt)
+        boolean evt, long topVer)
         throws GridException, GridCacheEntryRemovedException {
-        if (valBytes != null && val == null && isNewLocked())
+        if (valBytes != null && val == null && isNewLocked(topVer))
             val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
 
         synchronized (this) {
@@ -340,7 +340,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             V old = this.val;
             boolean hasVal = hasValueUnlocked();
 
-            if (isNew() || !valid(-1) || expVer == null || expVer.equals(this.dhtVer)) {
+            if (isNew(topVer) || !valid(topVer) || expVer == null || expVer.equals(this.dhtVer)) {
                 this.primaryNodeId = primaryNodeId;
 
                 refreshingLocked(false);

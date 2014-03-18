@@ -84,28 +84,13 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /**
-     * @param touch Whether should touch created entry for evictions.
-     * @return Cache entry.
-     */
-    public GridCacheEntryEx<K, V> unwrapCreate(boolean touch) {
-        GridCacheEntryEx<K, V> cached = this.cached;
-
-        if (cached == null)
-            this.cached = cached = entryEx(touch);
-
-        assert cached != null;
-
-        return cached;
-    }
-
-    /**
      * @return Cache entry.
      */
     @Nullable public GridCacheEntryEx<K, V> unwrapNoCreate() {
         GridCacheEntryEx<K, V> cached = this.cached;
 
         if (cached == null || cached.obsolete())
-            this.cached = cached = peekEx();
+            this.cached = cached = peekEx(ctx.discovery().topologyVersion());
 
         return cached;
     }
@@ -121,7 +106,9 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
         GridCacheEntryEx<K, V> cached = this.cached;
 
         if (cached == null) {
-            this.cached = cached = create ? entryEx(false) : peekEx();
+            long topVer = ctx.discovery().topologyVersion();
+
+            this.cached = cached = create ? entryEx(false, topVer) : peekEx(topVer);
 
             return F.t(cached, create);
         }
@@ -138,15 +125,17 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     private GridCacheEntryEx<K, V> unwrapForMeta() {
         GridCacheEntryEx<K, V> cached = this.cached;
 
+        long topVer = ctx.discovery().topologyVersion();
+
         if (cached == null || cached.obsolete())
-            this.cached = cached = peekEx();
+            this.cached = cached = peekEx(topVer);
 
         // Try create only if cache allows empty entries.
         if (cached == null)
             throw new GridRuntimeException("Failed to access cache entry metadata (entry is not present). " +
                 "Put value to cache before accessing metadata: " + key);
 
-        this.cached = cached = entryEx(true);
+        this.cached = cached = entryEx(true, topVer);
 
         assert cached != null;
 
@@ -154,12 +143,12 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    protected GridCacheEntryEx<K, V> entryEx(boolean touch) {
+    protected GridCacheEntryEx<K, V> entryEx(boolean touch, long topVer) {
         return ctx.cache().entryEx(key, touch);
     }
 
     /** {@inheritDoc} */
-    @Nullable protected GridCacheEntryEx<K, V> peekEx() {
+    @Nullable protected GridCacheEntryEx<K, V> peekEx(long topVer) {
         return ctx.cache().peekEx(key);
     }
 
@@ -228,13 +217,14 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public boolean primary() {
-        return ctx.config().getCacheMode() != PARTITIONED || F.eq(ctx.affinity().primary(key), ctx.localNode());
+        return ctx.config().getCacheMode() != PARTITIONED ||
+            ctx.affinity().primary(ctx.localNode(), key, ctx.discovery().topologyVersion());
     }
 
     /** {@inheritDoc} */
     @Override public boolean backup() {
         return ctx.config().getCacheMode() == PARTITIONED &&
-            F.viewReadOnly(ctx.affinity().backups(key), F.node2id()).contains(ctx.nodeId());
+            ctx.affinity().backups(key, ctx.discovery().topologyVersion()).contains(ctx.localNode());
     }
 
     /** {@inheritDoc} */
@@ -740,7 +730,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
         GridCacheEntryEx<K, V> cached = this.cached;
 
         if (cached == null)
-            this.cached = cached = entryEx(true);
+            this.cached = cached = entryEx(true, ctx.discovery().topologyVersion());
 
         return cached.memorySize();
     }

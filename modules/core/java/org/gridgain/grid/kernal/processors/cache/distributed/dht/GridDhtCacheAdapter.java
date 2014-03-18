@@ -404,9 +404,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @throws GridDhtInvalidPartitionException if entry does not belong to this node and
      *      {@code allowDetached} is {@code false}.
      */
-    public GridCacheEntryEx<K, V> entryExx(K key, boolean allowDetached, boolean touch) {
+    public GridCacheEntryEx<K, V> entryExx(K key, long topVer, boolean allowDetached, boolean touch) {
         try {
-            return allowDetached && !ctx.affinity().localNode(key) ?
+            return allowDetached && !ctx.affinity().localNode(key, topVer) ?
                 new GridDhtDetachedCacheEntry<>(ctx, key, key.hashCode(), null, null, 0, 0) :
                 entryEx(key, touch);
         }
@@ -431,6 +431,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final boolean replicate = ctx.isReplicationEnabled();
 
+        final long topVer = ctx.discovery().topologyVersion();
+
         ctx.store().loadCache(new CI3<K, V, GridCacheVersion>() {
             @Override public void apply(K key, V val, @Nullable GridCacheVersion ver) {
                 assert ver == null;
@@ -448,7 +450,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         try {
                             entry = entryEx(key, false);
 
-                            entry.initialValue(val, null, ver0, ttl, -1, false, replicate ? DR_LOAD : DR_NONE);
+                            entry.initialValue(val, null, ver0, ttl, -1, false, topVer, replicate ? DR_LOAD : DR_NONE);
                         }
                         catch (GridException e) {
                             throw new GridRuntimeException("Failed to put cache value: " + entry, e);
@@ -459,7 +461,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         }
                         finally {
                             if (entry != null)
-                                entry.context().evicts().touch(entry);
+                                entry.context().evicts().touch(entry, topVer);
 
                             part.release();
                         }
@@ -480,8 +482,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     @Override public int primarySize() {
         int sum = 0;
 
+        long topVer = ctx.discovery().topologyVersion();
+
         for (GridDhtLocalPartition<K, V> p : topology().currentLocalPartitions()) {
-            if (p.primary())
+            if (p.primary(topVer))
                 sum += p.publicSize();
         }
 
@@ -2267,7 +2271,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                     if (ret)
                                         val = e.innerGet(tx, true/*swap*/, true/*read-through*/, /*fail-fast.*/false,
                                             /*unmarshal*/false, /*update-metrics*/true,
-                                            /*event notification*/req.returnValue(i), CU.<K, V>empty());
+                                            /*event notification*/req.returnValue(i), req.topologyVersion(),
+                                            CU.<K, V>empty());
 
                                     assert e.lockedBy(mappedVer) ||
                                         (ctx.mvcc().isRemoved(mappedVer) && req.timeout() > 0) :
@@ -2459,7 +2464,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         if (created && entry.markObsolete(req.version()))
                             removeEntry(entry);
 
-                        ctx.evicts().touch(entry);
+                        // TODO.
+                        ctx.evicts().touch(entry, ctx.discovery().topologyVersion());
 
                         break;
                     }
@@ -2630,7 +2636,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     if (cand == null)
                         cand = entry.candidate(dhtVer);
 
-                    long topVer = cand == null ? -1 : cand.topologyVersion();
+                    long topVer = cand == null ? ctx.discovery().topologyVersion() : cand.topologyVersion();
 
                     // Note that we obtain readers before lock is removed.
                     // Even in case if entry would be removed just after lock is removed,
@@ -2657,7 +2663,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     if (created && entry.markObsolete(dhtVer))
                         removeEntry(entry);
 
-                    ctx.evicts().touch(entry);
+                    ctx.evicts().touch(entry, topVer);
 
                     break;
                 }

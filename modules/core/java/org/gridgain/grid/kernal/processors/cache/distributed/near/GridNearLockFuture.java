@@ -798,7 +798,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                                     try {
                                         if (dhtEntry != null)
-                                            val = dhtEntry.versionedValue();
+                                            val = dhtEntry.versionedValue(topVer);
                                     }
                                     catch (GridCacheEntryRemovedException ignored) {
                                         assert dhtEntry.obsolete() : " Got removed exception for non-obsolete entry: "

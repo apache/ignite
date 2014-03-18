@@ -272,7 +272,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                         boolean partMissing = false;
 
                         for (GridCacheEntryEx<K, V> e : loc.entries()) {
-                            if (!cctx.affinity().belongs(node, part)) {
+                            if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
                                 // Demander no longer needs this partition, so we send '-1' partition and move on.
                                 s.missed(part);
 
@@ -325,7 +325,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                                     boolean prepared = false;
 
                                     for (Map.Entry<byte[], GridCacheSwapEntry<V>> e : iter) {
-                                        if (!cctx.affinity().belongs(node, part)) {
+                                        if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
                                             // Demander no longer needs this partition,
                                             // so we send '-1' partition and move on.
                                             s.missed(part);
@@ -416,7 +416,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                             swapLsnr = null;
 
                             for (GridCacheEntryInfo<K, V> info : entries) {
-                                if (!cctx.affinity().belongs(node, part)) {
+                                if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
                                     // Demander no longer needs this partition,
                                     // so we send '-1' partition and move on.
                                     s.missed(part);

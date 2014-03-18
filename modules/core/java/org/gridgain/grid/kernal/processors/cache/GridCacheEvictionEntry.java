@@ -99,7 +99,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
         GridCacheContext<K, V> ctx = cached.context();
 
         return ctx.config().getCacheMode() != PARTITIONED ||
-            ctx.nodeId().equals(ctx.affinity().primary(cached.key()).id());
+            ctx.nodeId().equals(ctx.affinity().primary(cached.key(), ctx.discovery().topologyVersion()).id());
     }
 
     /** {@inheritDoc} */
@@ -107,7 +107,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
         GridCacheContext<K, V> ctx = cached.context();
 
         return ctx.config().getCacheMode() == PARTITIONED &&
-            F.viewReadOnly(ctx.affinity().backups(cached.key()), F.node2id()).contains(ctx.nodeId());
+            ctx.affinity().backups(cached.key(), ctx.discovery().topologyVersion()).contains(ctx.localNode());
     }
 
     /** {@inheritDoc} */

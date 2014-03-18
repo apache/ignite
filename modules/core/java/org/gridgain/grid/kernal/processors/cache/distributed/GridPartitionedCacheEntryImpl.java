@@ -239,9 +239,9 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheEntryEx<K, V> entryEx(boolean touch) {
+    @Override protected GridCacheEntryEx<K, V> entryEx(boolean touch, long topVer) {
         try {
-            return ctx.affinity().localNode(key) ? dht().entryEx(key, touch) : near().entryEx(key, touch);
+            return ctx.affinity().localNode(key, topVer) ? dht().entryEx(key, touch) : near().entryEx(key, touch);
         }
         catch (GridDhtInvalidPartitionException ignore) {
             return near().entryEx(key);
@@ -249,9 +249,9 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheEntryEx<K, V> peekEx() {
+    @Override protected GridCacheEntryEx<K, V> peekEx(long topVer) {
         try {
-            return ctx.affinity().localNode(key) ? dht().peekEx(key) : near().peekEx(key);
+            return ctx.affinity().localNode(key, topVer) ? dht().peekEx(key) : near().peekEx(key);
         }
         catch (GridDhtInvalidPartitionException ignore) {
             return near().peekEx(key);

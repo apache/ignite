@@ -347,7 +347,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isNew() throws GridCacheEntryRemovedException {
+    @Override public boolean isNew(long topVer) throws GridCacheEntryRemovedException {
         assert Thread.holdsLock(this);
 
         checkObsolete();
@@ -356,7 +356,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized boolean isNewLocked() throws GridCacheEntryRemovedException {
+    @Override public synchronized boolean isNewLocked(long topVer) throws GridCacheEntryRemovedException {
         checkObsolete();
 
         return isStartVersion();
@@ -608,17 +608,17 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     /** {@inheritDoc} */
     @Nullable @Override public final V innerGet(@Nullable GridCacheTxEx<K, V> tx, boolean readSwap,
         boolean readThrough, boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt,
-        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException,
+        long topVer, GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException,
         GridCacheFilterFailedException {
         cctx.denyOnFlag(LOCAL);
 
-        return innerGet0(tx, readSwap, readThrough, evt, failFast, unmarshal, updateMetrics, filter);
+        return innerGet0(tx, readSwap, readThrough, evt, failFast, unmarshal, updateMetrics, topVer, filter);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantTypeArguments", "TooBroadScope"})
     private V innerGet0(GridCacheTxEx<K, V> tx, boolean readSwap, boolean readThrough, boolean evt, boolean failFast,
-        boolean unmarshal, boolean updateMetrics, GridPredicate<GridCacheEntry<K, V>>[] filter)
+        boolean unmarshal, boolean updateMetrics, long topVer, GridPredicate<GridCacheEntry<K, V>>[] filter)
         throws GridException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
         // Disable read-through if there is no store.
         if (readThrough && !cctx.isStoreEnabled())
@@ -677,7 +677,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             // Attempt to load from swap.
             if (val == null && !hasOldBytes && readSwap) {
                 // Only promote when loading initial state.
-                if (isNew()) {
+                if (isNew(topVer)) {
                     // If this entry is already expired (expiration time was too low),
                     // we simply remove from swap and clear index.
                     if (expired) {
@@ -714,7 +714,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     asyncRefresh = true;
             }
 
-            boolean valid = valid(tx != null ? tx.topologyVersion() : -1);
+            boolean valid = valid(tx != null ? tx.topologyVersion() : topVer);
 
             old = expired || !valid ? null : val;
 
@@ -776,7 +776,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 return ret;
 
             // Try again (recursion).
-            return innerGet0(tx, readSwap, readThrough, false, failFast, unmarshal, updateMetrics, filter);
+            return innerGet0(tx, readSwap, readThrough, false, failFast, unmarshal, updateMetrics, topVer, filter);
         }
 
         boolean loadedFromStore = false;
@@ -840,12 +840,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             return ret;
 
         // Try again (recursion).
-        return innerGet0(tx, readSwap, readThrough, false, failFast, unmarshal, updateMetrics, filter);
+        return innerGet0(tx, readSwap, readThrough, false, failFast, unmarshal, updateMetrics, topVer, filter);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "TooBroadScope"})
-    @Nullable @Override public final V innerReload(GridPredicate<GridCacheEntry<K, V>>[] filter)
+    @Nullable @Override public final V innerReload(long topVer, GridPredicate<GridCacheEntry<K, V>>[] filter)
         throws GridException, GridCacheEntryRemovedException {
         cctx.denyOnFlag(GridCacheFlag.READ);
 
@@ -861,12 +861,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             // Cache version for optimistic check.
             startVer = ver;
 
-            wasNew = isNew();
+            wasNew = isNew(topVer);
         }
 
         // Check before load.
         if (cctx.isAll(this, filter)) {
-            // TODO Read through will change version for near cache.
             V ret = readThrough(null, key, true, filter);
 
             boolean touch = false;
@@ -879,7 +878,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     GridCacheVersion nextVer = nextVersion();
 
                     // If entry was loaded during read step.
-                    if (wasNew && !isNew())
+                    if (wasNew && !isNew(topVer))
                         // Map size was updated on entry creation.
                         return ret;
 
@@ -922,11 +921,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
             finally {
                 if (touch)
-                    cctx.evicts().touch(this);
+                    cctx.evicts().touch(this, cctx.discovery().topologyVersion());
             }
 
             // Recursion.
-            return innerReload(filter);
+            return innerReload(topVer, filter);
         }
 
         // If filter didn't pass.
@@ -952,6 +951,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         long ttl,
         boolean evt,
         boolean metrics,
+        long topVer,
         GridPredicate<GridCacheEntry<K, V>>[] filter,
         GridDrType drType,
         long drExpireTime,
@@ -959,7 +959,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     ) throws GridException, GridCacheEntryRemovedException {
         V old;
 
-        boolean valid = valid(tx != null ? tx.topologyVersion() : -1);
+        boolean valid = valid(tx != null ? tx.topologyVersion() : topVer);
 
         // Lock should be held by now.
         if (!cctx.isAll(this, filter))
@@ -990,7 +990,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             assert newVer != null : "Failed to get write version for tx: " + tx;
 
             if (tx != null && !tx.local() && tx.onePhaseCommit() && explicitVer == null) {
-                if (!isNew() && ver.compareTo(newVer) > 0) {
+                if (!isNew(topVer) && ver.compareTo(newVer) > 0) {
                     if (log.isDebugEnabled())
                         log.debug("Skipping entry update for one-phase commit since current entry version is " +
                             "greater than write version [entry=" + this + ", newVer=" + newVer + ']');
@@ -1058,6 +1058,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         boolean retval,
         boolean evt,
         boolean metrics,
+        long topVer,
         GridPredicate<GridCacheEntry<K, V>>[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer
@@ -1068,7 +1069,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         GridCacheVersion newVer;
 
-        boolean valid = valid(tx != null ? tx.topologyVersion() : -1);
+        boolean valid = valid(tx != null ? tx.topologyVersion() : topVer);
 
         // Lock should be held by now.
         if (!cctx.isAll(this, filter))
@@ -1210,6 +1211,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         boolean metrics,
         boolean primary,
         boolean verCheck,
+        long topVer,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
         GridDrType drType,
         long drTtl,
@@ -1239,7 +1241,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             checkObsolete();
 
             // Load and remove from swap if it is new.
-            if (isNew())
+            if (isNew(topVer))
                 unswap(true);
 
             boolean newTtlResolved = false;
@@ -1320,7 +1322,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             if (!drNeedResolve) { // Perform version check only in case there will be no explicit conflict resolution.
                 if (verCheck) {
-                    if (!isNew() && ATOMIC_VER_COMPARATOR.compare(ver, newVer) > 0) {
+                    if (!isNew(topVer) && ATOMIC_VER_COMPARATOR.compare(ver, newVer) > 0) {
                         if (log.isDebugEnabled())
                             log.debug("Received entry update for with smaller version than current (will ignore) " +
                                 "[entry=" + this + ", newVer=" + newVer + ']');
@@ -1331,7 +1333,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     }
                 }
                 else
-                    assert isNew() || ATOMIC_VER_COMPARATOR.compare(ver, newVer) <= 0 :
+                    assert isNew(topVer) || ATOMIC_VER_COMPARATOR.compare(ver, newVer) <= 0 :
                         "Invalid version for inner update [entry=" + this + ", newVer=" + newVer + ']';
             }
 
@@ -1408,7 +1410,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     cctx.store().putToStore(null, key, updated, newVer);
 
                 if (!hadVal) {
-                    boolean new0 = isNew();
+                    boolean new0 = isNew(topVer);
 
                     assert deletedUnlocked() || new0 : "Invalid entry [entry=" + this + ", locNodeId=" +
                         cctx.localNodeId() + ']';
@@ -1453,7 +1455,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     enqueueVer = newVer;
                 }
                 else {
-                    boolean new0 = isNew();
+                    boolean new0 = isNew(topVer);
 
                     assert deletedUnlocked() || new0 : "Invalid entry [entry=" + this + ", locNodeId=" +
                         cctx.localNodeId() + ']';
@@ -2042,6 +2044,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, GridException {
         assert tx == null || tx.local();
 
+        long topVer = tx == null ? tx.topologyVersion() : cctx.discovery().topologyVersion();
+
         if (cctx.peekModeExcluded(mode))
             return null;
 
@@ -2050,13 +2054,13 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 return peekTx(failFast, filter, tx);
 
             case GLOBAL:
-                return peekGlobal(failFast, filter);
+                return peekGlobal(failFast, topVer, filter);
 
             case NEAR_ONLY:
-                return peekGlobal(failFast, filter);
+                return peekGlobal(failFast, topVer, filter);
 
             case PARTITIONED_ONLY:
-                return peekGlobal(failFast, filter);
+                return peekGlobal(failFast, topVer, filter);
 
             case SMART:
                 /*
@@ -2070,7 +2074,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                  * may have enlisted into the same transaction and that's why we pass 'true'
                  * to 'e.peek(true)' method in this case.
                  */
-                return tx == null || tx.state() != ACTIVE ? peekGlobal(failFast, filter) :
+                return tx == null || tx.state() != ACTIVE ? peekGlobal(failFast, topVer, filter) :
                     peekTxThenGlobal(failFast, filter, tx);
 
             case SWAP:
@@ -2095,7 +2099,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         synchronized (this) {
             checkObsolete();
 
-            if (isNew())
+            if (isNew(cctx.discovery().topologyVersion()))
                 unswap(true);
 
             if (deletedUnlocked())
@@ -2148,8 +2152,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @throws GridCacheEntryRemovedException If entry got removed.
      * @throws GridException If unexpected cache failure occurred.
      */
-    @Nullable private GridTuple<V> peekTxThenGlobal(boolean failFast,
-        GridPredicate<GridCacheEntry<K, V>>[] filter,
+    @Nullable private GridTuple<V> peekTxThenGlobal(boolean failFast, GridPredicate<GridCacheEntry<K, V>>[] filter,
         GridCacheTxEx<K, V> tx) throws GridCacheFilterFailedException, GridCacheEntryRemovedException, GridException {
         if (!cctx.peekModeExcluded(TX)) {
             GridTuple<V> peek = peekTx(failFast, filter, tx);
@@ -2159,7 +2162,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 return peek;
         }
 
-        return !cctx.peekModeExcluded(GLOBAL) ? peekGlobal(failFast, filter) : null;
+        long topVer = tx == null ? cctx.discovery().topologyVersion() : tx.topologyVersion();
+
+        return !cctx.peekModeExcluded(GLOBAL) ? peekGlobal(failFast, topVer, filter) : null;
     }
 
     /**
@@ -2184,9 +2189,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @throws GridException If unexpected cache failure occurred.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Nullable private GridTuple<V> peekGlobal(boolean failFast, GridPredicate<GridCacheEntry<K, V>>[] filter)
+    @Nullable private GridTuple<V> peekGlobal(boolean failFast, long topVer,
+        GridPredicate<GridCacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, GridException {
-        if (!valid(-1))
+        if (!valid(topVer))
             return null;
 
         boolean rmv = false;
@@ -2360,14 +2366,14 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Override public boolean initialValue(V val, byte[] valBytes, GridCacheVersion ver, long ttl, long expireTime,
-        boolean preload, GridDrType drType) throws GridException, GridCacheEntryRemovedException {
-        if (cctx.isUnmarshalValues() && valBytes != null && val == null && isNewLocked())
+        boolean preload, long topVer, GridDrType drType) throws GridException, GridCacheEntryRemovedException {
+        if (cctx.isUnmarshalValues() && valBytes != null && val == null && isNewLocked(topVer))
             val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
 
         synchronized (this) {
             checkObsolete();
 
-            if (isNew() || (!preload && deletedUnlocked())) {
+            if (isNew(topVer) || (!preload && deletedUnlocked())) {
                 long expTime = expireTime < 0 ? toExpireTime(ttl) : expireTime;
 
                 if (val != null || valBytes != null)
@@ -2392,7 +2398,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 drReplicate(drType, val, valBytes, ver);
 
-                if (!skipQryNtf && cctx.isLocalNode(CU.primaryNode(cctx, key)))
+                if (!skipQryNtf && cctx.affinity().primary(cctx.localNode(), key, topVer))
                     cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), true);
 
                 return true;
@@ -2403,11 +2409,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized boolean initialValue(K key, GridCacheSwapEntry <V> unswapped) throws GridException,
+    @Override public synchronized boolean initialValue(K key, long topVer, GridCacheSwapEntry <V> unswapped) throws
+        GridException,
         GridCacheEntryRemovedException {
         checkObsolete();
 
-        if (isNew()) {
+        if (isNew(topVer)) {
             // Version does not change for load ops.
             update(unswapped.value(),
                 unswapped.valueBytes(),
