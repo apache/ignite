@@ -74,7 +74,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean valid(long topVer) {
-        assert topVer > 0;
+        assert topVer > 0 : "Topology version is invalid: " + topVer;
 
         UUID primaryNodeId = this.primaryNodeId;
 

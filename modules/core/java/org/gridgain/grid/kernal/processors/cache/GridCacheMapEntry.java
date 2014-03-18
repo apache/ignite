@@ -2044,7 +2044,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, GridException {
         assert tx == null || tx.local();
 
-        long topVer = tx == null ? tx.topologyVersion() : cctx.discovery().topologyVersion();
+        long topVer = tx != null ? tx.topologyVersion() : cctx.discovery().topologyVersion();
 
         if (cctx.peekModeExcluded(mode))
             return null;

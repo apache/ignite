@@ -389,7 +389,12 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Override public long topologyVersion() {
-        return topVer.get();
+        long res = topVer.get();
+
+        if (res == -1)
+            return cctx.discovery().topologyVersion();
+
+        return res;
     }
 
     /** {@inheritDoc} */
