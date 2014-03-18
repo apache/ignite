@@ -117,6 +117,12 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /** Ant-augmented compatible versions. */
     private static final String COMPATIBLE_VERS = /*@java.compatible.vers*/"";
 
+    /** GridGain site that is shown in log messages. */
+    private static final String SITE = /*@java.gridgain.site*/"www.gridgain.com";
+
+    /** GridGain support email. */
+    private static final String SUPPORT_EMAIL = /*@java.gridgain.support.email*/"support@gridgain.com";
+
     /** System line separator. */
     private static final String NL = U.nl();
 
@@ -962,8 +968,10 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     "This message is sent automatically to all configured admin emails." + NL +
                     "To change this behavior use 'lifeCycleEmailNotify' grid configuration property." +
                     NL + NL +
-                    "| www.gridgain.com" + NL +
-                    "| support@gridgain.com" + NL;
+                    "| " + SITE + NL;
+
+            if (ctx.isEnterprise())
+                body += "| " + SUPPORT_EMAIL + NL;
 
             sendAdminEmailAsync("GridGain node started: " + nid8, body, false);
         }
@@ -1645,7 +1653,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     ">>> Local node addresses: " + U.addressesAsString(localNode()) + NL +
                     ">>> Local ports: " + sb + NL;
 
-            str += ">>> GridGain documentation: http://www.gridgain.com/documentation" + NL;
+            str += ">>> GridGain documentation: http://" + SITE + "/documentation" + NL;
 
             log.info(str);
         }
@@ -1945,8 +1953,10 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
                 body +=
                     NL + NL +
-                        "| www.gridgain.com" + NL +
-                        "| support@gridgain.com" + NL;
+                        "| " + SITE + NL;
+
+                if (ctx.isEnterprise())
+                    body += "| " + SUPPORT_EMAIL + NL;
 
                 // We can't use email processor at this point.
                 // So we use "raw" method of sending.
