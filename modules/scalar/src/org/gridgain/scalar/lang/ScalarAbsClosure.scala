@@ -11,18 +11,21 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.util.lang.GridAbsClosure
+import org.gridgain.grid.util.lang.GridPeerDeployAwareAdapter
+import org.gridgain.grid.lang.GridRunnable
 
 /**
- * Peer deploy aware adapter for Java's `GridAbsClosure`.
+ * Peer deploy aware adapter for Java's `GridRunnable`.
  */
-class ScalarAbsClosure(private val f: () => Unit) extends GridAbsClosure {
+class ScalarAbsClosure(private val f: () => Unit) extends GridPeerDeployAwareAdapter with GridRunnable {
     assert(f != null)
+
+    peerDeployLike(f)
 
     /**
      * Delegates to passed in function.
      */
-    def apply() {
+    def run() {
         f()
     }
 }
