@@ -1470,6 +1470,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 // Clear value on backup. Entry will be removed from cache when it got evicted from queue.
                 update(null, null, 0, 0, newVer);
 
+                clearReaders();
+
                 drReplicate(drType, null, null, newVer);
 
                 recordNodeId(affNodeId);

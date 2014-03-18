@@ -1223,9 +1223,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (op == TRANSFORM || writeVal != updRes.newValue())
                             res.addNearValue(i, updRes.newValue(), newValBytes);
 
-                        GridFuture<Boolean> f = entry.addReader(nodeId, req.messageId());
+                        if (updRes.removeVersion() == null) {
+                            GridFuture<Boolean> f = entry.addReader(nodeId, req.messageId());
 
-                        assert f == null : f;
+                            assert f == null : f;
+                        }
                     }
                     else
                         res.addSkippedIndex(i);
@@ -1400,9 +1402,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 res.addNearValue(idx, writeVal, valBytes);
                             }
 
-                            GridFuture<Boolean> f = entry.addReader(nodeId, req.messageId());
+                            if (updRes.removeVersion() == null) {
+                                GridFuture<Boolean> f = entry.addReader(nodeId, req.messageId());
 
-                            assert f == null : f;
+                                assert f == null : f;
+                            }
                         }
                         else
                             res.addSkippedIndex(firstEntryIdx + i);
