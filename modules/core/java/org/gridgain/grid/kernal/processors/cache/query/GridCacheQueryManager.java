@@ -481,7 +481,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry)
         throws GridException {
 
-        P1<GridCacheEntry<K, V>> filter = new P1<GridCacheEntry<K, V>>() {
+        GridPredicate<GridCacheEntry<K, V>> filter = new P1<GridCacheEntry<K, V>>() {
             @Override public boolean apply(GridCacheEntry<K, V> e) {
                 return qry.projectionFilter() == null ||
                     qry.projectionFilter().apply((GridCacheEntry<Object, Object>)e);
@@ -789,6 +789,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 Collection<Object> data = new ArrayList<>(pageSize);
 
+                long topVer = cctx.discovery().topologyVersion();
+
                 while (!Thread.currentThread().isInterrupted() && iter.hasNext()) {
                     GridIndexingKeyValueRow<K, V> row = iter.next();
 
@@ -803,11 +805,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     // Filter backups for SCAN queries. Other types are filtered in indexing manager.
                     if (!cctx.isReplicated() && cctx.config().getCacheMode() != LOCAL && qry.type() == SCAN &&
-                        !incBackups && !cctx.affinity().primary(cctx.localNode(), key)) {
+                        !incBackups && !cctx.affinity().primary(cctx.localNode(), key, topVer)) {
                         if (log.isDebugEnabled())
                             log.debug("Ignoring backup element [row=" + row +
                                 ", cacheMode=" + cctx.config().getCacheMode() + ", incBackups=" + incBackups +
-                                ", primary=" + cctx.affinity().primary(cctx.localNode(), key) + ']');
+                                ", primary=" + cctx.affinity().primary(cctx.localNode(), key, topVer) + ']');
 
                         continue;
                     }
