@@ -431,7 +431,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final boolean replicate = ctx.isReplicationEnabled();
 
-        final long topVer = ctx.discovery().topologyVersion();
+        final long topVer = ctx.affinity().affinityTopologyVersion();
 
         ctx.store().loadCache(new CI3<K, V, GridCacheVersion>() {
             @Override public void apply(K key, V val, @Nullable GridCacheVersion ver) {
@@ -482,7 +482,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     @Override public int primarySize() {
         int sum = 0;
 
-        long topVer = ctx.discovery().topologyVersion();
+        long topVer = ctx.affinity().affinityTopologyVersion();
 
         for (GridDhtLocalPartition<K, V> p : topology().currentLocalPartitions()) {
             if (p.primary(topVer))
@@ -2464,8 +2464,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         if (created && entry.markObsolete(req.version()))
                             removeEntry(entry);
 
-                        // TODO.
-                        ctx.evicts().touch(entry, ctx.discovery().topologyVersion());
+                        ctx.evicts().touch(entry, ctx.affinity().affinityTopologyVersion());
 
                         break;
                     }
@@ -2636,7 +2635,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     if (cand == null)
                         cand = entry.candidate(dhtVer);
 
-                    long topVer = cand == null ? ctx.discovery().topologyVersion() : cand.topologyVersion();
+                    long topVer = cand == null ? ctx.affinity().affinityTopologyVersion() : cand.topologyVersion();
 
                     // Note that we obtain readers before lock is removed.
                     // Even in case if entry would be removed just after lock is removed,

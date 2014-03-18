@@ -789,7 +789,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 Collection<Object> data = new ArrayList<>(pageSize);
 
-                long topVer = cctx.discovery().topologyVersion();
+                long topVer = cctx.affinity().affinityTopologyVersion();
 
                 while (!Thread.currentThread().isInterrupted() && iter.hasNext()) {
                     GridIndexingKeyValueRow<K, V> row = iter.next();

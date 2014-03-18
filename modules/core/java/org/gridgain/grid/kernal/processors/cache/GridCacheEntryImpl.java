@@ -90,7 +90,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
         GridCacheEntryEx<K, V> cached = this.cached;
 
         if (cached == null || cached.obsolete())
-            this.cached = cached = peekEx(ctx.discovery().topologyVersion());
+            this.cached = cached = peekEx(ctx.affinity().affinityTopologyVersion());
 
         return cached;
     }
@@ -106,7 +106,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
         GridCacheEntryEx<K, V> cached = this.cached;
 
         if (cached == null) {
-            long topVer = ctx.discovery().topologyVersion();
+            long topVer = ctx.affinity().affinityTopologyVersion();
 
             this.cached = cached = create ? entryEx(false, topVer) : peekEx(topVer);
 
@@ -125,7 +125,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     private GridCacheEntryEx<K, V> unwrapForMeta() {
         GridCacheEntryEx<K, V> cached = this.cached;
 
-        long topVer = ctx.discovery().topologyVersion();
+        long topVer = ctx.affinity().affinityTopologyVersion();
 
         if (cached == null || cached.obsolete())
             this.cached = cached = peekEx(topVer);
@@ -218,13 +218,13 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     /** {@inheritDoc} */
     @Override public boolean primary() {
         return ctx.config().getCacheMode() != PARTITIONED ||
-            ctx.affinity().primary(ctx.localNode(), key, ctx.discovery().topologyVersion());
+            ctx.affinity().primary(ctx.localNode(), key, ctx.affinity().affinityTopologyVersion());
     }
 
     /** {@inheritDoc} */
     @Override public boolean backup() {
         return ctx.config().getCacheMode() == PARTITIONED &&
-            ctx.affinity().backups(key, ctx.discovery().topologyVersion()).contains(ctx.localNode());
+            ctx.affinity().backups(key, ctx.affinity().affinityTopologyVersion()).contains(ctx.localNode());
     }
 
     /** {@inheritDoc} */
@@ -730,7 +730,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
         GridCacheEntryEx<K, V> cached = this.cached;
 
         if (cached == null)
-            this.cached = cached = entryEx(true, ctx.discovery().topologyVersion());
+            this.cached = cached = entryEx(true, ctx.affinity().affinityTopologyVersion());
 
         return cached.memorySize();
     }

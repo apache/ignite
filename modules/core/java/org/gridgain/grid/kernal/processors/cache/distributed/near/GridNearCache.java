@@ -406,8 +406,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
         List<K> keys = req.nearKeys();
 
         if (keys != null) {
-            // TODO topVer
-            long topVer = ctx.discovery().topologyVersion();
+            long topVer = ctx.affinity().affinityTopologyVersion();
 
             for (K key : keys) {
                 while (true) {
@@ -1041,7 +1040,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
                         assert topVer != -1 || cand == null;
 
                         if (topVer == -1)
-                            topVer = ctx.discovery().topologyVersion();
+                            topVer = ctx.affinity().affinityTopologyVersion();
 
                         ctx.evicts().touch(entry, topVer);
 
@@ -1214,7 +1213,7 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public Set<GridCacheEntry<K, V>> primaryEntrySet(
         @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) {
-        final long topVer = ctx.discovery().topologyVersion();
+        final long topVer = ctx.affinity().affinityTopologyVersion();
 
         Collection<GridCacheEntry<K, V>> entries =
             F.flat(

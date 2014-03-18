@@ -1424,7 +1424,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
             // Initialize.
             primaryParts.addAll(cctx.affinity().primaryPartitions(cctx.localNodeId(),
-                cctx.discovery().topologyVersion()));
+                cctx.affinity().affinityTopologyVersion()));
 
             while (!isCancelled()) {
                 GridDiscoveryEvent evt = evts.take();

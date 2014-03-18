@@ -210,7 +210,6 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
      * @return Topology version.
      */
     private long topologyVersion() {
-        // TODO we can always return already calculated topology version for affinity here. Do we really need?
-        return cctx.discovery().topologyVersion();
+        return cctx.affinity().affinityTopologyVersion();
     }
 }

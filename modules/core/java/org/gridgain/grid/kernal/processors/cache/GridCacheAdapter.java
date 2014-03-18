@@ -1431,7 +1431,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) {
         ctx.denyOnFlag(READ);
 
-        final long topVer = ctx.discovery().topologyVersion();
+        final long topVer = ctx.affinity().affinityTopologyVersion();
 
         if (!F.isEmpty(keys)) {
             try {
@@ -1670,7 +1670,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             try {
                 assert keys != null;
 
-                final long topVer = tx == null ? ctx.discovery().topologyVersion() : tx.topologyVersion();
+                final long topVer = tx == null ? ctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
                 final Map<K, V> map = new GridLeanMap<>(keys.size());
 
@@ -3208,7 +3208,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public void loadCache(final GridBiPredicate<K, V> p, final long ttl, Object[] args) throws GridException {
         final boolean replicate = ctx.isReplicationEnabled();
-        final long topVer = ctx.discovery().topologyVersion();
+        final long topVer = ctx.affinity().affinityTopologyVersion();
 
         if (ctx.store().isLocalStore()) {
             try (final GridDataLoader<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex())) {
@@ -3336,7 +3336,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         GridCacheEntryEx<K, V> entry = entryEx(key);
 
         try {
-            if (!entry.initialValue(key, ctx.discovery().topologyVersion(), unswapped))
+            if (!entry.initialValue(key, ctx.affinity().affinityTopologyVersion(), unswapped))
                 return null;
         }
         catch (GridCacheEntryRemovedException ignored) {
@@ -3360,7 +3360,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         Collection<K> unswap = new ArrayList<>(keys.size());
 
-        long topVer = ctx.discovery().topologyVersion();
+        long topVer = ctx.affinity().affinityTopologyVersion();
 
         for (K key : keys) {
             // Do not look up in swap for existing entries.
@@ -4235,12 +4235,12 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         validateCacheKey(key);
 
-        long topVer = ctx.discovery().topologyVersion();
+        long topVer = ctx.affinity().affinityTopologyVersion();
 
         while (true) {
             try {
                 // Do not reload near entries, they will be reloaded in DHT cache.
-                if (ctx.isNear() && ctx.affinity().localNode(key, ctx.discovery().topologyVersion()))
+                if (ctx.isNear() && ctx.affinity().localNode(key, topVer))
                     return null;
 
                 return ctx.cloneOnFlag(entryEx(key).innerReload(topVer, filter));

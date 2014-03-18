@@ -921,7 +921,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
             finally {
                 if (touch)
-                    cctx.evicts().touch(this, cctx.discovery().topologyVersion());
+                    cctx.evicts().touch(this, cctx.affinity().affinityTopologyVersion());
             }
 
             // Recursion.
@@ -2044,7 +2044,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, GridException {
         assert tx == null || tx.local();
 
-        long topVer = tx != null ? tx.topologyVersion() : cctx.discovery().topologyVersion();
+        long topVer = tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion();
 
         if (cctx.peekModeExcluded(mode))
             return null;
@@ -2099,7 +2099,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         synchronized (this) {
             checkObsolete();
 
-            if (isNew(cctx.discovery().topologyVersion()))
+            if (isNew(cctx.affinity().affinityTopologyVersion()))
                 unswap(true);
 
             if (deletedUnlocked())
@@ -2162,7 +2162,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 return peek;
         }
 
-        long topVer = tx == null ? cctx.discovery().topologyVersion() : tx.topologyVersion();
+        long topVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
         return !cctx.peekModeExcluded(GLOBAL) ? peekGlobal(failFast, topVer, filter) : null;
     }

@@ -660,7 +660,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             boolean success = true;
 
-            long topVer = ctx.discovery().topologyVersion();
+            long topVer = ctx.affinity().affinityTopologyVersion();
 
             // Optimistically expect that all keys are available locally (avoid creation of get future).
             for (K key : keys) {

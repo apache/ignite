@@ -194,7 +194,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtCacheAdapter<K, V> {
             });
         }
 
-        long topVer = tx == null ? ctx.discovery().topologyVersion() : tx.topologyVersion();
+        long topVer = tx == null ? ctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
         return loadAsync(keys, false, forcePrimary, topVer, filter);
     }
@@ -215,7 +215,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         // We need detached entry here because if there is an ongoing transaction,
         // we should see this entry and apply filter.
-        GridCacheEntryEx<K, V> e = entryExx(key, ctx.discovery().topologyVersion(), true, true);
+        GridCacheEntryEx<K, V> e = entryExx(key, ctx.affinity().affinityTopologyVersion(), true, true);
 
         try {
             return e != null && e.peek(SMART, filter) != null;
