@@ -1166,10 +1166,6 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (!tx.dht() && tx.local())
                 cctx.cache().metrics0().onTxCommit();
 
-            // 15. Unwind continuous queries.
-            if (!tx.near() && (!tx.dht() || tx.local()))
-                cctx.continuousQueries().unwind(false);
-
             if (slowTxWarnTimeout > 0 && tx.local() &&
                 U.currentTimeMillis() - tx.startTime() > slowTxWarnTimeout)
                 U.warn(log, "Slow transaction detected [tx=" + tx +
