@@ -330,4 +330,11 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
 
         return aff.backupPartitions(nodeId, topVer);
     }
+
+    /**
+     * @return Affinity-ready topology version.
+     */
+    public long affinityTopologyVersion() {
+        return aff.lastVersion();
+    }
 }

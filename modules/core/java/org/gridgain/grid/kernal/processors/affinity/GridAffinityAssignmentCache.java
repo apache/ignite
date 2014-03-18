@@ -160,6 +160,13 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
+     * @return Last calculated affinity version.
+     */
+    public long lastVersion() {
+        return head.get().topologyVersion();
+    }
+
+    /**
      * Clean up outdated cache items.
      *
      * @param topVer Actual topology version, older versions will be removed.
@@ -272,11 +279,11 @@ public class GridAffinityAssignmentCache {
      */
     private GridAffinityAssignment cachedAffinity(long topVer) {
         if (topVer == -1)
-            topVer = ctx.discovery().topologyVersion();
+            topVer = lastVersion();
+        else
+            awaitTopologyVersion(topVer);
 
         assert topVer >= 0;
-
-        awaitTopologyVersion(topVer);
 
         GridAffinityAssignment cache = head.get();
 
