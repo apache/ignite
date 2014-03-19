@@ -17,7 +17,7 @@ import scalar._
 /**
  * Demonstrates a cron-based `Runnable` execution scheduling.
  * Test runnable object broadcasts a phrase to all grid nodes every minute,
- * 2 times with initial scheduling delay equal to five seconds.
+ * 3 times with initial scheduling delay equal to five seconds.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
@@ -27,12 +27,13 @@ object ScalarScheduleRunnableExample extends App {
         val g = grid$
 
         // Schedule output message every minute.
-        g.scheduleLocalRun(
+        val fut = g.scheduleLocalRun(
             () => g.bcastRun(() => println("Howdy! :)"), null),
-            "{5, 10} * * * * *" // Cron expression.
+            "{5, 3} * * * * *" // Cron expression.
         )
 
-        Thread.sleep(1000 * 60 * 2)
+        while (!fut.isDone)
+            fut.get
 
         println(">>>>> Check all nodes for hello message output.")
     }
