@@ -534,8 +534,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         entry.loadedValue(tx, nodeId, info.value(), info.valueBytes(), ver, info.version(), saved,
                             info.ttl(), info.expireTime(), true);
                     }
-
-                    map.put(info.key(), info.value());
                 }
                 catch (GridCacheEntryRemovedException ignore) {
                     if (log.isDebugEnabled())
@@ -547,6 +545,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                     return Collections.emptyMap();
                 }
+
+                map.put(info.key(), info.value());
             }
         }
 
