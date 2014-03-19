@@ -51,7 +51,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /** Set of removed lock versions. */
     private Collection<GridCacheVersion> rmvLocks =
-        new GridBoundedConcurrentOrderedSet<>(MAX_REMOVED_LOCKS);
+        new GridBoundedConcurrentLinkedHashSet<>(MAX_REMOVED_LOCKS);
 
     /** Current local candidates. */
     private Collection<GridCacheMvccCandidate<K>> dhtLocCands = new ConcurrentSkipListSet<>();
