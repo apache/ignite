@@ -10,12 +10,13 @@
 package org.gridgain.grid.util;
 
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.util.ConcurrentLinkedHashMap.*;
-import static org.gridgain.grid.util.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static org.jdk8.backport.ConcurrentLinkedHashMap.*;
+import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * Concurrent set with an upper bound. Once set reaches its maximum capacity,
