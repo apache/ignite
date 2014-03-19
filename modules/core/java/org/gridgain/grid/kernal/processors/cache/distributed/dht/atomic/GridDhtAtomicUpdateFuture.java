@@ -317,7 +317,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                 }
                 catch (GridCacheEntryRemovedException e) {
                     if (log.isDebugEnabled())
-                        log.debug("Near readers entry was removed [entry=" + entry + ", err=" + e + ']');
+                        log.debug("Entry with evicted reader was removed [entry=" + entry + ", err=" + e + ']');
                 }
             }
         }

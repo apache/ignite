@@ -1122,8 +1122,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         return false;
     }
 
-
-
     /**
      * Checks whether any of the given flags is set.
      *

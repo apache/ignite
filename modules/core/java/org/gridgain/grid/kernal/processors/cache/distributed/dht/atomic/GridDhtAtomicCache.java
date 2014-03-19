@@ -923,7 +923,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param locked Locked entries.
      * @param ver Assigned version.
      * @param dhtFut Optional DHT future.
-     * @param completionCb Completion callback to invoke when future is completed.
+     * @param completionCb Completion callback to invoke when DHT future is completed.
      * @param replicate Whether replication is enabled.
      * @return Deleted entries.
      * @throws GridCacheEntryRemovedException Should not be thrown.
@@ -1102,7 +1102,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param locked Locked entries.
      * @param ver Assigned update version.
      * @param dhtFut Optional DHT future.
-     * @param completionCb Completion callback to invoke when future is completed.
+     * @param completionCb Completion callback to invoke when DHT future is completed.
      * @param replicate Whether DR is enabled for that cache.
      * @return Return value.
      * @throws GridCacheEntryRemovedException Should be never thrown.
@@ -1277,7 +1277,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param putMap Values to put.
      * @param rmvKeys Keys to remove.
      * @param dhtFut DHT update future if has backups.
-     * @param completionCb Completion callback to invoke when future is completed.
+     * @param completionCb Completion callback to invoke when DHT future is completed.
      * @param req Request.
      * @param res Response.
      * @param replicate Whether replication is enabled.

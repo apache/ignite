@@ -365,8 +365,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      * @param remap Boolean flag indicating if this is partial future remap.
      * @param oldNodeId Old node ID if remap.
      */
-    private void mapOnTopology(final Collection<? extends K> keys, final boolean remap,
-        @Nullable final UUID oldNodeId) {
+    private void mapOnTopology(final Collection<? extends K> keys, final boolean remap, final UUID oldNodeId) {
         cache.topology().readLock();
 
         GridDiscoveryTopologySnapshot snapshot = null;

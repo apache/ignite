@@ -341,7 +341,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
                     update(val, valBytes, expireTime, ttl, ver);
 
                     if (cctx.deferredDelete()) {
-                        boolean deleted =  val == null && valBytes == null;
+                        boolean deleted = val == null && valBytes == null;
 
                         if (deleted != deletedUnlocked())
                             deletedUnlocked(deleted);

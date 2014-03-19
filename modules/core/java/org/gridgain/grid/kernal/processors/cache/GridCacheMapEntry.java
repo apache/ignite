@@ -1472,9 +1472,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 clearReaders();
 
-                drReplicate(drType, null, null, newVer);
-
                 recordNodeId(affNodeId);
+
+                drReplicate(drType, null, null, newVer);
 
                 if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED))
                     cctx.events().addEvent(partition(), key, evtNodeId, null, newVer,
