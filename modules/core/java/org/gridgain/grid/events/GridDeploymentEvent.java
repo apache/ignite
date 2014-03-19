@@ -74,11 +74,12 @@ public class GridDeploymentEvent extends GridEventAdapter {
      * Creates deployment event with given parameters.
      *
      * @param nodeId Node ID.
+     * @param node Node.
      * @param msg Optional event message.
      * @param type Event type.
      */
-    public GridDeploymentEvent(UUID nodeId, String msg, int type) {
-        super(nodeId, msg, type);
+    public GridDeploymentEvent(UUID nodeId, GridNode node, String msg, int type) {
+        super(nodeId, node, msg, type);
     }
 
     /**

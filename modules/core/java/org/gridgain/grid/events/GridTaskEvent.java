@@ -83,13 +83,14 @@ public class GridTaskEvent extends GridEventAdapter {
      * Creates task event with given parameters.
      *
      * @param nodeId Node ID.
+     * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
      * @param sesId Task session ID.
      * @param taskName Task name.
      */
-    public GridTaskEvent(UUID nodeId, String msg, int type, GridUuid sesId, String taskName) {
-        super(nodeId, msg, type);
+    public GridTaskEvent(UUID nodeId, GridNode node, String msg, int type, GridUuid sesId, String taskName) {
+        super(nodeId, node, msg, type);
 
         this.sesId = sesId;
         this.taskName = taskName;
@@ -99,11 +100,12 @@ public class GridTaskEvent extends GridEventAdapter {
      * Creates task event with given parameters.
      *
      * @param nodeId Node ID.
+     * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridTaskEvent(UUID nodeId, String msg, int type) {
-        super(nodeId, msg, type);
+    public GridTaskEvent(UUID nodeId, GridNode node, String msg, int type) {
+        super(nodeId, node, msg, type);
     }
 
     /**

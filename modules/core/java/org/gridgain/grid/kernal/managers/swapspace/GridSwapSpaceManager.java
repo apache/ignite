@@ -90,7 +90,8 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
                         }
                     }
 
-                    ctx.event().record(new GridSwapSpaceEvent(locNodeId, msg, evtType, spaceName));
+                    ctx.event().record(new GridSwapSpaceEvent(
+                        locNodeId, ctx.discovery().localNode(), msg, evtType, spaceName));
                 }
 
                 // Always notify grid cache processor.

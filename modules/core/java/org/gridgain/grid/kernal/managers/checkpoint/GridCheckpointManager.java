@@ -341,7 +341,8 @@ public class GridCheckpointManager extends GridManagerAdapter<GridCheckpointSpi>
                 msg = "Checkpoint removed: " + key;
             }
 
-            ctx.event().record(new GridCheckpointEvent(ctx.config().getNodeId(), msg, type, key));
+            ctx.event().record(new GridCheckpointEvent(
+                ctx.config().getNodeId(), ctx.discovery().localNode(), msg, type, key));
         }
     }
 

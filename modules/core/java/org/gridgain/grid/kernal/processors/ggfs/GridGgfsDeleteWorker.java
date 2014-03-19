@@ -240,7 +240,8 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
 
                     if (evts.isRecordable(EVT_GGFS_FILE_PURGED)) {
                         if (info.path() != null)
-                            evts.record(new GridGgfsEvent(info.path(), locNodeId, EVT_GGFS_FILE_PURGED));
+                            evts.record(new GridGgfsEvent(info.path(), locNodeId,
+                                ggfsCtx.kernalContext().discovery().localNode(), EVT_GGFS_FILE_PURGED));
                         else
                             LT.warn(log, null, "Removing file without path info: " + info);
                     }

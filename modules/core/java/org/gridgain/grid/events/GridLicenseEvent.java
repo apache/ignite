@@ -65,11 +65,12 @@ public class GridLicenseEvent extends GridEventAdapter {
      * Creates license event with given parameters.
      *
      * @param nodeId Node ID.
+     * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridLicenseEvent(UUID nodeId, String msg, int type) {
-        super(nodeId, msg, type);
+    public GridLicenseEvent(UUID nodeId, GridNode node, String msg, int type) {
+        super(nodeId, node, msg, type);
     }
 
     /** {@inheritDoc} */

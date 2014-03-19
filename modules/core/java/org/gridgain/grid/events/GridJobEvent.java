@@ -90,11 +90,12 @@ public class GridJobEvent extends GridEventAdapter {
      * Creates job event with given parameters.
      *
      * @param nodeId Node ID.
+     * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridJobEvent(UUID nodeId, String msg, int type) {
-        super(nodeId, msg, type);
+    public GridJobEvent(UUID nodeId, GridNode node, String msg, int type) {
+        super(nodeId, node, msg, type);
     }
 
     /**

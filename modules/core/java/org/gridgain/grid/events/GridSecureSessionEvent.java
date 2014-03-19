@@ -73,24 +73,27 @@ public class GridSecureSessionEvent extends GridEventAdapter {
      * Creates secure session event with given parameters.
      *
      * @param nodeId Node ID.
+     * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridSecureSessionEvent(UUID nodeId, String msg, int type) {
-        super(nodeId, msg, type);
+    public GridSecureSessionEvent(UUID nodeId, GridNode node, String msg, int type) {
+        super(nodeId, node, msg, type);
     }
 
     /**
      * Creates secure session event with given parameters.
      *
      * @param nodeId Node ID.
+     * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
      * @param subjType Subject type.
      * @param subjId Subject ID.
      */
-    public GridSecureSessionEvent(UUID nodeId, String msg, int type, GridSecuritySubjectType subjType, byte[] subjId) {
-        super(nodeId, msg, type);
+    public GridSecureSessionEvent(UUID nodeId, GridNode node, String msg, int type, GridSecuritySubjectType subjType,
+        byte[] subjId) {
+        super(nodeId, node, msg, type);
 
         this.subjType = subjType;
         this.subjId = subjId;

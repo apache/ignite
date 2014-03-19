@@ -66,12 +66,13 @@ public class GridCheckpointEvent extends GridEventAdapter {
      * Creates new checkpoint event with given parameters.
      *
      * @param nodeId Node ID.
+     * @param node Local node.
      * @param msg Optional event message.
      * @param type Event type.
      * @param cpKey Checkpoint key associated with this event.
      */
-    public GridCheckpointEvent(UUID nodeId, String msg, int type, String cpKey) {
-        super(nodeId, msg, type);
+    public GridCheckpointEvent(UUID nodeId, GridNode node, String msg, int type, String cpKey) {
+        super(nodeId, node, msg, type);
 
         this.cpKey = cpKey;
     }

@@ -114,6 +114,7 @@ public class GridCacheEvent extends GridEventAdapter {
      *
      * @param cacheName Cache name.
      * @param nodeId Local node ID.
+     * @param node Local node.
      * @param evtNodeId Event node ID.
      * @param msg Event message.
      * @param type Event type.
@@ -129,10 +130,10 @@ public class GridCacheEvent extends GridEventAdapter {
      * @param hasOldVal Flag indicating whether old value is present in case if we
      *      don't have it in deserialized form.
      */
-    public GridCacheEvent(String cacheName, UUID nodeId, UUID evtNodeId, String msg, int type, int part,
+    public GridCacheEvent(String cacheName, UUID nodeId, GridNode node, UUID evtNodeId, String msg, int type, int part,
         boolean near, Object key, GridUuid xid, Object lockId, Object newVal, boolean hasNewVal,
         Object oldVal, boolean hasOldVal) {
-        super(nodeId, msg, type);
+        super(nodeId, node, msg, type);
         this.cacheName = cacheName;
         this.evtNodeId = evtNodeId;
         this.part = part;

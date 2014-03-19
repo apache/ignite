@@ -30,6 +30,9 @@ public class GridEventAdapter implements GridEvent {
     private UUID nodeId;
 
     /** */
+    private GridNode node;
+
+    /** */
     private String msg;
 
     /** */
@@ -52,13 +55,14 @@ public class GridEventAdapter implements GridEvent {
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridEventAdapter(UUID nodeId, String msg, int type) {
+    public GridEventAdapter(UUID nodeId, GridNode node, String msg, int type) {
         assert nodeId != null;
         assert tstamp > 0;
 
         A.ensure(type > 0, "Event type ID must be greater than zero.");
 
         this.nodeId = nodeId;
+        this.node = node;
         this.msg = msg;
         this.type = type;
     }
@@ -122,6 +126,11 @@ public class GridEventAdapter implements GridEvent {
     /** {@inheritDoc} */
     @Override public UUID nodeId() {
         return nodeId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridNode node() {
+        return node;
     }
 
     /** {@inheritDoc} */

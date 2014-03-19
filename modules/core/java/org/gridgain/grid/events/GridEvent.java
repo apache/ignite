@@ -105,6 +105,13 @@ public interface GridEvent extends Comparable<GridEvent>, Serializable {
     public UUID nodeId();
 
     /**
+     * Node where event occurred and was recorded
+     *
+     * @return node where event occured and was recorded.
+     */
+    public GridNode node();
+
+    /**
      * Gets optional message for this event.
      *
      * @return Optional (can be {@code null}) message for this event.

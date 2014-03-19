@@ -290,8 +290,8 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         if (plcEnabled && evictSync && (cctx.isDht() || cctx.isColocated())) {
             // Add dummy event to worker.
-            backupWorker.addEvent(new GridDiscoveryEvent(cctx.localNodeId(), "Dummy event.", EVT_NODE_JOINED,
-                cctx.localNodeId()));
+            backupWorker.addEvent(new GridDiscoveryEvent(cctx.localNodeId(), cctx.localNode(), "Dummy event.",
+                EVT_NODE_JOINED, cctx.localNodeId()));
 
             backupWorkerThread = new GridThread(backupWorker);
             backupWorkerThread.start();

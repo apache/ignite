@@ -126,7 +126,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         // Events are not made for internal entry.
         if (!(key instanceof GridCacheInternal))
-            cctx.gridEvents().record(new GridCacheEvent(cctx.name(), cctx.nodeId(), evtNodeId,
+            cctx.gridEvents().record(new GridCacheEvent(cctx.name(), cctx.nodeId(), cctx.localNode(), evtNodeId,
                 "Cache event.", type, part, cctx.isNear(), key, xid, lockId, newVal, hasNewVal, oldVal, hasOldVal));
     }
 
@@ -148,8 +148,8 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
         if (!cctx.events().isRecordable(type))
             LT.warn(log, null, "Added event without checking if event is recordable: " + U.gridEventName(type));
 
-        cctx.gridEvents().record(new GridCachePreloadingEvent(cctx.name(), locNodeId, "Cache preloading event.",
-            type, part, discoNode, discoType, discoTs));
+        cctx.gridEvents().record(new GridCachePreloadingEvent(cctx.name(), locNodeId, cctx.localNode(),
+            "Cache preloading event.", type, part, discoNode, discoType, discoTs));
     }
 
     /**
@@ -162,8 +162,8 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
             LT.warn(log, null, "Added event without checking if event is recordable: " +
                 U.gridEventName(EVT_CACHE_PRELOAD_PART_UNLOADED));
 
-        cctx.gridEvents().record(new GridCachePreloadingEvent(cctx.name(), locNodeId, "Cache unloading event.",
-                EVT_CACHE_PRELOAD_PART_UNLOADED, part, null, 0, 0));
+        cctx.gridEvents().record(new GridCachePreloadingEvent(cctx.name(), locNodeId, cctx.localNode(),
+            "Cache unloading event.", EVT_CACHE_PRELOAD_PART_UNLOADED, part, null, 0, 0));
     }
 
     /**

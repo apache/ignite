@@ -52,12 +52,13 @@ public class GridSwapSpaceEvent extends GridEventAdapter {
      * Creates swap space event.
      *
      * @param nodeId Node ID.
+     * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
      * @param space Swap space name ({@code null} for default space).
      */
-    public GridSwapSpaceEvent(UUID nodeId, String msg, int type, @Nullable String space) {
-        super(nodeId, msg, type);
+    public GridSwapSpaceEvent(UUID nodeId, GridNode node, String msg, int type, @Nullable String space) {
+        super(nodeId, node, msg, type);
 
         this.space = space;
     }

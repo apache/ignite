@@ -87,12 +87,13 @@ public class GridDiscoveryEvent extends GridEventAdapter {
      * Creates new discovery event with given parameters.
      *
      * @param nodeId Local node ID.
+     * @param node Local node.
      * @param msg Optional event message.
      * @param type Event type.
      * @param evtNodeId ID of the node that caused this event to be generated.
      */
-    public GridDiscoveryEvent(UUID nodeId, String msg, int type, UUID evtNodeId) {
-        super(nodeId, msg, type);
+    public GridDiscoveryEvent(UUID nodeId, GridNode node, String msg, int type, UUID evtNodeId) {
+        super(nodeId, node, msg, type);
 
         this.evtNodeId = evtNodeId;
     }
@@ -101,11 +102,12 @@ public class GridDiscoveryEvent extends GridEventAdapter {
      * Creates new discovery event with given parameters.
      *
      * @param nodeId Local node ID.
+     * @param node Local node.
      * @param msg Optional event message.
      * @param type Event type.
      */
-    public GridDiscoveryEvent(UUID nodeId, String msg, int type) {
-        super(nodeId, msg, type);
+    public GridDiscoveryEvent(UUID nodeId, GridNode node, String msg, int type) {
+        super(nodeId, node, msg, type);
     }
 
     /**
