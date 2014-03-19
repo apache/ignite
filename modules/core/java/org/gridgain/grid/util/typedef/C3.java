@@ -24,4 +24,4 @@ import org.gridgain.grid.util.lang.*;
  * @see GridClosure3
  *
  */
-public abstract class C3<E1, E2, E3, R> extends GridClosure3<E1, E2, E3, R> { /* No-op. */ }
+public interface C3<E1, E2, E3, R> extends GridClosure3<E1, E2, E3, R> { /* No-op. */ }
