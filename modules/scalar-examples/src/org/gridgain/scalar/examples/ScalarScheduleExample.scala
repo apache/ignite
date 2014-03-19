@@ -16,25 +16,42 @@ import scalar._
 
 /**
  * Demonstrates a cron-based `Runnable` execution scheduling.
- * Test runnable object broadcasts a phrase to all grid nodes every minute,
- * 3 times with initial scheduling delay equal to five seconds.
+ * Test runnable object broadcasts a phrase to all grid nodes every minute
+ * three times with initial scheduling delay equal to five seconds.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
  */
-object ScalarScheduleRunnableExample extends App {
+object ScalarScheduleExample extends App {
     scalar("examples/config/example-compute.xml") {
+        println()
+        println("Compute schedule example started.")
+
         val g = grid$
 
-        // Schedule output message every minute.
-        val fut = g.scheduleLocalRun(
-            () => g.bcastRun(() => println("Howdy! :)"), null),
+        var invocations = 0
+
+        // Schedule callable that returns incremented value each time.
+        val fut = grid$.scheduleLocalCall(
+            () => {
+                invocations += 1
+
+                g.bcastRun(() => {
+                    println()
+                    println("Howdy! :)")
+                }, null)
+
+                invocations
+            },
             "{5, 3} * * * * *" // Cron expression.
         )
 
         while (!fut.isDone)
-            fut.get
+            println(">>> Invocation #: " + fut.get)
 
-        println(">>>>> Check all nodes for hello message output.")
+        // Prints.
+        println()
+        println(">>> Schedule future is done and has been unscheduled.")
+        println(">>> Check all nodes for hello message output.")
     }
 }
