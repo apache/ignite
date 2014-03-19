@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.gridgain</groupId>
         <artifactId>gridgain</artifactId>
-        <version>1.0</version>
+        <version>${gridgain.version}</version>
         <relativePath>../..</relativePath>
     </parent>
 
