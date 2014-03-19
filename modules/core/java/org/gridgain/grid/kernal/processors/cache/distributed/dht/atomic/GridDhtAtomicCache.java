@@ -854,8 +854,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     for (GridBiTuple<GridCacheEntryEx<K, V>, GridCacheVersion> e : deleted)
                         ctx.onDeferredDelete(e.get1(), e.get2());
                 }
-
-                ctx.continuousQueries().unwind(false);
             }
         }
         catch (GridDhtInvalidPartitionException ignore) {
@@ -1756,7 +1754,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      *
      */
-    private class FinishedLockFuture extends GridFinishedFutureEx<Boolean> implements GridDhtFuture<Boolean> {
+    private static class FinishedLockFuture extends GridFinishedFutureEx<Boolean> implements GridDhtFuture<Boolean> {
         /**
          * Empty constructor required by {@link Externalizable}.
          */

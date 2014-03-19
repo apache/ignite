@@ -69,7 +69,6 @@ public class ComputeScheduleExample {
             while (!fut.isDone())
                 System.out.println(">>> Invocation #: " + fut.get());
 
-            // Prints.
             System.out.println();
             System.out.println(">>> Schedule future is done and has been unscheduled.");
             System.out.println(">>> Check all nodes for hello message output.");

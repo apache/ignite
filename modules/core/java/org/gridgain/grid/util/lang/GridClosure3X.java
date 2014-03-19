@@ -19,7 +19,7 @@ import org.gridgain.grid.util.typedef.*;
  * into {@link GridClosureException} instance.
  * @see CX3
  */
-public abstract class GridClosure3X<E1, E2, E3, R> extends GridClosure3<E1, E2, E3, R> {
+public abstract class GridClosure3X<E1, E2, E3, R> implements GridClosure3<E1, E2, E3, R> {
     /** {@inheritDoc} */
     @Override public R apply(E1 e1, E2 e2, E3 e3) {
         try {
