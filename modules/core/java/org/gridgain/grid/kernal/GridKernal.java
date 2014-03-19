@@ -118,10 +118,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     private static final String COMPATIBLE_VERS = /*@java.compatible.vers*/"";
 
     /** GridGain site that is shown in log messages. */
-    private static final String SITE = /*@java.gridgain.site*/"www.gridgain.com";
-
-    /** GridGain support email. */
-    private static final String SUPPORT_EMAIL = /*@java.gridgain.support.email*/"support@gridgain.com";
+    private static final String SITE = /*@java.gridgain.site*/"www.gridgain.org";
 
     /** System line separator. */
     private static final String NL = U.nl();
@@ -968,10 +965,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     "This message is sent automatically to all configured admin emails." + NL +
                     "To change this behavior use 'lifeCycleEmailNotify' grid configuration property." +
                     NL + NL +
-                    "| " + SITE + NL;
-
-            if (ctx.isEnterprise())
-                body += "| " + SUPPORT_EMAIL + NL;
+                    "| " + SITE + NL +
+                    "| support@gridgain.com" + NL;
 
             sendAdminEmailAsync("GridGain node started: " + nid8, body, false);
         }
@@ -1953,10 +1948,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
                 body +=
                     NL + NL +
-                        "| " + SITE + NL;
-
-                if (ctx.isEnterprise())
-                    body += "| " + SUPPORT_EMAIL + NL;
+                        "| " + SITE + NL +
+                        "| support@gridgain.com" + NL;
 
                 // We can't use email processor at this point.
                 // So we use "raw" method of sending.
