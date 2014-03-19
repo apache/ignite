@@ -187,7 +187,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         long drExpireTime, @Nullable GridCacheVersion drVer, long ttl) {
         long topVer = updateReq.topologyVersion();
 
-        Collection<GridNode> dhtNodes = cctx.affinity().nodes(entry.partition());
+        Collection<GridNode> dhtNodes = cctx.affinity().nodes(entry.partition(), topVer);
 
         if (log.isDebugEnabled())
             log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
