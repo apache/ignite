@@ -25,6 +25,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
+import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
@@ -33,6 +34,10 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
  * Near cache for atomic cache.
  */
 public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
+    /** Maximum size for delete queue. */
+    private static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(GG_ATOMIC_NEAR_CACHE_DELETE_HISTORY_SIZE,
+        64 * 1024);
+
     /** Remove queue. */
     private GridCircularBuffer<T2<K, GridCacheVersion>> rmvQueue;
 
@@ -48,8 +53,7 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
     public GridAtomicNearCache(GridCacheContext<K, V> ctx) {
         super(ctx);
 
-        // TODO: 6312 (find optimal size).
-        rmvQueue = new GridCircularBuffer<>(64 * 1024);
+        rmvQueue = new GridCircularBuffer<>(U.ceilPow2(MAX_DELETE_QUEUE_SIZE));
     }
 
     /** {@inheritDoc} */
