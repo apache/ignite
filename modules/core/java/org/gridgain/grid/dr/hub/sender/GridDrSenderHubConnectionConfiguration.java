@@ -22,6 +22,9 @@ public class GridDrSenderHubConnectionConfiguration {
     /** Default receiver hub load balancing policy. */
     public static final GridDrReceiverHubLoadBalancingMode DFLT_RCV_HUB_LOAD_BALANCING_MODE = DR_RANDOM;
 
+    /** Default await acknowledge flag. */
+    public static final boolean DFLT_AWAIT_ACK = true;
+
     /** Data center ID.*/
     private byte dataCenterId;
 
@@ -36,6 +39,9 @@ public class GridDrSenderHubConnectionConfiguration {
 
     /** Ignored data center IDs. */
     private byte[] ignoreDataCenterIds;
+
+    /** Await acknowledge flag. */
+    private boolean awaitAck = DFLT_AWAIT_ACK;
 
     /**
      * Constructor.
@@ -55,6 +61,7 @@ public class GridDrSenderHubConnectionConfiguration {
         ignoreDataCenterIds = cfg.getIgnoredDataCenterIds();
         locOutboundHost = cfg.getLocalOutboundHost();
         rcvHubLoadBalancingMode = cfg.getReceiverHubLoadBalancingMode();
+        awaitAck = cfg.isAwaitAcknowledge();
     }
 
     /**
@@ -116,12 +123,11 @@ public class GridDrSenderHubConnectionConfiguration {
     }
 
     /**
-     * Gets remote receiver hub load balancing policy.
-     * <p>
-     * This policy provides balancing mechanism in case remote data center has several receiver hubs.
+     * Gets remote receiver hub load balancing policy. This policy provides balancing mechanism in case remote data
+     * center has several receiver hubs.
      * <p>
      * Defaults to {@link #DFLT_RCV_HUB_LOAD_BALANCING_MODE}.
-     *     *
+     *
      * @return Remote receiver hub load balancing policy.
      */
     public GridDrReceiverHubLoadBalancingMode getReceiverHubLoadBalancingMode() {
@@ -158,6 +164,28 @@ public class GridDrSenderHubConnectionConfiguration {
      */
     public void setIgnoredDataCenterIds(byte... ignoreDataCenterIds) {
         this.ignoreDataCenterIds = ignoreDataCenterIds;
+    }
+
+    /**
+     * Gets await acknowledge flag. When set to {@code true} sender hub will await acknowledge for each replication
+     * batch sent to a receiver hub thus ensuring that data is stored in remote topology. If set to {@code false},
+     * sender hub will not wait for that acknowledge. This will increase throughput at a cost of reliability.
+     * <p>
+     * Defaults to {@link #DFLT_AWAIT_ACK}.
+     *
+     * @return Await acknowledge flag.
+     */
+    public boolean isAwaitAcknowledge() {
+        return awaitAck;
+    }
+
+    /**
+     * Sets await acknowledge flag. See {@link #isAwaitAcknowledge()}
+     *
+     * @param awaitAck Await acknowledge flag.
+     */
+    public void setAwaitAcknowledge(boolean awaitAck) {
+        this.awaitAck = awaitAck;
     }
 
     /** {@inheritDoc} */
