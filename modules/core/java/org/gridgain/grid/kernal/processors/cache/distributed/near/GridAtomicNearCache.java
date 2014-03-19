@@ -62,6 +62,75 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
     }
 
     /**
+     * @param req Update request.
+     * @param res Update response.
+     */
+    public void processNearAtomicUpdateResponse(GridNearAtomicUpdateRequest<K, V> req,
+        GridNearAtomicUpdateResponse<K, V> res) {
+        /*
+         * Choose value to be stored in near cache: first check key is not in failed and not in skipped list,
+         * then check if value was generated on primary node, if not then use value sent in request.
+         */
+
+        Collection<K> failed = res.failedKeys();
+        List<Integer> nearValsIdxs = res.nearValuesIndexes();
+        List<Integer> skipped = res.skippedIndexes();
+
+        GridCacheVersion ver = req.updateVersion();
+
+        if (ver == null)
+            ver = res.nearVersion();
+
+        assert ver != null;
+
+        int nearValIdx = 0;
+
+        for (int i = 0; i < req.keys().size(); i++) {
+            if (F.contains(skipped, i))
+                continue;
+
+            K key = req.keys().get(i);
+
+            if (F.contains(failed, key))
+                continue;
+
+            if (ctx.affinity().nodes(key, req.topologyVersion()).contains(ctx.localNode())) { // Reader became backup.
+                GridCacheEntryEx<K, V> entry = peekEx(key);
+
+                if (entry != null && entry.markObsolete(ver))
+                    removeEntry(entry);
+
+                continue;
+            }
+
+            V val = null;
+            byte[] valBytes = null;
+
+            if (F.contains(nearValsIdxs, i)) {
+                val = res.nearValue(nearValIdx);
+                valBytes = res.nearValueBytes(nearValIdx);
+
+                nearValIdx++;
+            }
+            else {
+                assert req.operation() != TRANSFORM;
+
+                if (req.operation() != DELETE) {
+                    val = req.value(i);
+                    valBytes = req.valueBytes(i);
+                }
+            }
+
+            try {
+                processNearAtomicUpdateResponse(ver, key, val, valBytes, res.nearTtl(), req.nodeId());
+            }
+            catch (GridException e) {
+                res.addFailedKey(key, new GridException("Failed to update key in near cache: " + key, e));
+            }
+        }
+    }
+
+    /**
      * @param ver Version.
      * @param key Key.
      * @param val Value.
@@ -70,7 +139,7 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
      * @param nodeId Node ID.
      * @throws GridException If failed.
      */
-    public void processNearAtomicUpdateResponse(GridCacheVersion ver, K key, @Nullable V val, @Nullable byte[] valBytes,
+    private void processNearAtomicUpdateResponse(GridCacheVersion ver, K key, @Nullable V val, @Nullable byte[] valBytes,
         Long ttl, UUID nodeId) throws GridException {
         try {
             while (true) {
@@ -135,18 +204,7 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
 
         assert ver != null;
 
-        // TODO: 6312 (remove entry if near node became primary or backup, discuss better fix).
-        for (int i = 0; i < req.size(); i++) {
-            K key = req.key(i);
-
-            GridCacheEntryEx<K, V> entry = peekEx(key);
-
-            if (entry == null)
-                continue;
-
-            if (entry.markObsolete(ver))
-                removeEntry(entry);
-        }
+        Collection<K> backupKeys = req.keys();
 
         for (int i = 0; i < req.nearSize(); i++) {
             K key = req.nearKey(i);
@@ -158,6 +216,13 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
 
                         if (entry == null) {
                             res.addNearEvicted(key, req.nearKeyBytes(i));
+
+                            break;
+                        }
+
+                        if (F.contains(backupKeys, key)) { // Reader became backup.
+                            if (entry.markObsolete(ver))
+                                removeEntry(entry);
 
                             break;
                         }

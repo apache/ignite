@@ -353,60 +353,9 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         if (!nearEnabled || !req.hasPrimary())
             return;
 
-        /*
-         * Choose value to be stored in near cache: first check key is not in failed and not in skipped list,
-         * then check if value was generated on primary node, if not then use value sent in request.
-         */
-
         GridAtomicNearCache<K, V> near = (GridAtomicNearCache<K, V>)cctx.dht().near();
 
-        Collection<K> failed = res.failedKeys();
-        List<Integer> nearValsIdxs = res.nearValuesIndexes();
-        List<Integer> skipped = res.skippedIndexes();
-
-        int nearValIdx = 0;
-
-        for (int i = 0; i < req.keys().size(); i++) {
-            if (F.contains(skipped, i))
-                continue;
-
-            K key = req.keys().get(i);
-
-            if (F.contains(failed, key))
-                continue;
-
-            GridCacheVersion ver = req.updateVersion();
-
-            if (ver == null)
-                ver = res.nearVersion();
-
-            assert ver != null;
-
-            V val = null;
-            byte[] valBytes = null;
-
-            if (F.contains(nearValsIdxs, i)) {
-                val = res.nearValue(nearValIdx);
-                valBytes = res.nearValueBytes(nearValIdx);
-
-                nearValIdx++;
-            }
-            else {
-                assert req.operation() != TRANSFORM;
-
-                if (req.operation() != DELETE) {
-                    val = req.value(i);
-                    valBytes = req.valueBytes(i);
-                }
-            }
-
-            try {
-                near.processNearAtomicUpdateResponse(ver, key, val, valBytes, 0L, req.nodeId());
-            }
-            catch (GridException e) {
-                res.addFailedKey(key, new GridException("Failed to update key in near cache: " + key, e));
-            }
-        }
+        near.processNearAtomicUpdateResponse(req, res);
     }
 
     /**

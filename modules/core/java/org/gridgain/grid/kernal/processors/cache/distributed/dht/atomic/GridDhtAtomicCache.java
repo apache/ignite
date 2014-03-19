@@ -1127,6 +1127,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         boolean checkReaders = hasNear || ctx.discovery().hasNearCache(name(), topVer);
 
+        boolean readersOnly = false;
+
         // Avoid iterator creation.
         for (int i = 0; i < keys.size(); i++) {
             K k = keys.get(i);
@@ -1154,7 +1156,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 Object writeVal = req.writeValue(i);
 
-                Collection<UUID> readers = checkReaders ? F.view(entry.readers(), F.notEqualTo(nodeId)) : null;
+                Collection<UUID> readers = null;
+                Collection<UUID> filteredReaders = null;
+
+                if (checkReaders) {
+                    readers = entry.readers();
+                    filteredReaders = F.view(entry.readers(), F.notEqualTo(nodeId));
+                }
 
                 GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                     ver,
@@ -1177,8 +1185,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     newDrVer,
                     true);
 
-                if (dhtFut == null && !F.isEmpty(readers))
+                if (dhtFut == null && !F.isEmpty(filteredReaders)) {
                     dhtFut = createDhtFuture(ver, req, res, completionCb, true);
+
+                    readersOnly = true;
+                }
 
                 if (dhtFut != null) {
                     if (updRes.sendToDht()) { // Send to backups even in case of remove-remove scenarios.
@@ -1194,11 +1205,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             newValBytes = null; // Value has been changed.
                         }
 
-                        dhtFut.addWriteEntry(entry, updRes.newValue(), newValBytes, drExpireTime >= 0L ? ttl : -1L,
-                            drExpireTime, newDrVer, drExpireTime < 0L ? ttl : 0L);
+                        if (!readersOnly)
+                            dhtFut.addWriteEntry(entry, updRes.newValue(), newValBytes, drExpireTime >= 0L ? ttl : -1L,
+                                drExpireTime, newDrVer, drExpireTime < 0L ? ttl : 0L);
 
-                        if (!F.isEmpty(readers))
-                            dhtFut.addNearWriteEntries(readers, entry, updRes.newValue(), newValBytes,
+                        if (!F.isEmpty(filteredReaders))
+                            dhtFut.addNearWriteEntries(filteredReaders, entry, updRes.newValue(), newValBytes,
                                 drExpireTime < 0L ? ttl : 0L);
                     }
                     else {
@@ -1209,24 +1221,29 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
 
                 if (hasNear) {
-                    if (primary && updRes.sendToDht() &&
-                        !U.nodeIds(context().affinity().nodes(entry.partition(), topVer)).contains(nodeId)) {
-                        long ttl = updRes.newTtl(); // TODO: 6312 send ttl back?
+                    if (primary && updRes.sendToDht()) {
+                        if (!U.nodeIds(context().affinity().nodes(entry.partition(), topVer)).contains(nodeId)) {
+                            GridDrReceiverConflictContextImpl ctx = updRes.drConflictContext();
 
-                        GridDrReceiverConflictContextImpl ctx = updRes.drConflictContext();
+                            res.nearTtl(updRes.newTtl());
 
-                        if (ctx != null && ctx.isMerge())
-                            newValBytes = null;
+                            if (ctx != null && ctx.isMerge())
+                                newValBytes = null;
 
-                        // If put the same value as in request then do not need to send it back.
-                        if (op == TRANSFORM || writeVal != updRes.newValue())
-                            res.addNearValue(i, updRes.newValue(), newValBytes);
+                            // If put the same value as in request then do not need to send it back.
+                            if (op == TRANSFORM || writeVal != updRes.newValue())
+                                res.addNearValue(i, updRes.newValue(), newValBytes);
 
-                        if (updRes.newValue() != null || newValBytes != null) {
-                            GridFuture<Boolean> f = entry.addReader(nodeId, req.messageId());
+                            if (updRes.newValue() != null || newValBytes != null) {
+                                GridFuture<Boolean> f = entry.addReader(nodeId, req.messageId());
 
-                            assert f == null : f;
+                                assert f == null : f;
+                            }
                         }
+                        else if (F.contains(readers, nodeId)) // Reader became primary or backup.
+                            entry.removeReader(nodeId, req.messageId());
+                        else
+                            res.addSkippedIndex(i);
                     }
                     else
                         res.addSkippedIndex(i);
@@ -1348,7 +1365,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     boolean primary = !req.fastMap() || ctx.affinity().primary(ctx.localNode(), entry.key(),
                         req.topologyVersion());
 
-                    Collection<UUID> readers = checkReaders ? F.view(entry.readers(), F.notEqualTo(nodeId)) : null;
+                    Collection<UUID> readers = null;
+                    Collection<UUID> filteredReaders = null;
+
+                    if (checkReaders) {
+                        readers = entry.readers();
+                        filteredReaders = F.view(entry.readers(), F.notEqualTo(nodeId));
+                    }
 
                     GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                         ver,
@@ -1373,8 +1396,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     result.addDeleted(entry, updRes, entries);
 
-                    if (dhtFut == null && !F.isEmpty(readers))
+                    if (dhtFut == null && !F.isEmpty(filteredReaders)) {
                         dhtFut = createDhtFuture(ver, req, res, completionCb, true);
+
+                        result.readersOnly(true);
+                    }
 
                     if (dhtFut != null) {
                         GridCacheValueBytes valBytesTuple = op == DELETE ? GridCacheValueBytes.nil():
@@ -1382,30 +1408,37 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         byte[] valBytes = valBytesTuple.getIfMarshaled();
 
-                        dhtFut.addWriteEntry(entry, writeVal, valBytes, -1, -1, null, req.ttl());
+                        if (!result.readersOnly())
+                            dhtFut.addWriteEntry(entry, writeVal, valBytes, -1, -1, null, req.ttl());
 
-                        if (!F.isEmpty(readers))
-                            dhtFut.addNearWriteEntries(readers, entry, writeVal, valBytes, req.ttl());
+                        if (!F.isEmpty(filteredReaders))
+                            dhtFut.addNearWriteEntries(filteredReaders, entry, writeVal, valBytes, req.ttl());
                     }
 
                     if (hasNear) {
-                        if (primary &&
-                            !U.nodeIds(context().affinity().nodes(entry.partition(), topVer)).contains(nodeId)) {
-                            if (req.operation() == TRANSFORM) {
-                                int idx = firstEntryIdx + i;
+                        if (primary) {
+                            if (!U.nodeIds(context().affinity().nodes(entry.partition(), topVer)).contains(nodeId)) {
+                                if (req.operation() == TRANSFORM) {
+                                    int idx = firstEntryIdx + i;
 
-                                GridCacheValueBytes valBytesTuple = entry.valueBytes();
+                                    GridCacheValueBytes valBytesTuple = entry.valueBytes();
 
-                                byte[] valBytes = valBytesTuple.getIfMarshaled();
+                                    byte[] valBytes = valBytesTuple.getIfMarshaled();
 
-                                res.addNearValue(idx, writeVal, valBytes);
-                            }
+                                    res.addNearValue(idx, writeVal, valBytes);
+                                }
 
-                            if (writeVal != null || !entry.valueBytes().isNull()) {
-                                GridFuture<Boolean> f = entry.addReader(nodeId, req.messageId());
+                                res.nearTtl(req.ttl());
 
-                                assert f == null : f;
-                            }
+                                if (writeVal != null || !entry.valueBytes().isNull()) {
+                                    GridFuture<Boolean> f = entry.addReader(nodeId, req.messageId());
+
+                                    assert f == null : f;
+                                }
+                            } else if (readers.contains(nodeId)) // Reader became primary or backup.
+                                entry.removeReader(nodeId, req.messageId());
+                            else
+                                res.addSkippedIndex(firstEntryIdx + i);
                         }
                         else
                             res.addSkippedIndex(firstEntryIdx + i);
@@ -1734,25 +1767,25 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         GridCacheOperation op = (val != null || valBytes != null) ? UPDATE : DELETE;
 
                         GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
-                                ver,
-                                nodeId,
-                                nodeId,
-                                op,
-                                val,
-                                valBytes,
-                                /*write-through*/false,
-                                /*retval*/false,
-                                req.ttl(),
-                                /*event*/true,
-                                /*metrics*/true,
-                                /*primary*/false,
-                                /*check version*/true,
-                                CU.<K, V>empty(),
-                                replicate ? DR_BACKUP : DR_NONE,
-                                req.drTtl(i),
-                                req.drExpireTime(i),
-                                req.drVersion(i),
-                                false);
+                            ver,
+                            nodeId,
+                            nodeId,
+                            op,
+                            val,
+                            valBytes,
+                            /*write-through*/false,
+                            /*retval*/false,
+                            req.ttl(),
+                            /*event*/true,
+                            /*metrics*/true,
+                            /*primary*/false,
+                            /*check version*/true,
+                            CU.<K, V>empty(),
+                            replicate ? DR_BACKUP : DR_NONE,
+                            req.drTtl(i),
+                            req.drExpireTime(i),
+                            req.drVersion(i),
+                            false);
 
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());
@@ -1947,6 +1980,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /** */
         private GridDhtAtomicUpdateFuture<K, V> dhtFut;
 
+        /** */
+        private boolean readersOnly;
+
         /**
          * @param entry Entry.
          * @param updRes Entry update result.
@@ -1981,6 +2017,20 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
          */
         private void dhtFuture(@Nullable GridDhtAtomicUpdateFuture<K, V> dhtFut) {
             this.dhtFut = dhtFut;
+        }
+
+        /**
+         * @return {@code True} if only readers (not backups) should be updated.
+         */
+        private boolean readersOnly() {
+            return readersOnly;
+        }
+
+        /**
+         * @param readersOnly {@code True} if only readers (not backups) should be updated.
+         */
+        private void readersOnly(boolean readersOnly) {
+            this.readersOnly = readersOnly;
         }
     }
 

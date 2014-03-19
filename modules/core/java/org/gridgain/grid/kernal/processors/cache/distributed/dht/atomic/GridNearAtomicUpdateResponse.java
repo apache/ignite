@@ -87,6 +87,9 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
     /** Version generated on primary node to be used for originating node's near cache update. */
     private GridCacheVersion nearVer;
 
+    /** Ttl to be used for originating node's near cache update. */
+    private long nearTtl;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -188,6 +191,20 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
         nearValsIdxs.add(keyIdx);
         nearVals.add(val);
         nearValBytes.add(valBytes != null ? GridCacheValueBytes.marshaled(valBytes) : null);
+    }
+
+    /**
+     * @param ttl Time to live to be used for originating node's near cache update.
+     */
+    public void nearTtl(long ttl) {
+        nearTtl = ttl;
+    }
+
+    /**
+     * @return Time to live to be used for originating node's near cache update.
+     */
+    public long nearTtl() {
+        return nearTtl;
     }
 
     /**
@@ -366,6 +383,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
         _clone.nearVals = nearVals;
         _clone.nearValBytes = nearValBytes;
         _clone.nearVer = nearVer;
+        _clone.nearTtl = nearTtl;
     }
 
     /** {@inheritDoc} */
@@ -403,72 +421,6 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 commState.idx++;
 
             case 5:
-                if (nearValBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(nearValBytes.size()))
-                            return false;
-
-                        commState.it = nearValBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putValueBytes((GridCacheValueBytes)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
-
-            case 6:
-                if (nearValsIdxs != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(nearValsIdxs.size()))
-                            return false;
-
-                        commState.it = nearValsIdxs.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putInt((int)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
-
-            case 7:
-                if (!commState.putByteArray(remapKeysBytes))
-                    return false;
-
-                commState.idx++;
-
-            case 8:
-                if (!commState.putByteArray(retValBytes))
-                    return false;
-
-                commState.idx++;
-
-            case 9:
                 if (nearSkipIdxs != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(nearSkipIdxs.size()))
@@ -495,8 +447,80 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
                 commState.idx++;
 
-            case 10:
+            case 6:
+                if (!commState.putLong(nearTtl))
+                    return false;
+
+                commState.idx++;
+
+            case 7:
+                if (nearValBytes != null) {
+                    if (commState.it == null) {
+                        if (!commState.putInt(nearValBytes.size()))
+                            return false;
+
+                        commState.it = nearValBytes.iterator();
+                    }
+
+                    while (commState.it.hasNext() || commState.cur != NULL) {
+                        if (commState.cur == NULL)
+                            commState.cur = commState.it.next();
+
+                        if (!commState.putValueBytes((GridCacheValueBytes)commState.cur))
+                            return false;
+
+                        commState.cur = NULL;
+                    }
+
+                    commState.it = null;
+                } else {
+                    if (!commState.putInt(-1))
+                        return false;
+                }
+
+                commState.idx++;
+
+            case 8:
+                if (nearValsIdxs != null) {
+                    if (commState.it == null) {
+                        if (!commState.putInt(nearValsIdxs.size()))
+                            return false;
+
+                        commState.it = nearValsIdxs.iterator();
+                    }
+
+                    while (commState.it.hasNext() || commState.cur != NULL) {
+                        if (commState.cur == NULL)
+                            commState.cur = commState.it.next();
+
+                        if (!commState.putInt((int)commState.cur))
+                            return false;
+
+                        commState.cur = NULL;
+                    }
+
+                    commState.it = null;
+                } else {
+                    if (!commState.putInt(-1))
+                        return false;
+                }
+
+                commState.idx++;
+
+            case 9:
                 if (!commState.putCacheVersion(nearVer))
+                    return false;
+
+                commState.idx++;
+
+            case 10:
+                if (!commState.putByteArray(remapKeysBytes))
+                    return false;
+
+                commState.idx++;
+
+            case 11:
+                if (!commState.putByteArray(retValBytes))
                     return false;
 
                 commState.idx++;
@@ -554,6 +578,43 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 }
 
                 if (commState.readSize >= 0) {
+                    if (nearSkipIdxs == null)
+                        nearSkipIdxs = new ArrayList<>(commState.readSize);
+
+                    for (int i = commState.readItems; i < commState.readSize; i++) {
+                        if (buf.remaining() < 4)
+                            return false;
+
+                        int _val = commState.getInt();
+
+                        nearSkipIdxs.add((Integer)_val);
+
+                        commState.readItems++;
+                    }
+                }
+
+                commState.readSize = -1;
+                commState.readItems = 0;
+
+                commState.idx++;
+
+            case 6:
+                if (buf.remaining() < 8)
+                    return false;
+
+                nearTtl = commState.getLong();
+
+                commState.idx++;
+
+            case 7:
+                if (commState.readSize == -1) {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.readSize = commState.getInt();
+                }
+
+                if (commState.readSize >= 0) {
                     if (nearValBytes == null)
                         nearValBytes = new ArrayList<>(commState.readSize);
 
@@ -574,7 +635,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
                 commState.idx++;
 
-            case 6:
+            case 8:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -603,7 +664,17 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
                 commState.idx++;
 
-            case 7:
+            case 9:
+                GridCacheVersion nearVer0 = commState.getCacheVersion();
+
+                if (nearVer0 == CACHE_VER_NOT_READ)
+                    return false;
+
+                nearVer = nearVer0;
+
+                commState.idx++;
+
+            case 10:
                 byte[] remapKeysBytes0 = commState.getByteArray();
 
                 if (remapKeysBytes0 == BYTE_ARR_NOT_READ)
@@ -613,52 +684,13 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
                 commState.idx++;
 
-            case 8:
+            case 11:
                 byte[] retValBytes0 = commState.getByteArray();
 
                 if (retValBytes0 == BYTE_ARR_NOT_READ)
                     return false;
 
                 retValBytes = retValBytes0;
-
-                commState.idx++;
-
-            case 9:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
-                    commState.readSize = commState.getInt();
-                }
-
-                if (commState.readSize >= 0) {
-                    if (nearSkipIdxs == null)
-                        nearSkipIdxs = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        if (buf.remaining() < 4)
-                            return false;
-
-                        int _val = commState.getInt();
-
-                        nearSkipIdxs.add((Integer) _val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
-
-            case 10:
-                GridCacheVersion ver0 = commState.getCacheVersion();
-
-                if (ver0 == CACHE_VER_NOT_READ)
-                    return false;
-
-                nearVer = ver0;
 
                 commState.idx++;
 
