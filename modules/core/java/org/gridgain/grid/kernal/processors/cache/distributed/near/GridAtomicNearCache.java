@@ -95,6 +95,8 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
                 continue;
 
             if (ctx.affinity().nodes(key, req.topologyVersion()).contains(ctx.localNode())) { // Reader became backup.
+                log.info("Near backup1 " + key);
+
                 GridCacheEntryEx<K, V> entry = peekEx(key);
 
                 if (entry != null && entry.markObsolete(ver))
@@ -149,6 +151,8 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
                     entry = entryEx(key);
 
                     GridCacheOperation op = (val != null || valBytes != null) ? UPDATE : DELETE;
+
+                    log.info("Update near origin " + key);
 
                     GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                         ver,
@@ -221,6 +225,8 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
                         }
 
                         if (F.contains(backupKeys, key)) { // Reader became backup.
+                            log.info("Near backup2 " + key);
+
                             if (entry.markObsolete(ver))
                                 removeEntry(entry);
 
@@ -231,6 +237,8 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
                         byte[] valBytes = req.nearValueBytes(i);
 
                         GridCacheOperation op = (val != null || valBytes != null) ? UPDATE : DELETE;
+
+                        log.info("Update near reader " + key);
 
                         GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                             ver,

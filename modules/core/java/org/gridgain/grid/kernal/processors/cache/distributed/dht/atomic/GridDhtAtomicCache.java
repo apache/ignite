@@ -1164,6 +1164,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     filteredReaders = F.view(entry.readers(), F.notEqualTo(nodeId));
                 }
 
+                log.info("UpdateSingle " + k + " " + primary);
+
                 GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                     ver,
                     nodeId,
@@ -1372,6 +1374,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         readers = entry.readers();
                         filteredReaders = F.view(entry.readers(), F.notEqualTo(nodeId));
                     }
+
+                    log.info("Update partial batch " + entry.key());
 
                     GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                         ver,
@@ -1765,6 +1769,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         byte[] valBytes = req.valueBytes(i);
 
                         GridCacheOperation op = (val != null || valBytes != null) ? UPDATE : DELETE;
+
+                        log.info("Update backup " + key);
 
                         GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                             ver,

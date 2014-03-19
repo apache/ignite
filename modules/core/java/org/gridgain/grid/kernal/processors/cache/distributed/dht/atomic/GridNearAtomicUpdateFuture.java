@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -657,9 +658,17 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         GridCacheAffinityManager<K, V> affMgr = cctx.affinity();
 
         // If we can send updates is parallel - do it.
-        return fastMap ?
+        Collection<GridNode> nodes = fastMap ?
             affMgr.nodes(key, topVer) :
             Collections.singletonList(affMgr.primary(key, topVer));
+
+        log.info("Mapped " + key + " to " + nodes.size());
+
+        for (GridNode node : nodes) {
+            log.info(node.attribute(GridNodeAttributes.ATTR_GRID_NAME) + " " + node.id());
+        }
+
+        return nodes;
     }
 
     /**
