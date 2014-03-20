@@ -111,7 +111,7 @@ public class GridSharedFsCheckpointSpi extends GridSpiAdapter implements GridChe
      * Default directory name for SPI when {@code GRIDGAIN_HOME} not defined.
      * This directory name relative to file path in {@code java.io.tmpdir} system property value.
      */
-    public static final String DFLT_TMP_DIR = ".gg.sharedfs.cp";
+    private static final String DFLT_TMP_DIR = ".gg.sharedfs.cp";
 
     /** */
     private static final String CODES = "0123456789QWERTYUIOPASDFGHJKLZXCVBNM";

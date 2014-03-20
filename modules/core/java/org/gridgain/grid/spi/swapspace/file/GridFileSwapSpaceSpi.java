@@ -107,7 +107,7 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
      * Default directory name for SPI when {@code GRIDGAIN_HOME} not defined.
      * This directory name relative to file path in {@code java.io.tmpdir} system property value.
      */
-    public static final String DFLT_TMP_DIR = ".gg.file.ss";
+    private static final String DFLT_TMP_DIR = ".gg.file.ss";
 
     /** Default maximum sparsity. */
     public static final float DFLT_MAX_SPARSITY = 0.5f;
