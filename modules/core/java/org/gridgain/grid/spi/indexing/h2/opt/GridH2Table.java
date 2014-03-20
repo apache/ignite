@@ -11,7 +11,6 @@ package org.gridgain.grid.spi.indexing.h2.opt;
 
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.h2.api.*;
@@ -22,6 +21,7 @@ import org.h2.message.*;
 import org.h2.result.*;
 import org.h2.schema.*;
 import org.h2.table.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.sql.*;
