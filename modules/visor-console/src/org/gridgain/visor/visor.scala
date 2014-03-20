@@ -1429,7 +1429,7 @@ object visor extends VisorTag {
             val cfg = cfgMap.head._2
 
             // Setting up 'Config URL' for properly print in console.
-            System.setProperty(GridSystemProperties.GG_CONFIG_URL, cfgPath)
+            System.setProperty(GridSystemProperties.GG_CONFIG_URL, url.getPath)
 
             var cpuCnt = Runtime.getRuntime.availableProcessors
 
