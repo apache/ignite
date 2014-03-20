@@ -45,6 +45,7 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
      * Empty constructor required for {@link Externalizable}.
      */
     public GridAtomicNearCache() {
+        // No-op.
     }
 
     /**
@@ -69,8 +70,10 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
      * @param req Update request.
      * @param res Update response.
      */
-    public void processNearAtomicUpdateResponse(GridNearAtomicUpdateRequest<K, V> req,
-        GridNearAtomicUpdateResponse<K, V> res) {
+    public void processNearAtomicUpdateResponse(
+        GridNearAtomicUpdateRequest<K, V> req,
+        GridNearAtomicUpdateResponse<K, V> res
+    ) {
         /*
          * Choose value to be stored in near cache: first check key is not in failed and not in skipped list,
          * then check if value was generated on primary node, if not then use value sent in request.
@@ -143,8 +146,14 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
      * @param nodeId Node ID.
      * @throws GridException If failed.
      */
-    private void processNearAtomicUpdateResponse(GridCacheVersion ver, K key, @Nullable V val, @Nullable byte[] valBytes,
-        Long ttl, UUID nodeId) throws GridException {
+    private void processNearAtomicUpdateResponse(
+        GridCacheVersion ver,
+        K key,
+        @Nullable V val,
+        @Nullable byte[] valBytes,
+        Long ttl,
+        UUID nodeId
+    ) throws GridException {
         try {
             while (true) {
                 GridCacheEntryEx<K, V> entry = null;
@@ -202,8 +211,11 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
      * @param req Dht atomic update request.
      * @param res Dht atomic update response.
      */
-    public void processDhtAtomicUpdateRequest(UUID nodeId, GridDhtAtomicUpdateRequest<K, V> req,
-        GridDhtAtomicUpdateResponse<K, V> res) {
+    public void processDhtAtomicUpdateRequest(
+        UUID nodeId,
+        GridDhtAtomicUpdateRequest<K, V> req,
+        GridDhtAtomicUpdateResponse<K, V> res
+    ) {
         GridCacheVersion ver = req.writeVersion();
 
         assert ver != null;
@@ -291,8 +303,13 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V put(K key, V val, @Nullable GridCacheEntryEx<K, V> cached, long ttl,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+    @Override public V put(
+        K key,
+        V val,
+        @Nullable GridCacheEntryEx<K, V> cached,
+        long ttl,
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
+    ) throws GridException {
         return dht.put(key, val, cached, ttl, filter);
     }
 
