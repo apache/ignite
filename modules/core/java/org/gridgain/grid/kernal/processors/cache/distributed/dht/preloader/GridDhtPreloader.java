@@ -558,13 +558,14 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
         final GridDhtAffinityAssignmentRequest<K, V> req) {
         final long topVer = req.topologyVersion();
 
-        // TODO-gg-7663
-        U.debug(log, "Processing affinity assignment request: " + node + ", req=" + req);
+        if (log.isDebugEnabled())
+            log.debug("Processing affinity assignment request [node=" + node + ", req=" + req + ']');
 
         cctx.affinity().affinityReadyFuture(req.topologyVersion()).listenAsync(new CI1<GridFuture<Long>>() {
             @Override public void apply(GridFuture<Long> fut) {
-                // TODO-gg-7663
-                U.debug(log, "Affinity is ready for topology: " + topVer);
+                if (log.isDebugEnabled())
+                    log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
+                        ", node=" + node + ']');
 
                 List<List<GridNode>> assignment = cctx.affinity().assignments(topVer);
 
@@ -584,8 +585,8 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param res Response.
      */
     private void processAffinityAssignmentResponse(GridNode node, GridDhtAffinityAssignmentResponse<K, V> res) {
-        // TODO-gg-7663
-        U.debug(log, "Processing affinity assignment response:" + node);
+        if (log.isDebugEnabled())
+            log.debug("Processing affinity assignment response [node=" + node + ", res=" + res + ']');
 
         for (GridDhtAssignmentFetchFuture<K, V> fut : pendingAssignmentFetchFuts.values())
             fut.onResponse(node, res);

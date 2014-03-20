@@ -13,6 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.nio.*;
 import java.util.*;
@@ -26,6 +28,7 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
 
     /** Affinity assignment. */
     @GridDirectTransient
+    @GridToStringInclude
     private List<List<GridNode>> affAssignment;
 
     /** Affinity assignment bytes. */
@@ -169,5 +172,10 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridDhtAffinityAssignmentResponse.class, this);
     }
 }

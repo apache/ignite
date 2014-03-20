@@ -269,9 +269,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * Rechecks topology.
      */
     private void initTopology() throws GridException {
-        // TODO-gg-7663
-        U.debug(log, "Initializing topology");
-
         // Grab all alive remote nodes with order of equal or less than last joined node.
         rmtNodes = new ConcurrentLinkedQueue<>(CU.aliveRemoteNodes(cctx, exchId.topologyVersion()));
 
@@ -284,15 +281,15 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         }
 
         if (canCalculateAffinity()) {
-            // TODO-gg-7663
-            U.debug(log, "Will recalculate affinity [locNodeId=" + cctx.localNodeId() + ", exchId=" + exchId + ']');
+            if (log.isDebugEnabled())
+                log.debug("Will recalculate affinity [locNodeId=" + cctx.localNodeId() + ", exchId=" + exchId + ']');
 
             cctx.affinity().calculateAffinity(exchId.topologyVersion(), discoEvt);
         }
         else {
-            // TODO-gg-7663
-            U.debug(log, "Will request affinity from remote node [locNodeId=" + cctx.localNodeId() +
-                ", exchId=" + exchId + ']');
+            if (log.isDebugEnabled())
+                log.debug("Will request affinity from remote node [locNodeId=" + cctx.localNodeId() + ", exchId=" +
+                    exchId + ']');
 
             // Fetch affinity assignment from remote node.
             GridDhtAssignmentFetchFuture<K, V> fetchFut =
@@ -302,15 +299,11 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
             List<List<GridNode>> affAssignment = fetchFut.get();
 
-            // TODO-gg-7663
-            U.debug(log, "Going to initialize affinity assignment [locNodeId=" + cctx.localNodeId() +
-                ", topVer=" + exchId.topologyVersion() + ']');
+            if (log.isDebugEnabled())
+                log.debug("Fetched affinity from remote node, initializing affinity assignment [locNodeId=" +
+                    cctx.localNodeId() + ", topVer=" + exchId.topologyVersion() + ']');
 
             cctx.affinity().initializeAffinity(exchId.topologyVersion(), affAssignment);
-
-            // TODO-gg-7663
-            U.debug(log, "Initialized affinity from remote node [locNodeId=" + cctx.localNodeId() +
-                ", topVer=" + exchId.topologyVersion() + ']');
         }
 
         // If this is the oldest node.
@@ -436,10 +429,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 return;
 
             try {
-                // TODO-gg-7663
-                U.debug(log, "Initializing exchange future [locNodeId=" + cctx.localNodeId() +
-                    ", topVer=" + exchId.topologyVersion() + ", discoEvt=" + discoEvt + ']');
-
                 // Wait for event to occur to make sure that discovery
                 // will return corresponding nodes.
                 U.await(evtLatch);
@@ -623,7 +612,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /** {@inheritDoc} */
     @Override public boolean onDone(Long res, Throwable err) {
         if (err == null)
-            cctx.affinity().cleanUpCache(res);
+            cctx.affinity().cleanUpCache(res - 2);
 
         if (super.onDone(res, err) && !dummy && !forcePreload) {
             if (exchId.event() == GridEventType.EVT_NODE_FAILED || exchId.event() == GridEventType.EVT_NODE_LEFT)

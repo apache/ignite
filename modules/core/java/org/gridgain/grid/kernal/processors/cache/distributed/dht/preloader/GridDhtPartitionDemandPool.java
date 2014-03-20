@@ -1221,10 +1221,6 @@ public class GridDhtPartitionDemandPool<K, V> {
 
                             exchFut.get();
 
-                            // TODO-gg-7663
-                            U.debug(log, "Completed waiting on exchange future [topVer=" +
-                                exchFut.exchangeId().topologyVersion() + ", locNodeId=" + cctx.localNodeId() + ']');
-
                             if (log.isDebugEnabled())
                                 log.debug("After waiting for exchange future [exchFut=" + exchFut + ", worker=" +
                                     this + ']');

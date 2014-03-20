@@ -352,10 +352,6 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
 
     /** {@inheritDoc} */
     @Override public boolean afterExchange(GridDhtPartitionExchangeId exchId) throws GridException {
-        // TODO-gg-7663
-        U.debug(log, "Running after exchange [locNodeId=" + cctx.localNodeId() +
-            ", topVer=" + exchId.topologyVersion() + ']');
-
         boolean changed = waitForRent();
 
         GridNode loc = cctx.localNode();

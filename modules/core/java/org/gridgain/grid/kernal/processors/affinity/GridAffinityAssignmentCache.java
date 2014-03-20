@@ -17,7 +17,6 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -70,6 +69,7 @@ public class GridAffinityAssignmentCache {
      * @param aff Affinity function.
      * @param affMapper Affinity key mapper.
      */
+    @SuppressWarnings("unchecked")
     public GridAffinityAssignmentCache(GridCacheContext ctx, String cacheName, GridCacheAffinityFunction aff,
         GridCacheAffinityKeyMapper affMapper, int backups) {
         this.ctx = ctx;
@@ -111,7 +111,9 @@ public class GridAffinityAssignmentCache {
      * @param discoEvt Discovery event that caused this topology version change.
      */
     public List<List<GridNode>> calculate(long topVer, GridDiscoveryEvent discoEvt) {
-        U.debug(log, "Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() + ']');
+        if (log.isDebugEnabled())
+            log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
+                ", discoEvt=" + discoEvt + ']');
 
         GridAffinityAssignment prev = affCache.get(topVer - 1);
 
@@ -149,8 +151,9 @@ public class GridAffinityAssignmentCache {
 
         for (Map.Entry<Long, AffinityReadyFuture> entry : readyFuts.entrySet()) {
             if (entry.getKey() <= topVer) {
-                U.debug(log, "Completing topology ready future (calculated affinity) [locNodeId=" + ctx.localNodeId() +
-                    ", futVer=" + entry.getKey() + ", topVer=" + topVer + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Completing topology ready future (calculated affinity) [locNodeId=" + ctx.localNodeId() +
+                        ", futVer=" + entry.getKey() + ", topVer=" + topVer + ']');
 
                 entry.getValue().onDone(topVer);
             }
@@ -172,6 +175,10 @@ public class GridAffinityAssignmentCache {
      * @param topVer Actual topology version, older versions will be removed.
      */
     public void cleanUpCache(long topVer) {
+        if (log.isDebugEnabled())
+            log.debug("Cleaning up cache for version [locNodeId=" + ctx.localNodeId() +
+                ", topVer=" + topVer + ']');
+
         for (Iterator<Long> it = affCache.keySet().iterator(); it.hasNext(); )
             if (it.next() < topVer)
                 it.remove();
@@ -197,8 +204,9 @@ public class GridAffinityAssignmentCache {
         GridAffinityAssignment aff = head.get();
 
         if (aff.topologyVersion() >= topVer) {
-            U.debug(log, "Returning finished future for readyFuture [head=" + aff.topologyVersion() +
-                ", topVer=" + topVer + ']');
+            if (log.isDebugEnabled())
+                log.debug("Returning finished future for readyFuture [head=" + aff.topologyVersion() +
+                    ", topVer=" + topVer + ']');
 
             return new GridFinishedFutureEx<>(topVer);
         }
@@ -209,8 +217,9 @@ public class GridAffinityAssignmentCache {
         aff = head.get();
 
         if (aff.topologyVersion() >= topVer) {
-            U.debug(log, "Completing topology ready future right away [head=" + aff.topologyVersion() +
-                ", topVer=" + topVer + ']');
+            if (log.isDebugEnabled())
+                log.debug("Completing topology ready future right away [head=" + aff.topologyVersion() +
+                    ", topVer=" + topVer + ']');
 
             fut.onDone(topVer);
         }
@@ -312,13 +321,11 @@ public class GridAffinityAssignmentCache {
             return;
 
         try {
-            U.debug(log, "Will wait for topology version [locNodeId=" + ctx.localNodeId() +
+            if (log.isDebugEnabled())
+                log.debug("Will wait for topology version [locNodeId=" + ctx.localNodeId() +
                 ", topVer=" + topVer + ']');
 
             readyFuture(topVer).get();
-
-            U.debug(log, "Finished waiting for topology version [locNodeId=" + ctx.localNodeId() +
-                ", topVer=" + topVer + ']');
         }
         catch (GridException e) {
             throw new GridRuntimeException("Failed to wait for affinity ready future for topology version: " + topVer,

@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.nio.*;
 
@@ -116,5 +117,10 @@ public class GridDhtAffinityAssignmentRequest<K, V> extends GridCacheMessage<K, 
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridDhtAffinityAssignmentRequest.class, this);
     }
 }
