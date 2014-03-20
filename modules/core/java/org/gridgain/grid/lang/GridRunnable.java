@@ -19,4 +19,5 @@ import java.io.*;
  * like in {@link GridCompute#run(Runnable)} method.
  */
 public interface GridRunnable extends Runnable, Serializable {
+    // No-op.
 }
