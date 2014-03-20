@@ -1494,17 +1494,11 @@ public class GridCacheUtils {
     public static <K, V> void inTx(GridCacheProjection<K, V> cache, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, GridInClosureX<GridCacheProjection<K ,V>> clo) throws GridException {
 
-        GridCacheTx tx = cache.txStart(concurrency, isolation);
-
-        try {
+        try (GridCacheTx tx = cache.txStart(concurrency, isolation)) {
             clo.applyx(cache);
 
             tx.commit();
         }
-        finally {
-            tx.close();
-        }
-
     }
 
     /**
