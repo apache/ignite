@@ -9,7 +9,7 @@
  *
  */
 
-package org.gridgain.visor.commands.cscan
+package org.gridgain.visor.commands.cache
 
 import java.util.{Map => JavaMap, UUID}
 import collection.JavaConversions._
@@ -19,7 +19,6 @@ import org.gridgain.grid.kernal.processors.task.GridInternal
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.grid.util.scala.impl
 import org.gridgain.grid.util.typedef.CAX
-import org.gridgain.visor._
 import org.gridgain.visor.commands._
 import org.gridgain.visor.visor._
 import org.gridgain.grid.cache.GridCacheMode
@@ -27,18 +26,11 @@ import org.gridgain.grid.GridException
 
 /**
  * ==Overview==
- * Visor 'cscan' command implementation.
- *
- * ==Help==
- * {{{
- * +------------------------------------------------------+
- * | cscan | List all entries from cache on all nodes.    |
- * +------------------------------------------------------+
- * }}}
+ * Visor 'scan' command implementation.
  *
  * ====Specification====
  * {{{
- *     cscan {-id=<node-id>|-id8=<node-id8>} {-p=<page size>} -c=<cache name>
+ *     cache {-id=<node-id>|-id8=<node-id8>} {-p=<page size>} -n=<cache name> -scan
  * }}}
  *
  * ====Arguments====
@@ -55,11 +47,12 @@ import org.gridgain.grid.GridException
  *
  * ====Examples====
  * {{{
- *    cscan -c=cache
+ *    cscan -n=cache
  *        List entries from cache with name 'cache' from all nodes with this cache.
- *    cscan -p=50 -c=@c0
- *        List entries from cache with name taken from 'c0' memory variable with page of 50 items from all nodes with this cache.
- *    cscan -id8=12345678 -c=cache
+ *    cscan -p=50 -n=@c0
+ *        List entries from cache with name taken from 'c0' memory variable with page of 50 items
+ *        from all nodes with this cache.
+ *    cache -n=cache -scan -id8=12345678
  *        List entries from cache with name 'cache' and node '12345678' ID8.
  * }}}
  */
@@ -90,181 +83,178 @@ class VisorCacheScanCommand {
      * List all entries in cache with specified name.
      *
      * ===Examples===
-     * <ex>cscan -c=cache</ex>
-     * List all entries in cache with name 'cache'.
+     * <ex>cache -n=cache -scan</ex>
+     *     List entries from cache with name 'cache' from all nodes with this cache.
+     * <br>
+     * <ex>cache -n=@c0 -scan -p=50</ex>
+     *     List entries from cache with name taken from 'c0' memory variable with page of 50 items
+     *     from all nodes with this cache.
+     * <br>
+     * <ex>cache -n=cache -scan -id8=12345678</ex>
+     *     List entries from cache with name 'cache' and node '12345678' ID8.
      *
-     * @param args Command arguments.
+     * @param argLst Command arguments.
      */
-    def cscan(args: String) {
-        if (!isConnected)
-            adviseToConnect()
-        else {
-            val argLst = parseArgs(args)
+    def scan(argLst: ArgList) {
+        val id8Arg = argValue("id8", argLst)
+        val idArg = argValue("id", argLst)
+        val pageArg = argValue("p", argLst)
+        val cacheArg = argValue("n", argLst)
 
-            val id8Arg = argValue("id8", argLst)
-            val idArg = argValue("id", argLst)
-            val pageArg = argValue("p", argLst)
-            val cacheArg = argValue("c", argLst)
+        var nid: UUID = null
 
-            var nid: UUID = null
-
-            if (id8Arg.isDefined) {
-                id8Arg match {
-                    case Some(v) if v.startsWith("@") =>
-                        warn("Can't find node variable with specified name: " + v,
-                            "Type 'nodes' to see available nodes variables."
-                        )
-
-                        return
-                    case Some(id8) =>
-                        val ns = nodeById8(id8)
-
-                        if (ns.isEmpty)
-                            scold("Unknown 'id8' value: " + id8)
-                        else if (ns.size != 1)
-                            scold("'id8' resolves to more than one node (use full 'id' instead): " + id8)
-                        else
-                            nid = ns.head.id
-
-                        if (nid == null)
-                            return
-                }
-            }
-            else if (idArg.isDefined) {
-                val id = idArg.get
-                try {
-                    val node = grid.node(UUID.fromString(id))
-
-                    if (node != null)
-                        nid = node.id
-                    else
-                        scold("'id' does not match any node: " + id)
-                }
-                catch {
-                    case e: IllegalArgumentException => scold("Invalid node 'id': " + id)
-                }
-
-                if (nid == null)
-                    return
-            }
-
-            var pageSize = 25
-
-            if (pageArg.isDefined) {
-                val page = pageArg.get
-
-                try
-                 pageSize = page.toInt
-                catch {
-                    case nfe: NumberFormatException =>
-                        scold("Invalid value for 'page size': " + page)
-
-                        return
-                }
-
-                if (pageSize < 1 || pageSize > 100) {
-                    scold("'Page size' should be in range [1..100] but found: " + page)
-
-                    return
-                }
-            }
-
-            val cacheName = cacheArg match {
-                case None =>
-                    scold("Cache name is empty.")
-
-                    return
-
-                case Some(s) if s.startsWith("@") =>
-                    warn("Can't find cache variable with specified name: " + s,
-                        "Type 'cache' to see available cache variables."
+        if (id8Arg.isDefined) {
+            id8Arg match {
+                case Some(v) if v.startsWith("@") =>
+                    warn("Can't find node variable with specified name: " + v,
+                        "Type 'nodes' to see available nodes variables."
                     )
 
                     return
+                case Some(id8) =>
+                    val ns = nodeById8(id8)
 
-                case Some(name) => name
+                    if (ns.isEmpty)
+                        scold("Unknown 'id8' value: " + id8)
+                    else if (ns.size != 1)
+                        scold("'id8' resolves to more than one node (use full 'id' instead): " + id8)
+                    else
+                        nid = ns.head.id
+
+                    if (nid == null)
+                        return
+            }
+        }
+        else if (idArg.isDefined) {
+            val id = idArg.get
+            try {
+                val node = grid.node(UUID.fromString(id))
+
+                if (node != null)
+                    nid = node.id
+                else
+                    scold("'id' does not match any node: " + id)
+            }
+            catch {
+                case e: IllegalArgumentException => scold("Invalid node 'id': " + id)
             }
 
-            val cachePrj = if (nid != null) grid.forNodeId(nid).forCache(cacheName) else grid.forCache(cacheName)
+            if (nid == null)
+                return
+        }
 
-            if (cachePrj.nodes().isEmpty) {
-                warn("Can't find nodes with specified cache: " + cacheName,
-                    "Type 'cache' to see available cache names."
+        var pageSize = 25
+
+        if (pageArg.isDefined) {
+            val page = pageArg.get
+
+            try
+             pageSize = page.toInt
+            catch {
+                case nfe: NumberFormatException =>
+                    scold("Invalid value for 'page size': " + page)
+
+                    return
+            }
+
+            if (pageSize < 1 || pageSize > 100) {
+                scold("'Page size' should be in range [1..100] but found: " + page)
+
+                return
+            }
+        }
+
+        val cacheName = cacheArg match {
+            case None =>
+                scold("Cache name is empty.")
+
+                return
+
+            case Some(s) if s.startsWith("@") =>
+                warn("Can't find cache variable with specified name: " + s,
+                    "Type 'cache' to see available cache variables."
                 )
 
                 return
-            }
 
-            val qryPrj = cachePrj.forRandom()
+            case Some(name) => name
+        }
 
-            if (nid == null)
-                nid = qryPrj.node().id()
+        val cachePrj = if (nid != null) grid.forNodeId(nid).forCache(cacheName) else grid.forCache(cacheName)
 
-            var res =
-                try
-                    qryPrj
-                    .compute()
-                    .withName("visor-cscan-task")
-                    .withNoFailover()
-                    .execute(classOf[VisorScanCacheTask],
-                        new VisorScanCacheTaskArgs(nid, cachePrj.nodes().map(_.id()).toSeq, cacheName, pageSize))
-                    .get match {
-                        case Left(e) =>
-                            error(e)
+        if (cachePrj.nodes().isEmpty) {
+            warn("Can't find nodes with specified cache: " + cacheName,
+                "Type 'cache' to see available cache names."
+            )
 
-                            return
-                        case Right(r) => r
-                    }
-                catch {
-                    case e: Exception =>
+            return
+        }
+
+        val qryPrj = cachePrj.forRandom()
+
+        if (nid == null)
+            nid = qryPrj.node().id()
+
+        var res =
+            try
+                qryPrj
+                .compute()
+                .withName("visor-cscan-task")
+                .withNoFailover()
+                .execute(classOf[VisorScanCacheTask],
+                    new VisorScanCacheTaskArgs(nid, cachePrj.nodes().map(_.id()).toSeq, cacheName, pageSize))
+                .get match {
+                    case Left(e) =>
                         error(e)
 
                         return
+                    case Right(r) => r
                 }
+            catch {
+                case e: Exception =>
+                    error(e)
 
-            if (res.rows.isEmpty) {
-                println("Cache is empty")
-
-                return
+                    return
             }
 
-            def render() {
-                val t = VisorTextTable()
+        if (res.rows.isEmpty) {
+            println("Cache is empty")
 
-                t #= ("Key Class", "Key", "Value Class", "Value")
-
-                    res.rows.foreach(r => t += (r._1, r._2, r._3, r._4))
-
-                    t.render()
-            }
-
-            render()
-
-            while (res.hasMore) {
-                ask("\nFetch more objects (y/n) [y]:", "y") match {
-                    case "y" | "Y" =>
-                        try
-                            res = qryPrj
-                                .compute()
-                                .withName("visor-cscan-fetch-task")
-                                .withNoFailover()
-                                .execute(classOf[VisorFetchNextPageTask], new VisorFetchNextPageTaskArgs(nid, res.nlKey, pageSize))
-                                .get
-                        catch {
-                            case e: Exception => error(e)
-                        }
-
-                        render()
-
-                    case _ => return
-                }
-
-            }
+            return
         }
-    }
 
-    def cscan() {
-        scold("Cache name required")
+        def render() {
+            val t = VisorTextTable()
+
+            t #= ("Key Class", "Key", "Value Class", "Value")
+
+                res.rows.foreach(r => t += (r._1, r._2, r._3, r._4))
+
+                t.render()
+        }
+
+        render()
+
+        while (res.hasMore) {
+            ask("\nFetch more objects (y/n) [y]:", "y") match {
+                case "y" | "Y" =>
+                    try
+                        res = qryPrj
+                            .compute()
+                            .withName("visor-cscan-fetch-task")
+                            .withNoFailover()
+                            .execute(classOf[VisorFetchNextPageTask], new VisorFetchNextPageTaskArgs(nid, res.nlKey, pageSize))
+                            .get
+                    catch {
+                        case e: Exception => error(e)
+                    }
+
+                    render()
+
+                case _ => return
+            }
+
+        }
     }
 }
 
@@ -473,42 +463,6 @@ case class VisorScanCacheResult(nid: UUID, nlKey: String, rows: Array[VisorScanR
  * Companion object that does initialization of the command.
  */
 object VisorCacheScanCommand {
-    addHelp(
-        name = "cscan",
-        shortInfo = "List all entries from cache on specified or all nodes.",
-        spec = Seq(
-            "cscan",
-            "cscan {-id=<node-id>|-id8=<node-id8>} {-p=<page size>} -c=<cache name>"
-        ),
-        args = Seq(
-            "-id=<node-id>" -> Seq(
-                "Full node ID.",
-                "Either '-id' or '-id8' can be specified."
-            ),
-            "-id8=<node-id8>" -> Seq(
-                "Node ID8.",
-                "Note that either '-id8' or '-id' can be specified and " +
-                    "you can also use '@n0' ... '@nn' variables as shortcut to <node-id8>."
-            ),
-            "-p=<page size>" -> Seq(
-                "Number of object to fetch from cache at once.",
-                "Valid range from 1 to 100.",
-                "By default page size is 25."
-            ),
-            "-c=<cache-name>" -> Seq(
-                "Name of the cache.",
-                "Note you can also use '@c0' ... '@cn' variables as shortcut to <cache-name>."
-            )
-        ),
-        examples = Seq(
-            "cscan -c=cache" -> "List entries from cache with name 'cache' from all nodes with this cache.",
-            "cscan -p=50 -c=@c0" -> ("List entries from cache with name taken from 'c0' memory variable" +
-                " with page of 50 items from all nodes with this cache."),
-            "cscan -id8=12345678 -c=cache" -> "List entries from cache with name 'cache' and node '12345678' ID8."
-        ),
-        ref = VisorConsoleCommand(cmd.cscan, cmd.cscan)
-    )
-
     /** Singleton command. */
     private val cmd = new VisorCacheScanCommand
 
@@ -516,11 +470,4 @@ object VisorCacheScanCommand {
      * Singleton.
      */
     def apply() = cmd
-
-    /**
-     * Implicit converter from visor to commands "pimp".
-     *
-     * @param vs Visor tagging trait.
-     */
-    implicit def fromcscan2Visor(vs: VisorTag) = cmd
 }

@@ -52,8 +52,9 @@ import org.gridgain.visor.commands.{VisorConsoleMultiNodeTask, VisorConsoleComma
  * ====Specification====
  * {{{
  *     cache
- *     cache "-i {-n=<name>}"
- *     cache "{-n=<name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}"
+ *     cache -i {-n=<name>}
+ *     cache {-n=<name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}
+ *     cache -n=<cache-name> -scan {-id=<node-id>|id8=<node-id8>} {-p=<page size>}
  * }}}
  *
  * ====Arguments====
@@ -87,19 +88,30 @@ import org.gridgain.visor.commands.{VisorConsoleMultiNodeTask, VisorConsoleComma
  *     -a
  *         Prints details statistics about each cache.
  *         By default only aggregated summary is printed.
+ *     -p=<page size>
+ *         Number of object to fetch from cache at once.
+ *         Valid range from 1 to 100.
+ *         By default page size is 25.
  * }}}
  *
  * ====Examples====
  * {{{
- *     cache "-id8=12345678 -s=hi -r"
+ *     cache -id8=12345678 -s=hi -r
  *         Prints summary statistics about caches from node with specified id8
  *         sorted by number of hits in reverse order.
- *     cache "-i"
+ *     cache -i
  *         Prints cache statistics for interactively selected node.
- *     cache "-s=hi -r -a"
+ *     cache -s=hi -r -a
  *         Prints detailed statistics about all caches sorted by number of hits in reverse order.
  *     cache
  *         Prints summary statistics about all caches.
+ *     cache -n=cache -scan
+ *         List entries from cache with name 'cache' from all nodes with this cache.
+ *     cache -n=@c0 -scan -p=50
+ *         List entries from cache with name taken from 'c0' memory variable
+ *         with page of 50 items from all nodes with this cache.
+ *     cache -n=cache -scan -id8=12345678
+ *         List entries from cache with name 'cache' and node '12345678' ID8.
  * }}}
  */
 class VisorCacheCommand {
@@ -122,11 +134,20 @@ class VisorCacheCommand {
      *
      * ===Examples===
      * <ex>cache "-id8=12345678 -s=no -r"</ex>
-     * Prints statistics about caches from node with specified id8 sorted by number of
-     * nodes in reverse order.
-     *
+     *     Prints statistics about caches from node with specified id8 sorted by number of nodes in reverse order.
+     * <br>
      * <ex>cache "-s=no -r"</ex>
-     * Prints statistics about all caches sorted by number of nodes in reverse order.
+     *     Prints statistics about all caches sorted by number of nodes in reverse order.
+     * <br>
+     * <ex>cache -n=cache -scan</ex>
+     *     List entries from cache with name 'cache' from all nodes with this cache.
+     * <br>
+     * <ex>cache -n=@c0 -scan -p=50</ex>
+     *     List entries from cache with name taken from 'c0' memory variable with page of 50 items
+     *     from all nodes with this cache.
+     * <br>
+     * <ex>cache -n=cache -scan -id8=12345678</ex>
+     *     List entries from cache with name 'cache' and node '12345678' ID8.
      *
      * @param args Command arguments.
      */
@@ -146,6 +167,11 @@ class VisorCacheCommand {
                         }
                         case None => break()
                     }
+
+                    break()
+                }
+                else if (hasArgFlag("scan", argLst)) {
+                    VisorCacheScanCommand().scan(argLst)
 
                     break()
                 }
@@ -647,7 +673,8 @@ object VisorCacheCommand {
         spec = Seq(
             "cache",
             "cache -i",
-            "cache {-n=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}"
+            "cache {-n=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}",
+            "cache -n=<cache-name> -scan {-id=<node-id>|id8=<node-id8>} {-p=<page size>}"
         ),
         args = Seq(
             "-id=<node-id>" -> Seq(
@@ -665,6 +692,9 @@ object VisorCacheCommand {
                 "Name of the cache.",
                 "By default - statistics for all caches will be printed.",
                 "Note you can also use '@c0' ... '@cn' variables as shortcut to <cache-name>."
+            ),
+            "-scan" -> Seq(
+                "List all entries from cache"
             ),
             "-s=no|lr|lw|hi|mi|re|wr" -> Seq(
                 "Defines sorting type. Sorted by:",
@@ -687,6 +717,11 @@ object VisorCacheCommand {
             "-a" -> Seq(
                 "Prints details statistics about each cache.",
                 "By default only aggregated summary is printed."
+            ),
+            "-p=<page size>" -> Seq(
+                "Number of object to fetch from cache at once.",
+                "Valid range from 1 to 100.",
+                "By default page size is 25."
             )
         ),
         examples = Seq(
@@ -706,7 +741,11 @@ object VisorCacheCommand {
             "cache -s=hi -r -a" ->
                 "Prints detailed statistics about all caches sorted by number of hits in reverse order.",
             "cache" ->
-                "Prints summary statistics about all caches."
+                "Prints summary statistics about all caches.",
+            "cache -n=cache -scan" -> "List entries from cache with name 'cache' from all nodes with this cache.",
+            "cache -n=@c0 -scan -p=50" -> ("List entries from cache with name taken from 'c0' memory variable" +
+                " with page of 50 items from all nodes with this cache."),
+            "cache -n=cache -scan -id8=12345678" -> "List entries from cache with name 'cache' and node '12345678' ID8."
         ),
         ref = VisorConsoleCommand(cmd.cache, cmd.cache)
     )
