@@ -23,7 +23,7 @@ public class GridDrSenderCacheConfiguration {
     public static final GridDrSenderCacheMode DFLT_MODE = DR_ASYNC;
 
     /** Default data center replication sender cache batch send frequency. */
-    public static final long DFLT_BATCH_SND_FREQUENCY = 2000;
+    public static final long DFLT_BATCH_SND_FREQUENCY = 2000L;
 
     /** Default data center replication sender cache batch send size. */
     public static final int DFLT_BATCH_SND_SIZE = 2048;
@@ -91,7 +91,7 @@ public class GridDrSenderCacheConfiguration {
     }
 
     /**
-     * Gets mode. Set {@link GridDrSenderCacheMode} for more info.
+     * Gets mode. See {@link GridDrSenderCacheMode} for more info.
      * <p>
      * Defaults to {@link #DFLT_MODE}.
      *
