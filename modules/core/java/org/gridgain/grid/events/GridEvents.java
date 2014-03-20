@@ -55,8 +55,8 @@ public interface GridEvents {
      * selection.
      *
      * @param p Predicate filter used to query events on remote nodes.
-     * @param types Event types to be queried.
      * @param timeout Maximum time to wait for result, {@code 0} to wait forever.
+     * @param types Event types to be queried.
      * @return Collection of grid events returned from specified nodes.
      */
     public <T extends GridEvent> GridFuture<List<T>> remoteQuery(GridPredicate<T> p, long timeout,
