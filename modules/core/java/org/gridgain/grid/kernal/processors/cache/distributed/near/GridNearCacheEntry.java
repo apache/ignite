@@ -112,28 +112,39 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
                 GridCacheEntryInfo<K, V> e = entry.info();
 
                 if (e != null) {
-                    synchronized (this) {
-                        checkObsolete();
+                    GridCacheVersion enqueueVer = null;
 
-                        if (isNew() || !valid(topVer)) {
-                            // Version does not change for load ops.
-                            update(e.value(), e.valueBytes(), e.expireTime(), e.ttl(), e.isNew() ? ver : e.version());
+                    try {
+                        synchronized (this) {
+                            checkObsolete();
 
-                            if (cctx.deferredDelete()) {
-                                boolean deleted = val == null && valBytes == null;
+                            if (isNew() || !valid(topVer)) {
+                                // Version does not change for load ops.
+                                update(e.value(), e.valueBytes(), e.expireTime(), e.ttl(), e.isNew() ? ver : e.version());
 
-                                if (deleted != deletedUnlocked())
-                                    deletedUnlocked(deleted);
+                                if (cctx.deferredDelete()) {
+                                    boolean deleted = val == null && valBytes == null;
+
+                                    if (deleted != deletedUnlocked())
+                                        deletedUnlocked(deleted);
+
+                                    if (deleted)
+                                        enqueueVer = e.version();
+                                }
+
+                                recordNodeId(cctx.affinity().primary(key, topVer).id());
+
+                                dhtVer = e.isNew() || e.isDeleted() ? null : e.version();
+
+                                return true;
                             }
 
-                            recordNodeId(cctx.affinity().primary(key, topVer).id());
-
-                            dhtVer = e.isNew() || e.isDeleted() ? null : e.version();
-
-                            return true;
+                            return false;
                         }
-
-                        return false;
+                    }
+                    finally {
+                        if (enqueueVer != null)
+                            cctx.onDeferredDelete(entry, enqueueVer);
                     }
                 }
             }
@@ -318,46 +329,59 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         GridCacheVersion ver, GridCacheVersion dhtVer, @Nullable GridCacheVersion expVer, long ttl, long expireTime,
         boolean evt)
         throws GridException, GridCacheEntryRemovedException {
-        if (valBytes != null && val == null && (isNewLocked() || !valid(-1)))
+        boolean valid = valid(-1);
+
+        if (valBytes != null && val == null && (isNewLocked() || !valid))
             val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
 
-        synchronized (this) {
-            checkObsolete();
+        GridCacheVersion enqueueVer = null;
 
-            cctx.cache().metrics0().onRead(false);
+        try {
+            synchronized (this) {
+                checkObsolete();
 
-            boolean ret = false;
+                cctx.cache().metrics0().onRead(false);
 
-            V old = this.val;
-            boolean hasVal = hasValueUnlocked();
+                boolean ret = false;
 
-            if (isNew() || !valid(-1) || expVer == null || expVer.equals(this.dhtVer)) {
-                this.primaryNodeId = primaryNodeId;
+                V old = this.val;
+                boolean hasVal = hasValueUnlocked();
 
-                refreshingLocked(false);
+                if (isNew() || !valid || expVer == null || expVer.equals(this.dhtVer)) {
+                    this.primaryNodeId = primaryNodeId;
 
-                // Change entry only if dht version has changed.
-                if (!dhtVer.equals(dhtVersion())) {
-                    update(val, valBytes, expireTime, ttl, ver);
+                    refreshingLocked(false);
 
-                    if (cctx.deferredDelete()) {
-                        boolean deleted = val == null && valBytes == null;
+                    // Change entry only if dht version has changed.
+                    if (!dhtVer.equals(dhtVersion())) {
+                        update(val, valBytes, expireTime, ttl, ver);
 
-                        if (deleted != deletedUnlocked())
-                            deletedUnlocked(deleted);
+                        if (cctx.deferredDelete()) {
+                            boolean deleted = val == null && valBytes == null;
+
+                            if (deleted != deletedUnlocked())
+                                deletedUnlocked(deleted);
+
+                            if (deleted)
+                                enqueueVer = ver;
+                        }
+
+                        recordDhtVersion(dhtVer);
+
+                        ret = true;
                     }
-
-                    recordDhtVersion(dhtVer);
-
-                    ret = true;
                 }
+
+                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
+                    cctx.events().addEvent(partition(), key, tx, null, EVT_CACHE_OBJECT_READ,
+                        val, val != null || valBytes != null, old, hasVal);
+
+                return ret;
             }
-
-            if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
-                cctx.events().addEvent(partition(), key, tx, null, EVT_CACHE_OBJECT_READ,
-                    val, val != null || valBytes != null, old, hasVal);
-
-            return ret;
+        }
+        finally {
+            if (enqueueVer != null)
+                cctx.onDeferredDelete(this, enqueueVer);
         }
     }
 

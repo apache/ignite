@@ -429,6 +429,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return Transactional DHT cache.
+     */
+    public GridDhtTxCacheAdapter<K, V> dhtTx() {
+        return (GridDhtTxCacheAdapter<K, V>)cache;
+    }
+
+    /**
      * @return Colocated cache.
      */
     public GridDhtColocatedCache<K, V> colocated() {
@@ -1642,18 +1649,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert ver != null;
         assert deferredDelete();
 
-        GridDhtLocalPartition<K, V> part = topology().localPartition(entry.partition(), -1, false);
-
-        // Do not remove entry on replica topology. Instead, add entry to removal queue.
-        // It will be cleared eventually.
-        if (part != null) {
-            try {
-                part.onDeferredDelete(entry.key(), ver);
-            }
-            catch (GridException e) {
-                U.error(log, "Failed to enqueue deleted entry [key=" + entry.key() + ", ver=" + ver + ']', e);
-            }
-        }
+        cache.onDeferredDelete(entry, ver);
     }
 
     /**

@@ -1151,8 +1151,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     /**
      * @return DHT cache.
      */
-    private GridDhtCacheAdapter<K, V> dht() {
-        return cctx.near().dht();
+    private GridDhtTxCacheAdapter<K, V> dht() {
+        return cctx.nearTx().dht();
     }
 
     /**

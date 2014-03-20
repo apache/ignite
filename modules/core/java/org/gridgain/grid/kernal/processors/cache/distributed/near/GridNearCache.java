@@ -32,9 +32,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
  * Common logic for near caches.
  */
 public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
-    /** DHT cache. */
-    protected GridDhtCacheAdapter<K, V> dht;
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -65,16 +62,7 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
     /**
      * @return DHT cache.
      */
-    public GridDhtCacheAdapter<K, V> dht() {
-        return dht;
-    }
-
-    /**
-     * @param dht DHT cache.
-     */
-    public void dht(GridDhtCacheAdapter<K, V> dht) {
-        this.dht = dht;
-    }
+    public abstract GridDhtCacheAdapter<K, V> dht();
 
     /** {@inheritDoc} */
     @Override public boolean isNear() {
@@ -84,28 +72,28 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
     /** {@inheritDoc} */
     @Override public void beforePessimisticLock(
         GridBiClosure<Collection<K>, Boolean, GridFuture<Object>> beforePessimisticLock) {
-        dht.beforePessimisticLock(beforePessimisticLock);
+        dht().beforePessimisticLock(beforePessimisticLock);
     }
 
     /** {@inheritDoc} */
     @Override public GridBiClosure<Collection<K>, Boolean, GridFuture<Object>> beforePessimisticLock() {
-        return dht.beforePessimisticLock();
+        return dht().beforePessimisticLock();
     }
 
     /** {@inheritDoc} */
     @Override public void afterPessimisticUnlock(
         GridInClosure3<K, Boolean, GridCacheOperation> afterPessimisticUnlock) {
-        dht.afterPessimisticUnlock(afterPessimisticUnlock);
+        dht().afterPessimisticUnlock(afterPessimisticUnlock);
     }
 
     /** {@inheritDoc} */
     @Override public GridInClosure3<K, Boolean, GridCacheOperation> afterPessimisticUnlock() {
-        return dht.afterPessimisticUnlock();
+        return dht().afterPessimisticUnlock();
     }
 
     /** {@inheritDoc} */
     @Override public GridCachePreloader<K, V> preloader() {
-        return dht.preloader();
+        return dht().preloader();
     }
 
     /** {@inheritDoc} */
@@ -164,7 +152,7 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
 
     /** {@inheritDoc} */
     @Override public boolean isLocked(K key) {
-        return super.isLocked(key) || dht.isLocked(key);
+        return super.isLocked(key) || dht().isLocked(key);
     }
 
     /**
@@ -211,7 +199,7 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
         GridCompoundFuture fut = new GridCompoundFuture(ctx.kernalContext());
 
         fut.add(super.reloadAllAsync(keys, filter));
-        fut.add(dht.reloadAllAsync(keys, filter));
+        fut.add(dht().reloadAllAsync(keys, filter));
 
         fut.markInitialized();
 
@@ -240,7 +228,7 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
     @Override public void reloadAll() throws GridException {
         super.reloadAll();
 
-        dht.reloadAll();
+        dht().reloadAll();
     }
 
     /** {@inheritDoc} */
@@ -249,7 +237,7 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
         GridCompoundFuture fut = new GridCompoundFuture(ctx.kernalContext());
 
         fut.add(super.reloadAllAsync());
-        fut.add(dht.reloadAllAsync());
+        fut.add(dht().reloadAllAsync());
 
         fut.markInitialized();
 
@@ -262,7 +250,7 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
         GridCompoundFuture fut = new GridCompoundFuture(ctx.kernalContext());
 
         fut.add(super.reloadAllAsync());
-        fut.add(dht.reloadAllAsync(filter));
+        fut.add(dht().reloadAllAsync(filter));
 
         fut.markInitialized();
 
@@ -294,19 +282,19 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
 
     /** {@inheritDoc} */
     @Override public void loadCache(GridBiPredicate<K, V> p, long ttl, Object[] args) throws GridException {
-        dht.loadCache(p, ttl, args);
+        dht().loadCache(p, ttl, args);
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> loadCacheAsync(GridBiPredicate<K, V> p, long ttl, Object[] args) {
-        return dht.loadCacheAsync(p, ttl, args);
+        return dht().loadCacheAsync(p, ttl, args);
     }
 
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
         super.resetMetrics();
 
-        dht.resetMetrics();
+        dht().resetMetrics();
     }
 
     /**
@@ -329,12 +317,12 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return super.size() + dht.size();
+        return super.size() + dht().size();
     }
 
     /** {@inheritDoc} */
     @Override public int primarySize() {
-        return dht.primarySize();
+        return dht().primarySize();
     }
 
     /** {@inheritDoc} */
@@ -352,12 +340,12 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
     /** {@inheritDoc} */
     @Override public Set<GridCacheEntry<K, V>> entrySet(
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
-        return new EntrySet(super.entrySet(filter), dht.entrySet(filter));
+        return new EntrySet(super.entrySet(filter), dht().entrySet(filter));
     }
 
     /** {@inheritDoc} */
     @Override public Set<GridCacheEntry<K, V>> entrySet(int part) {
-        return dht.entrySet(part);
+        return dht().entrySet(part);
     }
 
     /** {@inheritDoc} */
@@ -366,7 +354,7 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
         Collection<GridCacheEntry<K, V>> entries =
             F.flat(
                 F.viewReadOnly(
-                    dht.topology().currentLocalPartitions(),
+                    dht().topology().currentLocalPartitions(),
                     new C1<GridDhtLocalPartition<K, V>, Collection<GridCacheEntry<K, V>>>() {
                         @Override public Collection<GridCacheEntry<K, V>> apply(GridDhtLocalPartition<K, V> p) {
                             return F.viewReadOnly(
@@ -422,13 +410,13 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(K key, GridPredicate<GridCacheEntry<K, V>> filter) {
-        return super.containsKey(key, filter) || dht.containsKey(key, filter);
+        return super.containsKey(key, filter) || dht().containsKey(key, filter);
     }
 
     /** {@inheritDoc} */
     @Override public boolean evict(K key, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         // Use unary 'and' to make sure that both sides execute.
-        return super.evict(key, filter) & dht.evict(key, filter);
+        return super.evict(key, filter) & dht().evict(key, filter);
     }
 
     /**
@@ -445,7 +433,7 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         super.evictAll(keys, filter);
 
-        dht.evictAll(keys, filter);
+        dht().evictAll(keys, filter);
     }
 
     /** {@inheritDoc} */
@@ -495,7 +483,7 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
             assert false : "Filter should not fail since fail-fast is false";
         }
 
-        return dht.peek(key, filter);
+        return dht().peek(key, filter);
     }
 
     /** {@inheritDoc} */
@@ -517,7 +505,7 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
         if (val != null)
             return val.get();
 
-        return !modes.contains(NEAR_ONLY) ? dht.peek(key, modes) : null;
+        return !modes.contains(NEAR_ONLY) ? dht().peek(key, modes) : null;
     }
 
     /** {@inheritDoc} */
@@ -526,7 +514,7 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
         final Map<K, V> resMap = super.peekAll(keys, filter);
 
         if (resMap.size() != keys.size())
-            resMap.putAll(dht.peekAll(keys, F.and(filter, new GridPredicate<GridCacheEntry<K, V>>() {
+            resMap.putAll(dht().peekAll(keys, F.and(filter, new GridPredicate<GridCacheEntry<K, V>>() {
                 @Override public boolean apply(GridCacheEntry<K, V> e) {
                     return !resMap.containsKey(e.getKey());
                 }
@@ -537,7 +525,7 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
 
     /** {@inheritDoc} */
     @Override public boolean clear0(K key, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
-        return super.clear0(key, filter) | dht.clear0(key, filter);
+        return super.clear0(key, filter) | dht().clear0(key, filter);
     }
 
     /** {@inheritDoc} */
@@ -545,87 +533,87 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         super.clearAll0(keys, filter);
 
-        dht.clearAll0(keys, filter);
+        dht().clearAll0(keys, filter);
     }
 
     /** {@inheritDoc} */
     @Override public V promote(K key) throws GridException {
         ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
 
-        // Unswap only from DHT. Near cache does not have swap storage.
-        return dht.promote(key);
+        // Unswap only from dht(). Near cache does not have swap storage.
+        return dht().promote(key);
     }
 
     /** {@inheritDoc} */
     @Override public void promoteAll(@Nullable Collection<? extends K> keys) throws GridException {
         ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
 
-        // Unswap only from DHT. Near cache does not have swap storage.
+        // Unswap only from dht(). Near cache does not have swap storage.
         // In near-only cache this is a no-op.
         if (isAffinityNode(ctx.config()))
-            dht.promoteAll(keys);
+            dht().promoteAll(keys);
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Map.Entry<K, V>> swapIterator() throws GridException {
         ctx.denyOnFlags(F.asList(SKIP_SWAP));
 
-        return dht.swapIterator();
+        return dht().swapIterator();
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Map.Entry<K, V>> offHeapIterator() throws GridException {
-        return dht.offHeapIterator();
+        return dht().offHeapIterator();
     }
 
     /** {@inheritDoc} */
     @Override public long offHeapEntriesCount() {
-        return dht.offHeapEntriesCount();
+        return dht().offHeapEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long offHeapAllocatedSize() {
-        return dht.offHeapAllocatedSize();
+        return dht().offHeapAllocatedSize();
     }
 
     /** {@inheritDoc} */
     @Override public long swapSize() throws GridException {
-        return dht.swapSize();
+        return dht().swapSize();
     }
 
     /** {@inheritDoc} */
     @Override public long swapKeys() throws GridException {
-        return dht.swapKeys();
+        return dht().swapKeys();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isGgfsDataCache() {
-        return dht.isGgfsDataCache();
+        return dht().isGgfsDataCache();
     }
 
     /** {@inheritDoc} */
     @Override public long ggfsDataSpaceUsed() {
-        return dht.ggfsDataSpaceUsed();
+        return dht().ggfsDataSpaceUsed();
     }
 
     /** {@inheritDoc} */
     @Override public long ggfsDataSpaceMax() {
-        return dht.ggfsDataSpaceMax();
+        return dht().ggfsDataSpaceMax();
     }
 
     /** {@inheritDoc} */
     @Override public void onGgfsDataSizeChanged(long delta) {
-        dht.onGgfsDataSizeChanged(delta);
+        dht().onGgfsDataSizeChanged(delta);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMongoDataCache() {
-        return dht.isMongoDataCache();
+        return dht().isMongoDataCache();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMongoMetaCache() {
-        return dht.isMongoMetaCache();
+        return dht().isMongoMetaCache();
     }
 
     /** {@inheritDoc} */
@@ -634,7 +622,7 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
             case NEAR_PARTITIONED:
                 GridCacheVersion obsoleteVer = ctx.versions().next();
 
-                List<GridCacheClearAllRunnable<K, V>> dhtJobs = dht.splitClearAll();
+                List<GridCacheClearAllRunnable<K, V>> dhtJobs = dht().splitClearAll();
 
                 List<GridCacheClearAllRunnable<K, V>> res = new ArrayList<>(dhtJobs.size());
 
@@ -655,17 +643,17 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> drFullStateTransfer(Collection<Byte> dataCenterIds) {
-        return dht.drFullStateTransfer(dataCenterIds);
+        return dht().drFullStateTransfer(dataCenterIds);
     }
 
     /** {@inheritDoc} */
     @Override public void drPause() throws GridException {
-        dht.drPause();
+        dht().drPause();
     }
 
     /** {@inheritDoc} */
     @Override public void drResume() throws GridException {
-        dht.drResume();
+        dht().drResume();
     }
 
     /**

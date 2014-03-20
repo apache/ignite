@@ -31,6 +31,7 @@ import sun.misc.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
@@ -65,7 +66,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>> updateReplyClos;
 
     /** Pending  */
-    private ConcurrentHashMap8<UUID, DeferredResponseBuffer> pendingResponses = new ConcurrentHashMap8<>();
+    private ConcurrentMap<UUID, DeferredResponseBuffer> pendingResponses = new ConcurrentHashMap8<>();
 
     /** */
     private GridAtomicNearCache<K, V> near;
@@ -548,9 +549,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtFuture<Boolean> lockAllAsyncInternal(@Nullable Collection<? extends K> keys, long timeout,
-        GridCacheTxLocalEx<K, V> txx, boolean isInvalidate, boolean isRead, boolean retval,
-        GridCacheTxIsolation isolation, GridPredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override protected GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
+        long timeout,
+        @Nullable GridCacheTxLocalEx<K, V> tx,
+        boolean isInvalidate,
+        boolean isRead,
+        boolean retval,
+        @Nullable GridCacheTxIsolation isolation,
+        GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return new FinishedLockFuture(new UnsupportedOperationException("Locks are not supported for " +
             "GridCacheAtomicityMode.ATOMIC mode (use GridCacheAtomicityMode.TRANSACTIONAL instead)"));
     }

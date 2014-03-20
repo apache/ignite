@@ -674,10 +674,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if ((unmarshal || isOffHeapValuesOnly()) && !expired && val == null && hasOldBytes)
                 val = rawGetOrUnmarshalUnlocked();
 
+            boolean valid = valid(tx != null ? tx.topologyVersion() : -1);
+
             // Attempt to load from swap.
             if (val == null && !hasOldBytes && readSwap) {
                 // Only promote when loading initial state.
-                if (isNew() || !valid(-1)) {
+                if (isNew() || !valid) {
                     // If this entry is already expired (expiration time was too low),
                     // we simply remove from swap and clear index.
                     if (expired) {
@@ -713,8 +715,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (1 - delta / ttlExtras() >= refreshRatio)
                     asyncRefresh = true;
             }
-
-            boolean valid = valid(tx != null ? tx.topologyVersion() : -1);
 
             old = expired || !valid ? null : val;
 
@@ -990,7 +990,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             assert newVer != null : "Failed to get write version for tx: " + tx;
 
             if (tx != null && !tx.local() && tx.onePhaseCommit() && explicitVer == null) {
-                if (!(isNew() || !valid(-1)) && ver.compareTo(newVer) > 0) {
+                if (!(isNew() || !valid) && ver.compareTo(newVer) > 0) {
                     if (log.isDebugEnabled())
                         log.debug("Skipping entry update for one-phase commit since current entry version is " +
                             "greater than write version [entry=" + this + ", newVer=" + newVer + ']');

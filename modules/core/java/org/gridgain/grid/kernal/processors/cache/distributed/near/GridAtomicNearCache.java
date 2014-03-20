@@ -38,6 +38,9 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
     private static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(GG_ATOMIC_NEAR_CACHE_DELETE_HISTORY_SIZE,
         64 * 1024);
 
+    /** */
+    private GridDhtCacheAdapter<K, V> dht;
+
     /** Remove queue. */
     private GridCircularBuffer<T2<K, GridCacheVersion>> rmvQueue;
 
@@ -64,6 +67,18 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
                 processGetResponse(nodeId, res);
             }
         });
+    }
+
+    /**
+     * @param dht DHT cache.
+     */
+    public void dht(GridDhtAtomicCache<K, V> dht) {
+        this.dht = dht;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridDhtCacheAdapter<K, V> dht() {
+        return dht;
     }
 
     /**
@@ -185,7 +200,7 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
                         false);
 
                     if (updRes.removeVersion() != null)
-                        onDeferredDelete(entry.key(), updRes.removeVersion());
+                        ctx.onDeferredDelete(entry, updRes.removeVersion());
 
                     break; // While.
                 }
@@ -270,7 +285,7 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
                             false);
 
                         if (updRes.removeVersion() != null)
-                            onDeferredDelete(entry.key(), updRes.removeVersion());
+                            ctx.onDeferredDelete(entry, updRes.removeVersion());
 
                         break;
                     }
@@ -314,26 +329,37 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx(K key, V val, @Nullable GridCacheEntryEx<K, V> cached, long ttl,
+    @Override public boolean putx(K key,
+            V val,
+            @Nullable GridCacheEntryEx<K, V> cached,
+            long ttl,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         return dht.putx(key, val, cached, ttl, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx(K key, V val, GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+    @Override public boolean putx(K key,
+        V val,
+        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         return dht.putx(key, val, filter);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
+    @Override public GridFuture<V> putAsync(K key,
+            V val,
+            @Nullable GridCacheEntryEx<K, V> entry,
+            long ttl,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         return dht.putAsync(key, val, entry, ttl, filter);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
+    @Override public GridFuture<Boolean> putxAsync(K key,
+            V val,
+            @Nullable GridCacheEntryEx<K, V> entry,
+            long ttl,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         return dht.putxAsync(key, val, entry, ttl, filter);
     }
@@ -438,8 +464,10 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> transformAsync(K key, GridClosure<V, V> transformer,
-        @Nullable GridCacheEntryEx<K, V> entry, long ttl) {
+    @Override public GridFuture<?> transformAsync(K key,
+        GridClosure<V, V> transformer,
+        @Nullable GridCacheEntryEx<K, V> entry,
+        long ttl) {
         return dht.transformAsync(key, transformer, entry, ttl);
     }
 
@@ -454,14 +482,16 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V remove(K key, @Nullable GridCacheEntryEx<K, V> entry,
+    @Override public V remove(K key,
+        @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         return dht.remove(key, entry, filter);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
+    @Override public GridFuture<V> removeAsync(K key,
+        @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         return dht.removeAsync(key, entry, filter);
     }
@@ -479,14 +509,16 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(K key, @Nullable GridCacheEntryEx<K, V> entry,
+    @Override public boolean removex(K key,
+        @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         return dht.removex(key, entry, filter);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
+    @Override public GridFuture<Boolean> removexAsync(K key,
+        @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         return dht.removexAsync(key, entry, filter);
     }
@@ -522,17 +554,31 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        @Nullable GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
-        @Nullable GridCacheTxIsolation isolation, GridPredicate<GridCacheEntry<K, V>>[] filter) {
-        return dht.lockAllAsync(keys, timeout, tx, isInvalidate, isRead, retval, isolation, filter);
+    @Override protected GridFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
+        long timeout,
+        @Nullable GridCacheTxLocalEx<K, V> tx,
+        boolean isInvalidate,
+        boolean isRead,
+        boolean retval,
+        @Nullable GridCacheTxIsolation isolation,
+        GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        return dht.lockAllAsync(keys, timeout, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTxLocalAdapter<K, V> newTx(boolean implicit, boolean implicitSingle,
-        GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, long timeout, boolean invalidate,
-        boolean syncCommit, boolean syncRollback, boolean swapEnabled, boolean storeEnabled, int txSize,
-        @Nullable Object grpLockKey, boolean partLock) {
+    @Override public GridCacheTxLocalAdapter<K, V> newTx(boolean implicit,
+        boolean implicitSingle,
+        GridCacheTxConcurrency concurrency,
+        GridCacheTxIsolation isolation,
+        long timeout,
+        boolean invalidate,
+        boolean syncCommit,
+        boolean syncRollback,
+        boolean swapEnabled,
+        boolean storeEnabled,
+        int txSize,
+        @Nullable Object grpLockKey,
+        boolean partLock) {
         return dht.newTx(implicit, implicitSingle, concurrency, isolation, timeout, invalidate, syncCommit,
             syncRollback, swapEnabled, storeEnabled, txSize, grpLockKey, partLock);
     }
@@ -543,22 +589,21 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
         dht.unlockAll(keys, filter);
     }
 
-    /**
-     * @param key Removed key.
-     * @param ver Removed version.
-     * @throws GridException If failed.
-     */
-    private void onDeferredDelete(K key, GridCacheVersion ver) throws GridException {
+    /** {@inheritDoc} */
+    @Override public void onDeferredDelete(GridCacheEntryEx<K, V> entry, GridCacheVersion ver) {
+        assert entry.isNear();
+
         try {
-            T2<K, GridCacheVersion> evicted = rmvQueue.add(new T2<>(key, ver));
+            T2<K, GridCacheVersion> evicted = rmvQueue.add(new T2<>(entry.key(), ver));
 
             if (evicted != null)
                 removeVersionedEntry(evicted.get1(), evicted.get2());
         }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        catch (InterruptedException ignore) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to enqueue deleted entry [key=" + entry.key() + ", ver=" + ver + ']');
 
-            throw new GridInterruptedException(e);
+            Thread.currentThread().interrupt();
         }
     }
 }

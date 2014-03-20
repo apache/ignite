@@ -31,6 +31,9 @@ import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
  * Near cache for transactional cache.
  */
 public class GridTxNearCache<K, V> extends GridNearCache<K, V> {
+    /** DHT cache. */
+    private GridDhtCache<K, V> dht;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -72,6 +75,18 @@ public class GridTxNearCache<K, V> extends GridNearCache<K, V> {
                 processLockResponse(nodeId, res);
             }
         });
+    }
+
+    /**
+     * @param dht DHT cache.
+     */
+    public void dht(GridDhtCache<K, V> dht) {
+        this.dht = dht;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridDhtCache<K, V> dht() {
+        return dht;
     }
 
     /** {@inheritDoc} */
@@ -870,6 +885,11 @@ public class GridTxNearCache<K, V> extends GridNearCache<K, V> {
         catch (GridException ex) {
             U.error(log, "Failed to unlock the lock for keys: " + keys, ex);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeferredDelete(GridCacheEntryEx<K, V> entry, GridCacheVersion ver) {
+        assert false : "Should not be called";
     }
 
     /** {@inheritDoc} */
