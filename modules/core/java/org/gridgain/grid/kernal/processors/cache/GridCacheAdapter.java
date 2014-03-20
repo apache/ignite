@@ -239,7 +239,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         for (GridCacheConfiguration ccfg : gridCfg.getCacheConfiguration()) {
             if (ccfg.getDrSenderConfiguration() != null &&
-                    F.eq(ctx.name(), CU.cacheNameForReplicationSystemCache(ccfg.getName()))) {
+                    F.eq(ctx.name(), CU.cacheNameForDrSystemCache(ccfg.getName()))) {
                 drSysCache = true;
 
                 break;
@@ -251,7 +251,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
             if (sndHubCfg != null && sndHubCfg.getCacheNames() != null) {
                 for (String cacheName : sndHubCfg.getCacheNames()) {
-                    if (F.eq(ctx.name(), CU.cacheNameForReplicationSystemCache(cacheName))) {
+                    if (F.eq(ctx.name(), CU.cacheNameForDrSystemCache(cacheName))) {
                         drSysCache = true;
 
                         break;
