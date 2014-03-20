@@ -86,12 +86,12 @@ package org.gridgain.visor.commands
  *         Prints detailed statistics about all caches sorted by number of hits in reverse order.
  *     cache
  *         Prints summary statistics about all caches.
- *     cache -n=cache -scan
+ *     cache -c=cache -scan
  *         List entries from cache with name 'cache' from all nodes with this cache.
- *     cache -n=@c0 -scan -p=50
+ *     cache -c=@c0 -scan -p=50
  *         List entries from cache with name taken from 'c0' memory variable
  *         with page of 50 items from all nodes with this cache.
- *     cache -n=cache -scan -id8=12345678
+ *     cache -c=cache -scan -id8=12345678
  *         List entries from cache with name 'cache' and node '12345678' ID8.
  * }}}
  */

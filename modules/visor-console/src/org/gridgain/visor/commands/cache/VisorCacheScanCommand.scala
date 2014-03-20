@@ -30,7 +30,7 @@ import org.gridgain.grid.GridException
  *
  * ====Specification====
  * {{{
- *     cache {-id=<node-id>|-id8=<node-id8>} {-p=<page size>} -n=<cache name> -scan
+ *     cache {-id=<node-id>|-id8=<node-id8>} {-p=<page size>} -c=<cache name> -scan
  * }}}
  *
  * ====Arguments====
@@ -47,12 +47,12 @@ import org.gridgain.grid.GridException
  *
  * ====Examples====
  * {{{
- *    cache -n=cache
+ *    cache -c=cache
  *        List entries from cache with name 'cache' from all nodes with this cache.
- *    cache -n=@c0 -scan -p=50
+ *    cache -c=@c0 -scan -p=50
  *        List entries from cache with name taken from 'c0' memory variable with page of 50 items
  *        from all nodes with this cache.
- *    cache -n=cache -scan -id8=12345678
+ *    cache -c=cache -scan -id8=12345678
  *        List entries from cache with name 'cache' and node '12345678' ID8.
  * }}}
  */
@@ -83,14 +83,14 @@ class VisorCacheScanCommand {
      * List all entries in cache with specified name.
      *
      * ===Examples===
-     * <ex>cache -n=cache -scan</ex>
+     * <ex>cache -c=cache -scan</ex>
      *     List entries from cache with name 'cache' from all nodes with this cache.
      * <br>
-     * <ex>cache -n=@c0 -scan -p=50</ex>
+     * <ex>cache -c=@c0 -scan -p=50</ex>
      *     List entries from cache with name taken from 'c0' memory variable with page of 50 items
      *     from all nodes with this cache.
      * <br>
-     * <ex>cache -n=cache -scan -id8=12345678</ex>
+     * <ex>cache -c=cache -scan -id8=12345678</ex>
      *     List entries from cache with name 'cache' and node '12345678' ID8.
      *
      * @param argLst Command arguments.
@@ -99,7 +99,7 @@ class VisorCacheScanCommand {
         val id8Arg = argValue("id8", argLst)
         val idArg = argValue("id", argLst)
         val pageArg = argValue("p", argLst)
-        val cacheArg = argValue("n", argLst)
+        val cacheArg = argValue("c", argLst)
 
         var nid: UUID = null
 
