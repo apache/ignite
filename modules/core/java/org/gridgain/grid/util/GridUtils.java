@@ -8194,29 +8194,27 @@ public abstract class GridUtils {
         boolean deleteIfExist) throws GridException {
         String ggHome = getGridGainHome();
 
-        File dir;
+        File dir = new File(path);
 
-        if (F.isEmpty(ggHome)) {
-            if (failOnEmptyGridGainHome)
-                throw new GridException("Failed to create directory, property " + GG_HOME + " is null.");
+        if (!dir.isAbsolute()) {
+            if (F.isEmpty(ggHome)) {
+                if (failOnEmptyGridGainHome)
+                    throw new GridException("Failed to create directory, property " + GG_HOME + " is null.");
 
-            String tmpDirPath = System.getProperty("java.io.tmpdir");
+                String tmpDirPath = System.getProperty("java.io.tmpdir");
 
-            if (tmpDirPath == null)
-                throw new GridException("System property 'java.io.tmpdir' is null.");
+                if (tmpDirPath == null)
+                    throw new GridException("System property 'java.io.tmpdir' is null.");
 
-            dir = tmpSubDir == null ? new File(tmpDirPath) : new File(tmpDirPath, tmpSubDir);
-        }
-        else {
-            dir = new File(path);
-
-            if (!dir.isAbsolute())
-                dir = new File(ggHome, dir.getPath());
-
-            if (deleteIfExist && dir.exists()) {
-                if (!U.delete(dir))
-                    throw new GridException("Failed to delete directory: " + dir);
+                dir = tmpSubDir == null ? new File(tmpDirPath) : new File(tmpDirPath, tmpSubDir);
             }
+            else
+                dir = new File(ggHome, dir.getPath());
+        }
+
+        if (deleteIfExist && dir.exists()) {
+            if (!U.delete(dir))
+                throw new GridException("Failed to delete directory: " + dir);
         }
 
         if (!mkdirs(dir))
