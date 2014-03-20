@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 
 /**
@@ -30,7 +29,7 @@ import org.gridgain.grid.util.typedef.*;
  * @see C3
  * @see GridFunc
  */
-public abstract class GridInClosure3<E1, E2, E3> {
+public interface GridInClosure3<E1, E2, E3> {
     /**
      * Closure body.
      *
@@ -38,5 +37,5 @@ public abstract class GridInClosure3<E1, E2, E3> {
      * @param e2 Second bound free variable, i.e. the element the closure is called or closed on.
      * @param e3 Third bound free variable, i.e. the element the closure is called or closed on.
      */
-    public abstract void apply(E1 e1, E2 e2, E3 e3);
+    public void apply(E1 e1, E2 e2, E3 e3);
 }

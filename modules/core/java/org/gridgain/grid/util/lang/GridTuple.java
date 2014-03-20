@@ -25,7 +25,7 @@ import java.util.*;
  * @see GridFunc#t1()
  * @see GridFunc#t(Object)
  */
-public class GridTuple<V> implements Iterable<V>, GridPeerDeployAware, Cloneable, Externalizable {
+public class GridTuple<V> implements Iterable<V>, Cloneable, Externalizable {
     /** The value to wrap. */
     @GridToStringInclude
     private V val;
@@ -108,16 +108,6 @@ public class GridTuple<V> implements Iterable<V>, GridPeerDeployAware, Cloneable
     @SuppressWarnings({"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         val = (V)in.readObject();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<?> deployClass() {
-        return val != null && val.getClass().getClassLoader() != null ? val.getClass() : getClass();
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClassLoader classLoader() {
-        return deployClass().getClassLoader();
     }
 
     /** {@inheritDoc} */
