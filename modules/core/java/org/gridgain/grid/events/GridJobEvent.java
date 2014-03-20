@@ -89,13 +89,12 @@ public class GridJobEvent extends GridEventAdapter {
     /**
      * Creates job event with given parameters.
      *
-     * @param nodeId Node ID.
      * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridJobEvent(UUID nodeId, GridNode node, String msg, int type) {
-        super(nodeId, node, msg, type);
+    public GridJobEvent(GridNode node, String msg, int type) {
+        super(node, msg, type);
     }
 
     /**
@@ -197,7 +196,7 @@ public class GridJobEvent extends GridEventAdapter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridJobEvent.class, this,
-            "nodeId8", U.id8(nodeId()),
+            "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),
             "tstamp", timestamp());

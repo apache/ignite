@@ -297,7 +297,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                 if (type == EVT_NODE_JOINED && node.id().equals(locNode.id())) {
                     GridDiscoveryEvent discoEvt = new GridDiscoveryEvent();
 
-                    discoEvt.nodeId(ctx.localNodeId());
+                    discoEvt.node(ctx.discovery().localNode());
                     discoEvt.eventNodeId(node.id());
                     discoEvt.type(EVT_NODE_JOINED);
                     discoEvt.shadow(new GridDiscoveryNodeShadowAdapter(node));
@@ -1388,7 +1388,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             if (ctx.event().isRecordable(type)) {
                 GridDiscoveryEvent evt = new GridDiscoveryEvent();
 
-                evt.nodeId(ctx.localNodeId());
+                evt.node(ctx.discovery().localNode());
                 evt.eventNodeId(node.id());
                 evt.type(type);
                 evt.shadow(new GridDiscoveryNodeShadowAdapter(node));

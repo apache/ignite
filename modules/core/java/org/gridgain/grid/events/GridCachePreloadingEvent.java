@@ -72,7 +72,6 @@ public class GridCachePreloadingEvent extends GridEventAdapter {
      * Constructs cache event.
      *
      * @param cacheName Cache name.
-     * @param nodeId Event node ID.
      * @param node Event node.
      * @param msg Event message.
      * @param type Event type.
@@ -81,9 +80,9 @@ public class GridCachePreloadingEvent extends GridEventAdapter {
      * @param discoEvtType Discovery event type that triggered this preloading event.
      * @param discoTs Timestamp of discovery event that triggered this preloading event.
      */
-    public GridCachePreloadingEvent(String cacheName, UUID nodeId, GridNode node, String msg, int type, int part,
+    public GridCachePreloadingEvent(String cacheName, GridNode node, String msg, int type, int part,
         GridNodeShadow discoNode, int discoEvtType, long discoTs) {
-        super(nodeId, node, msg, type);
+        super(node, msg, type);
         this.cacheName = cacheName;
         this.part = part;
         this.discoNode = discoNode;
@@ -158,7 +157,7 @@ public class GridCachePreloadingEvent extends GridEventAdapter {
     @Override public String toString() {
         return S.toString(GridCachePreloadingEvent.class, this,
             "discoEvtName", discoveryEventName(),
-            "nodeId8", U.id8(nodeId()),
+            "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),
             "tstamp", timestamp());

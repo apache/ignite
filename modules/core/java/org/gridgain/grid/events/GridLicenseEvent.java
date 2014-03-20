@@ -64,13 +64,12 @@ public class GridLicenseEvent extends GridEventAdapter {
     /**
      * Creates license event with given parameters.
      *
-     * @param nodeId Node ID.
      * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridLicenseEvent(UUID nodeId, GridNode node, String msg, int type) {
-        super(nodeId, node, msg, type);
+    public GridLicenseEvent(GridNode node, String msg, int type) {
+        super(node, msg, type);
     }
 
     /** {@inheritDoc} */
@@ -99,7 +98,7 @@ public class GridLicenseEvent extends GridEventAdapter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridLicenseEvent.class, this,
-            "nodeId8", U.id8(nodeId()),
+            "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),
             "tstamp", timestamp());

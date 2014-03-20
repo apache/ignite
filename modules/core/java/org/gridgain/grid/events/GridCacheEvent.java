@@ -113,7 +113,6 @@ public class GridCacheEvent extends GridEventAdapter {
      * Constructs cache event.
      *
      * @param cacheName Cache name.
-     * @param nodeId Local node ID.
      * @param node Local node.
      * @param evtNodeId Event node ID.
      * @param msg Event message.
@@ -130,10 +129,10 @@ public class GridCacheEvent extends GridEventAdapter {
      * @param hasOldVal Flag indicating whether old value is present in case if we
      *      don't have it in deserialized form.
      */
-    public GridCacheEvent(String cacheName, UUID nodeId, GridNode node, UUID evtNodeId, String msg, int type, int part,
+    public GridCacheEvent(String cacheName, GridNode node, UUID evtNodeId, String msg, int type, int part,
         boolean near, Object key, GridUuid xid, Object lockId, Object newVal, boolean hasNewVal,
         Object oldVal, boolean hasOldVal) {
-        super(nodeId, node, msg, type);
+        super(node, msg, type);
         this.cacheName = cacheName;
         this.evtNodeId = evtNodeId;
         this.part = part;
@@ -256,13 +255,13 @@ public class GridCacheEvent extends GridEventAdapter {
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
         return name() + ": near=" + near + ", key=" + key + ", hasNewVal=" + hasNewVal + ", hasOldVal=" + hasOldVal +
-            ", nodeId8=" + U.id8(nodeId());
+            ", nodeId8=" + U.id8(node().id());
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheEvent.class, this,
-            "nodeId8", U.id8(nodeId()),
+            "nodeId8", U.id8(node().id()),
             "evtNodeId8", U.id8(evtNodeId),
             "msg", message(),
             "type", name(),

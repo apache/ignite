@@ -1274,7 +1274,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             GridTaskEvent evt = new GridTaskEvent();
 
             evt.message(msg);
-            evt.nodeId(ctx.discovery().localNode().id());
+            evt.node(ctx.discovery().localNode());
             evt.taskName(ses.getTaskName());
             evt.taskClassName(ses.getTaskClassName());
             evt.taskSessionId(ses.getId());
@@ -1296,7 +1296,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             GridJobEvent evt = new GridJobEvent();
 
             evt.message(msg);
-            evt.nodeId(ctx.discovery().localNode().id());
+            evt.node(ctx.discovery().localNode());
             evt.taskName(ses.getTaskName());
             evt.taskClassName(ses.getTaskClassName());
             evt.taskSessionId(ses.getId());

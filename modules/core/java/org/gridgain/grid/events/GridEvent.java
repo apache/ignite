@@ -98,13 +98,6 @@ public interface GridEvent extends Comparable<GridEvent>, Serializable {
     public long localOrder();
 
     /**
-     * Gets ID of the node where event occurred and was recorded.
-     *
-     * @return ID of the node where event occurred and was recorded.
-     */
-    public UUID nodeId();
-
-    /**
      * Node where event occurred and was recorded
      *
      * @return node where event occured and was recorded.

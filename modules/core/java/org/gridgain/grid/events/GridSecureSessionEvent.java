@@ -72,28 +72,26 @@ public class GridSecureSessionEvent extends GridEventAdapter {
     /**
      * Creates secure session event with given parameters.
      *
-     * @param nodeId Node ID.
      * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridSecureSessionEvent(UUID nodeId, GridNode node, String msg, int type) {
-        super(nodeId, node, msg, type);
+    public GridSecureSessionEvent(GridNode node, String msg, int type) {
+        super(node, msg, type);
     }
 
     /**
      * Creates secure session event with given parameters.
      *
-     * @param nodeId Node ID.
      * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
      * @param subjType Subject type.
      * @param subjId Subject ID.
      */
-    public GridSecureSessionEvent(UUID nodeId, GridNode node, String msg, int type, GridSecuritySubjectType subjType,
+    public GridSecureSessionEvent(GridNode node, String msg, int type, GridSecuritySubjectType subjType,
         byte[] subjId) {
-        super(nodeId, node, msg, type);
+        super(node, msg, type);
 
         this.subjType = subjType;
         this.subjId = subjId;
@@ -138,7 +136,7 @@ public class GridSecureSessionEvent extends GridEventAdapter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridSecureSessionEvent.class, this,
-            "nodeId8", U.id8(nodeId()),
+            "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),
             "tstamp", timestamp());

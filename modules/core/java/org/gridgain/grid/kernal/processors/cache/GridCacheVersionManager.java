@@ -56,7 +56,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheManagerAdapter<K, V>
 
             GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
-            GridNode node = cctx.discovery().node(discoEvt.nodeId());
+            GridNode node = cctx.discovery().node(discoEvt.node().id());
 
             if (node != null && !node.id().equals(cctx.nodeId()))
                 onReceived(discoEvt.eventNodeId(), node.metrics().getLastDataVersion());

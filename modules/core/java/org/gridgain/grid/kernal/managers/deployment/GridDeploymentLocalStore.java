@@ -377,7 +377,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             GridDeploymentEvent evt = new GridDeploymentEvent();
 
             evt.message(msg);
-            evt.nodeId(ctx.localNodeId());
+            evt.node(ctx.discovery().localNode());
             evt.type(isTask ? EVT_TASK_DEPLOYED : EVT_CLASS_DEPLOYED);
             evt.alias(alias);
 
@@ -414,7 +414,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             GridDeploymentEvent evt = new GridDeploymentEvent();
 
             evt.message(msg);
-            evt.nodeId(ctx.localNodeId());
+            evt.node(ctx.discovery().localNode());
             evt.type(isTask(cls) ? EVT_CLASS_DEPLOY_FAILED : EVT_TASK_DEPLOY_FAILED);
             evt.alias(taskName);
 
@@ -444,7 +444,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                     GridDeploymentEvent evt = new GridDeploymentEvent();
 
                     evt.message(msg);
-                    evt.nodeId(ctx.localNodeId());
+                    evt.node(ctx.discovery().localNode());
                     evt.type(isTask ? EVT_TASK_UNDEPLOYED : EVT_CLASS_UNDEPLOYED);
                     evt.alias(getAlias(dep, cls));
 

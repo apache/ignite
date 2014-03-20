@@ -2365,7 +2365,7 @@ object visor extends VisorTag {
                                 logImpl(
                                     out,
                                     formatDateTime(e.timestamp),
-                                    nodeId8Addr(e.nodeId()),
+                                    nodeId8Addr(e.node().id()),
                                     U.compact(e.shortDisplay)
                                 )
 

@@ -1209,7 +1209,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                 evt.jobId(req.getJobId());
                 evt.message("Job reply failed (original task node left grid): " + req.getJobId());
-                evt.nodeId(locNodeId);
+                evt.node(ctx.discovery().localNode());
                 evt.taskName(req.getTaskName());
                 evt.taskClassName(req.getTaskClassName());
                 evt.taskSessionId(req.getSessionId());
@@ -1290,7 +1290,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                 evt.jobId(req.getJobId());
                 evt.message("Failed to send reply for job: " + req.getJobId());
-                evt.nodeId(locNodeId);
+                evt.node(ctx.discovery().localNode());
                 evt.taskName(req.getTaskName());
                 evt.taskClassName(req.getTaskClassName());
                 evt.taskSessionId(req.getSessionId());
@@ -1337,7 +1337,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 GridTaskEvent evt = new GridTaskEvent();
 
                 evt.message("Changed attributes: " + attrs);
-                evt.nodeId(ctx.discovery().localNode().id());
+                evt.node(ctx.discovery().localNode());
                 evt.taskName(ses.getTaskName());
                 evt.taskClassName(ses.getTaskClassName());
                 evt.taskSessionId(ses.getId());

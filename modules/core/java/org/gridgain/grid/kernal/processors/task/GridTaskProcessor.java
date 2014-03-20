@@ -693,7 +693,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             GridTaskEvent evt = new GridTaskEvent();
 
             evt.message("Changed attributes: " + attrs);
-            evt.nodeId(ctx.discovery().localNode().id());
+            evt.node(ctx.discovery().localNode());
             evt.taskName(ses.getTaskName());
             evt.taskClassName(ses.getTaskClassName());
             evt.taskSessionId(ses.getId());

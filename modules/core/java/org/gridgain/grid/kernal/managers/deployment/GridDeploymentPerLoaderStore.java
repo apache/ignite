@@ -435,7 +435,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
 
                 // Record task event.
                 evt.type(isTask ? EVT_TASK_DEPLOYED : EVT_CLASS_DEPLOYED);
-                evt.nodeId(sndNodeId);
+                evt.node(ctx.discovery().node(sndNodeId));
                 evt.message(msg);
                 evt.alias(cls.getName());
 
@@ -466,7 +466,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
                     if (evts.isRecordable(!isTask ? EVT_CLASS_UNDEPLOYED : EVT_TASK_UNDEPLOYED)) {
                         GridDeploymentEvent evt = new GridDeploymentEvent();
 
-                        evt.nodeId(sndNodeId);
+                        evt.node(ctx.discovery().node(sndNodeId));
                         evt.message(msg);
                         evt.type(!isTask ? EVT_CLASS_UNDEPLOYED : EVT_TASK_UNDEPLOYED);
                         evt.alias(depCls.getKey());

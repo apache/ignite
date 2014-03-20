@@ -8472,7 +8472,7 @@ public class GridFunc {
             @Override public boolean apply(GridEvent e) {
                 assert e != null;
 
-                return F.isAll(e.nodeId(), in(nodeIds));
+                return F.isAll(e.node().id(), in(nodeIds));
             }
         };
     }
@@ -8495,7 +8495,7 @@ public class GridFunc {
                     assert e != null;
 
                     try {
-                        GridNode node = G.grid(gridName).node(e.nodeId());
+                        GridNode node = G.grid(gridName).node(e.node().id());
 
                         return isAll(node, p);
                     }
@@ -8519,7 +8519,7 @@ public class GridFunc {
             @Override public boolean apply(GridEvent e) {
                 assert e != null;
 
-                return !forAll(nodes, not(nodeForNodeId(e.nodeId())));
+                return !forAll(nodes, not(nodeForNodeId(e.node().id())));
             }
         };
     }

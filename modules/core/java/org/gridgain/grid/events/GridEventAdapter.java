@@ -13,8 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
 /**
  * Base adapter for the events. All events (including user-defined ones) should
  * extend this adapter as it provides necessary plumbing implementation details.
@@ -25,9 +23,6 @@ public class GridEventAdapter implements GridEvent {
 
     /** */
     private final long tstamp = U.currentTimeMillis();
-
-    /** */
-    private UUID nodeId;
 
     /** */
     private GridNode node;
@@ -51,17 +46,14 @@ public class GridEventAdapter implements GridEvent {
     /**
      * Creates event based with given parameters.
      *
-     * @param nodeId Node ID.
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridEventAdapter(UUID nodeId, GridNode node, String msg, int type) {
-        assert nodeId != null;
+    public GridEventAdapter(GridNode node, String msg, int type) {
         assert tstamp > 0;
 
         A.ensure(type > 0, "Event type ID must be greater than zero.");
 
-        this.nodeId = nodeId;
         this.node = node;
         this.msg = msg;
         this.type = type;
@@ -97,12 +89,12 @@ public class GridEventAdapter implements GridEvent {
     }
 
     /**
-     * Sets ID of the node where even is occurred (i.e. node local to the event).
+     * Sets node where even is occurred (i.e. node local to the event).
      *
-     * @param nodeId Node ID.
+     * @param node Node.
      */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
+    public void node(GridNode node) {
+        this.node = node;
     }
 
     /**
@@ -121,11 +113,6 @@ public class GridEventAdapter implements GridEvent {
      */
     public void type(int type) {
         this.type = type;
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID nodeId() {
-        return nodeId;
     }
 
     /** {@inheritDoc} */

@@ -1193,7 +1193,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
             if (ctx.event().isRecordable(type)) {
                 GridDeploymentEvent evt = new GridDeploymentEvent();
 
-                evt.nodeId(ctx.localNodeId());
+                evt.node(ctx.discovery().localNode());
                 evt.message(msg);
                 evt.type(type);
                 evt.alias(cls.getName());
@@ -1224,7 +1224,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 if (ctx.event().isRecordable(type)) {
                     GridDeploymentEvent evt = new GridDeploymentEvent();
 
-                    evt.nodeId(ctx.localNodeId());
+                    evt.node(ctx.discovery().localNode());
                     evt.message(msg);
                     evt.type(type);
                     evt.alias(depCls.getKey());

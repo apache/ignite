@@ -5,8 +5,6 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
 /**
  * Grid swap space event.
  * <p>
@@ -51,14 +49,13 @@ public class GridSwapSpaceEvent extends GridEventAdapter {
     /**
      * Creates swap space event.
      *
-     * @param nodeId Node ID.
      * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
      * @param space Swap space name ({@code null} for default space).
      */
-    public GridSwapSpaceEvent(UUID nodeId, GridNode node, String msg, int type, @Nullable String space) {
-        super(nodeId, node, msg, type);
+    public GridSwapSpaceEvent(GridNode node, String msg, int type, @Nullable String space) {
+        super(node, msg, type);
 
         this.space = space;
     }
@@ -80,7 +77,7 @@ public class GridSwapSpaceEvent extends GridEventAdapter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridSwapSpaceEvent.class, this,
-            "nodeId8", U.id8(nodeId()),
+            "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),
             "tstamp", timestamp());

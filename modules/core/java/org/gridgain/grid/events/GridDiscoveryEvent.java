@@ -86,14 +86,13 @@ public class GridDiscoveryEvent extends GridEventAdapter {
     /**
      * Creates new discovery event with given parameters.
      *
-     * @param nodeId Local node ID.
      * @param node Local node.
      * @param msg Optional event message.
      * @param type Event type.
      * @param evtNodeId ID of the node that caused this event to be generated.
      */
-    public GridDiscoveryEvent(UUID nodeId, GridNode node, String msg, int type, UUID evtNodeId) {
-        super(nodeId, node, msg, type);
+    public GridDiscoveryEvent(GridNode node, String msg, int type, UUID evtNodeId) {
+        super(node, msg, type);
 
         this.evtNodeId = evtNodeId;
     }
@@ -101,20 +100,18 @@ public class GridDiscoveryEvent extends GridEventAdapter {
     /**
      * Creates new discovery event with given parameters.
      *
-     * @param nodeId Local node ID.
      * @param node Local node.
      * @param msg Optional event message.
      * @param type Event type.
      */
-    public GridDiscoveryEvent(UUID nodeId, GridNode node, String msg, int type) {
-        super(nodeId, node, msg, type);
+    public GridDiscoveryEvent(GridNode node, String msg, int type) {
+        super(node, msg, type);
     }
 
     /**
      * Sets ID of the node this event is referring to.
      *
-     * @param evtNodeId Event node ID. Note that event node ID is different from node ID
-     *      available via {@link #nodeId()} method.
+     * @param evtNodeId Event node ID.
      */
     public void eventNodeId(UUID evtNodeId) {
         this.evtNodeId = evtNodeId;
@@ -123,8 +120,7 @@ public class GridDiscoveryEvent extends GridEventAdapter {
     /**
      * Gets ID of the node that caused this event to be generated. It is potentially different from the node
      * on which this event was recorded. For example, node {@code A} locally recorded the event that a remote node
-     * {@code B} joined the topology. In this case this method will return ID of {@code B} and
-     * method {@link #nodeId()} will return ID of {@code A}
+     * {@code B} joined the topology. In this case this method will return ID of {@code B}.
      *
      * @return Event node ID.
      */
@@ -186,7 +182,7 @@ public class GridDiscoveryEvent extends GridEventAdapter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDiscoveryEvent.class, this,
-            "nodeId8", U.id8(nodeId()),
+            "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),
             "tstamp", timestamp());
