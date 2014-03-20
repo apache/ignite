@@ -34,10 +34,6 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
  * Near cache for atomic cache.
  */
 public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
-    /** Maximum size for delete queue. */
-    private static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE,
-        1_000_000);
-
     /** */
     private GridDhtCacheAdapter<K, V> dht;
 
@@ -57,7 +53,9 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
     public GridAtomicNearCache(GridCacheContext<K, V> ctx) {
         super(ctx);
 
-        rmvQueue = new GridCircularBuffer<>(U.ceilPow2(MAX_DELETE_QUEUE_SIZE / 10));
+        int size = Integer.getInteger(GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE, 1_000_000);
+
+        rmvQueue = new GridCircularBuffer<>(U.ceilPow2(size / 10));
     }
 
     /** {@inheritDoc} */
