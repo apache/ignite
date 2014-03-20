@@ -11,7 +11,6 @@
 package org.gridgain.grid.spi.discovery.tcp.metricsstore.sharedfs;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
@@ -20,6 +19,7 @@ import org.gridgain.grid.spi.discovery.tcp.metricsstore.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.jdk8.backport.*;
 
 import java.io.*;
 import java.net.*;
