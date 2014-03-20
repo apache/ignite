@@ -25,17 +25,22 @@ public class GridDrExternalHandshakeRequest {
     /** Marshaller class name. */
     private String marshClsName;
 
+    /** Await acknowledge flag. */
+    private boolean awaitAck;
+
     /**
      * Standard constructor.
      *
      * @param dataCenterId Data center ID.
      * @param protoVer Protocol version.
      * @param marshClsName Marshaller class name.
+     * @param awaitAck Await acknowledge flag.
      */
-    public GridDrExternalHandshakeRequest(byte dataCenterId, String protoVer, String marshClsName) {
+    public GridDrExternalHandshakeRequest(byte dataCenterId, String protoVer, String marshClsName, boolean awaitAck) {
         this.dataCenterId = dataCenterId;
         this.protoVer = protoVer;
         this.marshClsName = marshClsName;
+        this.awaitAck = awaitAck;
     }
 
     /**
@@ -59,6 +64,13 @@ public class GridDrExternalHandshakeRequest {
      */
     public String marshallerClassName() {
         return marshClsName;
+    }
+
+    /**
+     * @return Await acknowledge flag.
+     */
+    public boolean awaitAcknowledge() {
+        return awaitAck;
     }
 
     /** {@inheritDoc} */
