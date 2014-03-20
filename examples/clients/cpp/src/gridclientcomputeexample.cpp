@@ -62,7 +62,7 @@ void clientComputeExample(TGridClientPtr& client) {
 
     GridClientVariant rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask");
 
-    cout << ">>> GridClientNode projection : there are totally " << rslt.toString() <<
+    cout << ">>> GridClientNode projection: there are totally " << rslt.toString() <<
         " test entries on the grid" << endl;
 
     TGridClientNodeList prjNodes;
@@ -73,7 +73,7 @@ void clientComputeExample(TGridClientPtr& client) {
 
     rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask");
 
-    cout << ">>> Collection execution : there are totally " << rslt.toString() <<
+    cout << ">>> Collection execution: there are totally " << rslt.toString() <<
         " test entries on the grid" << endl;
 
     std::function<bool (const GridClientNode&)> filter = [&randNodeId](const GridClientNode& node) { return node.getNodeId() == randNodeId; };
@@ -81,7 +81,7 @@ void clientComputeExample(TGridClientPtr& client) {
 
     rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask");
 
-    cout << ">>> Predicate execution : there are totally " << rslt.toString() <<
+    cout << ">>> Predicate execution: there are totally " << rslt.toString() <<
         " test entries on the grid" << endl;
 
     // Balancing - may be random or round-robin. Users can create
@@ -93,7 +93,7 @@ void clientComputeExample(TGridClientPtr& client) {
 
     rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask");
 
-    cout << ">>> Predicate execution with balancer : there are totally " << rslt.toString() <<
+    cout << ">>> Predicate execution with balancer: there are totally " << rslt.toString() <<
             " test entries on the grid" << endl;
 
     // Now let's try round-robin load balancer.
@@ -103,12 +103,12 @@ void clientComputeExample(TGridClientPtr& client) {
 
     rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask");
 
-    cout << ">>> GridClientNode projection : there are totally " << rslt.toString() <<
+    cout << ">>> GridClientNode projection: there are totally " << rslt.toString() <<
             " test entries on the grid" << endl;
 
     TGridClientFutureVariant futVal = prj->executeAsync("org.gridgain.examples.misc.client.api.ClientExampleTask");
 
-    cout << ">>> Execute async : there are totally " << futVal->get().toString() <<
+    cout << ">>> Execute async: there are totally " << futVal->get().toString() <<
        " test entries on the grid" << endl;
 
     vector<GridClientUuid> uuids;
@@ -117,7 +117,7 @@ void clientComputeExample(TGridClientPtr& client) {
 
     nodes = prj->nodes(uuids);
 
-    cout << ">>> Nodes with UUID " << randNodeId.uuid() << " : ";
+    cout << ">>> Nodes with UUID " << randNodeId.uuid() << ": ";
 
     for (size_t i = 0 ; i < nodes.size(); i++) {
         if (i != 0)
@@ -133,7 +133,7 @@ void clientComputeExample(TGridClientPtr& client) {
     std::function < bool(const GridClientNode&) > filter2 = [&randNodeId](const GridClientNode& node) { return node.getNodeId() == randNodeId; };
     nodes = prj->nodes(filter2);
 
-    cout << ">>> Nodes filtered with predicate : ";
+    cout << ">>> Nodes filtered with predicate: ";
 
     for (size_t i = 0 ; i < nodes.size(); i++) {
         if (i != 0)
@@ -147,11 +147,11 @@ void clientComputeExample(TGridClientPtr& client) {
     // Information about nodes may be refreshed explicitly.
     TGridClientNodePtr clntNode = prj->refreshNode(randNodeId, true, true);
 
-    cout << ">>> Refreshed node : " << *clntNode << endl;
+    cout << ">>> Refreshed node: " << *clntNode << endl;
 
     TGridClientNodeFuturePtr futClntNode = prj->refreshNodeAsync(randNodeId, false, false);
 
-    cout << ">>> Refreshed node asynchronously : " << *futClntNode->get() << endl;
+    cout << ">>> Refreshed node asynchronously: " << *futClntNode->get() << endl;
 
     // Nodes may also be refreshed by IP address.
     string clntAddr = "127.0.0.1";
@@ -163,17 +163,17 @@ void clientComputeExample(TGridClientPtr& client) {
 
     clntNode = prj->refreshNode(clntAddr, true, true);
 
-    cout << ">>> Refreshed node by IP : " << *clntNode << endl;
+    cout << ">>> Refreshed node by IP: " << *clntNode << endl;
 
     // Asynchronous version.
     futClntNode = prj->refreshNodeAsync(clntAddr, false, false);
 
-    cout << ">>> Refreshed node by IP asynchronously : " << *futClntNode->get() << endl;
+    cout << ">>> Refreshed node by IP asynchronously: " << *futClntNode->get() << endl;
 
     // Topology as a whole may be refreshed, too.
     TGridClientNodeList top = prj->refreshTopology(true, true);
 
-    cout << ">>> Refreshed topology : ";
+    cout << ">>> Refreshed topology: ";
 
     for (size_t i = 0 ; i < top.size(); i++) {
         if (i != 0)
@@ -187,7 +187,7 @@ void clientComputeExample(TGridClientPtr& client) {
     // Asynchronous version.
     TGridClientNodeFutureList topFut = prj->refreshTopologyAsync(false, false);
 
-    cout << ">>> Refreshed topology asynchronously : ";
+    cout << ">>> Refreshed topology asynchronously: ";
 
     top = topFut->get();
 
@@ -199,43 +199,6 @@ void clientComputeExample(TGridClientPtr& client) {
     }
 
     cout << endl;
-
-    try {
-        vector<string> log = prj->log(0, 1);
-
-        cout << ">>> First log lines : " << endl;
-
-        cout << log[0] << endl;
-        cout << log[1] << endl;
-
-        // Log entries may be fetched asynchronously.
-        TGridFutureStringList futLog = prj->logAsync(1, 2);
-
-        log = futLog->get();
-
-        cout << ">>> First log lines fetched asynchronously : " << endl;
-        cout << log[0] << endl;
-        cout << log[1] << endl;
-
-        // Log file name can also be specified explicitly.
-        log = prj->log("work/log/gridgain.log", 0, 1);
-
-        cout << ">>> First log lines from log file work/log/gridgain.log : " << endl;
-        cout << log[0] << endl;
-        cout << log[1] << endl;
-
-        // Asynchronous version supported as well.
-        futLog = prj->logAsync("work/log/gridgain.log", 1, 2);
-
-        log = futLog->get();
-
-        cout << ">>> First log lines from log file work/log/gridgain.log fetched asynchronously : " << endl;
-        cout << log[0] << endl;
-        cout << log[1] << endl;
-    }
-    catch (GridClientException&) {
-        cout << "Log file was not found " << endl;
-    }
 
     cout << "End of example." << endl;
 }
