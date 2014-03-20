@@ -68,8 +68,8 @@ import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
  * with {@code job-submitter} or {@code job-scheduler} processes, while data nodes are usually
  * started together with Hadoop {@code task-tracker} processes.
  * <p>
- * For sample client and data node configuration refer to {@code config/ggfs/default-ggfs-client.xml}
- * and {@code config/ggfs/default-ggfs-data.xml} configuration files in GridGain installation.
+ * For sample client and data node configuration refer to {@code config/hadoop/default-config-client.xml}
+ * and {@code config/hadoop/default-config.xml} configuration files in GridGain installation.
  */
 public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Closeable {
     /** Endpoint type: shared memory. */

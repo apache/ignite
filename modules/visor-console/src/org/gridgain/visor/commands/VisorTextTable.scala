@@ -11,7 +11,6 @@
 
 package org.gridgain.visor.commands
 
-import collection.immutable._
 import org.gridgain.grid.util.{GridStringBuilder => SB}
 import VisorTextTable._
 
@@ -115,13 +114,13 @@ class VisorTextTable {
     private val NL = '\n'
 
     /** Headers. */
-    private var hdr = List.empty[Cell]
+    private val hdr = collection.mutable.ArrayBuffer.empty[Cell]
 
     /** Rows. */
-    private var rows = List.empty[List[Cell]]
+    private val rows = collection.mutable.ArrayBuffer.empty[Seq[Cell]]
 
     /** Current row, if any. */
-    private var curRow: List[Cell] = null
+    private var curRow: collection.mutable.ArrayBuffer[Cell] = null
 
     /** Table's margin, if any. */
     private var margin: Margin = Margin()
@@ -215,16 +214,16 @@ class VisorTextTable {
     def startRow() {
         assert(curRow == null)
 
-        curRow = List.empty[Cell]
+        curRow = collection.mutable.ArrayBuffer.empty[Cell]
     }
 
     /**
      * Ends data row.
      */
     def endRow() {
-        assert(!curRow.isEmpty)
+        assert(curRow.nonEmpty)
 
-        rows = rows :+ curRow
+        rows += curRow
 
         curRow = null
     }
@@ -272,13 +271,10 @@ class VisorTextTable {
         assert(lines != null)
         assert(lines.length > 0)
 
-        var lst = List.empty[String]
-
         // Break up long line into multiple ones - if necessary.
-        lines foreach((line: Any) =>
-            line.toString.grouped(maxCellWidth) foreach((grp: String) => lst = lst :+ grp))
+        val lst = lines flatten(_.toString.grouped(maxCellWidth))
 
-        hdr = hdr :+ Cell(Style(hdrSty), lst)
+        hdr += Cell(Style(hdrSty), lst)
 
         this
     }
@@ -323,13 +319,10 @@ class VisorTextTable {
         assert(lines.length >= 0)
         assert(curRow != null)
 
-        var lst = List.empty[String]
-
         // Break up long line into multiple ones - if necessary.
-        lines foreach((line: Any) =>
-            line.toString.grouped(maxCellWidth) foreach((grp: String) => lst = lst :+ grp))
+        val lst = lines flatten(_.toString.grouped(maxCellWidth))
 
-        curRow = curRow :+ Cell(Style(rowSty), lst)
+        curRow += Cell(Style(rowSty), lst)
 
         this
     }
@@ -372,7 +365,7 @@ class VisorTextTable {
 
         var colsNum = -1
 
-        val isHdr = !hdr.isEmpty
+        val isHdr = hdr.nonEmpty
 
         if (isHdr)
             colsNum = hdr.size

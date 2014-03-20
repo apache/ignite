@@ -17,8 +17,9 @@ import java.util.*;
 
 /**
  * Updates cache with batch of entries. Usually it is enough to configure {@link GridDataLoader#isolated(boolean)}
- * property and appropriate cache updater for data loader will be chosen automatically but in some cases for the best
- * performance custom implementation may help.
+ * property and appropriate internal cache updater will be chosen automatically. But in some cases to achieve best
+ * performance custom user-defined implementation may help.
+ * <p>
  * Data loader can be configured to use custom implementation of updater instead of default one using
  * {@link GridDataLoader#updater(GridDataLoadCacheUpdater)} method.
  */

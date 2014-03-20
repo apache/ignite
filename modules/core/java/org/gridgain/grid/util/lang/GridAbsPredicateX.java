@@ -17,7 +17,7 @@ import org.gridgain.grid.util.typedef.*;
  * implements {@link #apply()} method that calls {@link #applyx()} method
  * and properly wraps {@link GridException} into {@link GridClosureException} instance.
  */
-public abstract class GridAbsPredicateX extends GridAbsPredicate {
+public abstract class GridAbsPredicateX implements GridAbsPredicate {
     /** {@inheritDoc} */
     @Override public boolean apply() {
         try {

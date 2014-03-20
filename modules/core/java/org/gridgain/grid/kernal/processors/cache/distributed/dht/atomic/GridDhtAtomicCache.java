@@ -25,6 +25,7 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
@@ -54,7 +55,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         Integer.getInteger(GG_ATOMIC_DEFERRED_ACK_TIMEOUT, 500);
 
     /** Unsafe instance. */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
+    private static final Unsafe UNSAFE = org.jdk8.backport.GridUnsafe.unsafe();
 
     /** Will be {@code true} if affinity has backups. */
     private boolean hasBackups;
@@ -666,7 +667,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 while (true) {
                     try {
-                        entry = ctx.isSwapEnabled() ? entryEx(key) : peekEx(key);
+                        entry = ctx.isSwapOrOffheapEnabled() ? entryEx(key) : peekEx(key);
 
                         // If our DHT cache do has value, then we peek it.
                         if (entry != null) {
@@ -854,8 +855,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     for (GridBiTuple<GridCacheEntryEx<K, V>, GridCacheVersion> e : deleted)
                         ctx.onDeferredDelete(e.get1(), e.get2());
                 }
-
-                ctx.continuousQueries().unwind(false);
             }
         }
         catch (GridDhtInvalidPartitionException ignore) {
@@ -1756,7 +1755,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      *
      */
-    private class FinishedLockFuture extends GridFinishedFutureEx<Boolean> implements GridDhtFuture<Boolean> {
+    private static class FinishedLockFuture extends GridFinishedFutureEx<Boolean> implements GridDhtFuture<Boolean> {
         /**
          * Empty constructor required by {@link Externalizable}.
          */

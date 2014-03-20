@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 
 /**
@@ -27,54 +26,11 @@ import org.gridgain.grid.util.typedef.*;
  * @see P1
  * @see GridFunc
  */
-public abstract class GridAbsPredicate {
+public interface GridAbsPredicate {
     /**
      * Predicate body.
      *
      * @return Return value.
      */
-    public abstract boolean apply();
-
-    /**
-     * Gets closure that applies given closure over the result of {@code this} predicate.
-     *
-     * @param c Closure.
-     * @param <A> Return type of new closure.
-     * @return New closure.
-     */
-    public <A> GridOutClosure<A> andThen(final GridClosure<Boolean, A> c) {
-        return new GridOutClosure<A>() {
-            @Override public A apply() {
-                return c.apply(GridAbsPredicate.this.apply());
-            }
-        };
-    }
-
-    /**
-     * Gets closure that applies given closure over the result of {@code this} predicate.
-     *
-     * @param c Closure.
-     * @return New closure.
-     */
-    public GridAbsClosure andThen(final GridInClosure<Boolean> c) {
-        return new GridAbsClosure() {
-            @Override public void apply() {
-                c.apply(GridAbsPredicate.this.apply());
-            }
-        };
-    }
-
-    /**
-     * Gets predicate that applies given predicate over the result of {@code this} predicate.
-     *
-     * @param c Predicate.
-     * @return New predicate.
-     */
-    public GridAbsPredicate andThen(final GridPredicate<Boolean> c) {
-        return new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return c.apply(GridAbsPredicate.this.apply());
-            }
-        };
-    }
+    public boolean apply();
 }

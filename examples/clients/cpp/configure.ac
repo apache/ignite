@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.68)
-AC_INIT([GridGain C++ client examples],[4.1.0],[info@gridgain.com],[gridgain-client-examples],[www.gridgain.com])
+AC_INIT([GridGain C++ client examples],[6.0.2],[info@gridgain.com],[gridgain-client-examples],[www.gridgain.com])
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_MACRO_DIR([m4])
 AC_LANG([C++])
