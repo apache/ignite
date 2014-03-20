@@ -26,6 +26,7 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -38,7 +39,7 @@ import java.util.concurrent.locks.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
-import static org.gridgain.grid.util.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 import static org.gridgain.grid.util.nio.GridNioBackPressureControl.*;
 
 /**
@@ -74,6 +75,9 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
 
     /** Affinity assignment executor service. */
     private ExecutorService affPool;
+
+    /** Internal DR pool. */
+    private ExecutorService drPool;
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -159,6 +163,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         p2pPool = ctx.config().getPeerClassLoadingExecutorService();
         sysPool = ctx.config().getSystemExecutorService();
         mgmtPool = ctx.config().getManagementExecutorService();
+        drPool = ctx.drPool();
         affPool = Executors.newFixedThreadPool(1);
 
         getSpi().setListener(commLsnr = new GridCommunicationListener<Serializable>() {
@@ -460,6 +465,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
                 case SYSTEM_POOL:
                 case MANAGEMENT_POOL:
                 case AFFINITY_POOL: {
+                case DR_POOL: {
                     if (msg.isOrdered())
                         processOrderedMessage(node, msg, plc, msgC);
                     else
@@ -495,6 +501,10 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
                 return mgmtPool;
             case AFFINITY_POOL:
                 return affPool;
+            case DR_POOL:
+                assert drPool != null : "DR pool is not configured.";
+
+                return drPool;
 
             default: {
                 assert false : "Invalid communication policy: " + plc;

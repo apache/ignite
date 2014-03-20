@@ -48,7 +48,7 @@ public class ComputeFailoverNodeStartup {
         // Configure checkpoint SPI.
         GridSharedFsCheckpointSpi checkpointSpi = new GridSharedFsCheckpointSpi();
 
-        checkpointSpi.setDirectoryPaths(Collections.singletonList("/work/checkpoint/sharedfs"));
+        checkpointSpi.setDirectoryPaths(Collections.singletonList("work/checkpoint/sharedfs"));
 
         cfg.setCheckpointSpi(checkpointSpi);
 

@@ -12,6 +12,7 @@ package org.gridgain.examples.compute;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.util.lang.*;
 
 import java.util.*;
 
@@ -25,6 +26,14 @@ import java.util.*;
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public class ComputeBroadcastExample {
+    static class CC extends GridAbsClosure {
+        private Runnable r;
+
+        @Override
+        public void apply() {
+           r.run();
+        }
+    }
     /**
      * Executes example.
      *
@@ -36,11 +45,19 @@ public class ComputeBroadcastExample {
             System.out.println();
             System.out.println(">>> Compute broadcast example started.");
 
-            // Print hello message on all nodes.
-            hello(grid);
 
-            // Gather system info from all nodes.
-            gatherSystemInfo(grid);
+            final Runnable r = new GridRunnable() {
+                @Override public void run() {
+                    System.out.println();
+                    System.out.println(">>> Hello Node2! :)");
+                }
+            };
+
+            CC c = new CC();
+            c.r = r;
+
+            grid.compute().broadcast(c).get();
+
         }
     }
 

@@ -17,6 +17,7 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -70,6 +71,9 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Deployment enabled. */
     private boolean depEnabled;
 
+    /** IO policy. */
+    private GridIoPolicy plc;
+
     /** Message listener. */
     private GridMessageListener lsnr = new GridMessageListener() {
         @SuppressWarnings("unchecked")
@@ -108,6 +112,8 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
         retryCnt = cctx.gridConfig().getNetworkSendRetryCount();
 
         String cacheName = cctx.name();
+
+        plc = CU.isDrSystemCache(cacheName) ? DR_POOL : SYSTEM_POOL;
 
         depEnabled = cctx.gridDeploy().enabled();
 
@@ -411,11 +417,11 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     msg0 = (GridCacheMessage<K, V>)msg.clone();
 
                 if (gridTopic != null)
-                    cctx.gridIO().send(nodesView, gridTopic, msg0, SYSTEM_POOL);
+                    cctx.gridIO().send(nodesView, gridTopic, msg0, plc);
                 else {
                     assert topic != null;
 
-                    cctx.gridIO().send(nodesView, topic, msg0, SYSTEM_POOL);
+                    cctx.gridIO().send(nodesView, topic, msg0, plc);
                 }
 
                 boolean added = false;
@@ -526,7 +532,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
             try {
                 cnt++;
 
-                cctx.gridIO().sendOrderedMessage(node, topic, msgId, msg, SYSTEM_POOL, timeout, false);
+                cctx.gridIO().sendOrderedMessage(node, topic, msgId, msg, plc, timeout, false);
 
                 if (log.isDebugEnabled())
                     log.debug("Sent ordered cache message [topic=" + topic + ", msg=" + msg +

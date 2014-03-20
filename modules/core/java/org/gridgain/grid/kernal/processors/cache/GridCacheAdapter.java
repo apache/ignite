@@ -37,6 +37,7 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.transaction.*;
@@ -238,7 +239,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         for (GridCacheConfiguration ccfg : gridCfg.getCacheConfiguration()) {
             if (ccfg.getDrSenderConfiguration() != null &&
-                    F.eq(ctx.name(), CU.cacheNameForReplicationSystemCache(ccfg.getName()))) {
+                    F.eq(ctx.name(), CU.cacheNameForDrSystemCache(ccfg.getName()))) {
                 drSysCache = true;
 
                 break;
@@ -250,7 +251,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
             if (sndHubCfg != null && sndHubCfg.getCacheNames() != null) {
                 for (String cacheName : sndHubCfg.getCacheNames()) {
-                    if (F.eq(ctx.name(), CU.cacheNameForReplicationSystemCache(cacheName))) {
+                    if (F.eq(ctx.name(), CU.cacheNameForDrSystemCache(cacheName))) {
                         drSysCache = true;
 
                         break;
@@ -2898,7 +2899,23 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public GridCacheMetrics metrics() {
-        return GridCacheMetricsAdapter.copyOf(metrics);
+        GridCacheMetricsAdapter copy = GridCacheMetricsAdapter.copyOf(metrics);
+
+        if (copy != null) {
+            GridDrSenderCacheMetricsAdapter drSndMetrics = copy.drSendMetrics0();
+
+            if (drSndMetrics != null)
+                drSndMetrics.backupQueueSize(drBackupQueueSize());
+        }
+
+        return copy;
+    }
+
+    /**
+     * @return DR backup queue size.
+     */
+    protected int drBackupQueueSize() {
+        return ctx.dr().backupQueueSize();
     }
 
     /**

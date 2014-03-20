@@ -29,7 +29,10 @@ public enum GridIoPolicy {
     MANAGEMENT_POOL,
 
     /** Affinity fetch pool. */
-    AFFINITY_POOL;
+    AFFINITY_POOL,
+
+    /** DR execution pool. */
+    DR_POOL;
 
     /** Enum values. */
     private static final GridIoPolicy[] VALS = values();

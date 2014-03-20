@@ -393,6 +393,12 @@ public class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
         dht.resetMetrics();
     }
 
+    /** {@inheritDoc} */
+    @Override protected int drBackupQueueSize() {
+        // Delegate to DHT cache which is actually responsible for DR.
+        return dht.context().dr().backupQueueSize();
+    }
+
     /**
      * @param nodeId Node ID.
      * @param req Request.
