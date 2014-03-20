@@ -139,7 +139,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param discoType Discovery event type.
      * @param discoTs Discovery event timestamp.
      */
-    public void addPreloadEvent(int part, int type, GridNodeShadow discoNode, int discoType, long discoTs) {
+    public void addPreloadEvent(int part, int type, GridNode discoNode, int discoType, long discoTs) {
         assert discoNode != null;
         assert type > 0;
         assert discoType > 0;

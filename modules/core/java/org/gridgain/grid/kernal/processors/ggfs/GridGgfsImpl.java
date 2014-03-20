@@ -2014,8 +2014,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
             GridDiscoveryEvent evt0 = (GridDiscoveryEvent)evt;
 
-            if (evt0.shadow() != null) {
-                if (sameGgfs((GridGgfsAttributes[])evt0.shadow().attribute(ATTR_GGFS))) {
+            if (evt0.eventNode() != null) {
+                if (sameGgfs((GridGgfsAttributes[])evt0.eventNode().attribute(ATTR_GGFS))) {
                     Collection<GridUuid> rmv = new HashSet<>();
 
                     for (Map.Entry<GridUuid, GridFutureAdapter<Object>> fut : delFuts.entrySet()) {

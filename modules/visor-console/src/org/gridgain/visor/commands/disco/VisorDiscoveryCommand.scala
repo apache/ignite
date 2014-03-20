@@ -264,7 +264,7 @@ class VisorDiscoveryCommand {
 
         var evts = grid.forNode(node).events().remoteQuery((e: GridEvent) =>
              EVTS_DISCOVERY.contains(e.`type`) && // Only discovery events.
-             !e.asInstanceOf[GridDiscoveryEvent].shadow().isDaemon && // Filter out daemons.
+             !e.asInstanceOf[GridDiscoveryEvent].eventNode().isDaemon && // Filter out daemons.
              f.apply(e) // Apply timeframe.
              ,0
         ).get
@@ -278,12 +278,12 @@ class VisorDiscoveryCommand {
                 if (n != null)
                     n.metrics.getUpTime
                 else
-                    de.shadow().lastMetrics.getUpTime
+                    de.eventNode().metrics().getUpTime
 
             DiscoEvent(
                 ts = de.timestamp(),
                 nodeId = de.eventNode().id(),
-                ip = de.shadow().addresses.head,
+                ip = de.eventNode().addresses.head,
                 evtName = de.name(),
                 upTime = upTime
             )

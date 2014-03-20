@@ -1596,7 +1596,7 @@ object visor extends VisorTag {
                             if (nv.isDefined)
                                 mem.remove(nv.get._1)
 
-                            val ip = de.shadow().addresses.headOption
+                            val ip = de.eventNode().addresses.headOption
 
                             if (ip.isDefined) {
                                 val last = !grid.nodes().exists(n =>

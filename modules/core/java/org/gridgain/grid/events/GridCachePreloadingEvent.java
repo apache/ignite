@@ -13,8 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.util.*;
-
 /**
  * In-memory database (cache) preloading event. Preload event happens every time there is a change
  * in grid topology, which means that a node has either joined or left the grid.
@@ -60,7 +58,7 @@ public class GridCachePreloadingEvent extends GridEventAdapter {
     private int part;
 
     /** Discovery node. */
-    private GridNodeShadow discoNode;
+    private GridNode discoNode;
 
     /** Discovery event type. */
     private int discoEvtType;
@@ -81,7 +79,7 @@ public class GridCachePreloadingEvent extends GridEventAdapter {
      * @param discoTs Timestamp of discovery event that triggered this preloading event.
      */
     public GridCachePreloadingEvent(String cacheName, GridNode node, String msg, int type, int part,
-        GridNodeShadow discoNode, int discoEvtType, long discoTs) {
+        GridNode discoNode, int discoEvtType, long discoTs) {
         super(node, msg, type);
         this.cacheName = cacheName;
         this.part = part;
@@ -112,9 +110,8 @@ public class GridCachePreloadingEvent extends GridEventAdapter {
      * Gets shadow of the node that triggered this preloading event.
      *
      * @return Shadow of the node that triggered this preloading event.
-     * @see GridDiscoveryEvent#shadow()
      */
-    public GridNodeShadow discoveryNode() {
+    public GridNode discoveryNode() {
         return discoNode;
     }
 

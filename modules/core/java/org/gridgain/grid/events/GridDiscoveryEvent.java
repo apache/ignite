@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -61,9 +60,6 @@ public class GridDiscoveryEvent extends GridEventAdapter {
     /** */
     private GridNode evtNode;
 
-    /** */
-    private GridNodeShadow shadow;
-
     /** Topology version. */
     private long topVer;
 
@@ -72,8 +68,7 @@ public class GridDiscoveryEvent extends GridEventAdapter {
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
-        return name() + ": id8=" + U.id8(evtNode.id()) +
-            (shadow != null ? ", ip=" + F.first(shadow.addresses()) : "");
+        return name() + ": id8=" + U.id8(evtNode.id()) + ", ip=" + F.first(evtNode.addresses());
     }
 
     /**
@@ -126,24 +121,6 @@ public class GridDiscoveryEvent extends GridEventAdapter {
      */
     public GridNode eventNode() {
         return evtNode;
-    }
-
-    /**
-     * Sets node shadow.
-     *
-     * @param shadow Node shadow to set.
-     */
-    public void shadow(GridNodeShadow shadow) {
-        this.shadow = shadow;
-    }
-
-    /**
-     * Gets node shadow.
-     *
-     * @return Node shadow or {@code null} if one wasn't set.
-     */
-    @Nullable public GridNodeShadow shadow() {
-        return shadow;
     }
 
     /**

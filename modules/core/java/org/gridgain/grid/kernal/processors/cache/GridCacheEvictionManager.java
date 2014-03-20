@@ -215,7 +215,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
                         // Notify backup worker on each topology change.
-                        if (CU.affinityNode(cctx, discoEvt.shadow()))
+                        if (CU.affinityNode(cctx, discoEvt.eventNode()))
                             backupWorker.addEvent(discoEvt);
                     }
                 },

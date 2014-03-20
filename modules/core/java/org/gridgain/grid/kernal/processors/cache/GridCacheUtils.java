@@ -549,7 +549,7 @@ public class GridCacheUtils {
      * @param s Node shadow to check.
      * @return {@code True} if given node has specified cache started.
      */
-    public static boolean affinityNode(GridCacheContext ctx, GridNodeShadow s) {
+    public static boolean affinityNode(GridCacheContext ctx, GridNode s) {
         assert ctx != null;
         assert s != null;
 
@@ -632,11 +632,11 @@ public class GridCacheUtils {
      * Checks if given node has specified cache started.
      *
      * @param cacheName Cache name.
-     * @param s Node shadow to check.
+     * @param node Node to check.
      * @return {@code True} if given node has specified cache started.
      */
-    public static boolean cacheNode(String cacheName, GridNodeShadow s) {
-        return cacheNode(cacheName, (GridCacheAttributes[])s.attribute(ATTR_CACHE));
+    public static boolean cacheNode(String cacheName, GridNode node) {
+        return cacheNode(cacheName, (GridCacheAttributes[])node.attribute(ATTR_CACHE));
     }
 
     /**
