@@ -10,8 +10,8 @@
 package org.gridgain.grid.marshaller.optimized;
 
 import com.beust.jcommander.internal.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
+import org.jdk8.backport.*;
 import sun.misc.*;
 
 import java.io.*;
@@ -28,7 +28,7 @@ import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallable.*
  */
 class GridOptimizedMarshallerUtils {
     /** Unsafe. */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
+    private static final Unsafe UNSAFE = org.jdk8.backport.GridUnsafe.unsafe();
 
     /** {@code Null} object reference. */
     static final byte NULL = (byte)0x70;
