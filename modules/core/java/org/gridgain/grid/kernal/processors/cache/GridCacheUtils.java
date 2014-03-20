@@ -40,6 +40,9 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  * Cache utility methods.
  */
 public class GridCacheUtils {
+    /** DR system cache name prefix. */
+    public static final String DR_SYS_CACHE_PREFIX = "gg-dr-sys-cache-";
+
     /** Flag to turn off DHT cache for debugging purposes. */
     public static final boolean DHT_ENABLED = true;
 
@@ -1403,8 +1406,16 @@ public class GridCacheUtils {
      * @param cacheName Cache name.
      * @return Name of internal replicated cache used by data center replication component.
      */
-    public static String cacheNameForReplicationSystemCache(String cacheName) {
-        return "gg-dr-sys-cache-" + cacheName;
+    public static String cacheNameForDrSystemCache(String cacheName) {
+        return DR_SYS_CACHE_PREFIX + cacheName;
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return {@code True} if this is DR system cache.
+     */
+    public static boolean isDrSystemCache(String cacheName) {
+        return cacheName != null && cacheName.startsWith(DR_SYS_CACHE_PREFIX);
     }
 
     /**
