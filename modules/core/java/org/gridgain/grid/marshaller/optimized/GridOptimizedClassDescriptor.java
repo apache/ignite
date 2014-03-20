@@ -12,7 +12,6 @@ package org.gridgain.grid.marshaller.optimized;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.*;
 import sun.misc.*;
 
 import java.io.*;
@@ -29,7 +28,7 @@ import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallerUtil
  */
 class GridOptimizedClassDescriptor {
     /** Unsafe. */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
+    private static final Unsafe UNSAFE = org.jdk8.backport.GridUnsafe.unsafe();
 
     /** */
     private static final int TYPE_BYTE = 1;

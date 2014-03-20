@@ -30,6 +30,8 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.mbean.*;
 import org.gridgain.grid.util.worker.*;
+import org.jdk8.backport.*;
+import org.jdk8.backport.GridUnsafe;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.beans.factory.*;
