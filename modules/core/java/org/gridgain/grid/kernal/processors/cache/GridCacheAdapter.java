@@ -16,7 +16,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.dataload.*;
-import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
