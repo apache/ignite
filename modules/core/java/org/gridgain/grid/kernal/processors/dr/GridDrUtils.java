@@ -59,9 +59,14 @@ public class GridDrUtils {
     /** Cached external ping response bytes. */
     public  static final byte[] PING_RESP_BYTES;
 
+    /**
+     *
+     */
     static {
         PING_REQ_BYTES = new byte[5];
+
         U.intToBytes(1, PING_REQ_BYTES, 0);
+
         PING_REQ_BYTES[4] = TYP_PING_REQ;
 
         PING_RESP_BYTES = new byte[] { TYP_PING_RESP };
@@ -265,9 +270,8 @@ public class GridDrUtils {
      *
      * @param out Output.
      * @param size Size.
-     * @throws IOException If failed.
      */
-    private static void writeSize(GridUnsafeDataOutput out, int size) throws IOException {
+    private static void writeSize(GridUnsafeDataOutput out, int size) {
         U.intToBytes(size, out.internalArray(), out.offset());
 
         out.offset(out.offset() + 4);
