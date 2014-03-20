@@ -33,8 +33,9 @@ package org.gridgain.visor.commands
  * ====Specification====
  * {{{
  *     cache
- *     cache "-i {-n=<name>}"
- *     cache "{-n=<name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}"
+ *     cache -i {-n=<name>}
+ *     cache {-n=<name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}
+ *     cache -n=<cache-name> -scan {-id=<node-id>|id8=<node-id8>} {-p=<page size>}
  * }}}
  *
  * ====Arguments====
@@ -68,19 +69,30 @@ package org.gridgain.visor.commands
  *     -a
  *         Prints details statistics about each cache.
  *         By default only aggregated summary is printed.
+ *     -p=<page size>
+ *         Number of object to fetch from cache at once.
+ *         Valid range from 1 to 100.
+ *         By default page size is 25.
  * }}}
  *
  * ====Examples====
  * {{{
- *     cache "-id8=12345678 -s=hi -r"
+ *     cache -id8=12345678 -s=hi -r
  *         Prints summary statistics about caches from node with specified id8
  *         sorted by number of hits in reverse order.
- *     cache "-i"
+ *     cache -i
  *         Prints cache statistics for interactively selected node.
- *     cache "-s=hi -r -a"
+ *     cache -s=hi -r -a
  *         Prints detailed statistics about all caches sorted by number of hits in reverse order.
  *     cache
  *         Prints summary statistics about all caches.
+ *     cache -c=cache -scan
+ *         List entries from cache with name 'cache' from all nodes with this cache.
+ *     cache -c=@c0 -scan -p=50
+ *         List entries from cache with name taken from 'c0' memory variable
+ *         with page of 50 items from all nodes with this cache.
+ *     cache -c=cache -scan -id8=12345678
+ *         List entries from cache with name 'cache' and node '12345678' ID8.
  * }}}
  */
 package object cache
