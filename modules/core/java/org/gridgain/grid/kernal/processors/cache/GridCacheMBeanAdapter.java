@@ -198,11 +198,6 @@ class GridCacheMBeanAdapter implements GridCacheMBean {
     }
 
     /** {@inheritDoc} */
-    @Override public int getContinuousQueryQueueSize() {
-        return cctx.continuousQueries().currentQueueSize();
-    }
-
-    /** {@inheritDoc} */
     @Override public int getDrQueuedKeysCount() {
         return cctx.dr().queuedKeysCount();
     }

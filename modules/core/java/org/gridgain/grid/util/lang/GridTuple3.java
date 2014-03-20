@@ -26,7 +26,7 @@ import java.util.*;
  * @see GridFunc#t3()
  * @see GridFunc#t(Object, Object, Object)
  */
-public class GridTuple3<V1, V2, V3> implements Iterable<Object>, GridPeerDeployAware, Externalizable, Cloneable {
+public class GridTuple3<V1, V2, V3> implements Iterable<Object>, Externalizable, Cloneable {
     /** Value 1. */
     @GridToStringInclude
     private V1 val1;
@@ -183,22 +183,6 @@ public class GridTuple3<V1, V2, V3> implements Iterable<Object>, GridPeerDeployA
         val1 = (V1)in.readObject();
         val2 = (V2)in.readObject();
         val3 = (V3)in.readObject();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<?> deployClass() {
-        ClassLoader clsLdr = getClass().getClassLoader();
-
-        for (Object o : this)
-            if (o != null && !F.eq(o.getClass().getClassLoader(), clsLdr))
-                return o.getClass();
-
-        return getClass();
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClassLoader classLoader() {
-        return deployClass().getClassLoader();
     }
 
     /** {@inheritDoc} */
