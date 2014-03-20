@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.streamer;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 
 import java.util.*;
 

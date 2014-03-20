@@ -26,6 +26,7 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
@@ -41,14 +42,14 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.kernal.processors.cache.distributed.dht.GridDhtPartitionState.*;
-import static org.gridgain.grid.util.ConcurrentLinkedDeque8.*;
+import static org.jdk8.backport.ConcurrentLinkedDeque8.*;
 
 /**
  * Cache eviction manager.
  */
 public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Unsafe instance. */
-    private static final Unsafe unsafe = GridUnsafe.unsafe();
+    private static final Unsafe unsafe = org.jdk8.backport.GridUnsafe.unsafe();
 
     /** Eviction policy. */
     private GridCacheEvictionPolicy<K, V> plc;

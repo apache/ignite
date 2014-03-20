@@ -375,7 +375,7 @@ public class GridOptimizedMarshaller extends GridAbstractMarshaller {
     @SuppressWarnings({"TypeParameterExtendsFinalClass", "ErrorNotRethrown"})
     public static boolean available() {
         try {
-            Unsafe unsafe = GridUnsafe.unsafe();
+            Unsafe unsafe = org.jdk8.backport.GridUnsafe.unsafe();
 
             Class<? extends Unsafe> unsafeCls = unsafe.getClass();
 

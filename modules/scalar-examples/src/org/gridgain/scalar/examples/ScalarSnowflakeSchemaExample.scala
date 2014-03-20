@@ -6,9 +6,9 @@ import scala.collection.JavaConversions._
 import org.gridgain.grid.cache.GridCacheProjection
 import scala.StringBuilder
 import org.gridgain.grid.util.typedef.internal.A
-import org.gridgain.grid.util.ThreadLocalRandom8
 import java.util.ConcurrentModificationException
 import java.util
+import org.jdk8.backport.ThreadLocalRandom8
 
 /**
  * <a href="http://en.wikipedia.org/wiki/Snowflake_schema">Snowflake Schema</a> is a logical
