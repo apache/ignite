@@ -39,6 +39,7 @@
         <module>modules/scalar-examples</module>
         <module>modules/visor-console</module>
         <module>modules/jdbc-driver</module>
+        <module>modules/jdk8-backport</module>
     </modules>
 
     <repositories>
@@ -202,12 +203,6 @@
             <groupId>jboss</groupId>
             <artifactId>jboss-jmx</artifactId>
             <version>4.2.2.GA</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>jdk8-backport</artifactId>
-            <version>1.0</version>
         </dependency>
 
         <dependency>
