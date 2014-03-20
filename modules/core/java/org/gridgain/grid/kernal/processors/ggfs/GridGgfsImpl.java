@@ -133,7 +133,6 @@ public final class GridGgfsImpl implements GridGgfsEx {
         log = ggfsCtx.kernalContext().log(GridGgfsImpl.class);
         evts = ggfsCtx.kernalContext().event();
         locNodeId = ggfsCtx.kernalContext().localNodeId();
-        locNode = ggfsCtx.kernalContext().discovery().localNode();
         meta = ggfsCtx.meta();
         data = ggfsCtx.data();
 
@@ -258,6 +257,11 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
         ggfsCtx.kernalContext().io().addMessageListener(topic, delMsgLsnr);
         ggfsCtx.kernalContext().event().addLocalEventListener(delDiscoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() {
+        locNode = ggfsCtx.kernalContext().discovery().localNode();
     }
 
     /** {@inheritDoc} */

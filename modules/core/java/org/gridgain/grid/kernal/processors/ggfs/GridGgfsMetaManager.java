@@ -81,8 +81,6 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
         locNodeId = ggfsCtx.kernalContext().localNodeId();
 
-        locNode = ggfsCtx.kernalContext().discovery().localNode();
-
         sampling = new GridGgfsSamplingKey(cfg.getName());
 
         assert metaCache != null;
@@ -94,6 +92,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws GridException {
+        locNode = ggfsCtx.kernalContext().discovery().localNode();
+
         // Start background delete worker.
         delWorker = new GridGgfsDeleteWorker(ggfsCtx);
 
