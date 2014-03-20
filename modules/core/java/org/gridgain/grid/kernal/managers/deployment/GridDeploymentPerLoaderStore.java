@@ -59,7 +59,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
             @Override public void onEvent(GridEvent evt) {
                 assert evt instanceof GridDiscoveryEvent;
 
-                UUID nodeId = ((GridDiscoveryEvent)evt).eventNodeId();
+                UUID nodeId = ((GridDiscoveryEvent)evt).eventNode().id();
 
                 if (evt.type() == EVT_NODE_LEFT ||
                     evt.type() == EVT_NODE_FAILED) {

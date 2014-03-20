@@ -272,7 +272,7 @@ class VisorDiscoveryCommand {
         .map((e: GridEvent) => { // Map GridEvent => DiscoEvent.
             val de = e.asInstanceOf[GridDiscoveryEvent]
 
-            val n = grid.node(de.eventNodeId)
+            val n = grid.node(de.eventNode().id())
 
             val upTime =
                 if (n != null)
@@ -282,7 +282,7 @@ class VisorDiscoveryCommand {
 
             DiscoEvent(
                 ts = de.timestamp(),
-                nodeId = de.eventNodeId(),
+                nodeId = de.eventNode().id(),
                 ip = de.shadow().addresses.head,
                 evtName = de.name(),
                 upTime = upTime

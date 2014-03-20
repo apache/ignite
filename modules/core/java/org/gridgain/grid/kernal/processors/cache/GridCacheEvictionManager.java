@@ -252,7 +252,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
                         for (EvictionFuture fut : futs.values())
-                            fut.onNodeLeft(discoEvt.eventNodeId());
+                            fut.onNodeLeft(discoEvt.eventNode().id());
                     }
                 },
                 EVT_NODE_FAILED, EVT_NODE_LEFT);
@@ -292,7 +292,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         if (plcEnabled && evictSync && (cctx.isDht() || cctx.isColocated())) {
             // Add dummy event to worker.
             backupWorker.addEvent(new GridDiscoveryEvent(cctx.localNode(), "Dummy event.",
-                EVT_NODE_JOINED, cctx.localNodeId()));
+                EVT_NODE_JOINED, cctx.localNode()));
 
             backupWorkerThread = new GridThread(backupWorker);
             backupWorkerThread.start();

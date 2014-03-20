@@ -151,8 +151,9 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                 mini.onDiscoveryEvent();
 
                 if (type == EVT_NODE_LEFT || type == EVT_NODE_FAILED) {
-                    if (mini.node().id().equals(evt.eventNodeId())) {
-                        mini.onResult(new GridTopologyException("Node left grid (will retry): " + evt.eventNodeId()));
+                    if (mini.node().id().equals(evt.eventNode().id())) {
+                        mini.onResult(new GridTopologyException("Node left grid (will retry): " +
+                            evt.eventNode().id()));
 
                         break;
                     }

@@ -59,7 +59,7 @@ import java.util.*;
  */
 public class GridDiscoveryEvent extends GridEventAdapter {
     /** */
-    private UUID evtNodeId;
+    private GridNode evtNode;
 
     /** */
     private GridNodeShadow shadow;
@@ -72,7 +72,7 @@ public class GridDiscoveryEvent extends GridEventAdapter {
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
-        return name() + ": id8=" + U.id8(evtNodeId) +
+        return name() + ": id8=" + U.id8(evtNode.id()) +
             (shadow != null ? ", ip=" + F.first(shadow.addresses()) : "");
     }
 
@@ -89,12 +89,12 @@ public class GridDiscoveryEvent extends GridEventAdapter {
      * @param node Local node.
      * @param msg Optional event message.
      * @param type Event type.
-     * @param evtNodeId ID of the node that caused this event to be generated.
+     * @param evtNode Node that caused this event to be generated.
      */
-    public GridDiscoveryEvent(GridNode node, String msg, int type, UUID evtNodeId) {
+    public GridDiscoveryEvent(GridNode node, String msg, int type, GridNode evtNode) {
         super(node, msg, type);
 
-        this.evtNodeId = evtNodeId;
+        this.evtNode = evtNode;
     }
 
     /**
@@ -109,23 +109,23 @@ public class GridDiscoveryEvent extends GridEventAdapter {
     }
 
     /**
-     * Sets ID of the node this event is referring to.
+     * Sets node this event is referring to.
      *
-     * @param evtNodeId Event node ID.
+     * @param evtNode Event node.
      */
-    public void eventNodeId(UUID evtNodeId) {
-        this.evtNodeId = evtNodeId;
+    public void eventNode(GridNode evtNode) {
+        this.evtNode = evtNode;
     }
 
     /**
-     * Gets ID of the node that caused this event to be generated. It is potentially different from the node
+     * Gets node that caused this event to be generated. It is potentially different from the node
      * on which this event was recorded. For example, node {@code A} locally recorded the event that a remote node
      * {@code B} joined the topology. In this case this method will return ID of {@code B}.
      *
      * @return Event node ID.
      */
-    public UUID eventNodeId() {
-        return evtNodeId;
+    public GridNode eventNode() {
+        return evtNode;
     }
 
     /**

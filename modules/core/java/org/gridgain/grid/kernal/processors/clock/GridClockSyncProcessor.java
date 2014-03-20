@@ -379,7 +379,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
                 log.debug("Processing discovery event: " + evt);
 
             if (evt.type() == GridEventType.EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT)
-                onNodeLeft(evt.eventNodeId());
+                onNodeLeft(evt.eventNode().id());
 
             synchronized (this) {
                 lastSnapshot = new GridDiscoveryTopologySnapshot(evt.topologyVersion(), evt.topologyNodes());

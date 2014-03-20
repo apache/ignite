@@ -449,7 +449,7 @@ public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridC
 
                     GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
-                    UUID evtNodeId = discoEvt.eventNodeId();
+                    UUID evtNodeId = discoEvt.eventNode().id();
 
                     switch (discoEvt.type()) {
                         case EVT_NODE_JOINED:

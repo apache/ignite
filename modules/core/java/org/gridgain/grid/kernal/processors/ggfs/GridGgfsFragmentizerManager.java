@@ -436,7 +436,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
             Collection<UUID> startSync0 = startSync;
 
             if (startSync0 != null && !startSync0.isEmpty()) {
-                startSync0.remove(discoEvt.eventNodeId());
+                startSync0.remove(discoEvt.eventNode().id());
 
                 if (startSync0.isEmpty()) {
                     if (log.isDebugEnabled())
@@ -454,7 +454,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
 
                     Collection<UUID> nodeIds = entry.getValue();
 
-                    if (nodeIds.remove(discoEvt.eventNodeId())) {
+                    if (nodeIds.remove(discoEvt.eventNode().id())) {
                         if (nodeIds.isEmpty()) {
                             if (log.isDebugEnabled())
                                 log.debug("Received all responses for fragmentizer task [fileId=" + entry.getKey() +

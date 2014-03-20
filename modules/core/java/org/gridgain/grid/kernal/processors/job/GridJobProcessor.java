@@ -426,7 +426,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                 GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
-                if (taskNodeId.equals(discoEvt.eventNodeId())) {
+                if (taskNodeId.equals(discoEvt.eventNode().id())) {
                     lock.lock();
 
                     try {
@@ -1684,7 +1684,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             boolean handleCollisions = false;
 
-            UUID nodeId = ((GridDiscoveryEvent)evt).eventNodeId();
+            UUID nodeId = ((GridDiscoveryEvent)evt).eventNode().id();
 
             // We should always process discovery events (even on stop,
             // since we wait for jobs to complete if processor is stopped
