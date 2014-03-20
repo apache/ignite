@@ -587,14 +587,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (GridCacheConfiguration ccfg : ctx.grid().configuration().getCacheConfiguration()) {
             if (ccfg.getDrSenderConfiguration() != null)
-                sysCaches.add(CU.cacheNameForReplicationSystemCache(ccfg.getName()));
+                sysCaches.add(CU.cacheNameForDrSystemCache(ccfg.getName()));
         }
 
         GridDrSenderHubConfiguration sndHubCfg = ctx.grid().configuration().getDrSenderHubConfiguration();
 
         if (sndHubCfg != null && sndHubCfg.getCacheNames() != null) {
             for (String cacheName : sndHubCfg.getCacheNames())
-                sysCaches.add(CU.cacheNameForReplicationSystemCache(cacheName));
+                sysCaches.add(CU.cacheNameForDrSystemCache(cacheName));
         }
 
         GridCacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
