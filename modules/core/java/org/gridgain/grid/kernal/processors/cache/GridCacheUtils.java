@@ -21,6 +21,7 @@ import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -1494,17 +1495,11 @@ public class GridCacheUtils {
     public static <K, V> void inTx(GridCacheProjection<K, V> cache, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, GridInClosureX<GridCacheProjection<K ,V>> clo) throws GridException {
 
-        GridCacheTx tx = cache.txStart(concurrency, isolation);
-
-        try {
+        try (GridCacheTx tx = cache.txStart(concurrency, isolation)) {
             clo.applyx(cache);
 
             tx.commit();
         }
-        finally {
-            tx.close();
-        }
-
     }
 
     /**

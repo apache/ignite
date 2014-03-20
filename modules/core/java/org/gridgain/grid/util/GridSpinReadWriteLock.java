@@ -21,7 +21,7 @@ import java.util.concurrent.*;
 @GridToStringExclude
 public class GridSpinReadWriteLock {
     /** */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
+    private static final Unsafe UNSAFE = org.jdk8.backport.GridUnsafe.unsafe();
 
     /** */
     private static final long PENDING_WLOCKS_OFFS;

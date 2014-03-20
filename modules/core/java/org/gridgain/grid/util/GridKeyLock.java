@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util;
 
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
