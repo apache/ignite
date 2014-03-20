@@ -17,6 +17,10 @@ import org.gridgain.grid.Grid
 
 /**
  * Demonstrates various starting and stopping ways of grid using Scalar.
+ * <p>
+ * Grid nodes in this example start with the default configuration file `'GRIDGAIN_HOME/config/default-config.xml'`.
+ * <p>
+ * Remote nodes should also be started with the default one: `'ggstart.{sh|bat}'`.
  */
 object ScalarStartStopExample {
     /**

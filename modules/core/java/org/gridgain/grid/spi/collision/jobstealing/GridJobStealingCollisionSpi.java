@@ -19,10 +19,10 @@ import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.spi.failover.jobstealing.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 
 import java.io.*;
 import java.util.*;
