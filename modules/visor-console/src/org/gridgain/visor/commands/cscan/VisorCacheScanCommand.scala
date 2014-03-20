@@ -290,12 +290,54 @@ object VisorScanCache {
     def fetchRows(fut: GridCacheQueryFuture[JavaMap.Entry[Object, Object]],
         savedNext: JavaMap.Entry[Object, Object],
         pageSize: Int): (Array[VisorScanResult], JavaMap.Entry[Object, Object]) = {
-        def typeOf(o: Object): String = if (o != null) U.compact(o.getClass.getName) else "null"
+        def typeOf(o: Object): String = {
+            if (o != null) {
+                val clazz = o.getClass
 
-        def valueOf(o: Object): String = o match {
-            case null => "null"
-            case array if array.getClass.isArray => "binary"
-            case other => other.toString
+                if (clazz.isArray)
+                    U.compact(clazz.getComponentType.getName) + "[]"
+                else
+                    U.compact(o.getClass.getName)
+            }
+            else
+                "n/a"
+        }
+
+        def valueOf(o: Object): String = {
+            def mkstring(arr: Array[_], maxSz: Int) = {
+                val end = "..."
+                val sep = ", "
+
+                val sb = new StringBuilder
+
+                var first = true
+
+                arr.takeWhile(v => {
+                    if (first)
+                        first = false
+                    else
+                        sb.append(sep)
+
+                    sb.append(v)
+
+                    sb.size < maxSz
+                })
+
+                if (sb.size >= maxSz) {
+                    sb.setLength(maxSz - end.size)
+
+                    sb.append(end)
+                }
+
+                sb.toString()
+            }
+
+            o match {
+                case null => "null"
+                case b: Array[Byte] => "size=" + b.length
+                case arr: Array[_] => "size=" + arr.length + ", values=[" + mkstring(arr, 30) + "]"
+                case v => v.toString
+            }
         }
 
         val rows = collection.mutable.ArrayBuffer.empty[VisorScanResult]
@@ -332,7 +374,7 @@ private class VisorScanCacheTask extends VisorConsoleOneNodeTask[VisorScanCacheT
         val nodeLclKey = SCAN_QRY_KEY + "-" + UUID.randomUUID()
 
         try {
-            val c = g.cache[Object, Object](arg.cacheName)
+            val c = g.cachex[Object, Object](arg.cacheName)
 
             if (c.configuration().getCacheMode == GridCacheMode.LOCAL && arg.proj.size > 1)
                 Left(new GridException("Distributed queries are not available for caches with LOCAL caching mode. " +
