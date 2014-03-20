@@ -37,7 +37,7 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
-import static org.gridgain.grid.util.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * Command handler for API requests.
