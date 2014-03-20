@@ -1809,7 +1809,7 @@ public class GridGainEx {
                 // maximum threads has no effect.
                 drExecSvc = new GridThreadPoolExecutor(
                     "dr-" + cfg.getGridName(),
-                    2,
+                    Math.min(16, drSysCaches.size() * 2),
                     Math.min(16, drSysCaches.size() * 2),
                     DFLT_SYSTEM_KEEP_ALIVE_TIME,
                     new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
