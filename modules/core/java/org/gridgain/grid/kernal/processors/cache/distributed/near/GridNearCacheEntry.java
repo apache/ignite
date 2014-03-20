@@ -144,7 +144,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
                     }
                     finally {
                         if (enqueueVer != null)
-                            cctx.onDeferredDelete(entry, enqueueVer);
+                            cctx.onDeferredDelete(this, enqueueVer);
                     }
                 }
             }

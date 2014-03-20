@@ -393,10 +393,6 @@ public final class GridSystemProperties {
     /** Maximum size for atomic cache queue delete history. */
     public static final String GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE = "GRIDGAIN_ATOMIC_CACHE_DELETE_HISTORY_SIZE";
 
-    /** Maximum size for atomic near cache queue delete history. */
-    public static final String GG_ATOMIC_NEAR_CACHE_DELETE_HISTORY_SIZE =
-        "GRIDGAIN_ATOMIC_NEAR_CACHE_DELETE_HISTORY_SIZE";
-
     /**
      * Comma separated list of addresses in format "10.100.22.100:45000,10.100.22.101:45000".
      * Makes sense only for {@link GridTcpDiscoveryVmIpFinder}.
