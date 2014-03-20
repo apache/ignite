@@ -325,11 +325,11 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    public boolean loadedValue(@Nullable GridCacheTx tx, UUID primaryNodeId, V val, byte[] valBytes,
+    public boolean loadedValue(@Nullable GridCacheTxEx tx, UUID primaryNodeId, V val, byte[] valBytes,
         GridCacheVersion ver, GridCacheVersion dhtVer, @Nullable GridCacheVersion expVer, long ttl, long expireTime,
         boolean evt)
         throws GridException, GridCacheEntryRemovedException {
-        boolean valid = valid(-1);
+        boolean valid = valid(tx != null ? tx.topologyVersion() : -1);
 
         if (valBytes != null && val == null && (isNewLocked() || !valid))
             val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());

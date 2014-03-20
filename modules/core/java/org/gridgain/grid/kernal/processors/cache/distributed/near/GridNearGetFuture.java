@@ -518,7 +518,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         Map<K, V> map = empty ? Collections.<K, V>emptyMap() : new GridLeanMap<K, V>(keys.size());
 
         if (!empty) {
-            GridCacheVersion ver = F.isEmpty(infos) ? null : cctx.versions().next();
+            boolean atomic = cctx.atomic();
+
+            GridCacheVersion ver = atomic ? null : F.isEmpty(infos) ? null : cctx.versions().next();
 
             for (GridCacheEntryInfo<K, V> info : infos) {
                 try {
@@ -531,8 +533,16 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         GridCacheVersion saved = savedVers.get(info.key());
 
                         // Load entry into cache.
-                        entry.loadedValue(tx, nodeId, info.value(), info.valueBytes(), ver, info.version(), saved,
-                            info.ttl(), info.expireTime(), true);
+                        entry.loadedValue(tx,
+                            nodeId,
+                            info.value(),
+                            info.valueBytes(),
+                            atomic ? info.version() : ver,
+                            info.version(),
+                            saved,
+                            info.ttl(),
+                            info.expireTime(),
+                            true);
                     }
                 }
                 catch (GridCacheEntryRemovedException ignore) {
