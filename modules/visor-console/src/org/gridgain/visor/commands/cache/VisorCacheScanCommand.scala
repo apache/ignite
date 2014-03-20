@@ -47,9 +47,9 @@ import org.gridgain.grid.GridException
  *
  * ====Examples====
  * {{{
- *    cscan -n=cache
+ *    cache -n=cache
  *        List entries from cache with name 'cache' from all nodes with this cache.
- *    cscan -p=50 -n=@c0
+ *    cache -n=@c0 -scan -p=50
  *        List entries from cache with name taken from 'c0' memory variable with page of 50 items
  *        from all nodes with this cache.
  *    cache -n=cache -scan -id8=12345678
@@ -66,7 +66,7 @@ class VisorCacheScanCommand {
         assert(errMsgs != null)
 
         warn(errMsgs: _*)
-        warn("Type 'help cscan' to see how to use this command.")
+        warn("Type 'help cache' to see how to use this command.")
     }
 
     private def error(e: Exception) {
