@@ -140,9 +140,9 @@ public class GridDrUtils {
      * @throws GridException If failed.
      */
     public static byte[] marshal(GridDrExternalHandshakeRequest req) throws GridException {
-        // 16 = 4 (size) + 1 (type) + 1 (data center ID) + 1 (proto string flag) + 4 (proto string len) +
-        //      1 (marsh class string flag) + 4 (marsh class string len).
-        int size = 16 + U.GG_HEADER.length + req.protocolVersion().length() + req.marshallerClassName().length();
+        // 17 = 4 (size) + 1 (type) + 1 (data center ID) + 1 (proto string flag) + 4 (proto string len) +
+        //      1 (marsh class string flag) + 4 (marsh class string len) + 1 (ack flag).
+        int size = 17 + U.GG_HEADER.length + req.protocolVersion().length() + req.marshallerClassName().length();
 
         GridUnsafeDataOutput out = new GridUnsafeDataOutput(size);
 
@@ -156,6 +156,7 @@ public class GridDrUtils {
             out.writeByte(req.dataCenterId());
             U.writeString(out, req.protocolVersion());
             U.writeString(out, req.marshallerClassName());
+            out.writeBoolean(req.awaitAcknowledge());
 
             // Do not copy array in case we guessed size correctly.
             return out.offset() == size ? out.internalArray() : out.array();
@@ -296,7 +297,8 @@ public class GridDrUtils {
 
             switch (typ) {
                 case TYP_HND_REQ:
-                    return new GridDrExternalHandshakeRequest(in.readByte(), U.readString(in), U.readString(in));
+                    return new GridDrExternalHandshakeRequest(in.readByte(), U.readString(in), U.readString(in),
+                        in.readBoolean());
 
                 case TYP_HND_RESP:
                     return new GridDrExternalHandshakeResponse(U.readString(in));
