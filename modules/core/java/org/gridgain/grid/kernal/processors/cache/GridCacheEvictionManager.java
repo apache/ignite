@@ -1291,7 +1291,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
             if (evictSync)
                 backups = F.view(cctx.dht().topology().nodes(entry.partition(), topVer),
-                    F0.<GridNode>notEqualTo(cctx.localNode()));
+                    F0.notEqualTo(cctx.localNode()));
             else
                 backups = Collections.emptySet();
 

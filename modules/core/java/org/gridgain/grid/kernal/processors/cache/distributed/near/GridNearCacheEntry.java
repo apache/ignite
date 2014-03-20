@@ -115,7 +115,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
                     synchronized (this) {
                         checkObsolete();
 
-                        if (isNew() || !valid(-1)) {
+                        if (isNew() || !valid(topVer)) {
                             // Version does not change for load ops.
                             update(e.value(), e.valueBytes(), e.expireTime(), e.ttl(), e.isNew() ? ver : e.version());
 
