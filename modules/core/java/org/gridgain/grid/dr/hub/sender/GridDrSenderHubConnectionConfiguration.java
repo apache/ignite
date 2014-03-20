@@ -34,7 +34,7 @@ public class GridDrSenderHubConnectionConfiguration {
     /** Local host. */
     private String locOutboundHost;
 
-    /** receiver hub load balancing policy. */
+    /** Receiver hub load balancing policy. */
     private GridDrReceiverHubLoadBalancingMode rcvHubLoadBalancingMode = DFLT_RCV_HUB_LOAD_BALANCING_MODE;
 
     /** Ignored data center IDs. */
