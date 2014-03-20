@@ -30,6 +30,8 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.mbean.*;
 import org.gridgain.grid.util.worker.*;
+import org.jdk8.backport.*;
+import org.jdk8.backport.GridUnsafe;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.beans.factory.*;
@@ -6888,7 +6890,7 @@ public abstract class GridUtils {
      * @param cacheName Cache name.
      * @return Attributes.
      */
-    public static @Nullable GridCacheAttributes cacheAttributes(GridNode n, @Nullable String cacheName) {
+    @Nullable public static GridCacheAttributes cacheAttributes(GridNode n, @Nullable String cacheName) {
         for (GridCacheAttributes a : cacheAttributes(n)) {
             if (F.eq(a.cacheName(), cacheName))
                 return a;
@@ -7844,27 +7846,34 @@ public abstract class GridUtils {
     public static ApplicationContext applicationContext(URL cfgUrl, final String... excludedProps) {
         GenericApplicationContext springCtx = new GenericApplicationContext();
 
-        if (excludedProps != null && excludedProps.length != 0) {
-            BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
-                @Override public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
-                    throws BeansException {
-                    for (String beanName : beanFactory.getBeanDefinitionNames()) {
-                        BeanDefinition def = beanFactory.getBeanDefinition(beanName);
+        BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
+            @Override public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
+                throws BeansException {
+                for (String beanName : beanFactory.getBeanDefinitionNames()) {
+                    BeanDefinition def = beanFactory.getBeanDefinition(beanName);
 
-                        MutablePropertyValues vals = def.getPropertyValues();
+                    try {
+                        Class.forName(def.getBeanClassName());
+                    }
+                    catch (ClassNotFoundException ignored) {
+                        ((BeanDefinitionRegistry)beanFactory).removeBeanDefinition(beanName);
 
-                        for (PropertyValue val : new ArrayList<>(vals.getPropertyValueList())) {
-                            for (String excludedProp : excludedProps) {
-                                if (val.getName().equals(excludedProp))
-                                    vals.removePropertyValue(val);
-                            }
+                        continue;
+                    }
+
+                    MutablePropertyValues vals = def.getPropertyValues();
+
+                    for (PropertyValue val : new ArrayList<>(vals.getPropertyValueList())) {
+                        for (String excludedProp : excludedProps) {
+                            if (val.getName().equals(excludedProp))
+                                vals.removePropertyValue(val);
                         }
                     }
                 }
-            };
+            }
+        };
 
-            springCtx.addBeanFactoryPostProcessor(postProc);
-        }
+        springCtx.addBeanFactoryPostProcessor(postProc);
 
         new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(cfgUrl));
 

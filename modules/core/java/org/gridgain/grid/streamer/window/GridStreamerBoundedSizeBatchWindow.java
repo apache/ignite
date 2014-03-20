@@ -11,10 +11,10 @@ package org.gridgain.grid.streamer.window;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

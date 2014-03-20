@@ -54,11 +54,13 @@ public interface GridEvents {
      * Asynchronously queries nodes in this projection for events using passed in predicate filter for event
      * selection.
      *
-     * @param pe Predicate filter used to query events on remote nodes.
+     * @param p Predicate filter used to query events on remote nodes.
      * @param timeout Maximum time to wait for result, {@code 0} to wait forever.
+     * @param types Event types to be queried.
      * @return Collection of grid events returned from specified nodes.
      */
-    public <T extends GridEvent> GridFuture<List<T>> remoteQuery(GridPredicate<T> pe, long timeout);
+    public <T extends GridEvent> GridFuture<List<T>> remoteQuery(GridPredicate<T> p, long timeout,
+        @Nullable int... types);
 
     /**
      * Adds event listener for specified events to all nodes in the projection (possibly including
@@ -150,9 +152,10 @@ public interface GridEvents {
      *
      * @param p Predicate to filter events. All predicates must be satisfied for the
      *      event to be returned.
+     * @param types Event types to be queried.
      * @return Collection of grid events found on local node.
      */
-    public <T extends GridEvent> Collection<T> localQuery(GridPredicate<T> p);
+    public <T extends GridEvent> Collection<T> localQuery(GridPredicate<T> p, @Nullable int... types);
 
     /**
      * Records customer user generated event. All registered local listeners will be notified.

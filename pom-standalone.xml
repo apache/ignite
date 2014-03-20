@@ -34,12 +34,12 @@
     <modules>
         <module>modules/core</module>
         <module>modules/clients</module>
-        <module>modules/router</module>
         <module>examples</module>
         <module>modules/scalar</module>
         <module>modules/scalar-examples</module>
         <module>modules/visor-console</module>
         <module>modules/jdbc-driver</module>
+        <module>modules/jdk8-backport</module>
     </modules>
 
     <repositories>
@@ -206,12 +206,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>jdk8-backport</artifactId>
-            <version>1.0</version>
-        </dependency>
-
-        <dependency>
             <groupId>com.jcraft</groupId>
             <artifactId>jsch</artifactId>
             <version>0.1.50</version>
@@ -370,6 +364,75 @@
                     <source>1.7</source>
                     <target>1.7</target>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+                    <execution>
+                        <id>jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>descriptor.xml</descriptor>
+                            </descriptors>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <finalName>gridgain</finalName>
+                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.9.1</version>
+                <configuration>
+                    <finalName>gridgain</finalName>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>aggregate</id>
+                        <goals>
+                            <goal>aggregate-jar</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <excludePackageNames>org.gridgain.examples</excludePackageNames>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.2.1</version>
+                <configuration>
+                    <finalName>gridgain</finalName>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>aggregate</id>
+                        <goals>
+                            <goal>aggregate</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <excludeResources>true</excludeResources>
+                            <excludes>
+                                <exclude>**/org/gridgain/examples/**</exclude>
+                                <exclude>**/org/gridgain/scalar/examples/**</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>

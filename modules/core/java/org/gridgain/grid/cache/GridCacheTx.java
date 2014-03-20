@@ -91,9 +91,12 @@ import java.util.*;
  * try (GridCacheTx tx = cache.txStart()) {
  *     // Perform transactional operations.
  *     Integer v1 = cache.get("k1");
- *     Integer old1 = cache.put("k2", 2);
  *
- *     cache.removex("k3");
+ *     // Check if v1 satisfies some condition before doing a put.
+ *     if (v1 != null && v1 > 0)
+ *         cache.putx("k1", 2);
+ *
+ *     cache.removex("k2");
  *
  *     // Commit the transaction.
  *     tx.commit();

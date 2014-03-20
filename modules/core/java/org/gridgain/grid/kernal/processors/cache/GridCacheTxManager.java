@@ -23,6 +23,7 @@ import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -1165,10 +1166,6 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
             // 14. Update metrics.
             if (!tx.dht() && tx.local())
                 cctx.cache().metrics0().onTxCommit();
-
-            // 15. Unwind continuous queries.
-            if (!tx.near() && (!tx.dht() || tx.local()))
-                cctx.continuousQueries().unwind(false);
 
             if (slowTxWarnTimeout > 0 && tx.local() &&
                 U.currentTimeMillis() - tx.startTime() > slowTxWarnTimeout)

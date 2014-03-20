@@ -118,7 +118,7 @@
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-hibernate-deps</artifactId>
-            <version>1.0</version>
+            <version>1.2</version>
             <type>pom</type>
         </dependency>
 
@@ -223,12 +223,6 @@
             <groupId>jboss</groupId>
             <artifactId>jboss-jmx</artifactId>
             <version>4.2.2.GA</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>jdk8-backport</artifactId>
-            <version>1.0</version>
         </dependency>
 
         <dependency>
