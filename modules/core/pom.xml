@@ -27,6 +27,14 @@
 
     <artifactId>gridgain-core</artifactId>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>jdk8-backport</artifactId>
+            <version>${gridgain.version}</version>
+        </dependency>
+    </dependencies>
+
     <build>
         <sourceDirectory>java</sourceDirectory>
 

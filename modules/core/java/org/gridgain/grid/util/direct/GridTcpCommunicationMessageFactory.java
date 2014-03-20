@@ -31,7 +31,7 @@ import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.collision.jobstealing.*;
 import org.gridgain.grid.spi.communication.tcp.*;
-import org.gridgain.grid.util.*;
+import org.jdk8.backport.*;
 
 import java.util.*;
 

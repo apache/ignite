@@ -64,7 +64,7 @@ public class GridDrSenderHubConfiguration {
     private int maxQueueSize = DFLT_MAX_QUEUE_SIZE;
 
     /** Reconnect-on-failure timeout. */
-    private long reconnectOnFailureTimeout = DFLT_RECONNECT_ON_FAILURE_TIMEOUT;
+    private long reconnOnFailureTimeout = DFLT_RECONNECT_ON_FAILURE_TIMEOUT;
 
     /** Cache names this sender hub works with. */
     private String[] cacheNames;
@@ -92,7 +92,7 @@ public class GridDrSenderHubConfiguration {
         maxQueueSize = cfg.getMaxQueueSize();
         store = cfg.getStore();
         readTimeout = cfg.getReadTimeout();
-        reconnectOnFailureTimeout = cfg.getReconnectOnFailureTimeout();
+        reconnOnFailureTimeout = cfg.getReconnectOnFailureTimeout();
         connCfg = cfg.getConnectionConfiguration();
         sysReqTimeout = cfg.getSystemRequestTimeout();
     }
@@ -264,7 +264,7 @@ public class GridDrSenderHubConfiguration {
      * @return Reconnect-on-failure timeout.
      */
     public long getReconnectOnFailureTimeout() {
-        return reconnectOnFailureTimeout;
+        return reconnOnFailureTimeout;
     }
 
     /**
@@ -273,7 +273,7 @@ public class GridDrSenderHubConfiguration {
      * @param reconnectOnFailureTimeout Reconnect-on-failure timeout.
      */
     public void setReconnectOnFailureTimeout(long reconnectOnFailureTimeout) {
-        this.reconnectOnFailureTimeout = reconnectOnFailureTimeout;
+        this.reconnOnFailureTimeout = reconnectOnFailureTimeout;
     }
 
     /**

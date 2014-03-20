@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.license;
 
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.*;
+import org.jdk8.backport.*;
 
 import java.util.*;
 import java.util.concurrent.*;

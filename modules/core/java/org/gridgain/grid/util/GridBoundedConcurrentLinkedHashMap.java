@@ -10,8 +10,9 @@
 package org.gridgain.grid.util;
 
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 
-import static org.gridgain.grid.util.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * Concurrent map with an upper bound. Once map reaches its maximum capacity,
