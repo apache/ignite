@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.future.*;
@@ -55,6 +56,9 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
     /** Mappings. */
     @GridToStringInclude
     private ConcurrentMap<UUID, GridDhtAtomicUpdateRequest<K, V>> mappings = new ConcurrentHashMap8<>();
+
+    /** Entries with readers. */
+    private Map<K, GridDhtCacheEntry<K, V>> nearReadersEntries;
 
     /** Update request. */
     private GridNearAtomicUpdateRequest<K, V> updateReq;
@@ -179,7 +183,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
      * @param drVer DR version (optional).
      * @param ttl Time to live.
      */
-    public void addWriteEntry(GridCacheEntryEx<K, V> entry, @Nullable V val, @Nullable byte[] valBytes, long drTtl,
+    public void addWriteEntry(GridDhtCacheEntry<K, V> entry, @Nullable V val, @Nullable byte[] valBytes, long drTtl,
         long drExpireTime, @Nullable GridCacheVersion drVer, long ttl) {
         long topVer = updateReq.topologyVersion();
 
@@ -206,6 +210,39 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
             }
 
             updateReq.addWriteValue(entry.key(), entry.keyBytes(), val, valBytes, drTtl, drExpireTime, drVer);
+        }
+    }
+
+    /**
+     * @param readers Entry readers.
+     * @param entry Entry.
+     * @param val Value.
+     * @param valBytes Value bytes.
+     * @param ttl Time to live.
+     */
+    public void addNearWriteEntries(Iterable<UUID> readers, GridDhtCacheEntry<K, V> entry, @Nullable V val,
+        @Nullable byte[] valBytes, long ttl) {
+        GridCacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
+
+        keys.add(entry.key());
+
+        long topVer = updateReq.topologyVersion();
+
+        for (UUID nodeId : readers) {
+            GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
+
+            if (updateReq == null) {
+                updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl);
+
+                mappings.put(nodeId, updateReq);
+            }
+
+            if (nearReadersEntries == null)
+                nearReadersEntries = new HashMap<>();
+
+            nearReadersEntries.put(entry.key(), entry);
+
+            updateReq.addNearWriteValue(entry.key(), entry.keyBytes(), val, valBytes);
         }
     }
 
@@ -270,6 +307,20 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
 
         if (updateRes.error() != null)
             this.updateRes.addFailedKeys(updateRes.failedKeys(), updateRes.error());
+
+        if (!F.isEmpty(updateRes.nearEvicted())) {
+            for (K key : updateRes.nearEvicted()) {
+                GridDhtCacheEntry<K, V> entry = nearReadersEntries.get(key);
+
+                try {
+                    entry.removeReader(nodeId, updateRes.messageId());
+                }
+                catch (GridCacheEntryRemovedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Entry with evicted reader was removed [entry=" + entry + ", err=" + e + ']');
+                }
+            }
+        }
 
         mappings.remove(nodeId);
 

@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
@@ -114,6 +115,9 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     /** Fast map flag. */
     private final boolean fastMap;
 
+    /** Near cache flag. */
+    private final boolean nearEnabled;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -127,6 +131,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         filter = null;
         syncMode = null;
         op = null;
+        nearEnabled = false;
     }
 
     /**
@@ -186,6 +191,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
         fastMap = F.isEmpty(filter) && op != TRANSFORM && cctx.config().getWriteSynchronizationMode() == FULL_SYNC &&
             cctx.config().getAtomicWriteOrderMode() == CLOCK;
+
+        nearEnabled = CU.isNearEnabled(cctx);
     }
 
     /** {@inheritDoc} */
@@ -306,6 +313,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             assert singleNodeId.equals(nodeId) : "Invalid response received for single-node mapped future " +
                 "[singleNodeId=" + singleNodeId + ", nodeId=" + nodeId + ", res=" + res + ']';
 
+            updateNear(singleReq, res);
+
             if (res.error() != null)
                 onDone(addFailedKeys(res.failedKeys(), res.error()));
             else {
@@ -317,18 +326,36 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         else {
             GridNearAtomicUpdateRequest<K, V> req = mappings.get(nodeId);
 
-            if (res.error() != null)
-                addFailedKeys(req.keys(), res.error());
-            else {
-                // req can be null if onResult is being processed concurrently with onNodeLeft.
-                if (req != null && req.fastMap() && req.hasPrimary())
-                    opRes = res.returnValue();
-            }
+            if (req != null) { // req can be null if onResult is being processed concurrently with onNodeLeft.
+                updateNear(req, res);
 
-            mappings.remove(nodeId);
+                if (res.error() != null)
+                    addFailedKeys(req.keys(), res.error());
+                else {
+                    if (req.fastMap() && req.hasPrimary())
+                        opRes = res.returnValue();
+                }
+
+                mappings.remove(nodeId);
+            }
 
             checkComplete();
         }
+    }
+
+    /**
+     * Updates near cache.
+     *
+     * @param req Update request.
+     * @param res Update response.
+     */
+    private void updateNear(GridNearAtomicUpdateRequest<K, V> req, GridNearAtomicUpdateResponse<K, V> res) {
+        if (!nearEnabled || !req.hasPrimary())
+            return;
+
+        GridNearAtomicCache<K, V> near = (GridNearAtomicCache<K, V>)cctx.dht().near();
+
+        near.processNearAtomicUpdateResponse(req, res);
     }
 
     /**
@@ -476,7 +503,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             Collection<GridNode> primaryNodes = mapKey(key, topVer, fastMap);
 
             // One key and no backups.
-            assert primaryNodes.size() == 1;
+            assert primaryNodes.size() == 1 : primaryNodes;
 
             GridNode primary = F.first(primaryNodes);
 
@@ -629,9 +656,9 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     private Collection<GridNode> mapKey(K key, long topVer, boolean fastMap) {
         GridCacheAffinityManager<K, V> affMgr = cctx.affinity();
 
-        // If we can send updates is parallel - do it.
+        // If we can send updates in parallel - do it.
         return fastMap ?
-            affMgr.nodes(key, topVer) :
+            cctx.topology().nodes(affMgr.partition(key), topVer) :
             Collections.singletonList(affMgr.primary(key, topVer));
     }
 
