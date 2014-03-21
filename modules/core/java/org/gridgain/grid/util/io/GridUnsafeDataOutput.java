@@ -10,7 +10,6 @@
 package org.gridgain.grid.util.io;
 
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.*;
 import sun.misc.*;
 
 import java.io.*;
@@ -22,7 +21,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
  */
 public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput {
     /** Unsafe. */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
+    private static final Unsafe UNSAFE = org.jdk8.backport.GridUnsafe.unsafe();
 
     /** */
     private static final Long CHECK_FREQ = Long.getLong(GG_MARSHAL_BUFFERS_RECHECK, 10000);

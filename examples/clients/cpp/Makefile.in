@@ -210,7 +210,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CXXFLAGS = -Wall -std=c++11
+AM_CXXFLAGS = -Wall -std=c++0x
 gridgain_data_example_SOURCES = src/gridclientapiexample.cpp src/gridclientdataexample.cpp
 gridgain_data_example_LDADD = -L/usr/local/lib -lgridgain-client
 gridgain_compute_example_SOURCES = src/gridclientapiexample.cpp src/gridclientcomputeexample.cpp

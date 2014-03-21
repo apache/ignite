@@ -29,7 +29,7 @@ public enum GridDrPauseReason {
     /**
      * All sender hubs left.
      */
-    SEND_HUBS_LEFT;
+    NO_SND_HUBS;
 
     /** Enumerated values. */
     private static final GridDrPauseReason[] VALS = values();
