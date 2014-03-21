@@ -23,6 +23,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
@@ -37,7 +38,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
  */
 public abstract class GridDhtTxCacheAdapter<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
-     * Empty constructor required for {@link java.io.Externalizable}.
+     * Empty constructor required for {@link Externalizable}.
      */
     protected GridDhtTxCacheAdapter() {
         // No-op.
