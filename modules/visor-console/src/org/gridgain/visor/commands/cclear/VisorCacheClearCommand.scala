@@ -18,7 +18,6 @@ import org.gridgain.scalar._
 import scalar._
 import org.gridgain.grid.kernal.GridEx
 import org.gridgain.grid.kernal.processors.task.GridInternal
-import org.gridgain.grid.util.typedef._
 import org.gridgain.grid.util.scala.impl
 import org.gridgain.grid.resources._
 import org.gridgain.visor._
@@ -30,16 +29,6 @@ import org.gridgain.grid.lang.GridCallable
  * ==Overview==
  * Visor 'cclear' command implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to properly
- * import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.cclear.VisorCacheClearCommand._
- * </ex>
- * Note that `VisorCacheClearCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +------------------------------------------------------+
@@ -49,8 +38,8 @@ import org.gridgain.grid.lang.GridCallable
  *
  * ====Specification====
  * {{{
- *     visor cclear
- *     visor cclear "<cache-name>"
+ *     cclear
+ *     cclear -c=<cache-name>
  * }}}
  *
  * ====Arguments====
@@ -62,9 +51,9 @@ import org.gridgain.grid.lang.GridCallable
  *
  * ====Examples====
  * {{{
- *     visor cclear
+ *     cclear
  *         Clears default cache.
- *     visor cclear "cache"
+ *     cclear -c=cache
  *         Clears cache with name 'cache'.
  * }}}
  */
@@ -86,19 +75,23 @@ class VisorCacheClearCommand {
      * Clears cache by its name.
      *
      * ===Examples===
-     * <ex>cclear "cache"</ex>
+     * <ex>cclear -c=cache</ex>
      * Clears cache with name 'cache'.
      *
-     * @param cacheName Cache name.
+     * @param args Command arguments.
      */
-    def cclear(@Nullable cacheName: String) = breakable {
+    def cclear(@Nullable args: String) = breakable {
         if (!isConnected)
             adviseToConnect()
         else {
-            if (cacheName != null && cacheName.isEmpty)
+            val argLst = parseArgs(args)
+
+            val cacheArg = argValue("c", argLst)
+
+            if (cacheArg.isEmpty)
                 scold("Cache name is empty.").^^
 
-            val caches = getVariable(cacheName)
+            val caches = getVariable(cacheArg.get)
 
             val prj = grid.forCache(caches)
 
@@ -169,10 +162,10 @@ object VisorCacheClearCommand {
         shortInfo = "Clears all entries from cache on all nodes.",
         spec = Seq(
             "cclear",
-            "cclear <cache-name>"
+            "cclear -c=<cache-name>"
         ),
         args = Seq(
-            "<cache-name>" -> Seq(
+            "-c=<cache-name>" -> Seq(
                 "Name of the cache.",
                 "If not specified, default cache will be cleared.",
                 "Note you can also use '@c0' ... '@cn' variables as shortcut to <cache-name>."
@@ -180,8 +173,8 @@ object VisorCacheClearCommand {
         ),
         examples = Seq(
             "cclear" -> "Clears default cache.",
-            "cclear cache" -> "Clears cache with name 'cache'.",
-            "cclear @c0" -> "Clears cache with name taken from 'c0' memory variable."
+            "cclear -c=cache" -> "Clears cache with name 'cache'.",
+            "cclear -c=@c0" -> "Clears cache with name taken from 'c0' memory variable."
         ),
         ref = VisorConsoleCommand(cmd.cclear, cmd.cclear)
     )
