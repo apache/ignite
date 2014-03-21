@@ -418,14 +418,12 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>java</sourceDirectory>
-
         <resources>
             <resource>
                 <directory>config</directory>
             </resource>
             <resource>
-                <directory>java</directory>
+                <directory>src/main/java</directory>
             </resource>
             <resource>
                 <directory>gar</directory>
