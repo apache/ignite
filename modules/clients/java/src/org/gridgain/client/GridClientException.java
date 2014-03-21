@@ -9,7 +9,6 @@
 
 package org.gridgain.client;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -49,7 +48,7 @@ public class GridClientException extends Exception {
      * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
      * <b>including</b> that throwable itself.
      * <p>
-     * Note that this method follows includes {@link GridMultiException#nestedCauses()}
+     * Note that this method follows includes {@link Throwable#getSuppressed()}
      * into check.
      *
      * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
@@ -64,7 +63,7 @@ public class GridClientException extends Exception {
      * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
      * <b>including</b> that throwable itself.
      * <p>
-     * Note that this method follows includes {@link GridMultiException#nestedCauses()}
+     * Note that this method follows includes {@link Throwable#getSuppressed()}
      * into check.
      *
      * @param t Throwable to check (if {@code null}, {@code false} is returned).
@@ -83,11 +82,9 @@ public class GridClientException extends Exception {
                 if (c.isAssignableFrom(th.getClass()))
                     return true;
 
-            if (th instanceof GridMultiException) {
-                for (Throwable n : ((GridMultiException)th).nestedCauses())
-                    if (hasCause(n, cls))
-                        return true;
-            }
+            for (Throwable n : th.getSuppressed())
+                if (hasCause(n, cls))
+                    return true;
 
             if (th.getCause() == th)
                 break;
