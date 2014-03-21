@@ -281,7 +281,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext"})
     @Nullable public synchronized GridTuple3<GridCacheVersion, V, byte[]> versionedValue(long topVer)
         throws GridCacheEntryRemovedException {
-        if (isNew(topVer) || deletedUnlocked())
+        if (isNew() || !valid(-1) || deletedUnlocked())
             return null;
         else {
             V val0 = null;

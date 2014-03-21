@@ -204,6 +204,11 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void onDeferredDelete(GridCacheEntryEx<K, V> entry, GridCacheVersion ver) {
+        assert false : "Should not be called";
+    }
+
     /**
      * @param fut Clears future from cache.
      */

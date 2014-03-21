@@ -4346,6 +4346,12 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /**
+     * @param entry Entry.
+     * @param ver Version.
+     */
+    public abstract void onDeferredDelete(GridCacheEntryEx<K, V> entry, GridCacheVersion ver);
+
+    /**
      * Validates that given cache value implements {@link Externalizable}.
      *
      * @param val Cache value.

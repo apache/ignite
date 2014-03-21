@@ -15,16 +15,6 @@ package org.gridgain.visor.commands
  * ==Overview==
  * Visor 'cclear' command implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to properly
- * import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.cclear.VisorCacheClearCommand._
- * </ex>
- * Note that `VisorCacheClearCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +------------------------------------------------------+
@@ -34,8 +24,8 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor cclear
- *     visor cclear "<cache-name>"
+ *     cclear
+ *     cclear -c=<cache-name>
  * }}}
  *
  * ====Arguments====
@@ -47,9 +37,9 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor cclear
+ *     cclear
  *         Clears default cache.
- *     visor cclear "cache"
+ *     cclear -c=cache
  *         Clears cache with name 'cache'.
  * }}}
  */
