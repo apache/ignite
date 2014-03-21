@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.dr.messages.external;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.dr.*;
-import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -20,7 +19,7 @@ import java.util.*;
 /**
  *
  */
-public class GridDrExternalBatchRequest<K, V> implements Externalizable {
+public class GridDrExternalBatchRequest<K, V> {
     /** Request ID. */
     private GridUuid reqId;
 
@@ -60,13 +59,6 @@ public class GridDrExternalBatchRequest<K, V> implements Externalizable {
     }
 
     /**
-     * {@link Externalizable} support.
-     */
-    public GridDrExternalBatchRequest() {
-        // No-op.
-    }
-
-    /**
      * @return Request ID.
      */
     public GridUuid requestId() {
@@ -95,11 +87,19 @@ public class GridDrExternalBatchRequest<K, V> implements Externalizable {
     }
 
     /**
+     * @return Data bytes.
+     */
+    public byte[] dataBytes() {
+        return dataBytes;
+    }
+
+    /**
      * @return Amount of bytes.
      */
     public int dataSize() {
         return dataBytes.length;
     }
+
     /**
      * @return Data.
      */
@@ -109,11 +109,10 @@ public class GridDrExternalBatchRequest<K, V> implements Externalizable {
         return data;
     }
     /**
-     * @param marsh Marshaller.
      * @throws GridException If failed.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    public void prepare(GridMarshaller marsh) throws GridException {
+    public void prepare() throws GridException {
         assert data == null;
 
         data = new ArrayList<>(entryCnt);
@@ -125,24 +124,6 @@ public class GridDrExternalBatchRequest<K, V> implements Externalizable {
         catch (IOException e) {
             throw new GridException("Failed to unmarshal external data center replication batch request.", e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, reqId);
-        U.writeString(out, cacheName);
-        out.writeByte(dataCenterId);
-        out.writeInt(entryCnt);
-        U.writeByteArray(out, dataBytes);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        reqId = U.readGridUuid(in);
-        cacheName = U.readString(in);
-        dataCenterId = in.readByte();
-        entryCnt = in.readInt();
-        dataBytes = U.readByteArray(in);
     }
 
     /** {@inheritDoc} */
