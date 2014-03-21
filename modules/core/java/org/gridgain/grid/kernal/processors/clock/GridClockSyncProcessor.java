@@ -212,9 +212,9 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
             if (timeCoord == null) {
                 long minNodeOrder = Long.MAX_VALUE;
 
-                Collection<GridNodeShadow> nodes = discoEvt.topologyNodes();
+                Collection<GridNode> nodes = discoEvt.topologyNodes();
 
-                for (GridNodeShadow node : nodes) {
+                for (GridNode node : nodes) {
                     if (node.order() < minNodeOrder)
                         minNodeOrder = node.order();
                 }
@@ -284,7 +284,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
         try {
             timeSyncHist.put(snapshot.version(), snapshot);
 
-            for (GridNodeShadow n : top.topologyNodes()) {
+            for (GridNode n : top.topologyNodes()) {
                 GridClockDeltaSnapshotMessage msg = new GridClockDeltaSnapshotMessage(
                     snapshot.version(), snapshot.deltas());
 

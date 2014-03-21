@@ -63,8 +63,8 @@ public class GridDiscoveryEvent extends GridEventAdapter {
     /** Topology version. */
     private long topVer;
 
-    /** Collection of node shadows corresponding to topology version. */
-    private Collection<GridNodeShadow> topSnapshot;
+    /** Collection of nodes corresponding to topology version. */
+    private Collection<GridNode> topSnapshot;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
@@ -141,7 +141,7 @@ public class GridDiscoveryEvent extends GridEventAdapter {
      *
      * @return Topology snapshot.
      */
-    public Collection<GridNodeShadow> topologyNodes() {
+    public Collection<GridNode> topologyNodes() {
         return topSnapshot;
     }
 
@@ -151,7 +151,7 @@ public class GridDiscoveryEvent extends GridEventAdapter {
      * @param topVer Topology version.
      * @param topSnapshot Topology snapshot.
      */
-    public void topologySnapshot(long topVer, Collection<GridNodeShadow> topSnapshot) {
+    public void topologySnapshot(long topVer, Collection<GridNode> topSnapshot) {
         this.topVer = topVer;
         this.topSnapshot = topSnapshot;
     }

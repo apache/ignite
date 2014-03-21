@@ -24,7 +24,7 @@ public class GridDiscoveryTopologySnapshot {
 
     /** Topology nodes. */
     @GridToStringInclude
-    private Collection<GridNodeShadow> topNodes;
+    private Collection<GridNode> topNodes;
 
     /**
      * Creates a topology snapshot with given topology version and topology nodes.
@@ -32,7 +32,7 @@ public class GridDiscoveryTopologySnapshot {
      * @param topVer Topology version.
      * @param topNodes Topology nodes.
      */
-    public GridDiscoveryTopologySnapshot(long topVer, Collection<GridNodeShadow> topNodes) {
+    public GridDiscoveryTopologySnapshot(long topVer, Collection<GridNode> topNodes) {
         this.topVer = topVer;
         this.topNodes = topNodes;
     }
@@ -43,7 +43,7 @@ public class GridDiscoveryTopologySnapshot {
     }
 
     /** {@inheritDoc} */
-    public Collection<GridNodeShadow> topologyNodes() {
+    public Collection<GridNode> topologyNodes() {
         return topNodes;
     }
 

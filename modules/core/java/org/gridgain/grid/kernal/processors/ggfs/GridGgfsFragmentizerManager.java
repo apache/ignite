@@ -186,9 +186,9 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
             if (fragmentizerCrd == null) {
                 long minNodeOrder = Long.MAX_VALUE;
 
-                Collection<GridNodeShadow> nodes = discoEvt.topologyNodes();
+                Collection<GridNode> nodes = discoEvt.topologyNodes();
 
-                for (GridNodeShadow node : nodes) {
+                for (GridNode node : nodes) {
                     if (node.order() < minNodeOrder && ggfsCtx.ggfsNode(node))
                         minNodeOrder = node.order();
                 }

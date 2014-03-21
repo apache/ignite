@@ -303,9 +303,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                     discoEvt.type(EVT_NODE_JOINED);
 
                     discoEvt.topologySnapshot(topVer, new ArrayList<>(
-                        F.viewReadOnly(topSnapshot, new C1<GridNode, GridNodeShadow>() {
-                            @Override public GridNodeShadow apply(GridNode e) {
-                                return new GridDiscoveryNodeShadowAdapter(e);
+                        F.viewReadOnly(topSnapshot, new C1<GridNode, GridNode>() {
+                            @Override public GridNode apply(GridNode e) {
+                                return e;
                             }
                         }, daemonFilter)));
 
@@ -1393,9 +1393,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                 evt.type(type);
 
                 evt.topologySnapshot(topVer, new ArrayList<>(
-                    F.viewReadOnly(topSnapshot, new C1<GridNode, GridNodeShadow>() {
-                        @Override public GridNodeShadow apply(GridNode e) {
-                            return new GridDiscoveryNodeShadowAdapter(e);
+                    F.viewReadOnly(topSnapshot, new C1<GridNode, GridNode>() {
+                        @Override public GridNode apply(GridNode e) {
+                            return e;
                         }
                     }, daemonFilter)));
 
