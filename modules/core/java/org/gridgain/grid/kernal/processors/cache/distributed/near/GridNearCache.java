@@ -300,7 +300,7 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
     /** {@inheritDoc} */
     @Override protected int drBackupQueueSize() {
         // Delegate to DHT cache which is actually responsible for DR.
-        return dht.context().dr().backupQueueSize();
+        return dht().context().dr().backupQueueSize();
     }
 
     /**
