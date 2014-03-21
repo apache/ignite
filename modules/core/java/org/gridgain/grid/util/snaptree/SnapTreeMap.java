@@ -33,11 +33,11 @@
  * SUCH DAMAGE.
  */
 
-package edu.stanford.ppl.concurrent;
+package org.gridgain.grid.util.snaptree;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.*;
 
 // TODO: optimized buildFromSorted
 // TODO: submap.clone()

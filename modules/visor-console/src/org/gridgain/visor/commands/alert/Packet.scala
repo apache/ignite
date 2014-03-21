@@ -15,16 +15,6 @@ package org.gridgain.visor.commands
  * ==Overview==
  * Visor 'alert' command implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.alert.VisorAlertCommand._
- * </ex>
- * Note that `VisorAlertCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +---------------------------------------------------------------------+
@@ -35,9 +25,9 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor alert
- *     visor alert "-u {-id=<alert-id>|-a}"
- *     visor alert "-r {-t=<sec>} -c1=e1<num> -c2=e2<num> ... -ck=ek<num>"
+ *     alert
+ *     alert "-u {-id=<alert-id>|-a}"
+ *     alert "-r {-t=<sec>} -c1=e1<num> -c2=e2<num> ... -ck=ek<num>"
  * }}}
  *
  * ====Arguments====
@@ -99,13 +89,13 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor alert
+ *     alert
  *         Prints all currently registered alerts.
- *     visor alert "-u -a"
+ *     alert "-u -a"
  *         Unregisters all currently registered alerts.
- *     visor alert "-u -id=12345678"
+ *     alert "-u -id=12345678"
  *         Unregisters alert with provided ID.
- *     visor alert "-r -t=900 -cc=gte4 -cl=gt50"
+ *     alert "-r -t=900 -cc=gte4 -cl=gt50"
  *         Notify every 15 min if grid has >= 4 CPUs and > 50% CPU load.
  * }}}
  */

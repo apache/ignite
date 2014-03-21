@@ -33,10 +33,9 @@
  * SUCH DAMAGE.
  */
 
-package edu.stanford.ppl.concurrent;
+package org.gridgain.grid.util.snaptree;
 
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.concurrent.atomic.*;
 
 /** Provides an implementation of the behavior of an {@link Epoch}. */
 @SuppressWarnings("ALL")
