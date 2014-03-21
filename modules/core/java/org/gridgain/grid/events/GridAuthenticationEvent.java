@@ -24,7 +24,7 @@ import java.util.*;
  * APIs for performing a distributed queries across multiple nodes:
  * <ul>
  *      <li>
- *          {@link GridEvents#remoteQuery(GridPredicate, long, int...)}  -
+ *          {@link GridEvents#remoteQuery(GridPredicate, long, int...)} -
  *          asynchronously querying events occurred on the nodes specified, including remote nodes.
  *      </li>
  *      <li>
