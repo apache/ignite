@@ -2239,6 +2239,10 @@ public abstract class GridUtils {
 
                 // Resolve path to class-file.
                 uri = domain.getCodeSource().getLocation().toURI();
+
+                // Overcome UNC path problem on Windows (http://www.tomergabel.com/JavaMishandlesUNCPathsOnWindows.aspx)
+                if (isWindows() && uri.getAuthority() != null)
+                    uri = new URI(uri.toString().replace("file://", "file:/"));
             }
             catch (URISyntaxException | SecurityException e) {
                 logResolveFailed(cls, e);
