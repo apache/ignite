@@ -656,9 +656,9 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     private Collection<GridNode> mapKey(K key, long topVer, boolean fastMap) {
         GridCacheAffinityManager<K, V> affMgr = cctx.affinity();
 
-        // If we can send updates is parallel - do it.
+        // If we can send updates in parallel - do it.
         return fastMap ?
-            affMgr.nodes(key, topVer) :
+            cctx.topology().nodes(affMgr.partition(key), topVer) :
             Collections.singletonList(affMgr.primary(key, topVer));
     }
 
