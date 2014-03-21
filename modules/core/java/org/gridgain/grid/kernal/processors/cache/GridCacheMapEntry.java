@@ -674,7 +674,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if ((unmarshal || isOffHeapValuesOnly()) && !expired && val == null && hasOldBytes)
                 val = rawGetOrUnmarshalUnlocked();
 
-            boolean valid = valid(tx != null ? tx.topologyVersion() : -1);
+            boolean valid = valid(tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion());
 
             // Attempt to load from swap.
             if (val == null && !hasOldBytes && readSwap) {

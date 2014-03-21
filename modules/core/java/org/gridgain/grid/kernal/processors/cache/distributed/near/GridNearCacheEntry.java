@@ -330,7 +330,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         GridCacheVersion ver, GridCacheVersion dhtVer, @Nullable GridCacheVersion expVer, long ttl, long expireTime,
         boolean evt, long topVer)
         throws GridException, GridCacheEntryRemovedException {
-        boolean valid = valid(tx != null ? tx.topologyVersion() : -1);
+        boolean valid = valid(tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion());
 
         if (valBytes != null && val == null && (isNewLocked() || !valid))
             val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
