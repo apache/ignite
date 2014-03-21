@@ -27,6 +27,9 @@ public class GridDrExternalHandshakeRequest implements GridDrExternalProtocolVer
     /** Marshaller class name. */
     private String marshClsName;
 
+    /** Await acknowledge flag. */
+    private boolean awaitAck;
+
     /**
      * {@link Externalizable} support.
      */
@@ -40,11 +43,13 @@ public class GridDrExternalHandshakeRequest implements GridDrExternalProtocolVer
      * @param dataCenterId Data center ID.
      * @param protoVer DR protocol version.
      * @param marshClsName Marshaller class name.
+     * @param awaitAck Await acknowledge flag.
      */
-    public GridDrExternalHandshakeRequest(byte dataCenterId, String protoVer, String marshClsName) {
+    public GridDrExternalHandshakeRequest(byte dataCenterId, String protoVer, String marshClsName, boolean awaitAck) {
         this.dataCenterId = dataCenterId;
         this.protoVer = protoVer;
         this.marshClsName = marshClsName;
+        this.awaitAck = awaitAck;
     }
 
     /** {@inheritDoc} */
@@ -68,11 +73,19 @@ public class GridDrExternalHandshakeRequest implements GridDrExternalProtocolVer
         return marshClsName;
     }
 
+    /**
+     * @return Await acknowledge flag.
+     */
+    public boolean awaitAcknowledge() {
+        return awaitAck;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeByte(dataCenterId);
         U.writeString(out, protoVer);
         U.writeString(out, marshClsName);
+        out.writeBoolean(awaitAck);
     }
 
     /** {@inheritDoc} */
@@ -80,6 +93,7 @@ public class GridDrExternalHandshakeRequest implements GridDrExternalProtocolVer
         dataCenterId = in.readByte();
         protoVer = U.readString(in);
         marshClsName = U.readString(in);
+        awaitAck = in.readBoolean();
     }
 
     /** {@inheritDoc} */

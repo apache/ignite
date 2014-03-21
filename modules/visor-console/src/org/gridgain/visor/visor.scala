@@ -2272,13 +2272,7 @@ object visor extends VisorTag {
 
         val path = pathOpt.getOrElse(DFLT_LOG_PATH)
 
-        logFile = new File(path)
-
-        if (!logFile.isAbsolute)
-            logFile = new File(U.getGridGainHome, path)
-
-        if (!logFile.getParentFile.exists && !logFile.getParentFile.mkdirs)
-            throw new IllegalArgumentException("Failed to 'mkdir' log path: " + path)
+        logFile = U.resolveWorkDirectory(path, null, false, false)
 
         var freq = 0L
 
