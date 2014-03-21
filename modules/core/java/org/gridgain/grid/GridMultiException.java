@@ -9,18 +9,15 @@
 
 package org.gridgain.grid;
 
+import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
  * Grid exception which may contain more than one failure.
  */
 public class GridMultiException extends GridException {
-    /** Nested exceptions. */
-    private final List<Throwable> causes = new ArrayList<>();
-
     /**
      * Creates new exception with given error message.
      *
@@ -60,8 +57,7 @@ public class GridMultiException extends GridException {
     public GridMultiException(String msg, @Nullable Throwable cause, @Nullable Collection<Throwable> nestedCauses) {
         super(msg, cause);
 
-        if (nestedCauses != null)
-            causes.addAll(nestedCauses);
+        addAll(nestedCauses);
     }
 
     /**
@@ -73,8 +69,7 @@ public class GridMultiException extends GridException {
     public GridMultiException(String msg, @Nullable Collection<Throwable> nestedCauses) {
         super(msg);
 
-        if (nestedCauses != null)
-            causes.addAll(nestedCauses);
+        addAll(nestedCauses);
     }
 
     /**
@@ -83,7 +78,19 @@ public class GridMultiException extends GridException {
      * @param cause Cause to add.
      */
     public void add(Throwable cause) {
-        causes.add(cause);
+        addSuppressed(cause);
+    }
+
+    /**
+     * Adds new causes for multi-exception.
+     *
+     * @param nestedCauses Collection of nested causes.
+     */
+    private void addAll(Collection<Throwable> nestedCauses) {
+        if (!F.isEmpty(nestedCauses)) {
+            for (Throwable nested : nestedCauses)
+                add(nested);
+        }
     }
 
     /**
@@ -91,22 +98,7 @@ public class GridMultiException extends GridException {
      *
      * @return Nested causes for this multi-exception.
      */
-    public List<Throwable> nestedCauses() {
-        return causes;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void printStackTrace(PrintStream s) {
-        super.printStackTrace(s);
-
-        for (int i = 0; i < causes.size(); i++) {
-            Throwable t = causes.get(i);
-
-            s.println("Cause #" + (i + 1) + " of: " + getClass().getName());
-            s.print("\t");
-            t.printStackTrace(s);
-        }
-
-        s.println("End of: " + getClass().getName());
+    public Throwable[] nestedCauses() {
+        return getSuppressed();
     }
 }
