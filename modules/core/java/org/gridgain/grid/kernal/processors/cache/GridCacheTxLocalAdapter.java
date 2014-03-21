@@ -1961,7 +1961,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         filter = txEntry.filters();
 
                     // If we have user-passed filter, we must read value into entry for peek().
-                    if (!F.isEmpty(filter) && !F.isAlwaysTrue(filter))
+                    if (!F.isEmptyOrNulls(filter) && !F.isAlwaysTrue(filter))
                         retval = true;
 
                     boolean transform = transformMap != null && isSingleUpdate() && transformMap.containsKey(k);
