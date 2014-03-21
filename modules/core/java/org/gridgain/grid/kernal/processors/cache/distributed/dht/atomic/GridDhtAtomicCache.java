@@ -55,7 +55,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         Integer.getInteger(GG_ATOMIC_DEFERRED_ACK_TIMEOUT, 500);
 
     /** Unsafe instance. */
-    private static final Unsafe UNSAFE = org.jdk8.backport.GridUnsafe.unsafe();
+    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** Will be {@code true} if affinity has backups. */
     private boolean hasBackups;
