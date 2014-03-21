@@ -529,7 +529,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Read value.
      * @throws GridException If read failed.
      */
-    @Nullable GridCacheSwapEntry<V> read(GridCacheMapEntry<K, V> entry) throws GridException {
+    @Nullable GridCacheSwapEntry<V> read(GridCacheEntryEx<K, V> entry) throws GridException {
         if (!offheapEnabled && !swapEnabled)
             return null;
 

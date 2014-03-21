@@ -279,8 +279,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridException If reload failed.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable
-    public V innerReload(GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException,
+    @Nullable public V innerReload(GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException,
         GridCacheEntryRemovedException;
 
     /**
@@ -401,16 +400,44 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
     ) throws GridException, GridCacheEntryRemovedException;
 
     /**
-     * Marks entry as obsolete and, if possible or required, removes it
-     * from swap storage.
-     *
-     * @param ver Obsolete version.
-     * @param swap If {@code true} then remove from swap.
-     * @param readers Flag to clear readers as well.
-     * @param filter Optional entry filter.
-     * @throws GridException If failed to remove from swap.
-     * @return {@code True} if entry was not being used, passed the filter and could be removed.
+     * Update method in atomic mode for local cache.
+     * @param ver Cache version.
+     * @param op Operation.
+     * @param writeObj Value. Type depends on operation.
+     * @param writeThrough Write through flag.
+     * @param retval Return value flag.
+     * @param ttl Time to live.
+     * @param evt Event flag.
+     * @param metrics Metrics update flag.
+     * @param filter Optional filter to check.
+     * @return Tuple containing success flag and old value.
+     * @throws GridException If update failed.
+     * @throws GridCacheEntryRemovedException If entry is obsolete.
      */
+    public GridBiTuple<Boolean, V> updateLocalAtomic(
+        GridCacheVersion ver,
+        GridCacheOperation op,
+        @Nullable Object writeObj,
+        boolean writeThrough,
+        boolean retval,
+        long ttl,
+        boolean evt,
+        boolean metrics,
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
+    ) throws GridException, GridCacheEntryRemovedException;
+
+
+        /**
+         * Marks entry as obsolete and, if possible or required, removes it
+         * from swap storage.
+         *
+         * @param ver Obsolete version.
+         * @param swap If {@code true} then remove from swap.
+         * @param readers Flag to clear readers as well.
+         * @param filter Optional entry filter.
+         * @throws GridException If failed to remove from swap.
+         * @return {@code True} if entry was not being used, passed the filter and could be removed.
+         */
     public boolean clear(GridCacheVersion ver, boolean swap, boolean readers,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException;
 

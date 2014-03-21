@@ -28,6 +28,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
+import org.gridgain.grid.kernal.processors.cache.local.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
@@ -160,10 +161,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfg.getPreloadMode() == null)
             cfg.setPreloadMode(ASYNC);
 
-        if (cfg.getCacheMode() == PARTITIONED || cfg.getCacheMode() == REPLICATED) {
-            if (cfg.getAtomicityMode() == null)
-                cfg.setAtomicityMode(ATOMIC);
+        if (cfg.getAtomicityMode() == null)
+            cfg.setAtomicityMode(ATOMIC);
 
+        if (cfg.getCacheMode() == PARTITIONED || cfg.getCacheMode() == REPLICATED) {
             if (cfg.getDistributionMode() == null)
                 cfg.setDistributionMode(PARTITIONED_ONLY);
 
@@ -175,19 +176,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             assert cfg.getDistributionMode() != null;
         }
-        else {
+        else
             assert cfg.getCacheMode() == LOCAL;
-
-            if (cfg.getAtomicityMode() == null)
-                cfg.setAtomicityMode(TRANSACTIONAL);
-
-            if (cfg.getAtomicityMode() == ATOMIC) {
-                U.quietAndWarn(log, "Cache atomicity mode ATOMIC is not supported for LOCAL cache (ignoring) " +
-                    "[cacheName=" + cfg.getName() + ", cacheMode=" + cfg.getCacheMode() + ']');
-
-                cfg.setAtomicityMode(TRANSACTIONAL);
-            }
-        }
 
         if (cfg.getWriteSynchronizationMode() == null)
             cfg.setWriteSynchronizationMode(cfg.getCacheMode() == PARTITIONED ? PRIMARY_SYNC : FULL_ASYNC);
@@ -311,8 +301,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "cacheName=" + cc.getName() + ']');
             }
         }
-        else if (cc.getCacheMode() == LOCAL)
-            assert cc.getAtomicityMode() != ATOMIC : "Invalid configuration: " + cc;
 
         if (ctx.config().getDeploymentMode() == PRIVATE || ctx.config().getDeploymentMode() == ISOLATED)
             throw new GridException("Cannot start cache in PRIVATE or ISOLATED deployment mode: " +
@@ -663,7 +651,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             switch (cfg.getCacheMode()) {
                 case LOCAL: {
-                    cache = new GridLocalCache(cacheCtx);
+                    switch (cfg.getAtomicityMode()) {
+                        case TRANSACTIONAL: {
+                            cache = new GridLocalCache(cacheCtx);
+
+                            break;
+                        }
+                        case ATOMIC: {
+                            cache = new GridLocalAtomicCache(cacheCtx);
+
+                            break;
+                        }
+
+                        default: {
+                            assert false : "Invalid cache atomicity mode: " + cfg.getAtomicityMode();
+                        }
+                    }
 
                     break;
                 }
