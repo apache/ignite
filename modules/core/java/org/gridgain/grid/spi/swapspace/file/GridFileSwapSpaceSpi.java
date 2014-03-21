@@ -103,6 +103,12 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
     /** Default base directory. */
     public static final String DFLT_BASE_DIR = "work/swapspace";
 
+    /**
+     * Default directory name for SPI when {@code GRIDGAIN_HOME} not defined.
+     * This directory name relative to file path in {@code java.io.tmpdir} system property value.
+     */
+    private static final String DFLT_TMP_DIR = ".gg.file.ss";
+
     /** Default maximum sparsity. */
     public static final float DFLT_MAX_SPARSITY = 0.5f;
 
@@ -262,26 +268,14 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
         registerMBean(gridName, this, GridFileSwapSpaceSpiMBean.class);
 
-        dir = new File(baseDir + File.separator + gridName + File.separator + locNodeId);
+        String path = baseDir + File.separator + gridName + File.separator + locNodeId;
 
-        if (!dir.isAbsolute())
-            dir = new File(U.getGridGainHome(), dir.getPath());
-
-        if (dir.exists()) {
-            U.warn(log, "Swap directory already exists (will delete): " + dir.getAbsolutePath());
-
-            if (!U.delete(dir))
-                throw new GridSpiException("Failed to delete swap directory: " + dir.getAbsolutePath());
+        try {
+            dir = U.resolveWorkDirectory(path, DFLT_TMP_DIR, false, true);
         }
-
-        if (!U.mkdirs(dir))
-            throw new GridSpiException("Failed to create swap directory: " + dir.getAbsolutePath());
-
-        if (!dir.canRead())
-            throw new GridSpiException("Can't read from swap directory: " + dir.getAbsolutePath());
-
-        if (!dir.canWrite())
-            throw new GridSpiException("Can't write to swap directory: " + dir.getAbsolutePath());
+        catch (GridException e) {
+            throw new GridSpiException(e);
+        }
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
