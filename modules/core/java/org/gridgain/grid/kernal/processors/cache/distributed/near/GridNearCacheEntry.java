@@ -125,11 +125,12 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
                                 if (cctx.deferredDelete()) {
                                     boolean deleted = val == null && valBytes == null;
 
-                                    if (deleted != deletedUnlocked())
+                                    if (deleted != deletedUnlocked()) {
                                         deletedUnlocked(deleted);
 
-                                    if (deleted)
-                                        enqueueVer = e.version();
+                                        if (deleted)
+                                            enqueueVer = e.version();
+                                    }
                                 }
 
                                 recordNodeId(cctx.affinity().primary(key, topVer).id());
@@ -359,11 +360,12 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
                         if (cctx.deferredDelete()) {
                             boolean deleted = val == null && valBytes == null;
 
-                            if (deleted != deletedUnlocked())
+                            if (deleted != deletedUnlocked()) {
                                 deletedUnlocked(deleted);
 
-                            if (deleted)
-                                enqueueVer = ver;
+                                if (deleted)
+                                    enqueueVer = ver;
+                            }
                         }
 
                         recordDhtVersion(dhtVer);
