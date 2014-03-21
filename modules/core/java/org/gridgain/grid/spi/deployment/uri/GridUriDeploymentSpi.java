@@ -1045,19 +1045,12 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
 
         URI uri;
 
-        // GridGain home found.
-        if (getGridGainHome() != null && !getGridGainHome().isEmpty()) {
-            File dir = new File(getGridGainHome(), DFLT_DEPLOY_DIR);
-
-            if (!dir.exists() && !dir.mkdirs())
-                throw new GridSpiException("Failed to initialize default file scanner (folder doesn't exist): " + dir);
-
-            uri = dir.toURI();
+        try {
+            uri = U.resolveWorkDirectory(DFLT_DEPLOY_DIR, null, true, false).toURI();
         }
-        // Unknown GridGain home.
-        else
-            throw new GridSpiException("Failed to initialize default file scanner with unknown GRIDGAIN_HOME. " +
-                "Provide URI's explicitly for SPI or set system property GRIDGAIN_HOME.");
+        catch (GridException e) {
+            throw new GridSpiException("Failed to initialize default file scanner", e);
+        }
 
         uriEncodedList.add(uri);
     }

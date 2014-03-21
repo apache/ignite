@@ -74,7 +74,7 @@ public class GridCacheConfiguration {
     public static final GridCacheAtomicWriteOrderMode DFLT_ATOMIC_WRITE_ORDER_MODE = GridCacheAtomicWriteOrderMode.CLOCK;
 
     /** Default value for cache distribution mode. */
-    public static final GridCacheDistributionMode  DFLT_DISTRIBUTION_MODE = GridCacheDistributionMode.PARTITIONED_ONLY;
+    public static final GridCacheDistributionMode DFLT_DISTRIBUTION_MODE = GridCacheDistributionMode.PARTITIONED_ONLY;
 
     /** Default transaction timeout. */
     public static final long DFLT_TRANSACTION_TIMEOUT = 0;
