@@ -5430,8 +5430,9 @@ public abstract class GridUtils {
     }
 
     /**
-     * Replaces all occurrences of {@code org.gridgain.grid.} with {@code o.g.g.},
-     * {@code org.gridgain.visor.} with {@code o.g.v.}, and {@code org.gridgain.scalar.} with {@code o.g.s.}.
+     * Replaces all occurrences of {@code org.gridgain.} with {@code o.g.},
+     * {@code org.gridgain.grid.} with {@code o.g.g.}, {@code org.gridgain.visor.} with {@code o.g.v.} and
+     * {@code org.gridgain.scalar.} with {@code o.g.s.}.
      *
      * @param s String to replace in.
      * @return Replaces string.
@@ -5439,7 +5440,8 @@ public abstract class GridUtils {
     public static String compact(String s) {
         return s.replace("org.gridgain.grid.", "o.g.g.").
             replace("org.gridgain.visor.", "o.g.v.").
-            replace("org.gridgain.scalar.", "o.g.s.");
+            replace("org.gridgain.scalar.", "o.g.s.").
+            replace("org.gridgain.", "o.g.");
     }
 
     /**

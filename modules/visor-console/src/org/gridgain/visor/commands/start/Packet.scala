@@ -15,16 +15,6 @@ package org.gridgain.visor.commands
  * ==Overview==
  * Contains Visor command `start` implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.start.VisorStartCommand._
- * </ex>
- * Note that `VisorStartCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +-----------------------------------------------------+
@@ -35,8 +25,8 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor start "-f=<path> {-m=<num>} {-r}"
- *     visor start "-h=<hostname> {-p=<num>} {-u=<username>} {-pw=<password>} {-k=<path>}
+ *     start "-f=<path> {-m=<num>} {-r}"
+ *     start "-h=<hostname> {-p=<num>} {-u=<username>} {-pw=<password>} {-k=<path>}
  *         {-n=<num>} {-g=<path>} {-c=<path>} {-s=<path>} {-m=<num>} {-r}"
  * }}}
  *
@@ -83,11 +73,11 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor start "-h=10.1.1.10 -u=uname -pw=passwd -n=3"
+ *     start "-h=10.1.1.10 -u=uname -pw=passwd -n=3"
  *         Starts three nodes with default configuration (password authentication).
- *     visor start "-h=192.168.1.100~104 -u=uname -k=/home/uname/.ssh/is_rsa -n=5"
+ *     start "-h=192.168.1.100~104 -u=uname -k=/home/uname/.ssh/is_rsa -n=5"
  *         Starts 25 nodes on 5 hosts (5 nodes per host) with default configuration (key-based authentication).
- *     visor start "-f=start-nodes.ini -r"
+ *     start "-f=start-nodes.ini -r"
  *         Starts topology defined in 'start-nodes.ini' file. Existing nodes are stopped.
  * }}}
  */

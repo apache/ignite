@@ -117,7 +117,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         GridClosure[java.util.Map.Entry[K, V], java.util.Map.Entry[K, T]] = {
         new GridClosure[java.util.Map.Entry[K, V], java.util.Map.Entry[K, T]] {
             @impl def apply(e: java.util.Map.Entry[K, V]): java.util.Map.Entry[K, T] = {
-                F.t(e.getKey, trans(e.getValue))
+                new GridBiTuple[K, T](e.getKey, trans(e.getValue))
             }
         }
     }
