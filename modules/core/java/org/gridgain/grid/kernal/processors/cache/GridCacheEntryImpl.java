@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -105,15 +105,20 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     private GridBiTuple<GridCacheEntryEx<K, V>, Boolean> unwrapChecked(boolean create) {
         GridCacheEntryEx<K, V> cached = this.cached;
 
-        if (cached == null) {
-            long topVer = ctx.affinity().affinityTopologyVersion();
+        try {
+            if (cached == null) {
+                long topVer = ctx.affinity().affinityTopologyVersion();
 
-            this.cached = cached = create ? entryEx(false, topVer) : peekEx(topVer);
+                this.cached = cached = create ? entryEx(false, topVer) : peekEx(topVer);
 
-            return F.t(cached, create);
+                return F.t(cached, create);
+            }
+            else
+                return F.t(cached, false);
         }
-        else
-            return F.t(cached, false);
+        catch (GridDhtInvalidPartitionException ignore) {
+            return F.t(null, false);
+        }
     }
 
     /**
