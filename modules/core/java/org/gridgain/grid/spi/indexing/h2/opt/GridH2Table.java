@@ -105,6 +105,11 @@ public class GridH2Table extends TableBase {
         idxs.add(0, new ScanIndex((GridH2Index)idxs.get(0)));
     }
 
+    /** {@inheritDoc} */
+    @Override public long getDiskSpaceUsed() {
+        return 0;
+    }
+
     /**
      * @return Row descriptor.
      */
@@ -733,6 +738,11 @@ public class GridH2Table extends TableBase {
         }
 
         /** {@inheritDoc} */
+        @Override public long getDiskSpaceUsed() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
         @Override public void add(Session ses, Row row) {
             delegate.add(ses, row);
         }
@@ -798,7 +808,7 @@ public class GridH2Table extends TableBase {
         }
 
         /** {@inheritDoc} */
-        @Override public double getCost(Session ses, int[] masks) {
+        @Override public double getCost(Session ses, int[] masks, TableFilter tblFilter, SortOrder sortOrder) {
             return getRowCountApproximation() + Constants.COST_ROW_OFFSET;
         }
 

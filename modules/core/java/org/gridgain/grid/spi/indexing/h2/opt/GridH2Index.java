@@ -40,7 +40,7 @@ public class GridH2Index extends BaseIndex implements Comparator<GridSearchRowPo
     protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree;
 
     /** */
-    private ThreadLocal<ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row>> snapshot =
+    private final ThreadLocal<ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row>> snapshot =
         new ThreadLocal<>();
 
     /** */
@@ -73,7 +73,7 @@ public class GridH2Index extends BaseIndex implements Comparator<GridSearchRowPo
         IndexColumn.mapColumns(cols, tbl);
 
         initBaseIndex(tbl, 0, name, cols,
-            unique ? IndexType.createUnique(false, false) : IndexType.createNonUnique(false, false));
+            unique ? IndexType.createUnique(false, false) : IndexType.createNonUnique(false, false, false));
 
         this.keyCol = keyCol;
         this.valCol = valCol;
@@ -114,6 +114,11 @@ public class GridH2Index extends BaseIndex implements Comparator<GridSearchRowPo
                 return super.comparable(key);
             }
         };
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getDiskSpaceUsed() {
+        return 0;
     }
 
     /**
@@ -258,8 +263,8 @@ public class GridH2Index extends BaseIndex implements Comparator<GridSearchRowPo
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks) {
-        return getCostRangeIndex(masks, getRowCountApproximation());
+    @Override public double getCost(Session ses, int[] masks, TableFilter filter, SortOrder sortOrder) {
+        return getCostRangeIndex(masks, getRowCountApproximation(), filter, sortOrder);
     }
 
     /** {@inheritDoc} */

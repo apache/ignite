@@ -227,8 +227,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     private boolean longQryExplain;
 
     /** Cache for deserialized offheap rows. */
-    private CacheLongKeyLIRS<GridH2KeyValueRowOffheap> rowCache = CacheLongKeyLIRS.newInstance(
-        32 * 1024, 1, 128, 256);
+    private CacheLongKeyLIRS<GridH2KeyValueRowOffheap> rowCache = new CacheLongKeyLIRS(32 * 1024, 1, 128, 256);
 
     /** */
     private Map<String, GridH2IndexingSpaceConfiguration> spaceCfgs =
@@ -1809,7 +1808,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     public void setMaxOffheapRowsCacheSize(int size) {
         A.ensure(size >= 128, "Offheap rows cache size must be not less than 128.");
 
-        rowCache = CacheLongKeyLIRS.newInstance(size, 1, 128, 256);
+        rowCache = new CacheLongKeyLIRS(size, 1, 128, 256);
     }
 
     /** {@inheritDoc} */
