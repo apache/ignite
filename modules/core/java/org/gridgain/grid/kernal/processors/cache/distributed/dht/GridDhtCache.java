@@ -19,10 +19,10 @@ import java.io.*;
 /**
  * DHT cache.
  */
-public class GridDhtCache<K, V> extends GridDhtTxCacheAdapter<K, V> {
+public class GridDhtCache<K, V> extends GridDhtTransactionalCacheAdapter<K, V> {
     /** Near cache. */
     @GridToStringExclude
-    private GridTxNearCache<K, V> near;
+    private GridNearTransactionalCache<K, V> near;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -80,14 +80,14 @@ public class GridDhtCache<K, V> extends GridDhtTxCacheAdapter<K, V> {
     /**
      * @return Near cache.
      */
-    @Override public GridTxNearCache<K, V> near() {
+    @Override public GridNearTransactionalCache<K, V> near() {
         return near;
     }
 
     /**
      * @param near Near cache.
      */
-    public void near(GridTxNearCache<K, V> near) {
+    public void near(GridNearTransactionalCache<K, V> near) {
         this.near = near;
     }
 }

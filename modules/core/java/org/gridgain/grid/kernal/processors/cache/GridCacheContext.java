@@ -431,8 +431,8 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Transactional DHT cache.
      */
-    public GridDhtTxCacheAdapter<K, V> dhtTx() {
-        return (GridDhtTxCacheAdapter<K, V>)cache;
+    public GridDhtTransactionalCacheAdapter<K, V> dhtTx() {
+        return (GridDhtTransactionalCacheAdapter<K, V>)cache;
     }
 
     /**
@@ -445,15 +445,15 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Near cache.
      */
-    public GridNearCache<K, V> near() {
-        return (GridNearCache<K, V>)cache;
+    public GridNearCacheAdapter<K, V> near() {
+        return (GridNearCacheAdapter<K, V>)cache;
     }
 
     /**
      * @return Near cache for transactional mode.
      */
-    public GridTxNearCache<K, V> nearTx() {
-        return (GridTxNearCache<K, V>)cache;
+    public GridNearTransactionalCache<K, V> nearTx() {
+        return (GridNearTransactionalCache<K, V>)cache;
     }
 
     /**

@@ -31,18 +31,18 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 /**
  * Common logic for near caches.
  */
-public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K, V> {
+public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAdapter<K, V> {
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    protected GridNearCache() {
+    protected GridNearCacheAdapter() {
         // No-op.
     }
 
     /**
      * @param ctx Context.
      */
-    protected GridNearCache(GridCacheContext<K, V> ctx) {
+    protected GridNearCacheAdapter(GridCacheContext<K, V> ctx) {
         super(ctx, ctx.config().getNearStartSize());
     }
 
@@ -300,7 +300,7 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
     /** {@inheritDoc} */
     @Override protected int drBackupQueueSize() {
         // Delegate to DHT cache which is actually responsible for DR.
-        return dht.context().dr().backupQueueSize();
+        return dht().context().dr().backupQueueSize();
     }
 
     /**
@@ -689,7 +689,7 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
             return new EntryIterator(nearSet.iterator(),
                 F.iterator0(dhtSet, false, new P1<GridCacheEntry<K, V>>() {
                     @Override public boolean apply(GridCacheEntry<K, V> e) {
-                        return !GridNearCache.super.containsKey(e.getKey(), null);
+                        return !GridNearCacheAdapter.super.containsKey(e.getKey(), null);
                     }
                 }));
         }
@@ -756,7 +756,7 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
             currIter.remove();
 
             try {
-                GridNearCache.this.remove(currEntry.getKey(), CU.<K, V>empty());
+                GridNearCacheAdapter.this.remove(currEntry.getKey(), CU.<K, V>empty());
             }
             catch (GridException e) {
                 throw new GridRuntimeException(e);
@@ -766,6 +766,6 @@ public abstract class GridNearCache<K, V> extends GridDistributedCacheAdapter<K,
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearCache.class, this);
+        return S.toString(GridNearCacheAdapter.class, this);
     }
 }

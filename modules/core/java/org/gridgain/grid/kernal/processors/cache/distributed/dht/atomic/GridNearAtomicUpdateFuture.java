@@ -353,7 +353,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         if (!nearEnabled || !req.hasPrimary())
             return;
 
-        GridAtomicNearCache<K, V> near = (GridAtomicNearCache<K, V>)cctx.dht().near();
+        GridNearAtomicCache<K, V> near = (GridNearAtomicCache<K, V>)cctx.dht().near();
 
         near.processNearAtomicUpdateResponse(req, res);
     }

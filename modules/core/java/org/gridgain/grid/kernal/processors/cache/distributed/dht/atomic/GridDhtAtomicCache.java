@@ -69,7 +69,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private ConcurrentMap<UUID, DeferredResponseBuffer> pendingResponses = new ConcurrentHashMap8<>();
 
     /** */
-    private GridAtomicNearCache<K, V> near;
+    private GridNearAtomicCache<K, V> near;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -193,12 +193,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * @param near Near cache.
      */
-    public void near(GridAtomicNearCache<K, V> near) {
+    public void near(GridNearAtomicCache<K, V> near) {
         this.near = near;
     }
 
     /** {@inheritDoc} */
-    @Override public GridNearCache<K, V> near() {
+    @Override public GridNearCacheAdapter<K, V> near() {
         return near;
     }
 
@@ -1820,7 +1820,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
 
         if (isNearEnabled(cacheCfg))
-            ((GridAtomicNearCache<K, V>)near()).processDhtAtomicUpdateRequest(nodeId, req, res);
+            ((GridNearAtomicCache<K, V>)near()).processDhtAtomicUpdateRequest(nodeId, req, res);
 
         try {
             if (res.failedKeys() != null || res.nearEvicted() != null || req.writeSynchronizationMode() == FULL_SYNC)

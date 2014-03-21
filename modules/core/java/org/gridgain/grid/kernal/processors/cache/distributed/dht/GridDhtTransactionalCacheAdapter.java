@@ -35,18 +35,18 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 /**
  * Base class for transactional DHT caches.
  */
-public abstract class GridDhtTxCacheAdapter<K, V> extends GridDhtCacheAdapter<K, V> {
+public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * Empty constructor required for {@link java.io.Externalizable}.
      */
-    protected GridDhtTxCacheAdapter() {
+    protected GridDhtTransactionalCacheAdapter() {
         // No-op.
     }
 
     /**
      * @param ctx Context.
      */
-    protected GridDhtTxCacheAdapter(GridCacheContext<K, V> ctx) {
+    protected GridDhtTransactionalCacheAdapter(GridCacheContext<K, V> ctx) {
         super(ctx);
     }
 
@@ -56,7 +56,7 @@ public abstract class GridDhtTxCacheAdapter<K, V> extends GridDhtCacheAdapter<K,
      * @param ctx Cache context.
      * @param map Cache map.
      */
-    protected GridDhtTxCacheAdapter(GridCacheContext<K, V> ctx, GridCacheConcurrentMap<K, V> map) {
+    protected GridDhtTransactionalCacheAdapter(GridCacheContext<K, V> ctx, GridCacheConcurrentMap<K, V> map) {
         super(ctx, map);
     }
 
@@ -142,7 +142,7 @@ public abstract class GridDhtTxCacheAdapter<K, V> extends GridDhtCacheAdapter<K,
     }
 
     /** {@inheritDoc} */
-    @Override public abstract GridTxNearCache<K, V> near();
+    @Override public abstract GridNearTransactionalCache<K, V> near();
 
     /**
      * @param req Request.

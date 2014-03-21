@@ -33,7 +33,7 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 /**
  * Near cache for atomic cache.
  */
-public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
+public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     /** */
     private GridDhtCacheAdapter<K, V> dht;
 
@@ -43,14 +43,14 @@ public class GridAtomicNearCache<K, V> extends GridNearCache<K, V> {
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public GridAtomicNearCache() {
+    public GridNearAtomicCache() {
         // No-op.
     }
 
     /**
      * @param ctx Context.
      */
-    public GridAtomicNearCache(GridCacheContext<K, V> ctx) {
+    public GridNearAtomicCache(GridCacheContext<K, V> ctx) {
         super(ctx);
 
         int size = Integer.getInteger(GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE, 1_000_000);

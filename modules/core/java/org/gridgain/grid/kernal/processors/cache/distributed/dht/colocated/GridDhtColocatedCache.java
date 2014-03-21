@@ -33,7 +33,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 /**
  * Colocated cache.
  */
-public class GridDhtColocatedCache<K, V> extends GridDhtTxCacheAdapter<K, V> {
+public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapter<K, V> {
     /**
      * Empty constructor required for {@link Externalizable}
      */
@@ -355,7 +355,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTxCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridTxNearCache<K, V> near() {
+    @Override public GridNearTransactionalCache<K, V> near() {
         assert false : "Near cache is not available in colocated mode.";
 
         return null;

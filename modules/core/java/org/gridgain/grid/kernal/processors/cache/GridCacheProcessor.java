@@ -668,12 +668,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     if (isNearEnabled(cfg)) {
                         switch (cfg.getAtomicityMode()) {
                             case TRANSACTIONAL: {
-                                cache = new GridTxNearCache(cacheCtx);
+                                cache = new GridNearTransactionalCache(cacheCtx);
 
                                 break;
                             }
                             case ATOMIC: {
-                                cache = new GridAtomicNearCache(cacheCtx);
+                                cache = new GridNearAtomicCache(cacheCtx);
 
                                 break;
                             }
@@ -793,9 +793,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 switch (cfg.getAtomicityMode()) {
                     case TRANSACTIONAL: {
-                        assert cache instanceof GridTxNearCache;
+                        assert cache instanceof GridNearTransactionalCache;
 
-                        GridTxNearCache near = (GridTxNearCache)cache;
+                        GridNearTransactionalCache near = (GridNearTransactionalCache)cache;
 
                         GridDhtCache dhtCache = !isAffinityNode(cfg) ?
                             new GridDhtCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx)) :
@@ -810,9 +810,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         break;
                     }
                     case ATOMIC: {
-                        assert cache instanceof GridAtomicNearCache;
+                        assert cache instanceof GridNearAtomicCache;
 
-                        GridAtomicNearCache near = (GridAtomicNearCache)cache;
+                        GridNearAtomicCache near = (GridNearAtomicCache)cache;
 
                         GridDhtAtomicCache dhtCache = isAffinityNode(cfg) ? new GridDhtAtomicCache(cacheCtx) :
                             new GridDhtAtomicCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
@@ -1396,7 +1396,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert cache != null : "Failed to resolve cache name for swap space name: " + spaceName;
 
         GridCacheContext cctx = cache.configuration().getCacheMode() == PARTITIONED ?
-            ((GridNearCache<?, ?>)cache).dht().context() : cache.context();
+            ((GridNearCacheAdapter<?, ?>)cache).dht().context() : cache.context();
 
         if (spaceName.equals(CU.swapSpaceName(cctx))) {
             GridCacheQueryManager qryMgr = cctx.queries();

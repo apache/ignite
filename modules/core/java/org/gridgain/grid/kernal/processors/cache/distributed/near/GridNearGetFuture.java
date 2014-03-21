@@ -365,7 +365,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      */
     private Map<K, GridCacheVersion> map(K key, Map<GridNode, LinkedHashMap<K, Boolean>> mappings,
         long topVer, Map<GridNode, LinkedHashMap<K, Boolean>> mapped, Map<K, GridCacheVersion> savedVers) {
-        final GridNearCache<K, V> near = cache();
+        final GridNearCacheAdapter<K, V> near = cache();
 
         // Allow to get cached value from the local node.
         boolean allowLocRead = !forcePrimary || cctx.affinity().primary(cctx.localNode(), key, topVer);
@@ -493,8 +493,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     /**
      * @return Near cache.
      */
-    private GridNearCache<K, V> cache() {
-        return (GridNearCache<K, V>)cctx.cache();
+    private GridNearCacheAdapter<K, V> cache() {
+        return (GridNearCacheAdapter<K, V>)cctx.cache();
     }
 
     /**

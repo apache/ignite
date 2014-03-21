@@ -30,21 +30,21 @@ import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 /**
  * Near cache for transactional cache.
  */
-public class GridTxNearCache<K, V> extends GridNearCache<K, V> {
+public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V> {
     /** DHT cache. */
     private GridDhtCache<K, V> dht;
 
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public GridTxNearCache() {
+    public GridNearTransactionalCache() {
         // No-op.
     }
 
     /**
      * @param ctx Context.
      */
-    public GridTxNearCache(GridCacheContext<K, V> ctx) {
+    public GridNearTransactionalCache(GridCacheContext<K, V> ctx) {
         super(ctx);
     }
 
@@ -894,6 +894,6 @@ public class GridTxNearCache<K, V> extends GridNearCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTxNearCache.class, this);
+        return S.toString(GridNearTransactionalCache.class, this);
     }
 }
