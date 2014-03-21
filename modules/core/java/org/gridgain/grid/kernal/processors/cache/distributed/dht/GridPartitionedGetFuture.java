@@ -378,10 +378,16 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
                         // If our DHT cache do has value, then we peek it.
                         if (entry != null) {
-                            boolean isNew = entry.isNewLocked(topVer);
+                            boolean isNew = entry.isNewLocked();
 
-                            V v = entry.innerGet(tx, /*swap*/true, /*read-through*/false, /*fail-fast*/true,
-                                /*unmarshal*/true, /**update-metrics*/true, true, topVer, filters);
+                            V v = entry.innerGet(tx,
+                                /*swap*/true,
+                                /*read-through*/false,
+                                /*fail-fast*/true,
+                                /*unmarshal*/true,
+                                /**update-metrics*/true,
+                                /*event*/true,
+                                filters);
 
                             if (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))
                                 colocated.context().evicts().touch(entry, topVer);

@@ -227,7 +227,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @return {@code True} if entry is new.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public boolean isNew(long topVer) throws GridCacheEntryRemovedException;
+    public boolean isNew() throws GridCacheEntryRemovedException;
 
     /**
      * Checks if entry is new while holding lock.
@@ -235,7 +235,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @return {@code True} if entry is new.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public boolean isNewLocked(long topVer) throws GridCacheEntryRemovedException;
+    public boolean isNewLocked() throws GridCacheEntryRemovedException;
 
     /**
      * @param topVer Topology version where validation should be performed.
@@ -267,7 +267,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridCacheFilterFailedException If filter failed.
      */
     @Nullable public V innerGet(@Nullable GridCacheTxEx<K, V> tx, boolean readSwap, boolean readThrough,
-        boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt, long topVer,
+        boolean failFast, boolean unmarshal, boolean updateMetrics, boolean evt,
         GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException,
         GridCacheFilterFailedException;
 
@@ -280,7 +280,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     @Nullable
-    public V innerReload(long topVer, GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException,
+    public V innerReload(GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException,
         GridCacheEntryRemovedException;
 
     /**
@@ -394,7 +394,6 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         boolean metrics,
         boolean primary,
         boolean checkVer,
-        long topVer,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
         GridDrType drType,
         long drTtl,
@@ -579,7 +578,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public boolean initialValue(K key, long topVer, GridCacheSwapEntry<V> unswapped)
+    public boolean initialValue(K key, GridCacheSwapEntry<V> unswapped)
         throws GridException, GridCacheEntryRemovedException;
 
     /**

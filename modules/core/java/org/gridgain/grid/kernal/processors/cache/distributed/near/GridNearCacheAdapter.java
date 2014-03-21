@@ -136,10 +136,11 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /**
      * @param key Key.
+     * @param topVer Topology version.
      * @return Entry.
      */
-    public GridNearCacheEntry<K, V> entryExx(K key) {
-        return (GridNearCacheEntry<K, V>)entryEx(key);
+    public GridNearCacheEntry<K, V> entryExx(K key, long topVer) {
+        return (GridNearCacheEntry<K, V>)entryEx(key, topVer);
     }
 
     /**
@@ -357,6 +358,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Override public Set<GridCacheEntry<K, V>> primaryEntrySet(
         @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) {
+        final long topVer = ctx.affinity().affinityTopologyVersion();
+
         Collection<GridCacheEntry<K, V>> entries =
             F.flat(
                 F.viewReadOnly(
@@ -379,7 +382,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                     },
                     new P1<GridDhtLocalPartition<K, V>>() {
                         @Override public boolean apply(GridDhtLocalPartition<K, V> p) {
-                            return p.primary();
+                            return p.primary(topVer);
                         }
                     }));
 

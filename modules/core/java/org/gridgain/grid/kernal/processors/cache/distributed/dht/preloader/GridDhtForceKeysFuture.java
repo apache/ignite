@@ -272,7 +272,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         GridCacheEntryEx<K, V> e = cctx.dht().peekEx(key);
 
         try {
-            if (e != null && !e.isNewLocked(topVer)) {
+            if (e != null && !e.isNewLocked()) {
                 if (log.isDebugEnabled())
                     log.debug("Will not preload key (entry is not new) [cacheName=" + cctx.name() +
                         ", key=" + key + ", part=" + part + ", locId=" + cctx.nodeId() + ']');

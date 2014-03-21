@@ -267,7 +267,8 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             v = de.addMeta(name, val);
 
-        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) : near().entryExx(key);
+        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
+            near().entryExx(key, ctx.affinity().affinityTopologyVersion());
 
         if (ne != null) {
             V1 v1 = ne.addMeta(name, val);
@@ -288,7 +289,8 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             v = de.addMetaIfAbsent(name, c);
 
-        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) : near().entryExx(key);
+        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
+            near().entryExx(key, ctx.affinity().affinityTopologyVersion());
 
         if (ne != null) {
             V1 v1 = ne.addMetaIfAbsent(name, c);
@@ -309,7 +311,8 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             v = de.addMetaIfAbsent(name, val);
 
-        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) : near().entryExx(key);
+        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
+            near().entryExx(key, ctx.affinity().affinityTopologyVersion());
 
         if (ne != null) {
             V1 v1 = ne.addMetaIfAbsent(name, val);
@@ -413,7 +416,8 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             v = (V1)de.putMetaIfAbsent(name, c);
 
-        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) : near().entryExx(key);
+        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
+            near().entryExx(key, ctx.affinity().affinityTopologyVersion());
 
         if (ne != null) {
             V1 v1 = (V1)ne.putMetaIfAbsent(name, c);
@@ -435,7 +439,8 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             v = (V1)de.putMetaIfAbsent(name, val);
 
-        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) : near().entryExx(key);
+        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
+            near().entryExx(key, ctx.affinity().affinityTopologyVersion());
 
         if (ne != null) {
             V1 v1 = (V1)ne.putMetaIfAbsent(name, val);
@@ -510,7 +515,8 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             de.copyMeta(data);
 
-        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) : near().entryExx(key);
+        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
+            near().entryExx(key, ctx.affinity().affinityTopologyVersion());
 
         if (ne != null)
             ne.copyMeta(data);
@@ -523,7 +529,8 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         if (de != null)
             de.copyMeta(from);
 
-        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) : near().entryExx(key);
+        GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
+            near().entryExx(key, ctx.affinity().affinityTopologyVersion());
 
         if (ne != null)
             ne.copyMeta(from);

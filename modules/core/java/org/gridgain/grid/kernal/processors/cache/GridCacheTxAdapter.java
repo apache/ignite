@@ -1070,7 +1070,13 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         else {
             try {
                 V val = txEntry.hasValue() ? txEntry.value() :
-                    txEntry.cached().innerGet(this, false, false, true, true, metrics, false, topologyVersion(),
+                    txEntry.cached().innerGet(this,
+                        /*swap*/false,
+                        /*read through*/false,
+                        /*fail fast*/true,
+                        /*unmarshal*/true,
+                        /*metrics*/metrics,
+                        /*event*/false,
                         CU.<K, V>empty());
 
                 for (GridClosure<V, V> clos : txEntry.transformClosures())
@@ -1133,7 +1139,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
             if ((op == CREATE || op == UPDATE) && resVal == null)
                 op = DELETE;
             else if (op == DELETE && resVal != null)
-                op = old.isNewLocked(topologyVersion()) ? CREATE : UPDATE;
+                op = old.isNewLocked() ? CREATE : UPDATE;
         }
 
         return F.t(op, ctx);

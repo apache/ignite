@@ -258,10 +258,16 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                         // If our DHT cache do has value, then we peek it.
                         if (entry != null) {
-                            boolean isNew = entry.isNewLocked(topVer);
+                            boolean isNew = entry.isNewLocked();
 
-                            V v = entry.innerGet(null, /*swap*/true, /*read-through*/false, /*fail-fast*/true,
-                                /*unmarshal*/true, /**update-metrics*/true, true, topVer, filter);
+                            V v = entry.innerGet(null,
+                                /*swap*/true,
+                                /*read-through*/false,
+                                /*fail-fast*/true,
+                                /*unmarshal*/true,
+                                /**update-metrics*/true,
+                                /*event*/true,
+                                filter);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {

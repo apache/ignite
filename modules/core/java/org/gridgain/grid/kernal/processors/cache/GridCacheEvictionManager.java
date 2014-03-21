@@ -20,7 +20,6 @@ import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.GridUnsafe;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
@@ -116,7 +115,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
     private volatile boolean firstEvictWarn;
 
     /** Tx listener. */
-    private CI1<GridFuture<GridCacheTx>> txLsnr = new CI1<GridFuture<GridCacheTx>>() {
+    private GridInClosure<GridFuture<GridCacheTx>> txLsnr = new CI1<GridFuture<GridCacheTx>>() {
         @Override public void apply(GridFuture<GridCacheTx> t) {
             assert plcEnabled || memoryMode == OFFHEAP_TIERED;
 
@@ -779,8 +778,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             return;
 
         // Don't track non-primary entries if evicts are synchronized.
-        if (!cctx.isNear() && evictSync &&
-            !cctx.affinity().primary(cctx.localNode(), e.partition()))
+        if (!cctx.isNear() && evictSync && !cctx.affinity().primary(cctx.localNode(), e.partition(), topVer))
             return;
 
         if (!busyLock.enterBusy())

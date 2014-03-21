@@ -634,10 +634,10 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                             nearCached.updateOrEvict(xidVer, null, null, 0, 0, nodeId);
                                     }
                                     else if (op == RELOAD) {
-                                        V reloaded = cached.innerReload(topVer, CU.<K, V>empty());
+                                        V reloaded = cached.innerReload(CU.<K, V>empty());
 
                                         if (nearCached != null) {
-                                            nearCached.innerReload(topVer, CU.<K, V>empty());
+                                            nearCached.innerReload(CU.<K, V>empty());
 
                                             nearCached.updateOrEvict(cached.version(), reloaded, null,
                                                 cached.expireTime(), cached.ttl(), nodeId);

@@ -736,10 +736,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                                 null);
                                     }
                                     else if (op == RELOAD) {
-                                        cached.innerReload(topVer, CU.<K, V>empty());
+                                        cached.innerReload(CU.<K, V>empty());
 
                                         if (nearCached != null)
-                                            nearCached.innerReload(topVer, CU.<K, V>empty());
+                                            nearCached.innerReload(CU.<K, V>empty());
                                     }
                                     else if (op == READ) {
                                         assert near();
@@ -989,7 +989,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         while (true) {
                             try {
                                 val = txEntry.cached().innerGet(this, true, /*no read-through*/false, true, true, true,
-                                    true, topVer, filter);
+                                    true, filter);
 
                                 if (val != null) {
                                     if (!readCommitted())
@@ -1047,8 +1047,14 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                         if (!pessimistic() || readCommitted() || groupLock()) {
                             // This call will check for filter.
-                            val = entry.innerGet(this, true, /*no read-through*/false, true, true, true, true,
-                                topVer, filter);
+                            val = entry.innerGet(this,
+                                /*swap*/true,
+                                /*no read-through*/false,
+                                /*fail-fast*/true,
+                                /*unmarshal*/true,
+                                /*metrics*/true,
+                                /*event*/true,
+                                filter);
 
                             if (val != null)
                                 map.put(key, val);
@@ -1353,9 +1359,14 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 GridCacheEntryEx<K, V> cached = txEntry.cached();
 
                                 try {
-                                    V val = cached.innerGet(GridCacheTxLocalAdapter.this, swapEnabled,
-                                        /*read-through*/false, /*fail-fast*/true, /*unmarshal*/true,
-                                        /*metrics*/true, /*events*/true, topologyVersion(), filter);
+                                    V val = cached.innerGet(GridCacheTxLocalAdapter.this,
+                                        swapEnabled,
+                                        /*read-through*/false,
+                                        /*fail-fast*/true,
+                                        /*unmarshal*/true,
+                                        /*metrics*/true,
+                                        /*events*/true,
+                                        filter);
 
                                     // If value is in cache and passed the filter.
                                     if (val != null) {
@@ -1783,9 +1794,14 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             if (optimistic()) {
                                 try {
                                     //Should read through if filter is specified.
-                                    old = entry.innerGet(this, /*swap*/false, /*read-through*/readThrough,
-                                        /*fail-fast*/false, retval, /*metrics*/retval,
-                                        /*events*/retval, topologyVersion(), CU.<K, V>empty());
+                                    old = entry.innerGet(this,
+                                        /*swap*/false,
+                                        /*read-through*/readThrough,
+                                        /*fail-fast*/false,
+                                        retval,
+                                        /*metrics*/retval,
+                                        /*events*/retval,
+                                        CU.<K, V>empty());
                                 }
                                 catch (GridCacheFilterFailedException e) {
                                     e.printStackTrace();
@@ -1982,9 +1998,14 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             try {
                                 if (!hasPrevVal)
                                     // Entry should have been unswapped by now.
-                                    v = cached.innerGet(this, /*swap*/ false, /*read-through*/retval,
-                                         /*failFast*/false, /*unmarshal*/retval, /*metrics*/true, /*event*/!dht(),
-                                        topVer, CU.<K, V>empty());
+                                    v = cached.innerGet(this,
+                                        /*swap*/ false,
+                                        /*read-through*/retval,
+                                        /*failFast*/false,
+                                        /*unmarshal*/retval,
+                                        /*metrics*/true,
+                                        /*event*/!dht(),
+                                        CU.<K, V>empty());
                             }
                             catch (GridCacheFilterFailedException e) {
                                 e.printStackTrace();

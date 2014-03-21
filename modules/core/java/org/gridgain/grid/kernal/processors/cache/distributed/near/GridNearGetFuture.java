@@ -381,7 +381,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 // First we peek into near cache.
                 if (isNear)
                     v = entry.innerGet(tx, /*swap*/false, /*read-through*/false, /*fail-fast*/true, /*unmarshal*/true,
-                        true/*metrics*/, true/*events*/, topVer, filters);
+                        true/*metrics*/, true/*events*/, filters);
 
                 GridNode primary = null;
 
@@ -396,7 +396,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                             boolean isNew = entry.isNewLocked() || !entry.valid(topVer);
 
                             v = entry.innerGet(tx, /*swap*/true, /*read-through*/false, /*fail-fast*/true,
-                                /*unmarshal*/true, /*update-metrics*/false, !isNear, topVer, filters);
+                                /*unmarshal*/true, /*update-metrics*/false, !isNear, filters);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null && isNew && entry.markObsoleteIfEmpty(ver))
@@ -528,7 +528,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                     // Entries available locally in DHT should not be loaded into near cache for reading.
                     if (!cctx.cache().affinity().isPrimaryOrBackup(cctx.localNode(), info.key())) {
-                        GridNearCacheEntry<K, V> entry = cache().entryExx(info.key());
+                        GridNearCacheEntry<K, V> entry = cache().entryExx(info.key(), topVer);
 
                         GridCacheVersion saved = savedVers.get(info.key());
 
@@ -542,7 +542,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                             saved,
                             info.ttl(),
                             info.expireTime(),
-                            true);
+                            true,
+                            topVer);
                     }
                 }
                 catch (GridCacheEntryRemovedException ignore) {
