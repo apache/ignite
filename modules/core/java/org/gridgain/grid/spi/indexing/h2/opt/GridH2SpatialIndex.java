@@ -55,15 +55,11 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
      * @param tbl Table.
      * @param idxName Index name.
      * @param cols Columns.
-     * @param idxType Index type.
      * @param keyCol Key column.
      * @param valCol Value column.
      */
-    public GridH2SpatialIndex(Table tbl, String idxName, IndexColumn[] cols, IndexType idxType, int keyCol, int valCol) {
+    public GridH2SpatialIndex(Table tbl, String idxName, IndexColumn[] cols, int keyCol, int valCol) {
         super(keyCol, valCol);
-
-        if (idxType.isUnique())
-            throw DbException.getUnsupportedException("not unique");
 
         if (cols.length > 1)
             throw DbException.getUnsupportedException("can only do one column");
@@ -77,7 +73,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         if ((cols[0].sortType & SortOrder.NULLS_LAST) != 0)
             throw DbException.getUnsupportedException("cannot do nulls last");
 
-        initBaseIndex(tbl, 0, idxName, cols, idxType);
+        initBaseIndex(tbl, 0, idxName, cols, IndexType.createNonUnique(false, false, true));
 
         table = tbl;
 

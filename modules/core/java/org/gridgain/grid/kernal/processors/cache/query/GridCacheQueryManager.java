@@ -1390,7 +1390,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             GridIndexDescriptor desc = e.getValue();
 
                             // Add only SQL indexes.
-                            if (!desc.text()) {
+                            if (desc.type() == GridIndexType.SORTED) {
                                 Collection<String> idxFields = e.getValue().fields();
                                 Collection<String> descendings = new LinkedList<>();
 
@@ -1399,7 +1399,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                         descendings.add(idxField);
 
                                 indexesCol.add(new CacheSqlIndexMetadata(e.getKey().toUpperCase(),
-                                    idxFields, descendings, desc.unique()));
+                                    idxFields, descendings, false));
                             }
                         }
 

@@ -42,6 +42,8 @@ import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.gridgain.grid.spi.indexing.GridIndexType.*;
+import static org.gridgain.grid.spi.indexing.h2.opt.GridH2AbstractKeyValueRow.*;
 import static org.h2.result.SortOrder.*;
 
 /**
@@ -1927,7 +1929,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
             ArrayList<Index> idxs = new ArrayList<>();
 
-            idxs.add(new GridH2TreeIndex("_key_PK", tbl, true, GridH2AbstractKeyValueRow.KEY_COL, GridH2AbstractKeyValueRow.VAL_COL,
+            idxs.add(new GridH2TreeIndex("_key_PK", tbl, true, KEY_COL, VAL_COL,
                 offheap, tbl.indexColumn(0, ASCENDING)));
 
             if (type().valueClass() == String.class) {
@@ -1943,7 +1945,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
                 String name = e.getKey();
                 GridIndexDescriptor idx = e.getValue();
 
-                if (idx.text()) {
+                if (idx.type() == FULLTEXT) {
                     try {
                         luceneIdx = new GridLuceneIndex(marshaller, offheap, spaceName, type, true);
                     }
@@ -1962,8 +1964,12 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
                         cols[i++] = tbl.indexColumn(col.getColumnId(), idx.descending(field) ? DESCENDING : ASCENDING);
                     }
 
-                    idxs.add(new GridH2TreeIndex(name, tbl, idx.unique(), GridH2AbstractKeyValueRow.KEY_COL,
-                        GridH2AbstractKeyValueRow.VAL_COL, offheap, cols));
+                    if (idx.type() == SORTED)
+                        idxs.add(new GridH2TreeIndex(name, tbl, false, KEY_COL, VAL_COL, offheap, cols));
+                    else if (idx.type() == GEO_SPATIAL)
+                        idxs.add(new GridH2SpatialIndex(tbl, name, cols, KEY_COL, VAL_COL));
+                    else
+                        throw new IllegalStateException();
                 }
             }
 
