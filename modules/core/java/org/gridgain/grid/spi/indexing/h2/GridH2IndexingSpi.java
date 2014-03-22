@@ -28,7 +28,9 @@ import org.h2.constant.*;
 import org.h2.index.*;
 import org.h2.message.*;
 import org.h2.mvstore.cache.*;
+import org.h2.server.web.*;
 import org.h2.table.*;
+import org.h2.tools.*;
 import org.h2.util.*;
 import org.h2.value.*;
 import org.jdk8.backport.*;
@@ -1269,8 +1271,21 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             createSqlFunctions();
             runInitScript();
 
-            if (X.getSystemOrEnv(GridSystemProperties.GG_H2_DEBUG_CONSOLE) != null)
-                org.h2.tools.Console.main("-url", dbUrl);
+            if (X.getSystemOrEnv(GridSystemProperties.GG_H2_DEBUG_CONSOLE) != null) {
+                Connection c = DriverManager.getConnection(dbUrl);
+
+                WebServer webSrv = new WebServer();
+                Server web = new Server(webSrv, "-webPort", "0");
+                web.start();
+                String url = webSrv.addSession(c);
+
+                try {
+                    Server.openBrowser(url);
+                }
+                catch (Exception e) {
+                    U.warn(log, "Failed to open browser: " + e.getMessage());
+                }
+            }
         }
         catch (SQLException e) {
             throw new GridSpiException(e);
