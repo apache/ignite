@@ -33,10 +33,10 @@
  * SUCH DAMAGE.
  */
 
-package edu.stanford.ppl.concurrent;
+package org.gridgain.grid.util.snaptree;
 
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 /** Manages copy-on-write behavior for a concurrent tree structure.  It is
  *  assumed that the managed structure allows concurrent mutation, but that no

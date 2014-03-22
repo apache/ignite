@@ -412,7 +412,7 @@ object visor extends VisorTag {
             "open -cpath=/gg/config/mycfg.xml -g=mygrid" ->
                 "Connects visor to 'mygrid' grid using configuration from provided Spring file."
         ),
-        ref = VisorConsoleCommand(open, open(_, true))
+        ref = VisorConsoleCommand(open, open(_))
     )
 
     addHelp(
@@ -758,9 +758,8 @@ object visor extends VisorTag {
      */
     def getVariable(v: String): String = {
         v match {
-            case null => v
             case name if name.startsWith("@") => mgetOpt(name.substring(1)).getOrElse(v)
-            case name => mgetOpt(name).getOrElse(v)
+            case _ => v
         }
     }
 

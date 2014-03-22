@@ -15,16 +15,6 @@ package org.gridgain.visor.commands
  * ==Overview==
  * Contains Visor command `gc` implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.gc.VisorGcCommand._
- * </ex>
- * Note that `VisorGcCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +---------------------------------------------------------------------------+
@@ -36,8 +26,8 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor gc
- *     visor gc "{-id8=<node-id8>|-id=<node-id>} {-c}"
+ *     gc
+ *     gc "{-id8=<node-id8>|-id=<node-id>} {-c}"
  * }}}
  *
  * ====Arguments====
@@ -54,11 +44,11 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor gc "-id8=12345678"
+ *     gc "-id8=12345678"
  *         Runs garbage collector on specified node.
- *     visor gc
+ *     gc
  *         Runs garbage collector on all nodes in topology.
- *     visor gc "-id8=12345678 -c"
+ *     gc "-id8=12345678 -c"
  *         Runs garbage collector and DGC procedure on all caches.
  * }}}
  */

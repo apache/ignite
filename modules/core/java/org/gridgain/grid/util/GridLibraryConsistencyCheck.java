@@ -73,7 +73,6 @@ public class GridLibraryConsistencyCheck {
         "io.netty.channel.Channel",                                       // netty-all-XXX.jar
         "com.google.protobuf.ByteString",                                 // protobuf-java-XXX.jar
         "org.slf4j.LoggerFactory",                                        // slf4j-api-XXX.jar
-        "edu.stanford.ppl.concurrent.SnapTreeMap",                        // snaptree-gg-XXX.jar
         "org.springframework.aop.support.DefaultPointcutAdvisor",         // spring-aop-XXX.jar
         "org.springframework.beans.factory.ListableBeanFactory",          // spring-beans-XXX.jar
         "org.springframework.context.ApplicationContext",                 // spring-context-XXX.jar

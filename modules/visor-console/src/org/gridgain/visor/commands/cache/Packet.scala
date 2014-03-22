@@ -15,16 +15,6 @@ package org.gridgain.visor.commands
  * ==Overview==
  * Visor 'cache' command implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.cache.VisorCacheCommand._
- * </ex>
- * Note that `VisorCacheCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +--------------------------------------------------------------------------------+
@@ -42,9 +32,10 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor cache
- *     visor cache "-i {-n=<name>}"
- *     visor cache "{-n=<name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}"
+ *     cache
+ *     cache -i {-n=<name>}
+ *     cache {-n=<name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}
+ *     cache -n=<cache-name> -scan {-id=<node-id>|id8=<node-id8>} {-p=<page size>}
  * }}}
  *
  * ====Arguments====
@@ -78,19 +69,30 @@ package org.gridgain.visor.commands
  *     -a
  *         Prints details statistics about each cache.
  *         By default only aggregated summary is printed.
+ *     -p=<page size>
+ *         Number of object to fetch from cache at once.
+ *         Valid range from 1 to 100.
+ *         By default page size is 25.
  * }}}
  *
  * ====Examples====
  * {{{
- *     visor cache "-id8=12345678 -s=hi -r"
+ *     cache -id8=12345678 -s=hi -r
  *         Prints summary statistics about caches from node with specified id8
  *         sorted by number of hits in reverse order.
- *     visor cache "-i"
+ *     cache -i
  *         Prints cache statistics for interactively selected node.
- *     visor cache "-s=hi -r -a"
+ *     cache -s=hi -r -a
  *         Prints detailed statistics about all caches sorted by number of hits in reverse order.
- *     visor cache
+ *     cache
  *         Prints summary statistics about all caches.
+ *     cache -c=cache -scan
+ *         List entries from cache with name 'cache' from all nodes with this cache.
+ *     cache -c=@c0 -scan -p=50
+ *         List entries from cache with name taken from 'c0' memory variable
+ *         with page of 50 items from all nodes with this cache.
+ *     cache -c=cache -scan -id8=12345678
+ *         List entries from cache with name 'cache' and node '12345678' ID8.
  * }}}
  */
 package object cache
