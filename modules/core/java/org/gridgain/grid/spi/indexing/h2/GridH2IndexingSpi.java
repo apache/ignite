@@ -28,9 +28,7 @@ import org.h2.constant.*;
 import org.h2.index.*;
 import org.h2.message.*;
 import org.h2.mvstore.cache.*;
-import org.h2.result.*;
 import org.h2.table.*;
-import org.h2.tools.*;
 import org.h2.util.*;
 import org.h2.value.*;
 import org.jdk8.backport.*;
@@ -397,7 +395,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
      * @param tblToUpdate Table to update.
      * @throws GridSpiException In case of error.
      */
-    private <K, V> void removeKey(@Nullable String spaceName, GridIndexingEntity<K> k, TableDescriptor tblToUpdate)
+    private <K> void removeKey(@Nullable String spaceName, GridIndexingEntity<K> k, TableDescriptor tblToUpdate)
         throws GridSpiException {
         K key = k.value();
 
@@ -426,38 +424,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     }
 
     /**
-     * Binds additional fields to SQL statement.
-     *
-     * @param stmt SQL statement.
-     * @param startIdx Start index in prepared statement.
-     * @param key Key.
-     * @param val Value.
-     * @param tbl Table.
-     * @throws SQLException In case of SQL error.
-     * @throws GridSpiException In case of errors.
-     */
-    private void bindFields(PreparedStatement stmt, int startIdx, Object key, Object val, TableDescriptor tbl)
-        throws SQLException, GridSpiException {
-        int cnt = startIdx;
-
-        assert tbl != null;
-
-        GridIndexingTypeDescriptor t = tbl.type();
-
-        for (String prop : t.keyFields().keySet()) {
-            Object obj = t.value(key, prop);
-
-            bindObject(stmt, cnt++, obj);
-        }
-
-        for (String prop : t.valueFields().keySet()) {
-            Object obj = t.value(val, prop);
-
-            bindObject(stmt, cnt++, obj);
-        }
-    }
-
-    /**
      * Binds object to prepared statement.
      *
      * @param stmt SQL statement.
@@ -471,54 +437,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
             stmt.setNull(idx, Types.VARCHAR);
         else
             stmt.setObject(idx, obj);
-    }
-
-    /**
-     * Binds key to prepared statement.
-     *
-     * @param spaceName Space name.
-     * @param stmt SQL statement.
-     * @param idx Index.
-     * @param obj Value to store.
-     * @throws SQLException In case of errors.
-     */
-    private void bindKey(@Nullable String spaceName, PreparedStatement stmt, int idx, Object obj) throws SQLException {
-        if (!isIndexFixedTyping(spaceName))
-           stmt.setObject(idx, obj, Types.JAVA_OBJECT);
-        else
-            bindObject(stmt, idx, obj);
-    }
-
-    /**
-     * Binds object to prepared statement.
-     *
-     * @param stmt SQL statement.
-     * @param idx Index.
-     * @param val Value to store.
-     * @param tbl Table descriptor.
-     * @throws GridSpiException In case of errors.
-     */
-    private void bindValue(PreparedStatement stmt, int idx, Object val,
-        TableDescriptor tbl) throws GridSpiException {
-        assert stmt != null;
-        assert idx > 0;
-        assert val != null;
-        assert tbl != null;
-
-        try {
-            bindObject(stmt, idx, val);
-
-            idx++;
-
-            // Set value as string.
-            if (tbl.type().valueTextIndex())
-                stmt.setString(idx, val.toString());
-            else
-                stmt.setNull(idx, Types.BINARY);
-        }
-        catch (Exception e) {
-            throw new GridSpiException("Failed to bind value to prepared statement: " + val, e);
-        }
     }
 
     /**
@@ -958,7 +876,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
      * @param filters Filters.
      */
     private void setFilters(@Nullable GridIndexingQueryFilter<?, ?>[] filters) {
-        GridH2Index.setFiltersForThread(filters);
+        GridH2IndexBase.setFiltersForThread(filters);
     }
 
     /**
@@ -1936,45 +1854,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     }
 
     /**
-     * Class to store information about group index.
-     */
-    private static class IndexGroup {
-        /** */
-        private boolean unique;
-
-        /** */
-        private List<String> cols = new ArrayList<>();
-
-        /**
-         * @return {@code true} If index is unique.
-         */
-        boolean unique() {
-            return unique;
-        }
-
-        /**
-         * @param unique {@code true} If index is unique.
-         */
-        void unique(boolean unique) {
-            this.unique = unique;
-        }
-
-        /**
-         * @return List of columns.
-         */
-        List<String> columns() {
-            return cols;
-        }
-
-        /**
-         * @param cols List of columns.
-         */
-        void columns(List<String> cols) {
-            this.cols = cols;
-        }
-    }
-
-    /**
      * Information about table in database.
      */
     private class TableDescriptor implements GridH2Table.IndexesFactory {
@@ -2048,7 +1927,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
             ArrayList<Index> idxs = new ArrayList<>();
 
-            idxs.add(new GridH2Index("_key_PK", tbl, true, GridH2AbstractKeyValueRow.KEY_COL, GridH2AbstractKeyValueRow.VAL_COL,
+            idxs.add(new GridH2TreeIndex("_key_PK", tbl, true, GridH2AbstractKeyValueRow.KEY_COL, GridH2AbstractKeyValueRow.VAL_COL,
                 offheap, tbl.indexColumn(0, ASCENDING)));
 
             if (type().valueClass() == String.class) {
@@ -2080,11 +1959,10 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
                     for (String field : idx.fields()) {
                         Column col = tbl.getColumn(field.toUpperCase());
 
-                        cols[i++] = tbl.indexColumn(col.getColumnId(), idx.descending(field) ? SortOrder.DESCENDING :
-                            ASCENDING);
+                        cols[i++] = tbl.indexColumn(col.getColumnId(), idx.descending(field) ? DESCENDING : ASCENDING);
                     }
 
-                    idxs.add(new GridH2Index(name, tbl, idx.unique(), GridH2AbstractKeyValueRow.KEY_COL,
+                    idxs.add(new GridH2TreeIndex(name, tbl, idx.unique(), GridH2AbstractKeyValueRow.KEY_COL,
                         GridH2AbstractKeyValueRow.VAL_COL, offheap, cols));
                 }
             }
@@ -2159,7 +2037,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
          * @throws SQLException In case of SQL error.
          * @throws GridSpiException In case of error.
          */
-        @SuppressWarnings({"unchecked"})
         @Override protected GridIndexingKeyValueRow<K, V> loadRow()
             throws SQLException, GridSpiException, IOException {
             K key = (K)rs.getObject(KEY_FIELD_NAME);

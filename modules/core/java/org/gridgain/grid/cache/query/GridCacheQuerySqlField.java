@@ -30,14 +30,6 @@ public @interface GridCacheQuerySqlField {
     boolean index() default false;
 
     /**
-     * Specifies whether index should be unique or not. This property only
-     * makes sense if {@link #index()} property is set to {@code true}.
-     *
-     * @return {@code True} if field index should be unique.
-     */
-    boolean unique() default false;
-
-    /**
      * Specifies whether index should be in descending order or not. This property only
      * makes sense if {@link #index()} property is set to {@code true}.
      *

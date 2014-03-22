@@ -9,11 +9,16 @@
 
 package org.gridgain.grid.spi.indexing.h2.opt;
 
+import com.vividsolutions.jts.geom.*;
 import org.h2.engine.*;
 import org.h2.index.*;
+import org.h2.index.Cursor;
 import org.h2.message.*;
+import org.h2.mvstore.*;
+import org.h2.mvstore.rtree.*;
 import org.h2.result.*;
 import org.h2.table.*;
+import org.h2.value.*;
 
 import java.util.*;
 import java.util.concurrent.locks.*;
@@ -21,23 +26,164 @@ import java.util.concurrent.locks.*;
 /**
  * Spatial index.
  */
-public class GridH2SpatialIndex extends BaseIndex implements SpatialIndex {
+public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex {
     /** */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** */
-    private final SpatialIndex idx;
+    private volatile long rowCnt;
+
+    /** */
+    private long rowIds;
+
+    /** */
+    private boolean closed;
+
+    /** */
+    private final MVRTreeMap<Long> treeMap;
+
+    /** */
+    private final Map<Long, GridH2Row> idToRow = new HashMap<>();
+
+    /** */
+    private final Map<Value, Long> keyToId = new HashMap<>();
+
+    /** */
+    private final MVStore store;
 
     /**
-     * @param idx Spatial index.
+     * @param tbl Table.
+     * @param idxName Index name.
+     * @param cols Columns.
+     * @param idxType Index type.
+     * @param keyCol Key column.
+     * @param valCol Value column.
      */
-    public GridH2SpatialIndex(SpatialIndex idx) {
-        this.idx = idx;
+    public GridH2SpatialIndex(Table tbl, String idxName, IndexColumn[] cols, IndexType idxType, int keyCol, int valCol) {
+        super(keyCol, valCol);
+
+        if (idxType.isUnique())
+            throw DbException.getUnsupportedException("not unique");
+
+        if (cols.length > 1)
+            throw DbException.getUnsupportedException("can only do one column");
+
+        if ((cols[0].sortType & SortOrder.DESCENDING) != 0)
+            throw DbException.getUnsupportedException("cannot do descending");
+
+        if ((cols[0].sortType & SortOrder.NULLS_FIRST) != 0)
+            throw DbException.getUnsupportedException("cannot do nulls first");
+
+        if ((cols[0].sortType & SortOrder.NULLS_LAST) != 0)
+            throw DbException.getUnsupportedException("cannot do nulls last");
+
+        initBaseIndex(tbl, 0, idxName, cols, idxType);
+
+        table = tbl;
+
+        if (cols[0].column.getType() != Value.GEOMETRY) {
+            throw DbException.getUnsupportedException("spatial index on non-geometry column, " +
+                cols[0].column.getCreateSQL());
+        }
+
+        // Index in memory
+        store = MVStore.open(null);
+        treeMap = store.openMap("spatialIndex", new MVRTreeMap.Builder<Long>());
+    }
+
+    /**
+     * Check closed.
+     */
+    private void checkClosed() {
+        if (closed)
+            throw DbException.throwInternalError();
     }
 
     /** {@inheritDoc} */
-    @Override public void checkRename() {
-        throw DbException.getUnsupportedException("rename");
+    @Override public GridH2Row put(GridH2Row row, boolean ifAbsent) {
+        Lock l = lock.writeLock();
+
+        l.lock();
+
+        try {
+            checkClosed();
+
+            Value key = row.getValue(keyCol);
+
+            assert key != null;
+
+            Long rowId = keyToId.get(key);
+
+            if (rowId != null) {
+                Long oldRowId = treeMap.remove(getEnvelope(idToRow.get(rowId), rowId));
+
+                assert rowId.equals(oldRowId);
+            }
+            else {
+                rowId = ++rowIds;
+
+                keyToId.put(key, rowId);
+            }
+
+            GridH2Row old = idToRow.put(rowId, row);
+
+            treeMap.put(getEnvelope(row, rowId), rowId);
+
+            if (old == null)
+                rowCnt++; // No replace.
+
+            return old;
+        }
+        finally {
+            l.unlock();
+        }
+    }
+
+    /**
+     * @param row Row.
+     * @param rowId Row id.
+     * @return Envelope.
+     */
+    private SpatialKey getEnvelope(SearchRow row, long rowId) {
+        Value v = row.getValue(columnIds[0]);
+        Geometry g = ((ValueGeometry) v.convertTo(Value.GEOMETRY)).getGeometry();
+        Envelope env = g.getEnvelopeInternal();
+        return new SpatialKey(rowId,
+            (float) env.getMinX(), (float) env.getMaxX(),
+            (float) env.getMinY(), (float) env.getMaxY());
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridH2Row remove(SearchRow row) {
+        Lock l = lock.writeLock();
+
+        l.lock();
+
+        try {
+            checkClosed();
+
+            Value key = row.getValue(keyCol);
+
+            assert key != null;
+
+            Long rowId = keyToId.remove(key);
+
+            assert rowId != null;
+
+            GridH2Row oldRow = idToRow.remove(rowId);
+
+            assert oldRow != null;
+
+            if (!treeMap.remove(getEnvelope(row, rowId), rowId))
+                throw DbException.throwInternalError("row not found");
+
+            rowCnt--;
+
+            return oldRow;
+        }
+        finally {
+            l.unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -47,7 +193,9 @@ public class GridH2SpatialIndex extends BaseIndex implements SpatialIndex {
         l.lock();
 
         try {
-            idx.close(ses);
+            closed = true;
+
+            store.close();
         }
         finally {
             l.unlock();
@@ -55,108 +203,104 @@ public class GridH2SpatialIndex extends BaseIndex implements SpatialIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public void add(Session ses, Row row) {
-        throw DbException.getUnsupportedException("add");
+    @Override protected long getCostRangeIndex(int[] masks, long rowCnt, TableFilter filter, SortOrder sortOrder) {
+        rowCnt += Constants.COST_ROW_OFFSET;
+        long cost = rowCnt;
+        long rows = rowCnt;
+
+        if (masks == null)
+            return cost;
+
+        for (Column column : columns) {
+            int idx = column.getColumnId();
+            int mask = masks[idx];
+            if ((mask & IndexCondition.SPATIAL_INTERSECTS) != 0) {
+                cost = 3 + rows / 4;
+
+                break;
+            }
+        }
+
+        return cost;
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(Session ses, Row row) {
-        throw DbException.getUnsupportedException("remove row");
+    @Override public double getCost(Session ses, int[] masks, TableFilter filter, SortOrder sortOrder) {
+        return getCostRangeIndex(masks, rowCnt, filter, sortOrder);
     }
 
     /** {@inheritDoc} */
-    @Override public Cursor find(Session session, SearchRow first, SearchRow last) {
+    @Override public Cursor find(Session ses, SearchRow first, SearchRow last) {
         Lock l = lock.readLock();
 
         l.lock();
 
         try {
-            // TODO
+            checkClosed();
+
+            return new GridH2Cursor(rowIterator(treeMap.keySet().iterator()));
         }
         finally {
             l.unlock();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getCost(Session session, int[] masks, TableFilter filter, SortOrder sortOrder) {
-        Lock l = lock.readLock();
-
-        l.lock();
-
-        try {
-            // TODO
-        }
-        finally {
-            l.unlock();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void remove(Session ses) {
-        throw DbException.getUnsupportedException("remove index");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void truncate(Session ses) {
-        throw DbException.getUnsupportedException("truncate");
     }
 
     /** {@inheritDoc} */
     @Override public boolean canGetFirstOrLast() {
-        return idx.canGetFirstOrLast();
+        return true;
+    }
+
+    /**
+     * @param i Spatial key iterator.
+     * @return Iterator over rows.
+     */
+    private Iterator<GridH2Row> rowIterator(Iterator<SpatialKey> i) {
+        if (!i.hasNext())
+            return Collections.emptyIterator();
+
+        List<GridH2Row> rows = new ArrayList<>();
+
+        do {
+            GridH2Row row = idToRow.get(i.next().getId());
+
+            assert row != null;
+
+            rows.add(row);
+        }
+        while (i.hasNext());
+
+        return filter(rows.iterator());
     }
 
     /** {@inheritDoc} */
-    @Override public Cursor findFirstOrLast(Session session, boolean first) {
+    @Override public Cursor findFirstOrLast(Session ses, boolean first) {
         Lock l = lock.readLock();
 
         l.lock();
 
         try {
-            // TODO
+            checkClosed();
+
+            if (!first)
+                throw DbException.throwInternalError("Spatial Index can only be fetch by ascending order");
+
+            Iterator<GridH2Row> iter = rowIterator(treeMap.keySet().iterator());
+
+            return new SingleRowCursor(iter.hasNext() ? iter.next() : null);
         }
         finally {
             l.unlock();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean needRebuild() {
-        return false;
     }
 
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
-        Lock l = lock.readLock();
-
-        l.lock();
-
-        try {
-            // TODO
-        }
-        finally {
-            l.unlock();
-        }
+        return rowCnt;
     }
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation() {
-        Lock l = lock.readLock();
-
-        l.lock();
-
-        try {
-            // TODO
-        }
-        finally {
-            l.unlock();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getDiskSpaceUsed() {
-        return 0;
+        return rowCnt;
     }
 
     /** {@inheritDoc} */
@@ -166,57 +310,13 @@ public class GridH2SpatialIndex extends BaseIndex implements SpatialIndex {
         l.lock();
 
         try {
-            // TODO
+            if (intersection == null)
+                return find(filter.getSession(), null, null);
+
+            return new GridH2Cursor(rowIterator(treeMap.findIntersectingKeys(getEnvelope(intersection, 0))));
         }
         finally {
             l.unlock();
-        }
-    }
-
-    /**
-     * Cursor copying result before returning.
-     */
-    private static class CopyCursor implements Cursor {
-        /** */
-        private final List<Row> list;
-
-        /** */
-        private int row = -1;
-
-        /**
-         * @param c Cursor.
-         */
-        private CopyCursor(Cursor c) {
-            if (c.next()) {
-                list = new ArrayList<>();
-
-                list.add(c.get());
-
-                while (c.next())
-                    list.add(c.get());
-            }
-            else
-                list = Collections.emptyList();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Row get() {
-            return list.get(row);
-        }
-
-        /** {@inheritDoc} */
-        @Override public SearchRow getSearchRow() {
-            return list.;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean previous() {
-            return false;
         }
     }
 }

@@ -592,13 +592,13 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             GridCacheQueryGroupIndex grpIdx = cls.getAnnotation(GridCacheQueryGroupIndex.class);
 
             if (grpIdx != null)
-                type.addIndex(grpIdx.name(), grpIdx.unique());
+                type.addIndex(grpIdx.name(), false);
 
             GridCacheQueryGroupIndex.List grpIdxList = cls.getAnnotation(GridCacheQueryGroupIndex.List.class);
 
             if (grpIdxList != null && !F.isEmpty(grpIdxList.value())) {
                 for (GridCacheQueryGroupIndex idx : grpIdxList.value())
-                    type.addIndex(idx.name(), idx.unique());
+                    type.addIndex(idx.name(), false);
             }
         }
 
@@ -658,10 +658,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             if (!sqlAnn.name().isEmpty())
                 prop.name(sqlAnn.name());
 
-            if (sqlAnn.index() || sqlAnn.unique()) {
+            if (sqlAnn.index()) {
                 String idxName = prop.name() + "_idx";
 
-                desc.addIndex(idxName, sqlAnn.unique());
+                desc.addIndex(idxName, false);
 
                 desc.addFieldToIndex(idxName, prop.name(), 0, sqlAnn.descending());
             }
