@@ -965,7 +965,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @return Entry or <tt>null</tt>.
      */
     @Nullable public GridCacheEntryEx<K, V> peekEx(K key) {
-        return entry0(key, -1, false, false);
+        return entry0(key, ctx.affinity().affinityTopologyVersion(), false, false);
     }
 
     /**
@@ -982,7 +982,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @return Entry (never {@code null}).
      */
     public GridCacheEntryEx<K, V> entryEx(K key, boolean touch) {
-        GridCacheEntryEx<K, V> e = entry0(key, -1, true, touch);
+        GridCacheEntryEx<K, V> e = entry0(key, ctx.affinity().affinityTopologyVersion(), true, touch);
 
         assert e != null;
 
@@ -2899,16 +2899,16 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public GridCacheMetrics metrics() {
-        GridCacheMetricsAdapter copy = GridCacheMetricsAdapter.copyOf(metrics);
+        GridCacheMetricsAdapter cp = GridCacheMetricsAdapter.copyOf(metrics);
 
-        if (copy != null) {
-            GridDrSenderCacheMetricsAdapter drSndMetrics = copy.drSendMetrics0();
+        if (cp != null) {
+            GridDrSenderCacheMetricsAdapter drSndMetrics = cp.drSendMetrics0();
 
             if (drSndMetrics != null)
                 drSndMetrics.backupQueueSize(drBackupQueueSize());
         }
 
-        return copy;
+        return cp;
     }
 
     /**
