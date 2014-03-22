@@ -104,7 +104,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             try {
                 entry = (GridNearCacheEntry<K, V>)super.entryEx(key, touch);
 
-                entry.initializeFromDht(-1);
+                entry.initializeFromDht(ctx.affinity().affinityTopologyVersion());
 
                 return entry;
             }
