@@ -22,12 +22,9 @@ Combination of In-Memory File System 100% compatible with Hadoop HDFS and In-Mem
 ## Maven Install
 The easiest way to get started with GridGain in your project is to use Maven dependency management:
 
-```xml
-<repository>
-    <id>GridGain External Repository</id>
-    <url>http://www.gridgainsystems.com:8085/nexus/content/repositories/external</url>
-</repository>
-```
+### Platform Edition (includes everything)
+`Platform` edition includes all GridGain editions: `data grid`, `streaming`, and `hadoop accelerator`. This
+edition is required in order to compile and build GridGain source code.
 
 ```xml
 <dependency>
@@ -37,11 +34,42 @@ The easiest way to get started with GridGain in your project is to use Maven dep
 </dependency>
 ```
 
+### Data Grid Edition
+`Data Grid` edition includes all GridGain functionality except for `streaming` and `hadoop accelerator`.
+
+```xml
+<dependency>
+    <groupId>org.gridgain</groupId>
+    <artifactId>gridgain-datagrid</artifactId>
+    <version>${gridgain.version}</version>
+</dependency>
+```
+
+### Streaming Edition
+`Streaming` edition includes all GridGain functionality except for `data grid` and `hadoop accelerator`.
+
+```xml
+<dependency>
+    <groupId>org.gridgain</groupId>
+    <artifactId>gridgain-streaming</artifactId>
+    <version>${gridgain.version}</version>
+</dependency>
+```
+
+### Apache Hadoop Accelerator
+`Hadoop Accelerator` edition includes all GridGain functionality except for `data grid` and `streaming`.
+
+```xml
+<dependency>
+    <groupId>org.gridgain</groupId>
+    <artifactId>gridgain-hadoop</artifactId>
+    <version>${gridgain.version}</version>
+</dependency>
+```
+
 You can copy and paste this snippet into your Maven POM file. Make sure to replace version with the one you need.
 
-
 ## Binary Downloads & Documentation
-
 Grab the latest binary release and current documentation at [www.gridgain.org](http://www.gridgain.org)
 
 ## Issues
@@ -51,5 +79,4 @@ Use GitHub [issues](https://github.com/gridgain/gridgain/issues) to file bugs.
 GridGain is available under [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.html) license.
 
 ## Copyright
-
 Copyright (C) 2007-2014, GridGain Systems, Inc. All Rights Reserved.

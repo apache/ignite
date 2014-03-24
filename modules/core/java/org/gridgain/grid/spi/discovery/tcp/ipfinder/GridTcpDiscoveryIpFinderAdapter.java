@@ -22,6 +22,19 @@ public abstract class GridTcpDiscoveryIpFinderAdapter implements GridTcpDiscover
     /** Shared flag. */
     private boolean shared;
 
+    /** SPI context. */
+    private volatile GridSpiContext spiCtx;
+
+    /** {@inheritDoc} */
+    @Override public void onSpiContextInitialized(GridSpiContext spiCtx) throws GridSpiException {
+        this.spiCtx = spiCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onSpiContextDestroyed() {
+        // No-op.
+    }
+
     /** {@inheritDoc} */
     @Override public void initializeLocalAddresses(Collection<InetSocketAddress> addrs) throws GridSpiException {
         registerAddresses(addrs);
@@ -51,5 +64,12 @@ public abstract class GridTcpDiscoveryIpFinderAdapter implements GridTcpDiscover
     /** {@inheritDoc} */
     @Override public void close() {
         // No-op.
+    }
+
+    /**
+     * @return SPI context.
+     */
+    protected GridSpiContext spiContext() {
+        return spiCtx;
     }
 }

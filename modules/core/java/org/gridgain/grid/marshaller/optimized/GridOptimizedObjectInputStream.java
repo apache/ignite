@@ -10,9 +10,10 @@
 package org.gridgain.grid.marshaller.optimized;
 
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.io.*;
 import sun.misc.*;
 
 import java.io.*;
@@ -26,7 +27,7 @@ import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallerUtil
  */
 class GridOptimizedObjectInputStream extends ObjectInputStream {
     /** Unsafe. */
-    private static final Unsafe UNSAFE = org.jdk8.backport.GridUnsafe.unsafe();
+    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** Dummy object for HashSet. */
     private static final Object DUMMY = new Object();

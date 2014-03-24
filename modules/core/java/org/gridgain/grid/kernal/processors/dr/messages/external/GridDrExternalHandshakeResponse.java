@@ -12,77 +12,27 @@ package org.gridgain.grid.kernal.processors.dr.messages.external;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
-
 /**
  * Response which is sent by receiving hub as result of {@link GridDrExternalHandshakeRequest} processing.
  */
-public class GridDrExternalHandshakeResponse implements GridDrExternalProtocolVersionAware, Externalizable {
-    /** */
-    private String protoVer;
-
-    /** */
-    private String marshClsName;
-
-    /** */
-    private Throwable err;
+public class GridDrExternalHandshakeResponse {
+    /** Error message. */
+    private String errMsg;
 
     /**
-     * {@link Externalizable} support.
+     * Constructor.
+     *
+     * @param errMsg Error message.
      */
-    public GridDrExternalHandshakeResponse() {
-        // No-op.
+    public GridDrExternalHandshakeResponse(@Nullable String errMsg) {
+        this.errMsg = errMsg;
     }
 
     /**
-     * @param protoVer DR protocol version.
-     * @param marshClsName Marshaller class name.
-     * @param err Handshake error or {@code null} if handshake succeeded.
+     * @return Error message.
      */
-    public GridDrExternalHandshakeResponse(String protoVer, String marshClsName, @Nullable Throwable err) {
-        this.protoVer = protoVer;
-        this.marshClsName = marshClsName;
-        this.err = err;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String protocolVersion() {
-        return protoVer;
-    }
-
-    /**
-     * @param err Handshake error or {@code null} if handshake succeeded.
-     */
-    public void error(@Nullable Throwable err) {
-        this.err = err;
-    }
-
-    /**
-     * @return Handshake error or {@code null} if handshake succeeded.
-     */
-    @Nullable public Throwable error() {
-        return err;
-    }
-
-    /**
-     * @return Marshaller class name.
-     */
-    public String marshallerClassName() {
-        return marshClsName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, protoVer);
-        U.writeString(out, marshClsName);
-        out.writeObject(err);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        protoVer = U.readString(in);
-        marshClsName = U.readString(in);
-        err = (Throwable)in.readObject();
+    @Nullable public String errorMessage() {
+        return errMsg;
     }
 
     /** {@inheritDoc} */
