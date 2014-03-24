@@ -12,6 +12,7 @@ package org.gridgain.grid.marshaller.optimized;
 import com.beust.jcommander.internal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
+import org.jdk8.backport.*;
 import sun.misc.*;
 
 import java.io.*;

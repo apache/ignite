@@ -31,16 +31,6 @@ import visor._
  * ==Overview==
  * Visor 'events' commands implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.events.VisorEventsCommand._
- * </ex>
- * Note that `VisorEventsCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +----------------------------------------------------------------------------------------+
@@ -60,8 +50,8 @@ import visor._
  *
  * ====Specification====
  * {{{
- *     visor events
- *     visor events "{-id=<node-id>|-id8=<node-id8>} {-e=<ch,cp,de,di,jo,ta,cl,ca,sw>}
+ *     events
+ *     events "{-id=<node-id>|-id8=<node-id8>} {-e=<ch,cp,de,di,jo,ta,cl,ca,sw>}
  *         {-t=<num>s|m|h|d} {-s=e|t} {-r} {-c=<n>}"
  * }}}
  *
@@ -107,11 +97,11 @@ import visor._
  *
  * ====Examples====
  * {{{
- *     visor events "-id8=12345678"
+ *     events "-id8=12345678"
  *         Queries all events from node with '12345678' ID8.
- *     visor events "-id8=12345678 -e=di,ca"
+ *     events "-id8=12345678 -e=di,ca"
  *         Queries discovery and cache events from node with '12345678' ID8.
- *     visor events
+ *     events
  *         Starts command in interactive mode.
  * }}}
  */
@@ -197,7 +187,8 @@ class VisorEventsCommand {
                         nid = head.id
 
                         grid.forNode(head).compute()
-                            .execute(classOf[VisorConsoleCollectEventsTask], VisorConsoleCollectEventsTaskArgument(nid, typeArg, timeArg))
+                            .execute(classOf[VisorConsoleCollectEventsTask],
+                                VisorConsoleCollectEventsTaskArgs(nid, typeArg, timeArg))
                             .get match {
                                 case Left(res) => evts = res
 
@@ -225,7 +216,8 @@ class VisorEventsCommand {
                         nid = node.id
 
                         grid.forNode(node).compute()
-                            .execute(classOf[VisorConsoleCollectEventsTask], VisorConsoleCollectEventsTaskArgument(nid, typeArg, timeArg))
+                            .execute(classOf[VisorConsoleCollectEventsTask],
+                                VisorConsoleCollectEventsTaskArgs(nid, typeArg, timeArg))
                             .get match {
                                 case Left(res) => evts = res
 
@@ -390,18 +382,18 @@ private case class VisorEventData(
  * @param typeArg Arguments for type filter.
  * @param timeArg Arguments for time filter.
  */
-private case class VisorConsoleCollectEventsTaskArgument(
+private case class VisorConsoleCollectEventsTaskArgs(
     @impl nodeId: UUID,
     typeArg: Option[String],
     timeArg: Option[String]
-) extends VisorConsoleOneNodeArgument
+) extends VisorConsoleOneNodeTaskArgs
 
 /**
  * Task that runs on specified node and returns events data.
  */
 @GridInternal
 private class VisorConsoleCollectEventsTask
-    extends VisorConsoleOneNodeTask[VisorConsoleCollectEventsTaskArgument, Either[Array[VisorEventData], String]] {
+    extends VisorConsoleOneNodeTask[VisorConsoleCollectEventsTaskArgs, Either[Array[VisorEventData], String]] {
     /**
      * Creates predicate that filters events by type.
      *
@@ -496,7 +488,7 @@ private class VisorConsoleCollectEventsTask
         }
     }
 
-    protected def run(g: GridEx, arg: VisorConsoleCollectEventsTaskArgument): Either[Array[VisorEventData], String] = {
+    protected def run(g: GridEx, arg: VisorConsoleCollectEventsTaskArgs): Either[Array[VisorEventData], String] = {
         typeFilter(arg.typeArg) match {
             case Right(msg) => Right(msg)
 

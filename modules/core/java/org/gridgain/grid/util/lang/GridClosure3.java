@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 
 /**
@@ -32,7 +31,7 @@ import org.gridgain.grid.util.typedef.*;
  * @see C3
  * @see GridFunc
  */
-public abstract class GridClosure3<E1, E2, E3, R> {
+public interface GridClosure3<E1, E2, E3, R> {
     /**
      * Closure body.
      *
@@ -41,34 +40,5 @@ public abstract class GridClosure3<E1, E2, E3, R> {
      * @param e3 Third bound free variable, i.e. the element the closure is called or closed on.
      * @return Optional return value.
      */
-    public abstract R apply(E1 e1, E2 e2, E3 e3);
-
-    /**
-     * Gets closure that applies given closure over the result of {@code this} closure.
-     *
-     * @param c Closure.
-     * @param <A> Return type of new closure.
-     * @return New closure.
-     */
-    public <A> GridClosure3<E1, E2, E3, A> andThen(final GridClosure<R, A> c) {
-        return new GridClosure3<E1, E2, E3, A>() {
-            @Override public A apply(E1 e1, E2 e2, E3 e3) {
-                return c.apply(GridClosure3.this.apply(e1, e2, e3));
-            }
-        };
-    }
-
-    /**
-     * Gets closure that applies given closure over the result of {@code this} closure.
-     *
-     * @param c Closure.
-     * @return New closure.
-     */
-    public GridInClosure3<E1, E2, E3> andThen(final GridInClosure<R> c) {
-        return new GridInClosure3<E1, E2, E3>() {
-            @Override public void apply(E1 e1, E2 e2, E3 e3) {
-                c.apply(GridClosure3.this.apply(e1, e2, e3));
-            }
-        };
-    }
+    public R apply(E1 e1, E2 e2, E3 e3);
 }

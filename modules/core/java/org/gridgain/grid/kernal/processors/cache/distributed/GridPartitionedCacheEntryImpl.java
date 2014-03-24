@@ -61,7 +61,7 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
     /**
      * @return Near cache.
      */
-    public GridNearCache<K, V> near() {
+    public GridNearCacheAdapter<K, V> near() {
         return ctx.near();
     }
 

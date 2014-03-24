@@ -49,9 +49,6 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** Deployable object for Projection predicate. */
     private DeployableObject prjPredDep;
 
-    /** Stopped flag. */
-    private boolean stopped;
-
     /**
      * Required by {@link Externalizable}.
      */
@@ -110,14 +107,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
                 if (notify) {
                     if (loc) {
-                        boolean stop = false;
-
-                        synchronized (GridCacheContinuousQueryHandler.this) {
-                            if (!stopped)
-                                stop = stopped = !cb.apply(nodeId, F.<Map.Entry<K, V>>asList(e));
-                        }
-
-                        if (stop)
+                        if (!cb.apply(nodeId, F.<Map.Entry<K, V>>asList(e)))
                             ctx.continuous().stopRoutine(routineId);
                     }
                     else {
@@ -206,14 +196,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             }
         }
 
-        boolean stop = false;
-
-        synchronized (this) {
-            if (!stopped)
-                stop = stopped = !cb.apply(nodeId, entries);
-        }
-
-        if (stop)
+        if (!cb.apply(nodeId, entries))
             ctx.continuous().stopRoutine(routineId);
     }
 

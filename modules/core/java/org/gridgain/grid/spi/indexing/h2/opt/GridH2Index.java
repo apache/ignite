@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.spi.indexing.h2.opt;
 
-import edu.stanford.ppl.concurrent.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.snaptree.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.offheap.unsafe.*;

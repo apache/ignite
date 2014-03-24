@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -42,13 +43,14 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> GridFuture<List<T>> remoteQuery(GridPredicate<T> pe, long timeout) {
-        A.notNull(pe, "pe");
+    @Override public <T extends GridEvent> GridFuture<List<T>> remoteQuery(GridPredicate<T> p, long timeout,
+        @Nullable int... types) {
+        A.notNull(p, "p");
 
         guard();
 
         try {
-            return ctx.event().remoteEventsAsync(pe, prj.nodes(), timeout);
+            return ctx.event().remoteEventsAsync(compoundPredicate(p, types), prj.nodes(), timeout);
         }
         finally {
             unguard();
@@ -107,13 +109,13 @@ public class GridEventsImpl implements GridEvents {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends GridEvent> Collection<T> localQuery(GridPredicate<T> p) {
+    @Override public <T extends GridEvent> Collection<T> localQuery(GridPredicate<T> p, @Nullable int... types) {
         A.notNull(p, "p");
 
         guard();
 
         try {
-            return ctx.event().localEvents(p);
+            return ctx.event().localEvents(compoundPredicate(p, types));
         }
         finally {
             unguard();
@@ -207,5 +209,26 @@ public class GridEventsImpl implements GridEvents {
      */
     private void unguard() {
         ctx.gateway().readUnlock();
+    }
+
+    /**
+     * @param p Predicate.
+     * @param types Event types.
+     * @return Compound predicate.
+     */
+    private static <T extends GridEvent> GridPredicate<T> compoundPredicate(final GridPredicate<T> p,
+        @Nullable final int... types) {
+
+        return F.isEmpty(types) ? p :
+            new GridPredicate<T>() {
+                @Override public boolean apply(T t) {
+                    for (int type : types) {
+                        if (type == t.type())
+                            return p.apply(t);
+                    }
+
+                    return false;
+                }
+            };
     }
 }

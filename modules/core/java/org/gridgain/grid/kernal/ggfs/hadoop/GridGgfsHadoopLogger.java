@@ -11,8 +11,8 @@ package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 
 import java.io.*;
 import java.util.*;

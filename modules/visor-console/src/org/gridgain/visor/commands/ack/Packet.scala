@@ -15,16 +15,6 @@ package org.gridgain.visor.commands
  * ==Overview==
  * Visor 'ack' command implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to properly
- * import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.ack.VisorAckCommand._
- * </ex>
- * Note that `VisorAckCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +-------------------------------------------+
@@ -34,8 +24,8 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor ack {"s"}
- *     visor ack ("s", f)
+ *     ack {"s"}
+ *     ack ("s", f)
  * }}}
  *
  * ====Arguments====
@@ -48,11 +38,11 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor ack "Howdy!"
+ *     ack "Howdy!"
  *         Prints 'Howdy!' on all nodes in the topology.
- *     visor ack("Howdy!", _.id8.startsWith("123"))
+ *     ack("Howdy!", _.id8.startsWith("123"))
  *         Prints 'Howdy!' on all nodes satisfying this predicate.
- *     visor ack
+ *     ack
  *         Prints local node ID on all nodes in the topology.
  * }}}
  */

@@ -15,16 +15,6 @@ package org.gridgain.visor.commands
  * ==Overview==
  * Visor 'tasks' command implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.tasks.VisorTasksCommand._
- * </ex>
- * Note that `VisorTasksCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +---------------------------------------------------------------------------------------+
@@ -44,13 +34,13 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor tasks
- *     visor tasks "-l {-t=<num>s|m|h|d} {-r}"
- *     visor tasks "-s=<substring> {-t=<num>s|m|h|d} {-r}"
- *     visor tasks "-g {-t=<num>s|m|h|d} {-r}"
- *     visor tasks "-h {-t=<num>s|m|h|d} {-r}"
- *     visor tasks "-n=<task-name> {-r}"
- *     visor tasks "-e=<exec-id>"
+ *     tasks
+ *     tasks "-l {-t=<num>s|m|h|d} {-r}"
+ *     tasks "-s=<substring> {-t=<num>s|m|h|d} {-r}"
+ *     tasks "-g {-t=<num>s|m|h|d} {-r}"
+ *     tasks "-h {-t=<num>s|m|h|d} {-r}"
+ *     tasks "-n=<task-name> {-r}"
+ *     tasks "-e=<exec-id>"
  * }}}
  *
  * ====Arguments====
@@ -93,28 +83,28 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor tasks "-l"
+ *     tasks "-l"
  *         Prints list of all tasks and executions for the last hour (default).
- *     visor tasks
+ *     tasks
  *         Prints list of all tasks and executions for the last hour (default).
- *     visor tasks "-l -t=5m"
+ *     tasks "-l -t=5m"
  *         Prints list of tasks and executions that started during last 5 minutes.
- *     visor tasks "-s=Task"
+ *     tasks "-s=Task"
  *         Prints list of all tasks and executions that have 'Task' in task name.
- *     visor tasks "-g"
+ *     tasks "-g"
  *         Prints list of tasks grouped by nodes.
- *     visor tasks "-g -t=5m"
+ *     tasks "-g -t=5m"
  *         Prints list of tasks that started during last 5 minutes grouped by nodes.
- *     visor tasks "-h"
+ *     tasks "-h"
  *         Prints list of tasks grouped by hosts.
- *     visor tasks "-h -t=5m"
+ *     tasks "-h -t=5m"
  *         Prints list of tasks that started during last 5 minutes grouped by hosts.
- *     visor tasks "-n=GridTask"
+ *     tasks "-n=GridTask"
  *         Prints summary for task named 'GridTask'.
- *     visor tasks "-e=7D5CB773-225C-4165-8162-3BB67337894B"
+ *     tasks "-e=7D5CB773-225C-4165-8162-3BB67337894B"
  *         Traces task execution with ID '7D5CB773-225C-4165-8162-3BB67337894B'.
- *     visor tasks "-e=@e1"
- *         Traces task execution with ID taken from 's1' memory variable.
+ *     tasks "-e=@e1"
+ *         Traces task execution with ID taken from 'e1' memory variable.
  * }}}
  */
 package object tasks

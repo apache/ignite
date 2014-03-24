@@ -18,12 +18,12 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -331,7 +331,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     private void undoLocks(boolean dist) {
         // Transactions will undo during rollback.
         if (dist && tx == null)
-            cctx.near().removeLocks(lockVer, keys);
+            cctx.nearTx().removeLocks(lockVer, keys);
         else {
             if (tx != null) {
                 if (tx.setRollbackOnly()) {
@@ -1151,8 +1151,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     /**
      * @return DHT cache.
      */
-    private GridDhtCache<K, V> dht() {
-        return cctx.near().dht();
+    private GridDhtTransactionalCacheAdapter<K, V> dht() {
+        return cctx.nearTx().dht();
     }
 
     /**
