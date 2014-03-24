@@ -15,16 +15,6 @@ package org.gridgain.visor.commands
  * ==Overview==
  * Visor 'ccompact' command implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to properly
- * import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.ccompact.VisorCacheCompactCommand._
- * </ex>
- * Note that `VisorCacheCompactCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +--------------------------------------------------------+
@@ -34,8 +24,8 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor ccompact
- *     visor ccompact "<cache-name>"
+ *     ccompact
+ *     ccompact -c=<cache-name>
  * }}}
  *
  * ====Arguments====
@@ -47,9 +37,9 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor ccompact
+ *     ccompact
  *         Compacts entries in default cache.
- *     visor ccompact "cache"
+ *     ccompact -c=cache
  *         Compacts entries in cache with name 'cache'.
  * }}}
  */

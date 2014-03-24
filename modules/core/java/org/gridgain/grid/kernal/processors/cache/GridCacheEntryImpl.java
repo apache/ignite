@@ -683,7 +683,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
                 // Delegate to near if dht.
                 if (e.isDht() && isNearEnabled(ctx)) {
-                    GridNearCache<K, V> near = ctx.isDht() ? ctx.dht().near() : ctx.near();
+                    GridCache<K, V> near = ctx.isDht() ? ctx.dht().near() : ctx.near();
 
                     return near.isLockedByThread(key) || e.lockedByThread();
                 }

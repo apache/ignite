@@ -25,6 +25,7 @@ import java.net.*;
 import java.util.*;
 
 import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.spi.GridPortProtocol.*;
 
 /**
  * Multicast-based IP finder.
@@ -234,6 +235,13 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
 
         if (!res.isEmpty())
             registerAddresses(res);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onSpiContextInitialized(GridSpiContext spiCtx) throws GridSpiException {
+        super.onSpiContextInitialized(spiCtx);
+
+        spiCtx.registerPort(mcastPort, UDP);
     }
 
     /**
