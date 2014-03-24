@@ -56,10 +56,10 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     private volatile int txRollbacks;
 
     /** DR send data node metrics. */
-    private GridCacheDrSenderMetricsAdapter drSndMetrics;
+    private GridDrSenderCacheMetricsAdapter drSndMetrics;
 
     /** DR receive data node metrics. */
-    private GridCacheDrReceiverMetricsAdapter drRcvMetrics;
+    private GridDrReceiverCacheMetricsAdapter drRcvMetrics;
 
     /** Cache metrics. */
     @GridToStringExclude
@@ -80,10 +80,10 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         this();
 
         if (isDrSndCache)
-            drSndMetrics = new GridCacheDrSenderMetricsAdapter();
+            drSndMetrics = new GridDrSenderCacheMetricsAdapter();
 
         if (isDrRcvCache)
-            drRcvMetrics = new GridCacheDrReceiverMetricsAdapter();
+            drRcvMetrics = new GridDrReceiverCacheMetricsAdapter();
     }
 
     /**
@@ -175,11 +175,25 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         return drSndMetrics;
     }
 
+    /**
+     * @return DR sender cache metrics adapter.
+     */
+    @Nullable GridDrSenderCacheMetricsAdapter drSendMetrics0() {
+        return drSndMetrics;
+    }
+
     /** {@inheritDoc} */
     @Override public GridDrReceiverCacheMetrics drReceiveMetrics() {
         if (drRcvMetrics == null)
             throw new IllegalStateException("Data center replication is not configured.");
 
+        return drRcvMetrics;
+    }
+
+    /**
+     * @return DR receiver cache metrics adapter.
+     */
+    @Nullable GridDrReceiverCacheMetricsAdapter drReceiveMetrics0() {
         return drRcvMetrics;
     }
 
@@ -284,18 +298,6 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     }
 
     /**
-     * Callback for backup queue size changed.
-     *
-     * @param newSize New size of sender cache backup queue.
-     */
-    public void onSenderCacheBackupQueueSizeChanged(int newSize) {
-        drSndMetrics.onBackupQueueSizeChanged(newSize);
-
-        if (delegate != null)
-            delegate.onSenderCacheBackupQueueSizeChanged(newSize);
-    }
-
-    /**
      * Callback for replication pause state changed.
      *
      * @param pauseReason Pause reason or {@code null} if replication is not paused.
@@ -362,6 +364,9 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         out.writeInt(misses);
         out.writeInt(txCommits);
         out.writeInt(txRollbacks);
+
+        out.writeObject(drSndMetrics);
+        out.writeObject(drRcvMetrics);
     }
 
     /** {@inheritDoc} */
@@ -378,6 +383,9 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         misses = in.readInt();
         txCommits = in.readInt();
         txRollbacks = in.readInt();
+
+        drSndMetrics = (GridDrSenderCacheMetricsAdapter)in.readObject();
+        drRcvMetrics = (GridDrReceiverCacheMetricsAdapter)in.readObject();
     }
 
     /** {@inheritDoc} */

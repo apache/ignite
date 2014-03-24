@@ -59,9 +59,6 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     /** Listener. */
     private GridLocalEventListener lsnr;
 
-    /** Stopped flag. */
-    private boolean stopped;
-
     /**
      * Required by {@link Externalizable}.
      */
@@ -100,14 +97,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             @Override public void onEvent(GridEvent evt) {
                 if (filter == null || filter.apply(evt)) {
                     if (loc) {
-                        boolean stop = false;
-
-                        synchronized (GridEventConsumeHandler.this) {
-                            if (!stopped)
-                                stop = stopped = !cb.apply(nodeId, evt);
-                        }
-
-                        if (stop)
+                        if (!cb.apply(nodeId, evt))
                             ctx.continuous().stopRoutine(routineId);
                     }
                     else {
@@ -213,21 +203,11 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                 }
             }
 
-            boolean stop = false;
-            boolean breakLoop;
-
-            synchronized (this) {
-                if (!stopped)
-                    stop = stopped = !cb.apply(nodeId, wrapper.evt);
-
-                breakLoop = stopped;
-            }
-
-            if (stop)
+            if (!cb.apply(nodeId, wrapper.evt)) {
                 ctx.continuous().stopRoutine(routineId);
 
-            if (breakLoop)
                 break;
+            }
         }
     }
 

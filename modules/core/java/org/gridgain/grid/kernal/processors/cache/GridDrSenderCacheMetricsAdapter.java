@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.dr.cache.sender.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -19,7 +19,7 @@ import java.io.*;
 /**
  * Adapter for DR send data node metrics.
  */
-class GridCacheDrSenderMetricsAdapter implements GridDrSenderCacheMetrics, Externalizable {
+class GridDrSenderCacheMetricsAdapter implements GridDrSenderCacheMetrics, Externalizable {
     /** Number of sent batches. */
     private LongAdder batchesSent = new LongAdder();
 
@@ -47,14 +47,14 @@ class GridCacheDrSenderMetricsAdapter implements GridDrSenderCacheMetrics, Exter
     /**
      * No-args constructor.
      */
-    public GridCacheDrSenderMetricsAdapter() {
+    public GridDrSenderCacheMetricsAdapter() {
         // No-op.
     }
 
     /**
      * @param m Metrics to copy from.
      */
-    GridCacheDrSenderMetricsAdapter(GridDrSenderCacheMetrics m) {
+    GridDrSenderCacheMetricsAdapter(GridDrSenderCacheMetrics m) {
         batchesSent.add(m.batchesSent());
         entriesSent.add(m.entriesSent());
         entriesFiltered.add(m.entriesFiltered());
@@ -146,10 +146,10 @@ class GridCacheDrSenderMetricsAdapter implements GridDrSenderCacheMetrics, Exter
     /**
      * Callback for backup queue size changed.
      *
-     * @param newSize New size of sender cache backup queue.
+     * @param backupQueueSize Size of sender cache backup queue.
      */
-    public void onBackupQueueSizeChanged(int newSize) {
-        backupQueueSize = newSize;
+    public void backupQueueSize(int backupQueueSize) {
+        this.backupQueueSize = backupQueueSize;
     }
 
     /**
@@ -170,11 +170,11 @@ class GridCacheDrSenderMetricsAdapter implements GridDrSenderCacheMetrics, Exter
      * @param m Metrics to copy from.
      * @return Copy of given metrics.
      */
-    @Nullable public static GridCacheDrSenderMetricsAdapter copyOf(@Nullable GridDrSenderCacheMetrics m) {
+    @Nullable public static GridDrSenderCacheMetricsAdapter copyOf(@Nullable GridDrSenderCacheMetrics m) {
         if (m == null)
             return null;
 
-        return new GridCacheDrSenderMetricsAdapter(m);
+        return new GridDrSenderCacheMetricsAdapter(m);
     }
 
     /** {@inheritDoc} */
@@ -203,6 +203,6 @@ class GridCacheDrSenderMetricsAdapter implements GridDrSenderCacheMetrics, Exter
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheDrSenderMetricsAdapter.class, this);
+        return S.toString(GridDrSenderCacheMetricsAdapter.class, this);
     }
 }

@@ -285,12 +285,12 @@ void clientDataExample(TGridClientPtr& client) {
 
     TGridClientComputePtr compPrj = clientCompute->projection(*p);
 
-    GridClientVariant rslt = compPrj->affinityExecute("org.gridgain.examples.client.api.GridClientExampleTask", CACHE_NAME, key0);
+    GridClientVariant rslt = compPrj->affinityExecute("org.gridgain.examples.misc.client.api.ClientExampleTask", CACHE_NAME, key0);
 
     cout << ">>> Affinity execute : there are totally " << rslt.toString() << " test entries on the grid" <<
             endl;
 
-    futVal = compPrj->affinityExecuteAsync("org.gridgain.examples.client.api.GridClientExampleTask", CACHE_NAME, key0);
+    futVal = compPrj->affinityExecuteAsync("org.gridgain.examples.misc.client.api.ClientExampleTask", CACHE_NAME, key0);
 
     cout << ">>> Affinity execute async : there are totally " << futVal->get().toString() <<
         " test entries on the grid" << endl;
