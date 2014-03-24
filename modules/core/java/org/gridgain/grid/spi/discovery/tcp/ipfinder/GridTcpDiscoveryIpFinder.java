@@ -20,6 +20,22 @@ import java.util.*;
  */
 public interface GridTcpDiscoveryIpFinder {
     /**
+     * Callback invoked when SPI context is initialized after {@link GridTcpDiscoverySpi#spiStart(String)}
+     * method is completed, SPI context can be stored for future access.
+     *
+     * @param spiCtx Spi context.
+     * @throws GridSpiException In case of error.
+     */
+    public void onSpiContextInitialized(GridSpiContext spiCtx) throws GridSpiException;
+
+    /**
+     * Callback invoked prior to stopping grid before SPI context is destroyed.
+     * Note that invoking SPI context after this callback is complete is considered
+     * illegal and may produce unknown results.
+     */
+    public void onSpiContextDestroyed();
+
+    /**
      * Initializes addresses discovery SPI binds to.
      *
      * @param addrs Addresses discovery SPI binds to.

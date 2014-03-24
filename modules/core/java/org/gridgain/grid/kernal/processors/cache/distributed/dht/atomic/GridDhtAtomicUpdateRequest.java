@@ -78,6 +78,26 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /** Time to live. */
     private long ttl;
 
+    /** Keys to update. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private List<K> nearKeys;
+
+    /** Key bytes. */
+    @GridToStringInclude
+    @GridDirectCollection(byte[].class)
+    private List<byte[]> nearKeyBytes;
+
+    /** Values to update. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private List<V> nearVals;
+
+    /** Value bytes. */
+    @GridToStringInclude
+    @GridDirectCollection(GridCacheValueBytes.class)
+    private List<GridCacheValueBytes> nearValBytes;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -169,6 +189,26 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         }
     }
 
+    /**
+     * @param key Key to add.
+     * @param keyBytes Key bytes, if key was already serialized.
+     * @param val Value, {@code null} if should be removed.
+     * @param valBytes Value bytes, {@code null} if should be removed.
+     */
+    public void addNearWriteValue(K key, @Nullable byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes) {
+        if (nearKeys == null) {
+            nearKeys = new ArrayList<>();
+            nearKeyBytes = new ArrayList<>();
+            nearVals = new ArrayList<>();
+            nearValBytes = new ArrayList<>();
+        }
+
+        nearKeys.add(key);
+        nearKeyBytes.add(keyBytes);
+        nearVals.add(val);
+        nearValBytes.add(valBytes != null ? GridCacheValueBytes.marshaled(valBytes) : null);
+    }
+
     /** {@inheritDoc} */
     @Override public int lookupIndex() {
         return CACHE_MSG_IDX;
@@ -186,6 +226,13 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      */
     public int size() {
         return keys.size();
+    }
+
+    /**
+     * @return Keys size.
+     */
+    public int nearSize() {
+        return nearKeys != null ? nearKeys.size() : 0;
     }
 
     /**
@@ -239,11 +286,27 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     }
 
     /**
+     * @param idx Near key index.
+     * @return Key.
+     */
+    public K nearKey(int idx) {
+        return nearKeys.get(idx);
+    }
+
+    /**
      * @param idx Key index.
      * @return Key bytes.
      */
-    public byte[] keyBytes(int idx) {
+    @Nullable public byte[] keyBytes(int idx) {
         return keyBytes == null ? null : keyBytes.get(idx);
+    }
+
+    /**
+     * @param idx Near key index.
+     * @return Key bytes.
+     */
+    @Nullable public byte[] nearKeyBytes(int idx) {
+        return nearKeyBytes == null ? null : nearKeyBytes.get(idx);
     }
 
     /**
@@ -269,12 +332,49 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     }
 
     /**
+     * @param idx Near key index.
+     * @return Value.
+     */
+    @Nullable public V nearValue(int idx) {
+        if (nearVals != null) {
+            V val = nearVals.get(idx);
+
+            if (val != null)
+                return val;
+        }
+
+        if (nearValBytes != null) {
+            GridCacheValueBytes valBytes0 = nearValBytes.get(idx);
+
+            if (valBytes0 != null && valBytes0.isPlain())
+                return (V)valBytes0.get();
+        }
+
+        return null;
+    }
+
+    /**
      * @param idx Key index.
      * @return Value bytes.
      */
     @Nullable public byte[] valueBytes(int idx) {
         if (valBytes != null) {
             GridCacheValueBytes valBytes0 = valBytes.get(idx);
+
+            if (valBytes0 != null && !valBytes0.isPlain())
+                return valBytes0.get();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param idx Near key index.
+     * @return Value bytes.
+     */
+    @Nullable public byte[] nearValueBytes(int idx) {
+        if (nearValBytes != null) {
+            GridCacheValueBytes valBytes0 = nearValBytes.get(idx);
 
             if (valBytes0 != null && !valBytes0.isPlain())
                 return valBytes0.get();
@@ -352,6 +452,8 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
         keyBytes = marshalCollection(keys, ctx);
         valBytes = marshalValuesCollection(vals, ctx);
+        nearKeyBytes = marshalCollection(nearKeys, ctx);
+        nearValBytes = marshalValuesCollection(nearVals, ctx);
     }
 
     /** {@inheritDoc} */
@@ -360,6 +462,8 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
         keys = unmarshalCollection(keyBytes, ctx, ldr);
         vals = unmarshalValueBytesCollection(valBytes, ctx, ldr);
+        nearKeys = unmarshalCollection(nearKeyBytes, ctx, ldr);
+        nearVals = unmarshalValueBytesCollection(nearValBytes, ctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -391,6 +495,10 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         _clone.drExpireTimes = drExpireTimes;
         _clone.syncMode = syncMode;
         _clone.ttl = ttl;
+        _clone.nearKeys = nearKeys;
+        _clone.nearKeyBytes = nearKeyBytes;
+        _clone.nearVals = nearVals;
+        _clone.nearValBytes = nearValBytes;
     }
 
     /** {@inheritDoc} */
@@ -482,30 +590,84 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 7:
+                if (nearKeyBytes != null) {
+                    if (commState.it == null) {
+                        if (!commState.putInt(nearKeyBytes.size()))
+                            return false;
+
+                        commState.it = nearKeyBytes.iterator();
+                    }
+
+                    while (commState.it.hasNext() || commState.cur != NULL) {
+                        if (commState.cur == NULL)
+                            commState.cur = commState.it.next();
+
+                        if (!commState.putByteArray((byte[])commState.cur))
+                            return false;
+
+                        commState.cur = NULL;
+                    }
+
+                    commState.it = null;
+                } else {
+                    if (!commState.putInt(-1))
+                        return false;
+                }
+
+                commState.idx++;
+
+            case 8:
+                if (nearValBytes != null) {
+                    if (commState.it == null) {
+                        if (!commState.putInt(nearValBytes.size()))
+                            return false;
+
+                        commState.it = nearValBytes.iterator();
+                    }
+
+                    while (commState.it.hasNext() || commState.cur != NULL) {
+                        if (commState.cur == NULL)
+                            commState.cur = commState.it.next();
+
+                        if (!commState.putValueBytes((GridCacheValueBytes)commState.cur))
+                            return false;
+
+                        commState.cur = NULL;
+                    }
+
+                    commState.it = null;
+                } else {
+                    if (!commState.putInt(-1))
+                        return false;
+                }
+
+                commState.idx++;
+
+            case 9:
                 if (!commState.putUuid(nodeId))
                     return false;
 
                 commState.idx++;
 
-            case 8:
+            case 10:
                 if (!commState.putEnum(syncMode))
                     return false;
 
                 commState.idx++;
 
-            case 9:
+            case 11:
                 if (!commState.putLong(topVer))
                     return false;
 
                 commState.idx++;
 
-            case 10:
+            case 12:
                 if (!commState.putLong(ttl))
                     return false;
 
                 commState.idx++;
 
-            case 11:
+            case 13:
                 if (valBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(valBytes.size()))
@@ -532,7 +694,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
                 commState.idx++;
 
-            case 12:
+            case 14:
                 if (!commState.putCacheVersion(writeVer))
                     return false;
 
@@ -641,6 +803,64 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 7:
+                if (commState.readSize == -1) {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.readSize = commState.getInt();
+                }
+
+                if (commState.readSize >= 0) {
+                    if (nearKeyBytes == null)
+                        nearKeyBytes = new ArrayList<>(commState.readSize);
+
+                    for (int i = commState.readItems; i < commState.readSize; i++) {
+                        byte[] _val = commState.getByteArray();
+
+                        if (_val == BYTE_ARR_NOT_READ)
+                            return false;
+
+                        nearKeyBytes.add((byte[])_val);
+
+                        commState.readItems++;
+                    }
+                }
+
+                commState.readSize = -1;
+                commState.readItems = 0;
+
+                commState.idx++;
+
+            case 8:
+                if (commState.readSize == -1) {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.readSize = commState.getInt();
+                }
+
+                if (commState.readSize >= 0) {
+                    if (nearValBytes == null)
+                        nearValBytes = new ArrayList<>(commState.readSize);
+
+                    for (int i = commState.readItems; i < commState.readSize; i++) {
+                        GridCacheValueBytes _val = commState.getValueBytes();
+
+                        if (_val == VAL_BYTES_NOT_READ)
+                            return false;
+
+                        nearValBytes.add((GridCacheValueBytes)_val);
+
+                        commState.readItems++;
+                    }
+                }
+
+                commState.readSize = -1;
+                commState.readItems = 0;
+
+                commState.idx++;
+
+            case 9:
                 UUID nodeId0 = commState.getUuid();
 
                 if (nodeId0 == UUID_NOT_READ)
@@ -650,7 +870,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
                 commState.idx++;
 
-            case 8:
+            case 10:
                 Object syncMode0 = commState.getEnum(GridCacheWriteSynchronizationMode.class);
 
                 if (syncMode0 == ENUM_NOT_READ)
@@ -660,7 +880,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
                 commState.idx++;
 
-            case 9:
+            case 11:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -668,7 +888,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
                 commState.idx++;
 
-            case 10:
+            case 12:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -676,7 +896,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
                 commState.idx++;
 
-            case 11:
+            case 13:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -705,7 +925,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
                 commState.idx++;
 
-            case 12:
+            case 14:
                 GridCacheVersion writeVer0 = commState.getCacheVersion();
 
                 if (writeVer0 == CACHE_VER_NOT_READ)
