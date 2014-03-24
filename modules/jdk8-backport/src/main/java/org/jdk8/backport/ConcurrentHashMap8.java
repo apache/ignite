@@ -34,7 +34,7 @@
  */
 
 /*
- * Copyright © 1993, 2013, Oracle and/or its affiliates.
+ * Copyright &copy; 1993, 2013, Oracle and/or its affiliates.
  * All rights reserved.
  */
 

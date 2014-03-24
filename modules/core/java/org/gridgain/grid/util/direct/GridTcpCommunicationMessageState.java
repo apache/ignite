@@ -32,7 +32,7 @@ import static org.gridgain.grid.util.direct.GridTcpCommunicationMessageAdapter.*
 @SuppressWarnings("PublicField")
 public class GridTcpCommunicationMessageState {
     /** */
-    private static final Unsafe UNSAFE = org.jdk8.backport.GridUnsafe.unsafe();
+    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
     private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);

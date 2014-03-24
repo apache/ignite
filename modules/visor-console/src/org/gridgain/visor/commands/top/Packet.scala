@@ -15,16 +15,6 @@ package org.gridgain.visor.commands
  * ==Overview==
  * Contains Visor command `top` implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.top.VisorTopologyCommand._
- * </ex>
- * Note that `VisorTopologyCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +--------------------------------+
@@ -34,7 +24,7 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor top "{-c1=e1<num> -c2=e2<num> ... -ck=ek<num>} {-h=<host1> ... -h=<hostk>} {-a}"
+ *     top "{-c1=e1<num> -c2=e2<num> ... -ck=ek<num>} {-h=<host1> ... -h=<hostk>} {-a}"
  * }}}
  *
  * ====Arguments====
@@ -78,13 +68,13 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor top "-cc=eq2"
+ *     top "-cc=eq2"
  *         Prints topology for all nodes with two CPUs.
- *     visor top "-cc=eq2 -a"
+ *     top "-cc=eq2 -a"
  *         Prints full information for all nodes with two CPUs.
- *     visor top "-h=10.34.2.122 -h=10.65.3.11"
+ *     top "-h=10.34.2.122 -h=10.65.3.11"
  *         Prints topology for provided hosts.
- *     visor top
+ *     top
  *         Prints full topology.
  * }}}
  */

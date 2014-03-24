@@ -188,16 +188,6 @@ private class LicenseUpdater(oldLicId: UUID, newLicLines: List[String]) extends 
  * ==Overview==
  * Contains Visor command `license` implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.license.VisorLicenseCommand._
- * </ex>
- * Note that `VisorLicenseCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +---------------------------------------------------------------------------+

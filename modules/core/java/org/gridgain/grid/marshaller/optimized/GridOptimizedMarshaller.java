@@ -12,8 +12,8 @@ package org.gridgain.grid.marshaller.optimized;
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
@@ -375,7 +375,7 @@ public class GridOptimizedMarshaller extends GridAbstractMarshaller {
     @SuppressWarnings({"TypeParameterExtendsFinalClass", "ErrorNotRethrown"})
     public static boolean available() {
         try {
-            Unsafe unsafe = org.jdk8.backport.GridUnsafe.unsafe();
+            Unsafe unsafe = GridUnsafe.unsafe();
 
             Class<? extends Unsafe> unsafeCls = unsafe.getClass();
 
