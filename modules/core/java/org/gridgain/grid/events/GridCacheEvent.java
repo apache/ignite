@@ -15,8 +15,6 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
 /**
  * In-memory database (cache) event.
  * <p>
@@ -101,9 +99,9 @@ public class GridCacheEvent extends GridEventAdapter {
     @GridToStringInclude
     private final boolean hasNewVal;
 
-    /** Event node ID. */
+    /** Event node. */
     @GridToStringExclude
-    private final UUID evtNodeId;
+    private final GridNode evtNode;
 
     /** Flag indicating whether event happened on {@code near} or {@code partitioned} cache. */
     @GridToStringInclude
@@ -114,7 +112,7 @@ public class GridCacheEvent extends GridEventAdapter {
      *
      * @param cacheName Cache name.
      * @param node Local node.
-     * @param evtNodeId Event node ID.
+     * @param evtNode Event node ID.
      * @param msg Event message.
      * @param type Event type.
      * @param part Partition for the event (usually the partition the key belongs to).
@@ -129,12 +127,12 @@ public class GridCacheEvent extends GridEventAdapter {
      * @param hasOldVal Flag indicating whether old value is present in case if we
      *      don't have it in deserialized form.
      */
-    public GridCacheEvent(String cacheName, GridNode node, UUID evtNodeId, String msg, int type, int part,
+    public GridCacheEvent(String cacheName, GridNode node, GridNode evtNode, String msg, int type, int part,
         boolean near, Object key, GridUuid xid, Object lockId, Object newVal, boolean hasNewVal,
         Object oldVal, boolean hasOldVal) {
         super(node, msg, type);
         this.cacheName = cacheName;
-        this.evtNodeId = evtNodeId;
+        this.evtNode = evtNode;
         this.part = part;
         this.near = near;
         this.key = key;
@@ -174,12 +172,12 @@ public class GridCacheEvent extends GridEventAdapter {
     }
 
     /**
-     * Gets ID of the node which initiated cache operation.
+     * Gets node which initiated cache operation.
      *
-     * @return ID of the node which initiated cache operation.
+     * @return Node which initiated cache operation.
      */
-    public UUID eventNodeId() {
-        return evtNodeId;
+    public GridNode eventNode() {
+        return evtNode;
     }
 
     /**
@@ -262,7 +260,7 @@ public class GridCacheEvent extends GridEventAdapter {
     @Override public String toString() {
         return S.toString(GridCacheEvent.class, this,
             "nodeId8", U.id8(node().id()),
-            "evtNodeId8", U.id8(evtNodeId),
+            "evtNodeId8", U.id8(evtNode.id()),
             "msg", message(),
             "type", name(),
             "tstamp", timestamp());

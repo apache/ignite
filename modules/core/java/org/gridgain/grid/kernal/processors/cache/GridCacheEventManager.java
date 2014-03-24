@@ -13,11 +13,14 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.gridgain.grid.events.GridEventType.*;
 
@@ -124,10 +127,39 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
         if (!cctx.events().isRecordable(type))
             LT.warn(log, null, "Added event without checking if event is recordable: " + U.gridEventName(type));
 
+        GridNode evtNode = cctx.discovery().node(evtNodeId);
+
+        if (evtNode == null)
+            evtNode = findNodeInHistory(evtNodeId);
+
+        if (evtNode == null)
+            evtNode = new GridFakeNode(evtNodeId);
+
         // Events are not made for internal entry.
         if (!(key instanceof GridCacheInternal))
-            cctx.gridEvents().record(new GridCacheEvent(cctx.name(), cctx.localNode(), evtNodeId,
+            cctx.gridEvents().record(new GridCacheEvent(cctx.name(), cctx.localNode(), evtNode,
                 "Cache event.", type, part, cctx.isNear(), key, xid, lockId, newVal, hasNewVal, oldVal, hasOldVal));
+    }
+
+    /**
+     * Tries to find node in history by specified ID.
+     *
+     * @param nodeId Node ID.
+     * @return Found node or {@code null} if history doesn't contain this node.
+     */
+    @Nullable private GridNode findNodeInHistory(UUID nodeId) {
+        long topVer = cctx.discovery().topologyVersion();
+
+        while (true) {
+            Collection<GridNode> top = cctx.discovery().topology(--topVer);
+
+            if (top == null)
+                return null;
+
+            for (GridNode node : top)
+                if (F.eq(node.id(), nodeId))
+                    return node;
+        }
     }
 
     /**
@@ -179,5 +211,160 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
         X.println(">>> ");
         X.println(">>> Cache event manager memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() +
             ", stats=" + "N/A" + ']');
+    }
+
+    /** Fake implementation of {@code GridNode} interface that wraps only information about node ID. */
+    private static final class GridFakeNode implements GridNode, Externalizable {
+        /** Node ID */
+        private UUID id;
+
+        /**
+         * Public default no-arg constructor for {@link Externalizable} interface.
+         */
+        public GridFakeNode() {
+            // No-op.
+        }
+
+        /**
+         * @param id Node ID.
+         */
+        GridFakeNode(UUID id) {
+            this.id = id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public UUID id() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object consistentId() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <T> T attribute(String name) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridNodeMetrics metrics() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Object> attributes() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<String> addresses() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<String> hostNames() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long order() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridProductVersion version() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isLocal() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isDaemon() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void copyMeta(GridMetadataAware from) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void copyMeta(Map<String, ?> data) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <V> V addMeta(String name, V val) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <V> V putMetaIfAbsent(String name, V val) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <V> V putMetaIfAbsent(String name, Callable<V> c) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> V addMetaIfAbsent(String name, V val) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <V> V addMetaIfAbsent(String name, @Nullable Callable<V> c) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> V meta(String name) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> V removeMeta(String name) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> boolean removeMeta(String name, V val) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> Map<String, V> allMeta() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasMeta(String name) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> boolean hasMeta(String name, V val) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <V> boolean replaceMeta(String name, V curVal, V newVal) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeUuid(out, id);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException {
+            id = U.readUuid(in);
+        }
     }
 }
