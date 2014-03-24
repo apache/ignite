@@ -1224,7 +1224,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             else {
                                 assert txEntry != null;
 
-                                if (set || F.isEmpty(filter)) {
+                                if (set || F.isEmptyOrNulls(filter)) {
                                     txEntry.setAndMarkValid(val);
 
                                     if (pass && visibleVal != null)
@@ -1769,7 +1769,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                             V old = null;
 
-                            boolean readThrough = !F.isEmpty(filter) && !F.isAlwaysTrue(filter);
+                            boolean readThrough = !F.isEmptyOrNulls(filter) && !F.isAlwaysTrue(filter);
 
                             if (optimistic()) {
                                 try {
@@ -2591,7 +2591,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @throws GridException If transaction failed.
      */
     protected void checkValid(GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
-        if (optimistic() && !cctx.config().isBatchUpdateOnCommit() && !F.isEmpty(filter))
+        if (optimistic() && !cctx.config().isBatchUpdateOnCommit() && !F.isEmptyOrNulls(filter))
             throw new GridException("Operations that receive non-empty predicate filters cannot be used for " +
                 "optimistic mode if 'batchUpdateOnCommit' configuration flag is set to 'false': " + this);
 
@@ -2652,7 +2652,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         GridCacheTxEntry<K, V> old = txMap.get(key);
 
         // Keep old filter if already have one (empty filter is always overridden).
-        if (!filtersSet || !F.isEmpty(filter)) {
+        if (!filtersSet || !F.isEmptyOrNulls(filter)) {
             // Replace filter if previous filter failed.
             if (old != null && old.filtersSet())
                 filter = old.filters();
