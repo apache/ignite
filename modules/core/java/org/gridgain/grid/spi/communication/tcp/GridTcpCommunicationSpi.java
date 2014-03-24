@@ -1542,6 +1542,8 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
         int connectAttempts = 1;
 
+        long connTimeout0 = connTimeout;
+
         while (true) {
             GridCommunicationClient client;
 
@@ -1558,8 +1560,6 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
                 throw e;
             }
-
-            long connTimeout0 = connTimeout;
 
             try {
                 safeHandshake(client, node.id(), connTimeout0);
