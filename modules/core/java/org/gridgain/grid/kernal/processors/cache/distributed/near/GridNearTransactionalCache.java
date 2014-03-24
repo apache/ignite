@@ -894,31 +894,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> drStateTransfer(Collection<Byte> dataCenterIds) {
-        return dht.drStateTransfer(dataCenterIds);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridDrStateTransfer> drListStateTransfers() {
-        return dht.drListStateTransfers();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void drPause() {
-        dht.drPause();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void drResume() {
-        dht.drResume();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public GridDrPause drPauseState() {
-        return dht.drPauseState();
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearTransactionalCache.class, this);
     }

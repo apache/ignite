@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -648,18 +649,28 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> drFullStateTransfer(Collection<Byte> dataCenterIds) {
-        return dht().drFullStateTransfer(dataCenterIds);
+    @Override public GridFuture<?> drStateTransfer(Collection<Byte> dataCenterIds) {
+        return dht().drStateTransfer(dataCenterIds);
     }
 
     /** {@inheritDoc} */
-    @Override public void drPause() throws GridException {
+    @Override public Collection<GridDrStateTransfer> drListStateTransfers() {
+        return dht().drListStateTransfers();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void drPause() {
         dht().drPause();
     }
 
     /** {@inheritDoc} */
-    @Override public void drResume() throws GridException {
+    @Override public void drResume() {
         dht().drResume();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridDrPause drPauseState() {
+        return dht().drPauseState();
     }
 
     /**
