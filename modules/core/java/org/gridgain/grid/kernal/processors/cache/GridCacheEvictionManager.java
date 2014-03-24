@@ -20,6 +20,7 @@ import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.GridUnsafe;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
@@ -49,7 +50,7 @@ import static org.jdk8.backport.ConcurrentLinkedDeque8.*;
  */
 public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Unsafe instance. */
-    private static final Unsafe unsafe = org.jdk8.backport.GridUnsafe.unsafe();
+    private static final Unsafe unsafe = GridUnsafe.unsafe();
 
     /** Eviction policy. */
     private GridCacheEvictionPolicy<K, V> plc;

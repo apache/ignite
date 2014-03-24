@@ -1078,6 +1078,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         ctxInitLatch.countDown();
 
         spiCtx.registerPort(tcpSrvr.port, TCP);
+
+        ipFinder.onSpiContextInitialized(spiCtx);
+
+        if (metricsStore != null)
+            metricsStore.onSpiContextInitialized(spiCtx);
     }
 
     /** {@inheritDoc} */
@@ -1263,6 +1268,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             ctxInitLatch.countDown();
 
         getSpiContext().deregisterPorts();
+
+        ipFinder.onSpiContextDestroyed();
+
+        if (metricsStore != null)
+            metricsStore.onSpiContextDestroyed();
     }
 
     /**
