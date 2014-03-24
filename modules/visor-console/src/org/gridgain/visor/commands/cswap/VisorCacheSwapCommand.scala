@@ -31,16 +31,6 @@ import org.gridgain.grid.lang.GridCallable
  * ==Overview==
  * Visor 'cswap' command implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to properly
- * import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.cswap.VisorCacheSwapCommand._
- * </ex>
- * Note that `VisorCacheSwapCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +-----------------------------------------------------+
@@ -51,7 +41,7 @@ import org.gridgain.grid.lang.GridCallable
  * ====Specification====
  * {{{
  *     cswap
- *     cswap "<cache-name>"
+ *     cswap -c=<cache-name>
  * }}}
  *
  * ====Arguments====
@@ -65,7 +55,7 @@ import org.gridgain.grid.lang.GridCallable
  * {{{
  *     cswap
  *         Swaps entries in default cache.
- *     cswap "cache"
+ *     cswap -c=cache
  *         Swaps entries in cache with name 'cache'.
  * }}}
  */
@@ -87,19 +77,23 @@ class VisorCacheSwapCommand {
      * Swaps entries in cache.
      *
      * ===Examples===
-     * <ex>cswap "cache"</ex>
+     * <ex>cswap -c=cache</ex>
      * Swaps entries in cache with name 'cache'.
      *
-     * @param cacheName Cache name.
+     * @param args Command arguments.
      */
-    def cswap(@Nullable cacheName: String) = breakable {
+    def cswap(@Nullable args: String) = breakable {
         if (!isConnected)
             adviseToConnect()
         else {
-            if (cacheName != null && cacheName.isEmpty)
+            val argLst = parseArgs(args)
+
+            val cacheArg = argValue("c", argLst)
+
+            if (cacheArg.isEmpty)
                 scold("Cache name is empty.").^^
 
-            val caches = getVariable(cacheName)
+            val caches = getVariable(cacheArg.get)
 
             val prj = grid.forCache(caches)
 
@@ -169,7 +163,7 @@ object VisorCacheSwapCommand {
         shortInfo = "Swaps backup entries in cache on all nodes.",
         spec = List(
             "cswap",
-            "cswap <cache-name>"
+            "cswap -c=<cache-name>"
         ),
         args = List(
             "<cache-name>" -> List(
@@ -180,8 +174,8 @@ object VisorCacheSwapCommand {
         ),
         examples = List(
             "cswap" -> "Swaps entries in default cache.",
-            "cswap cache" -> "Swaps entries in cache with name 'cache'.",
-            "cswap @c0" -> "Swaps entries in cache with name taken from 'c0' memory variable."
+            "cswap -c=cache" -> "Swaps entries in cache with name 'cache'.",
+            "cswap -c=@c0" -> "Swaps entries in cache with name taken from 'c0' memory variable."
         ),
         ref = VisorConsoleCommand(cmd.cswap, cmd.cswap)
     )

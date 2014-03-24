@@ -36,7 +36,6 @@
         <module>modules/clients</module>
         <module>examples</module>
         <module>modules/scalar</module>
-        <module>modules/scalar-examples</module>
         <module>modules/visor-console</module>
         <module>modules/jdbc-driver</module>
         <module>modules/jdk8-backport</module>
@@ -288,12 +287,6 @@
             <groupId>com.enterprisedt</groupId>
             <artifactId>edtFTPj</artifactId>
             <version>1.5.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain.snaptree-gg</groupId>
-            <artifactId>snaptree-gg</artifactId>
-            <version>1.1</version>
         </dependency>
 
         <dependency>

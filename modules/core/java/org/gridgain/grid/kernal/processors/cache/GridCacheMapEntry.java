@@ -674,10 +674,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if ((unmarshal || isOffHeapValuesOnly()) && !expired && val == null && hasOldBytes)
                 val = rawGetOrUnmarshalUnlocked();
 
+            boolean valid = valid(tx != null ? tx.topologyVersion() : -1);
+
             // Attempt to load from swap.
             if (val == null && !hasOldBytes && readSwap) {
                 // Only promote when loading initial state.
-                if (isNew()) {
+                if (isNew() || !valid) {
                     // If this entry is already expired (expiration time was too low),
                     // we simply remove from swap and clear index.
                     if (expired) {
@@ -713,8 +715,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (1 - delta / ttlExtras() >= refreshRatio)
                     asyncRefresh = true;
             }
-
-            boolean valid = valid(tx != null ? tx.topologyVersion() : -1);
 
             old = expired || !valid ? null : val;
 
@@ -990,7 +990,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             assert newVer != null : "Failed to get write version for tx: " + tx;
 
             if (tx != null && !tx.local() && tx.onePhaseCommit() && explicitVer == null) {
-                if (!isNew() && ver.compareTo(newVer) > 0) {
+                if (!(isNew() || !valid) && ver.compareTo(newVer) > 0) {
                     if (log.isDebugEnabled())
                         log.debug("Skipping entry update for one-phase commit since current entry version is " +
                             "greater than write version [entry=" + this + ", newVer=" + newVer + ']');
@@ -1431,6 +1431,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 drReplicate(drType, updated, valBytes, newVer);
 
+                recordNodeId(affNodeId);
+
                 if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT))
                     cctx.events().addEvent(partition(), key, evtNodeId, null,
                         newVer, EVT_CACHE_OBJECT_PUT, updated, updated != null, old,
@@ -1467,6 +1469,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 // Clear value on backup. Entry will be removed from cache when it got evicted from queue.
                 update(null, null, 0, 0, newVer);
+
+                clearReaders();
+
+                recordNodeId(affNodeId);
 
                 drReplicate(drType, null, null, newVer);
 
@@ -2095,7 +2101,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         synchronized (this) {
             checkObsolete();
 
-            if (isNew())
+            if (isNew() || !valid(-1))
                 unswap(true);
 
             if (deletedUnlocked())

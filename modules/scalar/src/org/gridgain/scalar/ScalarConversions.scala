@@ -415,7 +415,7 @@ trait ScalarConversions {
      * @param t Scala tuple to convert.
      */
     implicit def toTuple2[A, B](t: (A, B)): GridBiTuple[A, B] =
-        GridFunc.t(t._1, t._2)
+        new GridBiTuple[A, B](t._1, t._2)
 
     /**
      * Implicit converter from `GridTuple2` to Scala tuple.
@@ -441,7 +441,7 @@ trait ScalarConversions {
      * @param t Scala tuple to convert.
      */
     implicit def toTuple3[A, B, C](t: (A, B, C)): GridTuple3[A, B, C] =
-        GridFunc.t(t._1, t._2, t._3)
+        new GridTuple3[A, B, C](t._1, t._2, t._3)
 
     /**
      * Implicit converter from `GridTuple3` to Scala tuple.
@@ -467,7 +467,7 @@ trait ScalarConversions {
      * @param t Scala tuple to convert.
      */
     implicit def toTuple4[A, B, C, D](t: (A, B, C, D)): GridTuple4[A, B, C, D] =
-        GridFunc.t(t._1, t._2, t._3, t._4)
+        new GridTuple4[A, B, C, D](t._1, t._2, t._3, t._4)
 
     /**
      * Implicit converter from `GridTuple4` to Scala tuple.
@@ -493,7 +493,7 @@ trait ScalarConversions {
      * @param t Scala tuple to convert.
      */
     implicit def toTuple5[A, B, C, D, E](t: (A, B, C, D, E)): GridTuple5[A, B, C, D, E] =
-        GridFunc.t(t._1, t._2, t._3, t._4, t._5)
+        new GridTuple5[A, B, C, D, E](t._1, t._2, t._3, t._4, t._5)
 
     /**
      * Implicit converter from `GridTuple5` to Scala tuple.

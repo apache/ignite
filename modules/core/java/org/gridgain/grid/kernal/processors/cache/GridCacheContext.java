@@ -382,7 +382,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if entries should not be deleted from cache immediately.
      */
     public boolean deferredDelete() {
-        return isDht() || isDhtAtomic() || isColocated();
+        return isDht() || isDhtAtomic() || isColocated() || (isNear() && atomic());
     }
 
     /**
@@ -429,6 +429,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return Transactional DHT cache.
+     */
+    public GridDhtTransactionalCacheAdapter<K, V> dhtTx() {
+        return (GridDhtTransactionalCacheAdapter<K, V>)cache;
+    }
+
+    /**
      * @return Colocated cache.
      */
     public GridDhtColocatedCache<K, V> colocated() {
@@ -438,8 +445,15 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Near cache.
      */
-    public GridNearCache<K, V> near() {
-        return (GridNearCache<K, V>)cache;
+    public GridNearCacheAdapter<K, V> near() {
+        return (GridNearCacheAdapter<K, V>)cache;
+    }
+
+    /**
+     * @return Near cache for transactional mode.
+     */
+    public GridNearTransactionalCache<K, V> nearTx() {
+        return (GridNearTransactionalCache<K, V>)cache;
     }
 
     /**
@@ -1001,7 +1015,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Excludes prior to this call.
      */
     public GridCachePeekMode[] excludePeekModes(@Nullable GridCachePeekMode[] modes) {
-        if (isDht())
+        if (nearContext())
             return dht().near().context().excludePeekModes(modes);
 
         GridCachePeekMode[] oldModes = peekModeExcl.get();
@@ -1015,7 +1029,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Peek mode excludes.
      */
     public GridCachePeekMode[] peekModeExcludes() {
-        return isDht() ? dht().near().context().peekModeExcludes() : peekModeExcl.get();
+        return nearContext() ? dht().near().context().peekModeExcludes() : peekModeExcl.get();
     }
 
     /**
@@ -1025,7 +1039,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean peekModeExcluded(GridCachePeekMode mode) {
         assert mode != null;
 
-        if (isDht())
+        if (nearContext())
             return dht().near().context().peekModeExcluded(mode);
 
         GridCachePeekMode[] excl = peekModeExcl.get();
@@ -1059,7 +1073,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param prj Flags to set.
      */
     void projectionPerCall(@Nullable GridCacheProjectionImpl<K, V> prj) {
-        if (isDht())
+        if (nearContext())
             dht().near().context().prjPerCall.set(prj);
         else
             prjPerCall.set(prj);
@@ -1070,7 +1084,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Projection per call.
      */
     public GridCacheProjectionImpl<K, V> projectionPerCall() {
-        return isDht() ? dht().near().context().prjPerCall.get() : prjPerCall.get();
+        return nearContext() ? dht().near().context().prjPerCall.get() : prjPerCall.get();
     }
 
     /**
@@ -1081,7 +1095,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean hasFlag(GridCacheFlag flag) {
         assert flag != null;
 
-        if (isDht())
+        if (nearContext())
             return dht().near().context().hasFlag(flag);
 
         GridCacheProjectionImpl<K, V> prj = prjPerCall.get();
@@ -1100,7 +1114,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean hasAnyFlags(GridCacheFlag[] flags) {
         assert !F.isEmpty(flags);
 
-        if (isDht())
+        if (nearContext())
             return dht().near().context().hasAnyFlags(flags);
 
         GridCacheProjectionImpl<K, V> prj = prjPerCall.get();
@@ -1124,7 +1138,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean hasAnyFlags(Collection<GridCacheFlag> flags) {
         assert !F.isEmpty(flags);
 
-        if (isDht())
+        if (nearContext())
             return dht().near().context().hasAnyFlags(flags);
 
         GridCacheProjectionImpl<K, V> prj = prjPerCall.get();
@@ -1137,6 +1151,13 @@ public class GridCacheContext<K, V> implements Externalizable {
                 return true;
 
         return false;
+    }
+
+    /**
+     * @return {@code True} if need check near cache context.
+     */
+    private boolean nearContext() {
+        return isDht() || (isDhtAtomic() && dht().near() != null);
     }
 
     /**
@@ -1628,18 +1649,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert ver != null;
         assert deferredDelete();
 
-        GridDhtLocalPartition<K, V> part = topology().localPartition(entry.partition(), -1, false);
-
-        // Do not remove entry on replica topology. Instead, add entry to removal queue.
-        // It will be cleared eventually.
-        if (part != null) {
-            try {
-                part.onDeferredDelete(entry.key(), ver);
-            }
-            catch (GridException e) {
-                U.error(log, "Failed to enqueue deleted entry [key=" + entry.key() + ", ver=" + ver + ']', e);
-            }
-        }
+        cache.onDeferredDelete(entry, ver);
     }
 
     /**
