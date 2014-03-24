@@ -19,7 +19,7 @@ import org.gridgain.grid.util.typedef.*;
  * into {@link GridClosureException} instance.
  * @see PX3
  */
-public abstract class GridPredicate3X<E1, E2, E3> extends GridPredicate3<E1, E2, E3> {
+public abstract class GridPredicate3X<E1, E2, E3> implements GridPredicate3<E1, E2, E3> {
     /** {@inheritDoc} */
     @Override public boolean apply(E1 e1, E2 e2, E3 e3) {
         try {

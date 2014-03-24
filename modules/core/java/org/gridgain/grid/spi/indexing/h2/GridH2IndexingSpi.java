@@ -35,6 +35,7 @@ import org.h2.result.*;
 import org.h2.table.*;
 import org.h2.util.*;
 import org.h2.value.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

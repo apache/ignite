@@ -412,7 +412,7 @@ object visor extends VisorTag {
             "open -cpath=/gg/config/mycfg.xml -g=mygrid" ->
                 "Connects visor to 'mygrid' grid using configuration from provided Spring file."
         ),
-        ref = VisorConsoleCommand(open, open(_, true))
+        ref = VisorConsoleCommand(open, open(_))
     )
 
     addHelp(
@@ -521,7 +521,7 @@ object visor extends VisorTag {
      * Lists visor memory variables.
      *
      * ==Examples==
-     * <ex>mlist "ac"</ex>
+     * <ex>mlist ac</ex>
      * Lists variables that start with `a` or `c` from visor memory.
      *
      * <ex>mlist</ex>
@@ -710,7 +710,7 @@ object visor extends VisorTag {
      * perform variable substitution on its parameters.
      *
      * ==Examples==
-     * <ex>mgetOpt "a"</ex>
+     * <ex>mgetOpt a</ex>
      * Gets the value as an option for visor variable 'a'.
      *
      * @param n Name of the variable.
@@ -758,9 +758,8 @@ object visor extends VisorTag {
      */
     def getVariable(v: String): String = {
         v match {
-            case null => v
             case name if name.startsWith("@") => mgetOpt(name.substring(1)).getOrElse(v)
-            case name => mgetOpt(name).getOrElse(v)
+            case _ => v
         }
     }
 
@@ -1109,7 +1108,7 @@ object visor extends VisorTag {
      * Prints visor status.
      *
      * ==Example==
-     * <ex>status "-q"</ex>
+     * <ex>status -q</ex>
      * Prints visor status without ASCII logo.
      *
      * @param args Optional "-q" flag to disable ASCII logo printout.
@@ -1151,7 +1150,7 @@ object visor extends VisorTag {
      * Prints visor status. This is an alias for `status` command.
      *
      * ==Example==
-     * <ex>! "-q"</ex>
+     * <ex>! -q</ex>
      * Prints visor status without ASCII logo.
      *
      * @param args Optional "-q" flag to disable ASCII logo printout.
@@ -1192,7 +1191,7 @@ object visor extends VisorTag {
      * <ex>help</ex>
      * Prints general help.
      *
-     * <ex>help "open"</ex>
+     * <ex>help open</ex>
      * Prints help for 'open' command.
      *
      * @param args List of commands to print help for. If empty - prints generic help.
@@ -1427,6 +1426,9 @@ object visor extends VisorTag {
                 throw new GE("More than one grid configuration found in: " + url)
 
             val cfg = cfgMap.head._2
+
+            // Setting up 'Config URL' for properly print in console.
+            System.setProperty(GridSystemProperties.GG_CONFIG_URL, url.getPath)
 
             var cpuCnt = Runtime.getRuntime.availableProcessors
 
@@ -2185,19 +2187,19 @@ object visor extends VisorTag {
      * Starts or stops logging.
      *
      * ==Examples==
-     * <ex>log "-l -f=/home/user/visor-log"</ex>
+     * <ex>log -l -f=/home/user/visor-log</ex>
      * Starts logging to file located at '/home/user/visor-log'.
      *
-     * <ex>log "-l -f=log/visor-log"</ex>
+     * <ex>log -l -f=log/visor-log</ex>
      * Starts logging to file located at 'GRIDGAIN_HOME/log/visor-log'.
      *
-     * <ex>log "-l -p=20"</ex>
+     * <ex>log -l -p=20</ex>
      * Starts logging with querying events period of 20 seconds.
      *
-     * <ex>log "-l -t=30"</ex>
+     * <ex>log -l -t=30</ex>
      * Starts logging with topology snapshot logging period of 30 seconds.
      *
-     * <ex>log "-s"</ex>
+     * <ex>log -s</ex>
      * Stops logging.
      *
      * @param args Command arguments.
@@ -2272,13 +2274,7 @@ object visor extends VisorTag {
 
         val path = pathOpt.getOrElse(DFLT_LOG_PATH)
 
-        logFile = new File(path)
-
-        if (!logFile.isAbsolute)
-            logFile = new File(U.getGridGainHome, path)
-
-        if (!logFile.getParentFile.exists && !logFile.getParentFile.mkdirs)
-            throw new IllegalArgumentException("Failed to 'mkdir' log path: " + path)
+        logFile = U.resolveWorkDirectory(path, null, false, false)
 
         var freq = 0L
 
@@ -2578,4 +2574,3 @@ class CollectorClosure(types: Seq[Int], key: String) extends GridCallable[Seq[Gr
         Collector.collect(types, g, key)
     }
 }
-

@@ -51,7 +51,7 @@ import java.util.concurrent.*;
  * <p>
  * Attribute names that start with {@code "gridgain:"} are reserved for internal system use.
  */
-public interface GridComputeJobContext extends GridComputeJobContinuation, GridMetadataAware {
+public interface GridComputeJobContext extends GridComputeJobContinuation {
     /**
      * Gets cache name for which job was co-located.
      *

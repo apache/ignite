@@ -26,8 +26,6 @@ import org.jetbrains.annotations.*;
 import javax.transaction.*;
 import java.util.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
-
 /**
  * This class defines grid cache configuration. This configuration is passed to
  * grid via {@link GridConfiguration#getCacheConfiguration()} method. It defines all configuration
@@ -76,7 +74,7 @@ public class GridCacheConfiguration {
     public static final GridCacheAtomicWriteOrderMode DFLT_ATOMIC_WRITE_ORDER_MODE = GridCacheAtomicWriteOrderMode.CLOCK;
 
     /** Default value for cache distribution mode. */
-    public static final GridCacheDistributionMode  DFLT_DISTRIBUTION_MODE = GridCacheDistributionMode.PARTITIONED_ONLY;
+    public static final GridCacheDistributionMode DFLT_DISTRIBUTION_MODE = GridCacheDistributionMode.PARTITIONED_ONLY;
 
     /** Default transaction timeout. */
     public static final long DFLT_TRANSACTION_TIMEOUT = 0;
@@ -187,12 +185,16 @@ public class GridCacheConfiguration {
     public static final int DFLT_MAX_QUERY_ITERATOR_CNT = 1024;
 
     /** Default continuous query buffers queue size. */
+    @SuppressWarnings("UnusedDeclaration")
+    @Deprecated
     public static final int DFLT_CONT_QUERY_QUEUE_SIZE = 1024 * 1024;
 
     /** Default memory mode. */
     public static final GridCacheMemoryMode DFLT_MEMORY_MODE = GridCacheMemoryMode.ONHEAP_TIERED;
 
     /** Default continuous query max buffer size. */
+    @SuppressWarnings("UnusedDeclaration")
+    @Deprecated
     public static final int DFLT_CONT_QUERY_MAX_BUF_SIZE = 1024;
 
     /** Cache name. */
@@ -357,14 +359,8 @@ public class GridCacheConfiguration {
     /** Maximum number of query iterators that can be stored. */
     private int maxQryIterCnt = DFLT_MAX_QUERY_ITERATOR_CNT;
 
-    /** Continuous query queue size. */
-    private int contQryQueueSize = DFLT_CONT_QUERY_QUEUE_SIZE;
-
     /** Memory mode. */
     private GridCacheMemoryMode memMode = DFLT_MEMORY_MODE;
-
-    /** Continuous query max buffer size. */
-    private int contQryMaxBufSize = Integer.getInteger(GG_CONT_QUERY_MAX_BUF_SIZE, DFLT_CONT_QUERY_MAX_BUF_SIZE);
 
     /** */
     private GridCacheCloner cloner;
@@ -410,8 +406,6 @@ public class GridCacheConfiguration {
         backups = cc.getBackups();
         cacheMode = cc.getCacheMode();
         cloner = cc.getCloner();
-        contQryMaxBufSize = cc.getContinuousQueryMaximumBufferSize();
-        contQryQueueSize = cc.getContinuousQueryQueueSize();
         dfltConcurrency = cc.getDefaultTxConcurrency();
         dfltIsolation = cc.getDefaultTxIsolation();
         dfltLockTimeout = cc.getDefaultLockTimeout();
@@ -950,7 +944,7 @@ public class GridCacheConfiguration {
     /**
      * Gets caching mode to use. You can configure cache either to be local-only,
      * fully replicated, partitioned, or near. If not provided, {@link GridCacheMode#REPLICATED}
-     * mode will be used by default (defined by #DFLT_CACHE_MODE} constant).
+     * mode will be used by default (defined by {@link #DFLT_CACHE_MODE} constant).
      *
      * @return {@code True} if cache is local.
      */
@@ -1859,24 +1853,25 @@ public class GridCacheConfiguration {
      * is enabled to postpone cache updates until query listeners are notified.
      * If your system is configured properly, then this number should never be reached.
      * <p>
-     * Current value of continuous query queue size can be monitored from
-     * {@link GridCacheMBean#getContinuousQueryQueueSize()} MBean parameter.
-     * <p>
      * Default value is {@link #DFLT_CONT_QUERY_QUEUE_SIZE}.
      *
      * @return Continuous query queue size.
+     * @deprecated Ignored in current version.
      */
+    @Deprecated
     public int getContinuousQueryQueueSize() {
-        return contQryQueueSize;
+        return 0;
     }
 
     /**
      * Sets continuous query queue size.
      *
      * @param contQryQueueSize Continuous query queue size.
+     * @deprecated Ignored in current version.
      */
+    @Deprecated
     public void setContinuousQueryQueueSize(int contQryQueueSize) {
-        this.contQryQueueSize = contQryQueueSize;
+        // No-op.
     }
 
     /**
@@ -1910,19 +1905,22 @@ public class GridCacheConfiguration {
      * {@code GG_CONT_QUERY_MAX_BUF_SIZE} system property value (if specified).
      *
      * @return Maximum buffer size for continuous queries.
+     * @deprecated Ignored in current version.
      */
+    @Deprecated
     public int getContinuousQueryMaximumBufferSize() {
-        return contQryMaxBufSize;
+        return 0;
     }
 
     /**
      * Sets maximum buffer size for continuous queries.
      *
      * @param contQryMaxBufSize Maximum buffer size for continuous queries.
-     * @see #getContinuousQueryMaximumBufferSize()
+     * @deprecated Ignored in current version.
      */
+    @Deprecated
     public void setContinuousQueryMaximumBufferSize(int contQryMaxBufSize) {
-        this.contQryMaxBufSize = contQryMaxBufSize;
+        // No-op.
     }
 
     /**

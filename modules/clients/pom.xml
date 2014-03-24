@@ -37,10 +37,5 @@
 
     <build>
         <sourceDirectory>java/src</sourceDirectory>
-        <resources>
-            <resource>
-                <directory>java/config</directory>
-            </resource>
-        </resources>
     </build>
 </project>

@@ -11,7 +11,6 @@ package org.gridgain.grid.util;
 
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.worker.*;
 import org.jetbrains.annotations.*;
 
@@ -35,16 +34,12 @@ public class GridThreadLocal<T> extends ThreadLocal<T> {
     };
 
     /** */
-    private final GridAbsClosure resetter;
-
-    /** */
     private final GridOutClosure<T> initializer;
 
     /**
      *
      */
     public GridThreadLocal() {
-        resetter = null;
         initializer = null;
     }
 
@@ -53,26 +48,6 @@ public class GridThreadLocal<T> extends ThreadLocal<T> {
      */
     public GridThreadLocal(GridOutClosure<T> initializer) {
         this.initializer = initializer;
-
-        resetter = null;
-    }
-
-    /**
-     * @param resetter Resetter.
-     */
-    public GridThreadLocal(GridAbsClosure resetter) {
-        this.resetter = resetter;
-
-        initializer = null;
-    }
-
-    /**
-     * @param initializer Initializer.
-     * @param resetter Resetter.
-     */
-    public GridThreadLocal(GridOutClosure<T> initializer, GridAbsClosure resetter) {
-        this.initializer = initializer;
-        this.resetter = resetter;
     }
 
     /**
@@ -98,10 +73,7 @@ public class GridThreadLocal<T> extends ThreadLocal<T> {
      * Resets the state of this thread local.
      */
     private void reset() {
-        if (resetter != null)
-            resetter.run();
-        else
-            super.set(initialValue());
+        super.set(initialValue());
     }
 
     /** {@inheritDoc} */

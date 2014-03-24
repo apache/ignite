@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.io;
 
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import sun.misc.*;
 
 import java.io.*;

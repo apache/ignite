@@ -187,8 +187,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /** Node local store. */
     private GridNodeLocalMap nodeLoc;
 
-    /** */
+    /** Scheduler. */
     private GridScheduler scheduler;
+
+    /** DR pool. */
+    private ExecutorService drPool;
 
     /** Kernal gateway. */
     private final AtomicReference<GridKernalGateway> gw = new AtomicReference<>();
@@ -505,7 +508,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @throws GridException Thrown in case of any errors.
      */
     @SuppressWarnings("CatchGenericClass")
-    public void start(final GridConfiguration cfg, GridAbsClosure errHnd) throws GridException {
+    public void start(final GridConfiguration cfg, @Nullable ExecutorService drPool, GridAbsClosure errHnd)
+        throws GridException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
 
         GridKernalGateway gw = this.gw.get();
@@ -630,6 +634,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             ctx.product(new GridProductImpl(ctx, verChecker));
 
             scheduler = new GridSchedulerImpl(ctx);
+
+            this.drPool = drPool;
 
             startProcessor(ctx, rsrcProc, attrs);
 
@@ -2586,6 +2592,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public ExecutorService drPool() {
+        return drPool;
     }
 
     /**

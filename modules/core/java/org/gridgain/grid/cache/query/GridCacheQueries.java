@@ -16,8 +16,14 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Various {@code 'createXxxQuery(..)'} methods to query cache using either {@code SQL},
- * full text search, or filter-based full scan (see {@link GridCacheQuery} for more information).
+ * Facade for creating distributed queries. It contains various {@code 'createXxxQuery(..)'}
+ * methods for {@code SQL}, {@code TEXT}, and {@code SCAN} query creation (see {@link GridCacheQuery}
+ * for more information).
+ * <p>
+ * Instance of {@code GridCacheQueries} is obtained from cache projection as follows:
+ * <pre name="code" class="java">
+ * GridCacheQueries q = GridGain.grid().cache("myCache").queries();
+ * </pre>
  */
 public interface GridCacheQueries<K, V> {
     /**

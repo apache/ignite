@@ -19,6 +19,7 @@ import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -637,7 +638,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         if (passedKeys.isEmpty())
             return new GridFinishedFuture<>(cctx.kernalContext(), ret);
 
-        GridFuture<Boolean> fut = cctx.dht().lockAllAsyncInternal(passedKeys,
+        GridFuture<Boolean> fut = cctx.dhtTx().lockAllAsyncInternal(passedKeys,
             lockTimeout(), this, isInvalidate(), read, /*retval*/false, isolation, CU.<K, V>empty());
 
         return new GridEmbeddedFuture<>(
