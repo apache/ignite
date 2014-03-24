@@ -434,7 +434,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             // At this point, if any new node joined, then it is
             // waiting for this transaction to complete, so
             // partition reassignments are not possible here.
-            GridFuture<GridCacheTxEx<K, V>> fut = cctx.near().dht().prepareTx(n, req);
+            GridFuture<GridCacheTxEx<K, V>> fut = cctx.nearTx().dht().prepareTx(n, req);
 
             // Add new future.
             add(new GridEmbeddedFuture<>(

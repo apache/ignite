@@ -263,16 +263,6 @@ class VisorSessionIdFilter(u: GridUuid) extends GridPredicate[GridEvent] {
  * ==Overview==
  * Visor 'tasks' command implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.tasks.VisorTasksCommand._
- * </ex>
- * Note that `VisorTasksCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +---------------------------------------------------------------------------------------+
@@ -292,13 +282,13 @@ class VisorSessionIdFilter(u: GridUuid) extends GridPredicate[GridEvent] {
  *
  * ====Specification====
  * {{{
- *     visor tasks
- *     visor tasks "-l {-t=<num>s|m|h|d} {-r}"
- *     visor tasks "-s=<substring> {-t=<num>s|m|h|d} {-r}"
- *     visor tasks "-g {-t=<num>s|m|h|d} {-r}"
- *     visor tasks "-h {-t=<num>s|m|h|d} {-r}"
- *     visor tasks "-n=<task-name> {-r}"
- *     visor tasks "-e=<exec-id>"
+ *     tasks
+ *     tasks "-l {-t=<num>s|m|h|d} {-r}"
+ *     tasks "-s=<substring> {-t=<num>s|m|h|d} {-r}"
+ *     tasks "-g {-t=<num>s|m|h|d} {-r}"
+ *     tasks "-h {-t=<num>s|m|h|d} {-r}"
+ *     tasks "-n=<task-name> {-r}"
+ *     tasks "-e=<exec-id>"
  * }}}
  *
  * ====Arguments====

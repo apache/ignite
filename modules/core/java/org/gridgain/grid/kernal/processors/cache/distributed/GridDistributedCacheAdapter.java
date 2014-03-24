@@ -86,6 +86,20 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         @Nullable GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
         @Nullable GridCacheTxIsolation isolation, GridPredicate<GridCacheEntry<K, V>>[] filter);
 
+    /**
+     * @param key Key to remove.
+     * @param ver Version to remove.
+     */
+    public void removeVersionedEntry(K key, GridCacheVersion ver) {
+        GridCacheEntryEx<K, V> entry = peekEx(key);
+
+        if (entry == null)
+            return;
+
+        if (entry.markObsoleteVersion(ver))
+            removeEntry(entry);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDistributedCacheAdapter.class, this, "super", super.toString());

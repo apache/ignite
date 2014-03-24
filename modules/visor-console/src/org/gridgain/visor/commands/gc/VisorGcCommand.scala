@@ -28,16 +28,6 @@ import org.gridgain.grid.util.lang.GridAbsClosure
  * ==Overview==
  * Contains Visor command `gc` implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.gc.VisorGcCommand._
- * </ex>
- * Note that `VisorGcCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +---------------------------------------------------------------------------+

@@ -15,16 +15,6 @@ package org.gridgain.visor.commands
  * ==Overview==
  * Visor 'disco' command implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.disco.VisorDiscoveryCommand._
- * </ex>
- * Note that `VisorDiscoveryCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +---------------------------------------------------------------------------------------+
@@ -45,8 +35,8 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor disco
- *     visor disco "{-t=<num>s|m|h|d} {-r} {-c=<n>}"
+ *     disco
+ *     disco "{-t=<num>s|m|h|d} {-r} {-c=<n>}"
  * }}}
  *
  * ====Arguments====
@@ -65,11 +55,11 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor disco
+ *     disco
  *         Prints all discovery events sorted chronologically (oldest first).
- *     visor disco "-r"
+ *     disco "-r"
  *         Prints all discovery events sorted chronologically in reversed order (newest first).
- *     visor disco "-t=2m"
+ *     disco "-t=2m"
  *         Prints discovery events fired during last two minutes sorted chronologically.
  * }}}
  */
