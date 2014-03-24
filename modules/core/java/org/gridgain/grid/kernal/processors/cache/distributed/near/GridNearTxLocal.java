@@ -312,7 +312,7 @@ class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public GridFuture<Boolean> loadMissing(boolean async, final Collection<? extends K> keys,
         final GridBiInClosure<K, V> c) {
-        return cctx.near().txLoadAsync(this, keys, CU.<K, V>empty()).chain(new C1<GridFuture<Map<K, V>>, Boolean>() {
+        return cctx.nearTx().txLoadAsync(this, keys, CU.<K, V>empty()).chain(new C1<GridFuture<Map<K, V>>, Boolean>() {
             @Override public Boolean apply(GridFuture<Map<K, V>> f) {
                 try {
                     Map<K, V> map = f.get();

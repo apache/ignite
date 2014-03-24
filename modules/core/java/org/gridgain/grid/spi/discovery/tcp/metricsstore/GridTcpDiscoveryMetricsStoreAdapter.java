@@ -24,6 +24,9 @@ public abstract class GridTcpDiscoveryMetricsStoreAdapter implements GridTcpDisc
     /** Default metrics expire time in milliseconds (value is <tt>10000</tt>). */
     public static final int DFLT_METRICS_EXPIRE_TIME = 10 * 1000;
 
+    /** SPI context. */
+    private volatile GridSpiContext spiCtx;
+
     /** Local metrics cache. */
     private final Map<UUID, GridNodeMetrics> metricsMap = new ConcurrentHashMap8<>();
 
@@ -33,6 +36,16 @@ public abstract class GridTcpDiscoveryMetricsStoreAdapter implements GridTcpDisc
     /** Metrics expire time. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private int metricsExpireTime = DFLT_METRICS_EXPIRE_TIME;
+
+    /** {@inheritDoc} */
+    @Override public void onSpiContextInitialized(GridSpiContext spiCtx) throws GridSpiException {
+        this.spiCtx = spiCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onSpiContextDestroyed() {
+        // No-op.
+    }
 
     /** {@inheritDoc} */
     @Override public final Map<UUID, GridNodeMetrics> metrics(Collection<UUID> nodeIds)
@@ -112,4 +125,11 @@ public abstract class GridTcpDiscoveryMetricsStoreAdapter implements GridTcpDisc
      * @throws GridSpiException If any error occurs.
      */
     protected abstract void removeMetrics0(Collection<UUID> nodeIds) throws GridSpiException;
+
+    /**
+     * @return SPI context.
+     */
+    protected GridSpiContext spiContext() {
+        return spiCtx;
+    }
 }

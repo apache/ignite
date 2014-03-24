@@ -50,6 +50,7 @@ import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.tostring.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  *
@@ -303,6 +304,13 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return Replication processor.
      */
     public GridDrProcessor dr();
+
+    /**
+     * Gets DR pool.
+     *
+     * @return DR pool.
+     */
+    public ExecutorService drPool();
 
     /**
      * Gets version converter processor.

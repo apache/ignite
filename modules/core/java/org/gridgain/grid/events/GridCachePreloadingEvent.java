@@ -22,11 +22,11 @@ import org.gridgain.grid.util.typedef.internal.*;
  * APIs for performing a distributed queries across multiple nodes:
  * <ul>
  *      <li>
- *          {@link GridEvents#remoteQuery(GridPredicate, long)} -
+ *          {@link GridEvents#remoteQuery(GridPredicate, long, int...)} -
  *          asynchronously querying events occurred on the nodes specified, including remote nodes.
  *      </li>
  *      <li>
- *          {@link GridEvents#localQuery(GridPredicate)} -
+ *          {@link GridEvents#localQuery(GridPredicate, int...)} -
  *          querying only local events stored on this local node.
  *      </li>
  *      <li>

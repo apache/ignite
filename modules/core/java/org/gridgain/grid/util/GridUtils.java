@@ -11,10 +11,9 @@ package org.gridgain.grid.util;
 
 import org.apache.commons.codec.binary.*;
 import org.apache.commons.codec.digest.*;
-
-import org.gridgain.grid.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
@@ -25,13 +24,12 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.mbean.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
 import org.jdk8.backport.*;
-import org.jdk8.backport.GridUnsafe;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.beans.factory.*;
@@ -72,8 +70,8 @@ import java.util.jar.*;
 import java.util.regex.*;
 import java.util.zip.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
@@ -5430,8 +5428,9 @@ public abstract class GridUtils {
     }
 
     /**
-     * Replaces all occurrences of {@code org.gridgain.grid.} with {@code o.g.g.},
-     * {@code org.gridgain.visor.} with {@code o.g.v.}, and {@code org.gridgain.scalar.} with {@code o.g.s.}.
+     * Replaces all occurrences of {@code org.gridgain.} with {@code o.g.},
+     * {@code org.gridgain.grid.} with {@code o.g.g.}, {@code org.gridgain.visor.} with {@code o.g.v.} and
+     * {@code org.gridgain.scalar.} with {@code o.g.s.}.
      *
      * @param s String to replace in.
      * @return Replaces string.
@@ -5439,7 +5438,8 @@ public abstract class GridUtils {
     public static String compact(String s) {
         return s.replace("org.gridgain.grid.", "o.g.g.").
             replace("org.gridgain.visor.", "o.g.v.").
-            replace("org.gridgain.scalar.", "o.g.s.");
+            replace("org.gridgain.scalar.", "o.g.s.").
+            replace("org.gridgain.", "o.g.");
     }
 
     /**
@@ -8177,5 +8177,55 @@ public abstract class GridUtils {
         sb.a(']');
 
         return sb.toString();
+    }
+
+    /**
+     * Resolves work directory.
+     *
+     * @param path Path to resolve.
+     * @param tmpSubDir Subdirectory in temporary folder. It's used when GridGain home is null.
+     * @param failOnEmptyGridGainHome {@code True} if exception should be thrown on empty GridGain home,
+     * {@code false} otherwise.
+     * @param deleteIfExist Flag indicating whether to delete the specify directory or not.
+     * @return Resolved work directory.
+     * @throws GridException If failed.
+     */
+    public static File resolveWorkDirectory(String path, String tmpSubDir, boolean failOnEmptyGridGainHome,
+        boolean deleteIfExist) throws GridException {
+        String ggHome = getGridGainHome();
+
+        File dir = new File(path);
+
+        if (!dir.isAbsolute()) {
+            if (F.isEmpty(ggHome)) {
+                if (failOnEmptyGridGainHome)
+                    throw new GridException("Failed to create directory, property " + GG_HOME + " is null.");
+
+                String tmpDirPath = System.getProperty("java.io.tmpdir");
+
+                if (tmpDirPath == null)
+                    throw new GridException("System property 'java.io.tmpdir' is null.");
+
+                dir = tmpSubDir == null ? new File(tmpDirPath) : new File(tmpDirPath, tmpSubDir);
+            }
+            else
+                dir = new File(ggHome, dir.getPath());
+        }
+
+        if (deleteIfExist && dir.exists()) {
+            if (!U.delete(dir))
+                throw new GridException("Failed to delete directory: " + dir);
+        }
+
+        if (!mkdirs(dir))
+            throw new GridException("Directory does not exist and cannot be created: " + dir);
+
+        if (!dir.canRead())
+            throw new GridException("Cannot read from directory: " + dir);
+
+        if (!dir.canWrite())
+            throw new GridException("Cannot write to directory: " + dir);
+
+        return dir;
     }
 }

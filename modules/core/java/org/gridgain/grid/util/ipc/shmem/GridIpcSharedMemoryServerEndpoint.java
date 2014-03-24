@@ -146,26 +146,14 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
         if (size <= 0)
             throw new GridGgfsIpcEndpointBindException("Space size should be positive: " + size);
 
+        String tokDirPath = this.tokDirPath;
+
         if (F.isEmpty(tokDirPath))
             throw new GridGgfsIpcEndpointBindException("Token directory path is empty.");
 
-        File workDir = new File(tokDirPath);
+        tokDirPath = tokDirPath + '/' + locNodeId.toString() + '-' + GridIpcSharedMemoryUtils.pid();
 
-        String locNodeTokDir = locNodeId.toString() + "-" + GridIpcSharedMemoryUtils.pid();
-
-        if (workDir.isAbsolute())
-            tokDir = new File(workDir, locNodeTokDir);
-        else if (!F.isEmpty(U.getGridGainHome()))
-            tokDir = new File(new File(U.getGridGainHome(), tokDirPath), locNodeTokDir);
-        else
-            throw new GridGgfsIpcEndpointBindException("Failed to resolve token directory path: " + tokDirPath);
-
-        if (!U.mkdirs(tokDir))
-            throw new GridGgfsIpcEndpointBindException("Failed to create token directory: " + tokDir.getAbsolutePath());
-
-        if (!tokDir.canRead() || !tokDir.canWrite())
-            throw new GridGgfsIpcEndpointBindException("Cannot read from or write to token directory: " +
-                tokDir.getAbsolutePath());
+        tokDir = U.resolveWorkDirectory(tokDirPath, null, true, false);
 
         if (port <= 0 || port >= 0xffff)
             throw new GridGgfsIpcEndpointBindException("Port value is illegal: " + port);

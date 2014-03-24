@@ -42,6 +42,9 @@
             <resource>
                 <directory>java</directory>
             </resource>
+            <resource>
+                <directory>resources</directory>
+            </resource>
         </resources>
     </build>
 </project>

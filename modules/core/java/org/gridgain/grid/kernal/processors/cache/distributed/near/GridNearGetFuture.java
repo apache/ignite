@@ -365,7 +365,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      */
     private Map<K, GridCacheVersion> map(K key, Map<GridNode, LinkedHashMap<K, Boolean>> mappings,
         long topVer, Map<GridNode, LinkedHashMap<K, Boolean>> mapped, Map<K, GridCacheVersion> savedVers) {
-        final GridNearCache<K, V> near = cache();
+        final GridNearCacheAdapter<K, V> near = cache();
 
         // Allow to get cached value from the local node.
         boolean allowLocRead = !forcePrimary || cctx.affinity().primary(cctx.localNode(), key, topVer);
@@ -386,14 +386,14 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 GridNode primary = null;
 
                 if (v == null && allowLocRead) {
-                    GridDhtCache<K, V> dht = cache().dht();
+                    GridDhtCacheAdapter<K, V> dht = cache().dht();
 
                     try {
                         entry = dht.context().isSwapOrOffheapEnabled() ? dht.entryEx(key) : dht.peekEx(key);
 
                         // If near cache does not have value, then we peek DHT cache.
                         if (entry != null) {
-                            boolean isNew = entry.isNewLocked();
+                            boolean isNew = entry.isNewLocked() || !entry.valid(topVer);
 
                             v = entry.innerGet(tx, /*swap*/true, /*read-through*/false, /*fail-fast*/true,
                                 /*unmarshal*/true, /*update-metrics*/false, !isNear, filters);
@@ -493,14 +493,14 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     /**
      * @return Near cache.
      */
-    private GridNearCache<K, V> cache() {
-        return (GridNearCache<K, V>)cctx.cache();
+    private GridNearCacheAdapter<K, V> cache() {
+        return (GridNearCacheAdapter<K, V>)cctx.cache();
     }
 
     /**
      * @return DHT cache.
      */
-    private GridDhtCache<K, V> dht() {
+    private GridDhtCacheAdapter<K, V> dht() {
         return cache().dht();
     }
 
@@ -518,32 +518,42 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         Map<K, V> map = empty ? Collections.<K, V>emptyMap() : new GridLeanMap<K, V>(keys.size());
 
         if (!empty) {
-            GridCacheVersion ver = F.isEmpty(infos) ? null : cctx.versions().next();
+            boolean atomic = cctx.atomic();
+
+            GridCacheVersion ver = atomic ? null : F.isEmpty(infos) ? null : cctx.versions().next();
 
             for (GridCacheEntryInfo<K, V> info : infos) {
-                // Entries available locally in DHT should not be loaded into near cache for reading.
-                if (!ctx.localNodeId().equals(nodeId)) {
-                    try {
+                try {
+                    info.unmarshalValue(cctx, cctx.deploy().globalLoader());
+
+                    // Entries available locally in DHT should not be loaded into near cache for reading.
+                    if (!cctx.cache().affinity().isPrimaryOrBackup(cctx.localNode(), info.key())) {
                         GridNearCacheEntry<K, V> entry = cache().entryExx(info.key());
 
                         GridCacheVersion saved = savedVers.get(info.key());
 
-                        info.unmarshalValue(cctx, cctx.deploy().globalLoader());
-
                         // Load entry into cache.
-                        entry.loadedValue(tx, nodeId, info.value(), info.valueBytes(), ver, info.version(), saved,
-                            info.ttl(), info.expireTime(), true);
+                        entry.loadedValue(tx,
+                            nodeId,
+                            info.value(),
+                            info.valueBytes(),
+                            atomic ? info.version() : ver,
+                            info.version(),
+                            saved,
+                            info.ttl(),
+                            info.expireTime(),
+                            true);
                     }
-                    catch (GridCacheEntryRemovedException ignore) {
-                        if (log.isDebugEnabled())
-                            log.debug("Got removed entry while processing get response (will not retry).");
-                    }
-                    catch (GridException e) {
-                        // Fail.
-                        onDone(e);
+                }
+                catch (GridCacheEntryRemovedException ignore) {
+                    if (log.isDebugEnabled())
+                        log.debug("Got removed entry while processing get response (will not retry).");
+                }
+                catch (GridException e) {
+                    // Fail.
+                    onDone(e);
 
-                        return Collections.emptyMap();
-                    }
+                    return Collections.emptyMap();
                 }
 
                 map.put(info.key(), info.value());

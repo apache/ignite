@@ -28,16 +28,6 @@ import org.gridgain.grid.lang.GridPredicate
  * ==Overview==
  * Visor 'alert' command implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.alert.VisorAlertCommand._
- * </ex>
- * Note that `VisorAlertCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +---------------------------------------------------------------------+

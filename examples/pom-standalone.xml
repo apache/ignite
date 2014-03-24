@@ -57,6 +57,12 @@
         </dependency>
 
         <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-aspectj-deps</artifactId>
             <version>1.1</version>
@@ -96,12 +102,6 @@
             <artifactId>gridgain-spring-deps</artifactId>
             <version>1.1</version>
             <type>pom</type>
-        </dependency>
-
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>3.0.1</version>
         </dependency>
 
         <dependency>
@@ -329,12 +329,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain.snaptree-gg</groupId>
-            <artifactId>snaptree-gg</artifactId>
-            <version>1.1</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.ant</groupId>
             <artifactId>ant</artifactId>
             <version>1.8.1</version>
@@ -424,6 +418,28 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>config</directory>
+            </resource>
+            <resource>
+                <directory>src/main/java</directory>
+            </resource>
+            <resource>
+                <directory>gar</directory>
+            </resource>
+        </resources>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>net.alchim31.maven</groupId>
+                    <artifactId>scala-maven-plugin</artifactId>
+                    <version>3.1.6</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -433,20 +449,28 @@
                     <target>1.7</target>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>scala-compile-first</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
-
-        <sourceDirectory>java</sourceDirectory>
-
-        <resources>
-            <resource>
-                <directory>config</directory>
-            </resource>
-            <resource>
-                <directory>java</directory>
-            </resource>
-            <resource>
-                <directory>gar</directory>
-            </resource>
-        </resources>
     </build>
 </project>

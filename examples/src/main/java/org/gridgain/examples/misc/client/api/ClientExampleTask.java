@@ -27,7 +27,8 @@ public class ClientExampleTask extends GridComputeTaskSplitAdapter<String, Integ
         for (int i = 0; i < gridSize; i++) {
             res.add(new GridComputeJobAdapter() {
                 @Override public Integer execute() {
-                    System.out.println(">>> Client job is run by: " + arg);
+                    System.out.println(">>> Executing job.");
+                    System.out.println(">>> Job argument is: " + arg);
 
                     return 1;
                 }
