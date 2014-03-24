@@ -11,9 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.local.atomic;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
@@ -21,18 +19,22 @@ import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
+import sun.misc.*;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheFlag.CLONE;
+import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
  * Non-transactional local cache.
  */
 public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
+    /** Unsafe instance. */
+    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
+
     /** */
     private GridCachePreloader<K,V> preldr;
 
@@ -85,26 +87,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridFuture<Map<K, V>> getAllAsync(
-        @Nullable final Collection<? extends K> keys,
-        final boolean forcePrimary,
-        boolean skipTx,
-        @Nullable final GridCacheEntryEx<K, V> entry,
-        @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
-    ) {
-        return asyncOp(new CO<GridFuture>() {
-            @Override public GridFuture<Map<K, V>> apply() {
-                return ctx.closures().callLocalSafe(new Callable<Map<K, V>>() {
-                    @Override public Map<K, V> call() throws Exception {
-                        return getAllInternal(keys, filter);
-                    }
-                });
-            }
-        });
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public V put(K key,
         V val,
         @Nullable GridCacheEntryEx<K, V> cached,
@@ -112,8 +94,16 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         A.notNull(key, "key", val, "val");
 
-        return (V)updateAllInternal(UPDATE, Collections.singleton(key), Collections.singleton(val),
-            ttl, true, false, filter);
+        ctx.denyOnLocalRead();
+
+        return (V)updateAllInternal(UPDATE,
+            Collections.singleton(key),
+            Collections.singleton(val),
+            ttl,
+            true,
+            false,
+            filter,
+            ctx.isStoreEnabled());
     }
 
     /** {@inheritDoc} */
@@ -122,16 +112,36 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
-        return (Boolean)updateAllInternal(UPDATE, Collections.singleton(key), Collections.singleton(val),
-            ttl, false, false, filter);
+        A.notNull(key, "key", val, "val");
+
+        ctx.denyOnLocalRead();
+
+        return (Boolean)updateAllInternal(UPDATE,
+            Collections.singleton(key),
+            Collections.singleton(val),
+            ttl,
+            false,
+            false,
+            filter,
+            ctx.isStoreEnabled());
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx(K key,
         V val,
         GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
-        return (Boolean)updateAllInternal(UPDATE, Collections.singleton(key), Collections.singleton(val),
-            -1, false, false, filter);
+        A.notNull(key, "key", val, "val");
+
+        ctx.denyOnLocalRead();
+
+        return (Boolean)updateAllInternal(UPDATE,
+            Collections.singleton(key),
+            Collections.singleton(val),
+            -1,
+            false,
+            false,
+            filter,
+            ctx.isStoreEnabled());
     }
 
     /** {@inheritDoc} */
@@ -141,7 +151,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         @Nullable GridCacheEntryEx<K, V> entry,
         long ttl,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
-        return updateAllAsync0(F0.asMap(key, val), null, true, false, entry, ttl, filter);
+        A.notNull(key, "key", val, "val");
+
+        ctx.denyOnLocalRead();
+
+        return updateAllAsync0(F0.asMap(key, val), null, true, false, ttl, filter);
     }
 
     /** {@inheritDoc} */
@@ -151,7 +165,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         @Nullable GridCacheEntryEx<K, V> entry,
         long ttl,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
-        return updateAllAsync0(F0.asMap(key, val), null, false, false, entry, ttl, filter);
+        A.notNull(key, "key", val, "val");
+
+        ctx.denyOnLocalRead();
+
+        return updateAllAsync0(F0.asMap(key, val), null, false, false, ttl, filter);
     }
 
     /** {@inheritDoc} */
@@ -209,46 +227,80 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridCacheReturn<V> replacex(K key, V oldVal, V newVal) throws GridException {
-        return (GridCacheReturn<V>)updateAllInternal(UPDATE, Collections.singleton(key), Collections.singleton(newVal),
-            0, true, true, ctx.equalsPeekArray(oldVal));
+        A.notNull(key, "key");
+
+        ctx.denyOnLocalRead();
+
+        return (GridCacheReturn<V>)updateAllInternal(UPDATE,
+            Collections.singleton(key),
+            Collections.singleton(newVal),
+            0,
+            true,
+            true,
+            ctx.equalsPeekArray(oldVal),
+            ctx.isStoreEnabled());
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridCacheReturn<V> removex(K key, V val) throws GridException {
-        return (GridCacheReturn<V>)updateAllInternal(DELETE, Collections.singleton(key), null, 0, true, true,
-            ctx.equalsPeekArray(val));
+        A.notNull(key, "key");
+
+        ctx.denyOnLocalRead();
+
+        return (GridCacheReturn<V>)updateAllInternal(DELETE,
+            Collections.singleton(key),
+            null,
+            0,
+            true,
+            true,
+            ctx.equalsPeekArray(val),
+            ctx.isStoreEnabled());
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridFuture<GridCacheReturn<V>> removexAsync(K key, V val) {
-        return removeAllAsync0(F.asList(key), null, null, true, true, ctx.equalsPeekArray(val));
+        A.notNull(key, "key");
+
+        ctx.denyOnLocalRead();
+
+        return removeAllAsync0(F.asList(key), true, true, ctx.equalsPeekArray(val));
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal) {
-        return updateAllAsync0(F.asMap(key, newVal), null, true, true, null, 0,
+        A.notNull(key, "key");
+
+        ctx.denyOnLocalRead();
+
+        return updateAllAsync0(F.asMap(key, newVal), null, true, true, 0,
             ctx.equalsPeekArray(oldVal));
     }
 
     /** {@inheritDoc} */
     @Override public void putAll(Map<? extends K, ? extends V> m,
         GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
-        updateAllInternal(UPDATE, m.keySet(), m.values(), 0, false, false, filter);
+        ctx.denyOnLocalRead();
+
+        updateAllInternal(UPDATE, m.keySet(), m.values(), 0, false, false, filter, ctx.isStoreEnabled());
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> putAllAsync(Map<? extends K, ? extends V> m,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
-        return updateAllAsync0(m, null, false, false, null, 0, filter);
+        ctx.denyOnLocalRead();
+
+        return updateAllAsync0(m, null, false, false, 0, filter);
     }
 
     /** {@inheritDoc} */
     @Override public void transform(K key, GridClosure<V, V> transformer) throws GridException {
+        ctx.denyOnLocalRead();
+
         updateAllInternal(TRANSFORM, Collections.singleton(key), Collections.singleton(transformer), -1, false, false,
-            null);
+            null, ctx.isStoreEnabled());
     }
 
     /** {@inheritDoc} */
@@ -256,23 +308,30 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         GridClosure<V, V> transformer,
         @Nullable GridCacheEntryEx<K, V> entry,
         long ttl) {
-        return updateAllAsync0(null, Collections.singletonMap(key, transformer), false, false, entry, ttl, null);
+        ctx.denyOnLocalRead();
+
+        return updateAllAsync0(null, Collections.singletonMap(key, transformer), false, false, ttl, null);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public void transformAll(@Nullable Map<? extends K, ? extends GridClosure<V, V>> m) throws GridException {
+        ctx.denyOnLocalRead();
+
         if (F.isEmpty(m))
             return;
 
-        updateAllInternal(TRANSFORM, m.keySet(), m.values(), 0, false, false, null);
+        updateAllInternal(TRANSFORM, m.keySet(), m.values(), 0, false, false, null, ctx.isStoreEnabled());
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends GridClosure<V, V>> m) {
+        ctx.denyOnLocalRead();
+
         if (F.isEmpty(m))
             return new GridFinishedFuture<Object>(ctx.kernalContext());
 
-        return updateAllAsync0(null, m, false, false, null, 0, null);
+        return updateAllAsync0(null, m, false, false, 0, null);
     }
 
     /** {@inheritDoc} */
@@ -280,7 +339,16 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public V remove(K key,
         @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
-        return (V)updateAllInternal(DELETE, Collections.singleton(key), null, 0, true, false, filter);
+        ctx.denyOnLocalRead();
+
+        return (V)updateAllInternal(DELETE,
+            Collections.singleton(key),
+            null,
+            0,
+            true,
+            false,
+            filter,
+            ctx.isStoreEnabled());
     }
 
     /** {@inheritDoc} */
@@ -288,26 +356,43 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public GridFuture<V> removeAsync(K key,
         @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
-        return removeAllAsync0(Collections.singletonList(key), null, entry, true, false, filter);
+        ctx.denyOnLocalRead();
+
+        return removeAllAsync0(Collections.singletonList(key), true, false, filter);
     }
 
     /** {@inheritDoc} */
     @Override public void removeAll(Collection<? extends K> keys,
         GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
-        updateAllInternal(DELETE, keys, null, 0, false, false, filter);
+        ctx.denyOnLocalRead();
+
+        updateAllInternal(DELETE, keys, null, 0, false, false, filter, ctx.isStoreEnabled());
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<?> removeAllAsync(Collection<? extends K> keys,
         GridPredicate<GridCacheEntry<K, V>>[] filter) {
-        return removeAllAsync0(keys, null, null, false, false, filter);
+        ctx.denyOnLocalRead();
+
+        return removeAllAsync0(keys, false, false, filter);
     }
 
     /** {@inheritDoc} */
     @Override public boolean removex(K key,
         @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
-        return (Boolean)updateAllInternal(DELETE, Collections.singleton(key), null, 0, false, false, filter);
+        A.notNull(key, "key");
+
+        ctx.denyOnLocalRead();
+
+        return (Boolean)updateAllInternal(DELETE,
+            Collections.singleton(key),
+            null,
+            0,
+            false,
+            false,
+            filter,
+            ctx.isStoreEnabled());
     }
 
     /** {@inheritDoc} */
@@ -315,13 +400,27 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public GridFuture<Boolean> removexAsync(K key,
         @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
-        return removeAllAsync0(Collections.singletonList(key), null, entry, false, false, filter);
+        A.notNull(key, "key");
+
+        ctx.denyOnLocalRead();
+
+        return removeAllAsync0(Collections.singletonList(key), false, false, filter);
     }
 
     /** {@inheritDoc} */
     @Override public boolean remove(K key, V val) throws GridException {
-        return (Boolean)updateAllInternal(DELETE, Collections.singleton(key), null, 0, false, false,
-            ctx.equalsPeekArray(val));
+        A.notNull(key, "key");
+
+        ctx.denyOnLocalRead();
+
+        return (Boolean)updateAllInternal(DELETE,
+            Collections.singleton(key),
+            null,
+            0,
+            false,
+            false,
+            ctx.equalsPeekArray(val),
+            ctx.isStoreEnabled());
     }
 
     /** {@inheritDoc} */
@@ -330,6 +429,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void removeAll(GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         removeAll(keySet(filter));
     }
@@ -339,22 +439,80 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         return removeAllAsync(keySet(filter), filter);
     }
 
+    /** {@inheritDoc} */
+
+    @SuppressWarnings("unchecked")
+    @Override @Nullable public V get(K key, @Nullable GridPredicate<GridCacheEntry<K, V>> filter) throws GridException {
+        ctx.denyOnFlag(LOCAL);
+
+        Map<K, V> m = getAllInternal(Collections.singleton(key),
+            filter != null ? new GridPredicate[]{filter} : null,
+            ctx.isSwapOrOffheapEnabled(),
+            ctx.isStoreEnabled(),
+            ctx.hasFlag(CLONE));
+
+        return m.get(key);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public final Map<K, V> getAll(Collection<? extends K> keys, GridPredicate<GridCacheEntry<K, V>> filter)
+        throws GridException {
+        ctx.denyOnFlag(LOCAL);
+
+        return getAllInternal(keys,
+            filter != null ? new GridPredicate[]{filter} : null,
+            ctx.isSwapOrOffheapEnabled(),
+            ctx.isStoreEnabled(),
+            ctx.hasFlag(CLONE));
+    }
+
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public GridFuture<Map<K, V>> getAllAsync(
+        @Nullable final Collection<? extends K> keys,
+        final boolean forcePrimary,
+        boolean skipTx,
+        @Nullable final GridCacheEntryEx<K, V> entry,
+        @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
+    ) {
+        ctx.denyOnFlag(LOCAL);
+
+        final boolean swapOrOffheap = ctx.isSwapOrOffheapEnabled();
+        final boolean storeEnabled = ctx.isStoreEnabled();
+        final boolean clone = ctx.hasFlag(CLONE);
+
+        return asyncOp(new Callable<Map<K, V>>() {
+            @Override public Map<K, V> call() throws Exception {
+                return getAllInternal(keys, filter, swapOrOffheap, storeEnabled, clone);
+            }
+        });
+    }
+
     /**
      * Entry point to all public API get methods.
      *
      * @param keys Keys to remove.
      * @param filter Filter.
-     * @return Get future.
+     * @param swapOrOffheap {@code True} if swap of off-heap storage are enabled.
+     * @param storeEnabled Store enabled flag.
+     * @param clone {@code True} if returned values should be cloned.
+     * @return Key-value map.
+     * @throws GridException If failed.
      */
     @SuppressWarnings("ConstantConditions")
     private Map<K, V> getAllInternal(@Nullable Collection<? extends K> keys,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
+        boolean swapOrOffheap,
+        boolean storeEnabled,
+        boolean clone) throws GridException {
         if (F.isEmpty(keys))
             return Collections.emptyMap();
 
-        Map<K, V> vals = new HashMap<>(keys.size(), 1.0f);
+        boolean success = true;
 
-        boolean swapOrOffheap = ctx.isSwapOrOffheapEnabled();
+        Map<K, V> vals = new HashMap<>(keys.size(), 1.0f);
 
         for (K key : keys) {
             if (key == null)
@@ -369,7 +527,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     if (entry != null) {
                         V v = entry.innerGet(null,
                             /*swap*/swapOrOffheap,
-                            /*read-through*/true,
+                            /*read-through*/false,
                             /*fail-fast*/false,
                             /*unmarshal*/true,
                             /**update-metrics*/true,
@@ -378,7 +536,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                         if (v != null)
                             vals.put(key, v);
+                        else
+                            success = false;
                     }
+                    else
+                        success = false;
 
                     break; // While.
                 }
@@ -393,28 +555,34 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     if (entry != null)
                         ctx.evicts().touch(entry);
                 }
+
+                if (!success && storeEnabled)
+                    break;
             }
         }
 
-        if (!ctx.hasFlag(CLONE))
-            return vals;
+        if (success || !storeEnabled) {
+            if (!clone)
+                return vals;
 
-        Map<K, V> map = new GridLeanMap<>();
+            Map<K, V> map = new GridLeanMap<>();
 
-        for (Map.Entry<K, V> e : vals.entrySet())
-            map.put(e.getKey(), ctx.cloneValue(e.getValue()));
+            for (Map.Entry<K, V> e : vals.entrySet())
+                map.put(e.getKey(), ctx.cloneValue(e.getValue()));
 
-        return map;
+            return map;
+        }
+
+        return getAllAsync(keys, null, false, filter).get();
     }
 
     /**
-     * Entry point for public API put/transform methods.
+     * Entry point for public API update methods.
      *
-     * @param map Put map. Either {@code map}, {@code transformMap} or {@code drMap} should be passed.
-     * @param transformMap Transform map. Either {@code map}, {@code transformMap} or {@code drMap} should be passed.
+     * @param map Put map. Either {@code map} or {@code transformMap} should be passed.
+     * @param transformMap Transform map. Either {@code map} or {@code transformMap} should be passed.
      * @param retval Return value required flag.
      * @param rawRetval Return {@code GridCacheReturn} instance.
-     * @param cached Cached cache entry for key. May be passed if and only if map size is {@code 1}.
      * @param ttl Entry time-to-live.
      * @param filter Cache entry filter for atomic updates.
      * @return Completion future.
@@ -424,21 +592,18 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         @Nullable final Map<? extends K, ? extends GridClosure<V, V>> transformMap,
         final boolean retval,
         final boolean rawRetval,
-        @Nullable GridCacheEntryEx<K, V> cached,
         final long ttl,
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         final GridCacheOperation op = transformMap != null ? TRANSFORM : UPDATE;
-        final Collection<? extends K> keys = map != null ? map.keySet() : transformMap != null ? transformMap.keySet() : null;
+        final Collection<? extends K> keys =
+            map != null ? map.keySet() : transformMap != null ? transformMap.keySet() : null;
         final Collection<?> vals = map != null ? map.values() : transformMap != null ? transformMap.values() : null;
+        final boolean storeEnabled = ctx.isStoreEnabled();
 
-        return asyncOp(new CO<GridFuture>() {
-            @Override public GridFuture apply() {
-                return ctx.closures().callLocalSafe(new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return updateAllInternal(op, keys, vals, ttl, retval, rawRetval, filter);
-                    }
-                });
+        return asyncOp(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                return updateAllInternal(op, keys, vals, ttl, retval, rawRetval, filter, storeEnabled);
             }
         });
     }
@@ -447,8 +612,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * Entry point for public API remove methods.
      *
      * @param keys Keys to remove.
-     * @param drMap DR map.
-     * @param cached Cached cache entry for key. May be passed if and only if keys size is {@code 1}.
      * @param retval Return value required flag.
      * @param rawRetval Return {@code GridCacheReturn} instance.
      * @param filter Cache entry filter.
@@ -456,21 +619,15 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      */
     private GridFuture removeAllAsync0(
         @Nullable final Collection<? extends K> keys,
-        @Nullable final Map<? extends K, GridCacheVersion> drMap,
-        @Nullable GridCacheEntryEx<K, V> cached,
         final boolean retval,
         final boolean rawRetval,
-        final @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
+        @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
-        return asyncOp(new CO<GridFuture>() {
-            @Override
-            public GridFuture apply() {
-                return ctx.closures().callLocalSafe(new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
-                        return updateAllInternal(DELETE, keys, null, 0, retval, rawRetval, filter);
-                    }
-                });
+        final boolean storeEnabled = ctx.isStoreEnabled();
+
+        return asyncOp(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                return updateAllInternal(DELETE, keys, null, 0, retval, rawRetval, filter, storeEnabled);
             }
         });
     }
@@ -485,7 +642,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @param retval Return value required flag.
      * @param rawRetval Return {@code GridCacheReturn} instance.
      * @param filter Cache entry filter.
+     * @param storeEnabled Store enabled flag.
      * @return Update result.
+     * @throws GridException If failed.
      */
     private Object updateAllInternal(GridCacheOperation op,
         Collection<? extends K> keys,
@@ -493,14 +652,21 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         long ttl,
         boolean retval,
         boolean rawRetval,
-        GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        GridPredicate<GridCacheEntry<K, V>>[] filter,
+        boolean storeEnabled) throws GridException {
+        GridCacheVersion ver = ctx.versions().next();
+
+        if (storeEnabled && keys.size() > 1) {
+            updateWithBatch(op, keys, vals, ver, filter);
+
+            return null;
+        }
+
         Iterator<?> valsIter = vals != null ? vals.iterator() : null;
 
         GridBiTuple<Boolean, V> res = null;
 
         GridCachePartialUpdateException err = null;
-
-        GridCacheVersion ver = ctx.versions().next();
 
         for (K key : keys) {
             Object val = valsIter != null ? valsIter.next() : null;
@@ -514,11 +680,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 try {
                     entry = entryEx(key);
 
-                    GridBiTuple<Boolean, V> t = entry.localUpdate(
+                    GridBiTuple<Boolean, V> t = entry.updateLocalAtomic(
                         ver,
                         val == null ? DELETE : op,
                         val,
-                        storeEnabled(),
+                        storeEnabled,
                         retval,
                         ttl,
                         true,
@@ -538,8 +704,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 }
                 catch (GridException e) {
                     if (err == null)
-                        err = new GridCachePartialUpdateException("Failed to update keys " +
-                            "(retry update if possible).");
+                        err = partialUpdateException();
 
                     err.add(F.asList(key), e);
 
@@ -562,10 +727,295 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /**
-     * @return {@code True} if store enabled.
+     * Updates entries using batched write-through.
+     *
+     * @param op Operation.
+     * @param keys Keys.
+     * @param vals Values.
+     * @param ver Cache version.
+     * @param filter Optional filter.
+     * @throws GridCachePartialUpdateException If update failed.
      */
-    private boolean storeEnabled() {
-        return ctx.isStoreEnabled() && ctx.config().getStore() != null;
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private void updateWithBatch(
+        GridCacheOperation op,
+        Collection<? extends K> keys,
+        @Nullable Collection<?> vals,
+        GridCacheVersion ver,
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
+    ) throws GridException {
+        List<GridCacheEntryEx<K, V>> locked = lockEntries(keys);
+
+        try {
+            int size = locked.size();
+
+            Map<K, V> putMap = null;
+            Collection<K> rmvKeys = null;
+            List<GridCacheEntryEx<K, V>> filtered = new ArrayList<>(size);
+
+            GridCachePartialUpdateException err = null;
+
+            Iterator<?> valsIter = vals != null ? vals.iterator() : null;
+
+            for (int i = 0; i < size; i++) {
+                GridCacheEntryEx<K, V> entry = locked.get(i);
+
+                Object val = valsIter != null ? valsIter.next() : null;
+
+                if (val == null && op != DELETE)
+                    continue;
+
+                try {
+                    try {
+                        if (!ctx.isAll(entry.wrapFilterLocked(), filter)) {
+                            if (log.isDebugEnabled())
+                                log.debug("Entry did not pass the filter (will skip write) [entry=" + entry +
+                                    ", filter=" + Arrays.toString(filter) + ']');
+
+                            continue;
+                        }
+                    }
+                    catch (GridException e) {
+                        if (err == null)
+                            err = partialUpdateException();
+
+                        err.add(F.asList(entry.key()), e);
+
+                        continue;
+                    }
+
+                    filtered.add(entry);
+
+                    if (op == TRANSFORM) {
+                        V old = entry.innerGet(null, true, true, false, true, true, true, CU.<K, V>empty());
+
+                        GridClosure<V, V> transform = (GridClosure<V, V>)val;
+
+                        V updated = transform.apply(old);
+
+                        if (updated == null) {
+                            // Update previous batch.
+                            if (putMap != null) {
+                                err = updatePartialBatch(
+                                    filtered,
+                                    ver,
+                                    putMap,
+                                    null,
+                                    err);
+
+                                putMap = null;
+
+                                filtered = new ArrayList<>();
+                            }
+
+                            // Start collecting new batch.
+                            if (rmvKeys == null)
+                                rmvKeys = new ArrayList<>(size);
+
+                            rmvKeys.add(entry.key());
+                        }
+                        else {
+                            // Update previous batch.
+                            if (rmvKeys != null) {
+                                err = updatePartialBatch(
+                                    filtered,
+                                    ver,
+                                    null,
+                                    rmvKeys,
+                                    err);
+
+                                rmvKeys = null;
+
+                                filtered = new ArrayList<>();
+                            }
+
+                            if (putMap == null)
+                                putMap = new LinkedHashMap<>(size, 1.0f);
+
+                            putMap.put(entry.key(), updated);
+                        }
+                    }
+                    else if (op == UPDATE) {
+                        if (putMap == null)
+                            putMap = new LinkedHashMap<>(size, 1.0f);
+
+                        putMap.put(entry.key(), (V)val);
+                    }
+                    else {
+                        assert op == DELETE;
+
+                        if (rmvKeys == null)
+                            rmvKeys = new ArrayList<>(size);
+
+                        rmvKeys.add(entry.key());
+                    }
+                }
+                catch (GridException e) {
+                    if (err == null)
+                        err = partialUpdateException();
+
+                    err.add(F.asList(entry.key()), e);
+                }
+                catch (GridCacheEntryRemovedException ignore) {
+                    assert false : "Entry cannot become obsolete while holding lock.";
+                }
+                catch (GridCacheFilterFailedException ignore) {
+                    assert false : "Filter should never fail with failFast=false and empty filter.";
+                }
+            }
+
+            // Store final batch.
+            if (putMap != null || rmvKeys != null) {
+                err = updatePartialBatch(
+                    filtered,
+                    ver,
+                    putMap,
+                    rmvKeys,
+                    err);
+            }
+            else
+                assert filtered.isEmpty();
+
+            if (err != null)
+                throw err;
+        }
+        finally {
+            unlockEntries(locked);
+        }
+    }
+
+    /**
+     * @param entries Entries to update.
+     * @param ver Cache version.
+     * @param putMap Values to put.
+     * @param rmvKeys Keys to remove.
+     * @param err Optional partial update exception.
+     * @return Partial update exception.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private GridCachePartialUpdateException updatePartialBatch(List<GridCacheEntryEx<K, V>> entries,
+        final GridCacheVersion ver,
+        @Nullable Map<K, V> putMap,
+        @Nullable Collection<K> rmvKeys,
+        @Nullable GridCachePartialUpdateException err) {
+        assert putMap == null ^ rmvKeys == null;
+        GridCacheOperation op;
+
+        try {
+            if (putMap != null) {
+                ctx.store().putAllToStore(null, F.viewReadOnly(putMap, new C1<V, GridBiTuple<V, GridCacheVersion>>() {
+                    @Override public GridBiTuple<V, GridCacheVersion> apply(V v) {
+                        return F.t(v, ver);
+                    }
+                }));
+
+                op = UPDATE;
+            }
+            else {
+                ctx.store().removeAllFromStore(null, rmvKeys);
+
+                op = DELETE;
+            }
+        }
+        catch (GridException e) {
+            if (err == null)
+                err = partialUpdateException();
+
+            err.add(putMap != null ? putMap.keySet() : rmvKeys, e);
+
+            return err;
+        }
+
+        for (int i = 0; i < entries.size(); i++) {
+            GridCacheEntryEx<K, V> entry = entries.get(i);
+
+            assert Thread.holdsLock(entry);
+
+            if (entry.obsolete())
+                continue;
+
+            try {
+                // We are holding java-level locks on entries at this point.
+                V writeVal = op == UPDATE ? putMap.get(entry.key()) : null;
+
+                assert writeVal != null || op == DELETE : "null write value found.";
+
+                entry.updateLocalAtomic(ver, op, writeVal, false, false, 0, true, true, null);
+            }
+            catch (GridCacheEntryRemovedException ignore) {
+                assert false : "Entry cannot become obsolete while holding lock.";
+            }
+            catch (GridException e) {
+                if (err == null)
+                    err = partialUpdateException();
+
+                err.add(Collections.singleton(entry.key()), e);
+            }
+        }
+
+        return err;
+    }
+
+    /**
+     * Acquires java-level locks on cache entries.
+     *
+     * @param keys Keys to lock.
+     * @return Collection of locked entries.
+     */
+    private List<GridCacheEntryEx<K, V>> lockEntries(Collection<? extends K> keys) {
+        List<GridCacheEntryEx<K, V>> locked = new ArrayList<>(keys.size());
+
+        while (true) {
+            for (K key : keys) {
+                if (key == null)
+                    continue;
+
+                GridCacheEntryEx<K, V> entry = entryEx(key);
+
+                locked.add(entry);
+            }
+
+            for (int i = 0; i < locked.size(); i++) {
+                GridCacheEntryEx<K, V> entry = locked.get(i);
+
+                UNSAFE.monitorEnter(entry);
+
+                if (entry.obsolete()) {
+                    // Unlock all locked.
+                    for (int j = 0; j <= i; j++)
+                        UNSAFE.monitorExit(locked.get(j));
+
+                    // Clear entries.
+                    locked.clear();
+
+                    // Retry.
+                    break;
+                }
+            }
+
+            if (!locked.isEmpty())
+                return locked;
+        }
+    }
+
+    /**
+     * Releases java-level locks on cache entries.
+     *
+     * @param locked Locked entries.
+     */
+    private void unlockEntries(List<GridCacheEntryEx<K, V>> locked) {
+        for (GridCacheEntryEx<K, V> entry : locked)
+            UNSAFE.monitorExit(entry);
+
+        for (GridCacheEntryEx<K, V> entry : locked)
+            ctx.evicts().touch(entry);
+    }
+
+    /**
+     * @return New partial update exception.
+     */
+    private static GridCachePartialUpdateException partialUpdateException() {
+        return new GridCachePartialUpdateException("Failed to update keys (retry update if possible).");
     }
 
     /** {@inheritDoc} */
@@ -619,7 +1069,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @return Future.
      */
     @SuppressWarnings("unchecked")
-    protected GridFuture asyncOp(final CO<GridFuture> op) {
+    protected GridFuture asyncOp(final Callable<?> op) {
         GridFuture fail = asyncOpAcquire();
 
         if (fail != null)
@@ -636,7 +1086,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 GridFuture f = new GridEmbeddedFuture(fut,
                     new C2<Object, Exception, GridFuture>() {
                         @Override public GridFuture apply(Object t, Exception e) {
-                            return op.apply();
+                            return ctx.closures().callLocalSafe(op);
                         }
                     }, ctx.kernalContext());
 
@@ -645,7 +1095,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 return f;
             }
 
-            GridFuture f = op.apply();
+            GridFuture f = ctx.closures().callLocalSafe(op);
 
             saveFuture(holder, f);
 
@@ -654,5 +1104,10 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         finally {
             holder.unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeferredDelete(GridCacheEntryEx<K, V> entry, GridCacheVersion ver) {
+        assert false : "Should not be called";
     }
 }

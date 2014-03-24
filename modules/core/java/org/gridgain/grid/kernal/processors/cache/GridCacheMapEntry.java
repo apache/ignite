@@ -1208,7 +1208,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         boolean metrics,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
         ) throws GridException, GridCacheEntryRemovedException {
-        assert cctx.isLocal();
+        assert cctx.isLocal() && cctx.atomic();
 
         V old;
         boolean res = true;

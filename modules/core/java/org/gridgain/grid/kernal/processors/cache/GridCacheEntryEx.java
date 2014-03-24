@@ -400,7 +400,8 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
     ) throws GridException, GridCacheEntryRemovedException;
 
     /**
-     * Update method in atomic mode for local cache.
+     * Update method for local cache in atomic mode.
+     *
      * @param ver Cache version.
      * @param op Operation.
      * @param writeObj Value. Type depends on operation.
@@ -427,17 +428,17 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
     ) throws GridException, GridCacheEntryRemovedException;
 
 
-        /**
-         * Marks entry as obsolete and, if possible or required, removes it
-         * from swap storage.
-         *
-         * @param ver Obsolete version.
-         * @param swap If {@code true} then remove from swap.
-         * @param readers Flag to clear readers as well.
-         * @param filter Optional entry filter.
-         * @throws GridException If failed to remove from swap.
-         * @return {@code True} if entry was not being used, passed the filter and could be removed.
-         */
+    /**
+     * Marks entry as obsolete and, if possible or required, removes it
+     * from swap storage.
+     *
+     * @param ver Obsolete version.
+     * @param swap If {@code true} then remove from swap.
+     * @param readers Flag to clear readers as well.
+     * @param filter Optional entry filter.
+     * @throws GridException If failed to remove from swap.
+     * @return {@code True} if entry was not being used, passed the filter and could be removed.
+     */
     public boolean clear(GridCacheVersion ver, boolean swap, boolean readers,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException;
 
