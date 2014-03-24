@@ -464,7 +464,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             if (resCache)
                 sibs.add(sib);
 
-            recordJobEvent(EVT_JOB_MAPPED, jobId, node.id(), "Job got mapped.");
+            recordJobEvent(EVT_JOB_MAPPED, jobId, node, "Job got mapped.");
         }
 
         synchronized (mux) {
@@ -807,7 +807,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     }
                     finally {
                         recordJobEvent(EVT_JOB_RESULTED, jobRes.getJobContext().getJobId(),
-                            jobRes.getNode().id(), "Job got resulted with: " + plc);
+                            jobRes.getNode(), "Job got resulted with: " + plc);
                     }
 
                     if (log.isDebugEnabled())
@@ -1006,7 +1006,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         if (timeout > 0) {
             recordJobEvent(EVT_JOB_FAILED_OVER, jobRes.getJobContext().getJobId(),
-                jobRes.getNode().id(), "Job failed over.");
+                jobRes.getNode(), "Job failed over.");
 
             // Send new reference to remote nodes for execution.
             sendRequest(jobRes);
@@ -1130,7 +1130,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         internal);
 
                     if (loc)
-                        ctx.job().processJobExecuteRequest(ctx.localNodeId(), req);
+                        ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req);
                     else {
                         // Send job execution request.
                         ctx.io().send(node, TOPIC_JOB, req, internal ? MANAGEMENT_POOL : PUBLIC_POOL);
@@ -1288,10 +1288,10 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /**
      * @param evtType Event type.
      * @param jobId Job ID.
-     * @param evtNodeId Event node ID.
+     * @param evtNode Event node.
      * @param msg Event message.
      */
-    private void recordJobEvent(int evtType, GridUuid jobId, UUID evtNodeId, String msg) {
+    private void recordJobEvent(int evtType, GridUuid jobId, GridNode evtNode, String msg) {
         if (ctx.event().isRecordable(evtType)) {
             GridJobEvent evt = new GridJobEvent();
 
@@ -1300,7 +1300,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             evt.taskName(ses.getTaskName());
             evt.taskClassName(ses.getTaskClassName());
             evt.taskSessionId(ses.getId());
-            evt.taskNodeId(evtNodeId);
+            evt.taskNode(evtNode);
             evt.jobId(jobId);
             evt.type(evtType);
 

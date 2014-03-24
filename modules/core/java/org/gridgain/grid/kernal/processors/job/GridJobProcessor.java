@@ -884,13 +884,13 @@ public class GridJobProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param nodeId Node ID.
+     * @param node Node.
      * @param req Request.
      */
     @SuppressWarnings("TooBroadScope")
-    public void processJobExecuteRequest(UUID nodeId, final GridJobExecuteRequest req) {
+    public void processJobExecuteRequest(GridNode node, final GridJobExecuteRequest req) {
         if (log.isDebugEnabled())
-            log.debug("Received job request message [req=" + req + ", nodeId=" + nodeId + ']');
+            log.debug("Received job request message [req=" + req + ", nodeId=" + node.id() + ']');
 
         GridJobWorker job = null;
 
@@ -917,7 +917,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     req.getTaskName(),
                     req.getTaskClassName(),
                     req.getUserVersion(),
-                    nodeId,
+                    node.id(),
                     req.getClassLoaderId(),
                     req.getLoaderParticipants(),
                     null);
@@ -978,7 +978,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         // Note that we unmarshal session/job attributes here with proper class loader.
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
                             req.getSessionId(),
-                            nodeId,
+                            node.id(),
                             req.getTaskName(),
                             dep,
                             req.getTaskClassName(),
@@ -1008,7 +1008,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                         U.error(log, ex.getMessage(), e);
 
-                        handleException(nodeId, req, ex, endTime);
+                        handleException(node, req, ex, endTime);
 
                         return;
                     }
@@ -1021,7 +1021,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         jobCtx,
                         req.getJobBytes(),
                         req.getJob(),
-                        nodeId,
+                        node,
                         req.isInternal(),
                         evtLsnr,
                         holdLsnr);
@@ -1044,7 +1044,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         }
                         else if (jobAlwaysActivate) {
                             if (onBeforeActivateJob(job)) {
-                                if (ctx.localNodeId().equals(nodeId)) {
+                                if (ctx.localNodeId().equals(node.id())) {
                                     // Always execute in another thread for local node.
                                     executeAsync(job);
 
@@ -1068,7 +1068,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             else
                                 U.error(log, "Received computation request with duplicate job ID (could be " +
                                     "network malfunction, source node may hang if task timeout was not set) " +
-                                    "[srcNode=" + nodeId +
+                                    "[srcNode=" + node.id() +
                                     ", jobId=" + req.getJobId() + ", sesId=" + req.getSessionId() +
                                     ", locNodeId=" + ctx.localNodeId() + ']');
 
@@ -1090,7 +1090,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                     U.error(log, ex.getMessage(), ex);
 
-                    handleException(nodeId, req, ex, endTime);
+                    handleException(node, req, ex, endTime);
                 }
             }
             finally {
@@ -1140,7 +1140,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         // Job has not been cancelled and should be activated.
         // However we need to check if master is alive before job will get
         // its runner thread for proper master leave handling.
-        if (ctx.discovery().node(jobWorker.getTaskNodeId()) == null &&
+        if (ctx.discovery().node(jobWorker.getTaskNode().id()) == null &&
             activeJobs.remove(jobWorker.getJobId(), jobWorker)) {
             // Add to cancelled jobs.
             cancelledJobs.put(jobWorker.getJobId(), jobWorker);
@@ -1191,18 +1191,18 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /**
      * Handles errors that happened prior to job creation.
      *
-     * @param nodeId Sender ID.
+     * @param node Sender node.
      * @param req Job execution request.
      * @param ex Exception that happened.
      * @param endTime Job end time.
      */
-    private void handleException(UUID nodeId, GridJobExecuteRequest req, GridException ex, long endTime) {
+    private void handleException(GridNode node, GridJobExecuteRequest req, GridException ex, long endTime) {
         UUID locNodeId = ctx.localNodeId();
 
-        GridNode sndNode = ctx.discovery().node(nodeId);
+        GridNode sndNode = ctx.discovery().node(node.id());
 
         if (sndNode == null) {
-            U.warn(log, "Failed to reply to sender node because it left grid [nodeId=" + nodeId +
+            U.warn(log, "Failed to reply to sender node because it left grid [nodeId=" + node.id() +
                 ", jobId=" + req.getJobId() + ']');
 
             if (ctx.event().isRecordable(EVT_JOB_FAILED)) {
@@ -1215,7 +1215,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 evt.taskClassName(req.getTaskClassName());
                 evt.taskSessionId(req.getSessionId());
                 evt.type(EVT_JOB_FAILED);
-                evt.taskNodeId(nodeId);
+                evt.taskNode(node);
 
                 // Record job reply failure.
                 ctx.event().record(evt);
@@ -1275,9 +1275,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
         }
         catch (GridException e) {
             // The only option here is to log, as we must assume that resending will fail too.
-            if (isDeadNode(nodeId))
+            if (isDeadNode(node.id()))
                 // Avoid stack trace for left nodes.
-                U.error(log, "Failed to reply to sender node because it left grid [nodeId=" + nodeId +
+                U.error(log, "Failed to reply to sender node because it left grid [nodeId=" + node.id() +
                     ", jobId=" + req.getJobId() + ']');
             else {
                 assert sndNode != null;
@@ -1296,7 +1296,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 evt.taskClassName(req.getTaskClassName());
                 evt.taskSessionId(req.getSessionId());
                 evt.type(EVT_JOB_FAILED);
-                evt.taskNodeId(nodeId);
+                evt.taskNode(node);
 
                 // Record job reply failure.
                 ctx.event().record(evt);
@@ -1656,6 +1656,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
             assert nodeId != null;
             assert msg != null;
 
+            GridNode node = ctx.discovery().node(nodeId);
+
             if (!ctx.discovery().alive(nodeId)) {
                 U.warn(log, "Received job request message from unknown node (ignoring) " +
                     "[msg=" + msg + ", nodeId=" + nodeId + ']');
@@ -1663,7 +1665,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 return;
             }
 
-            processJobExecuteRequest(nodeId, (GridJobExecuteRequest)msg);
+            assert node != null;
+
+            processJobExecuteRequest(node, (GridJobExecuteRequest)msg);
         }
     }
 
@@ -1694,7 +1698,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 case EVT_NODE_FAILED:
                     if (!jobAlwaysActivate) {
                         for (GridJobWorker job : passiveJobs.values()) {
-                            if (job.getTaskNodeId().equals(nodeId)) {
+                            if (job.getTaskNode().id().equals(nodeId)) {
                                 if (passiveJobs.remove(job.getJobId(), job))
                                     U.warn(log, "Task node left grid (job will not be activated) " +
                                         "[nodeId=" + nodeId + ", jobSes=" + job.getSession() + ", job=" + job + ']');
@@ -1703,7 +1707,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     }
 
                     for (GridJobWorker job : activeJobs.values()) {
-                        if (job.getTaskNodeId().equals(nodeId) && !job.isFinishing() &&
+                        if (job.getTaskNode().id().equals(nodeId) && !job.isFinishing() &&
                             activeJobs.remove(job.getJobId(), job)) {
                             // Add to cancelled jobs.
                             cancelledJobs.put(job.getJobId(), job);

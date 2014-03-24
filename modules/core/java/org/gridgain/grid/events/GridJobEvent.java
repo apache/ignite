@@ -13,8 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.util.*;
-
 /**
  * Grid job event.
  * <p>
@@ -72,7 +70,7 @@ public class GridJobEvent extends GridEventAdapter {
     private GridUuid jobId;
 
     /** */
-    private UUID taskNodeId;
+    private GridNode taskNode;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
@@ -176,21 +174,21 @@ public class GridJobEvent extends GridEventAdapter {
     }
 
     /**
-     * Get ID of the node where parent task of the job has originated.
+     * Get node where parent task of the job has originated.
      *
-     * @return ID of the node where parent task of the job has originated.
+     * @return Node where parent task of the job has originated.
      */
-    public UUID taskNodeId() {
-        return taskNodeId;
+    public GridNode taskNode() {
+        return taskNode;
     }
 
     /**
-     * Sets ID of the node where parent task of the job has originated.
+     * Sets node where parent task of the job has originated.
      *
-     * @param taskNodeId ID of the node where parent task of the job has originated.
+     * @param taskNode Node where parent task of the job has originated.
      */
-    public void taskNodeId(UUID taskNodeId) {
-        this.taskNodeId = taskNodeId;
+    public void taskNode(GridNode taskNode) {
+        this.taskNode = taskNode;
     }
 
     /** {@inheritDoc} */
