@@ -34,7 +34,7 @@
  */
 
 /*
- * Copyright © 1993, 2013, Oracle and/or its affiliates.
+ * Copyright &copy; 1993, 2013, Oracle and/or its affiliates.
  * All rights reserved.
  */
 
@@ -43,6 +43,8 @@ package org.jdk8.backport;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
+import java.lang.reflect.*;
+import java.security.*;
 import java.util.*;
 import java.util.Queue;
 
@@ -379,7 +381,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
          */
         static {
             try {
-                UNSAFE = GridUnsafe.unsafe();
+                UNSAFE = unsafe();
 
                 Class k = Node.class;
 
@@ -1941,7 +1943,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
         NEXT_TERMINATOR.prev = NEXT_TERMINATOR;
 
         try {
-            UNSAFE = GridUnsafe.unsafe();
+            UNSAFE = unsafe();
 
             Class cls = ConcurrentLinkedDeque8.class;
 
@@ -1950,6 +1952,33 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
         }
         catch (Exception e) {
             throw new Error(e);
+        }
+    }
+
+    /**
+     * @return Instance of Unsafe class.
+     */
+    static Unsafe unsafe() {
+        try {
+            return Unsafe.getUnsafe();
+        }
+        catch (SecurityException ignored) {
+            try {
+                return AccessController.doPrivileged
+                    (new PrivilegedExceptionAction<Unsafe>() {
+                        @Override
+                        public Unsafe run() throws Exception {
+                            Field f = Unsafe.class.getDeclaredField("theUnsafe");
+
+                            f.setAccessible(true);
+
+                            return (Unsafe) f.get(null);
+                        }
+                    });
+            }
+            catch (PrivilegedActionException e) {
+                throw new RuntimeException("Could not initialize intrinsics.", e.getCause());
+            }
         }
     }
 }

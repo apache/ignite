@@ -11,6 +11,7 @@ package org.gridgain.grid.util.offheap.unsafe;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.offheap.*;
@@ -27,7 +28,7 @@ import static org.gridgain.grid.util.offheap.GridOffHeapEvent.*;
  */
 public class GridUnsafeMemory {
     /** Unsafe handle. */
-    private static final Unsafe UNSAFE = org.jdk8.backport.GridUnsafe.unsafe();
+    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** Free byte. */
     private static final byte FREE = (byte)0;
