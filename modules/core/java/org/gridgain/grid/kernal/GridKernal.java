@@ -908,7 +908,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         long heapUsedInMBytes = heapUsed / 1024 / 1024;
                         long heapCommInMBytes = m.getHeapMemoryCommitted() / 1024 / 1024;
 
-                        double freeHeapPct = heapMax > 0 ? (heapMax - heapUsed) * 100 / heapMax : -1;
+                        double freeHeapPct = heapMax > 0 ? ((double)((heapMax - heapUsed) * 100)) / heapMax : -1;
 
                         int hosts = 0;
                         int nodes = 0;
