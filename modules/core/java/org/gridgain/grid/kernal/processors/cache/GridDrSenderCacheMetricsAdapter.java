@@ -41,8 +41,8 @@ class GridDrSenderCacheMetricsAdapter implements GridDrSenderCacheMetrics, Exter
     /** Total amount of entries in backup queue. */
     private volatile long backupQueueSize;
 
-    /** Reason of replication pause. */
-    private volatile GridDrStatus pause;
+    /** DR status. */
+    private volatile GridDrStatus status;
 
     /**
      * No-args constructor.
@@ -62,7 +62,7 @@ class GridDrSenderCacheMetricsAdapter implements GridDrSenderCacheMetrics, Exter
         entriesAcked.add(m.entriesAcked());
         batchesFailed.add(m.batchesFailed());
         backupQueueSize = m.backupQueueSize();
-        pause = m.pauseState();
+        status = m.status();
     }
 
         /** {@inheritDoc} */
@@ -101,8 +101,8 @@ class GridDrSenderCacheMetricsAdapter implements GridDrSenderCacheMetrics, Exter
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDrStatus pauseState() {
-        return pause;
+    @Nullable @Override public GridDrStatus status() {
+        return status;
     }
 
     /**
@@ -161,7 +161,7 @@ class GridDrSenderCacheMetricsAdapter implements GridDrSenderCacheMetrics, Exter
     public void onPauseStateChanged(@Nullable GridDrPauseReason pauseReason, @Nullable String errMsg) {
         assert pauseReason == null && errMsg == null || pauseReason != null;
 
-        this.pause = pauseReason != null ? new GridDrStatus(pauseReason, errMsg) : null;
+        this.status = pauseReason != null ? new GridDrStatus(pauseReason, errMsg) : GridDrStatus.NOT_PAUSED;
     }
 
     /**
@@ -186,7 +186,7 @@ class GridDrSenderCacheMetricsAdapter implements GridDrSenderCacheMetrics, Exter
         out.writeLong(entriesAcked.longValue());
         out.writeInt(batchesFailed.intValue());
         out.writeLong(backupQueueSize);
-        out.writeObject(pause);
+        out.writeObject(status);
     }
 
     /** {@inheritDoc} */
@@ -198,7 +198,7 @@ class GridDrSenderCacheMetricsAdapter implements GridDrSenderCacheMetrics, Exter
         entriesAcked.add(in.readLong());
         batchesFailed.add(in.readInt());
         backupQueueSize = in.readLong();
-        pause = (GridDrStatus)in.readObject();
+        status = (GridDrStatus)in.readObject();
     }
 
     /** {@inheritDoc} */

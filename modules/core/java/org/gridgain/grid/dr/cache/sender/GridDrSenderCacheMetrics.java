@@ -68,9 +68,9 @@ public interface GridDrSenderCacheMetrics {
     public long backupQueueSize();
 
     /**
-     * Gets data center replication pause state {@code null} if replication is not paused.
+     * Gets data center replication status.
      *
-     * @return Data center replication pause state {@code null} if replication is not paused.
+     * @return Data center replication status.
      */
-    @Nullable public GridDrStatus pauseState();
+    public GridDrStatus status();
 }
