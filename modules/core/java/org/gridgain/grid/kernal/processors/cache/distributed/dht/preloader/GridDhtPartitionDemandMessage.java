@@ -153,7 +153,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
     /**
      * @return Topology version for which demand message is sent.
      */
-    long topologyVersion() {
+    @Override public long topologyVersion() {
         return topVer;
     }
 

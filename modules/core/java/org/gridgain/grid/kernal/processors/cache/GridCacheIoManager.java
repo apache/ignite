@@ -82,7 +82,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 log.debug("Received unordered cache communication message [nodeId=" + nodeId +
                     ", locId=" + cctx.nodeId() + ", msg=" + msg + ']');
 
-            GridCacheMessage<K, V> cacheMsg = (GridCacheMessage<K, V>)msg;
+            final GridCacheMessage<K, V> cacheMsg = (GridCacheMessage<K, V>)msg;
 
             int msgIdx = cacheMsg.lookupIndex();
 
@@ -100,6 +100,25 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         ", nodeId=" + nodeId + ']');
 
                 return;
+            }
+
+            long locTopVer = cctx.discovery().topologyVersion();
+            long rmtTopVer = cacheMsg.topologyVersion();
+
+            if (locTopVer < rmtTopVer) {
+                GridFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer);
+
+                if (!topFut.isDone()) {
+                    final GridBiInClosure<UUID, GridCacheMessage<K, V>> c0 = c;
+
+                    topFut.listenAsync(new CI1<GridFuture<Long>>() {
+                        @Override public void apply(GridFuture<Long> t) {
+                            onMessage0(nodeId, cacheMsg, c0);
+                        }
+                    });
+
+                    return;
+                }
             }
 
             onMessage0(nodeId, cacheMsg, c);
