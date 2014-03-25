@@ -173,7 +173,7 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
     private long rcvdBytesCnt = -1;
 
     /** */
-    private int queueSize = -1;
+    private int outMesQueueSize = -1;
 
     /** {@inheritDoc} */
     @Override public long getLastUpdateTime() {
@@ -653,8 +653,8 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Override public int getQueueSize() {
-        return queueSize;
+    @Override public int getOutboundMessagesQueueSize() {
+        return outMesQueueSize;
     }
 
     /**
@@ -874,12 +874,12 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
     }
 
     /**
-     * Sets queue size.
+     * Sets outbound messages queue size.
      *
-     * @param queueSize Queue size.
+     * @param outMesQueueSize Outbound messages queue size.
      */
-    public void setQueueSize(int queueSize) {
-        this.queueSize = queueSize;
+    public void setOutboundMessagesQueueSize(int outMesQueueSize) {
+        this.outMesQueueSize = outMesQueueSize;
     }
 
     /** {@inheritDoc} */
@@ -933,7 +933,7 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
         out.writeLong(sentBytesCnt);
         out.writeInt(rcvdMsgsCnt);
         out.writeLong(rcvdBytesCnt);
-        out.writeInt(queueSize);
+        out.writeInt(outMesQueueSize);
     }
 
     /** {@inheritDoc} */
@@ -989,7 +989,7 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
         sentBytesCnt = in.readLong();
         rcvdMsgsCnt = in.readInt();
         rcvdBytesCnt = in.readLong();
-        queueSize = in.readInt();
+        outMesQueueSize = in.readInt();
     }
 
     /** {@inheritDoc} */
@@ -1034,7 +1034,7 @@ public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externaliza
             nonHeapUsed == other.nonHeapUsed &&
             peakThreadCnt == other.peakThreadCnt &&
             rcvdBytesCnt == other.rcvdBytesCnt &&
-            queueSize == other.queueSize &&
+            outMesQueueSize == other.outMesQueueSize &&
             rcvdMsgsCnt == other.rcvdMsgsCnt &&
             sentBytesCnt == other.sentBytesCnt &&
             sentMsgsCnt == other.sentMsgsCnt &&

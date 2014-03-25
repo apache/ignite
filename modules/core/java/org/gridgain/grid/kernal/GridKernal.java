@@ -954,16 +954,16 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
                         SB sb = new SB();
 
-                        sb.a("\n>>> H/N/C [hosts=").a(hosts).a(", nodes=").a(nodes).a(", CPUs=").a(cpus).a("]").
-                            a("\n>>> CPU [curr=").a(dblFmt.format(cpuLoadPct)).a("%, avg=").
+                        sb.a(NL + ">>> H/N/C [hosts=").a(hosts).a(", nodes=").a(nodes).a(", CPUs=").a(cpus).a("]").
+                            a(NL + ">>> CPU [curr=").a(dblFmt.format(cpuLoadPct)).a("%, avg=").
                             a(dblFmt.format(avgCpuLoadPct)).a("%, GC=").a(dblFmt.format(gcPct)).a("%]").
-                            a("\n>>> Heap [used=").a(dblFmt.format(heapUsedInMBytes)).a("MB, free=").
+                            a(NL + ">>> Heap [used=").a(dblFmt.format(heapUsedInMBytes)).a("MB, free=").
                             a(dblFmt.format(freeHeapPct)).a("%, comm=").a(dblFmt.format(heapCommInMBytes)).a("MB]").
-                            a("\n>>> Public thread pool [active=").a(pubPoolActiveThreads).
+                            a(NL + ">>> Public thread pool [active=").a(pubPoolActiveThreads).
                             a(", idle=").a(pubPoolIdleThreads).a("]").
-                            a("\n>>> System thread pool [active=").a(sysPoolActiveThreads).
+                            a(NL + ">>> System thread pool [active=").a(sysPoolActiveThreads).
                             a(", idle=").a(sysPoolIdleThreads).a("]").
-                            a("\n>>> Queue [size=").a(m.getQueueSize()).a("]");
+                            a(NL + ">>> Outbound messages queue [size=").a(m.getOutboundMessagesQueueSize()).a("]");
 
                         log.info(sb.toString());
                     }

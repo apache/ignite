@@ -100,9 +100,4 @@ public interface GridCommunicationClient {
      * @return {@code True} if send is asynchronous.
      */
     boolean async();
-
-    /**
-     * @return Queue size.
-     */
-    int queueSize();
 }

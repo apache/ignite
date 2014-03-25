@@ -134,11 +134,6 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
     }
 
     /** {@inheritDoc} */
-    @Override public int queueSize() {
-        return ses instanceof GridSelectorNioSessionImpl ? ((GridSelectorNioSessionImpl)ses).writeQueueSize() : 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridTcpNioCommunicationClient.class, this, super.toString());
     }

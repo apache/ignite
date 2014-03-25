@@ -1011,13 +1011,8 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public int getQueueSize() {
-        int res = 0;
-
-        for (GridCommunicationClient client : clients.values())
-            res += client.queueSize();
-
-        return res;
+    @Override public int getOutboundMessagesQueueSize() {
+        return nioSrvr.outboundMessagesQueueSize();
     }
 
     /** {@inheritDoc} */

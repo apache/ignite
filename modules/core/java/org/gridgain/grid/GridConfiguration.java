@@ -2678,6 +2678,8 @@ public class GridConfiguration {
      * Gets frequency of metrics log print out.
      * <p>
      * If {@code 0}, metrics print out is disabled.
+     * <p>
+     * If not provided, then default value {@link #DFLT_METRICS_LOG_FREQ} is used.
      *
      * @return Frequency of metrics log print out.
      */
@@ -2689,6 +2691,8 @@ public class GridConfiguration {
      * Sets frequency of metrics log print out.
      * <p>
      * If {@code 0}, metrics print out is disabled.
+     * <p>
+     * If not provided, then default value {@link #DFLT_METRICS_LOG_FREQ} is used.
      *
      * @param metricsLogFreq Frequency of metrics log print out.
      */

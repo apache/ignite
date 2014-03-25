@@ -1488,12 +1488,12 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
     }
 
     /**
-     * Gets queue size.
+     * Gets outbound messages queue size.
      *
-     * @return Queue size.
+     * @return Outbound messages queue size.
      */
-    public int getQueueSize() {
-        return getSpi().getQueueSize();
+    public int getOutboundMessagesQueueSize() {
+        return getSpi().getOutboundMessagesQueueSize();
     }
 
     /** {@inheritDoc} */

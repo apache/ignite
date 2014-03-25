@@ -98,11 +98,6 @@ public abstract class GridAbstractCommunicationClient implements GridCommunicati
     }
 
     /** {@inheritDoc} */
-    @Override public int queueSize() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridAbstractCommunicationClient.class, this);
     }
