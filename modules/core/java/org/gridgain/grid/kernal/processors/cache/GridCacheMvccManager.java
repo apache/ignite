@@ -22,6 +22,7 @@ import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -30,6 +31,7 @@ import java.util.concurrent.*;
 
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.util.GridConcurrentFactory.*;
+import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * Manages lock order within a thread.
@@ -51,7 +53,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /** Set of removed lock versions. */
     private Collection<GridCacheVersion> rmvLocks =
-        new GridBoundedConcurrentOrderedSet<>(MAX_REMOVED_LOCKS);
+        new GridBoundedConcurrentLinkedHashSet<>(MAX_REMOVED_LOCKS, MAX_REMOVED_LOCKS, 0.75f, 16, PER_SEGMENT_Q);
 
     /** Current local candidates. */
     private Collection<GridCacheMvccCandidate<K>> dhtLocCands = new ConcurrentSkipListSet<>();

@@ -251,8 +251,6 @@ public interface Grid extends GridProjection, AutoCloseable {
      * names) and a special '{@code defaults}' section with default values. They are applied to
      * undefined parameters in host's sections.
      * <p>
-     * See sample INI file for details: {@code GRIDGAIN_HOME/config/visor/start-nodes.ini}.
-     * <p>
      * Returned result is collection of tuples. Each tuple corresponds to one node start attempt and
      * contains hostname, success flag and error message if attempt was not successful. Note that
      * successful attempt doesn't mean that node was actually started and joined topology. For large

@@ -11,8 +11,8 @@ package org.gridgain.grid.marshaller.optimized;
 
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.marshaller.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.*;
 import sun.misc.*;
 
 import java.io.*;

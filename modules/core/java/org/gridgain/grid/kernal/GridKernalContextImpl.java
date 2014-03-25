@@ -54,6 +54,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.kernal.GridKernalState.*;
@@ -613,6 +614,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public GridDrProcessor dr() {
         return drProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService drPool() {
+        return grid.drPool();
     }
 
     /** {@inheritDoc} */

@@ -26,7 +26,10 @@ public enum GridIoPolicy {
     SYSTEM_POOL,
 
     /** Management execution pool. */
-    MANAGEMENT_POOL;
+    MANAGEMENT_POOL,
+
+    /** DR execution pool. */
+    DR_POOL;
 
     /** Enum values. */
     private static final GridIoPolicy[] VALS = values();

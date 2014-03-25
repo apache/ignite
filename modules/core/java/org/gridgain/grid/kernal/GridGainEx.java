@@ -57,12 +57,10 @@ import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
-import org.springframework.beans.factory.xml.*;
 import org.springframework.context.*;
-import org.springframework.context.support.*;
-import org.springframework.core.io.*;
 
 import javax.management.*;
 import java.io.*;
@@ -499,14 +497,10 @@ public class GridGainEx {
      */
     public static GridBiTuple<Collection<GridConfiguration>, ? extends ApplicationContext> loadConfigurations(URL springCfgUrl)
         throws GridException {
-        GenericApplicationContext springCtx;
+        ApplicationContext springCtx;
 
         try {
-            springCtx = new GenericApplicationContext();
-
-            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(springCfgUrl));
-
-            springCtx.refresh();
+            springCtx = U.applicationContext(springCfgUrl);
         }
         catch (BeansException e) {
             throw new GridException("Failed to instantiate Spring XML application context [springUrl=" +
@@ -1127,6 +1121,9 @@ public class GridGainEx {
         /** GGFS executor service shutdown flag. */
         private boolean ggfsSvcShutdown;
 
+        /** DR executor service. */
+        private ExecutorService drExecSvc;
+
         /** Grid state. */
         private volatile GridGainState state = STOPPED;
 
@@ -1296,7 +1293,7 @@ public class GridGainEx {
             GridLogger cfgLog = cfg.getGridLogger();
 
             if (cfgLog == null) {
-                URL url = U.resolveGridGainUrl("config/log4j/gridgain-log4j.xml");
+                URL url = U.resolveGridGainUrl("config/gridgain-log4j.xml");
 
                 cfgLog = url == null || GridLog4jLogger.isConfigured() ? new GridLog4jLogger() :
                     new GridLog4jLogger(url);
@@ -1435,8 +1432,6 @@ public class GridGainEx {
 
                 // Note that since we use 'LinkedBlockingQueue', number of
                 // maximum threads has no effect.
-                // Note, that we do not pre-start threads here as system pool may
-                // not be needed.
                 sysExecSvc = new GridThreadPoolExecutor(
                     "sys-" + cfg.getGridName(),
                     DFLT_SYSTEM_CORE_THREAD_CNT,
@@ -1751,7 +1746,7 @@ public class GridGainEx {
 
             if (sndHubCfg != null && sndHubCfg.getCacheNames() != null) {
                 for (String cacheName : sndHubCfg.getCacheNames())
-                    drSysCaches.add(CU.cacheNameForReplicationSystemCache(cacheName));
+                    drSysCaches.add(CU.cacheNameForDrSystemCache(cacheName));
             }
 
             GridCacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
@@ -1763,8 +1758,12 @@ public class GridGainEx {
                         "like GridTcpDiscoverySpi)");
 
                 for (GridCacheConfiguration ccfg : cacheCfgs) {
+                    if (CU.isDrSystemCache(ccfg.getName()))
+                        throw new GridException("Cache name cannot start with \"" + CU.DR_SYS_CACHE_PREFIX +
+                            "\" because this prefix is reserved for internal purposes.");
+
                     if (ccfg.getDrSenderConfiguration() != null)
-                        drSysCaches.add(CU.cacheNameForReplicationSystemCache(ccfg.getName()));
+                        drSysCaches.add(CU.cacheNameForDrSystemCache(ccfg.getName()));
                 }
 
                 GridCacheConfiguration[] clone = new GridCacheConfiguration[cacheCfgs.length + drSysCaches.size()];
@@ -1772,7 +1771,7 @@ public class GridGainEx {
                 int cloneIdx = 0;
 
                 for (String drSysCache : drSysCaches)
-                    clone[cloneIdx++] = replicationSystemCache(drSysCache);
+                    clone[cloneIdx++] = drSystemCache(drSysCache);
 
                 for (GridCacheConfiguration ccfg : cacheCfgs)
                     clone[cloneIdx++] = new GridCacheConfiguration(ccfg);
@@ -1785,7 +1784,7 @@ public class GridGainEx {
                 int idx = 0;
 
                 for (String drSysCache : drSysCaches)
-                    ccfgs[idx++] = replicationSystemCache(drSysCache);
+                    ccfgs[idx++] = drSystemCache(drSysCache);
 
                 myCfg.setCacheConfiguration(ccfgs);
             }
@@ -1803,6 +1802,20 @@ public class GridGainEx {
             }
             catch (Exception ignored) {
                 // No-op.
+            }
+
+            if (!drSysCaches.isEmpty()) {
+                // Note that since we use 'LinkedBlockingQueue', number of
+                // maximum threads has no effect.
+                drExecSvc = new GridThreadPoolExecutor(
+                    "dr-" + cfg.getGridName(),
+                    Math.min(16, drSysCaches.size() * 2),
+                    Math.min(16, drSysCaches.size() * 2),
+                    DFLT_SYSTEM_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
+
+                // Pre-start all threads as they are guaranteed to be needed.
+                ((ThreadPoolExecutor)drExecSvc).prestartAllCoreThreads();
             }
 
             // Ensure that SPIs support multiple grid instances, if required.
@@ -1831,7 +1844,7 @@ public class GridGainEx {
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;
 
-                grid0.start(myCfg, new CA() {
+                grid0.start(myCfg, drExecSvc, new CA() {
                     @Override public void apply() {
                         startLatch.countDown();
                     }
@@ -1896,7 +1909,7 @@ public class GridGainEx {
          * @param cacheName Cache name.
          * @return Replication cache configuration.
          */
-        private GridCacheConfiguration replicationSystemCache(String cacheName) {
+        private GridCacheConfiguration drSystemCache(String cacheName) {
             GridCacheConfiguration cache = new GridCacheConfiguration();
 
             cache.setName(cacheName);
@@ -2033,6 +2046,12 @@ public class GridGainEx {
                 U.shutdownNow(getClass(), ggfsExecSvc, log);
 
                 ggfsExecSvc = null;
+            }
+
+            if (drExecSvc != null) {
+                U.shutdownNow(getClass(), drExecSvc, log);
+
+                drExecSvc = null;
             }
         }
 

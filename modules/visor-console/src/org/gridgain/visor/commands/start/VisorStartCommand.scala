@@ -38,16 +38,6 @@ private case class Result(
  * ==Overview==
  * Contains Visor command `start` implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.start.VisorStartCommand._
- * </ex>
- * Note that `VisorStartCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +-----------------------------------------------------+
@@ -67,7 +57,6 @@ private case class Result(
  * {{{
  *     -f=<path>
  *         Path to INI file that contains topology specification.
- *         See sample file for details: GRIDGAIN_HOME/config/visor/start-nodes.ini.
  *     -h=<hostname>
  *         Hostname where to start nodes.
  *
@@ -348,8 +337,7 @@ object VisorStartCommand {
         ),
         args = List(
             "-f=<path>" -> List(
-                "Path to INI file that contains topology specification.",
-                "See sample file for details: GRIDGAIN_HOME/config/visor/start-nodes.ini."
+                "Path to INI file that contains topology specification."
             ),
             "-h=<hostname>" -> List(
                 "Hostname where to start nodes.",

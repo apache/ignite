@@ -127,6 +127,12 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
      * <p>
      * If the predicate returns {@code false}, query execution will
      * be cancelled.
+     * <p>
+     * <b>WARNING:</b> all operations that involve any kind of JVM-local
+     * or distributed locking (e.g., synchronization or transactional
+     * cache operations), should be executed asynchronously without
+     * blocking the thread that called the callback. Otherwise, you
+     * can get deadlocks.
      *
      * @param cb Local callback.
      */
@@ -142,6 +148,12 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
     /**
      * Sets optional key-value filter. This filter is called before
      * entry is sent to the master node.
+     * <p>
+     * <b>WARNING:</b> all operations that involve any kind of JVM-local
+     * or distributed locking (e.g., synchronization or transactional
+     * cache operations), should be executed asynchronously without
+     * blocking the thread that called the filter. Otherwise, you
+     * can get deadlocks.
      *
      * @param filter Key-value filter.
      */

@@ -10,10 +10,10 @@
 package org.gridgain.grid.streamer.index.tree;
 
 import com.romix.scala.collection.concurrent.*;
-import edu.stanford.ppl.concurrent.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.streamer.index.*;
 import org.gridgain.grid.streamer.index.hash.*;
+import org.gridgain.grid.util.snaptree.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
