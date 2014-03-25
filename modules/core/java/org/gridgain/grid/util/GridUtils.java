@@ -2237,6 +2237,10 @@ public abstract class GridUtils {
 
                 // Resolve path to class-file.
                 uri = domain.getCodeSource().getLocation().toURI();
+
+                // Overcome UNC path problem on Windows (http://www.tomergabel.com/JavaMishandlesUNCPathsOnWindows.aspx)
+                if (isWindows() && uri.getAuthority() != null)
+                    uri = new URI(uri.toString().replace("file://", "file:/"));
             }
             catch (URISyntaxException | SecurityException e) {
                 logResolveFailed(cls, e);
@@ -8177,5 +8181,55 @@ public abstract class GridUtils {
         sb.a(']');
 
         return sb.toString();
+    }
+
+    /**
+     * Resolves work directory.
+     *
+     * @param path Path to resolve.
+     * @param tmpSubDir Subdirectory in temporary folder. It's used when GridGain home is null.
+     * @param failOnEmptyGridGainHome {@code True} if exception should be thrown on empty GridGain home,
+     * {@code false} otherwise.
+     * @param deleteIfExist Flag indicating whether to delete the specify directory or not.
+     * @return Resolved work directory.
+     * @throws GridException If failed.
+     */
+    public static File resolveWorkDirectory(String path, String tmpSubDir, boolean failOnEmptyGridGainHome,
+        boolean deleteIfExist) throws GridException {
+        String ggHome = getGridGainHome();
+
+        File dir = new File(path);
+
+        if (!dir.isAbsolute()) {
+            if (F.isEmpty(ggHome)) {
+                if (failOnEmptyGridGainHome)
+                    throw new GridException("Failed to create directory, property " + GG_HOME + " is null.");
+
+                String tmpDirPath = System.getProperty("java.io.tmpdir");
+
+                if (tmpDirPath == null)
+                    throw new GridException("System property 'java.io.tmpdir' is null.");
+
+                dir = tmpSubDir == null ? new File(tmpDirPath) : new File(tmpDirPath, tmpSubDir);
+            }
+            else
+                dir = new File(ggHome, dir.getPath());
+        }
+
+        if (deleteIfExist && dir.exists()) {
+            if (!U.delete(dir))
+                throw new GridException("Failed to delete directory: " + dir);
+        }
+
+        if (!mkdirs(dir))
+            throw new GridException("Directory does not exist and cannot be created: " + dir);
+
+        if (!dir.canRead())
+            throw new GridException("Cannot read from directory: " + dir);
+
+        if (!dir.canWrite())
+            throw new GridException("Cannot write to directory: " + dir);
+
+        return dir;
     }
 }

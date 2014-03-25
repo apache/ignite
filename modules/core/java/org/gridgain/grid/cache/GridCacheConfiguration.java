@@ -74,7 +74,7 @@ public class GridCacheConfiguration {
     public static final GridCacheAtomicWriteOrderMode DFLT_ATOMIC_WRITE_ORDER_MODE = GridCacheAtomicWriteOrderMode.CLOCK;
 
     /** Default value for cache distribution mode. */
-    public static final GridCacheDistributionMode  DFLT_DISTRIBUTION_MODE = GridCacheDistributionMode.PARTITIONED_ONLY;
+    public static final GridCacheDistributionMode DFLT_DISTRIBUTION_MODE = GridCacheDistributionMode.PARTITIONED_ONLY;
 
     /** Default transaction timeout. */
     public static final long DFLT_TRANSACTION_TIMEOUT = 0;
@@ -944,7 +944,7 @@ public class GridCacheConfiguration {
     /**
      * Gets caching mode to use. You can configure cache either to be local-only,
      * fully replicated, partitioned, or near. If not provided, {@link GridCacheMode#REPLICATED}
-     * mode will be used by default (defined by #DFLT_CACHE_MODE} constant).
+     * mode will be used by default (defined by {@link #DFLT_CACHE_MODE} constant).
      *
      * @return {@code True} if cache is local.
      */
