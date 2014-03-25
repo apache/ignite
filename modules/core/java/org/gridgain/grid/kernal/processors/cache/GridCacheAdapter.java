@@ -3845,7 +3845,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridDrStateTransfer> drListStateTransfers() {
+    @Override public Collection<GridDrStateTransferDescriptor> drListStateTransfers() {
         checkDrEnabled();
 
         try {
@@ -3881,7 +3881,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDrPause drPauseState() {
+    @Nullable @Override public GridDrStatus drPauseState() {
         checkDrEnabled();
 
         return ctx.dr().drPauseState();

@@ -17,9 +17,9 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Data center replication state transfer value object.
+ * Data center replication state transfer descriptor.
  */
-public class GridDrStateTransfer implements Externalizable {
+public class GridDrStateTransferDescriptor implements Externalizable {
     /** Unique state transfer ID. */
     private GridUuid id;
 
@@ -29,7 +29,7 @@ public class GridDrStateTransfer implements Externalizable {
     /**
      * {@link Externalizable} support.
      */
-    public GridDrStateTransfer() {
+    public GridDrStateTransferDescriptor() {
         // No-op.
     }
 
@@ -39,7 +39,7 @@ public class GridDrStateTransfer implements Externalizable {
      * @param id Unique state transfer ID.
      * @param dataCenterIds Target data center IDs.
      */
-    public GridDrStateTransfer(GridUuid id, Collection<Byte> dataCenterIds) {
+    public GridDrStateTransferDescriptor(GridUuid id, Collection<Byte> dataCenterIds) {
         this.id = id;
         this.dataCenterIds = dataCenterIds;
     }
@@ -64,7 +64,7 @@ public class GridDrStateTransfer implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        return obj != null && obj instanceof GridDrStateTransfer && F.eq(id, (((GridDrStateTransfer) obj).id));
+        return obj != null && obj instanceof GridDrStateTransferDescriptor && F.eq(id, (((GridDrStateTransferDescriptor) obj).id));
     }
 
     /** {@inheritDoc} */
@@ -86,6 +86,6 @@ public class GridDrStateTransfer implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDrStateTransfer.class, this);
+        return S.toString(GridDrStateTransferDescriptor.class, this);
     }
 }

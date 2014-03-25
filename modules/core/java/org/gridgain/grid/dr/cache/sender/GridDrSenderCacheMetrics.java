@@ -72,5 +72,5 @@ public interface GridDrSenderCacheMetrics {
      *
      * @return Data center replication pause state {@code null} if replication is not paused.
      */
-    @Nullable public GridDrPause pauseState();
+    @Nullable public GridDrStatus pauseState();
 }

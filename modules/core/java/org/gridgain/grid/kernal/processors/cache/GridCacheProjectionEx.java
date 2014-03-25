@@ -378,7 +378,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      *
      * @return Collection of currently active state transfers.
      */
-    public Collection<GridDrStateTransfer> drListStateTransfers();
+    public Collection<GridDrStateTransferDescriptor> drListStateTransfers();
 
     /**
      * Pauses data center replication for this cache.
@@ -395,5 +395,5 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      *
      * @return DR pause state.
      */
-    @Nullable public GridDrPause drPauseState();
+    @Nullable public GridDrStatus drPauseState();
 }

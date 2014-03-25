@@ -68,7 +68,7 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridDrStateTransfer> listStateTransfers() throws GridException {
+    @Override public Collection<GridDrStateTransferDescriptor> listStateTransfers() throws GridException {
         return null;
     }
 
@@ -83,7 +83,7 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDrPause drPauseState() {
+    @Override public GridDrStatus drPauseState() {
         return null;
     }
 

@@ -59,7 +59,7 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
      * @return List of currently active state transfers.
      * @throws GridException If failed.
      */
-    public Collection<GridDrStateTransfer> listStateTransfers() throws GridException;
+    public Collection<GridDrStateTransferDescriptor> listStateTransfers() throws GridException;
 
     /**
      * Pauses data center replication.
@@ -80,7 +80,7 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
      *
      * @return DR pause state.
      */
-    @Nullable public GridDrPause drPauseState();
+    public GridDrStatus drPauseState();
 
     /**
      * @return Count of keys enqueued for data center replication.

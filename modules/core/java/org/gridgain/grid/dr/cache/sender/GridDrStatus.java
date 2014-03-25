@@ -15,42 +15,58 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Data center replication pause value object.
+ * Data center replication status.
  */
-public class GridDrPause implements Externalizable {
-    /** Reason of DR pause {@code null} if not paused. */
+public class GridDrStatus implements Externalizable {
+    /** Status: not paused. */
+    public static final GridDrStatus NOT_PAUSED = new GridDrStatus(null, null);
+
+    /** Pause reason or {@code null} if not paused. */
     private GridDrPauseReason reason;
 
-    /** Optional error information. */
+    /** Error description. */
     private String errMsg;
 
     /**
      * Required by {@link Externalizable}.
      */
-    public GridDrPause() {
+    public GridDrStatus() {
         // No-op.
     }
 
     /**
      * Constructor.
      *
-     * @param reason Reason of replication pause.
-     * @param errMsg Optional error information.
+     * @param reason Pause reason.
+     * @param errMsg Error description.
      */
-    public GridDrPause(GridDrPauseReason reason, @Nullable String errMsg) {
+    public GridDrStatus(@Nullable GridDrPauseReason reason, @Nullable String errMsg) {
         this.reason = reason;
         this.errMsg = errMsg;
     }
 
     /**
-     * @return Reason of replication pause.
+     * Gets pause flag.
+     *
+     * @return {@code True} if paused.
      */
-    public GridDrPauseReason reason() {
+    public boolean paused() {
+        return reason != null;
+    }
+
+    /**
+     * Gets pause reason.
+     *
+     * @return Pause reason or {@code null} if not paused.
+     */
+    @Nullable public GridDrPauseReason reason() {
         return reason;
     }
 
     /**
-     * @return Error information.
+     * Gets error description.
+     *
+     * @return Error description.
      */
     @Nullable public String error() {
         return errMsg;
