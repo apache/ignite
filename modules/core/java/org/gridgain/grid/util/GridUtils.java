@@ -2237,6 +2237,10 @@ public abstract class GridUtils {
 
                 // Resolve path to class-file.
                 uri = domain.getCodeSource().getLocation().toURI();
+
+                // Overcome UNC path problem on Windows (http://www.tomergabel.com/JavaMishandlesUNCPathsOnWindows.aspx)
+                if (isWindows() && uri.getAuthority() != null)
+                    uri = new URI(uri.toString().replace("file://", "file:/"));
             }
             catch (URISyntaxException | SecurityException e) {
                 logResolveFailed(cls, e);
@@ -8227,5 +8231,21 @@ public abstract class GridUtils {
             throw new GridException("Cannot write to directory: " + dir);
 
         return dir;
+    }
+
+    /**
+     * Creates {@code GridException} with the collection of suppressed exceptions.
+     *
+     * @param msg Message.
+     * @param suppressed The collections of suppressed exceptions.
+     * @return {@code GridException}.
+     */
+    public static GridException exceptionWithSuppressed(String msg, Collection<Throwable> suppressed) {
+        GridException e = new GridException(msg);
+
+        for (Throwable th : suppressed)
+            e.addSuppressed(th);
+
+        return e;
     }
 }

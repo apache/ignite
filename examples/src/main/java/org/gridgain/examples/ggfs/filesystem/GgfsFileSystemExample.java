@@ -36,7 +36,7 @@ public class GgfsFileSystemExample {
     private static final boolean USE_HDFS = false;
 
     /** Default path to the folder to copy in case it is not specified explicitly in arguments. */
-    private static final String DFLT_PATH = "examples/java/org/gridgain/examples";
+    private static final String DFLT_PATH = "examples/src/main/java/org/gridgain/examples";
 
     /**
      * Executes example.

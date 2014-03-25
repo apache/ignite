@@ -493,13 +493,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /**
-     * @return {@code True} if store enabled and batch update on commit is enabled.
-     */
-    private boolean batchStoreUpdate() {
-        return storeEnabled() && ctx.config().isBatchUpdateOnCommit();
-    }
-
-    /**
      * @return {@code True} if store enabled.
      */
     private boolean storeEnabled() {
@@ -846,7 +839,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         boolean replicate = ctx.isDrEnabled();
 
-                        if (batchStoreUpdate() && keys.size() > 1 && cacheCfg.getDrReceiverConfiguration() == null) {
+                        if (storeEnabled() && keys.size() > 1 && cacheCfg.getDrReceiverConfiguration() == null) {
                             // This method can only be used when there are no replicated entries in the batch.
                             UpdateBatchResult<K, V> result = updateWithBatch(nodeId, hasNear, req, res, locked, ver,
                                 dhtFut, completionCb, replicate);
