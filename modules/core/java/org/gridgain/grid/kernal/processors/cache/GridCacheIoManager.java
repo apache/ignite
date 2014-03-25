@@ -106,6 +106,10 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
             long rmtTopVer = cacheMsg.topologyVersion();
 
             if (locTopVer < rmtTopVer) {
+                if (log.isDebugEnabled())
+                    log.debug("Received message has higher topology version [msg=" + msg +
+                        ", locTopVer=" + locTopVer + ", rmtTopVer=" + rmtTopVer + ']');
+
                 GridFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer);
 
                 if (!topFut.isDone()) {
