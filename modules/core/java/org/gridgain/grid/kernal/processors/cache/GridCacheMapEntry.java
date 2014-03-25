@@ -1197,7 +1197,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridBiTuple<Boolean, V> updateLocalAtomic(
+    @Override public GridBiTuple<Boolean, V> innerUpdateLocal(
         GridCacheVersion ver,
         GridCacheOperation op,
         @Nullable Object writeObj,
@@ -1207,7 +1207,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         boolean evt,
         boolean metrics,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
-        ) throws GridException, GridCacheEntryRemovedException {
+    ) throws GridException, GridCacheEntryRemovedException {
         assert cctx.isLocal() && cctx.atomic();
 
         V old;

@@ -284,7 +284,14 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         ctx.denyOnLocalRead();
 
-        updateAllInternal(UPDATE, m.keySet(), m.values(), 0, false, false, filter, ctx.isStoreEnabled());
+        updateAllInternal(UPDATE,
+            m.keySet(),
+            m.values(),
+            0,
+            false,
+            false,
+            filter,
+            ctx.isStoreEnabled());
     }
 
     /** {@inheritDoc} */
@@ -299,8 +306,14 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public void transform(K key, GridClosure<V, V> transformer) throws GridException {
         ctx.denyOnLocalRead();
 
-        updateAllInternal(TRANSFORM, Collections.singleton(key), Collections.singleton(transformer), -1, false, false,
-            null, ctx.isStoreEnabled());
+        updateAllInternal(TRANSFORM,
+            Collections.singleton(key),
+            Collections.singleton(transformer),
+            -1,
+            false,
+            false,
+            null,
+            ctx.isStoreEnabled());
     }
 
     /** {@inheritDoc} */
@@ -321,7 +334,14 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         if (F.isEmpty(m))
             return;
 
-        updateAllInternal(TRANSFORM, m.keySet(), m.values(), 0, false, false, null, ctx.isStoreEnabled());
+        updateAllInternal(TRANSFORM,
+            m.keySet(),
+            m.values(),
+            0,
+            false,
+            false,
+            null,
+            ctx.isStoreEnabled());
     }
 
     /** {@inheritDoc} */
@@ -366,7 +386,14 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         ctx.denyOnLocalRead();
 
-        updateAllInternal(DELETE, keys, null, 0, false, false, filter, ctx.isStoreEnabled());
+        updateAllInternal(DELETE,
+            keys,
+            null,
+            0,
+            false,
+            false,
+            filter,
+            ctx.isStoreEnabled());
     }
 
     /** {@inheritDoc} */
@@ -603,7 +630,14 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         return asyncOp(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return updateAllInternal(op, keys, vals, ttl, retval, rawRetval, filter, storeEnabled);
+                return updateAllInternal(op,
+                    keys,
+                    vals,
+                    ttl,
+                    retval,
+                    rawRetval,
+                    filter,
+                    storeEnabled);
             }
         });
     }
@@ -627,7 +661,14 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         return asyncOp(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return updateAllInternal(DELETE, keys, null, 0, retval, rawRetval, filter, storeEnabled);
+                return updateAllInternal(DELETE,
+                    keys,
+                    null,
+                    0,
+                    retval,
+                    rawRetval,
+                    filter,
+                    storeEnabled);
             }
         });
     }
@@ -680,7 +721,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 try {
                     entry = entryEx(key);
 
-                    GridBiTuple<Boolean, V> t = entry.updateLocalAtomic(
+                    GridBiTuple<Boolean, V> t = entry.innerUpdateLocal(
                         ver,
                         val == null ? DELETE : op,
                         val,
@@ -940,7 +981,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                 assert writeVal != null || op == DELETE : "null write value found.";
 
-                entry.updateLocalAtomic(ver, op, writeVal, false, false, 0, true, true, null);
+                entry.innerUpdateLocal(ver, op, writeVal, false, false, 0, true, true, null);
             }
             catch (GridCacheEntryRemovedException ignore) {
                 assert false : "Entry cannot become obsolete while holding lock.";

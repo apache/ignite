@@ -415,7 +415,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridException If update failed.
      * @throws GridCacheEntryRemovedException If entry is obsolete.
      */
-    public GridBiTuple<Boolean, V> updateLocalAtomic(
+    public GridBiTuple<Boolean, V> innerUpdateLocal(
         GridCacheVersion ver,
         GridCacheOperation op,
         @Nullable Object writeObj,
