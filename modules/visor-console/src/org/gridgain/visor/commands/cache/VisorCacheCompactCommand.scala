@@ -9,7 +9,7 @@
  *
  */
 
-package org.gridgain.visor.commands.ccompact
+package org.gridgain.visor.commands.cache
 
 import org.gridgain.scalar._
 import scalar._
@@ -69,7 +69,7 @@ class VisorCacheCompactCommand {
         assert(errMsgs != null)
 
         warn(errMsgs: _*)
-        warn("Type 'help ccompact' to see how to use this command.")
+        warn("Type 'help cache' to see how to use this command.")
     }
 
     /**
@@ -77,66 +77,48 @@ class VisorCacheCompactCommand {
      * Compacts entries in cache.
      *
      * ===Examples===
-     * <ex>ccompact -c=cache</ex>
+     * <ex>cache -compact -c=cache</ex>
      * Compacts entries in cache with name 'cache'.
      *
-     * @param args Command arguments.
+     * @param argLst Command arguments.
      */
-    def ccompact(@Nullable args: String) = breakable {
-        if (!isConnected)
-            adviseToConnect()
-        else {
-            val argLst = parseArgs(args)
+    def compact(argLst: ArgList, node: Option[GridNode]) = breakable {
+        val cacheArg = argValue("c", argLst)
 
-            val cacheArg = argValue("c", argLst)
+        if (cacheArg.isEmpty)
+            scold("Cache name is empty.").^^
 
-            if (cacheArg.isEmpty)
-                scold("Cache name is empty.").^^
+        val caches = getVariable(cacheArg.get)
 
-            val caches = getVariable(cacheArg.get)
+        val prj = if (node.isDefined) grid.forNode(node.get) else grid.forCache(caches)
 
-            val prj = grid.forCache(caches)
+        if (prj.isEmpty) {
+            val msg =
+                if (caches == null)
+                    "Can't find nodes with default cache."
+                else
+                    "Can't find nodes with specified cache: " + caches
 
-            if (prj.isEmpty) {
-                val msg =
-                    if (caches == null)
-                        "Can't find nodes with default cache."
-                    else
-                        "Can't find nodes with specified cache: " + caches
-
-                scold(msg).^^
-            }
-
-            val res = prj.compute()
-                .withName("visor-ccompact-task")
-                .withNoFailover()
-                .broadcast(new CompactClosure(caches)).get
-
-            val t = VisorTextTable()
-
-            t #= ("Node ID8(@)", "Entries Compacted", "Cache Size Before", "Cache Size After")
-
-            res.foreach(r => t += (nodeId8(r._1), r._2, r._3, r._4))
-
-            t.render()
+            scold(msg).^^
         }
-    }
 
-    /**
-     * ===Command===
-     * Compacts entries in default cache.
-     *
-     * ===Examples===
-     * <ex>ccompact</ex>
-     * Compacts entries in default cache.
-     */
-    def ccompact() {
-        ccompact(null)
+        val res = prj.compute()
+            .withName("visor-ccompact-task")
+            .withNoFailover()
+            .broadcast(new CompactClosure(caches)).get
+
+        val t = VisorTextTable()
+
+        t #= ("Node ID8(@)", "Entries Compacted", "Cache Size Before", "Cache Size After")
+
+        res.foreach(r => t += (nodeId8(r._1), r._2, r._3, r._4))
+
+        t.render()
     }
 }
 
 /**
- *
+ * Compact cache entries task.
  */
 @GridInternal
 class CompactClosure(val cacheName: String) extends GridCallable[(UUID, Int, Int, Int)] {
@@ -158,28 +140,6 @@ class CompactClosure(val cacheName: String) extends GridCallable[(UUID, Int, Int
  * Companion object that does initialization of the command.
  */
 object VisorCacheCompactCommand {
-    addHelp(
-        name = "ccompact",
-        shortInfo = "Compacts all entries in cache on all nodes.",
-        spec = List(
-            "ccompact",
-            "ccompact -c=<cache-name>"
-        ),
-        args = List(
-            "<cache-name>" -> List(
-                "Name of the cache.",
-                "If not specified, entries in default cache will be compacted.",
-                "Note you can also use '@c0' ... '@cn' variables as shortcut to <cache-name>."
-            )
-        ),
-        examples = List(
-            "ccompact" -> "Compacts entries in default cache.",
-            "ccompact -c=cache" -> "Compacts entries in cache with name 'cache'.",
-            "ccompact -c=@c0" -> "Compacts cache with name taken from 'c0' memory variable."
-        ),
-        ref = VisorConsoleCommand(cmd.ccompact, cmd.ccompact)
-    )
-
     /** Singleton command. */
     private val cmd = new VisorCacheCompactCommand
 
@@ -187,11 +147,4 @@ object VisorCacheCompactCommand {
      * Singleton.
      */
     def apply() = cmd
-
-    /**
-     * Implicit converter from visor to commands "pimp".
-     *
-     * @param vs Visor tagging trait.
-     */
-    implicit def fromCCompact2Visor(vs: VisorTag) = cmd
 }

@@ -36,25 +36,33 @@ import org.gridgain.visor.commands.{VisorConsoleMultiNodeTask, VisorConsoleComma
  *
  * ==Help==
  * {{{
- * +--------------------------------------------------------------------------------+
- * | cache | Prints statistics about caches from specified node on the entire grid. |
- * |       | Output sorting can be specified in arguments.                          |
- * |       |                                                                        |
- * |       | Output abbreviations:                                                  |
- * |       |     #   Number of nodes.                                               |
- * |       |     H/h Number of cache hits.                                          |
- * |       |     M/m Number of cache misses.                                        |
- * |       |     R/r Number of cache reads.                                         |
- * |       |     W/w Number of cache writes.                                        |
- * +--------------------------------------------------------------------------------+
+ * +-----------------------------------------------------------------------------------------+
+ * | cache          | Prints statistics about caches from specified node on the entire grid. |
+ * |                | Output sorting can be specified in arguments.                          |
+ * |                |                                                                        |
+ * |                | Output abbreviations:                                                  |
+ * |                |     #   Number of nodes.                                               |
+ * |                |     H/h Number of cache hits.                                          |
+ * |                |     M/m Number of cache misses.                                        |
+ * |                |     R/r Number of cache reads.                                         |
+ * |                |     W/w Number of cache writes.                                        |
+ * +-----------------------------------------------------------------------------------------+
+ * | cache -compact | Compacts all entries in cache on all nodes.                            |
+ * +-----------------------------------------------------------------------------------------+
+ * | cache -clear   | Clears all entries from cache on all nodes.                            |
+ * +-----------------------------------------------------------------------------------------+
+ * | cache -scan    | List all entries in cache with specified name.                         |
+ * +-----------------------------------------------------------------------------------------+
  * }}}
  *
  * ====Specification====
  * {{{
  *     cache
- *     cache -i {-n=<name>}
+ *     cache -i
  *     cache {-c=<name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}
- *     cache -c=<cache-name> -scan {-id=<node-id>|id8=<node-id8>} {-p=<page size>}
+ *     cache -clear {-c=<cache-name>}
+ *     cache -compact {-c=<cache-name>}
+ *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}
  * }}}
  *
  * ====Arguments====
@@ -96,6 +104,8 @@ import org.gridgain.visor.commands.{VisorConsoleMultiNodeTask, VisorConsoleComma
  *
  * ====Examples====
  * {{{
+ *     cache
+ *         Prints summary statistics about all caches.
  *     cache -id8=12345678 -s=hi -r
  *         Prints summary statistics about caches from node with specified id8
  *         sorted by number of hits in reverse order.
@@ -103,8 +113,10 @@ import org.gridgain.visor.commands.{VisorConsoleMultiNodeTask, VisorConsoleComma
  *         Prints cache statistics for interactively selected node.
  *     cache -s=hi -r -a
  *         Prints detailed statistics about all caches sorted by number of hits in reverse order.
- *     cache
- *         Prints summary statistics about all caches.
+ *     cache -compact -c=cache
+ *         Compacts entries in cache with name 'cache'.
+ *     cache -clear -c=cache
+ *         Clears cache with name 'cache'.
  *     cache -c=cache -scan
  *         List entries from cache with name 'cache' from all nodes with this cache.
  *     cache -c=@c0 -scan -p=50
@@ -133,11 +145,23 @@ class VisorCacheCommand {
      * Sorting can be specified in arguments.
      *
      * ===Examples===
-     * <ex>cache "-id8=12345678 -s=no -r"</ex>
+     * <ex>cache -id8=12345678 -s=no -r</ex>
      *     Prints statistics about caches from node with specified id8 sorted by number of nodes in reverse order.
      * <br>
-     * <ex>cache "-s=no -r"</ex>
+     * <ex>cache -s=no -r</ex>
      *     Prints statistics about all caches sorted by number of nodes in reverse order.
+     * <br>
+     * <ex>cache -compact</ex>
+     *      Compacts entries in default cache.
+     * <br>
+     * <ex>cache -compact -c=cache</ex>
+     *      Compacts entries in cache with name 'cache'.
+     * <br>
+     * <ex>cache -clear</ex>
+     *      Clears default cache.
+     * <br>
+     * <ex>cache -clear -c=cache</ex>
+     *      Clears cache with name 'cache'.
      * <br>
      * <ex>cache -c=cache -scan</ex>
      *     List entries from cache with name 'cache' from all nodes with this cache.
@@ -156,7 +180,7 @@ class VisorCacheCommand {
             if (!isConnected)
                 adviseToConnect()
             else {
-                val argLst = parseArgs(args)
+                var argLst = parseArgs(args)
 
                 if (hasArgFlag("i", argLst)) {
                     askForNode("Select node from:") match {
@@ -170,42 +194,38 @@ class VisorCacheCommand {
 
                     break()
                 }
-                else if (hasArgFlag("scan", argLst)) {
-                    VisorCacheScanCommand().scan(argLst)
+
+                val node = parseNode(argLst) match {
+                    case Left(msg) =>
+                        scold(msg)
+
+                        break()
+
+                    case Right(n) => n
+                }
+
+                if (Seq("clear", "compact", "scan").exists(hasArgFlag(_, argLst))) {
+                    val name = argValue("c", argLst)
+
+                    if (name.isEmpty) {
+                        askForCache("Select cache from:", node) match {
+                            case Some(cacheName) => argLst = argLst ++ Seq("c" -> cacheName)
+                            case None => break()
+                        }
+                    }
+
+                    if (hasArgFlag("clear", argLst))
+                        VisorCacheClearCommand().clear(argLst, node)
+                    else if (hasArgFlag("compact", argLst))
+                        VisorCacheCompactCommand().compact(argLst, node)
+                    else if (hasArgFlag("scan", argLst))
+                        VisorCacheScanCommand().scan(argLst)
 
                     break()
                 }
 
-                val id8 = argValue("id8", argLst)
-                val id = argValue("id", argLst)
                 val name = argValue("c", argLst)
                 val all = hasArgFlag("a", argLst)
-
-                var node: Option[GridNode] = None
-
-                if (id8.isDefined && id.isDefined)
-                    scold("Only one of '-id8' or '-id' is allowed.").^^
-
-                if (id8.isDefined) {
-                    val ns = nodeById8(id8.get)
-
-                    if (ns.isEmpty)
-                        scold("Unknown 'id8' value: " + id8.get).^^
-                    else if (ns.size != 1)
-                        scold("'id8' resolves to more than one node (use full 'id' instead): " + id8.get).^^
-                    else
-                        node = ns.headOption
-                }
-                else if (id.isDefined)
-                    try {
-                        node = Option(grid.node(java.util.UUID.fromString(id.get)))
-
-                        if (!node.isDefined)
-                            scold("'id' does not match any node: " + id.get).^^
-                    }
-                    catch {
-                        case e: IllegalArgumentException => scold("Invalid node 'id': " + id.get).^^
-                    }
 
                 val sortType = argValue("s", argLst)
                 val reversed = hasArgName("r", argLst)
@@ -470,6 +490,68 @@ class VisorCacheCommand {
 
         if (reverse) sorted.reverse else sorted
     }
+
+    /**
+     * Asks user to select a cache from the list.
+     *
+     * @param title Title displayed before the list of caches.
+     * @return `Option` for ID of selected cache.
+     */
+    def askForCache(title: String, node: Option[GridNode]): Option[String] = {
+        assert(title != null)
+        assert(visor.isConnected)
+
+        // Get cache stats data from all nodes.
+        val aggrData = cacheData(node, None)
+
+        if (aggrData.isEmpty)
+            scold("No caches found.").^^
+
+        println("Time of the snapshot: " + formatDateTime(System.currentTimeMillis))
+
+        val sumT = VisorTextTable()
+
+        sumT #= (">", ("Name(@),", "Last Read/Write"), "Nodes", "Size")
+
+        (0 until aggrData.size) foreach (i => {
+            val ad = aggrData(i)
+
+            // Add cache host as visor variable.
+            registerCacheName(ad.cacheName)
+
+            sumT += (
+                i,
+                (
+                    mkCacheName(ad.cacheName),
+                    " ",
+                    formatDateTime(ad.lastRead),
+                    formatDateTime(ad.lastWrite)
+                    ),
+                ad.nodes,
+                (
+                    "min: " + ad.minSize,
+                    "avg: " + formatDouble(ad.avgSize),
+                    "max: " + ad.maxSize
+                ))
+        })
+
+        sumT.render()
+
+        val a = ask("\nChoose cache ('c' to cancel) [c]: ", "c")
+
+        if (a.toLowerCase == "c")
+            None
+        else {
+            try
+                Some(aggrData(a.toInt).cacheName)
+            catch {
+                case e: Throwable =>
+                    warn("Invalid selection: " + a)
+
+                    None
+            }
+        }
+    }
 }
 
 /**
@@ -658,7 +740,7 @@ private case class VisorAggregatedCacheQueryMetrics(
 object VisorCacheCommand {
     addHelp(
         name = "cache",
-        shortInfo = "Prints cache statistics.",
+        shortInfo = "Prints cache statistics, clear cache, compacts entries in cache, prints list of all entries from cache.",
         longInfo = Seq(
             "Prints statistics about caches from specified node on the entire grid.",
             "Output sorting can be specified in arguments.",
@@ -668,13 +750,21 @@ object VisorCacheCommand {
             "    H/h Number of cache hits.",
             "    M/m Number of cache misses.",
             "    R/r Number of cache reads.",
-            "    W/w Number of cache writes."
+            "    W/w Number of cache writes.",
+            " ",
+            "Clear cache",
+            " ",
+            "Compacts entries in cache",
+            " ",
+            "Prints list of all entries from cache"
         ),
         spec = Seq(
             "cache",
             "cache -i",
             "cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}",
-            "cache -c=<cache-name> -scan {-id=<node-id>|id8=<node-id8>} {-p=<page size>}"
+            "cache -clear {-c=<cache-name>}",
+            "cache -compact {-c=<cache-name>}",
+            "cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}"
         ),
         args = Seq(
             "-id=<node-id>" -> Seq(
@@ -693,8 +783,14 @@ object VisorCacheCommand {
                 "By default - statistics for all caches will be printed.",
                 "Note you can also use '@c0' ... '@cn' variables as shortcut to <cache-name>."
             ),
+            "-clear" -> Seq(
+                "Clear cache"
+            ),
+            "-compact" -> Seq(
+                "Compacts entries in cache"
+            ),
             "-scan" -> Seq(
-                "List all entries from cache"
+                "Prints list of all entries from cache"
             ),
             "-s=no|lr|lw|hi|mi|re|wr" -> Seq(
                 "Defines sorting type. Sorted by:",
@@ -725,6 +821,10 @@ object VisorCacheCommand {
             )
         ),
         examples = Seq(
+            "cache" ->
+                "Prints summary statistics about all caches.",
+            "cache -i" ->
+                "Prints cache statistics for interactively selected node.",
             "cache -id8=12345678 -s=hi -r"  -> Seq(
                 "Prints summary statistics about caches from node with specified id8",
                 "sorted by number of hits in reverse order."
@@ -733,15 +833,15 @@ object VisorCacheCommand {
                 "Prints summary statistics about caches from node with id8 taken from 'n0' memory variable.",
                 "sorted by number of hits in reverse order."
             ),
-            "cache -i" ->
-                "Prints cache statistics for interactively selected node.",
             "cache -c=@c0 -a"  -> Seq(
                 "Prints detailed statistics about cache with name taken from 'c0' memory variable."
             ),
             "cache -s=hi -r -a" ->
                 "Prints detailed statistics about all caches sorted by number of hits in reverse order.",
-            "cache" ->
-                "Prints summary statistics about all caches.",
+            "cache -compact -c=cache" -> "Compacts entries in cache with name 'cache'.",
+            "cache -compact -c=@c0" -> "Compacts cache with name taken from 'c0' memory variable.",
+            "cache -clear -c=cache" -> "Clears cache with name 'cache'.",
+            "cache -clear -c=@c0" -> "Clears cache with name taken from 'c0' memory variable.",
             "cache -c=cache -scan" -> "List entries from cache with name 'cache' from all nodes with this cache.",
             "cache -c=@c0 -scan -p=50" -> ("List entries from cache with name taken from 'c0' memory variable" +
                 " with page of 50 items from all nodes with this cache."),
