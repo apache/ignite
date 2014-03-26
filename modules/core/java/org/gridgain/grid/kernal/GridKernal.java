@@ -926,6 +926,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
                         int pubPoolActiveThreads = 0;
                         int pubPoolIdleThreads = 0;
+                        int pubPoolQSize = 0;
 
                         ExecutorService pubExec = cfg.getExecutorService();
 
@@ -936,10 +937,12 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
                             pubPoolActiveThreads = Math.min(poolSize, exec.getActiveCount());
                             pubPoolIdleThreads = poolSize - pubPoolActiveThreads;
+                            pubPoolQSize = exec.getQueue().size();
                         }
 
                         int sysPoolActiveThreads = 0;
                         int sysPoolIdleThreads = 0;
+                        int sysPoolQSize = 0;
 
                         ExecutorService sysExec = cfg.getSystemExecutorService();
 
@@ -950,20 +953,23 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
                             sysPoolActiveThreads = Math.min(poolSize, exec.getActiveCount());
                             sysPoolIdleThreads = poolSize - sysPoolActiveThreads;
+                            sysPoolQSize = exec.getQueue().size();
                         }
 
                         SB sb = new SB();
 
-                        sb.a(NL + ">>> H/N/C [hosts=").a(hosts).a(", nodes=").a(nodes).a(", CPUs=").a(cpus).a("]").
-                            a(NL + ">>> CPU [curr=").a(dblFmt.format(cpuLoadPct)).a("%, avg=").
-                            a(dblFmt.format(avgCpuLoadPct)).a("%, GC=").a(dblFmt.format(gcPct)).a("%]").
-                            a(NL + ">>> Heap [used=").a(dblFmt.format(heapUsedInMBytes)).a("MB, free=").
-                            a(dblFmt.format(freeHeapPct)).a("%, comm=").a(dblFmt.format(heapCommInMBytes)).a("MB]").
-                            a(NL + ">>> Public thread pool [active=").a(pubPoolActiveThreads).
-                            a(", idle=").a(pubPoolIdleThreads).a("]").
-                            a(NL + ">>> System thread pool [active=").a(sysPoolActiveThreads).
-                            a(", idle=").a(sysPoolIdleThreads).a("]").
-                            a(NL + ">>> Outbound messages queue [size=").a(m.getOutboundMessagesQueueSize()).a("]");
+                        sb.a("Metrics for local node (to disable printout set configuration " +
+                            "property 'metricsLogFrequency' to 0) [locNodeId=" + ctx.localNodeId() + ']').
+                            a(NL + "    >>> H/N/C [hosts=").a(hosts).a(", nodes=").a(nodes).a(", CPUs=").a(cpus).a("]").
+                            a(NL + "    >>> CPU [cur=").a(dblFmt.format(cpuLoadPct)).a("%, avg=").a(
+                                dblFmt.format(avgCpuLoadPct)).a("%, GC=").a(dblFmt.format(gcPct)).a("%]").
+                            a(NL + "    >>> Heap [used=").a(dblFmt.format(heapUsedInMBytes)).a("MB, free=").a(
+                                dblFmt.format(freeHeapPct)).a("%, comm=").a(dblFmt.format(heapCommInMBytes)).a("MB]").
+                            a(NL + "    >>> Public thread pool [active=").a(pubPoolActiveThreads).a(", idle=").a(
+                                pubPoolIdleThreads).a(", qSize=").a(pubPoolQSize).a("]").
+                            a(NL + "    >>> System thread pool [active=").a(sysPoolActiveThreads).a(", idle=").a(
+                                sysPoolIdleThreads).a(", qSize=").a(sysPoolQSize).a("]").
+                            a(NL + "    >>> Outbound messages queue [size=").a(m.getOutboundMessagesQueueSize()).a("]");
 
                         log.info(sb.toString());
                     }
@@ -1949,7 +1955,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         NL);
                 }
                 else {
-                    String ack = "GridGain ver. " + VER + '#' + ctx.build() + "-sha1:" + REV_HASH + " stopped with ERRORS";
+                    String ack = "GridGain ver. " + VER + '#' + ctx.build() + "-sha1:" + REV_HASH +
+                        " stopped with ERRORS";
 
                     String dash = U.dash(ack.length());
 
@@ -2622,8 +2629,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     ctx, Collections.<GridTuple3<String, Boolean, String>>emptyList());
 
             // Exceeding max line width for readability.
-            GridCompoundFuture<GridTuple3<String, Boolean, String>, Collection<GridTuple3<String, Boolean, String>>> fut =
-                new GridCompoundFuture<>(
+            GridCompoundFuture<GridTuple3<String, Boolean, String>, Collection<GridTuple3<String, Boolean, String>>>
+                fut = new GridCompoundFuture<>(
                     ctx,
                     CU.<GridTuple3<String, Boolean, String>>objectsReducer()
                 );
