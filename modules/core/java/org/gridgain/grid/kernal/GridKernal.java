@@ -959,16 +959,16 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         String msg = NL +
                             "Metrics for local node (to disable printout set configuration " +
                             "property 'metricsLogFrequency' to 0) [locNodeId=" + ctx.localNodeId() + ']' + NL +
-                            "    >>> H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
-                            "    >>> CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
+                            "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
+                            "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
                                 dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
-                            "    >>> Heap [used=" + dblFmt.format(heapUsedInMBytes) + "MB, free=" +
+                            "    ^-- Heap [used=" + dblFmt.format(heapUsedInMBytes) + "MB, free=" +
                                 dblFmt.format(freeHeapPct) + "%, comm=" + dblFmt.format(heapCommInMBytes) + "MB]" + NL +
-                            "    >>> Public thread pool [active=" + pubPoolActiveThreads + ", idle=" +
+                            "    ^-- Public thread pool [active=" + pubPoolActiveThreads + ", idle=" +
                                 pubPoolIdleThreads + ", qSize=" + pubPoolQSize + "]" + NL +
-                            "    >>> System thread pool [active=" + sysPoolActiveThreads + ", idle=" +
+                            "    ^-- System thread pool [active=" + sysPoolActiveThreads + ", idle=" +
                                 sysPoolIdleThreads + ", qSize=" + sysPoolQSize + "]" + NL +
-                            "    >>> Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]";
+                            "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]";
 
                         log.info(msg);
                     }
