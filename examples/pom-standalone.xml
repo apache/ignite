@@ -28,7 +28,7 @@
     <artifactId>gridgain-examples</artifactId>
     <version>${gridgain.version}</version>
 
-ß    <dependencies>
+    <dependencies>
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-core</artifactId>
