@@ -157,7 +157,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
                         break;
                     }
-
                 }
             }
         }

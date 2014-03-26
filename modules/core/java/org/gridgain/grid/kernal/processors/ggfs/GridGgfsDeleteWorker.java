@@ -51,9 +51,6 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
     /** Logger. */
     private final GridLogger log;
 
-    /** Local node ID. */
-    private final UUID locNodeId;
-
     /** Lock. */
     private final Lock lock = new ReentrantLock();
 
@@ -85,7 +82,6 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
         data = ggfsCtx.data();
 
         evts = ggfsCtx.kernalContext().event();
-        locNodeId = ggfsCtx.kernalContext().localNodeId();
 
         String ggfsName = ggfsCtx.ggfs().name();
 
