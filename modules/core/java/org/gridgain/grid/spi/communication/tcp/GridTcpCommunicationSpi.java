@@ -1547,6 +1547,8 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
         int connectAttempts = 1;
 
+        long connTimeout0 = connTimeout;
+
         while (true) {
             GridCommunicationClient client;
 
@@ -1563,8 +1565,6 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
                 throw e;
             }
-
-            long connTimeout0 = connTimeout;
 
             try {
                 safeHandshake(client, node.id(), connTimeout0);
@@ -1651,7 +1651,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
         boolean conn = false;
         GridCommunicationClient client = null;
-        GridMultiException errs = null;
+        GridException errs = null;
 
         int connectAttempts = 1;
 
@@ -1738,12 +1738,12 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
                                     ", err=" + e.getMessage() + ", addr=" + addr + ']');
 
                             if (errs == null)
-                                errs = new GridMultiException("Failed to connect to node (is node still alive?). " +
+                                errs = new GridException("Failed to connect to node (is node still alive?). " +
                                     "Make sure that each GridComputeTask and GridCacheTransaction has a timeout set " +
                                     "in order to prevent parties from waiting forever in case of network issues " +
                                     "[nodeId=" + node.id() + ", addrs=" + rmtAddrs + ']');
 
-                            errs.add(e);
+                            errs.addSuppressed(e);
 
                             break;
                         }
@@ -1771,12 +1771,12 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
                                 "configuration property) [addr=" + addr + ", port=" + port + ']');
 
                         if (errs == null)
-                            errs = new GridMultiException("Failed to connect to node (is node still alive?). " +
+                            errs = new GridException("Failed to connect to node (is node still alive?). " +
                                 "Make sure that each GridComputeTask and GridCacheTransaction has a timeout set " +
                                 "in order to prevent parties from waiting forever in case of network issues " +
                                 "[nodeId=" + node.id() + ", addrs=" + rmtAddrs + ']');
 
-                        errs.add(e);
+                        errs.addSuppressed(e);
 
                         // Reconnect for the second time, if connection is not established.
                         if (connectAttempts < 2 &&
