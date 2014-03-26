@@ -1011,6 +1011,11 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public int getOutboundMessagesQueueSize() {
+        return nioSrvr.outboundMessagesQueueSize();
+    }
+
+    /** {@inheritDoc} */
     @Override public void resetMetrics() {
         // Can't use 'reset' method because it is not thread-safe
         // according to javadoc.

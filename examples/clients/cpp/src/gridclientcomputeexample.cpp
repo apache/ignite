@@ -60,7 +60,7 @@ void clientComputeExample(TGridClientPtr& client) {
 
     TGridClientComputePtr prj = clientCompute->projection(*p);
 
-    GridClientVariant rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask");
+    GridClientVariant rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask", "GridClientNode projection task arg");
 
     cout << ">>> GridClientNode projection: there are totally " << rslt.toString() <<
         " test entries on the grid" << endl;
@@ -71,7 +71,7 @@ void clientComputeExample(TGridClientPtr& client) {
 
     prj = clientCompute->projection(prjNodes);
 
-    rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask");
+    rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask","Collection execution task arg");
 
     cout << ">>> Collection execution: there are totally " << rslt.toString() <<
         " test entries on the grid" << endl;
@@ -79,7 +79,7 @@ void clientComputeExample(TGridClientPtr& client) {
     std::function<bool (const GridClientNode&)> filter = [&randNodeId](const GridClientNode& node) { return node.getNodeId() == randNodeId; };
     prj = clientCompute->projection(filter);
 
-    rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask");
+    rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask", "Predicate execution task arg");
 
     cout << ">>> Predicate execution: there are totally " << rslt.toString() <<
         " test entries on the grid" << endl;
@@ -91,7 +91,7 @@ void clientComputeExample(TGridClientPtr& client) {
     std::function<bool (const GridClientNode&)> filter1 = [&randNodeId](const GridClientNode& node) { return node.getNodeId() == randNodeId; };
     prj = clientCompute->projection(filter1, balancer);
 
-    rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask");
+    rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask", "Predicate execution with balancer task arg");
 
     cout << ">>> Predicate execution with balancer: there are totally " << rslt.toString() <<
             " test entries on the grid" << endl;
@@ -101,12 +101,12 @@ void clientComputeExample(TGridClientPtr& client) {
 
     prj = prj->projection(prjNodes, balancer);
 
-    rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask");
+    rslt = prj->execute("org.gridgain.examples.misc.client.api.ClientExampleTask", "GridClientNode projection task arg");
 
     cout << ">>> GridClientNode projection: there are totally " << rslt.toString() <<
             " test entries on the grid" << endl;
 
-    TGridClientFutureVariant futVal = prj->executeAsync("org.gridgain.examples.misc.client.api.ClientExampleTask");
+    TGridClientFutureVariant futVal = prj->executeAsync("org.gridgain.examples.misc.client.api.ClientExampleTask", "Execute async task arg");
 
     cout << ">>> Execute async: there are totally " << futVal->get().toString() <<
        " test entries on the grid" << endl;
