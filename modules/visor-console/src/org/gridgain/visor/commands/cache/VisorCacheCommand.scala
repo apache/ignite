@@ -78,7 +78,7 @@ import org.gridgain.visor.commands.{VisorConsoleMultiNodeTask, VisorConsoleComma
  *     -c=<name>
  *         Name of the cache.
  *         By default - statistics for all caches will be printed.
- *     -s=no|lr|lw|hi|mi|re|wr
+ *     -s=lr|lw|hi|mi|re|wr|cn
  *         Defines sorting type. Sorted by:
  *            lr Last read.
  *            lw Last write.
@@ -481,6 +481,7 @@ class VisorCacheCommand {
             case "mi" => data.toList.sortBy(_.avgMisses)
             case "rd" => data.toList.sortBy(_.avgReads)
             case "wr" => data.toList.sortBy(_.avgWrites)
+            case "cn" => data.toList.sortBy(_.cacheName)
 
             case _ =>
                 assert(false, "Unknown sorting type: " + arg)
@@ -507,14 +508,16 @@ class VisorCacheCommand {
         if (aggrData.isEmpty)
             scold("No caches found.").^^
 
+        val sortedAggrData = sortAggregatedData(aggrData, "cn", false)
+
         println("Time of the snapshot: " + formatDateTime(System.currentTimeMillis))
 
         val sumT = VisorTextTable()
 
         sumT #= (">", ("Name(@),", "Last Read/Write"), "Nodes", "Size")
 
-        (0 until aggrData.size) foreach (i => {
-            val ad = aggrData(i)
+        (0 until sortedAggrData.size) foreach (i => {
+            val ad = sortedAggrData(i)
 
             // Add cache host as visor variable.
             registerCacheName(ad.cacheName)
@@ -752,11 +755,11 @@ object VisorCacheCommand {
             "    R/r Number of cache reads.",
             "    W/w Number of cache writes.",
             " ",
-            "Clear cache",
+            "Clear cache.",
             " ",
-            "Compacts entries in cache",
+            "Compacts entries in cache.",
             " ",
-            "Prints list of all entries from cache"
+            "Prints list of all entries from cache."
         ),
         spec = Seq(
             "cache",
@@ -784,15 +787,15 @@ object VisorCacheCommand {
                 "Note you can also use '@c0' ... '@cn' variables as shortcut to <cache-name>."
             ),
             "-clear" -> Seq(
-                "Clear cache"
+                "Clear cache."
             ),
             "-compact" -> Seq(
-                "Compacts entries in cache"
+                "Compacts entries in cache."
             ),
             "-scan" -> Seq(
-                "Prints list of all entries from cache"
+                "Prints list of all entries from cache."
             ),
-            "-s=no|lr|lw|hi|mi|re|wr" -> Seq(
+            "-s=lr|lw|hi|mi|re|wr|cn" -> Seq(
                 "Defines sorting type. Sorted by:",
                 "   lr Last read.",
                 "   lw Last write.",
@@ -800,6 +803,7 @@ object VisorCacheCommand {
                 "   mi Misses.",
                 "   rd Reads.",
                 "   wr Writes.",
+                "   cn Cache name.",
                 "If not specified - default sorting is 'lr'."
             ),
             "-i" -> Seq(

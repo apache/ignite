@@ -88,7 +88,7 @@ class VisorCacheCompactCommand {
         if (cacheArg.isEmpty)
             scold("Cache name is empty.").^^
 
-        val caches = getVariable(cacheArg.get)
+        val caches = cacheArg.get
 
         val prj = if (node.isDefined) grid.forNode(node.get) else grid.forCache(caches)
 
@@ -106,6 +106,8 @@ class VisorCacheCompactCommand {
             .withName("visor-ccompact-task")
             .withNoFailover()
             .broadcast(new CompactClosure(caches)).get
+
+        println("Compacts entries in cache: " + caches)
 
         val t = VisorTextTable()
 

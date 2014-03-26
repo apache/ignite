@@ -86,7 +86,7 @@ class VisorCacheClearCommand {
         if (cacheArg.isEmpty)
             scold("Cache name is empty.").^^
 
-        val caches = getVariable(cacheArg.get)
+        val caches = cacheArg.get
 
         val prj = if (node.isDefined) grid.forNode(node.get) else grid.forCache(caches)
 
@@ -106,6 +106,8 @@ class VisorCacheClearCommand {
             .withNoFailover()
             .broadcast(new ClearClosure(caches))
             .get
+
+        println("Cleared cache with name: " + caches)
 
         val t = VisorTextTable()
 
