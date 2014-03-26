@@ -123,6 +123,15 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
     }
 
     /**
+     * Gets topology version or -1 in case of topology version is not required for this message.
+     *
+     * @return Topology version.
+     */
+    public long topologyVersion() {
+        return -1;
+    }
+
+    /**
      * @param filters Predicate filters.
      * @param ctx Context.
      * @throws GridException If failed.
