@@ -43,9 +43,6 @@ class GridUpdateNotifier {
     private static final String HTTP_URL =
         /*@java.update.status.url*/"http://www.gridgain.org/update_status.php?test=vfvfvskfkeievskjv";
 
-    /** GridGain site that is shown in log messages. */
-    private static final String SITE = /*@java.gridgain.site*/"www.gridgain.org";
-
     /** Ant-augmented edition name. */
     private static final String EDITION = /*@java.edition*/"dev";
 
@@ -168,7 +165,7 @@ class GridUpdateNotifier {
                     throttle(log, false, "Your version is up to date.");
             }
             else
-                throttle(log, true, "New version is available at " + SITE + ": " + latestVer);
+                throttle(log, true, "New version is available at " + GridKernal.SITE + ": " + latestVer);
         else
             if (!reportOnlyNew)
                 throttle(log, false, "Update status is not available.");

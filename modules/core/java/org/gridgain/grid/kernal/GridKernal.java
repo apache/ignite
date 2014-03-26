@@ -118,7 +118,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     private static final String COMPATIBLE_VERS = /*@java.compatible.vers*/"";
 
     /** GridGain site that is shown in log messages. */
-    private static final String SITE = /*@java.gridgain.site*/"www.gridgain.org";
+    static final String SITE = "www.gridgain." + (ent ? "com" : "org");
 
     /** System line separator. */
     private static final String NL = U.nl();
