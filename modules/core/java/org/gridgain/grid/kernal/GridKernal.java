@@ -956,22 +956,21 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                             sysPoolQSize = exec.getQueue().size();
                         }
 
-                        SB sb = new SB();
+                        String msg = NL +
+                            "Metrics for local node (to disable printout set configuration " +
+                            "property 'metricsLogFrequency' to 0) [locNodeId=" + ctx.localNodeId() + ']' + NL +
+                            "    >>> H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
+                            "    >>> CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
+                                dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
+                            "    >>> Heap [used=" + dblFmt.format(heapUsedInMBytes) + "MB, free=" +
+                                dblFmt.format(freeHeapPct) + "%, comm=" + dblFmt.format(heapCommInMBytes) + "MB]" + NL +
+                            "    >>> Public thread pool [active=" + pubPoolActiveThreads + ", idle=" +
+                                pubPoolIdleThreads + ", qSize=" + pubPoolQSize + "]" + NL +
+                            "    >>> System thread pool [active=" + sysPoolActiveThreads + ", idle=" +
+                                sysPoolIdleThreads + ", qSize=" + sysPoolQSize + "]" + NL +
+                            "    >>> Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]";
 
-                        sb.a("Metrics for local node (to disable printout set configuration " +
-                            "property 'metricsLogFrequency' to 0) [locNodeId=" + ctx.localNodeId() + ']').
-                            a(NL + "    >>> H/N/C [hosts=").a(hosts).a(", nodes=").a(nodes).a(", CPUs=").a(cpus).a("]").
-                            a(NL + "    >>> CPU [cur=").a(dblFmt.format(cpuLoadPct)).a("%, avg=").a(
-                                dblFmt.format(avgCpuLoadPct)).a("%, GC=").a(dblFmt.format(gcPct)).a("%]").
-                            a(NL + "    >>> Heap [used=").a(dblFmt.format(heapUsedInMBytes)).a("MB, free=").a(
-                                dblFmt.format(freeHeapPct)).a("%, comm=").a(dblFmt.format(heapCommInMBytes)).a("MB]").
-                            a(NL + "    >>> Public thread pool [active=").a(pubPoolActiveThreads).a(", idle=").a(
-                                pubPoolIdleThreads).a(", qSize=").a(pubPoolQSize).a("]").
-                            a(NL + "    >>> System thread pool [active=").a(sysPoolActiveThreads).a(", idle=").a(
-                                sysPoolIdleThreads).a(", qSize=").a(sysPoolQSize).a("]").
-                            a(NL + "    >>> Outbound messages queue [size=").a(m.getOutboundMessagesQueueSize()).a("]");
-
-                        log.info(sb.toString());
+                        log.info(msg);
                     }
                 }
             }, metricsLogFreq, metricsLogFreq);
