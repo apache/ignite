@@ -75,7 +75,7 @@ public final class CacheAffinityExample {
             final int key = i;
 
             // This runnable will execute on the remote node where
-            // data with the 'key' is located. Since it will be co-located
+            // data with the given key is located. Since it will be co-located
             // we can use local 'peek' operation safely.
             g.compute().affinityRun(CACHE_NAME, key, new GridRunnable() {
                 @Override public void run() {

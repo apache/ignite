@@ -8232,4 +8232,20 @@ public abstract class GridUtils {
 
         return dir;
     }
+
+    /**
+     * Creates {@code GridException} with the collection of suppressed exceptions.
+     *
+     * @param msg Message.
+     * @param suppressed The collections of suppressed exceptions.
+     * @return {@code GridException}.
+     */
+    public static GridException exceptionWithSuppressed(String msg, Collection<Throwable> suppressed) {
+        GridException e = new GridException(msg);
+
+        for (Throwable th : suppressed)
+            e.addSuppressed(th);
+
+        return e;
+    }
 }
