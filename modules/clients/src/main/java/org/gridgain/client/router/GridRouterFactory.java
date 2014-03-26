@@ -9,6 +9,7 @@
 
 package org.gridgain.client.router;
 
+import org.gridgain.client.router.impl.*;
 import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
