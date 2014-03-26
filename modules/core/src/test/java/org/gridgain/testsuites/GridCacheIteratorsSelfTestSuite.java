@@ -13,7 +13,6 @@ import junit.framework.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
-import org.gridgain.testframework.*;
 
 /**
  * Cache iterators test suite.
@@ -24,7 +23,7 @@ public class GridCacheIteratorsSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Cache Iterators Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Cache Iterators Test Suite");
 
         suite.addTest(new TestSuite(GridCacheLocalIteratorsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheReplicatedIteratorsSelfTest.class));

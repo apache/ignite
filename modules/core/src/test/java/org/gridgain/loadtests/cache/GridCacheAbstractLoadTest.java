@@ -37,7 +37,7 @@ abstract class GridCacheAbstractLoadTest {
     protected static final Random RAND = new Random();
 
     /** Default configuration file path. */
-    protected static final String CONFIG_FILE = "modules/core/src/test/config/spring-cache-load.xml";
+    protected static final String CONFIG_FILE = "modules/tests/config/spring-cache-load.xml";
 
     /** Default log file path. */
     protected static final String LOG_FILE = "cache-load.log";
@@ -93,7 +93,7 @@ abstract class GridCacheAbstractLoadTest {
 
         try {
             props.load(new FileReader(GridTestUtils.resolveGridGainPath(
-                "modules/core/src/test/config/cache-load.properties")));
+                "modules/tests/config/cache-load.properties")));
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -132,14 +132,10 @@ abstract class GridCacheAbstractLoadTest {
 
                     while (!done.get()) {
                         if (tx) {
-                            GridCacheTx tx = cache.txStart();
-                            try {
+                            try (GridCacheTx tx = cache.txStart()) {
                                 writeClos.apply(cache);
 
                                 tx.commit();
-                            }
-                            finally {
-                                tx.close();
                             }
                         }
                         else
@@ -158,14 +154,10 @@ abstract class GridCacheAbstractLoadTest {
 
                     while(!done.get()) {
                         if (tx) {
-                            GridCacheTx tx = cache.txStart();
-                            try {
+                            try (GridCacheTx tx = cache.txStart()) {
                                 readClos.apply(cache);
 
                                 tx.commit();
-                            }
-                            finally {
-                                tx.close();
                             }
                         }
                         else

@@ -7,17 +7,17 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.client.suite;
+package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
 import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.integration.*;
 import org.gridgain.client.marshaller.protobuf.*;
+import org.gridgain.client.router.*;
 import org.gridgain.client.util.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
-import org.gridgain.testframework.*;
 
 import java.io.*;
 
@@ -30,7 +30,9 @@ public class GridClientTestSuite extends TestSuite {
      * @throws IOException If failed.
      */
     public static TestSuite suite() throws IOException {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Clients Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Clients Test Suite");
+
+        suite.addTest(new TestSuite(GridRouterFactorySelfTest.class));
 
         // Parser standalone test.
         suite.addTest(new TestSuite(GridTcpRestParserSelfTest.class));
@@ -111,6 +113,18 @@ public class GridClientTestSuite extends TestSuite {
         suite.addTestSuite(GridClientByteUtilsTest.class);
 
         suite.addTest(new TestSuite(GridClientTopologyCacheSelfTest.class));
+
+        // Router tests.
+        suite.addTest(new TestSuite(GridTcpRouterSelfTest.class));
+        suite.addTest(new TestSuite(GridHttpRouterSelfTest.class));
+        suite.addTest(new TestSuite(GridTcpSslRouterSelfTest.class));
+        suite.addTest(new TestSuite(GridHttpsRouterSelfTest.class));
+        suite.addTest(new TestSuite(GridTcpRouterMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(GridHttpRouterMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(GridHttpsRouterMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(GridRouterMultiAuthSelfTest.class));
+
+        suite.addTest(new TestSuite(GridClientFailedInitSelfTest.class));
 
         return suite;
     }

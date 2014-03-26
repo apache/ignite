@@ -119,8 +119,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @return Dht cache.
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
-    private GridDhtCache<Integer, String> dht(Grid g) {
-        return ((GridNearCache)((GridKernal)g).internalCache()).dht();
+    private GridDhtCacheAdapter<Integer, String> dht(Grid g) {
+        return ((GridNearCacheAdapter)((GridKernal)g).internalCache()).dht();
     }
 
     /**
@@ -145,8 +145,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         assert near0 != near1;
 
-        GridDhtCache<Integer, String> dht0 = dht(grid(primary.id()));
-        GridDhtCache<Integer, String> dht1 = dht(grid(other.id()));
+        GridDhtCacheAdapter<Integer, String> dht0 = dht(grid(primary.id()));
+        GridDhtCacheAdapter<Integer, String> dht1 = dht(grid(other.id()));
 
         // Put on primary node.
         String val = "v1";
@@ -190,8 +190,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         assert near0 != near1;
 
-        GridDhtCache<Integer, String> dht0 = dht(grid(primary.id()));
-        GridDhtCache<Integer, String> dht1 = dht(grid(other.id()));
+        GridDhtCacheAdapter<Integer, String> dht0 = dht(grid(primary.id()));
+        GridDhtCacheAdapter<Integer, String> dht1 = dht(grid(other.id()));
 
         // Put on primary node.
         String val = "v1";
@@ -236,8 +236,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         assert near0 != near1;
 
-        GridDhtCache<Integer, String> dht0 = dht(grid(primary.id()));
-        GridDhtCache<Integer, String> dht1 = dht(grid(other.id()));
+        GridDhtCacheAdapter<Integer, String> dht0 = dht(grid(primary.id()));
+        GridDhtCacheAdapter<Integer, String> dht1 = dht(grid(other.id()));
 
         // Put on primary node.
         String val = "v1";

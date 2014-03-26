@@ -11,8 +11,8 @@ package org.gridgain.grid.cache.eviction.lru;
 
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.ConcurrentLinkedDeque8.*;
+import org.jdk8.backport.*;
+import org.jdk8.backport.ConcurrentLinkedDeque8.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;

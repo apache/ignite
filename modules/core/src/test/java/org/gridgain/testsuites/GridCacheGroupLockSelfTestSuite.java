@@ -13,7 +13,6 @@ import junit.framework.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
-import org.gridgain.testframework.*;
 
 /**
  * Group lock test suite.
@@ -24,7 +23,7 @@ public class GridCacheGroupLockSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Cache Group Lock Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Cache Group Lock Test Suite");
 
         // One node.
         suite.addTest(new TestSuite(GridCacheGroupLockNearSelfTest.class));

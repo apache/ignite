@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal;
 import junit.framework.*;
 import org.apache.log4j.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.processors.rest.protocols.http.jetty.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -68,7 +67,8 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
 
             // We have to explicitly configure paths to license and jetty configs because of undefined GRIDGAIN_HOME.
             cfg.setLicenseUrl("file:///" + ggHome + "/" + GridGain.DFLT_LIC_FILE_NAME);
-            cfg.setRestJettyPath(ggHome + File.separator + "os" + File.separator + GridJettyRestProtocol.DFLT_CFG_PATH);
+            cfg.setRestJettyPath(ggHome + File.separator + "modules" + File.separator + "tests" + File.separator +
+                "config" + File.separator + "jetty" + File.separator + "rest-jetty.xml");
             // Default console logger is used
             cfg.setGridLogger(log);
             cfg.setDiscoverySpi(disc);

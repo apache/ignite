@@ -11,14 +11,13 @@ package org.gridgain.grid.cache.store.jdbc;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
+import org.jdk8.backport.*;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -184,9 +183,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
                 for (int i = 0; i < TX_CNT; i++) {
                     GridCache<Integer, String> cache = cache(rnd.nextInt(GRID_CNT));
 
-                    GridCacheTx tx = cache.txStart();
-
-                    try {
+                    try (GridCacheTx tx = cache.txStart()) {
                         cache.put(1, "value");
                         cache.put(2, "value");
                         cache.put(3, "value");
@@ -202,9 +199,6 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
                         cache.putAll(map);
 
                         tx.commit();
-                    }
-                    finally {
-                        tx.close();
                     }
                 }
 

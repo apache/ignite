@@ -417,15 +417,10 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
                 g0.cache(null).put(i, i);
 
             for (int i = 0; i < 100; i++) {
-                GridCacheTx tx = g0.cache(null).txStart(PESSIMISTIC, REPEATABLE_READ);
+                try (GridCacheTx tx = g0.cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    Integer val = (Integer) g0.cache(null).get(i);
 
-                try {
-                    Integer val = (Integer)g0.cache(null).get(i);
-
-                    assertEquals((Integer)i, val);
-                }
-                finally {
-                    tx.close();
+                    assertEquals((Integer) i, val);
                 }
             }
         }
@@ -736,9 +731,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
         clearStores(3);
 
-        GridCacheTx tx = g0.cache(null).txStart(OPTIMISTIC, READ_COMMITTED);
-
-        try {
+        try (GridCacheTx tx = g0.cache(null).txStart(OPTIMISTIC, READ_COMMITTED)) {
             g0.cache(null).putAll(map);
 
             tx.commit();
@@ -748,9 +741,6 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             checkStore(g2, Collections.<Integer, String>emptyMap());
 
             clearStores(3);
-        }
-        finally {
-            tx.close();
         }
     }
 

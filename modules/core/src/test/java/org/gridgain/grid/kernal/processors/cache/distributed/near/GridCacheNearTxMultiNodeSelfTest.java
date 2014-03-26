@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -151,8 +150,8 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
             grids = F.asList(otherGrid, newGrid);
 
             for (Grid g : grids) {
-                GridNearCache near = ((GridKernal)g).internalCache().context().near();
-                GridDhtCache dht = near.dht();
+                GridNearCacheAdapter near = ((GridKernal)g).internalCache().context().near();
+                GridDhtCacheAdapter dht = near.dht();
 
                 checkTm(g, near.context().tm());
                 checkTm(g, dht.context().tm());

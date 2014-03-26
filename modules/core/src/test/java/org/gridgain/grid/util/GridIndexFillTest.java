@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util;
 
-import edu.stanford.ppl.concurrent.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.util.snaptree.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 

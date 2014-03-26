@@ -99,9 +99,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
 
             final Random rnd = new Random();
 
-            GridCacheTx tx = cache.txStart();
-
-            try {
+            try (GridCacheTx tx = cache.txStart()) {
                 int iterCnt = 20;
                 int keyCnt = 5000;
 
@@ -118,7 +116,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
                         info("Stats [iterCnt=" + i + ", size=" + cache.size() + ']');
                 }
 
-                GridCacheFifoEvictionPolicy<Integer, Integer> plc0 = (GridCacheFifoEvictionPolicy<Integer, Integer>)plc;
+                GridCacheFifoEvictionPolicy<Integer, Integer> plc0 = (GridCacheFifoEvictionPolicy<Integer, Integer>) plc;
 
                 if (!plc0.queue().isEmpty()) {
                     for (GridCacheEntry<Integer, Integer> e : plc0.queue())
@@ -128,9 +126,6 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
                 }
 
                 tx.commit();
-            }
-            finally {
-                tx.close();
             }
         }
         catch (Throwable t) {

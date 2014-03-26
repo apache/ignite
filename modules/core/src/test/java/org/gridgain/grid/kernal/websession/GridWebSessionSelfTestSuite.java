@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.websession;
 
 import junit.framework.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suite for web sessions caching functionality.
@@ -22,7 +21,7 @@ public class GridWebSessionSelfTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("GridGain Web Sessions Test Suite");
+        TestSuite suite = new TestSuite("GridGain Web Sessions Test Suite");
 
         suite.addTestSuite(GridWebSessionSelfTest.class);
         suite.addTestSuite(WebSessionTransactionalSelfTest.class);

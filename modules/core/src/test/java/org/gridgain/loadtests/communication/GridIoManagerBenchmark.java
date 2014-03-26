@@ -14,11 +14,11 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.loadtests.util.*;
 import org.gridgain.testframework.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -39,7 +39,7 @@ import static org.gridgain.testframework.GridLoadTestUtils.*;
  */
 public class GridIoManagerBenchmark {
     /** */
-    public static final String DFLT_CONFIG = "modules/core/src/test/config/io-manager-benchmark.xml";
+    public static final String DFLT_CONFIG = "modules/tests/config/io-manager-benchmark.xml";
 
     /** */
     private static final int DFLT_THREADS = 2;
@@ -156,8 +156,7 @@ public class GridIoManagerBenchmark {
 
                         boolean recordAvg = ts - initTs > WARM_UP_DUR;
 
-                        if (recordAvg)
-                            qpsAvg.update(qps);
+                        if (recordAvg) qpsAvg.update(qps);
 
                         X.println("Communication benchmark [qps=" + qps + (recordAvg ? ", qpsAvg=" + qpsAvg : "") +
                             ", executed=" + executed + ", time=" + time + ']');
@@ -176,11 +175,8 @@ public class GridIoManagerBenchmark {
                     try {
                         X.println("Saving results to output file: " + outputFilename);
 
-                        appendLineToFile(
-                            outputFilename,
-                            "%s,%d",
-                            GridLoadTestUtils.DATE_TIME_FORMAT.format(new Date()),
-                            qpsAvg.get());
+                        appendLineToFile(outputFilename, "%s,%d", GridLoadTestUtils.DATE_TIME_FORMAT.format(new Date
+                            ()), qpsAvg.get());
                     }
                     catch (IOException e) {
                         X.println("Failed to record results to a file: " + e.getMessage());

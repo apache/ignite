@@ -24,8 +24,6 @@ import org.gridgain.grid.kernal.processors.cache.distributed.replicated.preloade
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.websession.*;
-import org.gridgain.grid.p2p.*;
-import org.gridgain.testframework.*;
 import org.gridgain.testsuites.*;
 
 /**
@@ -37,7 +35,7 @@ public class GridDataGridTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain In-Memory Data Grid Test Suite");
+        TestSuite suite = new TestSuite("Gridgain In-Memory Data Grid Test Suite");
 
         // Swap tests.
         suite.addTestSuite(GridCacheSwapPreloadSelfTest.class);
@@ -73,6 +71,8 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAsyncOperationsLimitSelfTest.class);
         suite.addTestSuite(GridCacheTtlManagerSelfTest.class);
         suite.addTestSuite(GridCacheLifecycleAwareSelfTest.class);
+        suite.addTestSuite(GridCacheStopSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicNearCacheSelfTest.class);
 
         // Local cache.
         suite.addTestSuite(GridCacheLocalProjectionSelfTest.class);
@@ -99,7 +99,9 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedProjectionSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearOneNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheAtomicNearMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearReadersSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheAtomicNearReadersSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAffinitySelfTest.class));
         suite.addTest(new TestSuite(GridCacheConsistentHashAffinityFunctionExcludeNeighborsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheRendezvousAffinityFunctionExcludeNeighborsSelfTest.class));
@@ -145,8 +147,10 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedLoadCacheSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtEvictionsDisabledSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearEvictionEventSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheAtomicNearEvictionEventSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtEvictionSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtEvictionNearReadersSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheDhtAtomicEvictionNearReadersSelfTest.class));
         suite.addTest(new TestSuite(GridCacheColocatedRefreshAheadSelfTest.class));
 //        suite.addTest(new TestSuite(GridCachePartitionedTopologyChangeSelfTest.class)); TODO-gg-5489
         suite.addTest(new TestSuite(GridCachePartitionedPreloadEventsSelfTest.class));
@@ -170,7 +174,10 @@ public class GridDataGridTestSuite extends TestSuite {
 
         // Value consistency tests.
         suite.addTestSuite(GridCacheValueConsistencyAtomicSelfTest.class);
+        suite.addTestSuite(GridCacheValueConsistencyAtomicNearEnabledSelfTest.class);
+        suite.addTestSuite(GridCacheValueConsistencyAtomicPrimaryWriteOrderNearEnabledSelfTest.class);
         suite.addTestSuite(GridCacheValueConsistencyTransactionalSelfTest.class);
+        suite.addTestSuite(GridCacheValueConsistencyTransactionalNearEnabledSelfTest.class);
 
         // Replicated cache.
         suite.addTestSuite(GridCacheReplicatedBasicApiTest.class);
@@ -199,10 +206,6 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheDeploymentSelfTest.class);
         suite.addTestSuite(GridCacheDeploymentOffHeapSelfTest.class);
         suite.addTestSuite(GridCachePutArrayValueSelfTest.class);
-        suite.addTestSuite(GridMultinodeRedeployContinuousModeSelfTest.class);
-        suite.addTestSuite(GridMultinodeRedeploySharedModeSelfTest.class);
-        suite.addTestSuite(GridMultinodeRedeployPrivateModeSelfTest.class);
-        suite.addTestSuite(GridMultinodeRedeployIsolatedModeSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedUnswapAdvancedSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedEvictionEventSelfTest.class);
         // TODO: GG-7569.

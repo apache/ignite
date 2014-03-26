@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
@@ -20,11 +19,11 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
+import org.jdk8.backport.*;
 
 import java.io.*;
 import java.util.*;
@@ -493,9 +492,8 @@ public class GridGgfsSizeSelfTest extends GridCommonAbstractTest {
             new Thread(new Runnable() {
                 @Override public void run() {
                     try {
-                        GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
-                        try {
+                        try (GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             metaCache.get(id);
 
                             latch.await();
@@ -503,9 +501,6 @@ public class GridGgfsSizeSelfTest extends GridCommonAbstractTest {
                             U.sleep(1000); // Sleep here so that data manager could "see" oversize.
 
                             tx.commit();
-                        }
-                        finally {
-                            tx.close();
                         }
                     }
                     catch (Throwable e) {
@@ -515,9 +510,8 @@ public class GridGgfsSizeSelfTest extends GridCommonAbstractTest {
             }).start();
 
             // Now add file ID to trash listing so that delete worker could "see" it.
-            GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
-            try {
+            try (GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 Map<String, GridGgfsListingEntry> listing = Collections.singletonMap(path.name(),
                     new GridGgfsListingEntry(info));
 
@@ -533,9 +527,6 @@ public class GridGgfsSizeSelfTest extends GridCommonAbstractTest {
                     metaCache.put(TRASH_ID, new GridGgfsFileInfo(listing, trashInfo));
 
                 tx.commit();
-            }
-            finally {
-                tx.close();
             }
 
             assert metaCache.get(TRASH_ID) != null;

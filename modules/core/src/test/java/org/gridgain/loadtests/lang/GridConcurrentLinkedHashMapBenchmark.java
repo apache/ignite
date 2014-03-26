@@ -9,8 +9,8 @@
 
 package org.gridgain.loadtests.lang;
 
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
+import org.jdk8.backport.*;
 
 import java.util.*;
 import java.util.concurrent.*;

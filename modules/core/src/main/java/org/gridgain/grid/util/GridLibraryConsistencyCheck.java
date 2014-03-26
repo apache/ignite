@@ -27,7 +27,6 @@ public class GridLibraryConsistencyCheck {
     public static final String[] CLASS_LIST = new String[] {
         "org.jetbrains.annotations.Nullable",                             // annotations-XXX.jar
         "org.aopalliance.intercept.MethodInterceptor",                    // aopalliance-XXX.jar
-        "org.aspectj.lang.annotation.Aspect",                             // aspectjrt-XXX.jar
         "com.amazonaws.services.s3.AmazonS3",                             // aws-java-sdk-XXX.jar
         "org.apache.commons.beanutils.converters.DateTimeConverter",      // commons-beanutils-XXX.jar
         "org.apache.commons.cli.CommandLineParser",                       // commons-cli-XXX.jar
@@ -70,10 +69,10 @@ public class GridLibraryConsistencyCheck {
         "javax.mail.internet.MimeMessage",                                // mail-XXX.jar
         "net.miginfocom.layout.LayoutCallback",                           // miglayout-core-XXX.jar
         "net.miginfocom.swing.MigLayout",                                 // miglayout-swing-XXX.jar
+        "com.mongodb.DBCollection",                                       // mongo-java-driver-XXX.jar
         "io.netty.channel.Channel",                                       // netty-all-XXX.jar
         "com.google.protobuf.ByteString",                                 // protobuf-java-XXX.jar
         "org.slf4j.LoggerFactory",                                        // slf4j-api-XXX.jar
-        "edu.stanford.ppl.concurrent.SnapTreeMap",                        // snaptree-gg-XXX.jar
         "org.springframework.aop.support.DefaultPointcutAdvisor",         // spring-aop-XXX.jar
         "org.springframework.beans.factory.ListableBeanFactory",          // spring-beans-XXX.jar
         "org.springframework.context.ApplicationContext",                 // spring-context-XXX.jar
@@ -156,7 +155,8 @@ public class GridLibraryConsistencyCheck {
         List<GridBiTuple<String, String>> res = new ArrayList<>();
 
         for (int i = 0; i < libs1.size(); i++) {
-            if (!F.eq(libs1.get(i), libs2.get(i)))
+            if (!NOT_FOUND_MESSAGE.equals(libs1.get(i)) && !NOT_FOUND_MESSAGE.equals(libs2.get(i)) &&
+                !F.eq(libs1.get(i), libs2.get(i)))
                 res.add(new GridBiTuple<>(libs1.get(i), libs2.get(i)));
         }
 

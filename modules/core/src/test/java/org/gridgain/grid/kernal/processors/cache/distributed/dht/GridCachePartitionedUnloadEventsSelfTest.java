@@ -46,6 +46,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
     }
 
     /**
+     * @return Cache configuration.
      */
     protected GridCacheConfiguration cacheConfiguration() {
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
@@ -79,25 +80,22 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         assertNotNull(g2Keys);
         assertFalse("There are no keys assigned to g2", g2Keys.isEmpty());
 
-        Collection <GridEvent> objEvts = g1.events().localQuery(new GridPredicate<GridEvent>() {
-            @Override
-            public boolean apply(GridEvent e) {
-                return e.type() == EVT_CACHE_PRELOAD_OBJECT_UNLOADED;
-            }
-        });
+        Collection<GridEvent> objEvts =
+            g1.events().localQuery(F.<GridEvent>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_UNLOADED);
 
         checkObjectUnloadEvents(objEvts, g1, g2Keys);
 
-        Collection <GridEvent> partEvts = g1.events().localQuery(new GridPredicate<GridEvent>() {
-            @Override
-            public boolean apply(GridEvent e) {
-                return e.type() == EVT_CACHE_PRELOAD_PART_UNLOADED;
-            }
-        });
+        Collection <GridEvent> partEvts =
+            g1.events().localQuery(F.<GridEvent>alwaysTrue(), EVT_CACHE_PRELOAD_PART_UNLOADED);
 
         checkPartitionUnloadEvents(partEvts, g1, dht(g2.cache(null)).topology().localPartitions());
     }
 
+    /**
+     * @param evts Events.
+     * @param g Grid.
+     * @param keys Keys.
+     */
     private void checkObjectUnloadEvents(Collection<GridEvent> evts, Grid g, Collection<?> keys) {
         assertEquals(keys.size(), evts.size());
 
@@ -112,6 +110,11 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         }
     }
 
+    /**
+     * @param evts Events.
+     * @param g Grid.
+     * @param parts Parts.
+     */
     private void checkPartitionUnloadEvents(Collection<GridEvent> evts, Grid g,
         Collection<GridDhtLocalPartition<Object, Object>> parts) {
         assertEquals(parts.size(), evts.size());

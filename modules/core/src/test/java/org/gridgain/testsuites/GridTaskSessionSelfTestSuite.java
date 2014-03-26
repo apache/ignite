@@ -11,7 +11,6 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.session.*;
-import org.gridgain.testframework.*;
 
 /**
  * Task session test suite.
@@ -22,7 +21,7 @@ public class GridTaskSessionSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createDistributedTestSuite("Gridgain TaskSession Test Suite");
+        TestSuite suite = new TestSuite("Gridgain TaskSession Test Suite");
 
         suite.addTest(new TestSuite(GridSessionCancelSiblingsFromFutureSelfTest.class));
         suite.addTest(new TestSuite(GridSessionCancelSiblingsFromJobSelfTest.class));

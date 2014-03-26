@@ -51,7 +51,7 @@ public class GridCacheGroupLockComparisonTest {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Grid g = G.start("modules/core/src/test/config/load/cache-benchmark.xml")) {
+        try (Grid g = G.start("modules/tests/config/load/cache-benchmark.xml")) {
             System.out.println("threadCnt=" + THREADS);
             System.out.println("objectCnt=" + OBJECT_CNT);
             System.out.println("batchSize=" + BATCH_SIZE);
@@ -162,9 +162,8 @@ public class GridCacheGroupLockComparisonTest {
                         break;
 
                     // Threads should not lock the same key.
-                    GridCacheTx tx = cache.txStartAffinity(affKey, PESSIMISTIC, REPEATABLE_READ, 0, BATCH_SIZE);
 
-                    try {
+                    try (GridCacheTx tx = cache.txStartAffinity(affKey, PESSIMISTIC, REPEATABLE_READ, 0, BATCH_SIZE)) {
                         for (long i = 0; i < BATCH_SIZE; i++) {
                             cache.put(new GridCacheAffinityKey<>((key % rangeCnt) + base, affKey), i);
 
@@ -172,9 +171,6 @@ public class GridCacheGroupLockComparisonTest {
                         }
 
                         tx.commit();
-                    }
-                    finally {
-                        tx.close();
                     }
 
                     long ops = opCnt.addAndGet(BATCH_SIZE);

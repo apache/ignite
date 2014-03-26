@@ -10,11 +10,11 @@
 package org.gridgain.jvmtest;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.lang.utils.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.testframework.*;
+import org.jdk8.backport.*;
 
 import java.util.*;
 import java.util.concurrent.*;

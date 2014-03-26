@@ -21,6 +21,7 @@ import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -385,7 +386,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         Collection<GridDhtCacheEntry<K, V>> entriesCp = entriesCopy();
 
         if (dist && tx == null) {
-            cctx.dht().removeLocks(nearNodeId, lockVer, F.viewReadOnly(entriesCp,
+            cctx.dhtTx().removeLocks(nearNodeId, lockVer, F.viewReadOnly(entriesCp,
                 new C1<GridDhtCacheEntry<K, V>, K>() {
                     @Override public K apply(GridDhtCacheEntry<K, V> e) {
                         return e.key();

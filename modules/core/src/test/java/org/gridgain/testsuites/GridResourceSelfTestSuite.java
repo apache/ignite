@@ -11,7 +11,6 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.kernal.processors.resource.*;
-import org.gridgain.testframework.*;
 
 /**
  * Gridgain resource injection test Suite.
@@ -23,7 +22,7 @@ public class GridResourceSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createDistributedTestSuite("Gridgain Resource Injection Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Resource Injection Test Suite");
 
         suite.addTest(new TestSuite(GridResourceFieldInjectionSelfTest.class));
         suite.addTest(new TestSuite(GridResourceMethodInjectionSelfTest.class));

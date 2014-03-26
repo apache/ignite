@@ -93,17 +93,12 @@ class GridCacheGroupLockPutTask extends GridComputeTaskAdapter<Collection<Intege
                         Object affKey = pair.get1();
 
                         // Group lock partition.
-                        GridCacheTx tx = cache.txStartPartition(cache.affinity().partition(affKey), PESSIMISTIC,
-                            REPEATABLE_READ, 0, pair.get2().size());
-
-                        try {
+                        try (GridCacheTx tx = cache.txStartPartition(cache.affinity().partition(affKey), PESSIMISTIC,
+                            REPEATABLE_READ, 0, pair.get2().size())) {
                             for (Integer val : pair.get2())
                                 cache.put(val, val);
 
                             tx.commit();
-                        }
-                        finally {
-                            tx.close();
                         }
                     }
 

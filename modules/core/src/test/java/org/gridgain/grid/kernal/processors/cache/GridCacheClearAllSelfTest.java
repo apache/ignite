@@ -287,16 +287,11 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void fillCache(GridCache<Integer, Integer> cache, int keysCnt) throws Exception {
-        GridCacheTx tx = cache.txStart();
-
-        try {
+        try (GridCacheTx tx = cache.txStart()) {
             for (int i = 0; i < keysCnt; i++)
                 cache.put(i, i);
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
     }
 

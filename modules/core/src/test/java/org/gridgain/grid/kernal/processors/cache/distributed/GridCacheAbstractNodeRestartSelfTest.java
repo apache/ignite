@@ -621,15 +621,13 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                 int c = 0;
 
                                 try {
-                                    GridCacheTx tx = cache.txStart(txConcurrency(), REPEATABLE_READ);
+                                    try (GridCacheTx tx = cache.txStart(txConcurrency(), REPEATABLE_READ)) {
+                                        c = txCntr.incrementAndGet();
 
-                                    c = txCntr.incrementAndGet();
+                                        if (c % logFreq == 0)
+                                            info(">>> Tx iteration started [cnt=" + c + ", keys=" + keys + ", " +
+                                                "locNodeId=" + locNodeId + ']');
 
-                                    if (c % logFreq == 0)
-                                        info(">>> Tx iteration started [cnt=" + c + ", keys=" + keys + ", " +
-                                            "locNodeId=" + locNodeId + ']');
-
-                                    try {
                                         for (int key : keys) {
                                             int op = cacheOp();
 
@@ -645,9 +643,6 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                     }
                                     catch (GridTopologyException ignored) {
                                         // It is ok if primary node leaves grid.
-                                    }
-                                    finally {
-                                        tx.close();
                                     }
                                 }
                                 catch (GridTopologyException ignored) {
@@ -773,17 +768,17 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                 // Ensure lock order.
                                 Collections.sort(keys);
 
-                                GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                                int c = 0;
 
-                                int c = txCntr.incrementAndGet();
+                                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                    c = txCntr.incrementAndGet();
 
-                                if (c % logFreq == 0)
-                                    info(">>> Tx iteration started [cnt=" + c + ", keys=" + keys + ", " +
-                                        "locNodeId=" + locNodeId + ']');
+                                    if (c % logFreq == 0)
+                                        info(">>> Tx iteration started [cnt=" + c + ", keys=" + keys + ", " +
+                                            "locNodeId=" + locNodeId + ']');
 
-                                Map<Integer, String> batch = new LinkedHashMap<>();
+                                    Map<Integer, String> batch = new LinkedHashMap<>();
 
-                                try {
                                     for (int key : keys)
                                         batch.put(key, String.valueOf(key));
 
@@ -793,9 +788,6 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                 }
                                 catch (GridTopologyException ignored) {
                                     // It is ok if primary node leaves grid.
-                                }
-                                finally {
-                                    tx.close();
                                 }
 
                                 if (c % logFreq == 0)

@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -93,7 +92,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
         doFilteredPut();
 
         GridCache<Integer, Integer> c =
-            ((GridNearCache<Integer, Integer>)cache().<Integer, Integer>cache()).dht();
+            ((GridNearCacheAdapter<Integer, Integer>)cache().<Integer, Integer>cache()).dht();
 
         assert c.entrySet().isEmpty() : "Actual size: " + c.entrySet().size();
     }
@@ -116,7 +115,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
         doPutAndRollback();
 
         GridCache<Integer, Integer> c =
-            ((GridNearCache<Integer, Integer>)cache().<Integer, Integer>cache()).dht();
+            ((GridNearCacheAdapter<Integer, Integer>)cache().<Integer, Integer>cache()).dht();
 
         assert c.entrySet().isEmpty() : "Actual size: " + c.entrySet().size();
     }
@@ -127,15 +126,10 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     private void doFilteredPut() throws Exception {
         GridCache<Integer, Integer> c = cache();
 
-        GridCacheTx tx = c.txStart();
-
-        try {
+        try (GridCacheTx tx = c.txStart()) {
             assert !c.putx(1, 1, F.<Integer, Integer>cacheHasPeekValue());
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         assert c.isEmpty();
@@ -149,15 +143,10 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     private void doPutAndRollback() throws Exception {
         GridCache<Integer, Integer> c = cache();
 
-        GridCacheTx tx = c.txStart();
-
-        try {
+        try (GridCacheTx tx = c.txStart()) {
             assert c.putx(1, 1);
 
             tx.rollback();
-        }
-        finally {
-            tx.close();
         }
 
         assert c.isEmpty();

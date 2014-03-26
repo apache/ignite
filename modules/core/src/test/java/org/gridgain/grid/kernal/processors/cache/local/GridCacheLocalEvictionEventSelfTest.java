@@ -12,12 +12,19 @@ package org.gridgain.grid.kernal.processors.cache.local;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+
 /**
- * Test local cache eviction event.
+ * Tests local cache eviction event.
  */
 public class GridCacheLocalEvictionEventSelfTest extends GridCacheEvictionEventAbstractTest {
     /** {@inheritDoc} */
     @Override protected GridCacheMode cacheMode() {
         return GridCacheMode.LOCAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridCacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
     }
 }

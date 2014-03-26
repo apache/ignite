@@ -223,11 +223,11 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      */
     private String entries(int key) {
         if (partitioned()) {
-            GridNearCache<Integer, String> near1 = near(1);
-            GridNearCache<Integer, String> near2 = near(2);
+            GridNearCacheAdapter<Integer, String> near1 = near(1);
+            GridNearCacheAdapter<Integer, String> near2 = near(2);
 
-            GridDhtCache<Integer, String> dht1 = dht(1);
-            GridDhtCache<Integer, String> dht2 = dht(2);
+            GridDhtCacheAdapter<Integer, String> dht1 = dht(1);
+            GridDhtCacheAdapter<Integer, String> dht2 = dht(2);
 
             return "Entries [ne1=" + near1.peekEx(key) + ", de1=" + dht1.peekEx(key) + ", ne2=" + near2.peekEx(key) +
                 ", de2=" + dht2.peekEx(key) + ']';

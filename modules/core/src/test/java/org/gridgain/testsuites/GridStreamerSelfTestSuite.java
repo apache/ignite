@@ -13,7 +13,6 @@ import junit.framework.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.streamer.index.*;
 import org.gridgain.grid.streamer.window.*;
-import org.gridgain.testframework.*;
 
 /**
  * Streamer test suite.
@@ -24,7 +23,7 @@ public class GridStreamerSelfTestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Streamer Test Suite.");
+        TestSuite suite = new TestSuite("Gridgain Streamer Test Suite.");
 
         // Streamer.
         suite.addTestSuite(GridStreamerWindowSelfTest.class);

@@ -25,7 +25,7 @@ public class GridAopSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain AOP Test Suite");
+        TestSuite suite = new TestSuite("Gridgain AOP Test Suite");
 
         // Test configuration.
         suite.addTest(new TestSuite(GridBasicAopSelfTest.class));

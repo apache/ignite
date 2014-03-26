@@ -105,9 +105,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
         c.put(CNTR_KEY, 0);
 
         for (int i = 0; i < 10; i++) {
-            GridCacheTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-            try {
+            try (GridCacheTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 c.get(CNTR_KEY);
 
                 ctx.closure().callLocalSafe((new Callable<Boolean>() {
@@ -121,9 +119,6 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
                 }), true);
 
                 tx.commit();
-            }
-            finally {
-                tx.close();
             }
         }
     }

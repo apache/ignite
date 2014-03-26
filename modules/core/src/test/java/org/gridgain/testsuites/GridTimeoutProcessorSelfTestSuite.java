@@ -11,7 +11,6 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.testframework.*;
 
 /**
  * Suite for {@link GridTimeoutProcessor} tests.
@@ -22,7 +21,7 @@ public class GridTimeoutProcessorSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createDistributedTestSuite("Gridgain Timeout Processor Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Timeout Processor Test Suite");
 
         suite.addTest(new TestSuite(GridTimeoutProcessorSelfTest.class));
 

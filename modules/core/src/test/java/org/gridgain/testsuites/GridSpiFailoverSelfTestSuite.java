@@ -13,7 +13,6 @@ import junit.framework.*;
 import org.gridgain.grid.spi.failover.always.*;
 import org.gridgain.grid.spi.failover.jobstealing.*;
 import org.gridgain.grid.spi.failover.never.*;
-import org.gridgain.testframework.*;
 
 /**
  * Failover SPI self-test suite.
@@ -24,7 +23,7 @@ public class GridSpiFailoverSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createDistributedTestSuite("Gridgain Failover SPI Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Failover SPI Test Suite");
 
         // Always failover.
         suite.addTest(new TestSuite(GridAlwaysFailoverSpiSelfTest.class));

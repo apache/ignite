@@ -14,7 +14,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.ipc.shmem.*;
-import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
@@ -29,7 +28,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain GGFS Events Test Suite");
+        TestSuite suite = new TestSuite("Gridgain GGFS Events Test Suite");
 
         suite.addTestSuite(ShmemPrivate.class);
         suite.addTestSuite(ShmemDualSync.class);
@@ -47,7 +46,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suiteNoarchOnly() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain GGFS Events Test Suite Noarch Only");
+        TestSuite suite = new TestSuite("Gridgain GGFS Events Test Suite Noarch Only");
 
         suite.addTestSuite(LoopbackPrivate.class);
         suite.addTestSuite(LoopbackDualSync.class);
@@ -98,7 +97,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://secondary/");
-            ggfsCfg.setSecondaryHadoopFileSystemConfigPath("modules/core/src/test/config/hadoop/core-site-secondary.xml");
+            ggfsCfg.setSecondaryHadoopFileSystemConfigPath("modules/tests/config/hadoop/core-site-secondary.xml");
 
             return ggfsCfg;
         }
@@ -194,7 +193,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setSecondaryHadoopFileSystemConfigPath(
-                "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml");
+                "modules/tests/config/hadoop/core-site-loopback-secondary.xml");
 
             return ggfsCfg;
         }

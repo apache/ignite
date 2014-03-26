@@ -23,6 +23,7 @@ import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -128,28 +129,26 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         GridCache<GridCacheAffinityKey<String>, String> cache = grid(0).cache(null);
 
-        GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 2);
+        GridCacheAffinityKey<String> key1;
+        GridCacheAffinityKey<String> key2;
 
-        if (concurrency == PESSIMISTIC)
-            assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
-        else
-            assertEquals("Unexpected number of lock events: " + locks.affectedKeys(), 0, locks.affectedKeys().size());
+        try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 2)) {
+            if (concurrency == PESSIMISTIC)
+                assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
+            else
+                assertEquals("Unexpected number of lock events: " + locks.affectedKeys(), 0, locks.affectedKeys().size());
 
-        assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0, unlocks.affectedKeys().size());
+            assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0, unlocks.affectedKeys().size());
 
-        GridCacheAffinityKey<String> key1 = new GridCacheAffinityKey<>("key1", affinityKey);
-        GridCacheAffinityKey<String> key2 = new GridCacheAffinityKey<>("key2", affinityKey);
+            key1 = new GridCacheAffinityKey<>("key1", affinityKey);
+            key2 = new GridCacheAffinityKey<>("key2", affinityKey);
 
-        try {
             cache.putAll(F.asMap(
                 key1, "val1",
                 key2, "val2")
             );
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         // Check that there are no further locks after transaction commit.
@@ -212,22 +211,18 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         grid(0).events().localListen(locks, EVT_CACHE_OBJECT_LOCKED);
         grid(0).events().localListen(unlocks, EVT_CACHE_OBJECT_UNLOCKED);
 
-        GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 2);
+        try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 2)) {
+            if (concurrency == PESSIMISTIC)
+                assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
+            else
+                assertEquals("Unexpected number of lock events: " + locks.affectedKeys(), 0, locks.affectedKeys().size());
 
-        if (concurrency == PESSIMISTIC)
-            assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
-        else
-            assertEquals("Unexpected number of lock events: " + locks.affectedKeys(), 0, locks.affectedKeys().size());
+            assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0, unlocks.affectedKeys().size());
 
-        assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0, unlocks.affectedKeys().size());
 
-        try {
             cache.removeAll(F.asList(key1, key2));
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         // Check that there are no further locks after transaction commit.
@@ -290,24 +285,19 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         grid(0).events().localListen(locks, EVT_CACHE_OBJECT_LOCKED);
         grid(0).events().localListen(unlocks, EVT_CACHE_OBJECT_UNLOCKED);
 
-        GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 2);
+        try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 2)) {
+            if (concurrency == PESSIMISTIC)
+                assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
+            else
+                assertEquals("Unexpected number of lock events: " + locks.affectedKeys(), 0, locks.affectedKeys().size());
 
-        if (concurrency == PESSIMISTIC)
-            assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
-        else
-            assertEquals("Unexpected number of lock events: " + locks.affectedKeys(), 0, locks.affectedKeys().size());
+            assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0, unlocks.affectedKeys().size());
 
-        assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0, unlocks.affectedKeys().size());
-
-        try {
             assertEquals("val1", cache.get(key1));
 
             assertEquals("val2", cache.get(key2));
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         // Check that there are no further locks after transaction commit.
@@ -377,15 +367,10 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 1);
-
-                    try {
+                    try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 1)) {
                         cache.put(key1, "val01");
 
                         tx.commit();
-                    }
-                    finally {
-                        tx.close();
                     }
 
                     return null;
@@ -434,15 +419,10 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         assertTrue(cache.lock(key1, 0));
 
         try {
-            GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 1);
-
-            try {
+            try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 1)) {
                 cache.put(key1, "val01");
 
                 tx.commit();
-            }
-            finally {
-                tx.close();
             }
 
             for (int i = 0; i < gridCount(); i++) {
@@ -481,46 +461,41 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         GridCache<UUID, String> cache = grid(0).cache(null);
 
-        GridCacheTx tx = cache.txStartPartition(cache.affinity().partition(affinityKey), concurrency, READ_COMMITTED,
-            0, 2);
-
-        // Note that events are not generated for internal keys.
-        assertEquals("Unexpected number of lock events: " + locks.affectedKeys(), 0, locks.affectedKeys().size());
-        assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0, unlocks.affectedKeys().size());
-
-        GridCacheAdapter<Object, Object> cacheAdapter = ((GridKernal)grid(0)).internalCache();
-
-        GridCacheAffinityManager<Object, Object> affMgr = cacheAdapter.context().affinity();
-
-        GridPartitionLockKey partAffKey = affMgr.partitionAffinityKey(cache.affinity().partition(affinityKey));
-
-        if (concurrency == PESSIMISTIC)
-            assertTrue(cacheAdapter.entryEx(partAffKey).lockedByThread());
-
         UUID key1;
-
-        do {
-            key1 = UUID.randomUUID();
-        }
-        while (cache.affinity().partition(key1) != cache.affinity().partition(affinityKey));
-
         UUID key2;
 
-        do {
-            key2 = UUID.randomUUID();
-        }
-        while (cache.affinity().partition(key2) != cache.affinity().partition(affinityKey));
+        try (GridCacheTx tx = cache.txStartPartition(cache.affinity().partition(affinityKey), concurrency,
+            READ_COMMITTED, 0, 2)) {
+            // Note that events are not generated for internal keys.
+            assertEquals("Unexpected number of lock events: " + locks.affectedKeys(), 0, locks.affectedKeys().size());
+            assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0,
+                unlocks.affectedKeys().size());
 
-        try {
+            GridCacheAdapter<Object, Object> cacheAdapter = ((GridKernal)grid(0)).internalCache();
+
+            GridCacheAffinityManager<Object, Object> affMgr = cacheAdapter.context().affinity();
+
+            GridPartitionLockKey partAffKey = affMgr.partitionAffinityKey(cache.affinity().partition(affinityKey));
+
+            if (concurrency == PESSIMISTIC)
+                assertTrue(cacheAdapter.entryEx(partAffKey).lockedByThread());
+
+            do {
+                key1 = UUID.randomUUID();
+            }
+            while (cache.affinity().partition(key1) != cache.affinity().partition(affinityKey));
+
+            do {
+                key2 = UUID.randomUUID();
+            }
+            while (cache.affinity().partition(key2) != cache.affinity().partition(affinityKey));
+
             cache.putAll(F.asMap(
                 key1, "val1",
                 key2, "val2")
             );
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         // Check that there are no further locks after transaction commit.
@@ -593,16 +568,14 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         grid(0).events().localListen(locks, EVT_CACHE_OBJECT_LOCKED);
         grid(0).events().localListen(unlocks, EVT_CACHE_OBJECT_UNLOCKED);
 
-        GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 2);
+        try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 2)) {
+            if (concurrency == PESSIMISTIC)
+                assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
+            else
+                assertEquals("Unexpected number of lock events: " + locks.affectedKeys(), 0, locks.affectedKeys().size());
 
-        if (concurrency == PESSIMISTIC)
-            assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
-        else
-            assertEquals("Unexpected number of lock events: " + locks.affectedKeys(), 0, locks.affectedKeys().size());
+            assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0, unlocks.affectedKeys().size());
 
-        assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0, unlocks.affectedKeys().size());
-
-        try {
             assertEquals("val1", cache.get(key1));
 
             assertEquals("val2", cache.get(key2));
@@ -612,9 +585,6 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
             cache.put(key2, "val02");
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         // Check that there are no further locks after transaction commit.
@@ -675,16 +645,14 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         grid(0).events().localListen(locks, EVT_CACHE_OBJECT_LOCKED);
         grid(0).events().localListen(unlocks, EVT_CACHE_OBJECT_UNLOCKED);
 
-        GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 2);
+        try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 2)) {
+            if (concurrency == PESSIMISTIC)
+                assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
+            else
+                assertEquals("Unexpected number of lock events: " + locks.affectedKeys(), 0, locks.affectedKeys().size());
 
-        if (concurrency == PESSIMISTIC)
-            assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
-        else
-            assertEquals("Unexpected number of lock events: " + locks.affectedKeys(), 0, locks.affectedKeys().size());
+            assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0, unlocks.affectedKeys().size());
 
-        assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0, unlocks.affectedKeys().size());
-
-        try {
             assertEquals("val1", cache.get(key1));
 
             assertEquals("val2", cache.get(key2));
@@ -694,9 +662,6 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
             cache.remove(key2);
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         for (int i = 0; i < gridCount(); i++) {
@@ -754,16 +719,14 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         grid(0).events().localListen(locks, EVT_CACHE_OBJECT_LOCKED);
         grid(0).events().localListen(unlocks, EVT_CACHE_OBJECT_UNLOCKED);
 
-        GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 2);
+        try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 2)) {
+            if (concurrency == PESSIMISTIC)
+                assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
+            else
+                assertEquals("Unexpected number of lock events: " + locks.affectedKeys(), 0, locks.affectedKeys().size());
 
-        if (concurrency == PESSIMISTIC)
-            assertTrue("Failed to wait for lock events: " + affinityKey, locks.awaitKeys(WAIT_TIMEOUT, affinityKey));
-        else
-            assertEquals("Unexpected number of lock events: " + locks.affectedKeys(), 0, locks.affectedKeys().size());
+            assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0, unlocks.affectedKeys().size());
 
-        assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0, unlocks.affectedKeys().size());
-
-        try {
             assertEquals("val1", cache.get(key1));
 
             assertEquals("val2", cache.get(key2));
@@ -777,9 +740,6 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
             assertEquals("val02", cache.get(key2));
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         // Check that there are no further locks after transaction commit.
@@ -807,14 +767,9 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         cache(0).put(key, "val");
 
-        GridCacheTx tx = cache(0).txStartPartition(cache(0).affinity().partition(key), concurrency, REPEATABLE_READ,
-            0, 1);
-
-        try {
+        try (GridCacheTx tx = cache(0).txStartPartition(cache(0).affinity().partition(key), concurrency,
+            REPEATABLE_READ, 0, 1)) {
             assertEquals("val", cache(0).get(key));
-        }
-        finally {
-            tx.close();
         }
     }
 
@@ -834,9 +789,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         final GridCache<GridCacheAffinityKey<String>, String> cache = grid(0).cache(null);
 
-        GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 1);
-
-        try {
+        try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 1)) {
             // Key with affinity key different from enlisted on tx start should raise exception.
             cache.put(new GridCacheAffinityKey<>("key1", UUID.randomUUID()), "val1");
 
@@ -844,9 +797,6 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         }
         catch (GridException ignored) {
             // Expected exception.
-        }
-        finally {
-            tx.close();
         }
 
         assertNull(cache.tx());
@@ -872,9 +822,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         cache.put(key, "val");
 
-        GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 1);
-
-        try {
+        try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 1)) {
             // Key with affinity key different from enlisted on tx start should raise exception.
             cache.remove(key);
 
@@ -882,9 +830,6 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         }
         catch (GridException ignored) {
             // Expected exception.
-        }
-        finally {
-            tx.close();
         }
 
         assertNull(cache.tx());
@@ -924,8 +869,6 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         GridCache<GridCacheAffinityKey<String>, String> cache = grid(0).cache(null);
 
-        GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 4);
-
         GridCacheAffinityKey<String> key1 = new GridCacheAffinityKey<>("key1", affinityKey);
         GridCacheAffinityKey<String> key2 = new GridCacheAffinityKey<>("key2", affinityKey);
         GridCacheAffinityKey<String> key3 = new GridCacheAffinityKey<>("key3", affinityKey);
@@ -937,16 +880,13 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
             key3, "val3",
             key4, "val4");
 
-        try {
+        try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 4)) {
             cache.put(key1, "val1");
             cache.put(key2, "val2");
             cache.put(key3, "val3");
             cache.put(key4, "val4");
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         for (int i = 0; i < gridCount(); i++) {

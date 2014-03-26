@@ -12,8 +12,8 @@ package org.gridgain.grid.spi.swapspace.inmemory;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

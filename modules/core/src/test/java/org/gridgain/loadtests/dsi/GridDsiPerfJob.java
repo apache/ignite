@@ -20,6 +20,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -94,8 +95,8 @@ public class GridDsiPerfJob extends GridComputeJobAdapter {
 
         long cnt = cntrs.get1().incrementAndGet();
 
-        GridNearCache near = (GridNearCache)((GridKernal)grid).internalCache(cacheName);
-        GridDhtCache dht = near.dht();
+        GridNearCacheAdapter near = (GridNearCacheAdapter)((GridKernal)grid).internalCache(cacheName);
+        GridDhtCacheAdapter dht = near.dht();
 
         doWork();
 
@@ -246,10 +247,8 @@ public class GridDsiPerfJob extends GridComputeJobAdapter {
         if (ses == null)
             ses = new GridDsiSession(terminalId);
 
-        GridCacheTx tx = cache.txStart();
-
         try {
-            try {
+            try (GridCacheTx tx = cache.txStart()) {
                 GridDsiRequest req = new GridDsiRequest(getId());
 
                 req.setMessageId(getId());
@@ -281,9 +280,6 @@ public class GridDsiPerfJob extends GridComputeJobAdapter {
                 tx.commit();
 
                 stopTimer("commit");
-            }
-            finally {
-                tx.close();
             }
         }
         catch (Exception e) {

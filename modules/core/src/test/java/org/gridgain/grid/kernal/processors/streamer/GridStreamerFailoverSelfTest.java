@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.streamer;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -19,6 +18,7 @@ import org.gridgain.grid.streamer.window.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
+import org.jdk8.backport.*;
 
 import java.util.*;
 import java.util.concurrent.*;

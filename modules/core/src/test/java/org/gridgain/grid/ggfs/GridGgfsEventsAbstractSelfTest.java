@@ -91,7 +91,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
-        GridConfiguration cfg = G.loadConfiguration("config/ggfs/default-ggfs-data.xml").get1();
+        GridConfiguration cfg = G.loadConfiguration("config/hadoop/default-config.xml").get1();
 
         assert cfg != null;
 

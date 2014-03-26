@@ -12,10 +12,10 @@ package org.gridgain.grid.util.offheap;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
+import org.jdk8.backport.*;
 
 import java.util.*;
 import java.util.concurrent.*;

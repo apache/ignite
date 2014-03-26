@@ -118,15 +118,15 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
      * @param g Grid.
      * @return Near cache.
      */
-    private static GridNearCache<String, Integer> near(Grid g) {
-        return (GridNearCache<String, Integer>)((GridKernal)g).<String, Integer>internalCache();
+    private static GridNearCacheAdapter<String, Integer> near(Grid g) {
+        return (GridNearCacheAdapter<String, Integer>)((GridKernal)g).<String, Integer>internalCache();
     }
 
     /**
      * @param g Grid.
      * @return DHT cache.
      */
-    private static GridDhtCache<String, Integer> dht(Grid g) {
+    private static GridDhtCacheAdapter<String, Integer> dht(Grid g) {
         return near(g).dht();
     }
 

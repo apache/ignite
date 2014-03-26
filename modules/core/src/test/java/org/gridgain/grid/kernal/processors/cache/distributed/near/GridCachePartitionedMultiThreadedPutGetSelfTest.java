@@ -168,9 +168,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
                 for (int i = 0; i < TX_CNT; i++) {
                     int kv = cntr.incrementAndGet();
 
-                    GridCacheTx tx = c.txStart(concurrency, isolation);
-
-                    try {
+                    try (GridCacheTx tx = c.txStart(concurrency, isolation)) {
                         assertNull(c.get(kv));
 
                         assert c.putx(kv, kv);
@@ -183,9 +181,6 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
                         assertEquals(Integer.valueOf(kv), c.get(kv));
 
                         tx.commit();
-                    }
-                    finally {
-                        tx.close();
                     }
 
                     if (TEST_INFO && kv % 1000 == 0)

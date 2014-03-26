@@ -13,8 +13,8 @@ import junit.framework.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.communication.*;
+import org.gridgain.grid.p2p.*;
 import org.gridgain.grid.spi.communication.tcp.*;
-import org.gridgain.testframework.*;
 import org.gridgain.testsuites.*;
 
 /**
@@ -26,7 +26,7 @@ public class GridComputeGridTestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Compute Grid Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Compute Grid Test Suite");
 
         suite.addTest(GridTaskSessionSelfTestSuite.suite());
         suite.addTest(GridResourceSelfTestSuite.suite());
@@ -86,6 +86,10 @@ public class GridComputeGridTestSuite {
         suite.addTestSuite(GridProjectionLocalJobMultipleArgumentsSelfTest.class);
         suite.addTestSuite(GridAffinitySelfTest.class);
         suite.addTestSuite(GridEventStorageRuntimeConfigurationSelfTest.class);
+        suite.addTestSuite(GridMultinodeRedeployContinuousModeSelfTest.class);
+        suite.addTestSuite(GridMultinodeRedeploySharedModeSelfTest.class);
+        suite.addTestSuite(GridMultinodeRedeployPrivateModeSelfTest.class);
+        suite.addTestSuite(GridMultinodeRedeployIsolatedModeSelfTest.class);
 
         return suite;
     }

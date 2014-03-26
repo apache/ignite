@@ -11,7 +11,6 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.testframework.*;
 
 /**
  * Continuous task self-test suite.
@@ -22,7 +21,7 @@ public class GridContinuousTaskSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createDistributedTestSuite("Gridgain Kernal Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Kernal Test Suite");
 
         suite.addTest(new TestSuite(GridContinuousJobAnnotationSelfTest.class));
         suite.addTest(new TestSuite(GridContinuousJobSiblingsSelfTest.class));

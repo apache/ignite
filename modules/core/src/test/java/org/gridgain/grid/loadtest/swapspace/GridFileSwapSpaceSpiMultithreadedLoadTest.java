@@ -10,7 +10,6 @@
 package org.gridgain.grid.loadtest.swapspace;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.spi.swapspace.file.*;
@@ -18,6 +17,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.loadtests.util.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
+import org.jdk8.backport.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;

@@ -55,9 +55,7 @@ public abstract class GridCacheExAbstractFullApiSelfTest extends GridCacheAbstra
 
             GridCache<String, Integer> cache = cache();
 
-            GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-            try {
+            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 int key = 0;
 
                 for (int i = 0; i < 1000; i++) {
@@ -78,10 +76,7 @@ public abstract class GridCacheExAbstractFullApiSelfTest extends GridCacheAbstra
                     }
                 }
 
-                ((GridCacheProjectionEx<String,Integer>)cache).getAllOutTx(F.asList("key" + key));
-            }
-            finally {
-                tx.close();
+                ((GridCacheProjectionEx<String, Integer>)cache).getAllOutTx(F.asList("key" + key));
             }
 
             assertTrue(GridTestUtils.waitForCondition(new PA() {

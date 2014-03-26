@@ -173,7 +173,7 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
                 for (GridKernal g : grids) {
                     GridCacheAdapter<?, ?> cache = g.internalCache();
 
-                    int txNum = cache.isNear() ? ((GridNearCache)cache).dht().context().tm().idMapSize() :
+                    int txNum = cache.isNear() ? ((GridNearCacheAdapter)cache).dht().context().tm().idMapSize() :
                         cache.context().tm().idMapSize();
 
                     if (txNum != 0)

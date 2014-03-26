@@ -14,7 +14,7 @@ import org.gridgain.grid.cache.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Continuous queries tests for partitioned cache.
+ * Continuous queries tests for local cache.
  */
 public class GridCacheContinuousQueryLocalSelfTest extends GridCacheContinuousQueryAbstractSelfTest {
     /** {@inheritDoc} */

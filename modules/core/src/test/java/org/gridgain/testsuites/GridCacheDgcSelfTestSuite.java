@@ -11,7 +11,6 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suite for cache DGC.
@@ -22,7 +21,7 @@ public class GridCacheDgcSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Cache DGC Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Cache DGC Test Suite");
 
         suite.addTest(new TestSuite(GridCacheDgcManagerNonTxSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDgcManagerReportLocksSelfTest.class));

@@ -219,9 +219,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     public void testGetAndAddInTx() throws Exception {
-        GridCacheTx tx = grid().cache(null).txStart(PESSIMISTIC, REPEATABLE_READ);
-
-        try {
+        try (GridCacheTx tx = grid().cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
             for (int i = 1; i < MAX_LOOPS_NUM; i++) {
                 for (GridCacheAtomicSequence seq : seqArr)
                     getAndAdd(seq, i);
@@ -229,9 +227,6 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
                 if (i % 100 == 0)
                     info("Finished iteration: " + i);
             }
-        }
-        finally {
-            tx.close();
         }
     }
 

@@ -15,9 +15,9 @@ import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -160,8 +160,7 @@ public class GridContinuousOperationsLoadTest {
                             long updDelta = updCntr.get() - updCntr0;
 
                             X.println("Stats [entriesPerSec=" + cbDelta +
-                                ", updatesPerSec=" + updDelta +
-                                ", queueSize=" + contQryMgr.currentQueueSize() + ']');
+                                ", updatesPerSec=" + updDelta + ']');
                         }
                     }
                     catch (GridInterruptedException ignored) {

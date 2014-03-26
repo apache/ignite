@@ -15,16 +15,6 @@ package org.gridgain.visor.commands
  * ==Overview==
  * Contains Visor command `license` implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.license.VisorLicenseCommand._
- * </ex>
- * Note that `VisorLicenseCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +---------------------------------------------------------------------------+
@@ -35,8 +25,8 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor license
- *     visor license "-f=<path> -id=<license-id>"
+ *     license
+ *     license "-f=<path> -id=<license-id>"
  * }}}
  *
  * ====Arguments====
@@ -49,9 +39,9 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor license
+ *     license
  *         Shows all licenses that are used on the grid.
- *     visor license "-f=/path/to/new/license.xml -id=fbdea781-90e6-4d1b-b8b3-5b8c14aa2df7"
+ *     license "-f=/path/to/new/license.xml -id=fbdea781-90e6-4d1b-b8b3-5b8c14aa2df7"
  *         Copies new license file to all nodes that use license with provided ID.
  * }}}
  */

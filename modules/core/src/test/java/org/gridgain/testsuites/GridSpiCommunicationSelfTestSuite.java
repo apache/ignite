@@ -11,7 +11,6 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.spi.communication.tcp.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suite for all communication SPIs.
@@ -22,7 +21,7 @@ public class GridSpiCommunicationSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Communication SPI Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Communication SPI Test Suite");
 
         suite.addTest(new TestSuite(GridTcpCommunicationSpiTcpSelfTest.class));
         suite.addTest(new TestSuite(GridTcpCommunicationSpiShmemSelfTest.class));

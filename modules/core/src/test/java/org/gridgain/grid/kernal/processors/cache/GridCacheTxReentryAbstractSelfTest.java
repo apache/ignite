@@ -91,9 +91,7 @@ public abstract class GridCacheTxReentryAbstractSelfTest extends GridCommonAbstr
             // Find test key.
             int key = testKey();
 
-            GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-            try {
+            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 // One near lock request.
                 cache.get(key);
 
@@ -101,9 +99,6 @@ public abstract class GridCacheTxReentryAbstractSelfTest extends GridCommonAbstr
                 cache.remove(key);
 
                 tx.commit();
-            }
-            finally {
-                tx.close();
             }
 
             CountingCommunicationSpi commSpi = (CountingCommunicationSpi)grid(0).configuration().getCommunicationSpi();

@@ -64,6 +64,12 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
     /** Path to jetty config configured with SSL. */
     public static final String REST_JETTY_SSL_CFG = "modules/clients/src/test/resources/jetty/rest-jetty-ssl.xml";
 
+    /** Path to router jetty config. */
+    public static final String ROUTER_JETTY_CFG = "modules/clients/src/test/resources/jetty/router-jetty.xml";
+
+    /** Path to jetty config with SSL for router. */
+    public static final String ROUTER_JETTY_SSL_CFG = "modules/clients/src/test/resources/jetty/router-jetty-ssl.xml";
+
     /** Need to be static because configuration inits only once per class. */
     private static final ConcurrentMap<Object, Object> INTERCEPTED_OBJECTS = new ConcurrentHashMap<>();
 
@@ -84,10 +90,6 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
 
     /** Flag indicating whether intercepted objects should be overwritten. */
     private static volatile boolean overwriteIntercepted;
-
-    static {
-        System.setProperty("CLIENTS_MODULE_PATH", U.resolveGridGainPath("modules/clients").getAbsolutePath());
-    }
 
     /** */
     private ExecutorService exec;
@@ -192,8 +194,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         cfg.setRestEnabled(true);
 
         cfg.setRestAccessibleFolders(
-            U.getGridGainHome() + "/work/log",
-            U.resolveGridGainPath("modules/core/src/test/resources/log").getAbsolutePath());
+            U.getGridGainHome() + "/work/log", U.getGridGainHome() + "/modules/core/src/test/resources/log");
 
         if (useSsl()) {
             cfg.setRestTcpSslEnabled(true);

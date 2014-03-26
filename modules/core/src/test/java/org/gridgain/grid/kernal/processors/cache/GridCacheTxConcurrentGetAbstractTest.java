@@ -63,15 +63,15 @@ public abstract class GridCacheTxConcurrentGetAbstractTest extends GridCommonAbs
      * @param g Grid.
      * @return Near cache.
      */
-    GridNearCache<String, Integer> near(Grid g) {
-        return (GridNearCache<String, Integer>)((GridKernal)g).<String, Integer>internalCache();
+    GridNearCacheAdapter<String, Integer> near(Grid g) {
+        return (GridNearCacheAdapter<String, Integer>)((GridKernal)g).<String, Integer>internalCache();
     }
 
     /**
      * @param g Grid.
      * @return DHT cache.
      */
-    GridDhtCache<String, Integer> dht(Grid g) {
+    GridDhtCacheAdapter<String, Integer> dht(Grid g) {
         return near(g).dht();
     }
 
@@ -113,10 +113,8 @@ public abstract class GridCacheTxConcurrentGetAbstractTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     private String txGet(Grid grid, String key) throws Exception {
-        GridCacheTx tx = grid.cache(null).txStart(PESSIMISTIC, REPEATABLE_READ);
-
-        try {
-            GridCacheEntryEx<String,Integer> dhtEntry = dht(grid).peekEx(key);
+        try (GridCacheTx tx = grid.cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            GridCacheEntryEx<String, Integer> dhtEntry = dht(grid).peekEx(key);
 
             if (DEBUG)
                 info("DHT entry [hash=" + System.identityHashCode(dhtEntry) + ", xid=" + tx.xid() +
@@ -130,9 +128,6 @@ public abstract class GridCacheTxConcurrentGetAbstractTest extends GridCommonAbs
             tx.commit();
 
             return val;
-        }
-        finally {
-            tx.close();
         }
     }
 }

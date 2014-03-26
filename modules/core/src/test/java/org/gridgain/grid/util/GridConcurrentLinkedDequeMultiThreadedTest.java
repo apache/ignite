@@ -10,7 +10,8 @@
 package org.gridgain.grid.util;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.ConcurrentLinkedDeque8.*;
+import org.jdk8.backport.*;
+import org.jdk8.backport.ConcurrentLinkedDeque8.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 

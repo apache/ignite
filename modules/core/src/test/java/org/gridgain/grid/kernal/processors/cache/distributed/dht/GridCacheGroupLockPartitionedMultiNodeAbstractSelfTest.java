@@ -145,9 +145,7 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
             assertEquals("val3", reader.cache(null).peek(key3));
         }
 
-        GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 3);
-
-        try {
+        try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 3)) {
             cache.putAll(F.asMap(
                 key1, "val01",
                 key2, "val02",
@@ -155,9 +153,6 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
             );
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         if (nearEnabled()) {

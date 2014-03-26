@@ -52,12 +52,10 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
         Grid grid = G.grid(getTestGridName());
 
         Collection<GridEvent> evts = grid.events().localQuery(new PE() {
-            @Override
-            public boolean apply(GridEvent evt) {
-                return evt.type() == EVT_TASK_TIMEDOUT &&
-                    ((GridTaskEvent) evt).taskSessionId().equals(execId);
+            @Override public boolean apply(GridEvent evt) {
+                return ((GridTaskEvent) evt).taskSessionId().equals(execId);
             }
-        });
+        }, EVT_TASK_TIMEDOUT);
 
         assert evts.size() == 1 : "Invalid number of timed out tasks: " + evts.size();
     }

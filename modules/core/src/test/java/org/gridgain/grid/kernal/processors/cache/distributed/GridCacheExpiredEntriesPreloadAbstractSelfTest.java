@@ -14,7 +14,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
@@ -92,12 +91,7 @@ public abstract class GridCacheExpiredEntriesPreloadAbstractSelfTest extends Gri
 
         cache1.preloader().syncFuture().get();
 
-        Collection <GridEvent> evts = g1.events().localQuery(new GridPredicate<GridEvent>() {
-            @Override
-            public boolean apply(GridEvent e) {
-                return e.type() == EVT_CACHE_PRELOAD_OBJECT_LOADED;
-            }
-        });
+        Collection<GridEvent> evts = g1.events().localQuery(F.<GridEvent>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
 
         assertEquals("Expected all entries are preloaded.", KEYS_NUM, evts.size());
 

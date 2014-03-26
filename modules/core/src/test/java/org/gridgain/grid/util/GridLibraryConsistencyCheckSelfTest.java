@@ -35,4 +35,44 @@ public class GridLibraryConsistencyCheckSelfTest extends TestCase {
 
         assertTrue(msg, testPassed);
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCheckLibraryHasDifferentVersions() throws Exception {
+        int libCnt = CLASS_LIST.length;
+
+        List<String> libs1 = initLibs(libCnt);
+        List<String> libs2 = initLibs(libCnt);
+
+        libs1.add("lib-1.0.jar");
+        libs2.add("lib-1.1.jar");
+
+        assertEquals(1, check(libs1, libs2).size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCheckLibraryNotFound() throws Exception {
+        int libCnt = CLASS_LIST.length;
+
+        List<String> libs1 = initLibs(libCnt);
+        List<String> libs2 = initLibs(libCnt);
+
+        libs1.add("lib-1.0.jar");
+        libs2.add(NOT_FOUND_MESSAGE);
+
+        assertEquals(0, check(libs1, libs2).size());
+    }
+
+    /** Initializes libraries list with not_found messages. */
+    private static List<String> initLibs(int libCnt) {
+        List<String> libs = new ArrayList<>(libCnt);
+
+        for (int i = 0; i < libCnt - 1; i++)
+            libs.add(NOT_FOUND_MESSAGE);
+
+        return libs;
+    }
 }

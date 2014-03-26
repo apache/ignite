@@ -11,7 +11,6 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.tools.*;
-import org.gridgain.testframework.*;
 
 /**
  * Tools self-test suite.
@@ -22,7 +21,7 @@ public class GridToolsSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Ant Tasks Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Ant Tasks Test Suite");
 
         suite.addTest(new TestSuite(GridToolsSelfTest.class));
 

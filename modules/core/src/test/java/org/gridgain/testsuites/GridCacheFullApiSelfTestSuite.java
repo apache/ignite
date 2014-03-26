@@ -16,7 +16,6 @@ import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.dr.cache.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suite for cache API.
@@ -27,7 +26,7 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Cache Full API Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Cache Full API Test Suite");
 
         // One node.
         suite.addTestSuite(GridCacheLocalFullApiSelfTest.class);
@@ -38,6 +37,8 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedNearDisabledFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedFilteredPutSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedAtomicFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicNearEnabledFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicNearEnabledPrimaryWriteOrderFullApiSelfTest.class);
 
         // No primary.
         suite.addTestSuite(GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest.class);
@@ -63,6 +64,8 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedMultiNodeP2PDisabledFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicMultiNodeP2PDisabledFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderMultiNodeP2PDisabledFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicNearEnabledMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicNearEnabledPrimaryWriteOrderMultiNodeFullApiSelfTest.class);
 
         suite.addTestSuite(GridCachePartitionedNearDisabledMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedNearDisabledMultiNodeP2PDisabledFullApiSelfTest.class);

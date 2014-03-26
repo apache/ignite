@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -23,7 +22,12 @@ import org.gridgain.testframework.junits.common.*;
 
 import java.util.concurrent.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.cache.GridCachePreloadMode.*;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
  * Tests entries distribution between primary-backup-near caches according to nodes count in grid.
@@ -41,13 +45,14 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
 
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
-        cc.setCacheMode(GridCacheMode.PARTITIONED);
-        cc.setDistributionMode(GridCacheDistributionMode.NEAR_PARTITIONED);
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setCacheMode(PARTITIONED);
+        cc.setDistributionMode(NEAR_PARTITIONED);
+        cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setBackups(1);
-        cc.setPreloadMode(GridCachePreloadMode.SYNC);
+        cc.setPreloadMode(SYNC);
         cc.setNearEvictionPolicy(null);
-        cc.setAtomicityMode(TRANSACTIONAL);
+        cc.setAtomicityMode(atomicityMode());
+        cc.setAtomicWriteOrderMode(PRIMARY);
 
         c.setCacheConfiguration(cc);
 
@@ -60,6 +65,13 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
         c.setMarshaller(new GridOptimizedMarshaller(false));
 
         return c;
+    }
+
+    /**
+     * @return Atomicity mode.
+     */
+    protected GridCacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
     }
 
     /** @throws Exception If failed. */
@@ -102,7 +114,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
                     GridCache<Integer, String> c = grid.cache(null);
 
                     for (int i = 0; i < cnt; i++)
-                        assertTrue(c.putx(i, Integer.toString(i)));
+                        c.putx(i, Integer.toString(i));
 
                     return true;
                 }
@@ -136,7 +148,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
                     GridCache<Integer, String> c = grid.cache(null);
 
                     for (int i = 0; i < cnt; i++)
-                        assertTrue(c.putx(i, Integer.toString(i)));
+                        c.putx(i, Integer.toString(i));
 
                     return true;
                 }

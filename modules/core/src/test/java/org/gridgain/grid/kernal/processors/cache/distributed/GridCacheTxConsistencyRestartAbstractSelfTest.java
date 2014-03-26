@@ -148,9 +148,7 @@ public abstract class GridCacheTxConsistencyRestartAbstractSelfTest extends Grid
 
                 Collections.sort(keys);
 
-                GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-                try {
+                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     Map<Integer, Integer> map = cache.getAll(keys);
 
                     for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
@@ -160,9 +158,6 @@ public abstract class GridCacheTxConsistencyRestartAbstractSelfTest extends Grid
                     }
 
                     tx.commit();
-                }
-                finally {
-                    tx.close();
                 }
             }
             catch (Exception e) {

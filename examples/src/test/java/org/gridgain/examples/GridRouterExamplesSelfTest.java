@@ -34,7 +34,7 @@ public class GridRouterExamplesSelfTest extends GridAbstractExamplesTest {
         // Start up a grid node.
         startGrid("grid-router-examples", "examples/config/example-cache.xml");
         // Start up a router.
-        startRouter("config/router/default-router.xml");
+        startRouter("modules/clients/java/config/router/default-router.xml");
     }
 
     /**
@@ -66,18 +66,23 @@ public class GridRouterExamplesSelfTest extends GridAbstractExamplesTest {
             throw new GridException("Spring XML file not found (is GRIDGAIN_HOME set?): " + cfgPath);
 
         ApplicationContext ctx = GridRouterCommandLineStartup.loadCfg(cfgUrl);
+
         if (ctx == null)
             throw new GridException("Application context can not be null");
 
         GridTcpRouterConfiguration tcpCfg = getBean(ctx, GridTcpRouterConfiguration.class);
+
         if (tcpCfg == null)
             throw new GridException("GridTcpRouterConfiguration is not found");
 
         GridRouterFactory.startTcpRouter(tcpCfg);
 
         GridHttpRouterConfiguration httpCfg = getBean(ctx, GridHttpRouterConfiguration.class);
+
         if (httpCfg == null)
             throw new GridException("GridHttpRouterConfiguration is not found");
+
+        httpCfg.setJettyConfigurationPath("modules/clients/java/config/router/router-jetty.xml");
 
         GridRouterFactory.startHttpRouter(httpCfg);
     }

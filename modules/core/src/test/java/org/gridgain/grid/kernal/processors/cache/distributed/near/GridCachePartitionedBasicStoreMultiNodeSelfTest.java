@@ -320,9 +320,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     public void testMultipleOperations() throws Exception {
         GridCache<Integer, String> cache = cache(0);
 
-        GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
-
-        try {
+        try (GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
             cache.put(1, "val");
             cache.put(2, "val");
             cache.put(3, "val");
@@ -332,9 +330,6 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
             cache.putAll(F.asMap(5, "val", 6, "val"));
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         assertEquals(4, store.getLoadCount());

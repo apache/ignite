@@ -117,7 +117,8 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     @Nullable private static GridCacheEntryEx<Object, Integer> dhtEntry(UUID nodeId, Object key) {
         Grid g = G.grid(nodeId);
 
-        GridDhtCache<Object, Integer> dht = ((GridKernal)g).<Object, Integer>internalCache().context().near().dht();
+        GridDhtCacheAdapter<Object, Integer> dht =
+            ((GridKernal)g).<Object, Integer>internalCache().context().near().dht();
 
         return dht.peekEx(key);
     }
@@ -130,7 +131,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     @Nullable private static GridCacheEntryEx<Object, Integer> nearEntry(UUID nodeId, Object key) {
         Grid g = G.grid(nodeId);
 
-        GridNearCache<Object, Integer> near = ((GridKernal)g).<Object, Integer>internalCache().context().near();
+        GridNearCacheAdapter<Object, Integer> near = ((GridKernal)g).<Object, Integer>internalCache().context().near();
 
         return near.peekEx(key);
     }
@@ -153,9 +154,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
 
-        GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-        try {
+        try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             if (DEBUG)
                 info("Before near get [retry=" + retry + ", xid=" + tx.xid() + ", node=" + grid.name() +
                     ", isCntrPrimary=" + isCntrPrimary + ", nearId=" + locId +
@@ -187,9 +186,6 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
             tx.commit();
         }
-        finally {
-            tx.close();
-        }
     }
 
     /**
@@ -210,9 +206,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
 
-        GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-        try {
+        try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             if (DEBUG)
                 info("Before item primary get [retry=" + retry + ", xid=" + tx.xid() + ", node=" + grid.name() +
                     ", isCntrPrimary=" + isCntrPrimary + ", nearId=" + locId +
@@ -246,9 +240,6 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
             tx.commit();
         }
-        finally {
-            tx.close();
-        }
     }
 
     /**
@@ -267,9 +258,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
 
-        GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-        try {
+        try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             if (DEBUG)
                 grid.log().info("Before item lock [retry=" + retry + ", xid=" + tx.xid() + ", node=" + grid.name() +
                     ", isCntrPrimary=" + isCntrPrimary + ", nearId=" + locId +
@@ -342,9 +331,6 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
             throw e;
         }
-        finally {
-            tx.close();
-        }
     }
 
     /**
@@ -363,9 +349,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
         boolean isCntrPrimary = cntrPrimaryId.equals(locId);
 
-        GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-        try {
+        try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             if (DEBUG)
                 grid.log().info("Before item lock [retry=" + retry + ", xid=" + tx.xid() + ", node=" + grid.name() +
                     ", isCntrPrimary=" + isCntrPrimary + ", nearId=" + locId +
@@ -415,9 +399,6 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
             grid.log().error("Error in test.", e);
 
             throw e;
-        }
-        finally {
-            tx.close();
         }
     }
 

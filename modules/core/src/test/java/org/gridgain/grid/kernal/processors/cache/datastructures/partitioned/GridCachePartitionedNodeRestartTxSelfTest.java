@@ -147,19 +147,14 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
             assert PARTITIONED == grid(i).cache(null).configuration().getCacheMode();
 
-            GridCacheTx tx = grid(i).cache(null).txStart(PESSIMISTIC, REPEATABLE_READ);
+            try (GridCacheTx tx = grid(i).cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                Integer val = (Integer) grid(i).cache(null).get(key);
 
-            try {
-                Integer val = (Integer)grid(i).cache(null).get(key);
-
-                assertEquals("Simple check failed for node: " + i, (Integer)i, val);
+                assertEquals("Simple check failed for node: " + i, (Integer) i, val);
 
                 grid(i).cache(null).put(key, i + 1);
 
                 tx.commit();
-            }
-            finally {
-                tx.close();
             }
 
             stopGrid(i);
@@ -177,25 +172,20 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
             assert PARTITIONED == grid(i).cache(null).configuration().getCacheMode();
 
-            GridCacheTx tx = grid(i).cache(null).txStart(PESSIMISTIC, REPEATABLE_READ);
-
-            try {
+            try (GridCacheTx tx = grid(i).cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
-                GridCacheAtomicLongValue atomicVal = ((GridCacheAtomicLongValue)grid(i).cache(null).get(key));
+                GridCacheAtomicLongValue atomicVal = ((GridCacheAtomicLongValue) grid(i).cache(null).get(key));
 
                 assertNotNull(atomicVal);
 
-                assertEquals("Custom check failed for node: " + i, (long)i, atomicVal.get());
+                assertEquals("Custom check failed for node: " + i, (long) i, atomicVal.get());
 
                 atomicVal.set(i + 1);
 
                 grid(i).cache(null).put(key, atomicVal);
 
                 tx.commit();
-            }
-            finally {
-                tx.close();
             }
 
             stopGrid(i);
@@ -239,16 +229,12 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
             assert PARTITIONED == grid(i).cache(null).configuration().getCacheMode();
 
         // Init cache data.
-        GridCacheTx tx = grid(0).cache(null).txStart(PESSIMISTIC, REPEATABLE_READ);
 
-        try {
+        try (GridCacheTx tx = grid(0).cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
             // Put simple value.
             grid(0).cache(null).put(key, INIT_GRID_NUM);
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
     }
 
@@ -266,16 +252,12 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
             assert PARTITIONED == grid(i).cache(null).configuration().getCacheMode();
 
         // Init cache data.
-        GridCacheTx tx = grid(0).cache(null).txStart(PESSIMISTIC, REPEATABLE_READ);
 
-        try {
+        try (GridCacheTx tx = grid(0).cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
             // Put custom data
             grid(0).cache(null).put(new GridCacheInternalKeyImpl(key), new GridCacheAtomicLongValue(INIT_GRID_NUM));
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         stopGrid(0);

@@ -57,9 +57,7 @@ public abstract class GridCacheAbstractTtlSelfTest extends GridCacheAbstractSelf
         String key = "1";
         int ttl = 500;
 
-        GridCacheTx tx = c.txStart();
-
-        try {
+        try (GridCacheTx tx = c.txStart()) {
             GridCacheEntry<String, Integer> entry = c.entry(key);
 
             entry.timeToLive(ttl);
@@ -67,9 +65,6 @@ public abstract class GridCacheAbstractTtlSelfTest extends GridCacheAbstractSelf
             entry.setValue(1);
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         checkKeyIsRetired(key, ttl);

@@ -38,7 +38,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
  */
 public class GridGgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     /** Path to the default hadoop configuration. */
-    public static final String HADOOP_FS_CFG = "/config/hadoop/core-site.xml";
+    public static final String HADOOP_FS_CFG = "examples/config/hadoop/core-site.xml";
 
     /** Group size. */
     public static final int GRP_SIZE = 128;

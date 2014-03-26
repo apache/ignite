@@ -142,9 +142,7 @@ public abstract class GridCacheBasicStoreNoBatchAbstractTest extends GridCommonA
 
         assert map.isEmpty();
 
-        GridCacheTx tx = cache.txStart();
-
-        try {
+        try (GridCacheTx tx = cache.txStart()) {
             for (int i = 1; i <= 10; i++) {
                 cache.put(i, Integer.toString(i));
 
@@ -154,9 +152,6 @@ public abstract class GridCacheBasicStoreNoBatchAbstractTest extends GridCommonA
             tx.commit();
 
             checkLastMethod("put");
-        }
-        finally {
-            tx.close();
         }
 
         for (int i = 1; i <= 10; i++) {

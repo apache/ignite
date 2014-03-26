@@ -64,7 +64,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         cacheCfg.setEvictSynchronized(true);
         cacheCfg.setEvictNearSynchronized(true);
         cacheCfg.setPreloadMode(SYNC);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        cacheCfg.setAtomicityMode(atomicityMode());
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
         cacheCfg.setBackups(1);
 
@@ -77,6 +77,13 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         cfg.setCacheConfiguration(cacheCfg);
 
         return cfg;
+    }
+
+    /**
+     * @return Atomicity mode.
+     */
+    public GridCacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
@@ -133,8 +140,8 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      * @return Near cache.
      */
     @SuppressWarnings({"unchecked"})
-    private GridNearCache<Integer, String> near(Grid g) {
-        return (GridNearCache)((GridKernal)g).internalCache();
+    private GridNearCacheAdapter<Integer, String> near(Grid g) {
+        return (GridNearCacheAdapter)((GridKernal)g).internalCache();
     }
 
     /**
@@ -142,8 +149,8 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      * @return Dht cache.
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
-    private GridDhtCache<Integer, String> dht(Grid g) {
-        return ((GridNearCache)((GridKernal)g).internalCache()).dht();
+    private GridDhtCacheAdapter<Integer, String> dht(Grid g) {
+        return ((GridNearCacheAdapter)((GridKernal)g).internalCache()).dht();
     }
 
     /**
@@ -216,14 +223,14 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         info("Backup node: " + backup.id());
         info("Other node: " + other.id());
 
-        GridNearCache<Integer, String> nearPrimary = near(grid(primary));
-        GridDhtCache<Integer, String> dhtPrimary = dht(grid(primary));
+        GridNearCacheAdapter<Integer, String> nearPrimary = near(grid(primary));
+        GridDhtCacheAdapter<Integer, String> dhtPrimary = dht(grid(primary));
 
-        GridNearCache<Integer, String> nearBackup = near(grid(backup));
-        GridDhtCache<Integer, String> dhtBackup = dht(grid(backup));
+        GridNearCacheAdapter<Integer, String> nearBackup = near(grid(backup));
+        GridDhtCacheAdapter<Integer, String> dhtBackup = dht(grid(backup));
 
-        GridNearCache<Integer, String> nearOther = near(grid(other));
-        GridDhtCache<Integer, String> dhtOther = dht(grid(other));
+        GridNearCacheAdapter<Integer, String> nearOther = near(grid(other));
+        GridDhtCacheAdapter<Integer, String> dhtOther = dht(grid(other));
 
         String val = "v1";
 

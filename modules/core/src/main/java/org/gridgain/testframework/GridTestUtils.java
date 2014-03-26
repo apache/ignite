@@ -701,115 +701,6 @@ public final class GridTestUtils {
     }
 
     /**
-     * @param suiteName Suite name.
-     * @return Distributed test suite instance.
-     * @throws IOException If failed.
-     */
-    public static TestSuite createDistributedTestSuite(String suiteName) throws IOException {
-        return createReflectedSuite(suiteName, "org.gridgain.grid.test.junit3.GridJunit3TestSuite");
-    }
-
-    /**
-     * @param tstCls Test class.
-     * @return Distributed test suite instance.
-     * @throws IOException If failed.
-     */
-    public static TestSuite createDistributedTestSuite(Class<?> tstCls) throws IOException {
-        return createReflectedSuite(tstCls, "org.gridgain.grid.test.junit3.GridJunit3TestSuite");
-    }
-
-    /**
-     * @param suiteName Suite name.
-     * @return Local test suite instance.
-     * @throws IOException If failed.
-     */
-    public static TestSuite createLocalTestSuite(String suiteName) throws IOException {
-        return createReflectedSuite(suiteName, "org.gridgain.grid.test.junit3.GridJunit3LocalTestSuite");
-    }
-
-    /**
-     * @param tstCls Class.
-     * @return Local test suite instance.
-     * @throws IOException If failed.
-     */
-    public static TestSuite createLocalTestSuite(Class<?> tstCls) throws IOException {
-        return createReflectedSuite(tstCls, "org.gridgain.grid.test.junit3.GridJunit3LocalTestSuite");
-    }
-
-    /**
-     * @param param Parameter.
-     * @param clsName Class name.
-     * @return Suite instance.
-     * @throws IOException If failed.
-     */
-    private static TestSuite createReflectedSuite(Object param, String clsName) throws IOException {
-        if (!Boolean.getBoolean("GRIDGAIN_DISABLED")) {
-            // Stable GridGain home dir.
-            String ggHome = U.getGridGainHome();
-
-            assert ggHome != null;
-
-            // Stable GridGain libs dir.
-            String stableGridGainLib = ggHome + "/libs";
-
-            List<String> jarPaths = new ArrayList<>();
-
-            // Add gridgain.jar.
-            jarPaths.addAll(getFiles(ggHome, "gridgain", ".jar"));
-
-            // Add all libraries.
-            jarPaths.addAll(getFiles(stableGridGainLib, null, ".jar"));
-
-            GridJarClassLoader jarClsLdr = GridJarClassLoader.getInstance(jarPaths,
-                GridTestUtils.class.getClassLoader());
-
-            List<String> exclCls = new ArrayList<>();
-
-            // Exclude Java classes.
-            exclCls.add("java.");
-            exclCls.add("javax.");
-            exclCls.add("com.sun.");
-            exclCls.add("org.w3c.dom.");
-
-            jarClsLdr.setExcludedCls(exclCls);
-
-            Class<?> cls;
-
-            try {
-                cls = Class.forName(clsName, true, jarClsLdr);
-            }
-            catch (ClassNotFoundException e) {
-                throw new GridRuntimeException("Failed to create distributed JUnit class", e);
-            }
-
-            return (TestSuite)create(cls, new Class[] {param.getClass()}, new Object[] {param});
-        }
-
-        return new TestSuite(clsName);
-    }
-
-    /**
-     * @param objCls Class.
-     * @param ctorParams Constructor parameters.
-     * @param ctorArgs Constructor arguments.
-     * @return New object.
-     */
-    private static Object create(Class<?> objCls, Class<?>[] ctorParams, Object[] ctorArgs) {
-        try {
-            assert objCls != null;
-
-            Constructor<?> cntr = objCls.getConstructor(ctorParams);
-
-            cntr.setAccessible(true);
-
-            return cntr.newInstance(ctorArgs);
-        }
-        catch (SecurityException | InstantiationException | InvocationTargetException | IllegalAccessException | NoSuchMethodException | IllegalArgumentException e) {
-            throw new GridRuntimeException("Failed to instantiate class: " + objCls, e);
-        }
-    }
-
-    /**
      * @param path Path.
      * @param startFilter Start filter.
      * @param endFilter End filter.
@@ -954,7 +845,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return Near cache.
      */
-    public static <K, V> GridNearCache<K, V> near(GridCacheProjection<K, V> cache) {
+    public static <K, V> GridNearCacheAdapter<K, V> near(GridCacheProjection<K, V> cache) {
         return cacheContext(cache).near();
     }
 
@@ -962,7 +853,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return DHT cache.
      */
-    public static <K, V> GridDhtCache<K, V> dht(GridCacheProjection<K, V> cache) {
+    public static <K, V> GridDhtCacheAdapter<K, V> dht(GridCacheProjection<K, V> cache) {
         return near(cache).dht();
     }
 
@@ -1364,9 +1255,7 @@ public final class GridTestUtils {
     public static GridSslContextFactory sslContextFactory() {
         GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
 
-        File keystore = U.resolveGridGainPath(GridTestProperties.getProperty("ssl.keystore.path"));
-
-        factory.setKeyStoreFilePath(keystore.getAbsolutePath());
+        factory.setKeyStoreFilePath(GridTestProperties.getProperty("ssl.keystore.path"));
         factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
 
         factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());

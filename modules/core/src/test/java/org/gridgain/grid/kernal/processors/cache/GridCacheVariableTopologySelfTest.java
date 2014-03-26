@@ -118,9 +118,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
                     if (cnt % logMod == 0)
                         info("Starting transaction: " + cnt);
 
-                    GridCacheTx tx = cache.txStart();
-
-                    try {
+                    try (GridCacheTx tx = cache.txStart()) {
                         int kv = RAND.nextInt(keyRange);
 
                         cache.put(kv, kv);
@@ -131,9 +129,6 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
                     }
                     catch (GridCacheTxOptimisticException e) {
                         info("Caught cache optimistic exception: " + e);
-                    }
-                    finally {
-                        tx.close();
                     }
 
                     try {

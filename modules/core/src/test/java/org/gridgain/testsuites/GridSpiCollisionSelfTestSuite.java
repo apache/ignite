@@ -13,7 +13,6 @@ import junit.framework.*;
 import org.gridgain.grid.spi.collision.fifoqueue.*;
 import org.gridgain.grid.spi.collision.jobstealing.*;
 import org.gridgain.grid.spi.collision.priorityqueue.*;
-import org.gridgain.testframework.*;
 
 /**
  * Collision SPI self-test suite.
@@ -24,7 +23,7 @@ public class GridSpiCollisionSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createDistributedTestSuite("Gridgain Collision SPI Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Collision SPI Test Suite");
 
         // Priority.
         suite.addTestSuite(GridPriorityQueueCollisionSpiSelfTest.class);

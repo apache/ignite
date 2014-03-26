@@ -12,7 +12,6 @@ package org.gridgain.testsuites.bamboo;
 import junit.framework.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.nodestart.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suite for remote node start.
@@ -23,7 +22,7 @@ public class GridStartStopRestartTestSuite extends TestSuite {
      * @throws Exception In case of error.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Remote node start suite.");
+        TestSuite suite = new TestSuite("Remote node start suite.");
 
         suite.addTestSuite(GridProjectionStartStopRestartSelfTest.class);
         suite.addTestSuite(GridNodeStartUtilsSelfTest.class);

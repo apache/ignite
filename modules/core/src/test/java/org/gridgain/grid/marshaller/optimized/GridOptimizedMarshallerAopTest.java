@@ -31,7 +31,7 @@ import static org.gridgain.grid.events.GridEventType.*;
  *      <tt>-javaagent:[GRIDGAIN_HOME]/libs/aspectjweaver-1.7.2.jar</tt>
  * </li>
  * <li>
- *      Classpath should contain the <tt>[GRIDGAIN_HOME]/config/aop/aspectj</tt> folder.
+ *      Classpath should contain the <tt>[GRIDGAIN_HOME]/modules/tests/config/aop/aspectj</tt> folder.
  * </li>
  * </ul>
  */

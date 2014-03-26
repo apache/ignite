@@ -12,7 +12,6 @@ package org.gridgain.testsuites.bamboo;
 import junit.framework.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.gridgain.testframework.*;
 
 /**
  * In-Memory Data Grid stability test suite on changing topology.
@@ -23,7 +22,7 @@ public class GridDataGridRestartTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain In-Memory Data Grid Restart Test Suite");
+        TestSuite suite = new TestSuite("Gridgain In-Memory Data Grid Restart Test Suite");
 
         // Common restart tests.
         // TODO: GG-7419: Enable when fixed.

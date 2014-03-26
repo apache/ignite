@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.config.*;
@@ -71,26 +70,11 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @param type type of event.
      * @throws InterruptedException if thread was interrupted.
      */
-    private void waitForEvent(Grid grid, final int type) throws InterruptedException {
-        waitForEvent(grid, new PE() {
-            @Override public boolean apply(GridEvent evt) {
-                return evt.type() == type;
-            }
-        });
-    }
-
-    /**
-     * Wait for specified event came.
-     *
-     * @param grid Grid for waiting.
-     * @param filter Predicate, specifying the event to wait.
-     * @throws InterruptedException if thread was interrupted.
-     */
-    private void waitForEvent(Grid grid, GridPredicate<GridEvent> filter) throws InterruptedException {
+    private void waitForEvent(Grid grid, int type) throws InterruptedException {
         Collection<GridEvent> evts;
 
         do {
-            evts = grid.events().localQuery(filter);
+            evts = grid.events().localQuery(F.<GridEvent>alwaysTrue(), type);
 
             Thread.sleep(500);
         }

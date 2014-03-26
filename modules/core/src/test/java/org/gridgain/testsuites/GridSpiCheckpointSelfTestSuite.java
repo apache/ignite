@@ -14,7 +14,6 @@ import org.gridgain.grid.spi.checkpoint.cache.*;
 import org.gridgain.grid.spi.checkpoint.jdbc.*;
 import org.gridgain.grid.spi.checkpoint.s3.*;
 import org.gridgain.grid.spi.checkpoint.sharedfs.*;
-import org.gridgain.testframework.*;
 
 /**
  * Grid SPI checkpoint self test suite.
@@ -25,7 +24,7 @@ public class GridSpiCheckpointSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Checkpoint Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Checkpoint Test Suite");
 
         // Cache.
         suite.addTest(new TestSuite(GridCacheCheckpointSpiConfigSelfTest.class));

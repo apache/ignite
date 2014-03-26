@@ -11,7 +11,6 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.spi.eventstorage.memory.*;
-import org.gridgain.testframework.*;
 
 /**
  * Event storage test suite.
@@ -22,7 +21,7 @@ public class GridSpiEventStorageSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createDistributedTestSuite("Gridgain Event Storage Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Event Storage Test Suite");
 
         suite.addTest(new TestSuite(GridMemoryEventStorageSpiSelfTest.class));
         suite.addTest(new TestSuite(GridMemoryEventStorageSpiStartStopSelfTest.class));

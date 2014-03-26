@@ -17,7 +17,6 @@ import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.*;
 import org.gridgain.testsuites.*;
 
 /**
@@ -29,7 +28,7 @@ public class GridBasicTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Basic Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Basic Test Suite");
 
         suite.addTest(GridLangSelfTestSuite.suite());
         suite.addTest(GridLoggingSelfTestSuite.suite());

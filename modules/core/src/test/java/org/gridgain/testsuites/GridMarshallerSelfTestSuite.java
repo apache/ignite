@@ -13,7 +13,6 @@ import junit.framework.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.io.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suite for all marshallers.
@@ -24,7 +23,7 @@ public class GridMarshallerSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createDistributedTestSuite("Gridgain Marshaller Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Marshaller Test Suite");
 
         suite.addTest(new TestSuite(GridJdkMarshallerSelfTest.class));
         suite.addTest(new TestSuite(GridOptimizedMarshallerEnumSelfTest.class));

@@ -175,9 +175,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
                             int j = rnd.nextInt(keyCnt);
 
-                            GridCacheTx tx = cache.txStart();
-
-                            try {
+                            try (GridCacheTx tx = cache.txStart()) {
                                 // Put or remove?
                                 if (rnd.nextBoolean())
                                     cache.putx(j, j);
@@ -185,9 +183,6 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
                                     cache.remove(j);
 
                                 tx.commit();
-                            }
-                            finally {
-                                tx.close();
                             }
 
                             if (i != 0 && i % 10000 == 0)

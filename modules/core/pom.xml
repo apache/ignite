@@ -29,6 +29,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>jdk8-backport</artifactId>
+            <version>${gridgain.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.11</version>
@@ -101,6 +107,9 @@
         <resources>
             <resource>
                 <directory>src/main/java</directory>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
             </resource>
         </resources>
     </build>

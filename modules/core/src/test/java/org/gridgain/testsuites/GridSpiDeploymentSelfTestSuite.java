@@ -14,7 +14,6 @@ import org.gridgain.grid.spi.deployment.local.*;
 import org.gridgain.grid.spi.deployment.uri.*;
 import org.gridgain.grid.spi.deployment.uri.scanners.file.*;
 import org.gridgain.grid.spi.deployment.uri.scanners.http.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suit for deployment SPIs.
@@ -25,7 +24,7 @@ public class GridSpiDeploymentSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Deployment SPI Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Deployment SPI Test Suite");
 
         // LocalDeploymentSpi tests
         suite.addTest(new TestSuite(GridLocalDeploymentSpiSelfTest.class));

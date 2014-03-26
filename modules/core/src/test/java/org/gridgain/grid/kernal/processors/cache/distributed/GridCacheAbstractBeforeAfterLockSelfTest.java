@@ -239,8 +239,7 @@ public abstract class GridCacheAbstractBeforeAfterLockSelfTest extends GridCache
     /**
      * Collecting unlock closure.
      */
-    private static class CollectAfterUnlockClosure extends GridInClosure3<Object,
-        Boolean, GridCacheOperation> {
+    private static class CollectAfterUnlockClosure implements GridInClosure3<Object, Boolean, GridCacheOperation> {
         /** Collected events. */
         private Collection<Object> evts = new ConcurrentLinkedDeque<>();
 

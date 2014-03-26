@@ -15,7 +15,6 @@ import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.ggfs.split.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.ipc.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suite for Hadoop file system over GridGain cache.
@@ -27,7 +26,7 @@ public class GridGgfsTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain GGFS Test Suite For Platform Independent Tests");
+        TestSuite suite = new TestSuite("Gridgain GGFS Test Suite For Platform Independent Tests");
 
         suite.addTest(new TestSuite(GridGgfsSizeSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsAttributesSelfTest.class));

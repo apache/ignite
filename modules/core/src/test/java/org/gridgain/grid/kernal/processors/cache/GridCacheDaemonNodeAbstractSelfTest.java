@@ -118,15 +118,10 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
             GridCache<Integer, Integer> cache = grid(0).cache(null);
 
             for (int i = 0; i < 30; i++) {
-                GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-                try {
+                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     cache.put(i, i);
 
                     tx.commit();
-                }
-                finally {
-                    tx.close();
                 }
             }
 
@@ -135,14 +130,9 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
             for (int i = 30; i < 60; i++)
                 batch.put(i, i);
 
-            GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-            try {
+            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.putAll(batch);
                 tx.commit();
-            }
-            finally {
-                tx.close();
             }
 
             for (int i = 0; i < 60; i++)

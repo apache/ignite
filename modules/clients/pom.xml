@@ -47,12 +47,4 @@
             </exclusions>
         </dependency>
     </dependencies>
-
-    <build>
-        <resources>
-            <resource>
-                <directory>java/config</directory>
-            </resource>
-        </resources>
-    </build>
 </project>

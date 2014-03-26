@@ -12,12 +12,12 @@ package org.gridgain.grid.util.offheap;
 import org.gridgain.grid.GridException;
 import org.gridgain.grid.GridFuture;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.X;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.testframework.junits.common.*;
+import org.jdk8.backport.*;
 
 import java.util.*;
 import java.util.concurrent.*;

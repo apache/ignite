@@ -12,7 +12,6 @@ package org.gridgain.testsuites;
 import junit.framework.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.messaging.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suite.
@@ -23,7 +22,7 @@ public class GridRichSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createDistributedTestSuite("Gridgain Rich Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Rich Test Suite");
 
         suite.addTest(new TestSuite(GridSelfTest.class));
         suite.addTest(new TestSuite(GridProjectionSelfTest.class));

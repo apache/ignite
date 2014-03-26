@@ -10,7 +10,6 @@
 package org.gridgain.jdbc.suite;
 
 import junit.framework.*;
-import org.gridgain.testframework.*;
 import org.gridgain.jdbc.*;
 
 /**
@@ -22,7 +21,7 @@ public class GridJdbcDriverTestSuite extends TestSuite {
      * @throws Exception In case of error.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain JDBC Driver Test Suite");
+        TestSuite suite = new TestSuite("Gridgain JDBC Driver Test Suite");
 
         suite.addTest(new TestSuite(GridJdbcConnectionSelfTest.class));
         suite.addTest(new TestSuite(GridJdbcStatementSelfTest.class));

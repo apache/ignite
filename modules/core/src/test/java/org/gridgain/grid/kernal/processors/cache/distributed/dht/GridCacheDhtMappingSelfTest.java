@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -81,7 +80,7 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < nodeCnt; i++) {
             Grid g = grid(i);
 
-            GridDhtCache<Integer, Integer> dht = ((GridNearCache<Integer, Integer>)
+            GridDhtCacheAdapter<Integer, Integer> dht = ((GridNearCacheAdapter<Integer, Integer>)
                 ((GridKernal)g).<Integer, Integer>internalCache()).dht();
 
             if (dht.peek(kv) != null) {

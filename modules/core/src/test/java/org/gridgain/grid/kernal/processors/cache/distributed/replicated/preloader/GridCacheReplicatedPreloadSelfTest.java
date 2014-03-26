@@ -157,12 +157,8 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             Collection<GridEvent> evts = null;
 
             for (int i = 0; i < 3; i++) {
-                evts = g2.events().localQuery(new PE() {
-                    @Override
-                    public boolean apply(GridEvent e) {
-                        return e.type() == EVT_CACHE_PRELOAD_STARTED || e.type() == EVT_CACHE_PRELOAD_STOPPED;
-                    }
-                });
+                evts = g2.events().localQuery(F.<GridEvent>alwaysTrue(),
+                    EVT_CACHE_PRELOAD_STARTED, EVT_CACHE_PRELOAD_STOPPED);
 
                 if (evts.size() != 2) {
                     info("Wrong events collection size (will retry in 1000 ms).");

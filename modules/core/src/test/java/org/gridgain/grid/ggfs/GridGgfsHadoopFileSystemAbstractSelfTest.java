@@ -15,7 +15,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.permission.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.lang.*;
@@ -29,6 +28,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -51,7 +51,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridCommo
     public static final int GRP_SIZE = 128;
 
     /** Path to the default hadoop configuration. */
-    public static final String HADOOP_FS_CFG = "/config/hadoop/core-site.xml";
+    public static final String HADOOP_FS_CFG = "examples/config/hadoop/core-site.xml";
 
     /** Thread count for multithreaded tests. */
     private static final int THREAD_CNT = 8;

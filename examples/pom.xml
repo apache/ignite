@@ -42,7 +42,7 @@
 
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-router</artifactId>
+            <artifactId>gridgain-scalar</artifactId>
             <version>${gridgain.version}</version>
         </dependency>
 
@@ -56,6 +56,13 @@
                     <artifactId>commons-codec</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest_2.10</artifactId>
+            <version>1.9.2</version>
+            <scope>test</scope>
         </dependency>
         <!-- ENTERPRISE DEPENDENCIES START -->
         <dependency>
@@ -80,11 +87,45 @@
                 <directory>config</directory>
             </resource>
             <resource>
-                <directory>java</directory>
+                <directory>src/main/java</directory>
             </resource>
             <resource>
                 <directory>gar</directory>
             </resource>
         </resources>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>net.alchim31.maven</groupId>
+                    <artifactId>scala-maven-plugin</artifactId>
+                    <version>3.1.6</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>scala-compile-first</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 </project>

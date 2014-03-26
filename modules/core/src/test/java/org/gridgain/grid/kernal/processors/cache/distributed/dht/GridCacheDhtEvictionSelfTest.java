@@ -134,8 +134,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
      * @return Near cache.
      */
     @SuppressWarnings({"unchecked"})
-    private GridNearCache<Integer, String> near(Grid g) {
-        return (GridNearCache)((GridKernal)g).internalCache();
+    private GridNearCacheAdapter<Integer, String> near(Grid g) {
+        return (GridNearCacheAdapter)((GridKernal)g).internalCache();
     }
 
     /**
@@ -143,8 +143,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
      * @return Dht cache.
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
-    private GridDhtCache<Integer, String> dht(Grid g) {
-        return ((GridNearCache)((GridKernal)g).internalCache()).dht();
+    private GridDhtCacheAdapter<Integer, String> dht(Grid g) {
+        return ((GridNearCacheAdapter)((GridKernal)g).internalCache()).dht();
     }
 
     /**
@@ -207,11 +207,11 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         info("Key primary node: " + primary.id());
         info("Key backup node: " + backup.id());
 
-        GridNearCache<Integer, String> nearPrimary = near(grid(primary));
-        GridDhtCache<Integer, String> dhtPrimary = dht(grid(primary));
+        GridNearCacheAdapter<Integer, String> nearPrimary = near(grid(primary));
+        GridDhtCacheAdapter<Integer, String> dhtPrimary = dht(grid(primary));
 
-        GridNearCache<Integer, String> nearBackup = near(grid(backup));
-        GridDhtCache<Integer, String> dhtBackup = dht(grid(backup));
+        GridNearCacheAdapter<Integer, String> nearBackup = near(grid(backup));
+        GridDhtCacheAdapter<Integer, String> dhtBackup = dht(grid(backup));
 
         String val = "v1";
 
@@ -268,11 +268,11 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         final Grid primaryGrid = grid(0);
         final Grid backupGrid = grid(1);
 
-        GridNearCache<Integer, String> nearPrimary = near(primaryGrid);
-        GridDhtCache<Integer, String> dhtPrimary = dht(primaryGrid);
+        GridNearCacheAdapter<Integer, String> nearPrimary = near(primaryGrid);
+        GridDhtCacheAdapter<Integer, String> dhtPrimary = dht(primaryGrid);
 
-        GridNearCache<Integer, String> nearBackup = near(backupGrid);
-        GridDhtCache<Integer, String> dhtBackup = dht(backupGrid);
+        GridNearCacheAdapter<Integer, String> nearBackup = near(backupGrid);
+        GridDhtCacheAdapter<Integer, String> dhtBackup = dht(backupGrid);
 
         Collection<Integer> keys = new ArrayList<>(keyCnt);
 

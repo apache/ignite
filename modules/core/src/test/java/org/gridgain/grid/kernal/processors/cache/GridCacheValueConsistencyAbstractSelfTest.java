@@ -11,15 +11,17 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
  *
@@ -27,6 +29,9 @@ import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** Number of threads for test. */
     private static final int THREAD_CNT = 16;
+
+    /** */
+    private String sizePropVal;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -44,12 +49,44 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
         cCfg.setCacheMode(PARTITIONED);
         cCfg.setAtomicityMode(atomicityMode());
-        cCfg.setDistributionMode(PARTITIONED_ONLY);
+        cCfg.setAtomicWriteOrderMode(writeOrderMode());
+        cCfg.setDistributionMode(distributionMode());
         cCfg.setPreloadMode(SYNC);
-        cCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cCfg.setWriteSynchronizationMode(FULL_SYNC);
         cCfg.setBackups(1);
 
         return cCfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        // Need to increase value set in GridAbstractTest
+        sizePropVal = System.getProperty(GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE);
+
+        System.setProperty(GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "100000");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.setProperty(GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE, sizePropVal != null ? sizePropVal : "");
+    }
+
+    /**
+     * @return Distribution mode.
+     */
+    @Override protected GridCacheDistributionMode distributionMode() {
+        return PARTITIONED_ONLY;
+    }
+
+    /**
+     * @return Atomic write order mode.
+     */
+    protected GridCacheAtomicWriteOrderMode writeOrderMode() {
+        return CLOCK;
     }
 
     /**
@@ -86,7 +123,10 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                     info("Node is reported as NOT affinity node for key [key=" + key +
                         ", nodeId=" + locNode.id() + ']');
 
-                    assertNull(cache0.peek(key));
+                    if (distributionMode() == NEAR_PARTITIONED && cache == cache0)
+                        assertEquals((Integer)i, cache0.peek(key));
+                    else
+                        assertNull(cache0.peek(key));
                 }
 
                 assertEquals((Integer)i, cache0.get(key));
@@ -143,7 +183,10 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                     info("Node is reported as NOT affinity node for key [key=" + key +
                         ", nodeId=" + locNode.id() + ']');
 
-                    assertNull(cache0.peek(key));
+                    if (distributionMode() == NEAR_PARTITIONED && cache == cache0)
+                        assertEquals((Integer)i, cache0.peek(key));
+                    else
+                        assertNull(cache0.peek(key));
                 }
 
                 assertEquals((Integer)i, cache0.get(key));
@@ -256,7 +299,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
         int itSize = 0;
 
-        for (Object key : keys)
+        for (Object ignored : keys)
             itSize++;
 
         int valsSize = cache.values().size();

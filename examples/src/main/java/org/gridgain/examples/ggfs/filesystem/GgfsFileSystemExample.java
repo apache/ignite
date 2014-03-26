@@ -30,13 +30,13 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 @GridOnlyAvailableIn(HADOOP)
 public class GgfsFileSystemExample {
     /** Path to the default hadoop configuration. */
-    private static final String HADOOP_FS_CFG = "/config/hadoop/core-site.xml";
+    private static final String HADOOP_FS_CFG = "examples/config/hadoop/core-site.xml";
 
     /** Flag to mark HDFS installation is configured, started and available for this example. */
     private static final boolean USE_HDFS = false;
 
     /** Default path to the folder to copy in case it is not specified explicitly in arguments. */
-    private static final String DFLT_PATH = "examples/src/main/java/org/gridgain/examples";
+    private static final String DFLT_PATH = "examples/java/org/gridgain/examples";
 
     /**
      * Executes example.

@@ -53,7 +53,7 @@ import org.gridgain.testframework.junits.common.*;
  *      {@code -javaagent:${GRIDGAIN_HOME}/libs/aspectjweaver-1.7.2.jar}
  * </li>
  * <li>
- *      Classpath should contain the {@code ${GRIDGAIN_HOME}/config/aop/aspectj} folder.
+ *      Classpath should contain the {@code ${GRIDGAIN_HOME}/modules/tests/config/aop/aspectj} folder.
  * </li>
  */
 public class GridMonteCarloExamplesSelfTest extends GridAbstractExamplesTest {

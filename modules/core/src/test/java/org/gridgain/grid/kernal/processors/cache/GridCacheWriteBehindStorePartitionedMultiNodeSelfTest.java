@@ -151,16 +151,11 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
 
         GridCache<Object, Object> cache = grid(0).cache(null);
 
-        GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-        try {
+        try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             for (int i = 0; i < 100; i++)
                 cache.put(i, String.valueOf(i));
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         checkWrites();

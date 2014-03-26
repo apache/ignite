@@ -430,8 +430,8 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
             doWork();
 
-            GridNearCache near = (GridNearCache)((GridKernal)grid).internalCache();
-            GridDhtCache dht = near.dht();
+            GridNearCacheAdapter near = (GridNearCacheAdapter)((GridKernal)grid).internalCache();
+            GridDhtCacheAdapter dht = near.dht();
 
             long start = cntrs.get2().get();
 
@@ -557,10 +557,10 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                 if (!F.isEmpty(keys)) {
                     for (Grid g : G.allGrids()) {
                         if (g.name().contains("server")) {
-                            GridNearCache<GridCacheAffinityKey<String>, Object> near =
-                                (GridNearCache<GridCacheAffinityKey<String>, Object>)((GridKernal)g).
+                            GridNearCacheAdapter<GridCacheAffinityKey<String>, Object> near =
+                                (GridNearCacheAdapter<GridCacheAffinityKey<String>, Object>)((GridKernal)g).
                                     <GridCacheAffinityKey<String>, Object>internalCache();
-                            GridDhtCache<GridCacheAffinityKey<String>, Object> dht = near.dht();
+                            GridDhtCacheAdapter<GridCacheAffinityKey<String>, Object> dht = near.dht();
 
                             for (GridCacheAffinityKey<String> k : keys) {
                                 GridNearCacheEntry<?, ?> nearEntry = near.peekExx(k);
@@ -603,10 +603,8 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
             Session ses = new Session(terminalId());
 
-            GridCacheTx tx = cache.txStart();
-
             try {
-                try {
+                try (GridCacheTx tx = cache.txStart()) {
                     Request req = new Request(getId());
 
                     req.setMessageId(getId());
@@ -642,9 +640,6 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                     tx.commit();
 
                     stopTimer("commit");
-                }
-                finally {
-                    tx.close();
                 }
             }
             catch (GridException e) {

@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
@@ -278,7 +277,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
         populate();
 
         GridCacheAdapter<Long, Object> cacheAdapter = ((GridKernal)grid(0)).internalCache();
-        GridNearCache<Long, Object> cache = (GridNearCache<Long, Object>)cacheAdapter;
+        GridNearCacheAdapter<Long, Object> cache = (GridNearCacheAdapter<Long, Object>)cacheAdapter;
 
         Map<Integer, Collection<Long>> grouped = new HashMap<>();
 

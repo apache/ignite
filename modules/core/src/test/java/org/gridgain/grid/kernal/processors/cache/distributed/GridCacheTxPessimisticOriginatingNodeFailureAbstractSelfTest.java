@@ -201,7 +201,7 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
                     GridCacheAdapter<?, ?> cache = g.internalCache();
 
                     GridCacheTxManager txMgr = cache.isNear() ?
-                        ((GridNearCache)cache).dht().context().tm() :
+                        ((GridNearCacheAdapter)cache).dht().context().tm() :
                         cache.context().tm();
 
                     int txNum = txMgr.idMapSize();
@@ -307,9 +307,7 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
 
         assertNotNull(cache);
 
-        GridCacheTx tx = cache.txStart();
-
-        try {
+        try (GridCacheTx tx = cache.txStart()) {
             cache.getAll(keys);
 
             // Should not send any messages.
@@ -327,9 +325,6 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
             else
                 tx.rollback();
         }
-        finally {
-            tx.close();
-        }
 
         boolean txFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -337,7 +332,7 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
                     GridCacheAdapter<?, ?> cache = g.internalCache();
 
                     GridCacheTxManager txMgr = cache.isNear() ?
-                        ((GridNearCache)cache).dht().context().tm() :
+                        ((GridNearCacheAdapter)cache).dht().context().tm() :
                         cache.context().tm();
 
                     int txNum = txMgr.idMapSize();

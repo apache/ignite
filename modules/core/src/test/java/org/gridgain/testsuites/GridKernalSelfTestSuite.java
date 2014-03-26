@@ -18,8 +18,6 @@ import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.managers.events.*;
 import org.gridgain.grid.kernal.managers.swapspace.*;
 import org.gridgain.grid.kernal.processors.port.*;
-import org.gridgain.grid.lang.*;
-import org.gridgain.testframework.*;
 
 /**
  * Kernal self test suite.
@@ -30,7 +28,7 @@ public class GridKernalSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createDistributedTestSuite("Gridgain Kernal Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Kernal Test Suite");
 
         suite.addTestSuite(GridSameVmStartupSelfTest.class);
         suite.addTestSuite(GridSpiExceptionSelfTest.class);

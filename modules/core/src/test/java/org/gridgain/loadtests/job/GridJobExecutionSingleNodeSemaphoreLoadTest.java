@@ -12,11 +12,11 @@ package org.gridgain.loadtests.job;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.loadtests.util.*;
 import org.gridgain.testframework.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -65,7 +65,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
             final LongAdder execCnt = new LongAdder();
 
             try {
-                final Grid g = G.start("modules/core/src/test/config/grid-job-load.xml");
+                final Grid g = G.start("modules/tests/config/grid-job-load.xml");
 
                 X.println("Thread count: " + threadCnt);
                 X.println("Task count: " + taskCnt);

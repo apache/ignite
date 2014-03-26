@@ -174,18 +174,13 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         assert map.isEmpty();
 
-        GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
-
-        try {
+        try (GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
             for (int i = 1; i <= 10; i++)
                 cache.putx(i, Integer.toString(i));
 
             checkLastMethod(null);
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         checkLastMethod("putAll");

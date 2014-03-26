@@ -87,7 +87,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @return DHT cache.
      */
-    protected <K, V> GridDhtCache<K, V> dht() {
+    protected <K, V> GridDhtCacheAdapter<K, V> dht() {
         return this.<K, V>near().dht();
     }
 
@@ -95,7 +95,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param idx Grid index.
      * @return DHT cache.
      */
-    protected <K, V> GridDhtCache<K, V> dht(int idx) {
+    protected <K, V> GridDhtCacheAdapter<K, V> dht(int idx) {
         return this.<K, V>near(idx).dht();
     }
 
@@ -104,7 +104,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache name.
      * @return DHT cache.
      */
-    protected <K, V> GridDhtCache<K, V> dht(int idx, String cache) {
+    protected <K, V> GridDhtCacheAdapter<K, V> dht(int idx, String cache) {
         return this.<K, V>near(idx, cache).dht();
     }
 
@@ -132,7 +132,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @return Near cache.
      */
-    protected static <K, V> GridNearCache<K, V> near(GridCacheProjection<K,V> cache) {
+    protected static <K, V> GridNearCacheAdapter<K, V> near(GridCacheProjection<K,V> cache) {
         return ((GridKernal)cache.gridProjection().grid()).<K, V>internalCache(cache.name()).context().near();
     }
 
@@ -147,7 +147,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @return Near cache.
      */
-    protected <K, V> GridNearCache<K, V> near() {
+    protected <K, V> GridNearCacheAdapter<K, V> near() {
         return ((GridKernal)grid()).<K, V>internalCache().context().near();
     }
 
@@ -155,7 +155,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param idx Grid index.
      * @return Near cache.
      */
-    protected <K, V> GridNearCache<K, V> near(int idx) {
+    protected <K, V> GridNearCacheAdapter<K, V> near(int idx) {
         return ((GridKernal)grid(idx)).<K, V>internalCache().context().near();
     }
 
@@ -172,7 +172,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache name.
      * @return Near cache.
      */
-    protected <K, V> GridNearCache<K, V> near(int idx, String cache) {
+    protected <K, V> GridNearCacheAdapter<K, V> near(int idx, String cache) {
         return ((GridKernal)grid(idx)).<K, V>internalCache(cache).context().near();
     }
 

@@ -13,7 +13,6 @@ import junit.framework.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suite for cache metrics.
@@ -24,7 +23,7 @@ public class GridCacheMetricsSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Cache Metrics Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Cache Metrics Test Suite");
 
         suite.addTest(new TestSuite(GridCacheLocalMetricsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearMetricsSelfTest.class));

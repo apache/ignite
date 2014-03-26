@@ -11,7 +11,6 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
-import org.gridgain.testframework.*;
 
 /**
  * Job metrics self test suite.
@@ -22,7 +21,7 @@ public class GridJobMetricsSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createDistributedTestSuite("Gridgain Job metrics Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Job metrics Test Suite");
 
         suite.addTest(new TestSuite(GridJobMetricsProcessorLoadTest.class));
 

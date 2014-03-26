@@ -13,7 +13,6 @@ import junit.framework.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suite for near-only cache.
@@ -24,9 +23,10 @@ public class GridCacheNearOnlySelfTestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain near-only cache test suite.");
+        TestSuite suite = new TestSuite("Gridgain near-only cache test suite.");
 
         suite.addTest(new TestSuite(GridCacheNearOnlySelfTest.class));
+        suite.addTest(new TestSuite(GridCacheAtomicNearOnlySelfTest.class));
         suite.addTest(new TestSuite(GridCacheClientOnlySelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearOnlyTopologySelfTest.class));
         suite.addTest(new TestSuite(GridCacheReplicatedClientOnlySelfTest.class));

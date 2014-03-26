@@ -15,7 +15,7 @@ import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
-import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
@@ -108,12 +108,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
         for (Object key : g2Keys)
             g2.cache(null).put(key, "changed val");
 
-        Collection<GridEvent> evts = g2.events().localQuery(new GridPredicate<GridEvent>() {
-            @Override
-            public boolean apply(GridEvent e) {
-                return e.type() == EVT_CACHE_PRELOAD_OBJECT_LOADED;
-            }
-        });
+        Collection<GridEvent> evts = g2.events().localQuery(F.<GridEvent>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
 
         checkPreloadEvents(evts, g2, g2Keys);
     }

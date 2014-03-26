@@ -29,7 +29,7 @@ public class GridExamplesSelfTestSuite extends TestSuite {
         System.setProperty(GG_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(GridExamplesSelfTestSuite.class));
 
-        TestSuite suite = GridTestUtils.createLocalTestSuite("GridGain Examples Test Suite");
+        TestSuite suite = new TestSuite("GridGain Examples Test Suite");
 
         suite.addTest(new TestSuite(GridCacheExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridClientApiExamplesSelfTest.class));

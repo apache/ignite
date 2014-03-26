@@ -21,7 +21,6 @@ import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.impl.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.tostring.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suite for GridGain utility classes.
@@ -32,7 +31,7 @@ public class GridUtilSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Util Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Util Test Suite");
 
         suite.addTestSuite(GridThreadPoolExecutorServiceSelfTest.class);
         suite.addTestSuite(GridUtilsSelfTest.class);

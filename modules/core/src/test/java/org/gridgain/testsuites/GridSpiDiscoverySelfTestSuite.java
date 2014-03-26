@@ -20,7 +20,6 @@ import org.gridgain.grid.spi.discovery.tcp.metricsstore.jdbc.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.s3.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.sharedfs.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.vm.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suite for all discovery spi implementations.
@@ -31,7 +30,7 @@ public class GridSpiDiscoverySelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Discovery SPI Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Discovery SPI Test Suite");
 
         // Tcp.
         suite.addTest(new TestSuite(GridTcpDiscoveryVmIpFinderSelfTest.class));

@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.affinity;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.util.*;
+import org.jdk8.backport.*;
 
 import java.io.*;
 import java.util.*;

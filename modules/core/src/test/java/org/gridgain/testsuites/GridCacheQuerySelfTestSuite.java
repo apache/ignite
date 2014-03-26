@@ -16,7 +16,6 @@ import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.cache.query.reducefields.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suite for cache queries.
@@ -27,15 +26,17 @@ public class GridCacheQuerySelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Cache Queries Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Cache Queries Test Suite");
 
         suite.addTestSuite(GridCacheQueryLoadSelfTest.class);
         suite.addTestSuite(GridCacheQueryMetricsSelfTest.class);
         suite.addTestSuite(GridCacheQueryUserResourceSelfTest.class);
         suite.addTestSuite(GridCacheLocalQuerySelfTest.class);
         suite.addTestSuite(GridCacheReplicatedQuerySelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedQueryP2PDisabledSelfTest.class);
         suite.addTestSuite(GridCachePartitionedQuerySelfTest.class);
         suite.addTestSuite(GridCacheAtomicQuerySelfTest.class);
+        suite.addTestSuite(GridCacheAtomicNearEnabledQuerySelfTest.class);
         suite.addTestSuite(GridCachePartitionedQueryP2PDisabledSelfTest.class);
         suite.addTestSuite(GridCachePartitionedQueryMultiThreadedSelfTest.class);
         suite.addTestSuite(GridCacheQueryIndexSelfTest.class);
@@ -54,6 +55,7 @@ public class GridCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedFieldsQueryP2PDisabledSelfTest.class);
         suite.addTestSuite(GridCachePartitionedFieldsQuerySelfTest.class);
         suite.addTestSuite(GridCacheAtomicFieldsQuerySelfTest.class);
+        suite.addTestSuite(GridCacheAtomicNearEnabledFieldsQuerySelfTest.class);
         suite.addTestSuite(GridCachePartitionedFieldsQueryP2PDisabledSelfTest.class);
         suite.addTestSuite(GridCacheFieldsQueryNoDataSelfTest.class);
 
@@ -66,6 +68,7 @@ public class GridCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheContinuousQueryPartitionedOnlySelfTest.class);
         suite.addTestSuite(GridCacheContinuousQueryPartitionedP2PDisabledSelfTest.class);
         suite.addTestSuite(GridCacheContinuousQueryAtomicSelfTest.class);
+        suite.addTestSuite(GridCacheContinuousQueryAtomicNearEnabledSelfTest.class);
         suite.addTestSuite(GridCacheContinuousQueryAtomicP2PDisabledSelfTest.class);
 
         // Reduce fields queries.

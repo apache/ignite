@@ -36,11 +36,14 @@ import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
- * Single node test for near cache.
+ * Multi node test for near cache.
  */
 public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 2;
+
+    /** */
+    private static final int BACKUPS = 1;
 
     /** Cache store. */
     private static TestStore store = new TestStore();
@@ -49,10 +52,10 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Grid counter. */
-    private static AtomicInteger cntr = new AtomicInteger(0);
+    private AtomicInteger cntr = new AtomicInteger(0);
 
     /** Affinity based on node index mode. */
-    private GridCacheAffinityFunction aff = new GridCacheModuloAffinityFunction(GRID_CNT, 1);
+    private GridCacheAffinityFunction aff = new GridCacheModuloAffinityFunction(GRID_CNT, BACKUPS);
 
     /** Debug flag for mappings. */
     private boolean mapDebug = true;
@@ -81,7 +84,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         cacheCfg.setStore(store);
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAffinity(aff);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        cacheCfg.setAtomicityMode(atomicityMode());
+        cacheCfg.setBackups(BACKUPS);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
         cfg.setCacheConfiguration(cacheCfg);
@@ -89,6 +93,20 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         cfg.setUserAttributes(F.asMap(GridCacheModuloAffinityFunction.IDX_ATTR, cntr.getAndIncrement()));
 
         return cfg;
+    }
+
+    /**
+     * @return Atomicity mode.
+     */
+    protected GridCacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
+    }
+
+    /**
+     * @return {@code True} if tests transactional cache.
+     */
+    protected boolean transactional() {
+        return atomicityMode() == TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
@@ -154,8 +172,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @return Dht cache.
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
-    private GridDhtCache<Integer, String> dht(Grid g) {
-        return ((GridNearCache)((GridKernal)g).internalCache()).dht();
+    private GridDhtCacheAdapter<Integer, String> dht(Grid g) {
+        return ((GridNearCacheAdapter)((GridKernal)g).internalCache()).dht();
     }
 
     /**
@@ -163,8 +181,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @return Dht cache.
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
-    private GridNearCache<Integer, String> near(Grid g) {
-        return (GridNearCache)((GridKernal)g).internalCache();
+    private GridNearCacheAdapter<Integer, String> near(Grid g) {
+        return (GridNearCacheAdapter)((GridKernal)g).internalCache();
     }
 
     /**
@@ -273,6 +291,29 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    public void testReadThroughAndPut() throws Exception {
+        Integer key = 100000;
+
+        Grid primary;
+        Grid backup;
+
+        if (grid(0) == primaryGrid(key)) {
+            primary = grid(0);
+            backup = grid(1);
+        }
+        else {
+            primary = grid(1);
+            backup = grid(0);
+        }
+
+        assertEquals(String.valueOf(key), backup.cache(null).get(key));
+
+        primary.cache(null).put(key, "a");
+
+        assertEquals("a", backup.cache(null).get(key));
+    }
+
+    /** @throws Exception If failed. */
     public void testReadThrough() throws Exception {
         GridNode loc = grid(0).localNode();
 
@@ -321,26 +362,31 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     public void testOptimisticWriteThrough() throws Exception {
         GridCache<Integer, String> near = cache(0);
 
-        GridCacheTx tx = near.txStart(OPTIMISTIC, REPEATABLE_READ, 0, 0);
+        if (transactional()) {
+            try (GridCacheTx tx = near.txStart(OPTIMISTIC, REPEATABLE_READ, 0, 0)) {
+                near.putx(2, "2");
 
-        try {
+                String s = near.put(3, "3");
+
+                assertNotNull(s);
+                assertEquals("3", s);
+
+                assertEquals("2", near.get(2));
+                assertEquals("3", near.get(3));
+
+                assertNull(dht(primaryGrid(2)).peek(2));
+                assertNotNull(dht(primaryGrid(3)).peek(3));
+
+                tx.commit();
+            }
+        }
+        else {
             near.putx(2, "2");
 
             String s = near.put(3, "3");
 
             assertNotNull(s);
             assertEquals("3", s);
-
-            assertEquals("2", near.get(2));
-            assertEquals("3", near.get(3));
-
-            assertNull(dht(primaryGrid(2)).peek(2));
-            assertNotNull(dht(primaryGrid(3)).peek(3));
-
-            tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         assertEquals("2", near.peek(2));
@@ -445,29 +491,34 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     public void testPessimisticWriteThrough() throws Exception {
         GridCache<Integer, String> near = cache(0);
 
-        GridCacheTx tx = near.txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0);
+        if (transactional()) {
+            try (GridCacheTx tx = near.txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+                assertTrue(near.putx(2, "2"));
 
-        try {
+                String s = near.put(3, "3");
+
+                assertNotNull(s);
+                assertEquals("3", s);
+
+                assertEquals("2", near.peek(2));
+                assertEquals("3", near.peek(3));
+
+                assertNotNull(dht(primaryGrid(3)).peek(3, F.asList(GLOBAL)));
+
+                // This assertion no longer makes sense as we bring the value over whenever
+                // there is a version mismatch.
+                // assertNull(dht(primaryGrid(2)).peek(2, new GridCachePeekMode[]{GLOBAL}));
+
+                tx.commit();
+            }
+        }
+        else {
             assertTrue(near.putx(2, "2"));
 
             String s = near.put(3, "3");
 
             assertNotNull(s);
             assertEquals("3", s);
-
-            assertEquals("2", near.peek(2));
-            assertEquals("3", near.peek(3));
-
-            assertNotNull(dht(primaryGrid(3)).peek(3, F.asList(GLOBAL)));
-
-            // This assertion no longer makes sense as we bring the value over whenever
-            // there is a version mismatch.
-            // assertNull(dht(primaryGrid(2)).peek(2, new GridCachePeekMode[]{GLOBAL}));
-
-            tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         assertEquals("2", near.peek(2));
@@ -532,11 +583,11 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         cache.put(key, val);
 
-        GridNearCache<Integer, String> near0 = near(0);
-        GridNearCache<Integer, String> near1 = near(1);
+        GridNearCacheAdapter<Integer, String> near0 = near(0);
+        GridNearCacheAdapter<Integer, String> near1 = near(1);
 
-        GridDhtCache<Integer, String> dht0 = dht(0);
-        GridDhtCache<Integer, String> dht1 = dht(1);
+        GridDhtCacheAdapter<Integer, String> dht0 = dht(0);
+        GridDhtCacheAdapter<Integer, String> dht1 = dht(1);
 
         assertNull(near0.peekNearOnly(key));
         assertNull(near1.peekNearOnly(key));
@@ -560,7 +611,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param key Key.
      * @return Near entry.
      */
-    private GridNearCacheEntry<Integer, String> nearEntry(int idx, int key) {
+    @Nullable private GridNearCacheEntry<Integer, String> nearEntry(int idx, int key) {
         return this.<Integer, String>near(idx).peekExx(key);
     }
 
@@ -577,6 +628,9 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkSingleLock(int key) throws Exception {
+        if (!transactional())
+            return;
+
         GridCache<Integer, String> cache = cache(0);
 
         String val = Integer.toString(key);
@@ -668,6 +722,9 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkSingleLockReentry(int key) throws Throwable {
+        if (!transactional())
+            return;
+
         GridCache<Integer, String> near = cache(0);
 
         String val = Integer.toString(key);
@@ -742,17 +799,17 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertNull(near(0).peekNearOnly(key));
         assertNull(near(1).peekNearOnly(key));
 
-        GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
+        if (transactional()) {
 
-        try {
-            // Simple transaction get.
+            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                // Simple transaction get.
+                assertEquals(val, cache.get(key));
+
+                tx.commit();
+            }
+        }
+        else
             assertEquals(val, cache.get(key));
-
-            tx.commit();
-        }
-        finally {
-            tx.close();
-        }
 
         assertEquals(val, dht(0).peek(key));
         assertEquals(val, dht(1).peek(key));
@@ -788,19 +845,23 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertNull(near(0).peekNearOnly(key));
         assertNull(near(1).peekNearOnly(key));
 
-        GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
+        if (transactional()) {
+            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                // Read.
+                assertEquals(val, cache.get(key));
 
-        try {
+                // Remove.
+                assertTrue(cache.removex(key));
+
+                tx.commit();
+            }
+        }
+        else {
             // Read.
             assertEquals(val, cache.get(key));
 
             // Remove.
             assertTrue(cache.removex(key));
-
-            tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         assertNull(dht(0).peek(key));

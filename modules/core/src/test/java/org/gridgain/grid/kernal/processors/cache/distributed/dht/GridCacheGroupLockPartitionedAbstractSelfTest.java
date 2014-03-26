@@ -74,9 +74,7 @@ public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends Grid
             cache.put(new GridCacheAffinityKey<>(i, affinityKey), i);
 
         for (int i = 0; i < 3; i++) {
-            GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 10);
-
-            try {
+            try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 10)) {
                 Set<GridCacheEntry<GridCacheAffinityKey<Integer>, Integer>> set =
                     cache.entrySet(cache(0).affinity().partition(affinityKey));
 
@@ -94,9 +92,6 @@ public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends Grid
 
                 tx.commit();
             }
-            finally {
-                tx.close();
-            }
         }
     }
 
@@ -110,10 +105,8 @@ public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends Grid
 
         final GridCache<UUID, String> cache = grid(0).cache(null);
 
-        GridCacheTx tx = cache.txStartPartition(cache.affinity().partition(affinityKey),  PESSIMISTIC, REPEATABLE_READ,
-            0, 2);
-
-        try {
+        try (GridCacheTx tx = cache.txStartPartition(cache.affinity().partition(affinityKey), PESSIMISTIC, REPEATABLE_READ,
+            0, 2)) {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     UUID key1;
@@ -129,9 +122,6 @@ public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends Grid
                     return null;
                 }
             }, GridException.class, null);
-        }
-        finally {
-            tx.close();
         }
     }
 }

@@ -14,7 +14,6 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suite.
@@ -25,7 +24,7 @@ public class GridCacheFailoverTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Cache Group Lock Failover Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Cache Failover Test Suite");
 
         suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
 
@@ -36,6 +35,8 @@ public class GridCacheFailoverTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheDhtAtomicRemoveFailureTest.class);
         suite.addTestSuite(GridCacheDhtRemoveFailureTest.class);
         suite.addTestSuite(GridCacheNearRemoveFailureTest.class);
+        suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class);
+        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderNearRemoveFailureTest.class);
 
         return suite;
     }

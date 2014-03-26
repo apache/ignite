@@ -11,7 +11,6 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.startup.cmdline.*;
-import org.gridgain.testframework.*;
 
 /**
  * Loaders self-test suite.
@@ -22,7 +21,7 @@ public class GridLoadersSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Loaders Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Loaders Test Suite");
 
         suite.addTest(new TestSuite(GridCommandLineTransformerSelfTest.class));
 

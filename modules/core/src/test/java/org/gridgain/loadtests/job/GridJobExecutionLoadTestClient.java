@@ -10,11 +10,11 @@
 package org.gridgain.loadtests.job;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.loadtests.util.*;
 import org.gridgain.testframework.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -75,7 +75,7 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
 
             X.println("Thread count: " + noThreads);
 
-            g = G.start("modules/core/src/test/config/jobs-load-client.xml");
+            g = G.start("modules/tests/config/jobs-load-client.xml");
 
             warmUp(noThreads);
 

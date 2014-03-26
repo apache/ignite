@@ -242,10 +242,8 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                         @Override public void run() {
                             GridCache<Integer, Integer> cache = node.cache(null);
 
-                            GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
                             try {
-                                try {
+                                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     cache.put(key, key);
 
                                     info(">>> Locked key, waiting for latch: " + key);
@@ -253,9 +251,6 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                                     commitLatch.await();
 
                                     tx.commit();
-                                }
-                                finally {
-                                    tx.close();
                                 }
                             }
                             catch (GridException e) {
@@ -318,19 +313,14 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
                         int key = (int)Thread.currentThread().getId();
 
-                        GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
                         try {
-                            try {
+                            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                 // This method should block until all previous transactions are completed.
                                 cache.put(key, key);
 
                                 info(">>> Acquired second lock for key: " + key);
 
                                 tx.commit();
-                            }
-                            finally {
-                                tx.close();
                             }
                         }
                         catch (GridException e) {
@@ -406,18 +396,13 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                         @Override public void run() {
                             GridCache<Integer, Integer> cache = node.cache(null);
 
-                            GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
                             try {
-                                try {
+                                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     cache.put(key, key);
 
                                     commitLatch.await();
 
                                     tx.commit();
-                                }
-                                finally {
-                                    tx.close();
                                 }
                             }
                             catch (GridException e) {
@@ -464,17 +449,12 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
                         int key = (int)Thread.currentThread().getId();
 
-                        GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
                         try {
-                            try {
+                            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                 // This method should block until all previous transactions are completed.
                                 cache.put(key, key);
 
                                 tx.commit();
-                            }
-                            finally {
-                                tx.close();
                             }
                         }
                         catch (GridException e) {

@@ -21,6 +21,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.events.GridEventType.*;
 
 /**
@@ -50,10 +51,10 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(cacheMode());
+        cc.setAtomicityMode(atomicityMode());
         cc.setEvictNearSynchronized(isNearEvictSynchronized());
 
         c.setCacheConfiguration(cc);
-
 
         c.setIncludeEventTypes(EVT_CACHE_ENTRY_EVICTED, EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
@@ -64,6 +65,11 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
      * @return Cache mode.
      */
     protected abstract GridCacheMode cacheMode();
+
+    /**
+     * @return Atomicity mode.
+     */
+    protected abstract GridCacheAtomicityMode atomicityMode();
 
     /**
      * @return {@code True} if near evicts synchronized.

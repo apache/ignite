@@ -40,8 +40,8 @@ public class GridCacheDhtTestUtils {
      * @param cache Cache.
      * @return Dht cache.
      */
-    static <K, V> GridDhtCache<K, V> dht(GridCacheProjection<K, V> cache) {
-        return ((GridNearCache<K, V>)cache.<K, V>cache()).dht();
+    static <K, V> GridDhtCacheAdapter<K, V> dht(GridCacheProjection<K, V> cache) {
+        return ((GridNearCacheAdapter<K, V>)cache.<K, V>cache()).dht();
     }
 
     /**

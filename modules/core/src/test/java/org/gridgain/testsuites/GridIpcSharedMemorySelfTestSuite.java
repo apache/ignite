@@ -11,7 +11,6 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.util.ipc.shmem.*;
-import org.gridgain.testframework.*;
 
 /**
  * Shared memory test suite.
@@ -22,7 +21,7 @@ public class GridIpcSharedMemorySelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain IPC Shared Memory Test Suite.");
+        TestSuite suite = new TestSuite("Gridgain IPC Shared Memory Test Suite.");
 
         suite.addTest(new TestSuite(GridIpcSharedMemorySpaceSelfTest.class));
         suite.addTest(new TestSuite(GridIpcSharedMemoryUtilsSelfTest.class));

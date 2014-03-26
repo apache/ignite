@@ -71,7 +71,7 @@ public class GridNioBenchmarkTest {
             }
         };
 
-        GridLogger log  = new GridLog4jLogger(U.resolveGridGainUrl("config/log4j/gridgain-log4j.xml"));
+        GridLogger log  = new GridLog4jLogger(U.resolveGridGainUrl("config/gridgain-log4j.xml"));
 
         GridNioServer.<ByteBuffer>builder()
             .address(InetAddress.getByName("localhost"))

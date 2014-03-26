@@ -16,7 +16,6 @@ import org.gridgain.grid.kernal.processors.cache.eviction.*;
 import org.gridgain.grid.kernal.processors.cache.eviction.fifo.*;
 import org.gridgain.grid.kernal.processors.cache.eviction.lru.*;
 import org.gridgain.grid.kernal.processors.cache.eviction.random.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suite for cache eviction.
@@ -27,12 +26,13 @@ public class GridCacheEvictionSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Cache Eviction Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Cache Eviction Test Suite");
 
         suite.addTest(new TestSuite(GridCacheFifoEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(GridCacheLruEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(GridCacheRandomEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearEvictionSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheAtomicNearEvictionSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEvictionFilterSelfTest.class));
         suite.addTest(new TestSuite(GridCacheConcurrentEvictionsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheConcurrentEvictionConsistencySelfTest.class));

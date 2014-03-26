@@ -34,7 +34,7 @@ import java.util.*;
  *      (replace ${GRIDGAIN_HOME} to you $GRIDGAIN_HOME):
  *      -javaagent:${GRIDGAIN_HOME}/libs/aspectjweaver-1.7.2.jar
  *
- * 2. Classpath should contains the ${GRIDGAIN_HOME}/config/aop/aspectj folder.
+ * 2. Classpath should contains the ${GRIDGAIN_HOME}/modules/tests/config/aop/aspectj folder.
  */
 @GridCommonTest(group="AOP")
 public class GridifySetToXXXNonSpringAopSelfTest extends GridCommonAbstractTest {

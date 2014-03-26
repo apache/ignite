@@ -12,7 +12,6 @@ package org.gridgain.grid.spi.communication.tcp;
 import mx4j.tools.adaptor.http.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -20,6 +19,7 @@ import org.gridgain.testframework.*;
 import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.spi.*;
+import org.jdk8.backport.*;
 
 import javax.management.*;
 import java.util.*;

@@ -109,7 +109,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         prj1.putAll(putMap);
 
-        info(">>> Before second put.");
+        info(">>> After second put.");
 
         for (int i = 0; i < size; i++) {
             assertEquals(i * i, prj0.get(i));

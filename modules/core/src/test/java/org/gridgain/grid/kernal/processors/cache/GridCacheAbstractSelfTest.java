@@ -11,11 +11,9 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -25,6 +23,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -102,12 +101,18 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                             // Preloading may happen as nodes leave, so we need to wait.
                             new GridAbsPredicateX() {
                                 @Override public boolean applyx() throws GridException {
-                                    if (txEnabled())
-                                        cache(fi).removeAll();
-                                    else
-                                        cache(fi).clearAll();
+                                    GridCache<String, Integer> cache = cache(fi);
 
-                                    return cache(fi).isEmpty();
+                                    if (txEnabled())
+                                        cache.removeAll();
+                                    else
+                                        cache.clearAll();
+
+                                    // clearAll() does not remove entries with readers.
+                                    if (!cache.isEmpty() && !txEnabled() && CU.isNearEnabled(cache.configuration()))
+                                        cache.removeAll();
+
+                                    return cache.isEmpty();
                                 }
                             },
                             getTestTimeout()));
@@ -336,15 +341,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected boolean belongs(String key, int idx) {
         return context(idx).affinity().localNode(key);
     }
-
-    /**
-     *
-     */
-    protected static GridPredicate<String> keyFilter = new P1<String>() {
-        @Override public boolean apply(String key) {
-            return key.contains("key");
-        }
-    };
 
     /**
      * Filters cache entry projections leaving only ones with keys containing 'key'.

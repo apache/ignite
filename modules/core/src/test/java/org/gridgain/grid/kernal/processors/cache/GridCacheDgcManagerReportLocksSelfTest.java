@@ -159,8 +159,8 @@ public class GridCacheDgcManagerReportLocksSelfTest extends GridCommonAbstractTe
 
             GridKernal grid = (GridKernal)G.grid(primaryNode.id());
 
-            GridNearCache<Integer, Integer> cache =
-                (GridNearCache<Integer, Integer>)grid.<Integer, Integer>internalCache("partitioned");
+            GridNearCacheAdapter<Integer, Integer> cache =
+                (GridNearCacheAdapter<Integer, Integer>)grid.<Integer, Integer>internalCache("partitioned");
 
             // Put key/value to primary and backup nodes.
             cache.put(key, key);
@@ -188,8 +188,8 @@ public class GridCacheDgcManagerReportLocksSelfTest extends GridCommonAbstractTe
         for (int i = 0; i < NODES_CNT; i++) {
             GridKernal grid = (GridKernal)grid(i);
 
-            GridNearCache<Integer, Integer> cache =
-                (GridNearCache<Integer, Integer>)grid.<Integer, Integer>internalCache("partitioned");
+            GridNearCacheAdapter<Integer, Integer> cache =
+                (GridNearCacheAdapter<Integer, Integer>)grid.<Integer, Integer>internalCache("partitioned");
 
             assert !cache.dht().context().mvcc().remoteCandidates().isEmpty();
         }

@@ -11,7 +11,6 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.spi.swapspace.file.*;
-import org.gridgain.testframework.*;
 
 /**
  *
@@ -22,7 +21,7 @@ public class GridSpiSwapSpaceSelfTestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Public Swap Space Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Public Swap Space Test Suite");
 
         suite.addTest(new TestSuite(GridFileSwapCompactionSelfTest.class));
         suite.addTest(new TestSuite(GridFileSwapSpaceSpiSelfTest.class));

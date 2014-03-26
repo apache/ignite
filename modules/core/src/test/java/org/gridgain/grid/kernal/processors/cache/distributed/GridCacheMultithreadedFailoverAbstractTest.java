@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
@@ -493,7 +492,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
     @SuppressWarnings({"TooBroadScope", "ConstantIfStatement"})
     private boolean compareCaches(Map<Integer, Integer> expVals) throws Exception {
         List<GridCache<Integer, Integer>> caches = new ArrayList<>(dataNodes());
-        List<GridDhtCache<Integer, Integer>> dhtCaches = null;
+        List<GridDhtCacheAdapter<Integer, Integer>> dhtCaches = null;
 
         for (int i = 0 ; i < dataNodes(); i++) {
             GridCache<Integer, Integer> cache = G.grid(nodeName(i)).cache(CACHE_NAME);
@@ -509,7 +508,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                 if (dhtCaches == null)
                     dhtCaches = new ArrayList<>(dataNodes());
 
-                dhtCaches.add(((GridNearCache<Integer, Integer>)cache0).dht());
+                dhtCaches.add(((GridNearCacheAdapter<Integer, Integer>)cache0).dht());
             }
         }
 

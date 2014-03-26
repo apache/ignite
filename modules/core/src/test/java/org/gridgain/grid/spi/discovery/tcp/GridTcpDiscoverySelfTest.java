@@ -12,6 +12,7 @@ package org.gridgain.grid.spi.discovery.tcp;
 import org.gridgain.grid.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
@@ -39,6 +40,7 @@ import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.events.GridEventType.*;
+import static org.gridgain.grid.spi.GridPortProtocol.*;
 
 /**
  * Test for {@link GridTcpDiscoverySpi}.
@@ -877,6 +879,22 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                 Grid g = startGrid("MulticastIpFinder-" + i);
 
                 assertEquals(i + 1, g.nodes().size());
+
+                GridTcpDiscoverySpi spi = (GridTcpDiscoverySpi)g.configuration().getDiscoverySpi();
+
+                GridTcpDiscoveryMulticastIpFinder ipFinder = (GridTcpDiscoveryMulticastIpFinder)spi.getIpFinder();
+
+                boolean found = false;
+
+                for (GridPortRecord rec : ((GridKernal) g).context().ports().records()) {
+                    if ((rec.protocol() == UDP) && rec.port() == ipFinder.getMulticastPort()) {
+                        found = true;
+
+                        break;
+                    }
+                }
+
+                assertTrue("GridTcpDiscoveryMulticastIpFinder should register port." , found);
             }
         }
         finally {

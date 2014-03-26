@@ -16,7 +16,6 @@ import org.gridgain.grid.lang.utils.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.future.nio.*;
-import org.gridgain.testframework.*;
 
 /**
  * Gridgain language test suite.
@@ -27,7 +26,7 @@ public class GridLangSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Lang Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Lang Test Suite");
 
         suite.addTest(new TestSuite(GridFuncSelfTest.class));
         suite.addTest(new TestSuite(GridTupleSelfTest.class));
@@ -42,7 +41,6 @@ public class GridLangSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridXSelfTest.class));
         suite.addTest(new TestSuite(GridBoundedConcurrentOrderedMapSelfTest.class));
         suite.addTest(new TestSuite(GridBoundedConcurrentLinkedHashMapSelfTest.class));
-        suite.addTest(new TestSuite(GridClosureComposeSelfTest.class));
         suite.addTest(new TestSuite(GridConcurrentLinkedDequeSelfTest.class));
         suite.addTest(new TestSuite(GridCircularBufferSelfTest.class));
         suite.addTest(new TestSuite(GridConcurrentLinkedHashMapSelfTest.class));

@@ -12,7 +12,6 @@ package org.gridgain.testsuites.bamboo;
 import junit.framework.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suite for Hadoop file system over GridGain cache.
@@ -24,7 +23,7 @@ public class GridGgfsLinuxAndMacOSTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain GGFS Test Suite For Linux And Mac OS");
+        TestSuite suite = new TestSuite("Gridgain GGFS Test Suite For Linux And Mac OS");
 
         suite.addTest(new TestSuite(GridGgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest.class));
 

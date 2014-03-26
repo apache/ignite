@@ -10,7 +10,6 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.testframework.*;
 
 /**
  * Test suite that contains all tests for {@link GridCacheWriteBehindStore}.
@@ -21,7 +20,7 @@ public class GridCacheWriteBehindTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain Write-Behind Store Test Suite");
+        TestSuite suite = new TestSuite("Gridgain Write-Behind Store Test Suite");
 
         // Write-behind tests.
         suite.addTest(new TestSuite(GridCacheWriteBehindStoreSelfSelfTest.class));

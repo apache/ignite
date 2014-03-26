@@ -143,9 +143,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
 
                     info("Partition: " + cache.affinity().partition(1));
 
-                    GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-                    try {
+                    try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         // info("Getting value for key 1");
 
                         String s = cache.get(1);
@@ -165,9 +163,6 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
                         }
                         else
                             assert "val".equals(s) : "String: " + s;
-                    }
-                    finally {
-                        tx.close();
                     }
 
                     info("Thread finished for grid: " + grid.name());

@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
@@ -212,8 +211,8 @@ public class GridCacheDgcManagerTxOnDemandSelfTest extends GridCommonAbstractTes
             GridKernal grid = (GridKernal)grid(i);
 
             if (isNearEnabled(grid.internalCache("partitioned").configuration())) {
-                GridNearCache<Integer, Integer> cache =
-                    (GridNearCache<Integer, Integer>)grid.<Integer, Integer>internalCache("partitioned");
+                GridNearCacheAdapter<Integer, Integer> cache =
+                    (GridNearCacheAdapter<Integer, Integer>)grid.<Integer, Integer>internalCache("partitioned");
 
                 assert cache.context().mvcc().remoteCandidates().isEmpty() :
                     cache.context().mvcc().remoteCandidates();
@@ -262,7 +261,7 @@ public class GridCacheDgcManagerTxOnDemandSelfTest extends GridCommonAbstractTes
                 if (log.isDebugEnabled())
                     log.debug("Delayed message send: " + msg);
 
-                delayedMsgs.add(F.<GridNode, GridTcpCommunicationMessageAdapter>t(node, msg));
+                delayedMsgs.add(F.t(node, msg));
 
                 return;
             }

@@ -11,7 +11,6 @@ package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
 import org.gridgain.grid.kernal.managers.*;
-import org.gridgain.testframework.*;
 import org.gridgain.testsuites.*;
 
 /**
@@ -23,7 +22,7 @@ public class GridSpiTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createLocalTestSuite("Gridgain SPIs Test Suite");
+        TestSuite suite = new TestSuite("Gridgain SPIs Test Suite");
 
         // Failover.
         suite.addTest(GridSpiFailoverSelfTestSuite.suite());

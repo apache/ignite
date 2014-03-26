@@ -238,9 +238,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
 
         info(">>> Starting transform transaction");
 
-        GridCacheTx tx = cache.txStart(concurrency, READ_COMMITTED);
-
-        try {
+        try (GridCacheTx tx = cache.txStart(concurrency, READ_COMMITTED)) {
             if (op == OP_UPDATE) {
                 for (String key : keys)
                     cache.transform(key, INCR_CLOS);
@@ -251,9 +249,6 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
             }
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
 
         if (batchUpdate()) {

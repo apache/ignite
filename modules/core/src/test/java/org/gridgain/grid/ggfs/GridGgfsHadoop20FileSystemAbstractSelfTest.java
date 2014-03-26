@@ -14,7 +14,6 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.communication.tcp.*;
@@ -26,6 +25,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -45,9 +45,6 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCommonAbstractTest {
     /** Group size. */
     public static final int GRP_SIZE = 128;
-
-    /** Path to the default hadoop configuration. */
-    public static final String HADOOP_FS_CFG = "/config/hadoop/core-site.xml";
 
     /** Thread count for multithreaded tests. */
     private static final int THREAD_CNT = 8;
@@ -1844,21 +1841,6 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridCom
             assertEquals(i, is.readInt());
 
         is.close();
-    }
-
-    /**
-     * Gets instance of Hadoop local file system.
-     *
-     * @param home File system home.
-     * @return File system.
-     * @throws IOException If failed.
-     */
-    private AbstractFileSystem local(Path home) throws IOException {
-        Configuration cfg = new Configuration();
-
-        cfg.addResource(U.resolveGridGainUrl(HADOOP_FS_CFG));
-
-        return AbstractFileSystem.get(home.toUri(), cfg);
     }
 
     /**

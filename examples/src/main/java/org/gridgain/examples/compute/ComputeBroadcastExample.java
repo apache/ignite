@@ -41,7 +41,7 @@ public class ComputeBroadcastExample {
 
             // Gather system info from all nodes.
             gatherSystemInfo(grid);
-        }
+       }
     }
 
     /**

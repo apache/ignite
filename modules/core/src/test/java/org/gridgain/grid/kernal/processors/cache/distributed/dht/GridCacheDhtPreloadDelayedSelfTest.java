@@ -134,9 +134,9 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         info("Beginning to wait for cache1 repartition.");
 
-        GridDhtCache<String, Integer> d0 = dht(0);
-        GridDhtCache<String, Integer> d1 = dht(1);
-        GridDhtCache<String, Integer> d2 = dht(2);
+        GridDhtCacheAdapter<String, Integer> d0 = dht(0);
+        GridDhtCacheAdapter<String, Integer> d1 = dht(1);
+        GridDhtCacheAdapter<String, Integer> d2 = dht(2);
 
         U.sleep(1000);
 
@@ -232,9 +232,9 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         U.sleep(1000);
 
-        GridDhtCache<String, Integer> d0 = dht(0);
-        GridDhtCache<String, Integer> d1 = dht(1);
-        GridDhtCache<String, Integer> d2 = dht(2);
+        GridDhtCacheAdapter<String, Integer> d0 = dht(0);
+        GridDhtCacheAdapter<String, Integer> d1 = dht(1);
+        GridDhtCacheAdapter<String, Integer> d2 = dht(2);
 
         info("Beginning to wait for caches repartition.");
 
@@ -287,9 +287,9 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         GridCache<String, Integer> c1 = g1.cache(null);
         GridCache<String, Integer> c2 = g2.cache(null);
 
-        GridDhtCache<String, Integer> d0 = dht(0);
-        GridDhtCache<String, Integer> d1 = dht(1);
-        GridDhtCache<String, Integer> d2 = dht(2);
+        GridDhtCacheAdapter<String, Integer> d0 = dht(0);
+        GridDhtCacheAdapter<String, Integer> d1 = dht(1);
+        GridDhtCacheAdapter<String, Integer> d2 = dht(2);
 
         info("Partition map for node 0: " + d0.topology().partitionMap(false).toFullString());
         info("Partition map for node 1: " + d1.topology().partitionMap(false).toFullString());
@@ -396,7 +396,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @return Topology.
      */
     private GridDhtPartitionTopology<Integer, String> topology(Grid g) {
-        return ((GridNearCache<Integer, String>)((GridKernal)g).<Integer, String>internalCache()).dht().topology();
+        return ((GridNearCacheAdapter<Integer, String>)((GridKernal)g).<Integer, String>internalCache()).dht().topology();
     }
 
     /**

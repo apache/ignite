@@ -20,12 +20,14 @@ import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.GridUnsafe;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
@@ -41,7 +43,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.kernal.processors.cache.distributed.dht.GridDhtPartitionState.*;
-import static org.gridgain.grid.util.ConcurrentLinkedDeque8.*;
+import static org.jdk8.backport.ConcurrentLinkedDeque8.*;
 
 /**
  * Cache eviction manager.
@@ -190,9 +192,9 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             throw new GridException("Illegal configuration (synchronized evictions are not supported for replicated " +
                 "cache): " + cctx.name());
 
-        evictSync = cfg.isEvictSynchronized() && (cctx.isColocated() || cctx.isDht()) && !cctx.isSwapOrOffheapEnabled();
+        evictSync = cfg.isEvictSynchronized() && !cctx.isNear() && !cctx.isSwapOrOffheapEnabled();
 
-        nearSync = cfg.isEvictNearSynchronized() && cctx.isDht() && isNearEnabled(cctx);
+        nearSync = cfg.isEvictNearSynchronized() && isNearEnabled(cctx) && !cctx.isNear();
 
         if (cctx.isDht() && !nearSync && evictSync && isNearEnabled(cctx))
             throw new GridException("Illegal configuration (may lead to data inconsistency) " +
@@ -202,7 +204,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         evictSyncAgr = evictSync || nearSync;
 
-        if (evictSync && (cctx.isDht() || cctx.isColocated()) && plcEnabled) {
+        if (evictSync && !cctx.isNear() && plcEnabled) {
             backupWorker = new BackupWorker();
 
             cctx.events().addListener(
@@ -288,7 +290,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
     @Override protected void onKernalStart0() throws GridException {
         super.onKernalStart0();
 
-        if (plcEnabled && evictSync && (cctx.isDht() || cctx.isColocated())) {
+        if (plcEnabled && evictSync && !cctx.isNear()) {
             // Add dummy event to worker.
             backupWorker.addEvent(new GridDiscoveryEvent(cctx.localNodeId(), "Dummy event.", EVT_NODE_JOINED,
                 cctx.localNodeId()));
@@ -308,7 +310,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         busyLock.block();
 
         // Stop backup worker.
-        if (evictSync && (cctx.isDht() || cctx.isColocated()) && backupWorker != null) {
+        if (evictSync && !cctx.isNear() && backupWorker != null) {
             backupWorker.cancel();
 
             U.join(backupWorkerThread, log);
@@ -527,7 +529,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
     private void saveEvictionInfo(K key, GridCacheVersion ver, int p) {
         assert cctx.preloadEnabled();
 
-        if (cctx.isDht() || cctx.isColocated()) {
+        if (!cctx.isNear()) {
             try {
                 GridDhtLocalPartition<K, V> part = cctx.dht().topology().localPartition(p, -1, false);
 
@@ -554,7 +556,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         if (!cctx.preloadEnabled())
             return false;
 
-        if (cctx.isDht() || cctx.isColocated()) {
+        if (!cctx.isNear()) {
             try {
                 GridDhtLocalPartition<K, V> part = cctx.dht().topology().localPartition(p, -1, false);
 
@@ -590,7 +592,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         if (!cctx.preloadEnabled())
             return;
 
-        if (cctx.isDht() || cctx.isColocated()) {
+        if (!cctx.isNear()) {
             try {
                 GridDhtLocalPartition<K, V> part = cctx.dht().topology().localPartition(p, -1, false);
 
@@ -616,7 +618,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
     private long lockTopology() {
         if (cctx.isReplicated())
             return cctx.discovery().topologyVersion();
-        else if (cctx.isDht() || cctx.isColocated()) {
+        else if (!cctx.isNear()) {
             cctx.dht().topology().readLock();
 
             return cctx.dht().topology().topologyVersion();
@@ -629,7 +631,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * Unlocks topology.
      */
     private void unlockTopology() {
-        if (cctx.isDht() || cctx.isColocated())
+        if (!cctx.isNear())
             cctx.dht().topology().readUnlock();
     }
 
@@ -645,7 +647,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         assert ver != null;
         assert obsoleteVer != null;
         assert evictSyncAgr;
-        assert cctx.isDht() || cctx.isColocated() || cctx.isReplicated();
+        assert !cctx.isNear() || cctx.isReplicated();
 
         if (log.isDebugEnabled())
             log.debug("Evicting key locally [key=" + key + ", ver=" + ver + ", obsoleteVer=" + obsoleteVer +
@@ -729,7 +731,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             if (cctx.isNear())
                 return;
 
-            if ((cctx.isDht() || cctx.isColocated()) && evictSync)
+            if (evictSync)
                 return;
         }
 
@@ -777,7 +779,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             return;
 
         // Don't track non-primary entries if evicts are synchronized.
-        if ((cctx.isDht() || cctx.isColocated()) && evictSync &&
+        if (!cctx.isNear() && evictSync &&
             !cctx.affinity().primary(cctx.localNode(), e.partition()))
             return;
 
@@ -878,7 +880,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             warnFirstEvict();
 
         if (evictSyncAgr) {
-            assert cctx.isDht() || cctx.isColocated(); // Make sure cache is not NEAR.
+            assert !cctx.isNear(); // Make sure cache is not NEAR.
 
             if (entry.wrap(false).backup() && evictSync)
                 // Do not track backups if evicts are synchronized.
@@ -1290,7 +1292,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
             if (evictSync)
                 backups = F.view(cctx.dht().topology().nodes(entry.partition(), topVer),
-                    F0.<GridNode>notEqualTo(cctx.localNode()));
+                    F0.notEqualTo(cctx.localNode()));
             else
                 backups = Collections.emptySet();
 
@@ -1418,7 +1420,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, GridInterruptedException {
-            assert (cctx.isDht() || cctx.isColocated()) && evictSync;
+            assert !cctx.isNear() && evictSync;
 
             GridNode loc = cctx.localNode();
 

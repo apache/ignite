@@ -9,7 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.util.typedef.*;
+
+import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
@@ -31,5 +36,22 @@ public class GridCacheAtomicFieldsQuerySelfTest extends GridCachePartitionedFiel
     /** {@inheritDoc} */
     @Override public void testCacheMetaData() throws Exception {
         // No-op.
+    }
+
+    /**
+     *
+     */
+    public void testUnsupportedOperations() {
+        GridCacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery(
+            "update Person set name = ?");
+
+        try {
+            qry.execute("Mary Poppins").get();
+
+            fail("We don't support updates.");
+        }
+        catch (GridException e) {
+            X.println("___ " + e.getMessage());
+        }
     }
 }

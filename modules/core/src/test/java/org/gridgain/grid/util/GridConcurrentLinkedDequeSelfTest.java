@@ -10,10 +10,11 @@
 package org.gridgain.grid.util;
 
 import org.gridgain.testframework.junits.common.*;
+import org.jdk8.backport.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.util.ConcurrentLinkedDeque8.*;
+import static org.jdk8.backport.ConcurrentLinkedDeque8.*;
 
 /**
  * Tests for {@link ConcurrentLinkedDeque8}.
@@ -91,7 +92,7 @@ public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
         iter.remove();
 
         // Iterator should have set item to null.
-        assert n1.item == null;
+        assert n1.item() == null;
 
         checkSize(deque, 3);
 

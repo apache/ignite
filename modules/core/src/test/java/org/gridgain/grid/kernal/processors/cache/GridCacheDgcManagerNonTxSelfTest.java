@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
@@ -123,8 +122,8 @@ public class GridCacheDgcManagerNonTxSelfTest extends GridCommonAbstractTest {
 
             GridKernal grid = (GridKernal)G.grid(primaryNode.id());
 
-            GridNearCache<Integer, Integer> cache =
-                (GridNearCache<Integer, Integer>)grid.<Integer, Integer>internalCache("partitioned");
+            GridNearCacheAdapter<Integer, Integer> cache =
+                (GridNearCacheAdapter<Integer, Integer>)grid.<Integer, Integer>internalCache("partitioned");
 
             // Put key/value to primary and backup nodes.
             cache.put(key, key, null);
@@ -163,8 +162,8 @@ public class GridCacheDgcManagerNonTxSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES_CNT; i++) {
             GridKernal grid = (GridKernal)grid(i);
 
-            GridNearCache<Integer, Integer> cache =
-                (GridNearCache<Integer, Integer>)grid.<Integer, Integer>internalCache("partitioned");
+            GridNearCacheAdapter<Integer, Integer> cache =
+                (GridNearCacheAdapter<Integer, Integer>)grid.<Integer, Integer>internalCache("partitioned");
 
             assert cache.context().mvcc().remoteCandidates().isEmpty();
             assert cache.dht().context().mvcc().remoteCandidates().isEmpty();

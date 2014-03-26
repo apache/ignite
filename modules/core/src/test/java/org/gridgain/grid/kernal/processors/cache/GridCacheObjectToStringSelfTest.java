@@ -146,9 +146,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
             assertNotNull(entries);
             assertFalse(entries.toString().isEmpty());
 
-            GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-            try {
+            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 assertEquals(1, cache.get(1));
 
                 cache.put(2, 22);
@@ -161,9 +159,6 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
                 assertFalse(entries.toString().isEmpty());
 
                 tx.commit();
-            }
-            finally {
-                tx.close();
             }
         }
         finally {

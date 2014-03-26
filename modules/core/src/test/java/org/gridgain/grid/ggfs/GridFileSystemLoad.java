@@ -76,13 +76,13 @@ public class GridFileSystemLoad {
     private static final boolean DFLT_PRIMARY_ONLY = false;
 
     /** */
-    private static final String DFLT_NODE_CFG = "config/ggfs/default-ggfs-data.xml";
+    private static final String DFLT_NODE_CFG = "config/hadoop/default-config.xml";
 
     /** */
     private static final long DFLT_DELAY = 5;
 
     /** */
-    private static final String DFLT_HADOOP_CFG = "config/hadoop/core-site.xml";
+    private static final String DFLT_HADOOP_CFG = "examples/config/hadoop/core-site.xml";
 
     /** */
     private static final int CREATE_BUF_SIZE = 100 * 1024;

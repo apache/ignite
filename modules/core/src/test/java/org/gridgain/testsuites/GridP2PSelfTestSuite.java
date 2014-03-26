@@ -12,7 +12,6 @@ package org.gridgain.testsuites;
 import junit.framework.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.p2p.*;
-import org.gridgain.testframework.*;
 
 /**
  * P2P test suite.
@@ -24,7 +23,7 @@ public class GridP2PSelfTestSuite extends TestSuite {
      */
     @SuppressWarnings({"ProhibitedExceptionDeclared"})
     public static TestSuite suite() throws Exception {
-        TestSuite suite = GridTestUtils.createDistributedTestSuite("Gridgain P2P Test Suite");
+        TestSuite suite = new TestSuite("Gridgain P2P Test Suite");
 
         suite.addTest(new TestSuite(GridP2PDoubleDeploymentSelfTest.class));
         suite.addTest(new TestSuite(GridP2PHotRedeploymentSelfTest.class));

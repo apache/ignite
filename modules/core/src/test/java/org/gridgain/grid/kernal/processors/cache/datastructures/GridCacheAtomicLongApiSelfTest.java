@@ -463,18 +463,13 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
 
         assertEquals(0, cache.primarySize());
 
-        GridCacheTx tx = cache.txStart();
-
-        try {
+        try (GridCacheTx tx = cache.txStart()) {
             long newVal = RND.nextLong();
 
             long curAtomicVal = atomic.get();
 
             assert curAtomicVal == atomic.getAndSet(newVal);
             assert newVal == atomic.get();
-        }
-        finally {
-            tx.close();
         }
     }
 }

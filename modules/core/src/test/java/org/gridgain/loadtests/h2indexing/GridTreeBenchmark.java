@@ -9,7 +9,7 @@
 
 package org.gridgain.loadtests.h2indexing;
 
-import edu.stanford.ppl.concurrent.*;
+import org.gridgain.grid.util.snaptree.*;
 
 import java.util.*;
 import java.util.concurrent.*;

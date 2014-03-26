@@ -115,9 +115,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
                 @Override public Void applyx(final Integer i) throws GridException {
                     GridCache<String, int[]> cache = grid.cache(null);
 
-                    GridCacheTx tx = cache.txStart(concur, isolation);
-
-                    try {
+                    try (GridCacheTx tx = cache.txStart(concur, isolation)) {
                         int[] arr = cache.get("TestKey");
 
                         if (arr == null)
@@ -133,8 +131,6 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
                             X.println("Executing transaction [i=" + i + ", c=" + c + ']');
 
                         tx.commit();
-                    } finally {
-                        tx.close();
                     }
 
                     return null;
@@ -152,9 +148,8 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
             // Do within transaction to make sure that lock is acquired
             // which means that all previous transactions have committed.
-            GridCacheTx tx = c.txStart(concur, isolation);
 
-            try {
+            try (GridCacheTx tx = c.txStart(concur, isolation)) {
                 int[] arr = c.get("TestKey");
 
                 assertNotNull(arr);
@@ -164,9 +159,6 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
                     assertEquals(1, j);
 
                 tx.commit();
-            }
-            finally {
-                tx.close();
             }
         }
     }

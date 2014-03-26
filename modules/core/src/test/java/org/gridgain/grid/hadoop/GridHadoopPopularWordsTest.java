@@ -1,4 +1,4 @@
-/* @java.file.header */
+//* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -42,11 +42,11 @@ public class GridHadoopPopularWordsTest {
 
     /** The path to the input directory. ALl files in that directory will be processed. */
     private static final Path BOOKS_LOCAL_DIR =
-        new Path("file:" + GG_HOME, "modules/core/src/test/java/org/gridgain/grid/hadoop/books");
+        new Path("file:" + GG_HOME, "modules/tests/java/org/gridgain/grid/hadoop/books");
 
     /** The path to the output directory. THe result file will be written to this location. */
     private static final Path RESULT_LOCAL_DIR =
-        new Path("file:" + GG_HOME, "modules/core/src/test/java/org/gridgain/grid/hadoop/output");
+        new Path("file:" + GG_HOME, "modules/tests/java/org/gridgain/grid/hadoop/output");
 
     /** Popular books source dir in DFS. */
     private static final Path BOOKS_DFS_DIR = new Path("tmp/word-count-example/in");
@@ -55,7 +55,7 @@ public class GridHadoopPopularWordsTest {
     private static final Path RESULT_DFS_DIR = new Path("tmp/word-count-example/out");
 
     /** Path to the distributed file system configuration. */
-    private static final String DFS_CFG = "/config/hadoop/core-site.xml";
+    private static final String DFS_CFG = "examples/config/hadoop/core-site.xml";
 
     /** Top N words to select **/
     private static final int POPULAR_WORDS_CNT = 10;

@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -24,7 +25,9 @@ import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
  * Checks that readers are properly handled.
@@ -48,16 +51,17 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setCacheMode(PARTITIONED);
+        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setPreloadMode(NONE);
 
         cacheCfg.setAffinity(aff);
         cacheCfg.setSwapEnabled(false);
         cacheCfg.setEvictSynchronized(true);
         cacheCfg.setEvictNearSynchronized(true);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        cacheCfg.setAtomicityMode(atomicityMode());
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
+        cacheCfg.setBackups(aff.backups());
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -70,6 +74,13 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         cfg.setUserAttributes(F.asMap(GridCacheModuloAffinityFunction.IDX_ATTR, cntr.getAndIncrement()));
 
         return cfg;
+    }
+
+    /**
+     * @return Atomicity mode.
+     */
+    protected GridCacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
     }
 
     /** @throws Exception If failed. */
@@ -190,6 +201,11 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         Grid g1 = grid(n1.id());
         Grid g2 = grid(n2.id());
+
+        awaitPartitionMapExchange();
+
+        ((GridKernal)g1).internalCache(null).preloader().request(F.asList(1, 2), 2).get();
+        ((GridKernal)g2).internalCache(null).preloader().request(F.asList(1, 2), 2).get();
 
         GridCache<Integer, String> cache1 = g1.cache(null);
         GridCache<Integer, String> cache2 = g2.cache(null);
@@ -471,6 +487,9 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testExplicitLockReaders() throws Exception {
+        if (atomicityMode() == ATOMIC)
+            return;
+
         grids = 3;
         aff.reset(grids, 1);
 
