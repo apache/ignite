@@ -116,7 +116,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         ent = ent0;
 
-        COMPOUND_VERSION = EDITION + (ent ? "ent" : "os") + VER;
+        COMPOUND_VERSION = EDITION + "-" + (ent ? "ent" : "os") + "-" + VER;
     }
 
     /** Ant-augmented compatible versions. */
