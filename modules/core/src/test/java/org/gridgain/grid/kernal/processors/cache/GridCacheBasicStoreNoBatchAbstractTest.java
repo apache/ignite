@@ -68,11 +68,18 @@ public abstract class GridCacheBasicStoreNoBatchAbstractTest extends GridCommonA
 
         cc.setBatchUpdateOnCommit(false);
         cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setAtomicityMode(TRANSACTIONAL);
+        cc.setAtomicityMode(atomicityMode());
 
         c.setCacheConfiguration(cc);
 
         return c;
+    }
+
+    /**
+     * @return Cache atomicity mode.
+     */
+    protected GridCacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
     }
 
     /** @throws Exception If test fails. */
@@ -83,7 +90,7 @@ public abstract class GridCacheBasicStoreNoBatchAbstractTest extends GridCommonA
 
         assert map.isEmpty();
 
-        GridCacheTx tx = cache.txStart();
+        GridCacheTx tx = atomicityMode() == TRANSACTIONAL ? cache.txStart() : null;
 
         try {
             for (int i = 1; i <= 10; i++) {
@@ -92,12 +99,15 @@ public abstract class GridCacheBasicStoreNoBatchAbstractTest extends GridCommonA
                 checkLastMethod("put");
             }
 
-            tx.commit();
+            if (tx != null) {
+                tx.commit();
 
-            checkLastMethod("put");
+                checkLastMethod("put");
+            }
         }
         finally {
-            tx.close();
+            if (tx != null)
+                tx.close();
         }
 
         assert cache.size() == 10;
@@ -111,7 +121,7 @@ public abstract class GridCacheBasicStoreNoBatchAbstractTest extends GridCommonA
 
         store.resetLastMethod();
 
-        tx = cache.txStart();
+        tx = atomicityMode() == TRANSACTIONAL ? cache.txStart() : null;
 
         try {
             for (int i = 1; i <= 10; i++) {
@@ -123,12 +133,15 @@ public abstract class GridCacheBasicStoreNoBatchAbstractTest extends GridCommonA
                 assert val.equals(Integer.toString(i));
             }
 
-            tx.commit();
+            if (tx != null) {
+                tx.commit();
 
-            checkLastMethod("remove");
+                checkLastMethod("remove");
+            }
         }
         finally {
-            tx.close();
+            if (tx != null)
+                tx.close();
         }
 
         assert map.isEmpty();
@@ -142,16 +155,25 @@ public abstract class GridCacheBasicStoreNoBatchAbstractTest extends GridCommonA
 
         assert map.isEmpty();
 
-        try (GridCacheTx tx = cache.txStart()) {
+        if (atomicityMode() == TRANSACTIONAL) {
+            try (GridCacheTx tx = cache.txStart()) {
+                for (int i = 1; i <= 10; i++) {
+                    cache.put(i, Integer.toString(i));
+
+                    checkLastMethod("put");
+                }
+
+                tx.commit();
+
+                checkLastMethod("put");
+            }
+        }
+        else {
             for (int i = 1; i <= 10; i++) {
                 cache.put(i, Integer.toString(i));
 
                 checkLastMethod("put");
             }
-
-            tx.commit();
-
-            checkLastMethod("put");
         }
 
         for (int i = 1; i <= 10; i++) {

@@ -18,6 +18,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
@@ -44,6 +45,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
         GridCacheConfiguration cc1 = new GridCacheConfiguration();
 
         cc1.setName(CACHE_REGULAR);
+        cc1.setAtomicityMode(TRANSACTIONAL);
         cc1.setCacheMode(LOCAL);
         cc1.setWriteSynchronizationMode(FULL_SYNC);
         cc1.setTxSerializableEnabled(true);
@@ -54,6 +56,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
         GridCacheConfiguration cc2 = new GridCacheConfiguration();
 
         cc2.setName(CACHE_OFFHEAP);
+        cc2.setAtomicityMode(TRANSACTIONAL);
         cc2.setCacheMode(LOCAL);
         cc2.setWriteSynchronizationMode(FULL_SYNC);
         cc2.setTxSerializableEnabled(true);

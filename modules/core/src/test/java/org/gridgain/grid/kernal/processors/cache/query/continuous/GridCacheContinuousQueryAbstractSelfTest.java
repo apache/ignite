@@ -1173,6 +1173,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testInternalKey() throws Exception {
+        if (atomicityMode() == ATOMIC)
+            return;
+
         GridCache<Object, Object> cache = grid(0).cache(null);
 
         GridCacheContinuousQuery<Object, Object> qry = cache.queries().createContinuousQuery();

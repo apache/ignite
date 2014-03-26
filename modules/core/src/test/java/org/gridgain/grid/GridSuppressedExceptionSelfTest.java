@@ -17,12 +17,12 @@ import java.io.*;
 /**
  *
  */
-public class GridMultiExceptionSelfTest extends TestCase {
+public class GridSuppressedExceptionSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
     public void testHasCause() throws Exception {
-        GridMultiException me = prepareMultiException();
+        GridException me = prepareMultiException();
 
         assertFalse(me.hasCause(IOException.class));
         assertTrue(me.hasCause(GridException.class));
@@ -33,7 +33,7 @@ public class GridMultiExceptionSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testGetCause() throws Exception {
-        GridMultiException me = prepareMultiException();
+        GridException me = prepareMultiException();
 
         assertNull(me.getCause(IOException.class));
 
@@ -48,7 +48,7 @@ public class GridMultiExceptionSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testXHasCause() throws Exception {
-        GridMultiException me = prepareMultiException();
+        GridException me = prepareMultiException();
 
         try {
             throw new RuntimeException("Test.", me);
@@ -64,7 +64,7 @@ public class GridMultiExceptionSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testXCause() throws Exception {
-        GridMultiException me = prepareMultiException();
+        GridException me = prepareMultiException();
 
         try {
             throw new RuntimeException("Test.", me);
@@ -81,19 +81,19 @@ public class GridMultiExceptionSelfTest extends TestCase {
     }
 
     /**
-     * Made to demonstrate stack printing for {@link GridMultiException}. Do not enable.
+     * Made to demonstrate stack printing for {@link GridException}. Do not enable.
      *
      * @throws Exception If failed.
      */
     public void _testStackTrace() throws Exception {
-        GridMultiException me = new GridMultiException("Test message.");
+        GridException me = new GridException("Test message.");
 
         for (int i = 5; i < 20; i++) {
             try {
                 generateException(i, null);
             }
             catch (GridException e) {
-                me.add(e);
+                me.addSuppressed(e);
             }
         }
 
@@ -104,15 +104,15 @@ public class GridMultiExceptionSelfTest extends TestCase {
      * @return A multi exception with few nested causes and
      *  {@link IllegalAccessException} in hierarchy.
      */
-    private GridMultiException prepareMultiException() {
-        GridMultiException me = new GridMultiException("Test message.");
+    private GridException prepareMultiException() {
+        GridException me = new GridException("Test message.");
 
         for (int i = 0; i < 3; i++) {
             try {
                 generateException(3, new IllegalArgumentException());
             }
             catch (GridException e) {
-                me.add(e);
+                me.addSuppressed(e);
             }
         }
         return me;

@@ -420,6 +420,13 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public GridBiTuple<Boolean, V> innerUpdateLocal(GridCacheVersion ver, GridCacheOperation op,
+                                                              @Nullable Object writeObj, boolean writeThrough, boolean retval, long ttl, boolean evt, boolean metrics,
+                                                              @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException, GridCacheEntryRemovedException {
+        return new GridBiTuple<>(false, null);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridCacheUpdateAtomicResult<K, V> innerUpdate(
         GridCacheVersion ver, UUID evtNodeId, UUID affNodeId, GridCacheOperation op, @Nullable Object val,
         @Nullable byte[] valBytes, boolean writeThrough, boolean retval, long ttl, boolean evt,

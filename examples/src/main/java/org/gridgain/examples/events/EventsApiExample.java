@@ -9,9 +9,9 @@
 
 package org.gridgain.examples.events;
 
-import org.gridgain.examples.datagrid.*;
+import org.gridgain.examples.compute.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
+import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
@@ -23,16 +23,12 @@ import static org.gridgain.grid.events.GridEventType.*;
 /**
  * Demonstrates event consume API that allows to register event listeners on remote nodes.
  * <p>
- * Remote nodes should always be started with configuration file which includes
- * cache: {@code 'ggstart.sh examples/config/example-cache.xml'}.
+ * Remote nodes should always be started with configuration: {@code 'ggstart.sh examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link CacheNodeStartup} in another JVM which will start
- * GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start
+ * GridGain node with {@code examples/config/example-compute.xml} configuration.
  */
 public class EventsApiExample {
-    /** Cache name. */
-    private static final String CACHE_NAME = "partitioned";
-
     /**
      * Executes example.
      *
@@ -40,7 +36,7 @@ public class EventsApiExample {
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Grid grid = GridGain.start("examples/config/example-cache.xml")) {
+        try (Grid grid = GridGain.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Events API example started.");
 
@@ -60,28 +56,32 @@ public class EventsApiExample {
      *
      * @throws GridException If failed.
      */
-    private static void localListen() throws GridException {
+    private static void localListen() throws Exception {
+        System.out.println();
+        System.out.println(">>> Local event listener example.");
+
         Grid g = GridGain.grid();
 
-        // Register event listener for all local task execution events.
-        g.events().localListen(new GridPredicate<GridEvent>() {
-            @Override public boolean apply(GridEvent evt) {
-                GridTaskEvent taskEvt = (GridTaskEvent) evt;
+        GridPredicate<GridTaskEvent> lsnr = new GridPredicate<GridTaskEvent>() {
+            @Override public boolean apply(GridTaskEvent evt) {
+                System.out.println("Received task event [evt=" + evt.name() + ", taskName=" + evt.taskName() + ']');
 
-                System.out.println();
-                System.out.println("Git event notification [evt=" + evt.name() + ", taskName=" + taskEvt.taskName() + ']');
-
-                return true;
+                return true; // Return true to continue listening.
             }
-        }, EVTS_TASK_EXECUTION);
+        };
+
+        // Register event listener for all local task execution events.
+        g.events().localListen(lsnr, EVTS_TASK_EXECUTION);
 
         // Generate task events.
         g.compute().withName("example-event-task").run(new GridRunnable() {
             @Override public void run() {
-                System.out.println();
                 System.out.println("Executing sample job.");
             }
         }).get();
+
+        // Unsubscribe local task event listener.
+        g.events().stopLocalListen(lsnr);
     }
 
     /**
@@ -90,48 +90,48 @@ public class EventsApiExample {
      * @throws GridException If failed.
      */
     private static void remoteListen() throws GridException {
+        System.out.println();
+        System.out.println(">>> Remote event listener example.");
+
+        // This optional local callback is called for each event notification
+        // that passed remote predicate listener.
+        GridBiPredicate<UUID, GridTaskEvent> locLsnr = new GridBiPredicate<UUID, GridTaskEvent>() {
+            @Override public boolean apply(UUID nodeId, GridTaskEvent evt) {
+                // Remote filter only accepts tasks whose name being with "good-task" prefix.
+                assert evt.taskName().startsWith("good-task");
+
+                System.out.println("Received task event [evt=" + evt.name() + ", taskName=" + evt.taskName());
+
+                return true; // Return true to continue listening.
+            }
+        };
+
+        // Remote filter which only accepts tasks whose name begins with "good-task" prefix.
+        GridPredicate<GridTaskEvent> rmtLsnr = new GridPredicate<GridTaskEvent>() {
+            @Override public boolean apply(GridTaskEvent evt) {
+                return evt.taskName().startsWith("good-task");
+            }
+        };
+
         Grid g = GridGain.grid();
 
-        GridCache<Integer, String> cache = g.cache(CACHE_NAME);
-
-        // Register remote event listeners on all nodes running cache.
-        GridFuture<?> fut = g.forCache(CACHE_NAME).events().remoteListen(
-            // This optional local callback is called for each event notification
-            // that passed remote predicate filter.
-            new GridBiPredicate<UUID, GridCacheEvent>() {
-                @Override public boolean apply(UUID nodeId, GridCacheEvent evt) {
-                    System.out.println();
-                    System.out.println("Received event [evt=" + evt.name() + ", key=" + evt.key() +
-                        ", oldVal=" + evt.oldValue() + ", newVal=" + evt.newValue());
-
-                    return true; // Return true to continue listening.
-                }
-            },
-            // Remote filter which only accepts events for keys that are
-            // greater or equal than 10 and if local node is primary for this key.
-            new GridPredicate<GridCacheEvent>() {
-                /** Auto-inject grid instance. */
-                @GridInstanceResource
-                private Grid g;
-
-                @Override public boolean apply(GridCacheEvent evt) {
-                    Integer key = evt.key();
-
-                    return key >= 10 && g.cache(CACHE_NAME).affinity().isPrimary(g.localNode(), key);
-                }
-            },
-            // Types of events for which listeners are registered.
-            EVT_CACHE_OBJECT_PUT,
-            EVT_CACHE_OBJECT_READ,
-            EVT_CACHE_OBJECT_REMOVED);
+        // Register event listeners on all nodes to listen for task events.
+        GridFuture<?> fut = g.events().remoteListen(locLsnr, rmtLsnr, EVTS_TASK_EXECUTION);
 
         // Wait until event listeners are subscribed on all nodes.
         fut.get();
 
-        int keyCnt = 20;
+        // Generate task events.
+        for (int i = 0; i < 10; i++) {
+            g.compute().withName(i < 5 ? "good-task-" + i : "bad-task-" + i).run(new GridRunnable() {
+                // Auto-inject task session.
+                @GridTaskSessionResource
+                private GridComputeTaskSession ses;
 
-        // Generate cache events.
-        for (int i = 0; i < keyCnt; i++)
-            cache.putx(i, Integer.toString(i));
+                @Override public void run() {
+                    System.out.println("Executing sample job for task: " + ses.getTaskName());
+                }
+            }).get();
+        }
     }
 }

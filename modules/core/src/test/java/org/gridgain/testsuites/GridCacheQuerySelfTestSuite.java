@@ -32,6 +32,7 @@ public class GridCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheQueryMetricsSelfTest.class);
         suite.addTestSuite(GridCacheQueryUserResourceSelfTest.class);
         suite.addTestSuite(GridCacheLocalQuerySelfTest.class);
+        suite.addTestSuite(GridCacheLocalAtomicQuerySelfTest.class);
         suite.addTestSuite(GridCacheReplicatedQuerySelfTest.class);
         suite.addTestSuite(GridCacheReplicatedQueryP2PDisabledSelfTest.class);
         suite.addTestSuite(GridCachePartitionedQuerySelfTest.class);
@@ -61,6 +62,7 @@ public class GridCacheQuerySelfTestSuite extends TestSuite {
 
         // Continuous queries.
         suite.addTestSuite(GridCacheContinuousQueryLocalSelfTest.class);
+        suite.addTestSuite(GridCacheContinuousQueryLocalAtomicSelfTest.class);
         suite.addTestSuite(GridCacheContinuousQueryReplicatedSelfTest.class);
         suite.addTestSuite(GridCacheContinuousQueryReplicatedAtomicSelfTest.class);
         suite.addTestSuite(GridCacheContinuousQueryReplicatedP2PDisabledSelfTest.class);

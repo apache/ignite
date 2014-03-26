@@ -16,6 +16,7 @@ import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
@@ -180,16 +181,26 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         int size = 10;
 
-        GridCacheTx tx = prj.txStart();
+        if (atomicityMode() == TRANSACTIONAL) {
+            GridCacheTx tx = prj.txStart();
 
-        for (int i = 0; i < size; i++) {
-            prj.put("key" + i, i);
+            for (int i = 0; i < size; i++) {
+                prj.put("key" + i, i);
+            }
+
+            prj.put("k", 11);
+            prj.put("key", -1);
+
+            tx.commit();
         }
+        else {
+            for (int i = 0; i < size; i++) {
+                prj.put("key" + i, i);
+            }
 
-        prj.put("k", 11);
-        prj.put("key", -1);
-
-        tx.commit();
+            prj.put("k", 11);
+            prj.put("key", -1);
+        }
 
         assertEquals(size, cache().size());
         assertEquals(size, prj.size());
@@ -720,6 +731,9 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
      * @throws Exception In case of error.
      */
     public void testTx() throws Exception {
+        if (atomicityMode() == ATOMIC)
+            return;
+
         GridCacheTx tx = cache().txStart();
 
         GridCacheProjection<String, Integer> typePrj = cache().projection(String.class, Integer.class);

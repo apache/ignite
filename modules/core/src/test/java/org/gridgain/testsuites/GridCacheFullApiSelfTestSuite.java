@@ -30,6 +30,7 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
 
         // One node.
         suite.addTestSuite(GridCacheLocalFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheLocalAtomicFullApiSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicFullApiSelfTest.class);
@@ -46,6 +47,7 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
 
         // One node with off-heap values.
         suite.addTestSuite(GridCacheLocalOffHeapFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheLocalAtomicOffHeapFullApiSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedOffHeapFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedOffHeapFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicOffHeapFullApiSelfTest.class);

@@ -77,6 +77,9 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
      * @throws Exception In case of error.
      */
     public void testFilteredKeySet() throws Exception {
+        if (!txEnabled())
+            return;
+
         final GridCache<String, Integer> myCache = cache();
 
         final AtomicLong cntr = new AtomicLong();

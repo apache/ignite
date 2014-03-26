@@ -72,13 +72,20 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         cc.setCacheMode(cacheMode());
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setSwapEnabled(false);
-        cc.setAtomicityMode(TRANSACTIONAL);
+        cc.setAtomicityMode(atomicityMode());
 
         cc.setStore(store);
 
         c.setCacheConfiguration(cc);
 
         return c;
+    }
+
+    /**
+     * @return Cache atomicity mode.
+     */
+    protected GridCacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
     }
 
     /**
@@ -115,22 +122,27 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         assert map.isEmpty();
 
-        GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
+        if (atomicityMode() == TRANSACTIONAL) {
+            try (GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                for (int i = 1; i <= 10; i++) {
+                    cache.putx(i, Integer.toString(i));
 
-        try {
-            for (int i = 1; i <= 10; i++) {
-                cache.putx(i, Integer.toString(i));
+                    checkLastMethod(null);
+                }
 
-                checkLastMethod(null);
+                tx.commit();
             }
-
-            tx.commit();
-
-            checkLastMethod("putAll");
         }
-        finally {
-            tx.close();
+        else {
+            Map<Integer, String> putMap = new HashMap<>();
+
+            for (int i = 1; i <= 10; i++)
+                putMap.put(i, Integer.toString(i));
+
+            cache.putAll(putMap);
         }
+
+        checkLastMethod("putAll");
 
         assert cache.size() == 10;
 
@@ -143,24 +155,31 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         store.resetLastMethod();
 
-        tx = cache.txStart();
+        if (atomicityMode() == TRANSACTIONAL) {
+            try (GridCacheTx tx = cache.txStart()) {
+                for (int i = 1; i <= 10; i++) {
+                    String val = cache.remove(i);
 
-        try {
-            for (int i = 1; i <= 10; i++) {
-                String val = cache.remove(i);
+                    checkLastMethod(null);
 
-                checkLastMethod(null);
+                    assert val != null;
+                    assert val.equals(Integer.toString(i));
+                }
 
-                assert val != null;
-                assert val.equals(Integer.toString(i));
+                tx.commit();
+
+                checkLastMethod("removeAll");
             }
+        }
+        else {
+            Collection<Integer> keys = new ArrayList<>(10);
 
-            tx.commit();
+            for (int i = 1; i <= 10; i++)
+                keys.add(i);
+
+            cache.removeAll(keys);
 
             checkLastMethod("removeAll");
-        }
-        finally {
-            tx.close();
         }
 
         assert map.isEmpty();
@@ -174,13 +193,23 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         assert map.isEmpty();
 
-        try (GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+        if (atomicityMode() == TRANSACTIONAL) {
+            try (GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                for (int i = 1; i <= 10; i++)
+                    cache.putx(i, Integer.toString(i));
+
+                checkLastMethod(null);
+
+                tx.commit();
+            }
+        }
+        else {
+            Map<Integer, String> putMap = new HashMap<>();
+
             for (int i = 1; i <= 10; i++)
-                cache.putx(i, Integer.toString(i));
+                putMap.put(i, Integer.toString(i));
 
-            checkLastMethod(null);
-
-            tx.commit();
+            cache.putAll(putMap);
         }
 
         checkLastMethod("putAll");
