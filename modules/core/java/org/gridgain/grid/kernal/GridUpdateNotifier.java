@@ -22,6 +22,8 @@ import java.io.*;
 import java.net.*;
 import java.util.concurrent.*;
 
+import static org.gridgain.grid.kernal.GridProductImpl.*;
+
 /**
  * This class is responsible for notification about new version availability. Note that this class
  * does not send any information and merely accesses the {@code www.gridgain.org} web site for the
@@ -43,14 +45,14 @@ class GridUpdateNotifier {
     private static final String HTTP_URL =
         /*@java.update.status.url*/"http://www.gridgain.org/update_status.php?test=vfvfvskfkeievskjv";
 
-    /** Ant-augmented edition name. */
-    private static final String EDITION = /*@java.edition*/"dev";
-
-    /** Ant-augmented version. */
-    private static final String VER = /*@java.version*/"ent-x.x.x";
-
     /** Throttling for logging out. */
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.
+
+    /** Grid version. */
+    private final String ver;
+
+    /** Edition name. */
+    private final String edition;
 
     /** Asynchronous checked. */
     private GridWorker checker;
@@ -80,9 +82,10 @@ class GridUpdateNotifier {
      * Creates new notifier with default values.
      *
      * @param gridName gridName
+     * @param ver Compound GridGain version.
      * @param reportOnlyNew Whether or not to report only new version.
      */
-    GridUpdateNotifier(String gridName, boolean reportOnlyNew) {
+    GridUpdateNotifier(String gridName, String ver, boolean reportOnlyNew) {
         tidy = new Tidy();
 
         tidy.setQuiet(true);
@@ -90,6 +93,9 @@ class GridUpdateNotifier {
         tidy.setShowWarnings(false);
         tidy.setInputEncoding("UTF8");
         tidy.setOutputEncoding("UTF8");
+
+        this.ver = ver;
+        edition = EDITION;
 
         this.gridName = gridName;
         this.reportOnlyNew = reportOnlyNew;
@@ -160,7 +166,7 @@ class GridUpdateNotifier {
         String latestVer = this.latestVer;
 
         if (latestVer != null)
-            if (latestVer.equals(VER)) {
+            if (latestVer.equals(ver)) {
                 if (!reportOnlyNew)
                     throttle(log, false, "Your version is up to date.");
             }
@@ -275,7 +281,7 @@ class GridUpdateNotifier {
 
                 String name = meta.getAttribute("name");
 
-                if ((EDITION + "-version").equals(name)) {
+                if ((edition + "-version").equals(name)) {
                     String content = meta.getAttribute("content");
 
                     if (content != null && !content.isEmpty())

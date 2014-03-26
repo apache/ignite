@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.product.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import static org.gridgain.grid.product.GridProductEdition.*;
@@ -19,8 +20,14 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * {@link GridProduct} implementation.
  */
 public class GridProductImpl implements GridProduct {
-    /** Ant-augmented version number. */
-    static final String VER = /*@java.version*/"x.x.x";
+    /** GridGain version. */
+    public static final String VER = "6.0.2";
+
+    /** Ant-augmented edition name. */
+    public static final String EDITION = /*@java.edition*/"platform";
+
+    /** GridGain version as numeric array (generated from {@link #VER}). */
+    public static final byte[] VER_BYTES = U.intToBytes(VER.hashCode());
 
     /** Ant-augmented build number. */
     static final long BUILD = /*@java.build*/0;
@@ -29,10 +36,7 @@ public class GridProductImpl implements GridProduct {
     static final String REV_HASH = /*@java.revision*/"DEV";
 
     /** Ant-augmented copyright blurb. */
-    static final String COPYRIGHT = /*@java.copyright*/"Copyright (C) 2013 GridGain Systems";
-
-    /** Ant-augmented edition name. */
-    private static final String EDITION = /*@java.edition*/"dev";
+    static final String COPYRIGHT = /*@java.copyright*/"Copyright (C) 2014 GridGain Systems";
 
     /** */
     private final GridKernalContext ctx;
@@ -54,7 +58,9 @@ public class GridProductImpl implements GridProduct {
         this.ctx = ctx;
         this.verChecker = verChecker;
 
-        ver = GridProductVersion.fromString(VER + '-' + BUILD + '-' + REV_HASH);
+        String releaseType = ctx.isEnterprise() ? "ent" : "os";
+
+        ver = GridProductVersion.fromString(EDITION + "-" + releaseType + "-" + VER + '-' + BUILD + '-' + REV_HASH);
 
         edition = editionFromString(EDITION);
     }
@@ -116,9 +122,6 @@ public class GridProductImpl implements GridProduct {
      */
     private static GridProductEdition editionFromString(String edition) {
         switch (edition) {
-            case "dev":
-                return PLATFORM;
-
             case "datagrid":
                 return DATA_GRID;
 

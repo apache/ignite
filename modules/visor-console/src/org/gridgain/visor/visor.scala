@@ -146,7 +146,7 @@ object visor extends VisorTag {
     private var nodeStopLsnr: GridGainListener = null
 
     /** Visor copyright blurb. */
-    private final val COPYRIGHT = /*@scala.copyright*/"Copyright (C) 2013 GridGain Systems."
+    private final val COPYRIGHT = /*@scala.copyright*/"Copyright (C) 2014 GridGain Systems."
 
     /** */
     @volatile private var isCon: Boolean = false

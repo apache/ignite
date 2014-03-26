@@ -121,7 +121,7 @@ import org.gridgain.grid.dataload.GridDataLoader
  */
 object scalar extends ScalarConversions {
     /** Visor copyright blurb. */
-    private val COPYRIGHT = /*@scala.copyright*/"Copyright (C) 2013 GridGain Systems."
+    private val COPYRIGHT = /*@scala.copyright*/"Copyright (C) 2014 GridGain Systems."
 
     /** Visor version number. */
     private val VER = /*@scala.version*/"x.x.xx"

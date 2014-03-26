@@ -29,6 +29,7 @@ import java.util.concurrent.*;
 
 import static org.gridgain.grid.GridGainState.*;
 import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.kernal.GridProductImpl.*;
 
 /**
  * This class defines command-line GridGain startup. This startup can be used to start GridGain
@@ -42,9 +43,6 @@ import static org.gridgain.grid.GridSystemProperties.*;
  */
 @SuppressWarnings({"CallToSystemExit"})
 public final class GridCommandLineStartup {
-    /** Ant-augmented version number. */
-    private static final String VER = /*@java.version*/"ent-x.x.x";
-
     /** Ant-augmented build number. */
     private static final long BUILD = /*@java.build*/0;
 
@@ -52,7 +50,7 @@ public final class GridCommandLineStartup {
     private static final String RELEASE = /*@java.rel.date*/"01011970";
 
     /** Ant-augmented copyright blurb. */
-    private static final String COPYRIGHT = /*@java.copyright*/"Copyright (C) 2013 GridGain Systems.";
+    private static final String COPYRIGHT = /*@java.copyright*/"Copyright (C) 2014 GridGain Systems.";
 
     /** Quite log flag. */
     private static final boolean QUITE;
@@ -118,8 +116,8 @@ public final class GridCommandLineStartup {
                 new Class<?>[] {aboutHndCls},
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
-                        GridAboutDialog.centerShow("GridGain Node", bannerUrl.toExternalForm(),
-                            VER, releaseDate, COPYRIGHT, G.state() == STARTED ? G.grid().product().license() : null);
+                        GridAboutDialog.centerShow("GridGain Node", bannerUrl.toExternalForm(), EDITION + "-" + VER,
+                            releaseDate, COPYRIGHT, G.state() == STARTED ? G.grid().product().license() : null);
 
                         return null;
                     }
@@ -255,7 +253,7 @@ public final class GridCommandLineStartup {
      */
     public static void main(String[] args) {
         if (!QUITE) {
-            X.println("GridGain Command Line Startup, ver. " + VER + "#" + buildDate);
+            X.println("GridGain Command Line Startup, ver. " + EDITION + "-" + VER + "#" + buildDate);
             X.println(COPYRIGHT);
             X.println();
         }

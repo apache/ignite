@@ -11,6 +11,7 @@ package org.gridgain.client.router.impl;
 
 import org.gridgain.client.router.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
@@ -31,9 +32,6 @@ import java.util.*;
  * Loader class for router.
  */
 public class GridRouterCommandLineStartup {
-    /** Ant-augmented version number. */
-    private static final String VER = /*@java.version*/"ent-x.x.x";
-
     /** Ant-augmented build number. */
     private static final long BUILD = /*@java.build*/0;
 
@@ -41,7 +39,7 @@ public class GridRouterCommandLineStartup {
     private static final String REV_HASH = /*@java.revision*/"DEV";
 
     /** Ant-augmented copyright blurb. */
-    private static final String COPYRIGHT = /*@java.copyright*/"Copyright (C) 2013 GridGain Systems.";
+    private static final String COPYRIGHT = /*@java.copyright*/"Copyright (C) 2014 GridGain Systems.";
 
     /** Logger. */
     @SuppressWarnings("FieldCanBeLocal")
@@ -123,7 +121,7 @@ public class GridRouterCommandLineStartup {
         String buildDate = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD));
 
         String rev = REV_HASH.length() > 8 ? REV_HASH.substring(0, 8) : REV_HASH;
-        String ver = "ver. " + VER + '#' + buildDate + "-sha1:" + rev;
+        String ver = "ver. " + GridProductImpl.VER + '#' + buildDate + "-sha1:" + rev;
 
         X.println(
             "  _____     _     _______      _         ",
