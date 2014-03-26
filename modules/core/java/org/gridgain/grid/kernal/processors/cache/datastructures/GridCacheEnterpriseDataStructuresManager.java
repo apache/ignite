@@ -61,6 +61,9 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     /** Cache contains only entry {@code GridCacheQueueHeader}.  */
     private GridCacheProjection<GridCacheInternalKey, GridCacheQueueHeader> queueHdrView;
 
+    /** Cache contains only entry {@code GridCacheQueueHeader}.  */
+    private GridCacheProjection<GridCacheQueueKey, GridCacheQueueHeader2> queueView;
+
     /** Cache contains only entry {@code GridCacheQueueItem}  */
     private GridCacheProjection<GridCacheQueueItemKey, GridCacheQueueItem> queueItemView;
 
@@ -93,39 +96,38 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     @SuppressWarnings("unchecked")
     @Override protected void onKernalStart0() {
         try {
-            if (!cctx.isColocated() || cctx.isReplicated()) {
-                assert !cctx.isDht();
+            dsView = cctx.cache().<GridCacheInternal, GridCacheInternal>projection
+                (GridCacheInternal.class, GridCacheInternal.class).flagsOn(CLONE);
 
-                dsView = cctx.cache().<GridCacheInternal, GridCacheInternal>projection
-                    (GridCacheInternal.class, GridCacheInternal.class).flagsOn(CLONE);
+            cntDownLatchView = cctx.cache().<GridCacheInternalKey, GridCacheCountDownLatchValue>projection
+                (GridCacheInternalKey.class, GridCacheCountDownLatchValue.class).flagsOn(CLONE);
 
-                cntDownLatchView = cctx.cache().<GridCacheInternalKey, GridCacheCountDownLatchValue>projection
-                    (GridCacheInternalKey.class, GridCacheCountDownLatchValue.class).flagsOn(CLONE);
+            atomicLongView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicLongValue>projection
+                (GridCacheInternalKey.class, GridCacheAtomicLongValue.class).flagsOn(CLONE);
 
-                atomicLongView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicLongValue>projection
-                    (GridCacheInternalKey.class, GridCacheAtomicLongValue.class).flagsOn(CLONE);
+            atomicRefView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicReferenceValue>projection
+                (GridCacheInternalKey.class, GridCacheAtomicReferenceValue.class).flagsOn(CLONE);
 
-                atomicRefView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicReferenceValue>projection
-                    (GridCacheInternalKey.class, GridCacheAtomicReferenceValue.class).flagsOn(CLONE);
+            atomicStampedView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicStampedValue>projection
+                (GridCacheInternalKey.class, GridCacheAtomicStampedValue.class).flagsOn(CLONE);
 
-                atomicStampedView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicStampedValue>projection
-                    (GridCacheInternalKey.class, GridCacheAtomicStampedValue.class).flagsOn(CLONE);
+            seqView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicSequenceValue>projection
+                (GridCacheInternalKey.class, GridCacheAtomicSequenceValue.class).flagsOn(CLONE);
 
-                seqView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicSequenceValue>projection
-                    (GridCacheInternalKey.class, GridCacheAtomicSequenceValue.class).flagsOn(CLONE);
+            queueHdrView = cctx.cache().<GridCacheInternalKey, GridCacheQueueHeader>projection
+                (GridCacheInternalKey.class, GridCacheQueueHeader.class).flagsOn(CLONE);
 
-                queueHdrView = cctx.cache().<GridCacheInternalKey, GridCacheQueueHeader>projection
-                    (GridCacheInternalKey.class, GridCacheQueueHeader.class).flagsOn(CLONE);
+            queueItemView = cctx.cache().<GridCacheQueueItemKey, GridCacheQueueItem>projection
+                (GridCacheQueueItemKey.class, GridCacheQueueItem.class).flagsOn(CLONE);
 
-                queueItemView = cctx.cache().<GridCacheQueueItemKey, GridCacheQueueItem>projection
-                    (GridCacheQueueItemKey.class, GridCacheQueueItem.class).flagsOn(CLONE);
+            queueView = cctx.cache().<GridCacheQueueKey, GridCacheQueueHeader2>projection
+                (GridCacheQueueKey.class, GridCacheQueueHeader2.class).flagsOn(CLONE);
 
-                queueQryFactory = new GridCacheQueueQueryFactory(cctx);
-
-                initFlag = true;
-            }
+            queueQryFactory = new GridCacheQueueQueryFactory(cctx);
 
             queueDelWorker = new QueueDeleteWorker(cctx.kernalContext().gridName(), "queue-del-worker", log);
+
+            initFlag = true;
         }
         finally {
             initLatch.countDown();
@@ -212,9 +214,11 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
      * @throws GridException If {@link GridCacheAtomicityMode#ATOMIC} mode.
      */
     private void checkAtomicity() throws GridException {
+        /*
         if (cctx.config().getAtomicityMode() == GridCacheAtomicityMode.ATOMIC)
             throw new GridException("Data structures require GridCacheAtomicityMode.TRANSACTIONAL atomicity mode " +
                 "(change atomicity mode from ATOMIC to TRANSACTIONAL in configuration)");
+                */
     }
 
     /** {@inheritDoc} */
@@ -577,8 +581,27 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "IfMayBeConditional"})
     @Override public final <T> GridCacheQueue<T> queue(final String name, final int cap, boolean colloc,
+        final boolean create) throws GridException {
+        GridCacheQueueKey key = new GridCacheQueueKey(name);
+
+        GridCacheQueueHeader2 header = new GridCacheQueueHeader2(GridUuid.randomUuid(), 0, 0);
+
+        GridCacheQueueHeader2 old = queueView.putIfAbsent(key, header);
+
+        if (old != null)
+            header = old;
+
+        if (cctx.atomic())
+            return new GridAtomicCacheQueueImpl<>(name, header.uuid(), cctx);
+        else
+            return new GridTransactionalCacheQueueImpl<>(name, header.uuid(), cctx);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    public final <T> GridCacheQueue<T> queueOld(final String name, final int cap, boolean colloc,
         final boolean create) throws GridException {
         A.ensure(cap > 0, "cap > 0");
 

@@ -95,6 +95,8 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      */
     public boolean transform(K key, GridClosure<V, V> valTransform) throws GridException;
 
+    public <R> R transformCompute(K key, GridCacheTransformComputeClosure<V, R> transformer) throws GridException;
+
     /**
      * @param key Key.
      * @param val Value.

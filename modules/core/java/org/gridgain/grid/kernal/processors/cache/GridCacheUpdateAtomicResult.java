@@ -29,6 +29,10 @@ public class GridCacheUpdateAtomicResult<K, V> {
     @GridToStringInclude
     private final V newVal;
 
+    /** Computed value. */
+    @GridToStringInclude
+    private final Object compVal;
+
     /** New TTL. */
     private final long newTtl;
 
@@ -58,12 +62,19 @@ public class GridCacheUpdateAtomicResult<K, V> {
      * @param drConflictCtx DR conflict resolution context.
      * @param sndToDht Whether update should be propagated to DHT node.
      */
-    public GridCacheUpdateAtomicResult(boolean success, @Nullable V oldVal, @Nullable V newVal, long newTtl,
-        long drExpireTime, @Nullable GridCacheVersion rmvVer,
-        @Nullable GridDrReceiverConflictContextImpl<K, V> drConflictCtx, boolean sndToDht) {
+    public GridCacheUpdateAtomicResult(boolean success,
+        @Nullable V oldVal,
+        @Nullable V newVal,
+        @Nullable Object compVal,
+        long newTtl,
+        long drExpireTime,
+        @Nullable GridCacheVersion rmvVer,
+        @Nullable GridDrReceiverConflictContextImpl<K, V> drConflictCtx,
+        boolean sndToDht) {
         this.success = success;
         this.oldVal = oldVal;
         this.newVal = newVal;
+        this.compVal = compVal;
         this.newTtl = newTtl;
         this.drExpireTime = drExpireTime;
         this.rmvVer = rmvVer;
@@ -90,6 +101,13 @@ public class GridCacheUpdateAtomicResult<K, V> {
      */
     @Nullable public V newValue() {
         return newVal;
+    }
+
+    /**
+     * @return Computed value.
+     */
+    @Nullable public Object computedValue() {
+        return compVal;
     }
 
     /**

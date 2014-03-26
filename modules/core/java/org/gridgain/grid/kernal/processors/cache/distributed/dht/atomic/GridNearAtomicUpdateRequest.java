@@ -233,7 +233,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     public void addUpdateEntry(K key, @Nullable Object val, long drTtl, long drExpireTime,
         @Nullable GridCacheVersion drVer, boolean primary) {
         assert val != null || op == DELETE;
-        assert op != TRANSFORM || val instanceof GridClosure;
+        assert op != TRANSFORM || (val instanceof GridClosure || val instanceof GridCacheTransformComputeClosure);
 
         keys.add(key);
         vals.add(val);

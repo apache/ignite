@@ -1337,6 +1337,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         V old;
 
+        Object compVal = null;
+
         boolean res = true;
 
         V updated;
@@ -1404,7 +1406,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     if (drRes.isUseOld()) {
                         old = retval ? rawGetOrUnmarshalUnlocked() : val;
 
-                        return new GridCacheUpdateAtomicResult<>(false, old, null, 0L, -1L, null, null, false);
+                        return new GridCacheUpdateAtomicResult<>(false, old, null, null, 0L, -1L, null, null, false);
                     }
                     else if (drRes.isUseNew())
                         op = writeObj != null ? UPDATE : DELETE;
@@ -1443,7 +1445,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                         old = retval ? rawGetOrUnmarshalUnlocked() : val;
 
-                        return new GridCacheUpdateAtomicResult<>(false, old, null, 0L, -1L, null, null, false);
+                        return new GridCacheUpdateAtomicResult<>(false, old, null, null, 0L, -1L, null, null, false);
                     }
                 }
                 else
@@ -1488,7 +1490,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 boolean pass = cctx.isAll(wrapFilterLocked(), filter);
 
                 if (!pass)
-                    return new GridCacheUpdateAtomicResult<>(false, old, null, 0L, -1L, null, null, false);
+                    return new GridCacheUpdateAtomicResult<>(false, old, null, null, 0L, -1L, null, null, false);
             }
 
             // Apply metrics.
@@ -1497,14 +1499,17 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             // Calculate new value.
             if (op == GridCacheOperation.TRANSFORM) {
-                GridClosure<V, V> transform = (GridClosure<V, V>) writeObj;
+                GridClosure<V, V> transform = (GridClosure<V, V>)writeObj;
 
                 updated = transform.apply(old);
+
+                if (writeObj instanceof GridCacheTransformComputeClosure)
+                    compVal = ((GridCacheTransformComputeClosure<V, Object>)writeObj).compute(old);
 
                 valBytes = null;
             }
             else
-                updated = (V) writeObj;
+                updated = (V)writeObj;
 
             op = updated == null ? GridCacheOperation.DELETE : GridCacheOperation.UPDATE;
 
@@ -1613,7 +1618,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         if (log.isDebugEnabled())
             log.debug("Updated cache entry [val=" + val + ", old=" + old + ", entry=" + this + ']');
 
-        return new GridCacheUpdateAtomicResult<>(res, old, updated, newTtl, newDrExpireTime, enqueueVer, drRes, true);
+        return new GridCacheUpdateAtomicResult<>(res, old, updated, compVal, newTtl, newDrExpireTime, enqueueVer,
+            drRes, true);
     }
 
     /**
