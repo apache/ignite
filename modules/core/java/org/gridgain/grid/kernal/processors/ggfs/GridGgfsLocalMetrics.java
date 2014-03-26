@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
+import org.jdk8.backport.*;
 
 /**
  * Value object holding all local GGFS metrics which cannot be determined using file system traversal.

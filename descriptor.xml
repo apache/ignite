@@ -35,11 +35,6 @@
         </fileSet>
 
         <fileSet>
-            <directory>modules/router/target/classes</directory>
-            <outputDirectory>/</outputDirectory>
-        </fileSet>
-
-        <fileSet>
             <directory>modules/clients/target/classes</directory>
             <outputDirectory>/</outputDirectory>
         </fileSet>
@@ -51,6 +46,11 @@
 
         <fileSet>
             <directory>modules/visor-console/target/classes</directory>
+            <outputDirectory>/</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/jdk8-backport/target/classes</directory>
             <outputDirectory>/</outputDirectory>
         </fileSet>
     </fileSets>

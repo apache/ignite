@@ -1078,6 +1078,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         ctxInitLatch.countDown();
 
         spiCtx.registerPort(tcpSrvr.port, TCP);
+
+        ipFinder.onSpiContextInitialized(spiCtx);
+
+        if (metricsStore != null)
+            metricsStore.onSpiContextInitialized(spiCtx);
     }
 
     /** {@inheritDoc} */
@@ -1263,6 +1268,11 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             ctxInitLatch.countDown();
 
         getSpiContext().deregisterPorts();
+
+        ipFinder.onSpiContextDestroyed();
+
+        if (metricsStore != null)
+            metricsStore.onSpiContextDestroyed();
     }
 
     /**
@@ -1395,7 +1405,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         }
 
         throw new GridSpiException("Failed to ping node by address: " + addr,
-            new GridMultiException("Failed to ping node by address: " + addr, null, errs));
+            U.exceptionWithSuppressed("Failed to ping node by address: " + addr, errs));
     }
 
     /** {@inheritDoc} */
@@ -1557,7 +1567,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             Collections.shuffle(shuffled);
 
             boolean retry = false;
-            GridMultiException errs = null;
+            GridException errs = null;
 
             for (InetSocketAddress addr : shuffled) {
                 try {
@@ -1602,9 +1612,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                 }
                 catch (GridSpiException e) {
                     if (errs == null)
-                        errs = new GridMultiException("Multiple connection attempts failed.");
+                        errs = new GridException("Multiple connection attempts failed.");
 
-                    errs.add(e);
+                    errs.addSuppressed(e);
 
                     if (log.isDebugEnabled()) {
                         IOException ioe = X.cause(e, IOException.class);
@@ -1781,8 +1791,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         throw new GridSpiException(
             "Failed to send message to address [addr=" + addr + ", msg=" + msg + ']',
-            new GridMultiException("Failed to send message to address " +
-                "[addr=" + addr + ", msg=" + msg + ']', null, errs));
+            U.exceptionWithSuppressed("Failed to send message to address " +
+                "[addr=" + addr + ", msg=" + msg + ']', errs));
     }
 
     /**
@@ -3052,8 +3062,8 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                         if (state == CONNECTED) {
                             Exception err = errs != null ?
-                                new GridMultiException("Failed to send message to next node [msg=" + msg +
-                                    ", next=" + U.toShortString(next) + ']', null, errs) :
+                                U.exceptionWithSuppressed("Failed to send message to next node [msg=" + msg +
+                                    ", next=" + U.toShortString(next) + ']', errs) :
                                 null;
 
                             // If node existed on connection initialization we should check

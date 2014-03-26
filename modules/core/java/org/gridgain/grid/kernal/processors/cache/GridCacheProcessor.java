@@ -28,6 +28,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
+import org.gridgain.grid.kernal.processors.cache.local.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
@@ -160,10 +161,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfg.getPreloadMode() == null)
             cfg.setPreloadMode(ASYNC);
 
-        if (cfg.getCacheMode() == PARTITIONED || cfg.getCacheMode() == REPLICATED) {
-            if (cfg.getAtomicityMode() == null)
-                cfg.setAtomicityMode(ATOMIC);
+        if (cfg.getAtomicityMode() == null)
+            cfg.setAtomicityMode(ATOMIC);
 
+        if (cfg.getCacheMode() == PARTITIONED || cfg.getCacheMode() == REPLICATED) {
             if (cfg.getDistributionMode() == null)
                 cfg.setDistributionMode(PARTITIONED_ONLY);
 
@@ -175,19 +176,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             assert cfg.getDistributionMode() != null;
         }
-        else {
+        else
             assert cfg.getCacheMode() == LOCAL;
-
-            if (cfg.getAtomicityMode() == null)
-                cfg.setAtomicityMode(TRANSACTIONAL);
-
-            if (cfg.getAtomicityMode() == ATOMIC) {
-                U.quietAndWarn(log, "Cache atomicity mode ATOMIC is not supported for LOCAL cache (ignoring) " +
-                    "[cacheName=" + cfg.getName() + ", cacheMode=" + cfg.getCacheMode() + ']');
-
-                cfg.setAtomicityMode(TRANSACTIONAL);
-            }
-        }
 
         if (cfg.getWriteSynchronizationMode() == null)
             cfg.setWriteSynchronizationMode(cfg.getCacheMode() == PARTITIONED ? PRIMARY_SYNC : FULL_ASYNC);
@@ -293,10 +283,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (cc.getCacheMode() == PARTITIONED || cc.getCacheMode() == REPLICATED) {
-            if (isNearEnabled(cc) && cc.getAtomicityMode() == ATOMIC)
-                throw new GridException("Cannot start cache with ATOMIC atomicity mode and near-enabled" +
-                    " partition distribution mode [cacheName=" + cc.getName() + ']');
-
             if (cc.getAtomicityMode() == ATOMIC && cc.getWriteSynchronizationMode() == FULL_ASYNC)
                 U.warn(log, "Cache write synchronization mode is set to FULL_ASYNC. All single-key 'put' and " +
                     "'remove' operations will return 'null', all 'putx' and 'removex' operations will return" +
@@ -311,8 +297,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "cacheName=" + cc.getName() + ']');
             }
         }
-        else if (cc.getCacheMode() == LOCAL)
-            assert cc.getAtomicityMode() != ATOMIC : "Invalid configuration: " + cc;
 
         if (ctx.config().getDeploymentMode() == PRIVATE || ctx.config().getDeploymentMode() == ISOLATED)
             throw new GridException("Cannot start cache in PRIVATE or ISOLATED deployment mode: " +
@@ -587,14 +571,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (GridCacheConfiguration ccfg : ctx.grid().configuration().getCacheConfiguration()) {
             if (ccfg.getDrSenderConfiguration() != null)
-                sysCaches.add(CU.cacheNameForReplicationSystemCache(ccfg.getName()));
+                sysCaches.add(CU.cacheNameForDrSystemCache(ccfg.getName()));
         }
 
         GridDrSenderHubConfiguration sndHubCfg = ctx.grid().configuration().getDrSenderHubConfiguration();
 
         if (sndHubCfg != null && sndHubCfg.getCacheNames() != null) {
             for (String cacheName : sndHubCfg.getCacheNames())
-                sysCaches.add(CU.cacheNameForReplicationSystemCache(cacheName));
+                sysCaches.add(CU.cacheNameForDrSystemCache(cacheName));
         }
 
         GridCacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
@@ -663,14 +647,45 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             switch (cfg.getCacheMode()) {
                 case LOCAL: {
-                    cache = new GridLocalCache(cacheCtx);
+                    switch (cfg.getAtomicityMode()) {
+                        case TRANSACTIONAL: {
+                            cache = new GridLocalCache(cacheCtx);
+
+                            break;
+                        }
+                        case ATOMIC: {
+                            cache = new GridLocalAtomicCache(cacheCtx);
+
+                            break;
+                        }
+
+                        default: {
+                            assert false : "Invalid cache atomicity mode: " + cfg.getAtomicityMode();
+                        }
+                    }
 
                     break;
                 }
                 case PARTITIONED:
                 case REPLICATED: {
-                    if (isNearEnabled(cfg))
-                        cache = new GridNearCache(cacheCtx);
+                    if (isNearEnabled(cfg)) {
+                        switch (cfg.getAtomicityMode()) {
+                            case TRANSACTIONAL: {
+                                cache = new GridNearTransactionalCache(cacheCtx);
+
+                                break;
+                            }
+                            case ATOMIC: {
+                                cache = new GridNearAtomicCache(cacheCtx);
+
+                                break;
+                            }
+
+                            default: {
+                                assert false : "Invalid cache atomicity mode: " + cfg.getAtomicityMode();
+                            }
+                        }
+                    }
                     else {
                         switch (cfg.getAtomicityMode()) {
                             case TRANSACTIONAL: {
@@ -777,17 +792,49 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ttlMgr,
                     drMgr);
 
-                assert cache instanceof GridNearCache;
+                GridDhtCacheAdapter dht = null;
 
-                GridNearCache near = (GridNearCache)cache;
-                GridDhtCache dht = !isAffinityNode(cfg) ?
-                    new GridDhtCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx)) :
-                    new GridDhtCache(cacheCtx);
+                switch (cfg.getAtomicityMode()) {
+                    case TRANSACTIONAL: {
+                        assert cache instanceof GridNearTransactionalCache;
+
+                        GridNearTransactionalCache near = (GridNearTransactionalCache)cache;
+
+                        GridDhtCache dhtCache = !isAffinityNode(cfg) ?
+                            new GridDhtCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx)) :
+                            new GridDhtCache(cacheCtx);
+
+                        dhtCache.near(near);
+
+                        near.dht(dhtCache);
+
+                        dht = dhtCache;
+
+                        break;
+                    }
+                    case ATOMIC: {
+                        assert cache instanceof GridNearAtomicCache;
+
+                        GridNearAtomicCache near = (GridNearAtomicCache)cache;
+
+                        GridDhtAtomicCache dhtCache = isAffinityNode(cfg) ? new GridDhtAtomicCache(cacheCtx) :
+                            new GridDhtAtomicCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
+
+                        dhtCache.near(near);
+
+                        near.dht(dhtCache);
+
+                        dht = dhtCache;
+
+                        break;
+                    }
+
+                    default: {
+                        assert false : "Invalid cache atomicity mode: " + cfg.getAtomicityMode();
+                    }
+                }
 
                 cacheCtx.cache(dht);
-
-                near.dht(dht);
-                dht.near(near);
 
                 // Start managers.
                 for (GridCacheManager mgr : dhtManagers(cacheCtx))
@@ -1142,7 +1189,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         // Start DHT cache as well.
         if (isNearEnabled(ctx)) {
-            GridDhtCache dht = ctx.near().dht();
+            GridDhtCacheAdapter dht = ctx.near().dht();
 
             GridCacheContext<?, ?> dhtCtx = dht.context();
 
@@ -1238,7 +1285,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheContext ctx = cache.context();
 
             if (isNearEnabled(ctx)) {
-                GridDhtCache dht = ctx.near().dht();
+                GridDhtCacheAdapter dht = ctx.near().dht();
 
                 if (dht != null) {
                     GridCacheContext<?, ?> dhtCtx = dht.context();
@@ -1278,7 +1325,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheContext ctx = cache.context();
 
             if (isNearEnabled(ctx)) {
-                GridDhtCache dht = ctx.near().dht();
+                GridDhtCacheAdapter dht = ctx.near().dht();
 
                 // Check whether dht cache has been started.
                 if (dht != null) {
@@ -1352,7 +1399,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert cache != null : "Failed to resolve cache name for swap space name: " + spaceName;
 
         GridCacheContext cctx = cache.configuration().getCacheMode() == PARTITIONED ?
-            ((GridNearCache<?, ?>)cache).dht().context() : cache.context();
+            ((GridNearCacheAdapter<?, ?>)cache).dht().context() : cache.context();
 
         if (spaceName.equals(CU.swapSpaceName(cctx))) {
             GridCacheQueryManager qryMgr = cctx.queries();

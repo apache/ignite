@@ -37,6 +37,7 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.transaction.*;
@@ -238,7 +239,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         for (GridCacheConfiguration ccfg : gridCfg.getCacheConfiguration()) {
             if (ccfg.getDrSenderConfiguration() != null &&
-                    F.eq(ctx.name(), CU.cacheNameForReplicationSystemCache(ccfg.getName()))) {
+                    F.eq(ctx.name(), CU.cacheNameForDrSystemCache(ccfg.getName()))) {
                 drSysCache = true;
 
                 break;
@@ -250,7 +251,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
             if (sndHubCfg != null && sndHubCfg.getCacheNames() != null) {
                 for (String cacheName : sndHubCfg.getCacheNames()) {
-                    if (F.eq(ctx.name(), CU.cacheNameForReplicationSystemCache(cacheName))) {
+                    if (F.eq(ctx.name(), CU.cacheNameForDrSystemCache(cacheName))) {
                         drSysCache = true;
 
                         break;
@@ -2894,7 +2895,23 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public GridCacheMetrics metrics() {
-        return GridCacheMetricsAdapter.copyOf(metrics);
+        GridCacheMetricsAdapter copy = GridCacheMetricsAdapter.copyOf(metrics);
+
+        if (copy != null) {
+            GridDrSenderCacheMetricsAdapter drSndMetrics = copy.drSendMetrics0();
+
+            if (drSndMetrics != null)
+                drSndMetrics.backupQueueSize(drBackupQueueSize());
+        }
+
+        return copy;
+    }
+
+    /**
+     * @return DR backup queue size.
+     */
+    protected int drBackupQueueSize() {
+        return ctx.dr().backupQueueSize();
     }
 
     /**
@@ -4205,7 +4222,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @return Map of cached values.
      * @throws GridException If read failed.
      */
-    public final Map<K, V> getAll(Collection<? extends K> keys,
+    public Map<K, V> getAll(Collection<? extends K> keys,
         GridPredicate<GridCacheEntry<K, V>> filter) throws GridException {
         ctx.denyOnFlag(LOCAL);
 
@@ -4319,6 +4336,12 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         @Nullable GridPredicate<GridCacheEntry<K, V>> filter) {
         return getAllAsync(keys, /*force primary*/false, /*skip tx*/false, null, filter);
     }
+
+    /**
+     * @param entry Entry.
+     * @param ver Version.
+     */
+    public abstract void onDeferredDelete(GridCacheEntryEx<K, V> entry, GridCacheVersion ver);
 
     /**
      * Validates that given cache value implements {@link Externalizable}.

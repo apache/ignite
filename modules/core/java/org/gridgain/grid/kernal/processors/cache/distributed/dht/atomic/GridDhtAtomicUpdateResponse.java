@@ -15,6 +15,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -40,10 +41,19 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
     /** Update error. */
     @GridDirectTransient
-    private GridMultiException err;
+    private GridException err;
 
     /** Serialized update error. */
     private byte[] errBytes;
+
+    /** Evicted readers. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private Collection<K> nearEvicted;
+
+    /** Evicted reader key bytes. */
+    @GridDirectCollection(byte[].class)
+    private Collection<byte[]> nearEvictedBytes;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -74,7 +84,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     /**
      * @return Gets update error.
      */
-    public GridMultiException error() {
+    public GridException error() {
         return err;
     }
 
@@ -98,9 +108,36 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
         failedKeys.add(key);
 
         if (err == null)
-            err = new GridMultiException("Failed to update keys on primary node.");
+            err = new GridException("Failed to update keys on primary node.");
 
-        err.add(e);
+        err.addSuppressed(e);
+    }
+
+    /**
+     * @return Evicted readers.
+     */
+    public Collection<K> nearEvicted() {
+        return nearEvicted;
+    }
+
+    /**
+     * Adds near evicted key..
+     *
+     * @param key Evicted key.
+     * @param bytes Bytes of evicted key.
+     */
+    public void addNearEvicted(K key, @Nullable byte[] bytes) {
+        if (nearEvicted == null)
+            nearEvicted = new ArrayList<>();
+
+        nearEvicted.add(key);
+
+        if (bytes != null) {
+            if (nearEvictedBytes == null)
+                nearEvictedBytes = new ArrayList<>();
+
+            nearEvictedBytes.add(bytes);
+        }
     }
 
     /** {@inheritDoc} */
@@ -109,6 +146,9 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
         failedKeysBytes = ctx.marshaller().marshal(failedKeys);
         errBytes = ctx.marshaller().marshal(err);
+
+        if (nearEvictedBytes == null)
+            nearEvictedBytes = marshalCollection(nearEvicted, ctx);
     }
 
     /** {@inheritDoc} */
@@ -117,6 +157,9 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
         failedKeys = ctx.marshaller().unmarshal(failedKeysBytes, ldr);
         err = ctx.marshaller().unmarshal(errBytes, ldr);
+
+        if (nearEvicted == null && nearEvictedBytes != null)
+            nearEvicted = unmarshalCollection(nearEvictedBytes, ctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -140,6 +183,8 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
         _clone.failedKeysBytes = failedKeysBytes;
         _clone.err = err;
         _clone.errBytes = errBytes;
+        _clone.nearEvicted = nearEvicted;
+        _clone.nearEvictedBytes = nearEvictedBytes;
     }
 
     /** {@inheritDoc} */
@@ -173,6 +218,33 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
             case 4:
                 if (!commState.putCacheVersion(futVer))
                     return false;
+
+                commState.idx++;
+
+            case 5:
+                if (nearEvictedBytes != null) {
+                    if (commState.it == null) {
+                        if (!commState.putInt(nearEvictedBytes.size()))
+                            return false;
+
+                        commState.it = nearEvictedBytes.iterator();
+                    }
+
+                    while (commState.it.hasNext() || commState.cur != NULL) {
+                        if (commState.cur == NULL)
+                            commState.cur = commState.it.next();
+
+                        if (!commState.putByteArray((byte[])commState.cur))
+                            return false;
+
+                        commState.cur = NULL;
+                    }
+
+                    commState.it = null;
+                } else {
+                    if (!commState.putInt(-1))
+                        return false;
+                }
 
                 commState.idx++;
 
@@ -217,6 +289,35 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                     return false;
 
                 futVer = futVer0;
+
+                commState.idx++;
+
+            case 5:
+                if (commState.readSize == -1) {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.readSize = commState.getInt();
+                }
+
+                if (commState.readSize >= 0) {
+                    if (nearEvictedBytes == null)
+                        nearEvictedBytes = new ArrayList<>(commState.readSize);
+
+                    for (int i = commState.readItems; i < commState.readSize; i++) {
+                        byte[] _val = commState.getByteArray();
+
+                        if (_val == BYTE_ARR_NOT_READ)
+                            return false;
+
+                        nearEvictedBytes.add((byte[])_val);
+
+                        commState.readItems++;
+                    }
+                }
+
+                commState.readSize = -1;
+                commState.readItems = 0;
 
                 commState.idx++;
 

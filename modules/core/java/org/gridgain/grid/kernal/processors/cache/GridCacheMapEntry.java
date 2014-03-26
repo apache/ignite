@@ -674,10 +674,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if ((unmarshal || isOffHeapValuesOnly()) && !expired && val == null && hasOldBytes)
                 val = rawGetOrUnmarshalUnlocked();
 
+            boolean valid = valid(tx != null ? tx.topologyVersion() : -1);
+
             // Attempt to load from swap.
             if (val == null && !hasOldBytes && readSwap) {
                 // Only promote when loading initial state.
-                if (isNew()) {
+                if (isNew() || !valid) {
                     // If this entry is already expired (expiration time was too low),
                     // we simply remove from swap and clear index.
                     if (expired) {
@@ -713,8 +715,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (1 - delta / ttlExtras() >= refreshRatio)
                     asyncRefresh = true;
             }
-
-            boolean valid = valid(tx != null ? tx.topologyVersion() : -1);
 
             old = expired || !valid ? null : val;
 
@@ -990,7 +990,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             assert newVer != null : "Failed to get write version for tx: " + tx;
 
             if (tx != null && !tx.local() && tx.onePhaseCommit() && explicitVer == null) {
-                if (!isNew() && ver.compareTo(newVer) > 0) {
+                if (!(isNew() || !valid) && ver.compareTo(newVer) > 0) {
                     if (log.isDebugEnabled())
                         log.debug("Skipping entry update for one-phase commit since current entry version is " +
                             "greater than write version [entry=" + this + ", newVer=" + newVer + ']');
@@ -1193,6 +1193,122 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         }
 
         return valid ? new GridCacheUpdateTxResult<>(true, old) : new GridCacheUpdateTxResult<V>(false, null);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public GridBiTuple<Boolean, V> innerUpdateLocal(
+        GridCacheVersion ver,
+        GridCacheOperation op,
+        @Nullable Object writeObj,
+        boolean writeThrough,
+        boolean retval,
+        long ttl,
+        boolean evt,
+        boolean metrics,
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
+    ) throws GridException, GridCacheEntryRemovedException {
+        assert cctx.isLocal() && cctx.atomic();
+
+        V old;
+        boolean res = true;
+
+        synchronized (this) {
+            boolean needVal = retval || op == GridCacheOperation.TRANSFORM || !F.isEmpty(filter);
+
+            checkObsolete();
+
+            // Load and remove from swap if it is new.
+            if (isNew())
+                unswap(true);
+
+            long newTtl = ttl;
+
+            if (newTtl < 0)
+                newTtl = ttlExtras();
+
+            long newExpireTime = toExpireTime(newTtl);
+
+            // Possibly get old value form store.
+            old = needVal ? rawGetOrUnmarshalUnlocked() : val;
+
+            if (needVal && old == null) {
+                old = readThrough(null, key, false, CU.<K, V>empty());
+
+                update(old, null, 0, 0, ver);
+            }
+
+            // Check filter inside of synchronization.
+            if (!F.isEmpty(filter)) {
+                boolean pass = cctx.isAll(wrapFilterLocked(), filter);
+
+                if (!pass)
+                    return new GridBiTuple<>(false, old);
+            }
+
+            // Apply metrics.
+            if (metrics && needVal)
+                cctx.cache().metrics0().onRead(old != null);
+
+            V updated;
+
+            // Calculate new value.
+            if (op == GridCacheOperation.TRANSFORM) {
+                GridClosure<V, V> transform = (GridClosure<V, V>)writeObj;
+
+                assert transform != null;
+
+                updated = transform.apply(old);
+            }
+            else
+                updated = (V)writeObj;
+
+            op = updated == null ? GridCacheOperation.DELETE : GridCacheOperation.UPDATE;
+
+            boolean hadVal = hasValueUnlocked();
+
+            // Try write-through.
+            if (op == GridCacheOperation.UPDATE) {
+                if (writeThrough)
+                    // Must persist inside synchronization in non-tx mode.
+                    cctx.store().putToStore(null, key, updated, ver);
+
+                // Update index inside synchronization since it can be updated
+                // in load methods without actually holding entry lock.
+                updateIndex(updated, null, newExpireTime, ver, old);
+
+                update(updated, null, newExpireTime, newTtl, ver);
+
+                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT))
+                    cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
+                        (GridCacheVersion)null, EVT_CACHE_OBJECT_PUT, updated, updated != null, old,
+                        old != null || hadVal);
+            }
+            else {
+                if (writeThrough)
+                    // Must persist inside synchronization in non-tx mode.
+                    cctx.store().removeFromStore(null, key);
+
+                // Update index inside synchronization since it can be updated
+                // in load methods without actually holding entry lock.
+                clearIndex(old);
+
+                update(null, null, 0, 0, ver);
+
+                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED))
+                    cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, (GridCacheVersion)null,
+                        EVT_CACHE_OBJECT_REMOVED, null, false, old, old != null || hadVal);
+
+                res = hadVal;
+            }
+
+            if (metrics)
+                cctx.cache().metrics0().onWrite();
+
+            cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), false);
+        }
+
+        return new GridBiTuple<>(res, old);
     }
 
     /** {@inheritDoc} */
@@ -1431,6 +1547,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 drReplicate(drType, updated, valBytes, newVer);
 
+                recordNodeId(affNodeId);
+
                 if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT))
                     cctx.events().addEvent(partition(), key, evtNodeId, null,
                         newVer, EVT_CACHE_OBJECT_PUT, updated, updated != null, old,
@@ -1467,6 +1585,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 // Clear value on backup. Entry will be removed from cache when it got evicted from queue.
                 update(null, null, 0, 0, newVer);
+
+                clearReaders();
+
+                recordNodeId(affNodeId);
 
                 drReplicate(drType, null, null, newVer);
 
@@ -2095,7 +2217,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         synchronized (this) {
             checkObsolete();
 
-            if (isNew())
+            if (isNew() || !valid(-1))
                 unswap(true);
 
             if (deletedUnlocked())

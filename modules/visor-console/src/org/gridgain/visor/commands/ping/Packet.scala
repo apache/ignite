@@ -15,16 +15,6 @@ package org.gridgain.visor.commands
  * ==Command==
  * Visor 'ping' command implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to properly
- * import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.ping.VisorPingCommand._
- * </ex>
- * Note that `VisorPingCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +--------------------+
@@ -34,7 +24,7 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor ping {"id81 id82 ... id8k"}
+ *     ping {"id81 id82 ... id8k"}
  * }}}
  *
  * ====Arguments====
@@ -45,9 +35,9 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor ping "12345678"
+ *     ping "12345678"
  *         Pings node with '12345678' ID8.
- *     visor ping
+ *     ping
  *         Pings all nodes in the topology.
  * }}}
  */

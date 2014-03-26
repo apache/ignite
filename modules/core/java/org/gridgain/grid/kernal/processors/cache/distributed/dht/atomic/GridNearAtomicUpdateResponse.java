@@ -15,6 +15,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -37,7 +38,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
     /** Update error. */
     @GridDirectTransient
-    private volatile GridMultiException err;
+    private volatile GridException err;
 
     /** Serialized error. */
     private byte[] errBytes;
@@ -64,6 +65,30 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
     /** Serialized keys that should be remapped. */
     private byte[] remapKeysBytes;
+
+    /** Indexes of keys for which values were generated on primary node (used if originating node has near cache). */
+    @GridDirectCollection(int.class)
+    private List<Integer> nearValsIdxs;
+
+    /** Indexes of keys for which update was skipped (used if originating node has near cache). */
+    @GridDirectCollection(int.class)
+    private List<Integer> nearSkipIdxs;
+
+    /** Values generated on primary node which should be put to originating node's near cache. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private List<V> nearVals;
+
+    /** Serialized values generated on primary node which should be put to originating node's near cache. */
+    @GridToStringInclude
+    @GridDirectCollection(GridCacheValueBytes.class)
+    private List<GridCacheValueBytes> nearValBytes;
+
+    /** Version generated on primary node to be used for originating node's near cache update. */
+    private GridCacheVersion nearVer;
+
+    /** Ttl to be used for originating node's near cache update. */
+    private long nearTtl;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -150,6 +175,100 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
     }
 
     /**
+     * Adds value to be put in near cache on originating node.
+     *
+     * @param keyIdx Key index.
+     * @param val Value.
+     * @param valBytes Value bytes.
+     */
+    public void addNearValue(int keyIdx, @Nullable V val, @Nullable byte[] valBytes) {
+        if (nearValsIdxs == null) {
+            nearValsIdxs = new ArrayList<>();
+            nearValBytes = new ArrayList<>();
+            nearVals = new ArrayList<>();
+        }
+
+        nearValsIdxs.add(keyIdx);
+        nearVals.add(val);
+        nearValBytes.add(valBytes != null ? GridCacheValueBytes.marshaled(valBytes) : null);
+    }
+
+    /**
+     * @param ttl Time to live to be used for originating node's near cache update.
+     */
+    public void nearTtl(long ttl) {
+        nearTtl = ttl;
+    }
+
+    /**
+     * @return Time to live to be used for originating node's near cache update.
+     */
+    public long nearTtl() {
+        return nearTtl;
+    }
+
+    /**
+     * @param nearVer Version generated on primary node to be used for originating node's near cache update.
+     */
+    public void nearVersion(GridCacheVersion nearVer) {
+        this.nearVer = nearVer;
+    }
+
+    /**
+     * @return Version generated on primary node to be used for originating node's near cache update.
+     */
+    public GridCacheVersion nearVersion() {
+        return nearVer;
+    }
+
+    /**
+     * @param keyIdx Index of key for which update was skipped
+     */
+    public void addSkippedIndex(int keyIdx) {
+        if (nearSkipIdxs == null)
+            nearSkipIdxs = new ArrayList<>();
+
+        nearSkipIdxs.add(keyIdx);
+    }
+
+    /**
+     * @return Indexes of keys for which update was skipped
+     */
+    @Nullable public List<Integer> skippedIndexes() {
+        return nearSkipIdxs;
+    }
+
+    /**
+     * @return Indexes of keys for which values were generated on primary node.
+     */
+   @Nullable public List<Integer> nearValuesIndexes() {
+        return nearValsIdxs;
+   }
+
+    /**
+     * @param idx Index.
+     * @return Value generated on primary node which should be put to originating node's near cache.
+     */
+    @Nullable public V nearValue(int idx) {
+        return nearVals.get(idx);
+    }
+
+    /**
+     * @param idx Index.
+     * @return Serialized value generated on primary node which should be put to originating node's near cache.
+     */
+    @Nullable public byte[] nearValueBytes(int idx) {
+        if (nearValBytes != null) {
+            GridCacheValueBytes valBytes0 = nearValBytes.get(idx);
+
+            if (valBytes0 != null && !valBytes0.isPlain())
+                return valBytes0.get();
+        }
+
+        return null;
+    }
+
+    /**
      * Adds key to collection of failed keys.
      *
      * @param key Key to add.
@@ -162,14 +281,9 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
         failedKeys.add(key);
 
         if (err == null)
-            err = new GridMultiException("Failed to update keys on primary node.");
+            err = new GridException("Failed to update keys on primary node.");
 
-        if (e instanceof GridMultiException) {
-            for (Throwable th : ((GridMultiException)e).nestedCauses())
-                err.add(th);
-        }
-        else
-            err.add(e);
+        err.addSuppressed(e);
     }
 
     /**
@@ -185,14 +299,9 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
         failedKeys.addAll(keys);
 
         if (err == null)
-            err = new GridMultiException("Failed to update keys on primary node.");
+            err = new GridException("Failed to update keys on primary node.");
 
-        if (e instanceof GridMultiException) {
-            for (Throwable th : ((GridMultiException)e).nestedCauses())
-                err.add(th);
-        }
-        else
-            err.add(e);
+        err.addSuppressed(e);
     }
 
     /** {@inheritDoc} */
@@ -210,6 +319,8 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
         if (remapKeys != null)
             remapKeysBytes = ctx.marshaller().marshal(remapKeys);
+
+        nearValBytes = marshalValuesCollection(nearVals, ctx);
     }
 
     /** {@inheritDoc} */
@@ -227,6 +338,8 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
         if (remapKeysBytes != null)
             remapKeys = ctx.marshaller().unmarshal(remapKeysBytes, ldr);
+
+        nearVals = unmarshalValueBytesCollection(nearValBytes, ctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -255,6 +368,12 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
         _clone.failedKeysBytes = failedKeysBytes;
         _clone.remapKeys = remapKeys;
         _clone.remapKeysBytes = remapKeysBytes;
+        _clone.nearValsIdxs = nearValsIdxs;
+        _clone.nearSkipIdxs = nearSkipIdxs;
+        _clone.nearVals = nearVals;
+        _clone.nearValBytes = nearValBytes;
+        _clone.nearVer = nearVer;
+        _clone.nearTtl = nearTtl;
     }
 
     /** {@inheritDoc} */
@@ -292,12 +411,105 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 commState.idx++;
 
             case 5:
+                if (nearSkipIdxs != null) {
+                    if (commState.it == null) {
+                        if (!commState.putInt(nearSkipIdxs.size()))
+                            return false;
+
+                        commState.it = nearSkipIdxs.iterator();
+                    }
+
+                    while (commState.it.hasNext() || commState.cur != NULL) {
+                        if (commState.cur == NULL)
+                            commState.cur = commState.it.next();
+
+                        if (!commState.putInt((int)commState.cur))
+                            return false;
+
+                        commState.cur = NULL;
+                    }
+
+                    commState.it = null;
+                } else {
+                    if (!commState.putInt(-1))
+                        return false;
+                }
+
+                commState.idx++;
+
+            case 6:
+                if (!commState.putLong(nearTtl))
+                    return false;
+
+                commState.idx++;
+
+            case 7:
+                if (nearValBytes != null) {
+                    if (commState.it == null) {
+                        if (!commState.putInt(nearValBytes.size()))
+                            return false;
+
+                        commState.it = nearValBytes.iterator();
+                    }
+
+                    while (commState.it.hasNext() || commState.cur != NULL) {
+                        if (commState.cur == NULL)
+                            commState.cur = commState.it.next();
+
+                        if (!commState.putValueBytes((GridCacheValueBytes)commState.cur))
+                            return false;
+
+                        commState.cur = NULL;
+                    }
+
+                    commState.it = null;
+                } else {
+                    if (!commState.putInt(-1))
+                        return false;
+                }
+
+                commState.idx++;
+
+            case 8:
+                if (nearValsIdxs != null) {
+                    if (commState.it == null) {
+                        if (!commState.putInt(nearValsIdxs.size()))
+                            return false;
+
+                        commState.it = nearValsIdxs.iterator();
+                    }
+
+                    while (commState.it.hasNext() || commState.cur != NULL) {
+                        if (commState.cur == NULL)
+                            commState.cur = commState.it.next();
+
+                        if (!commState.putInt((int)commState.cur))
+                            return false;
+
+                        commState.cur = NULL;
+                    }
+
+                    commState.it = null;
+                } else {
+                    if (!commState.putInt(-1))
+                        return false;
+                }
+
+                commState.idx++;
+
+            case 9:
+                if (!commState.putCacheVersion(nearVer))
+                    return false;
+
+                commState.idx++;
+
+            case 10:
                 if (!commState.putByteArray(remapKeysBytes))
                     return false;
 
                 commState.idx++;
 
-            case 6:
+            case 11:
                 if (!commState.putByteArray(retValBytes))
                     return false;
 
@@ -348,6 +560,111 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 commState.idx++;
 
             case 5:
+                if (commState.readSize == -1) {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.readSize = commState.getInt();
+                }
+
+                if (commState.readSize >= 0) {
+                    if (nearSkipIdxs == null)
+                        nearSkipIdxs = new ArrayList<>(commState.readSize);
+
+                    for (int i = commState.readItems; i < commState.readSize; i++) {
+                        if (buf.remaining() < 4)
+                            return false;
+
+                        int _val = commState.getInt();
+
+                        nearSkipIdxs.add((Integer)_val);
+
+                        commState.readItems++;
+                    }
+                }
+
+                commState.readSize = -1;
+                commState.readItems = 0;
+
+                commState.idx++;
+
+            case 6:
+                if (buf.remaining() < 8)
+                    return false;
+
+                nearTtl = commState.getLong();
+
+                commState.idx++;
+
+            case 7:
+                if (commState.readSize == -1) {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.readSize = commState.getInt();
+                }
+
+                if (commState.readSize >= 0) {
+                    if (nearValBytes == null)
+                        nearValBytes = new ArrayList<>(commState.readSize);
+
+                    for (int i = commState.readItems; i < commState.readSize; i++) {
+                        GridCacheValueBytes _val = commState.getValueBytes();
+
+                        if (_val == VAL_BYTES_NOT_READ)
+                            return false;
+
+                        nearValBytes.add((GridCacheValueBytes)_val);
+
+                        commState.readItems++;
+                    }
+                }
+
+                commState.readSize = -1;
+                commState.readItems = 0;
+
+                commState.idx++;
+
+            case 8:
+                if (commState.readSize == -1) {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.readSize = commState.getInt();
+                }
+
+                if (commState.readSize >= 0) {
+                    if (nearValsIdxs == null)
+                        nearValsIdxs = new ArrayList<>(commState.readSize);
+
+                    for (int i = commState.readItems; i < commState.readSize; i++) {
+                        if (buf.remaining() < 4)
+                            return false;
+
+                        int _val = commState.getInt();
+
+                        nearValsIdxs.add((Integer)_val);
+
+                        commState.readItems++;
+                    }
+                }
+
+                commState.readSize = -1;
+                commState.readItems = 0;
+
+                commState.idx++;
+
+            case 9:
+                GridCacheVersion nearVer0 = commState.getCacheVersion();
+
+                if (nearVer0 == CACHE_VER_NOT_READ)
+                    return false;
+
+                nearVer = nearVer0;
+
+                commState.idx++;
+
+            case 10:
                 byte[] remapKeysBytes0 = commState.getByteArray();
 
                 if (remapKeysBytes0 == BYTE_ARR_NOT_READ)
@@ -357,7 +674,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
                 commState.idx++;
 
-            case 6:
+            case 11:
                 byte[] retValBytes0 = commState.getByteArray();
 
                 if (retValBytes0 == BYTE_ARR_NOT_READ)

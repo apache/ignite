@@ -12,13 +12,13 @@ package org.gridgain.grid.cache.hibernate;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.hibernate.cache.*;
 import org.hibernate.cache.spi.*;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.*;
+import org.jdk8.backport.*;
 
 import java.util.*;
 

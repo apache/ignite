@@ -15,16 +15,6 @@ package org.gridgain.visor.commands
  * ==Overview==
  * Contains Visor command `node` implementation.
  *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.gridgain.visor._
- * import commands.node.VisorNodeCommand._
- * </ex>
- * Note that `VisorNodeCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
- *
  * ==Help==
  * {{{
  * +--------------------------------+
@@ -34,8 +24,8 @@ package org.gridgain.visor.commands
  *
  * ====Specification====
  * {{{
- *     visor node "{id8=<node-id8>|id=<node-id>} {-a}"
- *     visor node
+ *     node "{id8=<node-id8>|id=<node-id>} {-a}"
+ *     node
  * }}}
  *
  * ====Arguments====
@@ -53,11 +43,11 @@ package org.gridgain.visor.commands
  *
  * ====Examples====
  * {{{
- *     visor node
+ *     node
  *         Starts command in interactive mode.
- *     visor node "-id8=12345678"
+ *     node "-id8=12345678"
  *         Prints statistics for specified node.
- *     visor node "-id8=12345678 -a"
+ *     node "-id8=12345678 -a"
  *         Prints full statistics for specified node.
  * }}}
  */

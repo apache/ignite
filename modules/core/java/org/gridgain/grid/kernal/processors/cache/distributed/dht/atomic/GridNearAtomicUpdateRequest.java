@@ -303,7 +303,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
      * @return Value.
      */
     public V value(int idx) {
-        assert op == UPDATE;
+        assert op == UPDATE : op;
 
         return (V)vals.get(idx);
     }
@@ -313,7 +313,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
      * @return Transform closure.
      */
     public GridClosure<V, V> transformClosure(int idx) {
-        assert op == TRANSFORM;
+        assert op == TRANSFORM : op;
 
         return (GridClosure<V, V>)vals.get(idx);
     }
