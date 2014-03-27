@@ -16,7 +16,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * {@link GridCacheQueue} implementation using atomic cache.
@@ -60,11 +59,6 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean offer(T item, long timeout, TimeUnit unit) throws GridRuntimeException {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public T poll() throws GridRuntimeException {
         try {
@@ -99,36 +93,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public T take() throws GridRuntimeException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public T poll(long timeout, TimeUnit unit) throws GridRuntimeException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clear(int batchSize) throws GridRuntimeException {
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean removed() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int remainingCapacity() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int drainTo(Collection<? super T> c) {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int drainTo(Collection<? super T> c, int maxElements) {
-        return 0;
     }
 }

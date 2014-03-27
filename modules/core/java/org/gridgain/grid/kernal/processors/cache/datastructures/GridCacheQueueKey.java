@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * TODO
+ * Cache header queue.
  */
 public class GridCacheQueueKey implements Externalizable, GridCacheInternal {
     /** */
@@ -60,5 +60,10 @@ public class GridCacheQueueKey implements Externalizable, GridCacheInternal {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return name.hashCode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridCacheQueueKey.class, this);
     }
 }

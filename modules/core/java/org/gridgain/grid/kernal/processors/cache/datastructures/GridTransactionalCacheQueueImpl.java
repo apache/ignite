@@ -16,7 +16,6 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
@@ -97,11 +96,6 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean offer(T item, long timeout, TimeUnit unit) throws GridRuntimeException {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public T poll() throws GridRuntimeException {
         try {
@@ -126,36 +120,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public T take() throws GridRuntimeException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public T poll(long timeout, TimeUnit unit) throws GridRuntimeException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clear(int batchSize) throws GridRuntimeException {
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean removed() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int remainingCapacity() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int drainTo(Collection<? super T> c) {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int drainTo(Collection<? super T> c, int maxElements) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 }

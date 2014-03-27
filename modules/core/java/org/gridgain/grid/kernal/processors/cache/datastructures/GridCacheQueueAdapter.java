@@ -12,14 +12,17 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Common code for {@link GridCacheQueue} implementation.
@@ -111,7 +114,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /** {@inheritDoc} */
-    @Override public boolean bounded() throws GridException {
+    @Override public boolean bounded() {
         return cap < Integer.MAX_VALUE;
     }
 
@@ -181,6 +184,100 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean offer(T item, long timeout, TimeUnit unit) throws GridRuntimeException {
+        long end = U.currentTimeMillis() + MILLISECONDS.convert(timeout, unit);
+
+        while (U.currentTimeMillis() < end) {
+            if (offer(item))
+                return true;
+
+            if (Thread.interrupted())
+                throw new GridRuntimeException("Queue offer interrupted.");
+        }
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public T take() throws GridRuntimeException {
+        do {
+            T e = poll();
+
+            if (e != null)
+                return e;
+
+            if (Thread.interrupted())
+                throw new GridRuntimeException("Queue take interrupted.");
+        } while (true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public T poll(long timeout, TimeUnit unit) throws GridRuntimeException {
+        long end = U.currentTimeMillis() + MILLISECONDS.convert(timeout, unit);
+
+        while (U.currentTimeMillis() < end) {
+            T e = poll();
+
+            if (e != null)
+                return e;
+
+            if (Thread.interrupted())
+                throw new GridRuntimeException("Queue poll interrupted.");
+        }
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int remainingCapacity() {
+        if (!bounded())
+            return Integer.MAX_VALUE;
+
+        int remaining = cap - size();
+
+        return remaining > 0 ? remaining : 0;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void clear(int batchSize) throws GridRuntimeException {
+        try {
+            GridBiTuple<Long, Long> t = (GridBiTuple<Long, Long>)cache.transformCompute(queueKey, new ClearClosure());
+
+            if (t == null)
+                return;
+
+            Collection<ItemKey> keys = new ArrayList<>(batchSize != 0 ? batchSize : 10);
+
+            for (long idx = t.get1(); idx < t.get2(); idx++) {
+                keys.add(new ItemKey(uuid, idx, collocated()));
+
+                if (batchSize > 0 && keys.size() == batchSize) {
+                    cache.removeAll(keys);
+
+                    keys.clear();
+                }
+            }
+
+            if (!keys.isEmpty())
+                cache.removeAll(keys);
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int drainTo(Collection<? super T> c) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int drainTo(Collection<? super T> c, int maxElements) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      */
     private class QueueIterator implements Iterator<T> {
@@ -236,7 +333,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             if (cur == null)
                 throw new IllegalStateException();
 
-            // TODO
+            // TODO 7953.
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -317,6 +415,42 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(ItemKey.class, this);
+        }
+    }
+
+    /**
+     */
+    protected static class ClearClosure implements GridCacheTransformComputeClosure<GridCacheQueueHeader2, GridBiTuple<Long, Long>>,
+        Externalizable {
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public ClearClosure() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridBiTuple<Long, Long> compute(GridCacheQueueHeader2 header) {
+            if (header.tail() == header.head())
+                return null;
+
+            return new GridBiTuple<>(header.head(), header.tail());
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCacheQueueHeader2 apply(GridCacheQueueHeader2 header) {
+            if (header.tail() == header.head())
+                return header;
+
+            return new GridCacheQueueHeader2(header.uuid(), header.capacity(), header.tail(), header.tail());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         }
     }
 
