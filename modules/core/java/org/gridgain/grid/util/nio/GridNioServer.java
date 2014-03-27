@@ -12,6 +12,7 @@ package org.gridgain.grid.util.nio;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.thread.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -120,6 +121,9 @@ public class GridNioServer<T> {
 
     /** Message writer. */
     private final GridNioMessageWriter msgWriter;
+
+    /** Sessions. */
+    private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
 
     /** Static initializer ensures single-threaded execution of workaround. */
     static {
@@ -798,13 +802,13 @@ public class GridNioServer<T> {
      */
     private abstract class AbstractNioClientWorker extends GridWorker {
         /** Queue of change requests on this selector. */
-        private ConcurrentLinkedDeque8<NioOperationFuture> changeReqs = new ConcurrentLinkedDeque8<>();
+        private final ConcurrentLinkedDeque8<NioOperationFuture> changeReqs = new ConcurrentLinkedDeque8<>();
 
         /** Selector to select read events. */
         private Selector selector;
 
         /** Worker index. */
-        private int idx;
+        private final int idx;
 
         /**
          * @param idx Index of this worker in server's array.
@@ -1097,6 +1101,8 @@ public class GridNioServer<T> {
 
                 ses.key(key);
 
+                sessions.add(ses);
+
                 try {
                     filterChain.onSessionOpened(ses);
 
@@ -1133,6 +1139,8 @@ public class GridNioServer<T> {
                 else
                     U.error(log, "Closing NIO session because of unhandled exception.", e);
             }
+
+            sessions.remove(ses);
 
             SelectionKey key = ses.key();
 
@@ -1210,6 +1218,20 @@ public class GridNioServer<T> {
          * @throws IOException If write failed.
          */
         protected abstract void processWrite(SelectionKey key) throws IOException;
+    }
+
+    /**
+     * Gets outbound messages queue size.
+     *
+     * @return Write queue size.
+     */
+    public int outboundMessagesQueueSize() {
+        int res = 0;
+
+        for (GridSelectorNioSessionImpl ses : sessions)
+            res += ses.writeQueueSize();
+
+        return res;
     }
 
     /**
@@ -1416,7 +1438,7 @@ public class GridNioServer<T> {
          *
          * @param sockCh Socket channel to register on selector.
          */
-        private NioOperationFuture(SocketChannel sockCh) {
+        NioOperationFuture(SocketChannel sockCh) {
             this(sockCh, NioOperation.REGISTER, true, null);
         }
 
@@ -1426,7 +1448,7 @@ public class GridNioServer<T> {
          * @param accepted {@code True} if socket has been accepted.
          * @param meta Optional meta.
          */
-        private NioOperationFuture(SocketChannel sockCh, NioOperation op, boolean accepted,
+        NioOperationFuture(SocketChannel sockCh, NioOperation op, boolean accepted,
             @Nullable Map<Integer, ?> meta) {
             this.sockCh = sockCh;
             this.op = op;
@@ -1440,7 +1462,7 @@ public class GridNioServer<T> {
          * @param ses Session to change.
          * @param op Requested operation.
          */
-        private NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op) {
+        NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op) {
             assert ses != null;
             assert op != null;
             assert op != NioOperation.REGISTER;
@@ -1456,7 +1478,7 @@ public class GridNioServer<T> {
          * @param op Requested operation.
          * @param msg Message.
          */
-        private NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op,
+        NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op,
             ByteBuffer msg) {
             assert ses != null;
             assert op != null;
@@ -1475,7 +1497,7 @@ public class GridNioServer<T> {
          * @param op Requested operation.
          * @param commMsg Direct message.
          */
-        private NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op,
+        NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op,
             GridTcpCommunicationMessageAdapter commMsg) {
             assert ses != null;
             assert op != null;
