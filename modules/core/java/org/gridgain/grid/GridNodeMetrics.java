@@ -676,4 +676,12 @@ public interface GridNodeMetrics extends Serializable {
      */
     @GridMBeanDescription("Received bytes count.")
     public long getReceivedBytesCount();
+
+    /**
+     * Gets outbound messages queue size.
+     *
+     * @return Outbound messages queue size.
+     */
+    @GridMBeanDescription("Outbound messages queue size.")
+    public int getOutboundMessagesQueueSize();
 }
