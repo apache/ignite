@@ -9,8 +9,6 @@
 
 package org.gridgain.examples;
 
-import org.gridgain.examples.misc.deployment.gar.*;
-
 /**
  * Deployment examples multi-node self test.
  */
@@ -20,13 +18,5 @@ public class GridDeploymentExamplesMultiNodeSelfTest extends GridDeploymentExamp
         startRemoteNodes();
 
         super.testGridDeploymentExample();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testGridGarHelloWorldExample() throws Exception {
-        for (int i = 0; i < RMT_NODES_CNT; i++)
-            startGrid("node-" + i, GarDeploymentNodeStartup.configuration());
-
-        super.testGridGarHelloWorldExample();
     }
 }
