@@ -272,8 +272,6 @@ public abstract class GridUtils {
     public static final String MAC_INVALID_ARG_MSG = "On MAC OS you may have too many file descriptors open " +
         "(simple restart usually solves the issue)";
 
-    public static final String FOR_MORE_INFO_MSG = "\nFor more information see:\n";
-
     /** Default help pages. */
     public static final List<String> DFLT_HELP_LINKS = Arrays.asList(
         "Troubleshooting:      http://bit.ly/GridGain-Troubleshooting",
@@ -7897,7 +7895,7 @@ public abstract class GridUtils {
     public static String errorMessageWithHelpUrls(String msg) {
         StringBuilder sb = msg == null ? new StringBuilder() : new StringBuilder(msg);
 
-        sb.append(FOR_MORE_INFO_MSG);
+        sb.append("\nFor more information see:\n");
 
         for (String url : DFLT_HELP_LINKS)
             sb.append("    ").append(url).append("\n");
