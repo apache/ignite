@@ -900,21 +900,77 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
                         double cpuLoadPct = m.getCurrentCpuLoad() * 100;
                         double avgCpuLoadPct = m.getAverageCpuLoad() * 100;
+                        double gcPct = m.getCurrentGcCpuLoad() * 100;
 
                         long heapUsed = m.getHeapMemoryUsed();
                         long heapMax = m.getHeapMemoryMaximum();
 
-                        double heapUsedPct = heapUsed * 100.0 / heapMax;
+                        long heapUsedInMBytes = heapUsed / 1024 / 1024;
+                        long heapCommInMBytes = m.getHeapMemoryCommitted() / 1024 / 1024;
 
-                        SB sb = new SB();
+                        double freeHeapPct = heapMax > 0 ? ((double)((heapMax - heapUsed) * 100)) / heapMax : -1;
 
-                        sb.a("Metrics [").
-                            a("curCpuLoad=").a(dblFmt.format(cpuLoadPct)).a("%").
-                            a(", avgCpuLoad=").a(dblFmt.format(avgCpuLoadPct)).a("%").
-                            a(", heapUsed=").a(dblFmt.format(heapUsedPct)).a("%").
-                            a("]");
+                        int hosts = 0;
+                        int nodes = 0;
+                        int cpus = 0;
 
-                        log.info(sb.toString());
+                        try {
+                            GridProjectionMetrics metrics = metrics();
+
+                            hosts = metrics.getTotalHosts();
+                            nodes = metrics.getTotalNodes();
+                            cpus = metrics.getTotalCpus();
+                        }
+                        catch (GridException ignore) {
+                        }
+
+                        int pubPoolActiveThreads = 0;
+                        int pubPoolIdleThreads = 0;
+                        int pubPoolQSize = 0;
+
+                        ExecutorService pubExec = cfg.getExecutorService();
+
+                        if (pubExec instanceof ThreadPoolExecutor) {
+                            ThreadPoolExecutor exec = (ThreadPoolExecutor)pubExec;
+
+                            int poolSize = exec.getPoolSize();
+
+                            pubPoolActiveThreads = Math.min(poolSize, exec.getActiveCount());
+                            pubPoolIdleThreads = poolSize - pubPoolActiveThreads;
+                            pubPoolQSize = exec.getQueue().size();
+                        }
+
+                        int sysPoolActiveThreads = 0;
+                        int sysPoolIdleThreads = 0;
+                        int sysPoolQSize = 0;
+
+                        ExecutorService sysExec = cfg.getSystemExecutorService();
+
+                        if (sysExec instanceof ThreadPoolExecutor) {
+                            ThreadPoolExecutor exec = (ThreadPoolExecutor)sysExec;
+
+                            int poolSize = exec.getPoolSize();
+
+                            sysPoolActiveThreads = Math.min(poolSize, exec.getActiveCount());
+                            sysPoolIdleThreads = poolSize - sysPoolActiveThreads;
+                            sysPoolQSize = exec.getQueue().size();
+                        }
+
+                        String msg = NL +
+                            "Metrics for local node (to disable printout set configuration " +
+                            "property 'metricsLogFrequency' to 0) [locNodeId=" + ctx.localNodeId() + ']' + NL +
+                            "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
+                            "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
+                                dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
+                            "    ^-- Heap [used=" + dblFmt.format(heapUsedInMBytes) + "MB, free=" +
+                                dblFmt.format(freeHeapPct) + "%, comm=" + dblFmt.format(heapCommInMBytes) + "MB]" + NL +
+                            "    ^-- Public thread pool [active=" + pubPoolActiveThreads + ", idle=" +
+                                pubPoolIdleThreads + ", qSize=" + pubPoolQSize + "]" + NL +
+                            "    ^-- System thread pool [active=" + sysPoolActiveThreads + ", idle=" +
+                                sysPoolIdleThreads + ", qSize=" + sysPoolQSize + "]" + NL +
+                            "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]";
+
+                        log.info(msg);
                     }
                 }
             }, metricsLogFreq, metricsLogFreq);
@@ -1898,7 +1954,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         NL);
                 }
                 else {
-                    String ack = "GridGain ver. " + VER + '#' + ctx.build() + "-sha1:" + REV_HASH + " stopped with ERRORS";
+                    String ack = "GridGain ver. " + VER + '#' + ctx.build() + "-sha1:" + REV_HASH +
+                        " stopped with ERRORS";
 
                     String dash = U.dash(ack.length());
 
@@ -2571,8 +2628,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     ctx, Collections.<GridTuple3<String, Boolean, String>>emptyList());
 
             // Exceeding max line width for readability.
-            GridCompoundFuture<GridTuple3<String, Boolean, String>, Collection<GridTuple3<String, Boolean, String>>> fut =
-                new GridCompoundFuture<>(
+            GridCompoundFuture<GridTuple3<String, Boolean, String>, Collection<GridTuple3<String, Boolean, String>>>
+                fut = new GridCompoundFuture<>(
                     ctx,
                     CU.<GridTuple3<String, Boolean, String>>objectsReducer()
                 );

@@ -511,7 +511,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                     // ensure proper lock ordering for removed entries.
                     cctx.tm().addCommittedTx(this);
 
-                    boolean replicate = cctx.isReplicationEnabled();
+                    boolean replicate = cctx.isDrEnabled();
 
                     // Node that for near transactions we grab all entries.
                     for (GridCacheTxEntry<K, V> txEntry : (near() ? allEntries() : writeEntries())) {

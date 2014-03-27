@@ -30,7 +30,7 @@ import scala.tools.jline.internal.Configuration
 // Note the importing of implicit conversions.
 import ack.VisorAckCommand
 import alert.VisorAlertCommand
-import org.gridgain.visor.commands.cache.{VisorCacheCompactCommand, VisorCacheClearCommand, VisorCacheCommand}
+import cache.{VisorCacheCompactCommand, VisorCacheClearCommand, VisorCacheCommand}
 import cswap.VisorCacheSwapCommand
 import config.VisorConfigurationCommand
 import deploy.VisorDeployCommand
