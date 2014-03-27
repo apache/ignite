@@ -1268,7 +1268,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (retVal == null) {
                     Object ret = updRes.oldValue();
 
-                    // TODO: 7953, version check could fail in CLOCK mode.
                     if (op == TRANSFORM && writeVal instanceof GridCacheTransformComputeClosure) {
                         assert req.returnValue();
 

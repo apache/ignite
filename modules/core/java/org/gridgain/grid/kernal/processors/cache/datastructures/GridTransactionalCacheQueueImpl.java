@@ -37,19 +37,16 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeQueue(int batchSize) throws GridException {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public boolean offer(T item) throws GridRuntimeException {
         try {
             try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(1));
+                Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(uuid, 1));
 
                 if (idx == null)
                     return false;
+
+                checkRemoved(idx);
 
                 boolean putx = cache.putx(new ItemKey(uuid, idx, collocated()), item, null);
 
@@ -70,10 +67,12 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     @Override public boolean addAll(Collection<? extends T> items) {
         try {
             try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(items.size()));
+                Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(uuid, items.size()));
 
                 if (idx == null)
                     return false;
+
+                checkRemoved(idx);
 
                 Map<ItemKey, T> putMap = new HashMap<>();
 
@@ -99,20 +98,23 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     @SuppressWarnings("unchecked")
     @Nullable @Override public T poll() throws GridRuntimeException {
         try {
+            T e = null;
+
             try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                Long idx = (Long)cache.transformCompute(queueKey, new PollClosure());
+                Long idx = (Long)cache.transformCompute(queueKey, new PollClosure(uuid));
 
-                if (idx == null)
-                    return null;
+                if (idx != null) {
+                    checkRemoved(idx);
 
-                T e = (T)cache.remove(new ItemKey(uuid, idx, collocated()), null);
+                    e = (T)cache.remove(new ItemKey(uuid, idx, collocated()), null);
 
-                assert e != null;
+                    assert e != null;
+                }
 
                 tx.commit();
-
-                return e;
             }
+
+            return e;
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
@@ -120,7 +122,23 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removed() {
-        throw new UnsupportedOperationException();
+    @SuppressWarnings("unchecked")
+    @Override protected void removeItem(long rmvIdx) throws GridException {
+        try {
+            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                Long idx = (Long)cache.transformCompute(queueKey, new RemoveClosure(uuid, rmvIdx));
+
+                if (idx != null) {
+                    boolean removex = cache.removex(new ItemKey(uuid, idx, collocated()));
+
+                    assert removex;
+                }
+
+                tx.commit();
+            }
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
     }
 }

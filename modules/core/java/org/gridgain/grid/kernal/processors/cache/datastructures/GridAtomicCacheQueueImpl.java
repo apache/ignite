@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.datastructures.GridCacheQueue;
+import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -21,6 +21,9 @@ import java.util.*;
  * {@link GridCacheQueue} implementation using atomic cache.
  */
 public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
+    /** */
+    private static final long RETRY_TIMEOUT = 2000;
+
     /**
      * @param queueName Queue name.
      * @param uuid Queue UUID.
@@ -34,20 +37,15 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeQueue(int batchSize) throws GridException {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public boolean offer(T item) throws GridRuntimeException {
         try {
-            Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(1));
-
-            assert idx != null;
+            Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(uuid, 1));
 
             if (idx == null)
                 return false;
+
+            checkRemoved(idx);
 
             cache.putx(new ItemKey(uuid, idx, collocated()), item, null);
 
@@ -62,10 +60,12 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     @SuppressWarnings("unchecked")
     @Nullable @Override public T poll() throws GridRuntimeException {
         try {
-            Long idx = (Long)cache.transformCompute(queueKey, new PollClosure());
+            Long idx = (Long)cache.transformCompute(queueKey, new PollClosure(uuid));
 
             if (idx == null)
                 return null;
+
+            checkRemoved(idx);
 
             ItemKey key = new ItemKey(uuid, idx, collocated());
 
@@ -74,7 +74,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
             if (data != null)
                 return data;
 
-            long stop = U.currentTimeMillis() + 1000;
+            long stop = U.currentTimeMillis() + RETRY_TIMEOUT;
 
             while (U.currentTimeMillis() < stop ) {
                 data = (T)cache.remove(key, null);
@@ -93,7 +93,26 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removed() {
-        return false;
+    @SuppressWarnings("unchecked")
+    @Override protected void removeItem(long rmvIdx) throws GridException {
+        Long idx = (Long)cache.transformCompute(queueKey, new RemoveClosure(uuid, rmvIdx));
+
+        if (idx != null) {
+            checkRemoved(idx);
+
+            ItemKey key = new ItemKey(uuid, idx, collocated());
+
+            if (cache.removex(key))
+                return;
+
+            long stop = U.currentTimeMillis() + RETRY_TIMEOUT;
+
+            while (U.currentTimeMillis() < stop ) {
+                if (cache.removex(key))
+                    return;
+            }
+
+            U.warn(log, "Failed to remove item, [queue=" + queueName + ", idx=" + idx + ']');
+        }
     }
 }

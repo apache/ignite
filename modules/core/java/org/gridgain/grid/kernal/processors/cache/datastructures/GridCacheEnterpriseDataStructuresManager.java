@@ -13,19 +13,16 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.worker.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
@@ -59,31 +56,13 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     private GridCacheProjection<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
 
     /** Cache contains only entry {@code GridCacheQueueHeader}.  */
-    private GridCacheProjection<GridCacheInternalKey, GridCacheQueueHeader> queueHdrView;
-
-    /** Cache contains only entry {@code GridCacheQueueHeader}.  */
-    private GridCacheProjection<GridCacheQueueKey, GridCacheQueueHeader2> queueView;
-
-    /** Cache contains only entry {@code GridCacheQueueItem}  */
-    private GridCacheProjection<GridCacheQueueItemKey, GridCacheQueueItem> queueItemView;
-
-    /** Query factory. */
-    private GridCacheQueueQueryFactory queueQryFactory;
+    private GridCacheProjection<GridCacheQueueKey, GridCacheQueueHeader> queueHdrView;
 
     /** Init latch. */
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
     /** Init flag. */
     private boolean initFlag;
-
-    /** Queue busy lock. */
-    private final GridSpinBusyLock queueBusyLock = new GridSpinBusyLock();
-
-    /** Queue delete worker. */
-    private QueueDeleteWorker queueDelWorker;
-
-    /** Queue remove candidates identified during preload. */
-    private final BlockingQueue<GridCacheInternal> queueDelCands = new LinkedBlockingQueue<>();
 
     /**
      * Default constructor.
@@ -99,33 +78,26 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
             dsView = cctx.cache().<GridCacheInternal, GridCacheInternal>projection
                 (GridCacheInternal.class, GridCacheInternal.class).flagsOn(CLONE);
 
-            cntDownLatchView = cctx.cache().<GridCacheInternalKey, GridCacheCountDownLatchValue>projection
-                (GridCacheInternalKey.class, GridCacheCountDownLatchValue.class).flagsOn(CLONE);
+            if (transactionalWithNear()) {
+                cntDownLatchView = cctx.cache().<GridCacheInternalKey, GridCacheCountDownLatchValue>projection
+                    (GridCacheInternalKey.class, GridCacheCountDownLatchValue.class).flagsOn(CLONE);
 
-            atomicLongView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicLongValue>projection
-                (GridCacheInternalKey.class, GridCacheAtomicLongValue.class).flagsOn(CLONE);
+                atomicLongView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicLongValue>projection
+                    (GridCacheInternalKey.class, GridCacheAtomicLongValue.class).flagsOn(CLONE);
 
-            atomicRefView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicReferenceValue>projection
-                (GridCacheInternalKey.class, GridCacheAtomicReferenceValue.class).flagsOn(CLONE);
+                atomicRefView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicReferenceValue>projection
+                    (GridCacheInternalKey.class, GridCacheAtomicReferenceValue.class).flagsOn(CLONE);
 
-            atomicStampedView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicStampedValue>projection
-                (GridCacheInternalKey.class, GridCacheAtomicStampedValue.class).flagsOn(CLONE);
+                atomicStampedView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicStampedValue>projection
+                    (GridCacheInternalKey.class, GridCacheAtomicStampedValue.class).flagsOn(CLONE);
 
-            seqView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicSequenceValue>projection
-                (GridCacheInternalKey.class, GridCacheAtomicSequenceValue.class).flagsOn(CLONE);
+                seqView = cctx.cache().<GridCacheInternalKey, GridCacheAtomicSequenceValue>projection
+                    (GridCacheInternalKey.class, GridCacheAtomicSequenceValue.class).flagsOn(CLONE);
+            }
 
-            queueHdrView = cctx.cache().<GridCacheInternalKey, GridCacheQueueHeader>projection
-                (GridCacheInternalKey.class, GridCacheQueueHeader.class).flagsOn(CLONE);
-
-            queueItemView = cctx.cache().<GridCacheQueueItemKey, GridCacheQueueItem>projection
-                (GridCacheQueueItemKey.class, GridCacheQueueItem.class).flagsOn(CLONE);
-
-            queueView = cctx.cache().<GridCacheQueueKey, GridCacheQueueHeader2>projection
-                (GridCacheQueueKey.class, GridCacheQueueHeader2.class).flagsOn(CLONE);
-
-            queueQryFactory = new GridCacheQueueQueryFactory(cctx);
-
-            queueDelWorker = new QueueDeleteWorker(cctx.kernalContext().gridName(), "queue-del-worker", log);
+            if (supportsQueue())
+                queueHdrView = cctx.cache().<GridCacheQueueKey, GridCacheQueueHeader>projection
+                    (GridCacheQueueKey.class, GridCacheQueueHeader.class).flagsOn(CLONE);
 
             initFlag = true;
         }
@@ -134,91 +106,24 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void onKernalStop0(boolean cancel) {
-        queueBusyLock.block();
-
-        for (GridCacheRemovable entry : dsMap.values()) {
-            if (entry instanceof GridCacheQueue) {
-                try {
-                    GridCacheQueueEx queue = cast(entry, GridCacheQueueEx.class);
-
-                    queue.onRemoved();
-                }
-                catch (GridException e) {
-                    U.warn(log, "Failed to remove queue entry: " + e);
-                }
-            }
-        }
-
-        if (queueDelWorker != null) {
-            queueDelWorker.cancel();
-
-            try {
-                queueDelWorker.join();
-            }
-            catch (InterruptedException ignore) {
-                U.warn(log, "Interrupted while waiting for queue delete worker to stop.");
-
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onPartitionsChange() {
-        for (Map.Entry<GridCacheInternal, GridCacheRemovable> e : dsMap.entrySet()) {
-            final GridCacheRemovable v = e.getValue();
-
-            if (v instanceof GridCacheQueue) {
-                final GridCacheInternal key = e.getKey();
-
-                GridCacheProjectionEx<GridCacheInternal, GridCacheInternal> cache =
-                    (GridCacheProjectionEx<GridCacheInternal, GridCacheInternal>)cctx.cache();
-
-                // Re-initialize near cache.
-                GridFuture<GridCacheInternal> fut = cache.getForcePrimaryAsync(key);
-
-                fut.listenAsync(new CI1<GridFuture<GridCacheInternal>>() {
-                    @Override public void apply(GridFuture<GridCacheInternal> f) {
-                        if (queueBusyLock.enterBusy()) {
-                            try {
-                                GridCacheQueueHeader hdr = cast(f.get(), GridCacheQueueHeader.class);
-
-                                if (hdr != null) {
-                                    GridCacheQueueEx queue = cast(v, GridCacheQueueEx.class);
-
-                                    queue.onHeaderChanged(hdr);
-                                }
-                                else if (v != null)
-                                    queueDelCands.add(key);
-                            }
-                            catch (GridException ex) {
-                                U.error(log, "Failed to synchronize queue state (will invalidate the queue): " + v, ex);
-
-                                v.onInvalid(ex);
-                            }
-                            finally {
-                                queueBusyLock.leaveBusy();
-                            }
-                        }
-                        else
-                            U.warn(log, "Partition change callback is ignored because grid is stopping.");
-                    }
-                });
-            }
-        }
+    /**
+     * @return {@code True} if cache is transactional with near cache enabled.
+     */
+    private boolean transactionalWithNear() {
+        return cctx.transactional() && (CU.isNearEnabled(cctx) || cctx.isReplicated() || cctx.isLocal());
     }
 
     /**
-     * @throws GridException If {@link GridCacheAtomicityMode#ATOMIC} mode.
+     * @throws GridException If cache is not transactional with near cache enabled.
      */
-    private void checkAtomicity() throws GridException {
-        /*
-        if (cctx.config().getAtomicityMode() == GridCacheAtomicityMode.ATOMIC)
+    private void checkTransactionalWithNear() throws GridException {
+        if (cctx.atomic())
             throw new GridException("Data structures require GridCacheAtomicityMode.TRANSACTIONAL atomicity mode " +
                 "(change atomicity mode from ATOMIC to TRANSACTIONAL in configuration)");
-                */
+
+        if (!cctx.isReplicated() && !cctx.isLocal() && !CU.isNearEnabled(cctx))
+            throw new GridException("Cache data structures can not be used with near cache disabled on cache: " +
+                cctx.cache().name());
     }
 
     /** {@inheritDoc} */
@@ -226,7 +131,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         final boolean create) throws GridException {
         waitInitialization();
 
-        checkAtomicity();
+        checkTransactionalWithNear();
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
@@ -238,73 +143,69 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
                 return val;
 
             return CU.outTx(new Callable<GridCacheAtomicSequence>() {
-                    @Override public GridCacheAtomicSequence call() throws Exception {
-                        GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ);
+                @Override public GridCacheAtomicSequence call() throws Exception {
+                    try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                        GridCacheAtomicSequenceValue seqVal = cast(dsView.get(key),
+                            GridCacheAtomicSequenceValue.class);
 
-                        try {
-                            GridCacheAtomicSequenceValue seqVal = cast(dsView.get(key),
-                                GridCacheAtomicSequenceValue.class);
+                        // Check that sequence hasn't been created in other thread yet.
+                        GridCacheAtomicSequenceEx seq = cast(dsMap.get(key), GridCacheAtomicSequenceEx.class);
 
-                            // Check that sequence hasn't been created in other thread yet.
-                            GridCacheAtomicSequenceEx seq = cast(dsMap.get(key), GridCacheAtomicSequenceEx.class);
-
-                            if (seq != null) {
-                                assert seqVal != null;
-
-                                return seq;
-                            }
-
-                            if (seqVal == null && !create)
-                                return null;
-
-                            /* We should use offset because we already reserved left side of range.*/
-                            long off = cctx.config().getAtomicSequenceReserveSize() > 1 ?
-                                cctx.config().getAtomicSequenceReserveSize() - 1 : 1;
-
-                            long upBound;
-                            long locCntr;
-
-                            if (seqVal == null) {
-                                locCntr = initVal;
-
-                                upBound = locCntr + off;
-
-                                // Global counter must be more than reserved region.
-                                seqVal = new GridCacheAtomicSequenceValue(upBound + 1);
-                            }
-                            else {
-                                locCntr = seqVal.get();
-
-                                upBound = locCntr + off;
-
-                                // Global counter must be more than reserved region.
-                                seqVal.set(upBound + 1);
-                            }
-
-                            // Update global counter.
-                            dsView.putx(key, seqVal);
-
-                            // Only one thread can be in the transaction scope and create sequence.
-                            seq = new GridCacheAtomicSequenceImpl(name, key, seqView, cctx,
-                                locCntr, upBound);
-
-                            dsMap.put(key, seq);
-
-                            tx.commit();
+                        if (seq != null) {
+                            assert seqVal != null;
 
                             return seq;
                         }
-                        catch (Error | Exception e) {
-                            dsMap.remove(key);
 
-                            U.error(log, "Failed to make atomic sequence: " + name, e);
+                        if (seqVal == null && !create)
+                            return null;
 
-                            throw e;
-                        } finally {
-                            tx.close();
+                            /* We should use offset because we already reserved left side of range.*/
+                        long off = cctx.config().getAtomicSequenceReserveSize() > 1 ?
+                            cctx.config().getAtomicSequenceReserveSize() - 1 : 1;
+
+                        long upBound;
+                        long locCntr;
+
+                        if (seqVal == null) {
+                            locCntr = initVal;
+
+                            upBound = locCntr + off;
+
+                            // Global counter must be more than reserved region.
+                            seqVal = new GridCacheAtomicSequenceValue(upBound + 1);
                         }
+                        else {
+                            locCntr = seqVal.get();
+
+                            upBound = locCntr + off;
+
+                            // Global counter must be more than reserved region.
+                            seqVal.set(upBound + 1);
+                        }
+
+                        // Update global counter.
+                        dsView.putx(key, seqVal);
+
+                        // Only one thread can be in the transaction scope and create sequence.
+                        seq = new GridCacheAtomicSequenceImpl(name, key, seqView, cctx,
+                            locCntr, upBound);
+
+                        dsMap.put(key, seq);
+
+                        tx.commit();
+
+                        return seq;
                     }
-                }, cctx);
+                    catch (Error | Exception e) {
+                        dsMap.remove(key);
+
+                        U.error(log, "Failed to make atomic sequence: " + name, e);
+
+                        throw e;
+                    }
+                }
+            }, cctx);
         }
         catch (Exception e) {
             throw new GridException("Failed to get sequence by name: " + name, e);
@@ -315,7 +216,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     @Override public final boolean removeSequence(String name) throws GridException {
         waitInitialization();
 
-        checkAtomicity();
+        checkTransactionalWithNear();
 
         try {
             GridCacheInternal key = new GridCacheInternalKeyImpl(name);
@@ -332,7 +233,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         final boolean create) throws GridException {
         waitInitialization();
 
-        checkAtomicity();
+        checkTransactionalWithNear();
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
@@ -344,50 +245,46 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
                 return atomicLong;
 
             return CU.outTx(new Callable<GridCacheAtomicLong>() {
-                    @Override public GridCacheAtomicLong call() throws Exception {
-                        GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ);
+                @Override public GridCacheAtomicLong call() throws Exception {
+                    try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                        GridCacheAtomicLongValue val = cast(dsView.get(key),
+                            GridCacheAtomicLongValue.class);
 
-                        try {
-                            GridCacheAtomicLongValue val = cast(dsView.get(key),
-                                GridCacheAtomicLongValue.class);
+                        // Check that atomic long hasn't been created in other thread yet.
+                        GridCacheAtomicLongEx a = cast(dsMap.get(key), GridCacheAtomicLongEx.class);
 
-                            // Check that atomic long hasn't been created in other thread yet.
-                            GridCacheAtomicLongEx a = cast(dsMap.get(key), GridCacheAtomicLongEx.class);
-
-                            if (a != null) {
-                                assert val != null;
-
-                                return a;
-                            }
-
-                            if (val == null && !create)
-                                return null;
-
-                            if (val == null) {
-                                val = new GridCacheAtomicLongValue(initVal);
-
-                                dsView.putx(key, val);
-                            }
-
-                            a = new GridCacheAtomicLongImpl(name, key, atomicLongView, cctx);
-
-                            dsMap.put(key, a);
-
-                            tx.commit();
+                        if (a != null) {
+                            assert val != null;
 
                             return a;
                         }
-                        catch (Error | Exception e) {
-                            dsMap.remove(key);
 
-                            U.error(log, "Failed to make atomic long: " + name, e);
+                        if (val == null && !create)
+                            return null;
 
-                            throw e;
-                        } finally {
-                            tx.close();
+                        if (val == null) {
+                            val = new GridCacheAtomicLongValue(initVal);
+
+                            dsView.putx(key, val);
                         }
+
+                        a = new GridCacheAtomicLongImpl(name, key, atomicLongView, cctx);
+
+                        dsMap.put(key, a);
+
+                        tx.commit();
+
+                        return a;
                     }
-                }, cctx);
+                    catch (Error | Exception e) {
+                        dsMap.remove(key);
+
+                        U.error(log, "Failed to make atomic long: " + name, e);
+
+                        throw e;
+                    }
+                }
+            }, cctx);
         }
         catch (Exception e) {
             throw new GridException("Failed to get atomic long by name: " + name, e);
@@ -398,7 +295,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     @Override public final boolean removeAtomicLong(String name) throws GridException {
         waitInitialization();
 
-        checkAtomicity();
+        checkTransactionalWithNear();
 
         try {
             GridCacheInternal key = new GridCacheInternalKeyImpl(name);
@@ -416,7 +313,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         final boolean create) throws GridException {
         waitInitialization();
 
-        checkAtomicity();
+        checkTransactionalWithNear();
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
@@ -428,51 +325,47 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
                 return atomicRef;
 
             return CU.outTx(new Callable<GridCacheAtomicReference<T>>() {
-                    @Override public GridCacheAtomicReference<T> call() throws Exception {
-                        GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ);
+                @Override public GridCacheAtomicReference<T> call() throws Exception {
+                    try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                        GridCacheAtomicReferenceValue val = cast(dsView.get(key),
+                            GridCacheAtomicReferenceValue.class);
 
-                        try {
-                            GridCacheAtomicReferenceValue val = cast(dsView.get(key),
-                                GridCacheAtomicReferenceValue.class);
+                        // Check that atomic reference hasn't been created in other thread yet.
+                        GridCacheAtomicReferenceEx ref = cast(dsMap.get(key),
+                            GridCacheAtomicReferenceEx.class);
 
-                            // Check that atomic reference hasn't been created in other thread yet.
-                            GridCacheAtomicReferenceEx ref = cast(dsMap.get(key),
-                                GridCacheAtomicReferenceEx.class);
-
-                            if (ref != null) {
-                                assert val != null;
-
-                                return ref;
-                            }
-
-                            if (val == null && !create)
-                                return null;
-
-                            if (val == null) {
-                                val = new GridCacheAtomicReferenceValue(initVal);
-
-                                dsView.putx(key, val);
-                            }
-
-                            ref = new GridCacheAtomicReferenceImpl(name, key, atomicRefView, cctx);
-
-                            dsMap.put(key, ref);
-
-                            tx.commit();
+                        if (ref != null) {
+                            assert val != null;
 
                             return ref;
                         }
-                        catch (Error | Exception e) {
-                            dsMap.remove(key);
 
-                            U.error(log, "Failed to make atomic reference: " + name, e);
+                        if (val == null && !create)
+                            return null;
 
-                            throw e;
-                        } finally {
-                            tx.close();
+                        if (val == null) {
+                            val = new GridCacheAtomicReferenceValue(initVal);
+
+                            dsView.putx(key, val);
                         }
+
+                        ref = new GridCacheAtomicReferenceImpl(name, key, atomicRefView, cctx);
+
+                        dsMap.put(key, ref);
+
+                        tx.commit();
+
+                        return ref;
                     }
-                }, cctx);
+                    catch (Error | Exception e) {
+                        dsMap.remove(key);
+
+                        U.error(log, "Failed to make atomic reference: " + name, e);
+
+                        throw e;
+                    }
+                }
+            }, cctx);
         }
         catch (Exception e) {
             throw new GridException("Failed to get atomic reference by name: " + name, e);
@@ -483,7 +376,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     @Override public final boolean removeAtomicReference(String name) throws GridException {
         waitInitialization();
 
-        checkAtomicity();
+        checkTransactionalWithNear();
 
         try {
             GridCacheInternal key = new GridCacheInternalKeyImpl(name);
@@ -501,7 +394,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         final S initStamp, final boolean create) throws GridException {
         waitInitialization();
 
-        checkAtomicity();
+        checkTransactionalWithNear();
 
         final GridCacheInternalKeyImpl key = new GridCacheInternalKeyImpl(name);
 
@@ -513,51 +406,47 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
                 return atomicStamped;
 
             return CU.outTx(new Callable<GridCacheAtomicStamped<T, S>>() {
-                    @Override public GridCacheAtomicStamped<T, S> call() throws Exception {
-                        GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ);
+                @Override public GridCacheAtomicStamped<T, S> call() throws Exception {
+                    try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                        GridCacheAtomicStampedValue val = cast(dsView.get(key),
+                            GridCacheAtomicStampedValue.class);
 
-                        try {
-                            GridCacheAtomicStampedValue val = cast(dsView.get(key),
-                                GridCacheAtomicStampedValue.class);
+                        // Check that atomic stamped hasn't been created in other thread yet.
+                        GridCacheAtomicStampedEx stmp = cast(dsMap.get(key),
+                            GridCacheAtomicStampedEx.class);
 
-                            // Check that atomic stamped hasn't been created in other thread yet.
-                            GridCacheAtomicStampedEx stmp = cast(dsMap.get(key),
-                                GridCacheAtomicStampedEx.class);
-
-                            if (stmp != null) {
-                                assert val != null;
-
-                                return stmp;
-                            }
-
-                            if (val == null && !create)
-                                return null;
-
-                            if (val == null) {
-                                val = new GridCacheAtomicStampedValue(initVal, initStamp);
-
-                                dsView.putx(key, val);
-                            }
-
-                            stmp = new GridCacheAtomicStampedImpl(name, key, atomicStampedView, cctx);
-
-                            dsMap.put(key, stmp);
-
-                            tx.commit();
+                        if (stmp != null) {
+                            assert val != null;
 
                             return stmp;
                         }
-                        catch (Error | Exception e) {
-                            dsMap.remove(key);
 
-                            U.error(log, "Failed to make atomic stamped: " + name, e);
+                        if (val == null && !create)
+                            return null;
 
-                            throw e;
-                        } finally {
-                            tx.close();
+                        if (val == null) {
+                            val = new GridCacheAtomicStampedValue(initVal, initStamp);
+
+                            dsView.putx(key, val);
                         }
+
+                        stmp = new GridCacheAtomicStampedImpl(name, key, atomicStampedView, cctx);
+
+                        dsMap.put(key, stmp);
+
+                        tx.commit();
+
+                        return stmp;
                     }
-                }, cctx);
+                    catch (Error | Exception e) {
+                        dsMap.remove(key);
+
+                        U.error(log, "Failed to make atomic stamped: " + name, e);
+
+                        throw e;
+                    }
+                }
+            }, cctx);
         }
         catch (Exception e) {
             throw new GridException("Failed to get atomic stamped by name: " + name, e);
@@ -568,7 +457,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     @Override public final boolean removeAtomicStamped(String name) throws GridException {
         waitInitialization();
 
-        checkAtomicity();
+        checkTransactionalWithNear();
 
         try {
             GridCacheInternal key = new GridCacheInternalKeyImpl(name);
@@ -580,18 +469,52 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         }
     }
 
+    /**
+     * @return {@code True} if {@link GridCacheQueue} can be used with current cache configuration.
+     */
+    private boolean supportsQueue() {
+        return !(cctx.atomic() && !cctx.isLocal() && cctx.config().getAtomicWriteOrderMode() == CLOCK);
+    }
+
+    /**
+     * @throws GridException If {@link GridCacheQueue} can not be used with current cache configuration.
+     */
+    private void checkSupportsQueue() throws GridException {
+        if (!supportsQueue())
+            throw new GridException("GridCacheQueue can not be used with ATOMIC cache with CLOCK write order mode" +
+                " (change write order mode to PRIMARY in configuration)");
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "IfMayBeConditional"})
     @Override public final <T> GridCacheQueue<T> queue(final String name, final int cap, boolean colloc,
         final boolean create) throws GridException {
+        waitInitialization();
+
+        checkSupportsQueue();
+
         GridCacheQueueKey key = new GridCacheQueueKey(name);
 
-        GridCacheQueueHeader2 header = new GridCacheQueueHeader2(GridUuid.randomUuid(), cap, 0, 0);
+        GridCacheQueueHeader header;
 
-        GridCacheQueueHeader2 old = queueView.putIfAbsent(key, header);
+        if (create) {
+            header = new GridCacheQueueHeader(GridUuid.randomUuid(), cap, colloc, 0, 0, null);
 
-        if (old != null)
-            header = old;
+            GridCacheQueueHeader old = queueHdrView.putIfAbsent(key, header);
+
+            if (old != null) {
+                if (old.capacity() != cap || old.collocated() != colloc)
+                    throw new GridException("Failed to create queue, queue with the same name but different " +
+                        "configuration already exists [name=" + name + ']');
+
+                header = old;
+            }
+        }
+        else
+            header = queueHdrView.get(key);
+
+        if (header == null)
+            return null;
 
         if (cctx.atomic())
             return new GridAtomicCacheQueueImpl<>(name, header.uuid(), cap, colloc, cctx);
@@ -600,115 +523,35 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    public final <T> GridCacheQueue<T> queueOld(final String name, final int cap, boolean colloc,
-        final boolean create) throws GridException {
-        A.ensure(cap > 0, "cap > 0");
-
-        waitInitialization();
-
-        checkAtomicity();
-
-        // Non collocated mode enabled only for PARTITIONED cache.
-        final boolean collocMode = cctx.cache().configuration().getCacheMode() != PARTITIONED
-            || colloc;
-
-        final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
-
-        try {
-            // Check type of structure received by key from local cache.
-            GridCacheQueue queue = cast(dsMap.get(key), GridCacheQueue.class);
-
-            if (queue != null)
-                return queue;
-
-            return CU.outTx(new Callable<GridCacheQueue<T>>() {
-                    @Override public GridCacheQueue<T> call() throws Exception {
-                        if (queueBusyLock.enterBusy()) {
-                            try {
-                                GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ);
-
-                                try {
-                                    GridCacheQueueHeader hdr = cast(dsView.get(key), GridCacheQueueHeader.class);
-
-                                    GridCacheQueueEx queue = cast(dsMap.get(key), GridCacheQueueEx.class);
-
-                                    if (queue != null) {
-                                        assert hdr != null : "Failed to find queue header in cache: " + queue;
-
-                                        return queue;
-                                    }
-
-                                    if (hdr == null) {
-                                        if (!create)
-                                            return null;
-
-                                        hdr = new GridCacheQueueHeader(name, cap, collocMode);
-
-                                        dsView.putx(key, hdr);
-                                    }
-
-                                    queue = new GridCacheQueueImpl(name, hdr, key, cctx, queueHdrView, queueItemView,
-                                        queueQryFactory);
-
-                                    GridCacheRemovable prev = dsMap.put(key, queue);
-
-                                    assert prev == null;
-
-                                    tx.commit();
-
-                                    return queue;
-                                }
-                                catch (Error | Exception e) {
-                                    dsMap.remove(key);
-
-                                    U.error(log, "Failed to create queue: " + name, e);
-
-                                    throw e;
-                                } finally {
-                                    tx.close();
-                                }
-                            }
-                            finally {
-                                queueBusyLock.leaveBusy();
-                            }
-                        }
-                        else
-                            throw new GridException("Failed to get queue because grid is stopping.");
-                    }
-                }, cctx);
-        }
-        catch (Exception e) {
-            throw new GridException("Failed to get queue by name :" + name, e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public final boolean removeQueue(String name, int batchSize) throws GridException {
         waitInitialization();
 
-        checkAtomicity();
+        checkSupportsQueue();
 
-        try {
-            GridCacheInternal key = new GridCacheInternalKeyImpl(name);
+        GridCacheQueueKey key = new GridCacheQueueKey(name);
 
-            GridCacheQueueEx queue = cast(dsMap.get(key), GridCacheQueueEx.class);
+        GridCacheQueueHeader header = queueHdrView.remove(key);
 
-            return queue != null && queue.removeQueue(batchSize);
-        }
-        catch (Exception e) {
-            throw new GridException("Failed to remove queue by name :" + name, e);
-        }
+        if (header == null)
+            return false;
+
+        if (header.empty())
+            return true;
+
+        GridCacheQueueAdapter.removeKeys(cctx.cache(), header.uuid(), header.collocated(), header.head(),
+            header.tail(), batchSize);
+
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheCountDownLatch countDownLatch(final String name, final int cnt, final boolean autoDel,
         final boolean create) throws GridException {
-        A.ensure(cnt >= 0, "count can not be negative" );
+        A.ensure(cnt >= 0, "count can not be negative");
 
         waitInitialization();
 
-        checkAtomicity();
+        checkTransactionalWithNear();
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
@@ -721,9 +564,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
             return CU.outTx(new Callable<GridCacheCountDownLatch>() {
                     @Override public GridCacheCountDownLatch call() throws Exception {
-                        GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ);
-
-                        try {
+                        try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                             GridCacheCountDownLatchValue val = cast(dsView.get(key),
                                 GridCacheCountDownLatchValue.class);
 
@@ -760,8 +601,6 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
                             U.error(log, "Failed to create count down latch: " + name, e);
 
                             throw e;
-                        } finally {
-                            tx.close();
                         }
                     }
                 }, cctx);
@@ -775,7 +614,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     @Override public boolean removeCountDownLatch(final String name) throws GridException {
         waitInitialization();
 
-        checkAtomicity();
+        checkTransactionalWithNear();
 
         try {
             return CU.outTx(
@@ -783,9 +622,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
                     @Override public Boolean call() throws Exception {
                         GridCacheInternal key = new GridCacheInternalKeyImpl(name);
 
-                        GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ);
-
-                        try {
+                        try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                             // Check correctness type of removable object.
                             GridCacheCountDownLatchValue val =
                                 cast(dsView.get(key), GridCacheCountDownLatchValue.class);
@@ -809,8 +646,6 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
                             U.error(log, "Failed to remove data structure: " + key, e);
 
                             throw e;
-                        } finally {
-                            tx.close();
                         }
                     }
                 },
@@ -834,9 +669,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         return CU.outTx(
             new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
-                    GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ);
-
-                    try {
+                    try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         // Check correctness type of removable object.
                         R val = cast(dsView.get(key), cls);
 
@@ -854,13 +687,16 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
                         U.error(log, "Failed to remove data structure: " + key, e);
 
                         throw e;
-                    } finally {
-                        tx.close();
                     }
                 }
             },
             cctx
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onPartitionsChange() {
+        // TODO: 7953.
     }
 
     /** {@inheritDoc} */
@@ -885,31 +721,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
                 if ((entry.op() == CREATE || entry.op() == UPDATE) && entry.key() instanceof GridCacheInternalKey) {
                     GridCacheInternal key = (GridCacheInternal)entry.key();
 
-                    if (entry.value() instanceof GridCacheQueueHeader) {
-                        if (queueBusyLock.enterBusy()) {
-                            try {
-                                // Notify queue on changes.
-                                GridCacheRemovable queue = dsMap.get(key);
-
-                                // If queue is used in current cache.
-                                if (queue instanceof GridCacheQueueEx) {
-                                    GridCacheQueueHeader hdr = (GridCacheQueueHeader)entry.value();
-
-                                    ((GridCacheQueueEx)queue).onHeaderChanged(hdr);
-                                }
-                                else if (queue != null)
-                                    U.error(log, "Failed to cast object [expected=" +
-                                        GridCacheQueue.class.getSimpleName() + ", actual=" + queue.getClass() +
-                                        ", value=" + queue + ']');
-                            }
-                            finally {
-                                queueBusyLock.leaveBusy();
-                            }
-                        }
-                        else
-                            U.warn(log, "Ignored queue update from TX because grid is stopping.");
-                    }
-                    else if (entry.value() instanceof GridCacheCountDownLatchValue) {
+                    if (entry.value() instanceof GridCacheCountDownLatchValue) {
                         // Notify latch on changes.
                         GridCacheRemovable latch = dsMap.get(key);
 
@@ -951,15 +763,6 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     }
 
     /**
-     * Gets queue query factory.
-     *
-     * @return Queue query factory.
-     */
-    public GridCacheQueueQueryFactory queueQueryFactory() {
-        return queueQryFactory;
-    }
-
-    /**
      * @throws GridException If thread is interrupted or manager
      *     was not successfully initialized.
      */
@@ -967,63 +770,9 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         if (initLatch.getCount() > 0)
             U.await(initLatch);
 
-        if (!initFlag) {
-            if (cctx.isColocated())
-                throw new GridException("Cache data structures can not be used with near cache disabled on cache: " +
-                    cctx.cache().name());
-            else
-                throw new GridException("DataStructures manager was not properly initialized for cache: " +
-                    cctx.cache().name());
-        }
-    }
-
-    /**
-     * Queue delete worker.
-     */
-    private class QueueDeleteWorker extends GridWorker {
-        /**
-         * Constructor.
-         *
-         * @param gridName Grid name.
-         * @param name Worker name.
-         * @param log Logger.
-         */
-        private QueueDeleteWorker(@Nullable String gridName, String name, GridLogger log) {
-            super(gridName, name, log);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
-            while (!isCancelled()) {
-                GridCacheInternal key = queueDelCands.poll(1000, TimeUnit.MILLISECONDS);
-
-                if (key != null) {
-                    try {
-                        GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ);
-
-                        try {
-                            GridCacheQueueHeader hdr = cast(dsView.get(key), GridCacheQueueHeader.class);
-
-                            GridCacheQueueEx queue = cast(dsMap.get(key), GridCacheQueueEx.class);
-
-                            if (hdr == null && queue != null) {
-                                queue.onRemoved();
-
-                                dsMap.remove(key);
-                            }
-
-                            tx.commit();
-                        }
-                        finally {
-                            tx.close();
-                        }
-                    }
-                    catch (Exception e) {
-                        U.warn(log, "Failed to check queue for existence: " + e);
-                    }
-                }
-            }
-        }
+        if (!initFlag)
+            throw new GridException("DataStructures manager was not properly initialized for cache: " +
+                cctx.cache().name());
     }
 
     /**

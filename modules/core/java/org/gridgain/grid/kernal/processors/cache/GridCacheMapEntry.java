@@ -3511,14 +3511,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             flags |= IS_DELETED_MASK;
 
-            cctx.decrementPublicSize(this);
+            if (!isInternal())
+                cctx.decrementPublicSize(this);
         }
         else {
             assert deletedUnlocked();
 
             flags &= ~IS_DELETED_MASK;
 
-            cctx.incrementPublicSize(this);
+            if (!isInternal())
+                cctx.incrementPublicSize(this);
         }
     }
 
