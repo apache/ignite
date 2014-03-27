@@ -101,7 +101,7 @@ public class GridCacheEvent extends GridEventAdapter {
 
     /** Event node. */
     @GridToStringExclude
-    private final GridNode evtNode;
+    @Nullable private final GridNode evtNode;
 
     /** Flag indicating whether event happened on {@code near} or {@code partitioned} cache. */
     @GridToStringInclude
@@ -127,7 +127,7 @@ public class GridCacheEvent extends GridEventAdapter {
      * @param hasOldVal Flag indicating whether old value is present in case if we
      *      don't have it in deserialized form.
      */
-    public GridCacheEvent(String cacheName, GridNode node, GridNode evtNode, String msg, int type, int part,
+    public GridCacheEvent(String cacheName, GridNode node, @Nullable GridNode evtNode, String msg, int type, int part,
         boolean near, Object key, GridUuid xid, Object lockId, Object newVal, boolean hasNewVal,
         Object oldVal, boolean hasOldVal) {
         super(node, msg, type);
@@ -172,11 +172,11 @@ public class GridCacheEvent extends GridEventAdapter {
     }
 
     /**
-     * Gets node which initiated cache operation.
+     * Gets node which initiated cache operation or {@code null} if that node is not available.
      *
-     * @return Node which initiated cache operation.
+     * @return Node which initiated cache operation or {@code null} if that node is not available.
      */
-    public GridNode eventNode() {
+    @Nullable public GridNode eventNode() {
         return evtNode;
     }
 
