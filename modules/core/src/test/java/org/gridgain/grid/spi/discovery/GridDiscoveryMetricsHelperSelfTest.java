@@ -134,6 +134,7 @@ public class GridDiscoveryMetricsHelperSelfTest extends GridCommonAbstractTest {
         metrics.setSentBytesCount(43);
         metrics.setReceivedMessagesCount(44);
         metrics.setReceivedBytesCount(45);
+        metrics.setOutboundMessagesQueueSize(46);
 
         return metrics;
     }
