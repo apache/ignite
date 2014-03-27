@@ -11,7 +11,6 @@
 
 package org.gridgain.visor
 
-import org.scalatest.matchers._
 import org.scalatest._
 import org.gridgain.scalar._
 import org.gridgain.grid._
