@@ -46,10 +46,12 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     @Override public boolean offer(T item) throws GridRuntimeException {
         try {
             try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(1));
+                Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(uuid, 1));
 
                 if (idx == null)
                     return false;
+
+                checkRemoved(idx);
 
                 boolean putx = cache.putx(new ItemKey(uuid, idx, collocated()), item, null);
 
@@ -70,10 +72,12 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     @Override public boolean addAll(Collection<? extends T> items) {
         try {
             try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(items.size()));
+                Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(uuid, items.size()));
 
                 if (idx == null)
                     return false;
+
+                checkRemoved(idx);
 
                 Map<ItemKey, T> putMap = new HashMap<>();
 
@@ -100,10 +104,12 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     @Nullable @Override public T poll() throws GridRuntimeException {
         try {
             try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                Long idx = (Long)cache.transformCompute(queueKey, new PollClosure());
+                Long idx = (Long)cache.transformCompute(queueKey, new PollClosure(uuid));
 
                 if (idx == null)
                     return null;
+
+                checkRemoved(idx);
 
                 T e = (T)cache.remove(new ItemKey(uuid, idx, collocated()), null);
 

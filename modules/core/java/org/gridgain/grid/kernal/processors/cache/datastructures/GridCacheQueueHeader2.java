@@ -30,6 +30,9 @@ public class GridCacheQueueHeader2 implements Externalizable {
     /** */
     private int cap;
 
+    /** */
+    private boolean collocated;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -40,15 +43,17 @@ public class GridCacheQueueHeader2 implements Externalizable {
     /**
      * @param uuid Queue unique ID.
      * @param cap Capacity.
+     * @param collocated Collocation flag.
      * @param head Queue head index.
      * @param tail Queue tail index.
      */
-    public GridCacheQueueHeader2(GridUuid uuid, int cap, long head, long tail) {
+    public GridCacheQueueHeader2(GridUuid uuid, int cap, boolean collocated, long head, long tail) {
         assert uuid != null;
         assert head <= tail;
 
         this.uuid = uuid;
         this.cap = cap;
+        this.collocated = collocated;
         this.head = head;
         this.tail = tail;
     }
@@ -65,6 +70,13 @@ public class GridCacheQueueHeader2 implements Externalizable {
      */
     public int capacity() {
         return cap;
+    }
+
+    /**
+     * @return Queue collocation flag.
+     */
+    public boolean collocated() {
+        return collocated;
     }
 
     /**
@@ -86,6 +98,13 @@ public class GridCacheQueueHeader2 implements Externalizable {
      */
     public boolean bounded() {
         return cap < Integer.MAX_VALUE;
+    }
+
+    /**
+     * @return {@code True} if queue is empty.
+     */
+    public boolean empty() {
+        return head == tail;
     }
 
     /** {@inheritDoc} */

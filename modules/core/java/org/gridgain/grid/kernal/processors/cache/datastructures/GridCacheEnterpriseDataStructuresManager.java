@@ -586,7 +586,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         final boolean create) throws GridException {
         GridCacheQueueKey key = new GridCacheQueueKey(name);
 
-        GridCacheQueueHeader2 header = new GridCacheQueueHeader2(GridUuid.randomUuid(), cap, 0, 0);
+        GridCacheQueueHeader2 header = new GridCacheQueueHeader2(GridUuid.randomUuid(), cap, colloc, 0, 0);
 
         GridCacheQueueHeader2 old = queueView.putIfAbsent(key, header);
 
@@ -687,18 +687,20 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     @Override public final boolean removeQueue(String name, int batchSize) throws GridException {
         waitInitialization();
 
-        checkAtomicity();
+        GridCacheQueueKey key = new GridCacheQueueKey(name);
 
-        try {
-            GridCacheInternal key = new GridCacheInternalKeyImpl(name);
+        GridCacheQueueHeader2 header = queueView.remove(key);
 
-            GridCacheQueueEx queue = cast(dsMap.get(key), GridCacheQueueEx.class);
+        if (header == null)
+            return false;
 
-            return queue != null && queue.removeQueue(batchSize);
-        }
-        catch (Exception e) {
-            throw new GridException("Failed to remove queue by name :" + name, e);
-        }
+        if (header.empty())
+            return true;
+
+        GridCacheQueueAdapter.removeKeys(cctx.cache(), header.uuid(), header.collocated(), header.head(),
+            header.tail(), batchSize);
+
+        return true;
     }
 
     /** {@inheritDoc} */

@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.datastructures.GridCacheQueue;
+import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -42,12 +42,12 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     @SuppressWarnings("unchecked")
     @Override public boolean offer(T item) throws GridRuntimeException {
         try {
-            Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(1));
-
-            assert idx != null;
+            Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(uuid, 1));
 
             if (idx == null)
                 return false;
+
+            checkRemoved(idx);
 
             cache.putx(new ItemKey(uuid, idx, collocated()), item, null);
 
@@ -62,10 +62,12 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     @SuppressWarnings("unchecked")
     @Nullable @Override public T poll() throws GridRuntimeException {
         try {
-            Long idx = (Long)cache.transformCompute(queueKey, new PollClosure());
+            Long idx = (Long)cache.transformCompute(queueKey, new PollClosure(uuid));
 
             if (idx == null)
                 return null;
+
+            checkRemoved(idx);
 
             ItemKey key = new ItemKey(uuid, idx, collocated());
 
