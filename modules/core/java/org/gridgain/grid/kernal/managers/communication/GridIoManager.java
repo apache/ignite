@@ -1487,6 +1487,15 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         return getSpi().getReceivedBytesCount();
     }
 
+    /**
+     * Gets outbound messages queue size.
+     *
+     * @return Outbound messages queue size.
+     */
+    public int getOutboundMessagesQueueSize() {
+        return getSpi().getOutboundMessagesQueueSize();
+    }
+
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");

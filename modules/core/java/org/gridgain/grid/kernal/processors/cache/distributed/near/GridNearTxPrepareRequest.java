@@ -136,7 +136,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     /**
      * @return Topology version.
      */
-    public long topologyVersion() {
+    @Override public long topologyVersion() {
         return topVer;
     }
 
