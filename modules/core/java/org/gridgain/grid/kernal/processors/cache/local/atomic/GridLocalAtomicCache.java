@@ -317,6 +317,19 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public <R> R transformCompute(K key, GridCacheTransformComputeClosure<V, R> transformer)
+        throws GridException {
+        return (R)updateAllInternal(TRANSFORM,
+            Collections.singleton(key),
+            Collections.singleton(transformer),
+            -1,
+            false,
+            false,
+            null,
+            ctx.isStoreEnabled());
+    }
+
+    /** {@inheritDoc} */
     @Override public GridFuture<?> transformAsync(K key,
         GridClosure<V, V> transformer,
         @Nullable GridCacheEntryEx<K, V> entry,
@@ -731,6 +744,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         true,
                         true,
                         filter);
+
+                    // TODO 7953, handle transformCompute.
 
                     if (res == null)
                         res = t;

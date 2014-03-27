@@ -29,10 +29,6 @@ public class GridCacheUpdateAtomicResult<K, V> {
     @GridToStringInclude
     private final V newVal;
 
-    /** Computed value. */
-    @GridToStringInclude
-    private final Object compVal;
-
     /** New TTL. */
     private final long newTtl;
 
@@ -65,7 +61,6 @@ public class GridCacheUpdateAtomicResult<K, V> {
     public GridCacheUpdateAtomicResult(boolean success,
         @Nullable V oldVal,
         @Nullable V newVal,
-        @Nullable Object compVal,
         long newTtl,
         long drExpireTime,
         @Nullable GridCacheVersion rmvVer,
@@ -74,7 +69,6 @@ public class GridCacheUpdateAtomicResult<K, V> {
         this.success = success;
         this.oldVal = oldVal;
         this.newVal = newVal;
-        this.compVal = compVal;
         this.newTtl = newTtl;
         this.drExpireTime = drExpireTime;
         this.rmvVer = rmvVer;
@@ -101,13 +95,6 @@ public class GridCacheUpdateAtomicResult<K, V> {
      */
     @Nullable public V newValue() {
         return newVal;
-    }
-
-    /**
-     * @return Computed value.
-     */
-    @Nullable public Object computedValue() {
-        return compVal;
     }
 
     /**

@@ -1265,9 +1265,18 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
 
                 // Create only once.
-                if (retVal == null)
-                    retVal = new GridCacheReturn<>(updRes.computedValue() != null ? updRes.computedValue() :
-                        updRes.oldValue(), updRes.success());
+                if (retVal == null) {
+                    Object ret = updRes.oldValue();
+
+                    // TODO: 7953, version check could fail in CLOCK mode.
+                    if (op == TRANSFORM && writeVal instanceof GridCacheTransformComputeClosure) {
+                        assert req.returnValue();
+
+                        ret = ((GridCacheTransformComputeClosure<V, ?>)writeVal).compute(updRes.oldValue());
+                    }
+
+                    retVal = new GridCacheReturn<>(ret, updRes.success());
+                }
             }
             catch (GridException e) {
                 res.addFailedKey(k, e);

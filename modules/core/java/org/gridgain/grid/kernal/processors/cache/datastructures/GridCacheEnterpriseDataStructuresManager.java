@@ -586,7 +586,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         final boolean create) throws GridException {
         GridCacheQueueKey key = new GridCacheQueueKey(name);
 
-        GridCacheQueueHeader2 header = new GridCacheQueueHeader2(GridUuid.randomUuid(), 0, 0);
+        GridCacheQueueHeader2 header = new GridCacheQueueHeader2(GridUuid.randomUuid(), cap, 0, 0);
 
         GridCacheQueueHeader2 old = queueView.putIfAbsent(key, header);
 
@@ -594,9 +594,9 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
             header = old;
 
         if (cctx.atomic())
-            return new GridAtomicCacheQueueImpl<>(name, header.uuid(), cctx);
+            return new GridAtomicCacheQueueImpl<>(name, header.uuid(), cap, colloc, cctx);
         else
-            return new GridTransactionalCacheQueueImpl<>(name, header.uuid(), cctx);
+            return new GridTransactionalCacheQueueImpl<>(name, header.uuid(), cap, colloc, cctx);
     }
 
     /** {@inheritDoc} */

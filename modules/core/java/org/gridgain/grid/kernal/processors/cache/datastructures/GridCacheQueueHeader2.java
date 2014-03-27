@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * TODO
+ * Queue header item.
  */
 public class GridCacheQueueHeader2 implements Externalizable {
     /** */
@@ -27,36 +27,85 @@ public class GridCacheQueueHeader2 implements Externalizable {
     /** */
     private long tail;
 
+    /** */
+    private int cap;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
     public GridCacheQueueHeader2() {
+        // No-op.
     }
 
-    public GridCacheQueueHeader2(GridUuid uuid, long head, long tail) {
+    /**
+     * @param uuid Queue unique ID.
+     * @param cap Capacity.
+     * @param head Queue head index.
+     * @param tail Queue tail index.
+     */
+    public GridCacheQueueHeader2(GridUuid uuid, int cap, long head, long tail) {
+        assert uuid != null;
+        assert head <= tail;
+
         this.uuid = uuid;
+        this.cap = cap;
         this.head = head;
         this.tail = tail;
     }
 
+    /**
+     * @return Queue unique ID.
+     */
     public GridUuid uuid() {
         return uuid;
     }
 
+    /**
+     * @return Capacity.
+     */
+    public int capacity() {
+        return cap;
+    }
+
+    /**
+     * @return Head index.
+     */
     public long head() {
         return head;
     }
 
+    /**
+     * @return Tail index.
+     */
     public long tail() {
         return tail;
     }
 
+    /**
+     * @return {@code True} if queue is bounded.
+     */
+    public boolean bounded() {
+        return cap < Integer.MAX_VALUE;
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, uuid);
+        out.writeInt(cap);
         out.writeLong(head);
         out.writeLong(tail);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         uuid = U.readGridUuid(in);
+        cap = in.readInt();
         head = in.readLong();
         tail = in.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridCacheQueueHeader2.class, this);
     }
 }

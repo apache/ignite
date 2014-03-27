@@ -21,21 +21,30 @@ public class GridCacheQueueKey implements Externalizable, GridCacheInternal {
     /** */
     private String name;
 
+    /**
+     * Required by {@link Externalizable}.
+     */
     public GridCacheQueueKey() {
     }
 
+    /**
+     * @param name Queue name.
+     */
     public GridCacheQueueKey(String name) {
         this.name = name;
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, name);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -48,6 +57,7 @@ public class GridCacheQueueKey implements Externalizable, GridCacheInternal {
         return name.equals(queueKey.name);
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         return name.hashCode();
     }

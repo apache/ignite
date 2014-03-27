@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -29,15 +28,13 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     /**
      * @param queueName Queue name.
      * @param uuid Queue UUID.
+     * @param cap Capacity.
+     * @param collocated Collocation flag.
      * @param cctx Cache context.
      */
-    public GridTransactionalCacheQueueImpl(String queueName, GridUuid uuid, GridCacheContext<?, ?> cctx) {
-        super(queueName, uuid, cctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterator<T> iterator() {
-        return null;
+    public GridTransactionalCacheQueueImpl(String queueName, GridUuid uuid, int cap, boolean collocated,
+        GridCacheContext<?, ?> cctx) {
+        super(queueName, uuid, cap, collocated, cctx);
     }
 
     /** {@inheritDoc} */
@@ -46,17 +43,48 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public boolean offer(T item) throws GridRuntimeException {
         try {
             try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                Long idx = (Long)cache.transformCompute(queueKey, new AddClosure());
+                Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(1));
 
                 if (idx == null)
                     return false;
 
-                boolean putx = cache.putx(new ItemKey(uuid, idx), item, null);
+                boolean putx = cache.putx(new ItemKey(uuid, idx, collocated()), item, null);
 
                 assert putx;
+
+                tx.commit();
+
+                return true;
+            }
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public boolean addAll(Collection<? extends T> items) {
+        try {
+            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(items.size()));
+
+                if (idx == null)
+                    return false;
+
+                Map<ItemKey, T> putMap = new HashMap<>();
+
+                for (T item : items) {
+                    putMap.put(new ItemKey(uuid, idx, collocated()), item);
+
+                    idx += 1;
+                }
+
+                cache.putAll(putMap, null);
 
                 tx.commit();
 
@@ -74,6 +102,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Nullable @Override public T poll() throws GridRuntimeException {
         try {
             try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -82,7 +111,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                 if (idx == null)
                     return null;
 
-                T e = (T)cache.remove(new ItemKey(uuid, idx), null);
+                T e = (T)cache.remove(new ItemKey(uuid, idx, collocated()), null);
 
                 assert e != null;
 
@@ -108,21 +137,6 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
     /** {@inheritDoc} */
     @Override public void clear(int batchSize) throws GridRuntimeException {
-    }
-
-    /** {@inheritDoc} */
-    @Override public int capacity() throws GridException {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean bounded() throws GridException {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean collocated() throws GridException {
-        return false;
     }
 
     /** {@inheritDoc} */
