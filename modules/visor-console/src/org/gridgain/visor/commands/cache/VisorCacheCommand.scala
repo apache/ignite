@@ -96,6 +96,12 @@ import org.gridgain.visor.commands.{VisorConsoleMultiNodeTask, VisorConsoleComma
  *     -a
  *         Prints details statistics about each cache.
  *         By default only aggregated summary is printed.
+ *     -compact
+ *          Compacts entries in cache.
+ *     -clear
+ *          Clears cache.
+ *     -scan
+ *          Prints list of all entries from cache.
  *     -p=<page size>
  *         Number of object to fetch from cache at once.
  *         Valid range from 1 to 100.
@@ -117,7 +123,7 @@ import org.gridgain.visor.commands.{VisorConsoleMultiNodeTask, VisorConsoleComma
  *         Compacts entries in cache with name 'cache'.
  *     cache -clear -c=cache
  *         Clears cache with name 'cache'.
- *     cache -c=cache -scan
+ *     cache -scan -c=cache
  *         List entries from cache with name 'cache' from all nodes with this cache.
  *     cache -c=@c0 -scan -p=50
  *         List entries from cache with name taken from 'c0' memory variable
@@ -150,9 +156,6 @@ class VisorCacheCommand {
      * <br>
      * <ex>cache -s=no -r</ex>
      *     Prints statistics about all caches sorted by number of nodes in reverse order.
-     * <br>
-     * <ex>cache -compact</ex>
-     *      Compacts entries in default cache.
      * <br>
      * <ex>cache -compact -c=cache</ex>
      *      Compacts entries in cache with name 'cache'.
@@ -431,7 +434,7 @@ class VisorCacheCommand {
     private def isValidSortType(arg: String): Boolean = {
         assert(arg != null)
 
-        Set("lr", "lw", "hi", "mi", "rd", "wr").contains(arg.trim)
+        Set("lr", "lw", "hi", "mi", "rd", "wr", "cn").contains(arg.trim)
     }
 
     /**
@@ -453,6 +456,7 @@ class VisorCacheCommand {
             case "mi" => data.toList.sortBy(_.misses)
             case "rd" => data.toList.sortBy(_.reads)
             case "wr" => data.toList.sortBy(_.writes)
+            case "cn" => data.toList.sortBy(_.cacheName)
 
             case _ =>
                 assert(false, "Unknown sorting type: " + arg)
@@ -743,7 +747,7 @@ private case class VisorAggregatedCacheQueryMetrics(
 object VisorCacheCommand {
     addHelp(
         name = "cache",
-        shortInfo = "Prints cache statistics, clear cache, compacts entries in cache, prints list of all entries from cache.",
+        shortInfo = "Prints cache statistics, clears cache, compacts entries in cache, prints list of all entries from cache.",
         longInfo = Seq(
             "Prints statistics about caches from specified node on the entire grid.",
             "Output sorting can be specified in arguments.",
@@ -755,7 +759,7 @@ object VisorCacheCommand {
             "    R/r Number of cache reads.",
             "    W/w Number of cache writes.",
             " ",
-            "Clear cache.",
+            "Clears cache.",
             " ",
             "Compacts entries in cache.",
             " ",
@@ -787,7 +791,7 @@ object VisorCacheCommand {
                 "Note you can also use '@c0' ... '@cn' variables as shortcut to <cache-name>."
             ),
             "-clear" -> Seq(
-                "Clear cache."
+                "Clears cache."
             ),
             "-compact" -> Seq(
                 "Compacts entries in cache."

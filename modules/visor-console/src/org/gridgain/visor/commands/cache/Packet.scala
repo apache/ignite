@@ -39,11 +39,10 @@ package org.gridgain.visor.commands
  * ====Specification====
  * {{{
  *     cache
- *     cache -i {-c=<name>}
+ *     cache -i
  *     cache {-c=<name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}
- *     cache -compact -c=<cache-name>
- *     cache -clear -c=<cache-name>
- *     cache -compact -c=<cache-name>
+ *     cache -clear {-c=<cache-name>}
+ *     cache -compact {-c=<cache-name>}
  *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}
  * }}}
  *
@@ -60,7 +59,7 @@ package org.gridgain.visor.commands
  *     -c=<name>
  *         Name of the cache.
  *         By default - statistics for all caches will be printed.
- *     -s=no|lr|lw|hi|mi|re|wr
+ *     -s=lr|lw|hi|mi|re|wr|cn
  *         Defines sorting type. Sorted by:
  *            lr Last read.
  *            lw Last write.
@@ -78,6 +77,12 @@ package org.gridgain.visor.commands
  *     -a
  *         Prints details statistics about each cache.
  *         By default only aggregated summary is printed.
+ *     -compact
+ *          Compacts entries in cache.
+ *     -clear
+ *          Clears cache.
+ *     -scan
+ *          Prints list of all entries from cache.
  *     -p=<page size>
  *         Number of object to fetch from cache at once.
  *         Valid range from 1 to 100.
@@ -95,15 +100,11 @@ package org.gridgain.visor.commands
  *         Prints cache statistics for interactively selected node.
  *     cache -s=hi -r -a
  *         Prints detailed statistics about all caches sorted by number of hits in reverse order.
- *     cache -compact
- *         Compacts entries in default cache.
  *     cache -compact -c=cache
  *         Compacts entries in cache with name 'cache'.
- *     cache -clear
- *         Clears default cache.
  *     cache -clear -c=cache
  *         Clears cache with name 'cache'.
- *     cache -c=cache -scan
+ *     cache -scan -c=cache
  *         List entries from cache with name 'cache' from all nodes with this cache.
  *     cache -c=@c0 -scan -p=50
  *         List entries from cache with name taken from 'c0' memory variable
