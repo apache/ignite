@@ -10,7 +10,6 @@
 package org.gridgain.examples;
 
 import org.gridgain.examples.misc.deployment.*;
-import org.gridgain.examples.misc.deployment.gar.*;
 import org.gridgain.testframework.junits.common.*;
 
 /**
@@ -22,12 +21,5 @@ public class GridDeploymentExamplesSelfTest extends GridAbstractExamplesTest {
      */
     public void testGridDeploymentExample() throws Exception {
         DeploymentExample.main(EMPTY_ARGS);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGridGarHelloWorldExample() throws Exception {
-        GarDeploymentExample.main(EMPTY_ARGS);
     }
 }
