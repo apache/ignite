@@ -34,8 +34,4 @@
             <version>${gridgain.version}</version>
         </dependency>
     </dependencies>
-
-    <build>
-        <sourceDirectory>java</sourceDirectory>
-    </build>
 </project>
