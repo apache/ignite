@@ -25,6 +25,7 @@ import org.gridgain.visor.visor
 import scala.tools.jline.console.ConsoleReader
 import scala.tools.jline.console.completer.Completer
 import scala.tools.jline.internal.Configuration
+import org.gridgain.grid.kernal.GridProductImpl
 
 // Built-in commands.
 // Note the importing of implicit conversions.
@@ -53,11 +54,11 @@ import vvm.VisorVvmCommand
  */
 object VisorConsole extends App {
     /** Ant-augmented version number. */
-    private final val VISOR_VER = /*@scala.version*/"x.x.x"
+    private final val VISOR_VER = GridProductImpl.EDITION + "-" + GridProductImpl.VER
     /** Ant-augmented release date. */
-    private final val VISOR_RELEASE_DATE = /*@scala.rel.date*/"26032012"
+    private final val VISOR_RELEASE_DATE = GridProductImpl.RELEASE_DATE
     /** Ant-augmented copyright blurb. */
-    private final val VISOR_COPYRIGHT = /*@scala.copyright*/"Copyright (C) 2014 GridGain Systems."
+    private final val VISOR_COPYRIGHT = GridProductImpl.COPYRIGHT
 
     private final val releaseDate = new SimpleDateFormat("ddMMyyyy").parse(VISOR_RELEASE_DATE)
 

@@ -43,15 +43,6 @@ import static org.gridgain.grid.kernal.GridProductImpl.*;
  */
 @SuppressWarnings({"CallToSystemExit"})
 public final class GridCommandLineStartup {
-    /** Ant-augmented build number. */
-    private static final long BUILD = /*@java.build*/0;
-
-    /** Ant-augmented release date. */
-    private static final String RELEASE = /*@java.rel.date*/"01011970";
-
-    /** Ant-augmented copyright blurb. */
-    private static final String COPYRIGHT = /*@java.copyright*/"Copyright (C) 2014 GridGain Systems.";
-
     /** Quite log flag. */
     private static final boolean QUITE;
 
@@ -88,9 +79,9 @@ public final class GridCommandLineStartup {
 
         // Mac OS specific customizations: app icon and about dialog.
         try {
-            buildDate = new SimpleDateFormat("yyyy/MM/dd", Locale.US).format(new Date(BUILD));
+            buildDate = new SimpleDateFormat("yyyy/MM/dd", Locale.US).format(new Date(BUILD * 1000));
 
-            releaseDate = new SimpleDateFormat("ddMMyyyy", Locale.US).parse(RELEASE);
+            releaseDate = new SimpleDateFormat("ddMMyyyy", Locale.US).parse(RELEASE_DATE);
 
             Class<?> appCls = Class.forName("com.apple.eawt.Application");
 
