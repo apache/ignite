@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.lang.*;
@@ -1165,18 +1166,28 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> drFullStateTransfer(Collection<Byte> dataCenterIds) {
-        return cache.drFullStateTransfer(dataCenterIds);
+    @Override public GridFuture<?> drStateTransfer(Collection<Byte> dataCenterIds) {
+        return cache.drStateTransfer(dataCenterIds);
     }
 
     /** {@inheritDoc} */
-    @Override public void drPause() throws GridException {
+    @Override public Collection<GridDrStateTransferDescriptor> drListStateTransfers() {
+        return cache.drListStateTransfers();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void drPause() {
         cache.drPause();
     }
 
     /** {@inheritDoc} */
-    @Override public void drResume() throws GridException {
+    @Override public void drResume() {
         cache.drResume();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridDrStatus drPauseState() {
+        return cache.drPauseState();
     }
 
     /** {@inheritDoc} */
