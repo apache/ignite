@@ -1691,10 +1691,14 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         int connectAttempts = 1;
 
         for (int i = 0; i < reconCnt; i++) {
+            boolean openSocket = true;
+
             try {
                 long tstamp = U.currentTimeMillis();
 
                 sock = openSocket(addr);
+
+                openSocket = false;
 
                 // Handshake.
                 writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
@@ -1734,50 +1738,27 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                 errs.add(e);
             }
-            catch (ConnectException e) {
+            catch (IOException | GridException e) {
                 if (log.isDebugEnabled())
-                    U.error(log, "Connect exception on direct send: " + addr, e);
+                    log.error("Exception on direct send: " + e.getMessage(), e);
 
-                // Reconnect for the second time, if connection is not established.
-                if (connectAttempts < 2) {
-                    connectAttempts++;
+                if (errs == null)
+                    errs = new ArrayList<>();
 
-                    continue;
+                errs.add(e);
+
+                if (openSocket) {
+                    // Reconnect for the second time, if connection is not established.
+                    if (connectAttempts < 2) {
+                        connectAttempts++;
+
+                        continue;
+                    }
+
+                    break; // Don't retry if we can not establish connection.
                 }
 
-                if (errs == null)
-                    errs = new ArrayList<>();
-
-                errs.add(e);
-
-                break; // Don't retry if nobody listens on port.
-            }
-            catch (IOException e) {
-                if (log.isDebugEnabled())
-                    log.debug("IO exception on direct send: " + e.getMessage());
-
-                if (errs == null)
-                    errs = new ArrayList<>();
-
-                errs.add(e);
-
-                if (e instanceof SocketTimeoutException) {
-                    ackTimeout0 *= 2;
-
-                    if (!checkAckTimeout(ackTimeout0))
-                        break;
-                }
-            }
-            catch (GridException e) {
-                if (log.isDebugEnabled())
-                    U.error(log, "Grid exception on direct send: " + addr, e);
-
-                if (errs == null)
-                    errs = new ArrayList<>();
-
-                errs.add(e);
-
-                if (X.hasCause(e, SocketTimeoutException.class)) {
+                if (e instanceof SocketTimeoutException || X.hasCause(e, SocketTimeoutException.class)) {
                     ackTimeout0 *= 2;
 
                     if (!checkAckTimeout(ackTimeout0))
@@ -1833,15 +1814,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         sock.setTcpNoDelay(true);
 
-        try {
-            sock.connect(resolved, (int)sockTimeout);
-        }
-        catch (SocketTimeoutException e) {
-            LT.warn(log, null, "Connection timed out (consider increasing 'socketTimeout' configuration property) " +
-                "[socketTimeout=" + sockTimeout + ']');
-
-            throw e;
-        }
+        sock.connect(resolved, (int)sockTimeout);
 
         writeToSocket(sock, U.GG_HEADER);
 
@@ -2849,11 +2822,15 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                             boolean success = false;
 
+                            boolean openSocket = true;
+
                             // Restore ring.
                             try {
                                 long tstamp = U.currentTimeMillis();
 
                                 nextNodeSock = openSocket(addr);
+
+                                openSocket = false;
 
                                 // Handshake.
                                 writeToSocket(nextNodeSock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
@@ -2914,6 +2891,9 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to connect to next node [msg=" + msg + ", err=" + e + ']');
+
+                                if (openSocket)
+                                    break; // Don't retry if we can not establish connection.
 
                                 if (e instanceof SocketTimeoutException ||
                                     X.hasCause(e, SocketTimeoutException.class)) {
