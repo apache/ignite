@@ -86,6 +86,13 @@ public interface GridCommunicationSpi<T extends Serializable> extends GridSpi, G
     public long getReceivedBytesCount();
 
     /**
+     * Gets outbound messages queue size.
+     *
+     * @return Outbound messages queue size.
+     */
+    public int getOutboundMessagesQueueSize();
+
+    /**
      * Resets metrics for this SPI instance.
      */
     public void resetMetrics();

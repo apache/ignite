@@ -378,7 +378,7 @@ public final class X {
      * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
      * <b>including</b> that throwable itself.
      * <p>
-     * Note that this method follows includes {@link GridMultiException#nestedCauses()}
+     * Note that this method follows includes {@link Throwable#getSuppressed()}
      * into check.
      *
      * @param t Throwable to check (if {@code null}, {@code false} is returned).
@@ -397,11 +397,9 @@ public final class X {
                 if (c.isAssignableFrom(th.getClass()))
                     return true;
 
-            if (th instanceof GridMultiException) {
-                for (Throwable n : ((GridMultiException)th).nestedCauses())
-                    if (hasCause(n, cls))
-                        return true;
-            }
+            for (Throwable n : th.getSuppressed())
+                if (hasCause(n, cls))
+                    return true;
 
             if (th.getCause() == th)
                 break;
@@ -414,7 +412,7 @@ public final class X {
      * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
      * <b>excluding</b> that throwable itself.
      * <p>
-     * Note that this method follows includes {@link GridMultiException#nestedCauses()}
+     * Note that this method follows includes {@link Throwable#getSuppressed()}
      * into check.
      *
      * @param t Throwable to check (if {@code null}, {@code false} is returned).
@@ -437,11 +435,9 @@ public final class X {
                 break;
         }
 
-        if (t instanceof GridMultiException) {
-            for (Throwable n : ((GridMultiException)t).nestedCauses())
-                if (hasCause(n, cls))
-                    return true;
-        }
+        for (Throwable n : t.getSuppressed())
+            if (hasCause(n, cls))
+                return true;
 
         return false;
     }
@@ -449,7 +445,7 @@ public final class X {
     /**
      * Gets first cause if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy.
      * <p>
-     * Note that this method follows includes {@link GridMultiException#nestedCauses()}
+     * Note that this method follows includes {@link Throwable#getSuppressed()}
      * into check.
      *
      * @param t Throwable to check (if {@code null}, {@code null} is returned).
@@ -465,13 +461,11 @@ public final class X {
             if (cls.isAssignableFrom(th.getClass()))
                 return (T)th;
 
-            if (th instanceof GridMultiException) {
-                for (Throwable n : ((GridMultiException)th).nestedCauses()) {
-                    T found = cause(n, cls);
+            for (Throwable n : th.getSuppressed()) {
+                T found = cause(n, cls);
 
-                    if (found != null)
-                        return found;
-                }
+                if (found != null)
+                    return found;
             }
 
             if (th.getCause() == th)

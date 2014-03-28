@@ -32,7 +32,7 @@ public abstract class GridTcpDiscoveryIpFinderAdapter implements GridTcpDiscover
 
     /** {@inheritDoc} */
     @Override public void onSpiContextDestroyed() {
-        // No-op.
+        spiCtx = null;
     }
 
     /** {@inheritDoc} */

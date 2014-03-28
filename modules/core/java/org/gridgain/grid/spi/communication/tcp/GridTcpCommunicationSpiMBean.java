@@ -111,6 +111,14 @@ public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
     public long getReceivedBytesCount();
 
     /**
+     * Gets outbound messages queue size.
+     *
+     * @return Outbound messages queue size.
+     */
+    @GridMBeanDescription("Outbound messages queue size.")
+    public int getOutboundMessagesQueueSize();
+
+    /**
      * Gets port resolver for ports mapping determination.
      *
      * @return Port resolver for ports mapping determination.
