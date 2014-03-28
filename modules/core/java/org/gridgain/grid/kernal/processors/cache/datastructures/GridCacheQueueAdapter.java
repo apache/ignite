@@ -445,7 +445,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
     /**
      */
-    protected static class ItemKey implements Externalizable {
+    protected static class ItemKey implements Externalizable, GridCacheInternal {
         /** */
         private GridUuid uuid;
 

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -19,7 +20,7 @@ import java.util.*;
 /**
  * Queue header item.
  */
-public class GridCacheQueueHeader implements Externalizable {
+public class GridCacheQueueHeader implements Externalizable, GridCacheInternal {
     /** */
     private GridUuid uuid;
 
