@@ -56,7 +56,7 @@ import java.util.*;
  * <p>
  * Here is the code that queries minimum price for GOOG instrument using index:
  * <pre name="code" class="java">
- * double googPrice = streamer.context().reduce(
+ * double minGooglePrice = streamer.context().reduce(
  *     // This closure will execute on remote nodes.
  *     new GridClosure&lt;GridStreamerContext, Double&gt;() {
  *         &#64;Nullable &#64;Override public Double apply(GridStreamerContext ctx) {

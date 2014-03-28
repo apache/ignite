@@ -506,7 +506,8 @@ public class StreamingCheckInExample {
     }
 
     /**
-     * Index updater for check-in events.
+     * Index updater for check-in events. Updaters are specified for {@link GridStreamerIndexProviderAdapter} in
+     * streamer configuration.
      */
     private static class CheckInEventIndexUpdater implements GridStreamerIndexUpdater<CheckInEvent, String, Location> {
         /** {@inheritDoc} */
@@ -536,7 +537,8 @@ public class StreamingCheckInExample {
     }
 
     /**
-     * Index updater for location info.
+     * Index updater for location info. Updaters are specified for {@link GridStreamerIndexProviderAdapter} in
+     * streamer configuration.
      */
     private static class PlacesIndexUpdater implements GridStreamerIndexUpdater<LocationInfo, String, Place> {
         /** {@inheritDoc} */
