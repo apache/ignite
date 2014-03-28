@@ -154,36 +154,6 @@ object scalar extends ScalarConversions {
     }
 
     /**
-     * Prints help for REPL.
-     */
-    def replHelp() {
-        val t = ScalarTextTable()
-
-        t #= ("Command", "Description")
-
-        t += ("scalar start", "Starts GridGain with the default configurtaion.")
-        t += ("scalar stop", "Stops GridGain.")
-        t += ("scalar start(\"path/to/my/config.xml\")", "Starts GridGain with the provided configurtaion file.")
-        t += ("grid$", "Global grid projection (including all nodes).")
-        t += ("cache$", "Default cache.")
-        t += ("scalar ?", "Prints this help.")
-
-        println("Some of the key Scalar command:")
-        t.render()
-        println()
-        println("Example:")
-        println("    scala> scalar start")
-        println("    scala> grid$ *< (BROADCAST, () => println(\"Howdy!\"))")
-    }
-
-    /**
-     * Help shortcut.
-     */
-    def `?` {
-        replHelp()
-    }
-
-    /**
      * Note that grid instance will be stopped with cancel flat set to `true`.
      *
      * @param g Grid instance.

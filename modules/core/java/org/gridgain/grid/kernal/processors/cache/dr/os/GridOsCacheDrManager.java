@@ -10,9 +10,11 @@
 package org.gridgain.grid.kernal.processors.cache.dr.os;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.dr.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -61,18 +63,28 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> fullStateTransfer(Collection<Byte> dataCenterIds) {
+    @Override public GridFuture<?> stateTransfer(Collection<Byte> dataCenterIds) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void pauseReplication() throws GridException {
+    @Override public Collection<GridDrStateTransferDescriptor> listStateTransfers() throws GridException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void pause() throws GridException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void resumeReplication() throws GridException {
+    @Override public void resume() throws GridException {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridDrStatus drPauseState() {
+        return null;
     }
 
     /** {@inheritDoc} */
