@@ -1691,14 +1691,14 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
         int connectAttempts = 1;
 
         for (int i = 0; i < reconCnt; i++) {
-            boolean openSocket = true;
+            boolean openSock = false;
 
             try {
                 long tstamp = U.currentTimeMillis();
 
                 sock = openSocket(addr);
 
-                openSocket = false;
+                openSock = true;
 
                 // Handshake.
                 writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
@@ -1747,7 +1747,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                 errs.add(e);
 
-                if (openSocket) {
+                if (!openSock) {
                     // Reconnect for the second time, if connection is not established.
                     if (connectAttempts < 2) {
                         connectAttempts++;
@@ -2822,7 +2822,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                             boolean success = false;
 
-                            boolean openSocket = true;
+                            boolean openSock = false;
 
                             // Restore ring.
                             try {
@@ -2830,7 +2830,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                                 nextNodeSock = openSocket(addr);
 
-                                openSocket = false;
+                                openSock = true;
 
                                 // Handshake.
                                 writeToSocket(nextNodeSock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
@@ -2892,7 +2892,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to connect to next node [msg=" + msg + ", err=" + e + ']');
 
-                                if (openSocket)
+                                if (!openSock)
                                     break; // Don't retry if we can not establish connection.
 
                                 if (e instanceof SocketTimeoutException ||
