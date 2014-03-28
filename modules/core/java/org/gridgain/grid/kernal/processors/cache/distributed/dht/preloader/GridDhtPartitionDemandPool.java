@@ -662,7 +662,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                             entry.ttl(),
                             entry.expireTime(),
                             true,
-                            cctx.isReplicationEnabled() ? DR_PRELOAD : DR_NONE
+                            cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE
                         )) {
                             cctx.evicts().touch(cached); // Start tracking.
 
