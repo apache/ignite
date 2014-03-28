@@ -28,7 +28,7 @@
     <artifactId>gridgain-examples</artifactId>
     <version>${gridgain.version}</version>
 
-ß    <dependencies>
+    <dependencies>
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-core</artifactId>
@@ -584,9 +584,6 @@
             </resource>
             <resource>
                 <directory>src/main/java</directory>
-            </resource>
-            <resource>
-                <directory>gar</directory>
             </resource>
         </resources>
 

@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
+import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
@@ -370,19 +371,29 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @param dataCenterIds  Data center IDs for which full state transfer was requested.
      * @return Future that will be completed when all replication batches are sent.
      */
-    public GridFuture<?> drFullStateTransfer(Collection<Byte> dataCenterIds);
+    public GridFuture<?> drStateTransfer(Collection<Byte> dataCenterIds);
+
+    /**
+     * List currently active state transfers.
+     *
+     * @return Collection of currently active state transfers.
+     */
+    public Collection<GridDrStateTransferDescriptor> drListStateTransfers();
 
     /**
      * Pauses data center replication for this cache.
-     *
-     * @throws GridException If failed to pause replication.
      */
-    public void drPause() throws GridException;
+    public void drPause();
 
     /**
      * Resumes data center replication for this cache.
-     *
-     * @throws GridException If failed to resume replication.
      */
-    public void drResume()throws GridException;
+    public void drResume();
+
+    /**
+     * Get DR pause state.
+     *
+     * @return DR pause state.
+     */
+    @Nullable public GridDrStatus drPauseState();
 }

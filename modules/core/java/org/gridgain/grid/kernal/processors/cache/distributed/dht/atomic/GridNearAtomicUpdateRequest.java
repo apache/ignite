@@ -190,7 +190,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     /**
      * @return Topology version.
      */
-    public long topologyVersion() {
+    @Override public long topologyVersion() {
         return topVer;
     }
 

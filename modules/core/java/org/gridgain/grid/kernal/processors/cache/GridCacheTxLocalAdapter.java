@@ -565,7 +565,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             try {
                 cctx.tm().txContext(this);
 
-                GridDrType drType = cctx.isReplicationEnabled() ? DR_PRIMARY : DR_NONE;
+                GridDrType drType = cctx.isDrEnabled() ? DR_PRIMARY : DR_NONE;
 
                 /*
                  * Commit to cache. Note that for 'near' transaction we loop through all the entries.
