@@ -38,7 +38,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
     /** Update error. */
     @GridDirectTransient
-    private volatile GridMultiException err;
+    private volatile GridException err;
 
     /** Serialized error. */
     private byte[] errBytes;
@@ -281,14 +281,9 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
         failedKeys.add(key);
 
         if (err == null)
-            err = new GridMultiException("Failed to update keys on primary node.");
+            err = new GridException("Failed to update keys on primary node.");
 
-        if (e instanceof GridMultiException) {
-            for (Throwable th : ((GridMultiException)e).nestedCauses())
-                err.add(th);
-        }
-        else
-            err.add(e);
+        err.addSuppressed(e);
     }
 
     /**
@@ -304,14 +299,9 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
         failedKeys.addAll(keys);
 
         if (err == null)
-            err = new GridMultiException("Failed to update keys on primary node.");
+            err = new GridException("Failed to update keys on primary node.");
 
-        if (e instanceof GridMultiException) {
-            for (Throwable th : ((GridMultiException)e).nestedCauses())
-                err.add(th);
-        }
-        else
-            err.add(e);
+        err.addSuppressed(e);
     }
 
     /** {@inheritDoc} */

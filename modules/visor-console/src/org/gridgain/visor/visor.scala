@@ -816,6 +816,41 @@ object visor extends VisorTag {
     }
 
     /**
+     * Extract node from command arguments.
+     *
+     * @param argLst Command arguments.
+     * @return error message or node ref.
+     */
+    def parseNode(argLst: ArgList) = {
+        val id8 = argValue("id8", argLst)
+        val id = argValue("id", argLst)
+
+        if (id8.isDefined && id.isDefined)
+            Left("Only one of '-id8' or '-id' is allowed.")
+        else if (id8.isDefined) {
+            nodeById8(id8.get) match {
+                case Nil => Left("Unknown 'id8' value: " + id8.get)
+                case node :: Nil => Right(Option(node))
+                case _ => Left("'id8' resolves to more than one node (use full 'id' instead): " + id8.get)
+            }
+        }
+        else if (id.isDefined)
+            try {
+                val node = Option(grid.node(java.util.UUID.fromString(id.get)))
+
+                if (node.isDefined)
+                    Right(node)
+                else
+                    Left("'id' does not match any node: " + id.get)
+            }
+            catch {
+                case e: IllegalArgumentException => Left("Invalid node 'id': " + id.get)
+            }
+        else
+            Right(None)
+    }
+
+    /**
      * Utility method that parses command arguments. Arguments represented as a string
      * into argument list represented as list of tuples (host, value) performing
      * variable substitution:
@@ -1426,6 +1461,9 @@ object visor extends VisorTag {
                 throw new GE("More than one grid configuration found in: " + url)
 
             val cfg = cfgMap.head._2
+
+            // Setting up 'Config URL' for properly print in console.
+            System.setProperty(GridSystemProperties.GG_CONFIG_URL, url.getPath)
 
             var cpuCnt = Runtime.getRuntime.availableProcessors
 

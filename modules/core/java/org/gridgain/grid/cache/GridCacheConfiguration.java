@@ -944,7 +944,7 @@ public class GridCacheConfiguration {
     /**
      * Gets caching mode to use. You can configure cache either to be local-only,
      * fully replicated, partitioned, or near. If not provided, {@link GridCacheMode#REPLICATED}
-     * mode will be used by default (defined by #DFLT_CACHE_MODE} constant).
+     * mode will be used by default (defined by {@link #DFLT_CACHE_MODE} constant).
      *
      * @return {@code True} if cache is local.
      */
