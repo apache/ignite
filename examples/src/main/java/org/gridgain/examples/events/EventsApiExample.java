@@ -106,7 +106,7 @@ public class EventsApiExample {
             }
         };
 
-        // Remote filter which only accepts tasks whose name being with "good-task" prefix.
+        // Remote filter which only accepts tasks whose name begins with "good-task" prefix.
         GridPredicate<GridTaskEvent> rmtLsnr = new GridPredicate<GridTaskEvent>() {
             @Override public boolean apply(GridTaskEvent evt) {
                 return evt.taskName().startsWith("good-task");
