@@ -101,7 +101,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
     /**
      * @return Topology version.
      */
-    public long topologyVersion() {
+    @Override public long topologyVersion() {
         return topVer;
     }
 

@@ -585,9 +585,6 @@
             <resource>
                 <directory>src/main/java</directory>
             </resource>
-            <resource>
-                <directory>gar</directory>
-            </resource>
         </resources>
 
         <pluginManagement>

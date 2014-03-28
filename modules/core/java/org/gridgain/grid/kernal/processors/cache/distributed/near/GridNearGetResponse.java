@@ -132,7 +132,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
     /**
      * @return Topology version if this response has invalid partitions.
      */
-    public long topologyVersion() {
+    @Override public long topologyVersion() {
         return topVer;
     }
 
