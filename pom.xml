@@ -32,8 +32,6 @@
 
     <modules>
         <module>modules/core</module>
-        <module>modules/extdata/p2p</module>
-        <module>modules/extdata/uri</module>
         <module>modules/clients</module>
         <module>examples</module>
         <module>modules/scalar</module>
