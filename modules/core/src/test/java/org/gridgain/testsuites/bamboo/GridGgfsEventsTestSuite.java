@@ -97,7 +97,8 @@ public class GridGgfsEventsTestSuite extends TestSuite {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setSecondaryHadoopFileSystemUri("ggfs://secondary/");
-            ggfsCfg.setSecondaryHadoopFileSystemConfigPath("modules/tests/config/hadoop/core-site-secondary.xml");
+            ggfsCfg.setSecondaryHadoopFileSystemConfigPath(
+                "modules/core/src/test/config/hadoop/core-site-secondary.xml");
 
             return ggfsCfg;
         }
@@ -193,7 +194,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
             GridGgfsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setSecondaryHadoopFileSystemConfigPath(
-                "modules/tests/config/hadoop/core-site-loopback-secondary.xml");
+                "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml");
 
             return ggfsCfg;
         }
