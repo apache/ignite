@@ -258,7 +258,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
         Map<GridNode, LinkedHashMap<K, Boolean>> mappings = new HashMap<>(CU.affinityNodes(cctx, topVer).size());
 
-        Map<K, V> locVals = new HashMap<>(keys.size());
+        final int keysSize = keys.size();
+
+        Map<K, V> locVals = new HashMap<>(keysSize);
 
         boolean hasRmtNodes = false;
 
@@ -296,7 +298,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
                 if (!F.isEmpty(invalidParts)) {
-                    Collection<K> remapKeys = new ArrayList<>(keys.size());
+                    Collection<K> remapKeys = new ArrayList<>(keysSize);
 
                     for (K key : keys) {
                         if (key != null && invalidParts.contains(cctx.affinity().partition(key)))

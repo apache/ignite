@@ -919,11 +919,9 @@ public class GridDhtPartitionDemandPool<K, V> {
                         remaining.removeAll(s.supply().missed());
 
                         // Only request partitions based on latest topology version.
-                        missed.addAll(F.view(s.supply().missed(), new P1<Integer>() {
-                            @Override public boolean apply(Integer p) {
-                                return cctx.affinity().localNode(p);
-                            }
-                        }));
+                        for (Integer miss : s.supply().missed())
+                            if (cctx.affinity().localNode(miss))
+                                missed.add(miss);
 
                         if (remaining.isEmpty())
                             break; // While.

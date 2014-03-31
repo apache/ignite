@@ -3478,6 +3478,34 @@ public class GridFunc {
     }
 
     /**
+     * Creates collection with elements which correspond to provided predicates. Resulting
+     * collection will only "have" elements for which all provided predicates, if any, evaluate
+     * to {@code true}.
+     *
+     * @param c Input collection that serves as a base for the view.
+     * @param p Optional predicates. If predicates are not provided - all elements will be in new collection.
+     * @param <T> Type of the collection.
+     * @return Light-weight view on given collection with provided predicate.
+     */
+    public static <T> Collection<T> keep(@Nullable final Collection<T> c,
+        @Nullable final GridPredicate<? super T>... p) {
+        if (isEmpty(c) || isAlwaysFalse(p))
+            return Collections.emptyList();
+
+        Collection<T> res = null;
+
+        for (T t : c)
+            if (isAll(t, p)) {
+                if (res == null)
+                    res = new ArrayList<>();
+
+                res.add(t);
+            }
+
+        return res == null ? Collections.<T>emptyList() : res;
+    }
+
+    /**
      * Creates a view on given list with provided transformer and predicates.
      * Resulting list will only "have" elements for which all provided predicates, if any,
      * evaluate to {@code true}. Note that a new collection will be created and data will
