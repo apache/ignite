@@ -211,10 +211,16 @@ class VisorCacheCommand {
                     val name = argValue("c", argLst)
 
                     if (name.isEmpty) {
-                        askForCache("Select cache from:", node) match {
-                            case Some(cacheName) => argLst = argLst ++ Seq("c" -> cacheName)
-                            case None => break()
+                        val dfltCachePrj = node match {
+                            case Some(n) => grid.forNode(n).forCache(null)
+                            case None => grid.forCache(null)
                         }
+
+                        if (dfltCachePrj.nodes.isEmpty)
+                            askForCache("Select cache from:", node) match {
+                                case Some(cacheName) => argLst = argLst ++ Seq("c" -> cacheName)
+                                case None => break()
+                            }
                     }
 
                     if (hasArgFlag("clear", argLst))
@@ -456,7 +462,7 @@ class VisorCacheCommand {
             case "mi" => data.toList.sortBy(_.misses)
             case "rd" => data.toList.sortBy(_.reads)
             case "wr" => data.toList.sortBy(_.writes)
-            case "cn" => data.toList.sortBy(_.cacheName)
+            case "cn" => data.toList.sortWith((x, y) => x.cacheName == null || x.cacheName < y.cacheName)
 
             case _ =>
                 assert(false, "Unknown sorting type: " + arg)
@@ -485,7 +491,7 @@ class VisorCacheCommand {
             case "mi" => data.toList.sortBy(_.avgMisses)
             case "rd" => data.toList.sortBy(_.avgReads)
             case "wr" => data.toList.sortBy(_.avgWrites)
-            case "cn" => data.toList.sortBy(_.cacheName)
+            case "cn" => data.toList.sortWith((x, y) => x.cacheName == null || x.cacheName < y.cacheName)
 
             case _ =>
                 assert(false, "Unknown sorting type: " + arg)

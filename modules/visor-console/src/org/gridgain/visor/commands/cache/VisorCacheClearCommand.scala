@@ -83,19 +83,16 @@ class VisorCacheClearCommand {
     def clear(argLst: ArgList, node: Option[GridNode]) = breakable {
         val cacheArg = argValue("c", argLst)
 
-        if (cacheArg.isEmpty)
-            scold("Cache name is empty.").^^
+        val cache = if (cacheArg.isEmpty) null else cacheArg.get
 
-        val caches = cacheArg.get
-
-        val prj = if (node.isDefined) grid.forNode(node.get) else grid.forCache(caches)
+        val prj = if (node.isDefined) grid.forNode(node.get) else grid.forCache(cache)
 
         if (prj.isEmpty) {
             val msg =
-                if (caches == null)
+                if (cache == null)
                     "Can't find nodes with default cache."
                 else
-                    "Can't find nodes with specified cache: " + caches
+                    "Can't find nodes with specified cache: " + cache
 
             scold(msg).^^
         }
@@ -104,10 +101,10 @@ class VisorCacheClearCommand {
             .compute()
             .withName("visor-cclear-task")
             .withNoFailover()
-            .broadcast(new ClearClosure(caches))
+            .broadcast(new ClearClosure(cache))
             .get
 
-        println("Cleared cache with name: " + caches)
+        println("Cleared cache with name: " + (if (cache == null) "<default>" else cache))
 
         val t = VisorTextTable()
 
