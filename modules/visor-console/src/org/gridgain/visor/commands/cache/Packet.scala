@@ -40,7 +40,7 @@ package org.gridgain.visor.commands
  * {{{
  *     cache
  *     cache -i
- *     cache {-c=<name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}
+ *     cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}
  *     cache -clear {-c=<cache-name>}
  *     cache -compact {-c=<cache-name>}
  *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}
@@ -56,9 +56,8 @@ package org.gridgain.visor.commands
  *         ID8 of the node to get cache statistics from.
  *         Either '-id8' or '-id' can be specified.
  *         If neither is specified statistics will be gathered from all nodes.
- *     -c=<name>
+ *     -c=<cache-name>
  *         Name of the cache.
- *         By default - statistics for all caches will be printed.
  *     -s=lr|lw|hi|mi|re|wr|cn
  *         Defines sorting type. Sorted by:
  *            lr Last read.
