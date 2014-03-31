@@ -119,15 +119,15 @@ import org.gridgain.visor.commands.{VisorConsoleMultiNodeTask, VisorConsoleComma
  *     cache -s=hi -r -a
  *         Prints detailed statistics about all caches sorted by number of hits in reverse order.
  *     cache -compact
- *         Compacts entries in default cache or in interactively selected cache.
+ *         Compacts entries in interactively selected cache.
  *     cache -compact -c=cache
  *         Compacts entries in cache with name 'cache'.
  *     cache -clear
- *         Clears default cache or interactively selected cache.
+ *         Clears interactively selected cache.
  *     cache -clear -c=cache
  *         Clears cache with name 'cache'.
  *     cache -scan
- *         Prints list entries from default cache or from interactively selected cache.
+ *         Prints list entries from interactively selected cache.
  *     cache -scan -c=cache
  *         Prints list entries from cache with name 'cache' from all nodes with this cache.
  *     cache -scan -c=@c0 -p=50
@@ -163,21 +163,21 @@ class VisorCacheCommand {
      *     Prints statistics about all caches sorted by number of nodes in reverse order.
      * <br>
      * <ex>cache -compact</ex>
-     *      Compacts entries in default cache or in interactively selected cache.
+     *      Compacts entries in interactively selected cache.
      * <br>
      * <ex>cache -compact -c=cache</ex>
      *      Compacts entries in cache with name 'cache'.
      * <br>
      * <ex>cache -clear</ex>
-     *      Clears default cache or interactively selected cache.
+     *      Clears interactively selected cache.
      * <br>
      * <ex>cache -clear -c=cache</ex>
      *      Clears cache with name 'cache'.
      * <br>
      * <ex>cache -scan</ex>
-     *     Prints list entries from default cache or from interactively selected cache.
+     *     Prints list entries from interactively selected cache.
      * <br>
-     * <ex>cache -c=cache -scan</ex>
+     * <ex>cache -scan -c=cache</ex>
      *     Prints list entries from cache with name 'cache' from all nodes with this cache.
      * <br>
      * <ex>cache -scan -c=@c0 -p=50</ex>
@@ -218,33 +218,25 @@ class VisorCacheCommand {
                     case Right(n) => n
                 }
 
+                val cacheName = argValue("c", argLst)
+
                 if (Seq("clear", "compact", "scan").exists(hasArgFlag(_, argLst))) {
-                    val name = argValue("c", argLst)
-
-                    if (name.isEmpty) {
-                        val dfltCachePrj = node match {
-                            case Some(n) => grid.forNode(n).forCache(null)
-                            case None => grid.forCache(null)
+                    if (cacheName.isEmpty)
+                        askForCache("Select cache from:", node) match {
+                            case Some(name) => argLst = argLst ++ Seq("c" -> name)
+                            case None => break()
                         }
-
-                        if (dfltCachePrj.nodes.isEmpty)
-                            askForCache("Select cache from:", node) match {
-                                case Some(cacheName) => argLst = argLst ++ Seq("c" -> cacheName)
-                                case None => break()
-                            }
-                    }
 
                     if (hasArgFlag("clear", argLst))
                         VisorCacheClearCommand().clear(argLst, node)
                     else if (hasArgFlag("compact", argLst))
                         VisorCacheCompactCommand().compact(argLst, node)
                     else if (hasArgFlag("scan", argLst))
-                        VisorCacheScanCommand().scan(argLst)
+                        VisorCacheScanCommand().scan(argLst, node)
 
                     break()
                 }
 
-                val name = argValue("c", argLst)
                 val all = hasArgFlag("a", argLst)
 
                 val sortType = argValue("s", argLst)
@@ -254,7 +246,7 @@ class VisorCacheCommand {
                     scold("Invalid '-s' argument in: " + args).^^
 
                 // Get cache stats data from all nodes.
-                val aggrData = cacheData(node, name)
+                val aggrData = cacheData(node, cacheName)
 
                 if (aggrData.isEmpty)
                     scold("No caches found.").^^
@@ -862,13 +854,13 @@ object VisorCacheCommand {
             ),
             "cache -s=hi -r -a" ->
                 "Prints detailed statistics about all caches sorted by number of hits in reverse order.",
-            "cache -compact" -> "Compacts entries in default cache or in interactively selected cache.",
+            "cache -compact" -> "Compacts entries in interactively selected cache.",
             "cache -compact -c=cache" -> "Compacts entries in cache with name 'cache'.",
             "cache -compact -c=@c0" -> "Compacts cache with name taken from 'c0' memory variable.",
-            "cache -clear" -> "Clears default cache or interactively selected cache.",
+            "cache -clear" -> "Clears interactively selected cache.",
             "cache -clear -c=cache" -> "Clears cache with name 'cache'.",
             "cache -clear -c=@c0" -> "Clears cache with name taken from 'c0' memory variable.",
-            "cache -scan" -> "Prints list entries from default cache or from interactively selected cache.",
+            "cache -scan" -> "Prints list entries from interactively selected cache.",
             "cache -scan -c=cache" -> "List entries from cache with name 'cache' from all nodes with this cache.",
             "cache -scan -c=@c0 -p=50" -> ("Prints list entries from cache with name taken from 'c0' memory variable" +
                 " with page of 50 items from all nodes with this cache."),

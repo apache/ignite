@@ -52,7 +52,7 @@ import org.gridgain.grid.GridNode
  * ====Examples====
  * {{{
  *     cache -clear
- *         Clears default cache.
+ *         Clears interactively selected cache.
  *     cache -clear -c=cache
  *         Clears cache with name 'cache'.
  * }}}
@@ -83,16 +83,27 @@ class VisorCacheClearCommand {
     def clear(argLst: ArgList, node: Option[GridNode]) = breakable {
         val cacheArg = argValue("c", argLst)
 
-        val cache = if (cacheArg.isEmpty) null else cacheArg.get
+        val cacheName = cacheArg match {
+            case None => null // default cache.
 
-        val prj = if (node.isDefined) grid.forNode(node.get) else grid.forCache(cache)
+            case Some(s) if s.startsWith("@") =>
+                warn("Can't find cache variable with specified name: " + s,
+                    "Type 'cache' to see available cache variables."
+                )
+
+                break()
+
+            case Some(name) => name
+        }
+
+        val prj = if (node.isDefined) grid.forNode(node.get) else grid.forCache(cacheName)
 
         if (prj.isEmpty) {
             val msg =
-                if (cache == null)
+                if (cacheName == null)
                     "Can't find nodes with default cache."
                 else
-                    "Can't find nodes with specified cache: " + cache
+                    "Can't find nodes with specified cache: " + cacheName
 
             scold(msg).^^
         }
@@ -101,10 +112,10 @@ class VisorCacheClearCommand {
             .compute()
             .withName("visor-cclear-task")
             .withNoFailover()
-            .broadcast(new ClearClosure(cache))
+            .broadcast(new ClearClosure(cacheName))
             .get
 
-        println("Cleared cache with name: " + (if (cache == null) "<default>" else cache))
+        println("Cleared cache with name: " + (if (cacheName == null) "<default>" else cacheName))
 
         val t = VisorTextTable()
 

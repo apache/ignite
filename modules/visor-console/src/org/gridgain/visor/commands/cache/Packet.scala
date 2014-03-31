@@ -100,15 +100,15 @@ package org.gridgain.visor.commands
  *     cache -s=hi -r -a
  *         Prints detailed statistics about all caches sorted by number of hits in reverse order.
  *     cache -compact
- *         Compacts entries in default cache or in interactively selected cache.
+ *         Compacts entries in interactively selected cache.
  *     cache -compact -c=cache
  *         Compacts entries in cache with name 'cache'.
  *     cache -clear
- *         Clears default cache or interactively selected cache.
+ *         Clears interactively selected cache.
  *     cache -clear -c=cache
  *         Clears cache with name 'cache'.
  *     cache -scan
- *         Prints list entries from default cache or from interactively selected cache.
+ *         Prints list entries from interactively selected cache.
  *     cache -scan -c=cache
  *         Prints list entries from cache with name 'cache' from all nodes with this cache.
  *     cache -scan -c=@c0 -p=50

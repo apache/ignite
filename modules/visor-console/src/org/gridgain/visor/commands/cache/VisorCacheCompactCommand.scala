@@ -14,7 +14,7 @@ package org.gridgain.visor.commands.cache
 import org.gridgain.scalar._
 import scalar._
 import org.gridgain.visor._
-import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.gridgain.visor.commands.VisorTextTable
 import visor._
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.GridEx
@@ -22,26 +22,25 @@ import resources._
 import collection.JavaConversions._
 import java.util.UUID
 import scala.util.control.Breaks._
-import org.jetbrains.annotations.Nullable
 import util.scala.impl
 import org.gridgain.grid.kernal.processors.task.GridInternal
 import org.gridgain.grid.lang.GridCallable
 
 /**
  * ==Overview==
- * Visor 'ccompact' command implementation.
+ * Visor 'compact' command implementation.
  *
  * ==Help==
  * {{{
  * +--------------------------------------------------------+
- * | ccompact | Compacts all entries in cache on all nodes. |
+ * | compact | Compacts all entries in cache on all nodes. |
  * +--------------------------------------------------------+
  * }}}
  *
  * ====Specification====
  * {{{
- *     ccompact
- *     ccompact -c=<cache-name>
+ *     compact
+ *     compact -c=<cache-name>
  * }}}
  *
  * ====Arguments====
@@ -53,9 +52,9 @@ import org.gridgain.grid.lang.GridCallable
  *
  * ====Examples====
  * {{{
- *     ccompact
- *         Compacts entries in default cache.
- *     ccompact -c=cache
+ *     compact
+ *         Compacts entries in interactively selected cache.
+ *     compact -c=cache
  *         Compacts entries in cache with name 'cache'.
  * }}}
  */
@@ -85,16 +84,27 @@ class VisorCacheCompactCommand {
     def compact(argLst: ArgList, node: Option[GridNode]) = breakable {
         val cacheArg = argValue("c", argLst)
 
-        val cache = if (cacheArg.isEmpty) null else cacheArg.get
+        val cacheName = cacheArg match {
+            case None => null // default cache.
 
-        val prj = if (node.isDefined) grid.forNode(node.get) else grid.forCache(cache)
+            case Some(s) if s.startsWith("@") =>
+                warn("Can't find cache variable with specified name: " + s,
+                    "Type 'cache' to see available cache variables."
+                )
+
+                break()
+
+            case Some(name) => name
+        }
+
+        val prj = if (node.isDefined) grid.forNode(node.get) else grid.forCache(cacheName)
 
         if (prj.isEmpty) {
             val msg =
-                if (cache == null)
+                if (cacheName == null)
                     "Can't find nodes with default cache."
                 else
-                    "Can't find nodes with specified cache: " + cache
+                    "Can't find nodes with specified cache: " + cacheName
 
             scold(msg).^^
         }
@@ -102,9 +112,9 @@ class VisorCacheCompactCommand {
         val res = prj.compute()
             .withName("visor-ccompact-task")
             .withNoFailover()
-            .broadcast(new CompactClosure(cache)).get
+            .broadcast(new CompactClosure(cacheName)).get
 
-        println("Compacts entries in cache: " + (if (cache == null) "<default>" else cache))
+        println("Compacts entries in cache: " + (if (cacheName == null) "<default>" else cacheName))
 
         val t = VisorTextTable()
 
