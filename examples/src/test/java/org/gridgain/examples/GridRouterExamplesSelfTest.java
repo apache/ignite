@@ -34,7 +34,7 @@ public class GridRouterExamplesSelfTest extends GridAbstractExamplesTest {
         // Start up a grid node.
         startGrid("grid-router-examples", "examples/config/example-cache.xml");
         // Start up a router.
-        startRouter("modules/clients/java/config/router/default-router.xml");
+        startRouter("modules/clients/src/main/java/config/router/default-router.xml");
     }
 
     /**
@@ -82,7 +82,7 @@ public class GridRouterExamplesSelfTest extends GridAbstractExamplesTest {
         if (httpCfg == null)
             throw new GridException("GridHttpRouterConfiguration is not found");
 
-        httpCfg.setJettyConfigurationPath("modules/clients/java/config/router/router-jetty.xml");
+        httpCfg.setJettyConfigurationPath("modules/clients/src/main/java/config/router/router-jetty.xml");
 
         GridRouterFactory.startHttpRouter(httpCfg);
     }
