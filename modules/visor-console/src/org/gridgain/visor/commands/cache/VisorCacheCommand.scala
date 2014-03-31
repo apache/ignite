@@ -559,7 +559,7 @@ class VisorCacheCommand {
             None
         else {
             try
-                Some(aggrData(a.toInt).cacheName)
+                Some(sortedAggrData(a.toInt).cacheName)
             catch {
                 case e: Throwable =>
                     warn("Invalid selection: " + a)
