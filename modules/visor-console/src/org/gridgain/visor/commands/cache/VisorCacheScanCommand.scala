@@ -172,13 +172,17 @@ class VisorCacheScanCommand {
                     return
             }
 
+        def escapeCacheName(name: String) = if (name == null) "<default>" else name
+
         if (res.rows.isEmpty) {
-            println("Cache is empty")
+            println("Cache: '" + escapeCacheName(cacheName) + "' is empty")
 
             return
         }
 
         def render() {
+            println("Entries in cache: '" + escapeCacheName(cacheName) + "'")
+
             val t = VisorTextTable()
 
             t #= ("Key Class", "Key", "Value Class", "Value")
