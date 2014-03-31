@@ -29,6 +29,7 @@ import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import visor._
 import org.gridgain.visor.commands.{VisorConsoleMultiNodeTask, VisorConsoleCommand, VisorTextTable}
+import VisorCacheCommand._
 
 /**
  * ==Overview==
@@ -218,7 +219,13 @@ class VisorCacheCommand {
                     case Right(n) => n
                 }
 
-                val cacheName = argValue("c", argLst)
+                val cacheName = argValue("c", argLst) match {
+                    case Some("<default>") | Some(CACHE_DFLT) =>
+                        argLst = argLst.filter(_._1 != "c") ++ Seq("c" -> null)
+
+                        Some(null)
+                    case cn => cn
+                }
 
                 if (Seq("clear", "compact", "scan").exists(hasArgFlag(_, argLst))) {
                     if (cacheName.isEmpty)
@@ -387,8 +394,11 @@ class VisorCacheCommand {
      * @param s Cache host.
      */
     private def mkCacheName(@Nullable s: String): String = {
-        if (s == null)
-            "<default>"
+        if (s == null) {
+            val v = mfind(CACHE_DFLT)
+
+            "<default>" + (if (v.isDefined) "(@" + v.get._1 + ')' else "")
+        }
         else {
             val v = mfind(s)
 
@@ -401,9 +411,7 @@ class VisorCacheCommand {
      *
      * @param s Cache host.
      */
-    private def registerCacheName(@Nullable s: String) =
-        if (s != null)
-            setVarIfAbsent(s, "c")
+    private def registerCacheName(@Nullable s: String) = setVarIfAbsent(if (s != null) s else CACHE_DFLT, "c")
 
     /**
      * ===Command===
@@ -868,6 +876,9 @@ object VisorCacheCommand {
         ),
         ref = VisorConsoleCommand(cmd.cache, cmd.cache)
     )
+
+    /** Default cache key. */
+    protected val CACHE_DFLT = "<default>-" + UUID.randomUUID().toString
 
     /** Singleton command */
     private val cmd = new VisorCacheCommand
