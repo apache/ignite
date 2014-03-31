@@ -18,7 +18,7 @@ import org.scalatest._
 /**
  * Test for interaction between visor and scalar.
  */
-class VisorScalarSpec extends FlatSpec with ShouldMatchers {
+class VisorScalarSpec extends FlatSpec with Matchers {
     behavior of "A visor object"
 
     it should "properly open and close w/o Scalar" in {
