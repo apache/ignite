@@ -11,14 +11,15 @@
 
 package org.gridgain.visor
 
+import org.scalatest.matchers._
+import org.scalatest._
 import org.gridgain.scalar._
 import org.gridgain.grid._
-import org.scalatest._
 
 /**
  * Test for interaction between visor and scalar.
  */
-class VisorScalarSpec extends FlatSpec with Matchers {
+class VisorScalarSpec extends FlatSpec with ShouldMatchers {
     behavior of "A visor object"
 
     it should "properly open and close w/o Scalar" in {
