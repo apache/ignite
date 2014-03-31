@@ -524,10 +524,12 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         Collection<? extends GridNode> subgrid = top != null ? ctx.discovery().nodes(top) : ctx.discovery().allNodes();
 
-        if (F.isEmpty(subgrid))
+        int size = subgrid.size();
+
+        if (size == 0)
             throw new GridEmptyProjectionException("Topology projection is empty.");
 
-        List<GridNode> shuffledNodes = new ArrayList<>(subgrid.size());
+        List<GridNode> shuffledNodes = new ArrayList<>(size);
 
         for (GridNode node : subgrid)
             shuffledNodes.add(node);

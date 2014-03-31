@@ -228,7 +228,7 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
                 }
             }
             else {
-                Collection<GridNode> all = ctx.discovery().nodes();
+                Collection<GridNode> all = ctx.discovery().allNodes();
 
                 return p != null ? F.view(all, p) : all;
             }

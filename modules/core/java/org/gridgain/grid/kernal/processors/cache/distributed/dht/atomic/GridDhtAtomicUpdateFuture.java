@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
@@ -66,10 +65,6 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
     /** Update response. */
     private GridNearAtomicUpdateResponse<K, V> updateRes;
 
-    /** Remote nodes predicate. */
-    @GridToStringExclude
-    private GridPredicate<GridNode> rmtNodes;
-
     /** Future keys. */
     private Collection<K> keys;
 
@@ -105,8 +100,6 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         this.updateRes = updateRes;
 
         log = U.logger(ctx, logRef, GridDhtAtomicUpdateFuture.class);
-
-        rmtNodes = F.remoteNodes(ctx.localNodeId());
 
         keys = new ArrayList<>(updateReq.keys().size());
     }
@@ -192,24 +185,24 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         if (log.isDebugEnabled())
             log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
 
-        Collection<GridNode> dhtRemoteNodes = F.view(dhtNodes, rmtNodes); // Exclude local node.
-
         GridCacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
 
         keys.add(entry.key());
 
-        for (GridNode node : dhtRemoteNodes) {
+        for (GridNode node : dhtNodes) {
             UUID nodeId = node.id();
 
-            GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
+            if (!F.eq(ctx.localNodeId(), nodeId)) {
+                GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
 
-            if (updateReq == null) {
-                updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl);
+                if (updateReq == null) {
+                    updateReq = new GridDhtAtomicUpdateRequest<>(nodeId, futVer, writeVer, syncMode, topVer, ttl);
 
-                mappings.put(nodeId, updateReq);
+                    mappings.put(nodeId, updateReq);
+                }
+
+                updateReq.addWriteValue(entry.key(), entry.keyBytes(), val, valBytes, drTtl, drExpireTime, drVer);
             }
-
-            updateReq.addWriteValue(entry.key(), entry.keyBytes(), val, valBytes, drTtl, drExpireTime, drVer);
         }
     }
 

@@ -931,22 +931,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     }
 
     /**
-     * @param nodes Nodes.
-     * @return Alive nodes.
-     */
-    public Collection<GridNode> aliveNodes(Collection<? extends GridNode> nodes) {
-        return F.view((Collection<GridNode>)nodes, aliveFilter);
-    }
-
-    /**
-     * @param p Filters.
-     * @return Collection of nodes for given filters.
-     */
-    public Collection<GridNode> nodes(GridPredicate<GridNode>... p) {
-        return F.isEmpty(p) ? allNodes() : F.view(allNodes(), p);
-    }
-
-    /**
      * Gets collection of node for given node IDs and predicates.
      *
      * @param ids Ids to include.
