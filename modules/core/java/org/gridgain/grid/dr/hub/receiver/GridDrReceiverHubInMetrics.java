@@ -34,4 +34,11 @@ public interface GridDrReceiverHubInMetrics {
      * @return Total amount of bytes received from remote sender hubs.
      */
     public long bytesReceived();
+
+    /**
+     * Checks whether metrics are empty, i.e. all parameters are zero.
+     *
+     * @return {@code True} if metrics are empty.
+     */
+    public boolean empty();
 }

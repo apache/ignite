@@ -62,4 +62,11 @@ public interface GridDrReceiverHubOutMetrics {
      * @return Average time in milliseconds between sending batch to receiver cache nodes and successfully storing it.
      */
     public double averageBatchAckTime();
+
+    /**
+     * Checks whether metrics are empty, i.e. all parameters are zero.
+     *
+     * @return {@code True} if metrics are empty.
+     */
+    public boolean empty();
 }

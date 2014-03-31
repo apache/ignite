@@ -34,4 +34,11 @@ public interface GridDrSenderHubInMetrics {
      * @return Amount of bytes received from sender caches.
      */
     public long bytesReceived();
+
+    /**
+     * Checks whether metrics are empty, i.e. all parameters are zero.
+     *
+     * @return {@code True} if metrics are empty.
+     */
+    public boolean empty();
 }
