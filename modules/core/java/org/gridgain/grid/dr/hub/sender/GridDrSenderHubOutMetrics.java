@@ -63,11 +63,4 @@ public interface GridDrSenderHubOutMetrics {
      *     for it.
      */
     public double averageBatchAckTime();
-
-    /**
-     * Checks whether metrics are empty, i.e. all parameters are zero.
-     *
-     * @return {@code True} if metrics are empty.
-     */
-    public boolean empty();
 }
