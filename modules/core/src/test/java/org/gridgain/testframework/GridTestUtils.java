@@ -817,7 +817,7 @@ public final class GridTestUtils {
      * @return Resolved path, or {@code null} if file cannot be resolved.
      */
     @Nullable private static File resolvePath(@Nullable String ggHome, String path) {
-        File file = new File(path);
+        File file = new File(path).getAbsoluteFile();
 
         if (!file.exists()) {
             String home = ggHome != null ? ggHome : U.getGridGainHome();

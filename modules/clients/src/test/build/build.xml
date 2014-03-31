@@ -23,6 +23,8 @@
     <property name="tests.cfg.dir" value="${test.base.dir}/src/test/resources"/>
     <property name="tests.src.dir" value="${test.base.dir}/src/test/java"/>
 
+    <property name="test.core.dir" value="${gridgain.home}/os/modules/core/src/test/java"/>
+
     <!-- JAR file names. -->
     <property name="jar.tests" value="${gg.sys.name}-clients-tests.jar"/>
 
@@ -46,6 +48,9 @@
 
         <!-- Copy java tests. -->
         <copy todir="${tmp.tests.src}">
+            <fileset dir="${test.core.dir}">
+                <include name="org/gridgain/testframework/**/*.java"/>
+            </fileset>
             <fileset dir="${tests.src.dir}">
                 <include name="**/*.java"/>
                 <include name="**/*.xml"/>
