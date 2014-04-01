@@ -60,7 +60,8 @@ public class GridCacheHibernateBlobStoreSelfTest extends
      * @throws Exception If failed.
      */
     public void testConfigurationByUrl() throws Exception {
-        URL url = U.resolveGridGainUrl("modules/core/src/test/java/org/gridgain/grid/cache/store/hibernate/hibernate.cfg.xml");
+        URL url = U.resolveGridGainUrl(
+            "modules/core/src/test/java/org/gridgain/grid/cache/store/hibernate/hibernate.cfg.xml");
 
         assert url != null;
 
@@ -74,7 +75,8 @@ public class GridCacheHibernateBlobStoreSelfTest extends
      * @throws Exception If failed.
      */
     public void testConfigurationByFile() throws Exception {
-        URL url = U.resolveGridGainUrl("modules/core/src/test/java/org/gridgain/grid/cache/store/hibernate/hibernate.cfg.xml");
+        URL url = U.resolveGridGainUrl(
+            "modules/core/src/test/java/org/gridgain/grid/cache/store/hibernate/hibernate.cfg.xml");
 
         assert url != null;
 

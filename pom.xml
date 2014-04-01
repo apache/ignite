@@ -39,4 +39,12 @@
         <module>modules/jdbc-driver</module>
         <module>modules/jdk8-backport</module>
     </modules>
+
+    <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/java</directory>
+            </testResource>
+        </testResources>
+    </build>
 </project>
