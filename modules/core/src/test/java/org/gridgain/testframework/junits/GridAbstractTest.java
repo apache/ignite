@@ -1031,6 +1031,7 @@ public abstract class GridAbstractTest extends TestCase {
         cfg.setGridGainHome(rsrcs.getGridgainHome());
         cfg.setMBeanServer(rsrcs.getMBeanServer());
         cfg.setPeerClassLoadingEnabled(true);
+        cfg.setMetricsLogFrequency(0);
 
         GridTcpCommunicationSpi commSpi = new GridTcpCommunicationSpi();
 

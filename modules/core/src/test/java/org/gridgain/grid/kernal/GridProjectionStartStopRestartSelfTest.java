@@ -172,7 +172,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 1, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 1, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
                 null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 1;
@@ -202,7 +202,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
                 null, false, DFLT_TIMEOUT, 1).get(WAIT_TIMEOUT);
 
         assert res.size() == 3;
@@ -232,7 +232,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
                 null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 3;
@@ -254,7 +254,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         assert grid.nodes().size() == 3;
 
         res = grid.startNodes(
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
             null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.isEmpty();
@@ -273,7 +273,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
                 null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 3;
@@ -295,7 +295,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         assert grid.nodes().size() == 3;
 
         res = grid.startNodes(
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 1, U.getGridGainHome(), CFG_NO_ATTR, null),
+            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 1, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
             null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.isEmpty();
@@ -314,7 +314,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
                 null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 3;
@@ -338,7 +338,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         joinedLatch = new CountDownLatch(2);
 
         res = grid.startNodes(
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 5, U.getGridGainHome(), CFG_NO_ATTR, null),
+            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 5, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
             null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 2;
@@ -368,8 +368,8 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
-                F.asList(map(HOST, SSH_UNAME, pwd, key, 2, U.getGridGainHome(), CFG_NO_ATTR, null),
-                    map(HOST, SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null)),
+                F.asList(map(HOST, SSH_UNAME, pwd, key, 2, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
+                    map(HOST, SSH_UNAME, pwd, key, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR, null)),
                 null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 5;
@@ -399,7 +399,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
                 null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 3;
@@ -424,7 +424,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         leftLatch = new CountDownLatch(3);
 
         res = grid.startNodes(
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
             null, true, 0, 16).get();
 
         assert res.size() == 3;
@@ -491,7 +491,8 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, null, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, null, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR,
+                    null),
                 null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 3;
@@ -526,7 +527,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 2, U.getGridGainHome(), CFG_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 2, U.getGridGainHome() + "/os", CFG_ATTR, null),
                 null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 2;
@@ -545,7 +546,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         joinedLatch = new CountDownLatch(1);
 
         res = grid.startNodes(
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
             null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 1;
@@ -589,7 +590,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
                 null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 3;
@@ -624,7 +625,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
                 null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 3;
@@ -666,7 +667,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
                 null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 3;
@@ -703,7 +704,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
                 null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 3;
@@ -740,7 +741,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 2, U.getGridGainHome(), CFG_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 2, U.getGridGainHome() + "/os", CFG_ATTR, null),
                 null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 2;
@@ -759,7 +760,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         joinedLatch = new CountDownLatch(1);
 
         res = grid.startNodes(
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
             null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 1;
@@ -806,7 +807,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
                 null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 3;
@@ -843,7 +844,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
                 null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 3;
@@ -882,7 +883,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             grid.startNodes(
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome() + "/os", CFG_NO_ATTR, null),
                 null, false, 0, 16).get(WAIT_TIMEOUT);
 
         assert res.size() == 3;
