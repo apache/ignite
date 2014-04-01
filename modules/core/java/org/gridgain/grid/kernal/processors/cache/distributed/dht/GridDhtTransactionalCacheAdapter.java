@@ -1034,26 +1034,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      */
     @SuppressWarnings({"unchecked"})
     protected final void processDhtTxFinishRequest(final UUID nodeId, final GridDhtTxFinishRequest<K, V> req) {
-        Collection<K> keys = F.viewReadOnly(req.writes(), CU.<K, V>tx2key());
-
-        GridFuture<Object> keyFut = F.isEmpty(keys) ? null :
-                ctx.dht().dhtPreloader().request(keys, req.topologyVersion());
-
-        try {
-            if (keyFut != null && !keyFut.isDone()) {
-                log.info("Wait keys");
-
-                keyFut.get();
-
-                log.info("Wait keys done");
-            }
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-
         if (req.onePhaseCommit() && beforePessimisticLock != null) {
-            GridFuture<Object> f = beforePessimisticLock.apply(keys, true);
+            GridFuture<Object> f = beforePessimisticLock.apply(F.viewReadOnly(req.writes(), CU.<K, V>tx2key()), true);
 
             if (f != null && !f.isDone()) {
                 f.listenAsync(new CI1<GridFuture<Object>>() {
