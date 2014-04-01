@@ -1482,7 +1482,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
                 final Map<K, V> map = ret ? new HashMap<K, V>(keys.size()) : null;
 
-                final Collection<? extends K> absentKeys = F.keep(keys, CU.keyHasMeta(ctx, uid));
+                final Collection<? extends K> absentKeys = F.view(keys, CU.keyHasMeta(ctx, uid));
 
                 final Collection<K> loadedKeys = new GridConcurrentHashSet<>();
 
