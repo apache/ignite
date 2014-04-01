@@ -470,7 +470,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
             boolean rec = cctx.events().isRecordable(EVT_CACHE_PRELOAD_OBJECT_LOADED);
 
-            boolean replicate = cctx.isReplicationEnabled();
+            boolean replicate = cctx.isDrEnabled();
 
             for (GridCacheEntryInfo<K, V> info : res.forcedInfos()) {
                 int p = cctx.affinity().partition(info.key());
