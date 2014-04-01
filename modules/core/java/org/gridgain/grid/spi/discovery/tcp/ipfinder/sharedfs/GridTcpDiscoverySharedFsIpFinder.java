@@ -47,6 +47,12 @@ public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAd
     /** Default path for local testing only. */
     public static final String DFLT_PATH = "work/disco/tcp";
 
+    /**
+     * Default directory name for SPI when {@code GRIDGAIN_HOME} not defined.
+     * This directory name relative to file path in {@code java.io.tmpdir} system property value.
+     */
+    private static final String DFLT_TMP_DIR = ".gg.sharedfs.disco";
+
     /** Delimiter to use between address and port tokens in file names. */
     public static final String DELIM = "#";
 
@@ -115,18 +121,18 @@ public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAd
                 U.warn(log, "Default local computer-only share is used by IP finder.");
 
             try {
-                URL folderUrl = U.resolveGridGainUrl(path);
-
-                if (folderUrl == null)
-                    throw new GridSpiException("Failed to resolve path: " + path);
-
                 File tmp;
 
-                try {
-                    tmp = new File(folderUrl.toURI());
-                }
-                catch (URISyntaxException e) {
-                    throw new GridSpiException("Failed to resolve path: " + path, e);
+                if (new File(path).exists())
+                    tmp = new File(path);
+                else {
+                    try {
+                        tmp = U.resolveWorkDirectory(path, DFLT_TMP_DIR, false, false);
+                    }
+                    catch (GridException e) {
+                        throw new GridSpiException("Failed to resolve directory [path=" + path +
+                            ", exception=" + e.getMessage() + ']');
+                    }
                 }
 
                 if (!tmp.isDirectory())

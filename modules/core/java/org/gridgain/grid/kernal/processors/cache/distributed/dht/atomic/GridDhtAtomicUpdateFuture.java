@@ -192,7 +192,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         for (GridNode node : dhtNodes) {
             UUID nodeId = node.id();
 
-            if (!F.eq(ctx.localNodeId(), nodeId)) {
+            if (!nodeId.equals(ctx.localNodeId())) {
                 GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
 
                 if (updateReq == null) {
