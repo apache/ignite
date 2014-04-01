@@ -55,7 +55,7 @@ public class GridCacheQueueHeader implements Externalizable, GridCacheInternal {
      * @param rmvIdxs Indexes of removed items.
      */
     public GridCacheQueueHeader(GridUuid uuid, int cap, boolean collocated, long head, long tail,
-                                @Nullable Set<Long> rmvIdxs) {
+        @Nullable Set<Long> rmvIdxs) {
         assert uuid != null;
         assert head <= tail;
 
@@ -68,7 +68,7 @@ public class GridCacheQueueHeader implements Externalizable, GridCacheInternal {
     }
 
     /**
-     * @return Queue unique ID.
+     * @return Queue UUID.
      */
     public GridUuid uuid() {
         return uuid;

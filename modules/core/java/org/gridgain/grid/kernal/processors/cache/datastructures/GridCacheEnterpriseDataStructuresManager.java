@@ -13,8 +13,11 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.thread.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.util.worker.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -33,6 +36,12 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCacheDataStructuresManager<K, V> {
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
+
+    /** Number of queue items to process before delaying cleanup. */
+    private static final long QUEUE_CLEANUP_THROTTLE_ITEMS = 10_000;
+
+    /** Queue cleanup throttle delay. */
+    private static final long QUEUE_CLEANUP_THROTTLE_DELAY = 5_000;
 
     /** Cache contains only {@code GridCacheInternal,GridCacheInternal}. */
     private GridCacheProjection<GridCacheInternal, GridCacheInternal> dsView;
@@ -57,6 +66,9 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
     /** Cache contains only entry {@code GridCacheQueueHeader}.  */
     private GridCacheProjection<GridCacheQueueKey, GridCacheQueueHeader> queueHdrView;
+
+    /** Worker removing orphaned queue items. */
+    private QueueCleanupWorker queueCleanupWorker;
 
     /** Init latch. */
     private final CountDownLatch initLatch = new CountDownLatch(1);
@@ -95,9 +107,14 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
                     (GridCacheInternalKey.class, GridCacheAtomicSequenceValue.class).flagsOn(CLONE);
             }
 
-            if (supportsQueue())
+            if (supportsQueue()) {
                 queueHdrView = cctx.cache().<GridCacheQueueKey, GridCacheQueueHeader>projection
                     (GridCacheQueueKey.class, GridCacheQueueHeader.class).flagsOn(CLONE);
+
+                queueCleanupWorker = new QueueCleanupWorker();
+
+                new GridThread(queueCleanupWorker).start();
+            }
 
             initFlag = true;
         }
@@ -106,24 +123,15 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         }
     }
 
-    /**
-     * @return {@code True} if cache is transactional with near cache enabled.
-     */
-    private boolean transactionalWithNear() {
-        return cctx.transactional() && (CU.isNearEnabled(cctx) || cctx.isReplicated() || cctx.isLocal());
-    }
+    /** {@inheritDoc} */
+    @Override protected void onKernalStop0(boolean cancel) {
+        super.onKernalStop0(cancel);
 
-    /**
-     * @throws GridException If cache is not transactional with near cache enabled.
-     */
-    private void checkTransactionalWithNear() throws GridException {
-        if (cctx.atomic())
-            throw new GridException("Data structures require GridCacheAtomicityMode.TRANSACTIONAL atomicity mode " +
-                "(change atomicity mode from ATOMIC to TRANSACTIONAL in configuration)");
+        if (queueCleanupWorker != null) {
+            U.cancel(queueCleanupWorker);
 
-        if (!cctx.isReplicated() && !cctx.isLocal() && !CU.isNearEnabled(cctx))
-            throw new GridException("Cache data structures can not be used with near cache disabled on cache: " +
-                cctx.cache().name());
+            U.join(queueCleanupWorker, log);
+        }
     }
 
     /** {@inheritDoc} */
@@ -469,22 +477,6 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         }
     }
 
-    /**
-     * @return {@code True} if {@link GridCacheQueue} can be used with current cache configuration.
-     */
-    private boolean supportsQueue() {
-        return !(cctx.atomic() && !cctx.isLocal() && cctx.config().getAtomicWriteOrderMode() == CLOCK);
-    }
-
-    /**
-     * @throws GridException If {@link GridCacheQueue} can not be used with current cache configuration.
-     */
-    private void checkSupportsQueue() throws GridException {
-        if (!supportsQueue())
-            throw new GridException("GridCacheQueue can not be used with ATOMIC cache with CLOCK write order mode" +
-                " (change write order mode to PRIMARY in configuration)");
-    }
-
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "IfMayBeConditional"})
     @Override public final <T> GridCacheQueue<T> queue(final String name, final int cap, boolean colloc,
@@ -535,11 +527,9 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         if (header == null)
             return false;
 
-        if (header.empty())
-            return true;
-
-        GridCacheQueueAdapter.removeKeys(cctx.cache(), header.uuid(), header.collocated(), header.head(),
-            header.tail(), batchSize);
+        if (!header.empty())
+            GridCacheQueueAdapter.removeKeys(cctx.cache(), header.uuid(), name, header.collocated(), header.head(),
+                header.tail(), batchSize);
 
         return true;
     }
@@ -776,6 +766,43 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     }
 
     /**
+     * @return {@code True} if cache is transactional with near cache enabled.
+     */
+    private boolean transactionalWithNear() {
+        return cctx.transactional() && (CU.isNearEnabled(cctx) || cctx.isReplicated() || cctx.isLocal());
+    }
+
+
+    /**
+     * @return {@code True} if {@link GridCacheQueue} can be used with current cache configuration.
+     */
+    private boolean supportsQueue() {
+        return !(cctx.atomic() && !cctx.isLocal() && cctx.config().getAtomicWriteOrderMode() == CLOCK);
+    }
+
+    /**
+     * @throws GridException If {@link GridCacheQueue} can not be used with current cache configuration.
+     */
+    private void checkSupportsQueue() throws GridException {
+        if (cctx.atomic() && !cctx.isLocal() && cctx.config().getAtomicWriteOrderMode() == CLOCK)
+            throw new GridException("GridCacheQueue can not be used with ATOMIC cache with CLOCK write order mode" +
+                " (change write order mode to PRIMARY in configuration)");
+    }
+
+    /**
+     * @throws GridException If cache is not transactional with near cache enabled.
+     */
+    private void checkTransactionalWithNear() throws GridException {
+        if (cctx.atomic())
+            throw new GridException("Data structures require GridCacheAtomicityMode.TRANSACTIONAL atomicity mode " +
+                "(change atomicity mode from ATOMIC to TRANSACTIONAL in configuration)");
+
+        if (!cctx.isReplicated() && !cctx.isLocal() && !CU.isNearEnabled(cctx))
+            throw new GridException("Cache data structures can not be used with near cache disabled on cache: " +
+                cctx.cache().name());
+    }
+
+    /**
      * Tries to cast the object to expected type.
      *
      * @param obj Object which will be casted.
@@ -800,5 +827,114 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         X.println(">>> ");
         X.println(">>> Data structure manager memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
         X.println(">>>   dsMapSize: " + dsMap.size());
+    }
+
+    /**
+     * Worker removing orphaned queue items.
+     */
+    private class QueueCleanupWorker extends GridWorker {
+        /**
+         */
+        private QueueCleanupWorker() {
+            super(cctx.gridName(), "queue-cleanup-worker", log);
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override protected void body() throws InterruptedException, GridInterruptedException {
+            final long cleanupFreq = Long.getLong(GridSystemProperties.GG_CACHE_QUEUE_CLEANUP_FREQUENCY, 10 * 60_000);
+
+            while (!isCancelled()) {
+                U.sleep(cleanupFreq);
+
+                try {
+                    GridCacheAdapter cache = cctx.cache();
+
+                    Map<GridUuid, GridCacheQueueHeader> aliveQueues = new GridLeanMap<>();
+
+                    Collection<GridUuid> deadQueues = new GridLeanSet<>();
+
+                    Collection<GridCacheQueueItemKey> rmvKeys = null;
+
+                    int cnt = 0;
+
+                    Set<GridCacheEntryEx<Object, Object>> entries = cache.map().allEntries0();
+
+                    for (GridCacheEntryEx<Object, Object> entry : entries) {
+                        if (!(entry.key() instanceof GridCacheQueueItemKey))
+                            continue;
+
+                        GridCacheQueueItemKey key = (GridCacheQueueItemKey)entry.key();
+
+                        boolean rmv;
+
+                        if (deadQueues.contains(key.queueId()))
+                            rmv = true;
+                        else if (aliveQueues.containsKey(key.queueId()))
+                            rmv = removeItem(aliveQueues.get(key.queueId()), key);
+                        else {
+                            GridCacheQueueHeader header = (GridCacheQueueHeader)cache.get(
+                                new GridCacheQueueKey(key.queueName()));
+
+                            if (header == null) {
+                                deadQueues.add(key.queueId());
+
+                                rmv = true;
+                            }
+                            else {
+                                aliveQueues.put(header.uuid(), header);
+
+                                rmv = removeItem(header, key);
+                            }
+                        }
+
+                        if (rmv) {
+                            if (log.isDebugEnabled())
+                                log.debug("Found orphaned queue item: " + key);
+
+                            if (rmvKeys == null)
+                                rmvKeys = new ArrayList<>(10);
+
+                            rmvKeys.add(key);
+
+                            if (rmvKeys.size() == 10) {
+                                cache.removeAll(rmvKeys);
+
+                                rmvKeys.clear();
+                            }
+                        }
+
+                        if (++cnt % QUEUE_CLEANUP_THROTTLE_ITEMS == 0) {
+                            if (isCancelled())
+                                return;
+
+                            U.sleep(QUEUE_CLEANUP_THROTTLE_DELAY);
+                        }
+                    }
+
+                    if (!F.isEmpty(rmvKeys))
+                        cache.removeAll(rmvKeys);
+                }
+                catch (GridInterruptedException ignore) {
+                    return;
+                }
+                catch (GridException e) {
+                    U.error(log, "Failed to cleanup orphaned queue items [cache=" + cctx.name() + ']', e);
+                }
+            }
+        }
+
+        /**
+         * @param header Queue header.
+         * @param key Item key.
+         * @return {@code True} if item is orphaned and should be removed.
+         */
+        @SuppressWarnings("SimplifiableIfStatement")
+        private boolean removeItem(GridCacheQueueHeader header, GridCacheQueueItemKey key) {
+            if (!header.uuid().equals(key.queueId())) // Another queue with the same name was created.
+                return true;
+
+            return cctx.transactional() ? key.index() < header.head() : key.index() < (header.head() - 1000);
+        }
     }
 }
