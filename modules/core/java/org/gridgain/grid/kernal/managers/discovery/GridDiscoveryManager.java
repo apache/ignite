@@ -1164,9 +1164,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * Gets topology by specified version from history storage.
      *
      * @param topVer Topology version.
-     * @return Topology nodes.
+     * @return Topology nodes or {@code null} if there are no nodes for passed in version.
      */
-    public Collection<GridNode> topology(long topVer) {
+    @Nullable public Collection<GridNode> topology(long topVer) {
         if (!histSupported)
             throw new UnsupportedOperationException("Current discovery SPI does not support " +
                 "topology snapshots history (consider using TCP discovery SPI).");

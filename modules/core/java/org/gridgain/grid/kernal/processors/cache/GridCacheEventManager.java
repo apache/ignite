@@ -124,16 +124,17 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
         if (!cctx.events().isRecordable(type))
             LT.warn(log, null, "Added event without checking if event is recordable: " + U.gridEventName(type));
 
-        GridNode evtNode = cctx.discovery().node(evtNodeId);
-
-        if (evtNode == null)
-            evtNode = findNodeInHistory(evtNodeId);
-
-        // Events are not made for internal entry.
+        // Events are not fired for internal entry.
         if (!(key instanceof GridCacheInternal)) {
+            GridNode evtNode = cctx.discovery().node(evtNodeId);
+
             if (evtNode == null)
-                LT.warn(log, null, "Node which initiated cache operation is not available now, so cache event " +
-                    "will be recorded with null event node property. Try to increase topology history size.");
+                evtNode = findNodeInHistory(evtNodeId);
+
+            if (evtNode == null)
+                LT.warn(log, null, "Failed to find event node in grid topology history " +
+                    "(try to increase topology history size configuration property of configured " +
+                    "discovery SPI): " + evtNodeId);
 
             cctx.gridEvents().record(new GridCacheEvent(cctx.name(), cctx.localNode(), evtNode,
                 "Cache event.", type, part, cctx.isNear(), key, xid, lockId, newVal, hasNewVal, oldVal, hasOldVal));
@@ -147,18 +148,18 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Found node or {@code null} if history doesn't contain this node.
      */
     @Nullable private GridNode findNodeInHistory(UUID nodeId) {
-        long topVer = cctx.discovery().topologyVersion();
-
-        while (true) {
-            Collection<GridNode> top = cctx.discovery().topology(--topVer);
+        for (long topVer = cctx.discovery().topologyVersion() - 1; topVer > 0; topVer--) {
+            Collection<GridNode> top = cctx.discovery().topology(topVer);
 
             if (top == null)
-                return null;
+                break;
 
             for (GridNode node : top)
                 if (F.eq(node.id(), nodeId))
                     return node;
         }
+
+        return null;
     }
 
     /**
