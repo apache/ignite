@@ -179,7 +179,7 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
                 assert evt instanceof GridDiscoveryEvent : "Invalid event [expected=" + EVT_NODE_JOINED +
                     ", actual=" + evt.type() + ", evt=" + evt + ']';
 
-                GridNode node = spiCtx.node(((GridDiscoveryEvent)evt).eventNodeId());
+                GridNode node = spiCtx.node(((GridDiscoveryEvent)evt).eventNode().id());
 
                 if (node != null)
                     try {

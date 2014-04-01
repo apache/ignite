@@ -83,7 +83,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
                 for (GridCacheDistributedQueryFuture fut : futs.values())
-                    fut.onNodeLeft(discoEvt.eventNodeId());
+                    fut.onNodeLeft(discoEvt.eventNode().id());
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }

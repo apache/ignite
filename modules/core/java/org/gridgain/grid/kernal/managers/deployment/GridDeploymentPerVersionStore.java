@@ -93,7 +93,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                         for (Iterator<SharedDeployment> i2 = deps.iterator(); i2.hasNext();) {
                             SharedDeployment dep = i2.next();
 
-                            dep.removeParticipant(discoEvt.eventNodeId());
+                            dep.removeParticipant(discoEvt.eventNode().id());
 
                             if (!dep.hasParticipants()) {
                                 if (dep.deployMode() == SHARED) {
@@ -126,7 +126,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                     }
                 }
 
-                recordUndeployed(discoEvt.eventNodeId(), undeployed);
+                recordUndeployed(discoEvt.eventNode().id(), undeployed);
             }
         };
 
@@ -1194,7 +1194,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
             if (ctx.event().isRecordable(type)) {
                 GridDeploymentEvent evt = new GridDeploymentEvent();
 
-                evt.nodeId(ctx.localNodeId());
+                evt.node(ctx.discovery().localNode());
                 evt.message(msg);
                 evt.type(type);
                 evt.alias(cls.getName());
@@ -1225,7 +1225,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 if (ctx.event().isRecordable(type)) {
                     GridDeploymentEvent evt = new GridDeploymentEvent();
 
-                    evt.nodeId(ctx.localNodeId());
+                    evt.node(ctx.discovery().localNode());
                     evt.message(msg);
                     evt.type(type);
                     evt.alias(depCls.getKey());

@@ -276,7 +276,7 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
                 GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
                 for (GridStreamerStageExecutionFuture fut : stageFuts.values())
-                    fut.onNodeLeft(discoEvt.eventNodeId());
+                    fut.onNodeLeft(discoEvt.eventNode().id());
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }

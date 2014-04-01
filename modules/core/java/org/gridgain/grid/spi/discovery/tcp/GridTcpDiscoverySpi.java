@@ -439,14 +439,21 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     }
 
     /**
-     * Size of topology snapshots history.
-     * <p>
-     * If not specified, default is {@link #DFLT_TOP_HISTORY_SIZE}.
+     * Sets size of topology snapshots history. Specified size should be greater than or equal to default size
+     * {@link #DFLT_TOP_HISTORY_SIZE}.
      *
      * @param topHistSize Size of topology snapshots history.
      */
     @GridSpiConfiguration(optional = true)
     public void setTopHistorySize(int topHistSize) {
+        if (topHistSize < DFLT_TOP_HISTORY_SIZE) {
+            U.warn(log, "Topology history size should be greater than or equal to default size. " +
+                "Specified size will not be set [curSize=" + this.topHistSize + ", specifiedSize=" + topHistSize +
+                ", defaultSize=" + DFLT_TOP_HISTORY_SIZE + ']');
+
+            return;
+        }
+
         this.topHistSize = topHistSize;
     }
 
