@@ -806,9 +806,9 @@ public final class GridTestUtils {
      * @return Resolved path, or {@code null} if file cannot be resolved.
      */
     @Nullable public static File resolveGridGainPath(@Nullable String ggHome, String path) {
-        File file = resolvePath(ggHome, "os/" + path);
+        File file = resolvePath(ggHome, path);
 
-        return file != null ? file : resolvePath(ggHome, path);
+        return file != null ? file : resolvePath(ggHome, "os/" + path);
     }
 
     /**

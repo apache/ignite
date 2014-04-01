@@ -47,9 +47,6 @@ public final class GridTestProperties {
     public static final String TESTS_CFG_PATH = "modules/core/src/test/config";
 
     /** */
-    public static final String OPTIONAL_TESTS_CFG_PATH = "modules/core/src/test/config";
-
-    /** */
     private static final Pattern PROP_REGEX = Pattern.compile("[@$]\\{[^@${}]+\\}");
 
     /** */
@@ -60,28 +57,19 @@ public final class GridTestProperties {
 
     /** */
     static {
-        String ggHome = System.getProperty("GG_TEST_HOME");
+        // Initialize GRIDGAIN_HOME system property.
+        String ggHome = System.getProperty("GRIDGAIN_HOME");
 
-        if (ggHome == null) {
-            // Initialize GRIDGAIN_HOME system property.
-            ggHome = System.getProperty("GRIDGAIN_HOME");
+        if (ggHome == null || ggHome.isEmpty()) {
+            ggHome = System.getenv("GRIDGAIN_HOME");
 
-            if (ggHome == null || ggHome.isEmpty()) {
-                ggHome = System.getenv("GRIDGAIN_HOME");
-
-                if (ggHome != null && !ggHome.isEmpty()) {
-                    System.setProperty("GRIDGAIN_HOME", ggHome);
-                }
+            if (ggHome != null && !ggHome.isEmpty()) {
+                System.setProperty("GRIDGAIN_HOME", ggHome);
             }
         }
 
-        File cfgDir = GridTestUtils.resolveGridGainPath(ggHome, TESTS_CFG_PATH);
-
-        assert cfgDir != null;
-        assert cfgDir.isDirectory();
-
         // Load default properties.
-        File cfgFile = new File(cfgDir, TESTS_PROP_FILE);
+        File cfgFile = getTestConfigurationFile(null, TESTS_PROP_FILE);
 
         assert cfgFile.exists();
         assert !cfgFile.isDirectory();
@@ -259,37 +247,20 @@ public final class GridTestProperties {
      * @param fileName File name.
      * @return Configuration file for given user.
      */
-    @Nullable private static File getTestConfigurationFile(String user, String fileName) {
-        String ggTestHome = System.getProperty("GG_TEST_HOME");
+    @Nullable private static File getTestConfigurationFile(@Nullable String user, String fileName) {
+        String path = TESTS_CFG_PATH;
 
-        File baseCfgDir = GridTestUtils.resolveGridGainPath(ggTestHome, TESTS_CFG_PATH);
+        if (user != null)
+            path += File.separatorChar + user;
 
-        File userCfgDir = new File(baseCfgDir, user);
+        path += File.separatorChar + fileName;
 
-        if (userCfgDir.exists()) {
-            File file = new File(userCfgDir, fileName);
+        File file = GridTestUtils.resolveGridGainPath(path);
 
-            if (file.exists()) {
-                assert !file.isDirectory();
+        if (file != null && file.exists()) {
+            assert !file.isDirectory();
 
-                return file;
-            }
-        }
-
-        baseCfgDir = GridTestUtils.resolveGridGainPath(ggTestHome, OPTIONAL_TESTS_CFG_PATH);
-
-        if (baseCfgDir != null) {
-            userCfgDir = new File(baseCfgDir, user);
-
-            if (userCfgDir.exists()) {
-                File file = new File(userCfgDir, fileName);
-
-                if (file.exists()) {
-                    assert !file.isDirectory();
-
-                    return file;
-                }
-            }
+            return file;
         }
 
         return null;

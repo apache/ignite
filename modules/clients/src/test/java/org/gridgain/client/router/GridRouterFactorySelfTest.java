@@ -80,7 +80,7 @@ public class GridRouterFactorySelfTest extends GridCommonAbstractTest {
 
             System.setProperty(GG_JETTY_PORT, String.valueOf(ROUTER_HTTP_PORT));
 
-            httpCfg.setJettyConfigurationPath("modules/clients/java/config/router/router-jetty.xml");
+            httpCfg.setJettyConfigurationPath("modules/clients/src/main/java/config/router/router-jetty.xml");
 
             try {
                 httpRouters.add(GridRouterFactory.startHttpRouter(httpCfg));

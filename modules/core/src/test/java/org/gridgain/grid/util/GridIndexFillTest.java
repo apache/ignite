@@ -11,7 +11,6 @@ package org.gridgain.grid.util;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.snaptree.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
@@ -127,8 +126,6 @@ public class GridIndexFillTest extends GridCommonAbstractTest {
         }, 12, "put");
 
         Thread.sleep(500);
-
-        U.debug(idxs.get(0).tree.size());
 
         Idx newIdx = new Idx(false);
 
