@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -257,9 +258,10 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param val Value.
      * @param valBytes Value bytes.
      * @param drVer Data center replication version.
+     * @param clos Transform closures.
      */
     void addWrite(GridCacheOperation op, K key, byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes,
-        @Nullable GridCacheVersion drVer) {
+        @Nullable Collection<GridClosure<V, V>> clos, @Nullable GridCacheVersion drVer) {
         checkInternal(key);
 
         if (isSystemInvalidate())
@@ -271,6 +273,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
 
         txEntry.keyBytes(keyBytes);
         txEntry.valueBytes(valBytes);
+        txEntry.transformClosures(clos);
 
         writeMap.put(key, txEntry);
     }
