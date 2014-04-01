@@ -101,11 +101,150 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         return cap < Integer.MAX_VALUE;
     }
 
+    /** */
+    private static final int MAX_REPEAT_NUM = 100;
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public boolean offer(T item) throws GridRuntimeException {
+        try {
+            int cnt = 0;
+
+            Long idx = null;
+
+            boolean retry = false;
+
+            while (cnt < MAX_REPEAT_NUM) {
+                try {
+                    idx = (Long)cache.transformCompute(queueKey, new AddClosure(uuid, 1));
+
+                    break;
+                }
+                catch (GridCacheTxRollbackException | GridCachePartialUpdateException e) {
+                    if (cnt++ == MAX_REPEAT_NUM)
+                        throw e;
+                    else
+                        U.warn(log, "Failed to update queue header, will retry [err=" + e + ']');
+
+                    retry = true;
+                }
+            }
+
+            if (retry)
+                log.info("Computed idx after retry: " + idx);
+
+            if (idx == null)
+                return false;
+
+            checkRemoved(idx);
+
+            cnt = 0;
+
+            ItemKey key = new ItemKey(uuid, idx, collocated());
+
+            while (cnt < MAX_REPEAT_NUM) {
+                try {
+                    boolean putx = cache.putx(key, item, null);
+
+                    assert putx;
+
+                    break;
+                }
+                catch (GridCacheTxRollbackException | GridCachePartialUpdateException e) {
+                    if (cnt++ == MAX_REPEAT_NUM)
+                        throw e;
+                    else
+                        U.warn(log, "Failed to put queue item, will retry [err=" + e + ", idx=" + idx + ']');
+                }
+            }
+
+            return true;
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Nullable @Override public T poll() throws GridRuntimeException {
+        try {
+            int cnt = 0;
+
+            Long idx = null;
+
+            boolean retry = false;
+
+            while (cnt < MAX_REPEAT_NUM) {
+                try {
+                    idx = (Long)cache.transformCompute(queueKey, new PollClosure(uuid));
+
+                    break;
+                }
+                catch (GridCacheTxRollbackException | GridCachePartialUpdateException e) {
+                    if (cnt++ == MAX_REPEAT_NUM)
+                        throw e;
+                    else
+                        U.warn(log, "Failed to update queue header, will retry [err=" + e + ']');
+
+                    retry = true;
+                }
+            }
+
+            if (retry)
+                log.info("Computed poll idx after retry: " + idx);
+
+            if (idx == null)
+                return null;
+
+            checkRemoved(idx);
+
+            ItemKey key = new ItemKey(uuid, idx, collocated());
+
+            cnt = 0;
+
+            while (cnt < MAX_REPEAT_NUM) {
+                try {
+                    T data = (T)cache.remove(key, null);
+
+                    if (data != null)
+                        return data;
+
+                    long stop = U.currentTimeMillis() + 2000;
+
+                    while (U.currentTimeMillis() < stop ) {
+                        data = (T)cache.remove(key, null);
+
+                        if (data != null)
+                            return data;
+                    }
+
+                    break;
+                }
+                catch (GridCacheTxRollbackException | GridCachePartialUpdateException e) {
+                    if (cnt++ == MAX_REPEAT_NUM)
+                        throw e;
+                    else
+                        U.warn(log, "Failed to remove queue item, will retry [err=" + e + ']');
+                }
+            }
+
+            U.warn(log, "Failed to get item, retrying poll [queue=" + queueName + ", idx=" + idx + ']');
+
+            return poll();
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public int size() {
         try {
             GridCacheQueueHeader header = (GridCacheQueueHeader)cache.get(queueKey);
+
+            log.info("Size: " + header);
 
             checkRemoved(header);
 
@@ -322,7 +461,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      */
     protected final void checkRemoved(Long idx) {
         if (idx == QUEUE_REMOVED_IDX) {
-            rmvd = true;
+            // rmvd = true;
 
             throw new GridCacheDataStructureRemovedRuntimeException("Queue has been removed from cache: " + this);
         }
@@ -356,6 +495,12 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @return {@code True} if queue was removed.
      */
     private static boolean queueRemoved(@Nullable GridCacheQueueHeader header, GridUuid uuid) {
+        if (header == null || !uuid.equals(header.uuid())) {
+            System.err.println("Queue removed: " + header + " " + uuid);
+
+            //U.dumpStack(null, "removed");
+        }
+
         return header == null || !uuid.equals(header.uuid());
     }
 
@@ -598,16 +743,26 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         /** {@inheritDoc} */
         @Override public Long compute(@Nullable GridCacheQueueHeader header) {
-            if (queueRemoved(header, uuid))
-                return QUEUE_REMOVED_IDX;
+            if (queueRemoved(header, uuid)) {
+                // // System.out.println(Thread.currentThread().getName() + " computed " + null);
 
-            if (header.empty())
+                return QUEUE_REMOVED_IDX;
+            }
+
+            if (header.empty()) {
+                // // System.out.println(Thread.currentThread().getName() + " computed " + null);
                 return null;
+            }
 
             Set<Long> rmvIdx = header.removedIndexes();
 
-            if (rmvIdx == null)
+            if (rmvIdx == null) {
+                // // System.out.println(Thread.currentThread().getName() + " computed " + header.head());
+
                 return header.head();
+            }
+
+            assert false;
 
             long next = header.head();
 
@@ -623,14 +778,24 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         /** {@inheritDoc} */
         @Override public GridCacheQueueHeader apply(@Nullable GridCacheQueueHeader header) {
-            if (queueRemoved(header, uuid) || header.empty())
+            if (queueRemoved(header, uuid) || header.empty()) {
+                // System.out.println(Thread.currentThread().getName() + " apply " + header);
+
                 return header;
+            }
 
             Set<Long> removedIdx = header.removedIndexes();
 
-            if (removedIdx == null)
-                return new GridCacheQueueHeader(header.uuid(), header.capacity(), header.collocated(),
+            if (removedIdx == null) {
+                GridCacheQueueHeader r =  new GridCacheQueueHeader(header.uuid(), header.capacity(), header.collocated(),
                     header.head() + 1, header.tail(), removedIdx);
+
+                // System.out.println(Thread.currentThread().getName() + " apply " + header + " " + r);
+
+                return r;
+            }
+
+            assert false;
 
             long next = header.head() + 1;
 
@@ -696,11 +861,19 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         /** {@inheritDoc} */
         @Override public GridCacheQueueHeader apply(@Nullable GridCacheQueueHeader header) {
-            if (queueRemoved(header, uuid) || !spaceAvailable(header, size))
-                return header;
+            if (queueRemoved(header, uuid) || !spaceAvailable(header, size)) {
+                // System.out.println(Thread.currentThread().getName() + " add apply " + header);
 
-            return new GridCacheQueueHeader(header.uuid(), header.capacity(), header.collocated(), header.head(),
+                return header;
+            }
+
+            GridCacheQueueHeader ret = new GridCacheQueueHeader(header.uuid(), header.capacity(), header.collocated(), header.head(),
                 header.tail() + size, header.removedIndexes());
+
+            //U.dumpStack(null, "add apply " + Thread.currentThread().getName());
+            // System.out.println(Thread.currentThread().getName() + " add apply " + ret.head()  + "/" + ret.tail() + " " + header.head() + " " + header.tail());
+
+            return ret;
         }
 
         /**

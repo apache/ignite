@@ -1067,8 +1067,12 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                 V val = txEntry.hasValue() ? txEntry.value() :
                     txEntry.cached().innerGet(this, false, false, true, true, metrics, false, CU.<K, V>empty());
 
-                for (GridClosure<V, V> clos : txEntry.transformClosures())
-                    val = clos.apply(val);
+                if (!txEntry.cached().version().equals(writeVersion())) {
+                    for (GridClosure<V, V> clos : txEntry.transformClosures())
+                        val = clos.apply(val);
+                }
+                else
+                    log.info("Skip transform: " + val);
 
                 GridCacheOperation op = val == null ? DELETE : UPDATE;
 

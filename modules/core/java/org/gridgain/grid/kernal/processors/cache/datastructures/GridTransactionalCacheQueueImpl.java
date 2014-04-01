@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.lang.GridBiTuple;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -35,62 +36,6 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     public GridTransactionalCacheQueueImpl(String queueName, GridUuid uuid, int cap, boolean collocated,
         GridCacheContext<?, ?> cctx) {
         super(queueName, uuid, cap, collocated, cctx);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public boolean offer(T item) throws GridRuntimeException {
-        try {
-            Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(uuid, 1));
-
-            if (idx == null)
-                return false;
-
-            checkRemoved(idx);
-
-            cache.putx(new ItemKey(uuid, idx, collocated()), item, null);
-
-            return true;
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public T poll() throws GridRuntimeException {
-        try {
-            Long idx = (Long)cache.transformCompute(queueKey, new PollClosure(uuid));
-
-            if (idx == null)
-                return null;
-
-            checkRemoved(idx);
-
-            ItemKey key = new ItemKey(uuid, idx, collocated());
-
-            T data = (T)cache.remove(key, null);
-
-            if (data != null)
-                return data;
-
-            long stop = U.currentTimeMillis() + 2000;
-
-            while (U.currentTimeMillis() < stop ) {
-                data = (T)cache.remove(key, null);
-
-                if (data != null)
-                    return data;
-            }
-
-            U.warn(log, "Failed to get item, retrying poll [queue=" + queueName + ", idx=" + idx + ']');
-
-            return poll();
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
-        }
     }
 
     /** {@inheritDoc} */
@@ -160,33 +105,63 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     }
 
     /** {@inheritDoc} */
-    /*
     @SuppressWarnings("unchecked")
     @Nullable @Override public T poll() throws GridRuntimeException {
         try {
-            T e = null;
+            T ret = null;
 
-            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                Long idx = (Long)cache.transformCompute(queueKey, new PollClosure(uuid));
+            int cnt = 0;
 
-                if (idx != null) {
-                    checkRemoved(idx);
+            Long idx = null;
 
-                    e = (T)cache.remove(new ItemKey(uuid, idx, collocated()), null);
+            while (cnt < 100) {
+                //log.info("Tx start");
 
-                    assert e != null;
+                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    //log.info("Tx compute");
+
+                    idx = (Long)cache.transformCompute(queueKey, new PollClosure(uuid));
+
+                    if (cnt > 0)
+                        log.info("Computed tx poll after retry: " + idx);
+
+                    if (idx != null) {
+                        checkRemoved(idx);
+
+                        // log.info("Tx remove");
+
+                        ret = (T)cache.remove(new ItemKey(uuid, idx, collocated()), null);
+
+                        if (ret == null) {
+                            tx.rollback();
+
+                            log.info("Got null for " + idx + " " + cnt);
+                        }
+                        else
+                            log.info("Got " + ret + " for " + idx + " " + cnt);
+                    }
+                    else
+                        tx.commit();
+
+                    break;
                 }
+                catch(GridTopologyException e) {
+                    if (cnt++ == 100)
+                        throw e;
+                    else {
+                        log.error("Poll tx", e);
 
-                tx.commit();
+                        U.warn(log, "Failed to poll, will retry [err=" + e + ']');
+                    }
+                }
             }
 
-            return e;
+            return ret;
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
         }
     }
-    */
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")

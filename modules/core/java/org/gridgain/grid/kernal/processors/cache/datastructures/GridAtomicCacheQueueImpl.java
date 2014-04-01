@@ -38,62 +38,6 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public boolean offer(T item) throws GridRuntimeException {
-        try {
-            Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(uuid, 1));
-
-            if (idx == null)
-                return false;
-
-            checkRemoved(idx);
-
-            cache.putx(new ItemKey(uuid, idx, collocated()), item, null);
-
-            return true;
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public T poll() throws GridRuntimeException {
-        try {
-            Long idx = (Long)cache.transformCompute(queueKey, new PollClosure(uuid));
-
-            if (idx == null)
-                return null;
-
-            checkRemoved(idx);
-
-            ItemKey key = new ItemKey(uuid, idx, collocated());
-
-            T data = (T)cache.remove(key, null);
-
-            if (data != null)
-                return data;
-
-            long stop = U.currentTimeMillis() + RETRY_TIMEOUT;
-
-            while (U.currentTimeMillis() < stop ) {
-                data = (T)cache.remove(key, null);
-
-                if (data != null)
-                    return data;
-            }
-
-            U.warn(log, "Failed to get item, retrying poll [queue=" + queueName + ", idx=" + idx + ']');
-
-            return poll();
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void removeItem(long rmvIdx) throws GridException {
         Long idx = (Long)cache.transformCompute(queueKey, new RemoveClosure(uuid, rmvIdx));
 
