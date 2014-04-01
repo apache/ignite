@@ -3999,6 +3999,23 @@ public class GridFunc {
     }
 
     /**
+     * Tests if the given array is {@code null}, empty or contains only {@code null} values.
+     *
+     * @param c Array to test.
+     * @return Whether or not the given array is {@code null}, empty or contains only {@code null} values.
+     */
+    public static <T> boolean isEmptyOrNulls(@Nullable T[] c) {
+        if (isEmpty(c))
+            return true;
+
+        for (T element : c)
+            if (element != null)
+                return false;
+
+        return true;
+    }
+
+    /**
      * Tests if the given array is either {@code null} or empty.
      *
      * @param c Array to test.
