@@ -24,8 +24,10 @@ import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.h2.api.*;
+import org.h2.command.*;
 import org.h2.constant.*;
 import org.h2.index.*;
+import org.h2.jdbc.*;
 import org.h2.message.*;
 import org.h2.mvstore.cache.*;
 import org.h2.server.web.*;
@@ -174,6 +176,23 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
 
     /** */
     private static final GridIndexingQueryFilter[] EMPTY_FILTER = new GridIndexingQueryFilter[0];
+
+    /** */
+    private static final Field COMMAND_FIELD;
+
+    /**
+     * Command in H2 prepared statement.
+     */
+    static {
+        try {
+            COMMAND_FIELD = JdbcPreparedStatement.class.getDeclaredField("command");
+
+            COMMAND_FIELD.setAccessible(true);
+        }
+        catch (NoSuchFieldException e) {
+            throw new IllegalStateException("Check H2 version in classpath.", e);
+        }
+    }
 
     /** */
     private static final JavaObjectSerializer SERIALIZER = new JavaObjectSerializer() {
@@ -717,6 +736,19 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     }
 
     /**
+     * @param stmt Prepared statement.
+     * @return Command type.
+     */
+    private static int commandType(PreparedStatement stmt) {
+        try {
+            return ((CommandInterface)COMMAND_FIELD.get(stmt)).getCommandType();
+        }
+        catch (IllegalAccessException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
      * Executes sql query.
      *
      * @param conn Connection,.
@@ -738,6 +770,16 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
                 return null;
 
             throw new GridSpiException("Failed to parse query: " + sql, e);
+        }
+
+        switch (commandType(stmt)) {
+            case CommandInterface.SELECT:
+            case CommandInterface.CALL:
+            case CommandInterface.EXPLAIN:
+            case CommandInterface.ANALYZE:
+                break;
+            default:
+                throw new GridSpiException("Failed to execute non-query SQL statement: " + sql);
         }
 
         bindParameters(stmt, params);

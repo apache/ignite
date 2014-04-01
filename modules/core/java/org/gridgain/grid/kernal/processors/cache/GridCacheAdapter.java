@@ -16,6 +16,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.dataload.*;
+import org.gridgain.grid.dr.cache.sender.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
@@ -1780,7 +1781,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
                                                 // Don't put key-value pair into result map if value is null.
                                                 if (val != null) {
-                                                    if (set || F.isEmpty(filter))
+                                                    if (set || F.isEmptyOrNulls(filter))
                                                         map.put(key, ctx.cloneOnFlag(val));
                                                     else {
                                                         touch = false;
@@ -2858,7 +2859,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Override public void removeAll(GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         ctx.denyOnLocalRead();
 
-        if (F.isEmpty(filter))
+        if (F.isEmptyOrNulls(filter))
             filter = ctx.trueArray();
 
         final GridPredicate<GridCacheEntry<K, V>>[] p = filter;
@@ -3220,7 +3221,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public void loadCache(final GridBiPredicate<K, V> p, final long ttl, Object[] args) throws GridException {
-        final boolean replicate = ctx.isReplicationEnabled();
+        final boolean replicate = ctx.isDrEnabled();
 
         if (ctx.store().isLocalStore()) {
             try (final GridDataLoader<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex())) {
@@ -3837,28 +3838,61 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public GridFuture<?> drFullStateTransfer(Collection<Byte> dataCenterIds) {
-        if (!ctx.isReplicationEnabled())
-            throw new IllegalStateException("Replication is not configured for cache: " + ctx.namexx());
+    @Override public GridFuture<?> drStateTransfer(Collection<Byte> dataCenterIds) {
+        checkDrEnabled();
 
-
-        return ctx.dr().fullStateTransfer(dataCenterIds);
+        return ctx.dr().stateTransfer(dataCenterIds);
     }
 
     /** {@inheritDoc} */
-    @Override public void drPause() throws GridException {
-        if (!ctx.isReplicationEnabled())
-            throw new IllegalStateException("Replication is not configured for cache: " + ctx.namexx());
+    @Override public Collection<GridDrStateTransferDescriptor> drListStateTransfers() {
+        checkDrEnabled();
 
-        ctx.dr().pauseReplication();
+        try {
+            return ctx.dr().listStateTransfers();
+        }
+        catch (GridException e) {
+            throw new IllegalStateException("Failed to list state transfers because grid is stopping.");
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void drResume() throws GridException {
-        if (!ctx.isReplicationEnabled())
-            throw new IllegalStateException("Replication is not configured for cache: " + ctx.namexx());
+    @Override public void drPause() {
+        checkDrEnabled();
 
-        ctx.dr().resumeReplication();
+        try {
+            ctx.dr().pause();
+        }
+        catch (GridException e) {
+            throw new IllegalStateException(e.getMessage());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void drResume() {
+        checkDrEnabled();
+
+        try {
+            ctx.dr().resume();
+        }
+        catch (GridException e) {
+            throw new IllegalStateException(e.getMessage());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridDrStatus drPauseState() {
+        checkDrEnabled();
+
+        return ctx.dr().drPauseState();
+    }
+
+    /**
+     * Check whether DR is enabled.
+     */
+    private void checkDrEnabled() {
+        if (!ctx.isDrEnabled())
+            throw new IllegalStateException("Data center replication is not configured for cache: " + ctx.namexx());
     }
 
     /**
@@ -3968,7 +4002,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         GridCacheVersion obsoleteVer = ctx.versions().next();
 
-        if (!ctx.evicts().evictSyncOrNearSync() && F.isEmpty(filter) && ctx.isSwapOrOffheapEnabled()) {
+        if (!ctx.evicts().evictSyncOrNearSync() && F.isEmptyOrNulls(filter) && ctx.isSwapOrOffheapEnabled()) {
             try {
                 ctx.evicts().batchEvict(keys, obsoleteVer);
             }
@@ -4222,7 +4256,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @return Map of cached values.
      * @throws GridException If read failed.
      */
-    public final Map<K, V> getAll(Collection<? extends K> keys,
+    public Map<K, V> getAll(Collection<? extends K> keys,
         GridPredicate<GridCacheEntry<K, V>> filter) throws GridException {
         ctx.denyOnFlag(LOCAL);
 

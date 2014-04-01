@@ -12,7 +12,8 @@
 package org.gridgain.visor.commands.ccompact
 
 import org.gridgain.visor._
-import VisorCacheCompactCommand._
+import org.gridgain.visor.commands.cache.VisorCacheCommand
+import VisorCacheCommand._
 import org.gridgain.grid._
 import cache._
 import GridCacheMode._
@@ -73,7 +74,7 @@ class VisorCacheCompactCommandSpec extends VisorRuntimeBaseSpec(2) {
 
         visor.open("-e -g=node-1", false)
 
-        visor.ccompact()
+        visor.cache("-compact")
 
         visor.close()
     }
@@ -85,21 +86,21 @@ class VisorCacheCompactCommandSpec extends VisorRuntimeBaseSpec(2) {
 
         visor.open("-e -g=node-1", false)
 
-        visor.ccompact("cache")
+        visor.cache("-compact -c=cache")
 
         visor.close()
     }
 
     it should "show correct help" in {
-        VisorCacheCompactCommand
+        VisorCacheCommand
 
-        visor.help("ccompact")
+        visor.help("cache")
     }
 
     it should "show empty projection error message" in {
         visor.open("-e -g=node-1", false)
 
-        visor.ccompact("wrong")
+        visor.cache("-compact -c=wrong")
 
         visor.close()
     }
