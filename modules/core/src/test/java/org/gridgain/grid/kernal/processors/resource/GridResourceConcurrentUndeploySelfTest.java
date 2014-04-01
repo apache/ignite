@@ -15,12 +15,10 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -232,7 +230,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
             Grid grid1 = startGrid(1);
             Grid grid2 = startGrid(2);
 
-            ClassLoader ldr = new URLClassLoader(new URL[] {new URL ( GridTestProperties.getProperty("p2p.uri.cls")) });
+            ClassLoader ldr = getExternalClassLoader();
 
             Class task1 = ldr.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 

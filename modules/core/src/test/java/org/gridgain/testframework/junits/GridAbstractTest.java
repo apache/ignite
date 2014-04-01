@@ -1108,11 +1108,11 @@ public abstract class GridAbstractTest extends TestCase {
      *
      * @return External class loader.
      */
-    protected ClassLoader getExternalClassLoader() {
+    protected static ClassLoader getExternalClassLoader() {
         String path = GridTestProperties.getProperty("p2p.uri.cls");
 
         try {
-            return new URLClassLoader(new URL[]{new URL(path)}, getClass().getClassLoader());
+            return new URLClassLoader(new URL[]{new URL(path)}, U.gridClassLoader());
         }
         catch (MalformedURLException e) {
             throw new RuntimeException("Failed to create URL: " + path, e);
