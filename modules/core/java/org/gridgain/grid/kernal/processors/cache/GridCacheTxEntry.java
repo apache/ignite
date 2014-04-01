@@ -679,7 +679,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
             if (transformClosBytes == null && transformClosCol != null)
                 transformClosBytes = CU.marshal(ctx, transformClosCol);
 
-            if (F.isEmpty(filters))
+            if (F.isEmptyOrNulls(filters))
                 filterBytes = null;
             else if (filterBytes == null)
                 filterBytes = CU.marshal(ctx, filters);
