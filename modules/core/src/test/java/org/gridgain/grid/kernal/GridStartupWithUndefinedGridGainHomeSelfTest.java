@@ -67,8 +67,7 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
 
             // We have to explicitly configure paths to license and jetty configs because of undefined GRIDGAIN_HOME.
             cfg.setLicenseUrl("file:///" + ggHome + "/" + GridGain.DFLT_LIC_FILE_NAME);
-            cfg.setRestJettyPath(ggHome + File.separator + "modules" + File.separator + "tests" + File.separator +
-                "config" + File.separator + "jetty" + File.separator + "rest-jetty.xml");
+            cfg.setRestJettyPath(ggHome + File.separator + "modules/core/src/test/config/jetty/rest-jetty.xml");
             // Default console logger is used
             cfg.setGridLogger(log);
             cfg.setDiscoverySpi(disc);

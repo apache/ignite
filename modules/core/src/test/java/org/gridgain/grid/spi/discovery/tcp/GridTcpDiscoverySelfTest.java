@@ -1002,7 +1002,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
-    public void testAuthenticationFailure() throws Exception {
+    public void _testAuthenticationFailure() throws Exception {
         try {
             authSpi = new AlwaysFalseAuthenticationSpi();
 
