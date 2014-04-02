@@ -74,7 +74,7 @@ public final class GridJavaProcess {
      */
     public static GridJavaProcess exec(Class cls, String params, @Nullable GridLogger log,
         @Nullable GridInClosure<String> printC, @Nullable GridAbsClosure procKilledC) throws Exception {
-        return exec(cls, params, log, printC, procKilledC, null);
+        return exec(cls, params, log, printC, procKilledC, null, null);
     }
 
     /**
@@ -86,12 +86,13 @@ public final class GridJavaProcess {
      * @param procKilledC Optional closure to be called when process termination is detected.
      * @param log Log to use.
      * @param jvmArgs JVM arguments to use.
+     * @param cp Additional classpath.
      * @return Wrapper around {@link Process}
      * @throws Exception If any problem occurred.
      */
     public static GridJavaProcess exec(Class cls, String params, @Nullable GridLogger log,
         @Nullable GridInClosure<String> printC, @Nullable GridAbsClosure procKilledC,
-        @Nullable Collection<String> jvmArgs) throws Exception {
+        @Nullable Collection<String> jvmArgs, @Nullable String cp) throws Exception {
         if (!(U.isLinux() || U.isMacOs() || U.isWindows()))
             throw new Exception("Your OS is not supported.");
 
@@ -103,6 +104,9 @@ public final class GridJavaProcess {
         String javaBin = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
         String classpath = System.getProperty("java.class.path");
         String clsName = cls.getCanonicalName();
+
+        if (cp != null)
+            classpath += System.getProperty("path.separator") + cp;
 
         List<String> procParams = params == null || params.isEmpty() ?
             Collections.<String>emptyList() : Arrays.asList(params.split(" "));

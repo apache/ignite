@@ -248,7 +248,7 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
      * @return List of shared memory IDs created while client-server interactions.
      * @throws Exception In case of any exception happen.
      */
-    @SuppressWarnings("BusyWait")
+    @SuppressWarnings({"BusyWait", "TypeMayBeWeakened"})
     private Collection<Integer> interactWithClient(GridIpcSharedMemoryServerEndpoint srv, boolean killClient)
         throws Exception {
         ProcessStartResult clientStartRes = startSharedMemoryTestClient();
@@ -348,7 +348,9 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
 
                     killedLatch.countDown();
                 }
-            }
+            },
+            null,
+            System.getProperty("surefire.test.class.path")
         );
 
         res.proc(proc);
@@ -385,7 +387,9 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
 
                     isKilledLatch.countDown();
                 }
-            }
+            },
+            null,
+            System.getProperty("surefire.test.class.path")
         );
 
         srvReady.await();
