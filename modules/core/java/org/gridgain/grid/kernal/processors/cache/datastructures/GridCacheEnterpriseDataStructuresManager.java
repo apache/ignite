@@ -50,6 +50,9 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     /** Internal storage of all dataStructures items (sequence, queue , atomic long etc.). */
     private final ConcurrentMap<GridCacheInternal, GridCacheRemovable> dsMap;
 
+    /** Queues map. */
+    private final Map<GridUuid, GridCacheQueueAdapter> queuesMap;
+
     /** Cache contains only {@code GridCacheAtomicValue}. */
     private GridCacheProjection<GridCacheInternalKey, GridCacheAtomicLongValue> atomicLongView;
 
@@ -82,6 +85,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
      */
     public GridCacheEnterpriseDataStructuresManager() {
         dsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
+        queuesMap = new HashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -508,7 +512,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
      * @return Queue.
      * @throws GridException If failed.
      */
-    @SuppressWarnings({"unchecked", "IfMayBeConditional"})
+    @SuppressWarnings({"unchecked", "NonPrivateFieldAccessedInSynchronizedContext"})
     private <T> GridCacheQueue<T> queue0(final String name, final int cap, boolean colloc, final boolean create)
         throws GridException {
         GridCacheQueueKey key = new GridCacheQueueKey(name);
@@ -534,10 +538,25 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         if (header == null)
             return null;
 
-        if (cctx.atomic())
-            return new GridAtomicCacheQueueImpl<>(name, header, cctx);
-        else
-            return new GridTransactionalCacheQueueImpl<>(name, header, cctx);
+        synchronized (queuesMap) {
+            GridCacheQueueAdapter queue = queuesMap.get(header.uuid());
+
+            if (queue == null) {
+                queue = cctx.atomic() ? new GridAtomicCacheQueueImpl<>(name, header, cctx) :
+                    new GridTransactionalCacheQueueImpl<>(name, header, cctx);
+
+                queuesMap.put(header.uuid(), queue);
+            }
+
+            return queue;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void queueRemoved(GridUuid uuid) {
+        synchronized (queuesMap) {
+            queuesMap.remove(uuid);
+        }
     }
 
     /** {@inheritDoc} */

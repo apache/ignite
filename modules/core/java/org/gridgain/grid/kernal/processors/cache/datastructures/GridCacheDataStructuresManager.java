@@ -161,4 +161,9 @@ public abstract class GridCacheDataStructuresManager<K, V> extends GridCacheMana
      * @param tx Committed transaction.
      */
     public abstract void onTxCommitted(GridCacheTxEx<K, V> tx);
+
+    /**
+     * @param uuid Queue UUID.
+     */
+    public abstract void queueRemoved(GridUuid uuid);
 }

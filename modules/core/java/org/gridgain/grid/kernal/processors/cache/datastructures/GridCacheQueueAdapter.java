@@ -99,9 +99,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         log = cctx.logger(getClass());
 
-        full = header.full();
-        empty = header.empty();
-
         GridCacheContinuousQueryAdapter qry = (GridCacheContinuousQueryAdapter)cache.queries().createContinuousQuery();
 
         qry.filter(new QueuePredicate(queueName));
@@ -115,6 +112,12 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
                     try {
                         if (header == null) {
+                            rmvd = true;
+
+                            GridCacheQueueAdapter queue = GridCacheQueueAdapter.this;
+
+                            queue.cctx.dataStructures().queueRemoved(queue.uuid);
+
                             full = false;
                             empty = false;
 
@@ -465,11 +468,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @param idx Result of closure execution.
      */
     protected final void checkRemoved(Long idx) {
-        if (idx == QUEUE_REMOVED_IDX) {
-            rmvd = true;
-
-            throw new GridCacheDataStructureRemovedRuntimeException("Queue has been removed from cache: " + this);
-        }
+        if (idx == QUEUE_REMOVED_IDX)
+            onRemoved();
     }
 
     /**
@@ -478,11 +478,19 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @param header Queue header.
      */
     protected final void checkRemoved(@Nullable GridCacheQueueHeader header) {
-        if (queueRemoved(header, uuid)) {
-            rmvd = true;
+        if (queueRemoved(header, uuid))
+            onRemoved();
+    }
 
-            throw new GridCacheDataStructureRemovedRuntimeException("Queue has been removed from cache: " + this);
-        }
+    /**
+     * Marks queue as removed and throws {@link GridCacheDataStructureRemovedRuntimeException}.
+     */
+    private void onRemoved() {
+        cctx.dataStructures().queueRemoved(uuid);
+
+        rmvd = true;
+
+        throw new GridCacheDataStructureRemovedRuntimeException("Queue has been removed from cache: " + this);
     }
 
     /**
