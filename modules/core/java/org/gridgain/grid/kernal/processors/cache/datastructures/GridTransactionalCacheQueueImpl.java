@@ -241,4 +241,48 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
             throw new GridRuntimeException(e);
         }
     }
+
+    /** {@inheritDoc} */
+    @Override public void clear(int batchSize) throws GridRuntimeException {
+        try {
+            CU.outTx(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    GridTransactionalCacheQueueImpl.super.clear();
+
+                    return null;
+                }
+            }, cctx);
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public T peek() throws GridRuntimeException {
+        try {
+            return CU.outTx(new Callable<T>() {
+                @Override public T call() throws Exception {
+                    return GridTransactionalCacheQueueImpl.super.peek();
+                }
+            }, cctx);
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() {
+        try {
+            return CU.outTx(new Callable<Integer>() {
+                @Override public Integer call() throws Exception {
+                    return GridTransactionalCacheQueueImpl.super.size();
+                }
+            }, cctx);
+        }
+        catch (GridException e) {
+            throw new GridRuntimeException(e);
+        }
+    }
 }

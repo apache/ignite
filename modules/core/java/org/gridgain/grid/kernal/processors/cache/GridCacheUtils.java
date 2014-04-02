@@ -1133,7 +1133,7 @@ public class GridCacheUtils {
             try {
                 return cmd.call();
             }
-            catch (GridException e) {
+            catch (GridException | GridRuntimeException e) {
                 throw e;
             }
             catch (Exception e) {

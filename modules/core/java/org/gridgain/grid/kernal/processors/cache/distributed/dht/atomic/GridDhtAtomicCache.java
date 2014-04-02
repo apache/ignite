@@ -262,8 +262,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable final GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
         return asyncOp(new CO<GridFuture<Map<K, V>>>() {
-            @Override
-            public GridFuture<Map<K, V>> apply() {
+            @Override public GridFuture<Map<K, V>> apply() {
                 return getAllAsync0(keys, false, forcePrimary, filter);
             }
         });

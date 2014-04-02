@@ -12,12 +12,13 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.lang.*;
 
 /**
- * Transform closure additionally computing return value for transform operation.
+ * Transform closure additionally computing return value, used by cache operation
+ * {@link GridCacheAdapter#transformCompute(Object, GridCacheTransformComputeClosure)}.
  */
 public interface GridCacheTransformComputeClosure<V, R> extends GridClosure<V, V> {
     /**
-     * @param val Value.
-     * @return New value and return value.
+     * @param val Old value.
+     * @return Value to be returned as result of {@link GridCacheAdapter#transformCompute}.
      */
-    abstract R compute(V val);
+    public R compute(V val);
 }

@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -29,9 +28,6 @@ class GridCacheQueueItemKey implements Externalizable, GridCacheInternal {
     /** */
     private long idx;
 
-    /** */
-    private boolean collocated;
-
     /**
      * Required by {@link Externalizable}.
      */
@@ -43,17 +39,15 @@ class GridCacheQueueItemKey implements Externalizable, GridCacheInternal {
      * @param uuid Queue UUID.
      * @param queueName Queue name.
      * @param idx Item index.
-     * @param collocated Collocation flag.
      */
-    GridCacheQueueItemKey(GridUuid uuid, String queueName, long idx, boolean collocated) {
+    GridCacheQueueItemKey(GridUuid uuid, String queueName, long idx) {
         this.uuid = uuid;
         this.queueName = queueName;
         this.idx = idx;
-        this.collocated = collocated;
     }
 
     /**
-     * @return
+     * @return Queue UUID.
      */
     public GridUuid queueId() {
         return uuid;
@@ -73,20 +67,11 @@ class GridCacheQueueItemKey implements Externalizable, GridCacheInternal {
         return queueName;
     }
 
-    /**
-     * @return Item affinity key.
-     */
-    @GridCacheAffinityKeyMapped
-    public Object affinityKey() {
-        return collocated ? uuid : idx;
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, uuid);
         U.writeString(out, queueName);
         out.writeLong(idx);
-        out.writeBoolean(collocated);
     }
 
     /** {@inheritDoc} */
@@ -94,7 +79,6 @@ class GridCacheQueueItemKey implements Externalizable, GridCacheInternal {
         uuid = U.readGridUuid(in);
         queueName = U.readString(in);
         idx = in.readLong();
-        collocated = in.readBoolean();
     }
 
     /** {@inheritDoc} */

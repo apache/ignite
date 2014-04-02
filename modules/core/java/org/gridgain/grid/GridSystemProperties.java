@@ -9,7 +9,7 @@
 
 package org.gridgain.grid;
 
-import org.gridgain.grid.cache.datastructures.GridCacheQueue;
+import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;

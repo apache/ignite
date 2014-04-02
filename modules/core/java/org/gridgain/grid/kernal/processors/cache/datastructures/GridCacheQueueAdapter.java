@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
@@ -33,7 +34,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     protected static final long QUEUE_REMOVED_IDX = Long.MIN_VALUE;
 
     /** */
-    protected static final int MAX_UPDATE_RETRIES = 100;
+    protected static final int MAX_UPDATE_RETRIES = 10;
 
     /** */
     protected final GridLogger log;
@@ -319,7 +320,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         Collection<GridCacheQueueItemKey> keys = new ArrayList<>(batchSize > 0 ? batchSize : 10);
 
         for (long idx = startIdx; idx < endIdx; idx++) {
-            keys.add(new GridCacheQueueItemKey(uuid, queueName, idx, collocated));
+            keys.add(itemKey(uuid, queueName, collocated, idx));
 
             if (batchSize > 0 && keys.size() == batchSize) {
                 cache.removeAll(keys);
@@ -366,6 +367,27 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @throws GridException If failed.
      */
     protected abstract void removeItem(long rmvIdx) throws GridException;
+
+
+    /**
+     * @param idx Item index.
+     * @return Item key.
+     */
+    protected GridCacheQueueItemKey itemKey(Long idx) {
+        return itemKey(uuid, queueName, collocated(), idx);
+    }
+
+    /**
+     * @param uuid Queue UUID.
+     * @param queueName Queue name.
+     * @param collocated Collocation flag.
+     * @param idx Item index.
+     * @return Item key.
+     */
+    private static GridCacheQueueItemKey itemKey(GridUuid uuid, String queueName, boolean collocated, long idx) {
+        return collocated ? new CollocatedItemKey(uuid, queueName, idx) :
+            new GridCacheQueueItemKey(uuid, queueName, idx);
+    }
 
     /**
      * @param header Queue header.
@@ -461,11 +483,32 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
-     * @param idx Item index.
-     * @return Item key.
+     * Item key for collocated queue.
      */
-    protected GridCacheQueueItemKey itemKey(Long idx) {
-        return new GridCacheQueueItemKey(uuid, queueName, idx, collocated());
+    private static class CollocatedItemKey extends GridCacheQueueItemKey {
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public CollocatedItemKey() {
+            // No-op.
+        }
+
+        /**
+         * @param uuid Queue UUID.
+         * @param queueName Queue name.
+         * @param idx Item index.
+         */
+        private CollocatedItemKey(GridUuid uuid, String queueName, long idx) {
+            super(uuid, queueName, idx);
+        }
+
+        /**
+         * @return Item affinity key.
+         */
+        @GridCacheAffinityKeyMapped
+        public Object affinityKey() {
+            return queueId();
+        }
     }
 
     /**

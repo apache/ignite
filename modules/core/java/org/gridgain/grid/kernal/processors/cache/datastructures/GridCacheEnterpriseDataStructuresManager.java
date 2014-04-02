@@ -26,6 +26,7 @@ import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
@@ -478,13 +479,38 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "IfMayBeConditional"})
     @Override public final <T> GridCacheQueue<T> queue(final String name, final int cap, boolean colloc,
         final boolean create) throws GridException {
         waitInitialization();
 
         checkSupportsQueue();
 
+        // Non collocated mode enabled only for PARTITIONED cache.
+        final boolean collocMode = cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc;
+
+        if (cctx.atomic())
+            return queue0(name, cap, collocMode, create);
+
+        return CU.outTx(new Callable<GridCacheQueue<T>>() {
+            @Override public GridCacheQueue<T> call() throws Exception {
+                return queue0(name, cap, collocMode, create);
+            }
+        }, cctx);
+    }
+
+    /**
+     * Gets or creates queue.
+     *
+     * @param name Queue name.
+     * @param cap Capacity.
+     * @param colloc Collocation flag.
+     * @param create If {@code true} queue will be created in case it is not in cache.
+     * @return Queue.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings({"unchecked", "IfMayBeConditional"})
+    private <T> GridCacheQueue<T> queue0(final String name, final int cap, boolean colloc, final boolean create)
+        throws GridException {
         GridCacheQueueKey key = new GridCacheQueueKey(name);
 
         GridCacheQueueHeader header;
@@ -515,11 +541,28 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     }
 
     /** {@inheritDoc} */
-    @Override public final boolean removeQueue(String name, int batchSize) throws GridException {
+    @Override public final boolean removeQueue(final String name, final int batchSize) throws GridException {
         waitInitialization();
 
         checkSupportsQueue();
 
+        if (cctx.atomic())
+            return removeQueue0(name, batchSize);
+
+        return CU.outTx(new Callable<Boolean>() {
+            @Override public Boolean call() throws Exception {
+                return removeQueue0(name, batchSize);
+            }
+        }, cctx);
+    }
+
+    /**
+     * @param name Queue name.
+     * @param batchSize Batch size.
+     * @return {@code True} if queue was removed.
+     * @throws GridException If failed.
+     */
+    private boolean removeQueue0(String name, int batchSize) throws GridException {
         GridCacheQueueKey key = new GridCacheQueueKey(name);
 
         GridCacheQueueHeader header = queueHdrView.remove(key);
@@ -685,11 +728,6 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     }
 
     /** {@inheritDoc} */
-    @Override public void onPartitionsChange() {
-        // TODO: 7953.
-    }
-
-    /** {@inheritDoc} */
     @Override public void onTxCommitted(GridCacheTxEx<K, V> tx) {
         if (!cctx.isDht() && tx.internal() && (!cctx.isColocated() || cctx.isReplicated())) {
             try {
@@ -842,6 +880,8 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override protected void body() throws InterruptedException, GridInterruptedException {
+            final int BATCH_SIZE = 10;
+
             final long cleanupFreq = Long.getLong(GridSystemProperties.GG_CACHE_QUEUE_CLEANUP_FREQUENCY, 10 * 60_000);
 
             while (!isCancelled()) {
@@ -890,14 +930,14 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
                         if (rmv) {
                             if (log.isDebugEnabled())
-                                log.debug("Found orphaned queue item: " + key);
+                                log.debug("Found orphaned queue item [key=" + key + ", cache=" + cctx.name() + ']');
 
                             if (rmvKeys == null)
-                                rmvKeys = new ArrayList<>(10);
+                                rmvKeys = new ArrayList<>(BATCH_SIZE);
 
                             rmvKeys.add(key);
 
-                            if (rmvKeys.size() == 10) {
+                            if (rmvKeys.size() == BATCH_SIZE) {
                                 cache.removeAll(rmvKeys);
 
                                 rmvKeys.clear();

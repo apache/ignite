@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Cache header queue.
+ * Queue header key.
  */
 public class GridCacheQueueKey implements Externalizable, GridCacheInternal {
     /** */

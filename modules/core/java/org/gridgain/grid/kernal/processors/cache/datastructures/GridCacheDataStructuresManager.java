@@ -161,9 +161,4 @@ public abstract class GridCacheDataStructuresManager<K, V> extends GridCacheMana
      * @param tx Committed transaction.
      */
     public abstract void onTxCommitted(GridCacheTxEx<K, V> tx);
-
-    /**
-     * Callback for partition map changes.
-     */
-    public abstract void onPartitionsChange();
 }

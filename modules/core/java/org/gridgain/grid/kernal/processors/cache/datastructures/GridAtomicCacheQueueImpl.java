@@ -23,7 +23,7 @@ import java.util.*;
  */
 public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     /** */
-    private static final long RETRY_TIMEOUT = 2000;
+    private static final long RETRY_TIMEOUT = 3000;
 
     /**
      * @param queueName Queue name.
