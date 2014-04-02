@@ -15,7 +15,6 @@ import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
@@ -34,8 +33,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.testframework.GridTestUtils.*;
 
@@ -83,7 +82,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
     public static final int REST_TCP_PORT_BASE = 12345;
 
     static {
-        System.setProperty("CLIENTS_MODULE_PATH", U.resolveGridGainPath("modules/clients").getAbsolutePath());
+        System.setProperty("CLIENTS_MODULE_PATH", U.resolveGridGainPath("os/modules/clients").getAbsolutePath());
     }
 
     /** Client instance for each test. */
