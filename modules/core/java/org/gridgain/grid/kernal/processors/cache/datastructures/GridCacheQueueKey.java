@@ -34,6 +34,13 @@ public class GridCacheQueueKey implements Externalizable, GridCacheInternal {
         this.name = name;
     }
 
+    /**
+     * @return Queue name.
+     */
+    public String queueName() {
+        return name;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, name);

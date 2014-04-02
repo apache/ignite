@@ -535,9 +535,9 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
             return null;
 
         if (cctx.atomic())
-            return new GridAtomicCacheQueueImpl<>(name, header.uuid(), cap, colloc, cctx);
+            return new GridAtomicCacheQueueImpl<>(name, header, cctx);
         else
-            return new GridTransactionalCacheQueueImpl<>(name, header.uuid(), cap, colloc, cctx);
+            return new GridTransactionalCacheQueueImpl<>(name, header, cctx);
     }
 
     /** {@inheritDoc} */

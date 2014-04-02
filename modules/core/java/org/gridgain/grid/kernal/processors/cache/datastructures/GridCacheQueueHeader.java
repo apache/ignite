@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -114,6 +115,26 @@ public class GridCacheQueueHeader implements Externalizable, GridCacheInternal {
      */
     public boolean empty() {
         return head == tail;
+    }
+
+    /**
+     * @return {@code True} if queue is full.
+     */
+    public boolean full() {
+        return bounded() && size() == capacity();
+    }
+
+    /**
+     * @return Queue size.
+     */
+    public int size() {
+        int rmvSize = F.isEmpty(removedIndexes()) ? 0 : removedIndexes().size();
+
+        int size = (int)(tail() - head() - rmvSize);
+
+        assert size >= 0 : size;
+
+        return size;
     }
 
     /**

@@ -28,14 +28,13 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     /**
      * @param queueName Queue name.
-     * @param uuid Queue UUID.
-     * @param cap Capacity.
-     * @param collocated Collocation flag.
+     * @param header Queue header.
      * @param cctx Cache context.
+     * @throws GridException If failed.
      */
-    public GridTransactionalCacheQueueImpl(String queueName, GridUuid uuid, int cap, boolean collocated,
-        GridCacheContext<?, ?> cctx) {
-        super(queueName, uuid, cap, collocated, cctx);
+    public GridTransactionalCacheQueueImpl(String queueName, GridCacheQueueHeader header, GridCacheContext<?, ?> cctx)
+        throws GridException {
+        super(queueName, header, cctx);
     }
 
     /** {@inheritDoc} */

@@ -29,7 +29,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  * Continuous query implementation.
  */
-class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuousQuery<K, V> {
+public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuousQuery<K, V> {
     /** Guard. */
     private final GridBusyLock guard = new GridBusyLock();
 
@@ -174,11 +174,22 @@ class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuousQuery<
 
     /** {@inheritDoc} */
     @Override public void execute() throws GridException {
-        execute(null);
+        execute(null, false);
     }
 
     /** {@inheritDoc} */
     @Override public void execute(@Nullable GridProjection prj) throws GridException {
+        execute(prj, false);
+    }
+
+    /**
+     * Starts continuous query execution.
+     *
+     * @param prj Grid projection.
+     * @param internal If {@code true} then query notified about internal entries updates.
+     * @throws GridException If failed.
+     */
+    public void execute(@Nullable GridProjection prj, boolean internal) throws GridException {
         if (cb == null)
             throw new IllegalStateException("Mandatory local callback is not set for the query: " + this);
 
@@ -219,7 +230,8 @@ class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuousQuery<
 
             guard.block();
 
-            GridContinuousHandler hnd = new GridCacheContinuousQueryHandler<>(ctx.name(), topic, cb, filter, prjPred);
+            GridContinuousHandler hnd = new GridCacheContinuousQueryHandler<>(ctx.name(), topic, cb, filter, prjPred,
+                internal);
 
             routineId = ctx.kernalContext().continuous().startRoutine(hnd, bufSize, timeInterval, autoUnsubscribe,
                 prj.predicate()).get();

@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
@@ -23,6 +24,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
 
@@ -63,24 +65,85 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /** */
     private volatile boolean rmvd;
 
+    /** */
+    private Lock lock = new ReentrantLock();
+
+    /** */
+    private Condition addCond = lock.newCondition();
+
+    /** */
+    private Condition pollCond = lock.newCondition();
+
+    /** */
+    private boolean full;
+
+    /** */
+    private boolean empty;
+
     /**
      * @param queueName Queue name.
-     * @param uuid Queue UUID.
-     * @param cap Capacity.
-     * @param collocated Collocation flag.
+     * @param header Queue header.
      * @param cctx Cache context.
+     * @throws GridException If failed.
      */
-    protected GridCacheQueueAdapter(String queueName, GridUuid uuid, int cap, boolean collocated,
-        GridCacheContext<?, ?> cctx) {
+    @SuppressWarnings("unchecked")
+    protected GridCacheQueueAdapter(String queueName, GridCacheQueueHeader header, GridCacheContext<?, ?> cctx)
+        throws GridException {
         this.cctx = cctx;
         this.queueName = queueName;
-        this.uuid = uuid;
-        this.cap = cap;
-        this.collocated = collocated;
+        uuid = header.uuid();
+        cap = header.capacity();
+        collocated = header.collocated();
         queueKey = new GridCacheQueueKey(queueName);
         cache = cctx.cache();
 
         log = cctx.logger(getClass());
+
+        full = header.full();
+        empty = header.empty();
+
+        GridCacheContinuousQueryAdapter qry = (GridCacheContinuousQueryAdapter)cache.queries().createContinuousQuery();
+
+        qry.filter(new QueuePredicate(queueName));
+
+        qry.callback(new GridBiPredicate<UUID, Collection<Map.Entry>>() {
+            @Override public boolean apply(UUID uuid, Collection<Map.Entry> entries) {
+                for (Map.Entry e : entries) {
+                    GridCacheQueueHeader header = (GridCacheQueueHeader)e.getValue();
+
+                    lock.lock();
+
+                    try {
+                        if (header == null) {
+                            full = false;
+                            empty = false;
+
+                            addCond.signalAll();
+                            pollCond.signalAll();
+
+                            return false;
+                        }
+                        else {
+                            full = header.full();
+                            empty = header.empty();
+
+                            if (!full)
+                                addCond.signalAll();
+
+                            if (!empty)
+                                pollCond.signalAll();
+                        }
+                    }
+                    finally {
+                        lock.unlock();
+                    }
+                }
+
+                return true;
+            }
+        });
+
+        qry.execute(cctx.isLocal() || cctx.isReplicated() ? cctx.grid().forLocal() : null, true);
     }
 
     /** {@inheritDoc} */
@@ -118,13 +181,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
             checkRemoved(header);
 
-            int rmvSize = F.isEmpty(header.removedIndexes()) ? 0 : header.removedIndexes().size();
-
-            int size = (int)(header.tail() - header.head() - rmvSize);
-
-            assert size >= 0 : size;
-
-            return size;
+            return header.size();
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
@@ -188,13 +245,33 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     @Override public void put(T item) throws GridRuntimeException {
         A.notNull(item, "item");
 
-        do {
+        if (!bounded()) {
+            boolean offer = offer(item);
+
+            assert offer;
+
+            return;
+        }
+
+        while (true) {
+            lock.lock();
+
+            try {
+                while (full)
+                    addCond.await();
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new GridRuntimeException("Queue put interrupted.", e);
+            }
+            finally {
+                lock.unlock();
+            }
+
             if (offer(item))
                 return;
-
-            if (Thread.interrupted())
-                throw new GridRuntimeException("Queue put interrupted.");
-        } while (true);
+        }
     }
 
     /** {@inheritDoc} */
@@ -202,14 +279,36 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         A.notNull(item, "item");
         A.ensure(timeout >= 0, "Timeout cannot be negative: " + timeout);
 
+        if (!bounded()) {
+            boolean offer = offer(item);
+
+            assert offer;
+
+            return true;
+        }
+
         long end = U.currentTimeMillis() + MILLISECONDS.convert(timeout, unit);
 
         while (U.currentTimeMillis() < end) {
+            lock.lock();
+
+            try {
+                while (full) {
+                    if (!addCond.await(end - U.currentTimeMillis(), MILLISECONDS))
+                        return false;
+                }
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new GridRuntimeException("Queue put interrupted.", e);
+            }
+            finally {
+                lock.unlock();
+            }
+
             if (offer(item))
                 return true;
-
-            if (Thread.interrupted())
-                throw new GridRuntimeException("Queue offer interrupted.");
         }
 
         return false;
@@ -217,15 +316,27 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
     /** {@inheritDoc} */
     @Nullable @Override public T take() throws GridRuntimeException {
-        do {
+        while (true) {
+            lock.lock();
+
+            try {
+                while (empty)
+                    pollCond.await();
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new GridRuntimeException("Queue take interrupted.", e);
+            }
+            finally {
+                lock.unlock();
+            }
+
             T e = poll();
 
             if (e != null)
                 return e;
-
-            if (Thread.interrupted())
-                throw new GridRuntimeException("Queue take interrupted.");
-        } while (true);
+        }
     }
 
     /** {@inheritDoc} */
@@ -235,13 +346,27 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         long end = U.currentTimeMillis() + MILLISECONDS.convert(timeout, unit);
 
         while (U.currentTimeMillis() < end) {
+            lock.lock();
+
+            try {
+                while (empty) {
+                    if (!pollCond.await(end - U.currentTimeMillis(), MILLISECONDS))
+                        return null;
+                }
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new GridRuntimeException("Queue poll interrupted.", e);
+            }
+            finally {
+                lock.unlock();
+            }
+
             T e = poll();
 
             if (e != null)
                 return e;
-
-            if (Thread.interrupted())
-                throw new GridRuntimeException("Queue poll interrupted.");
         }
 
         return null;
@@ -396,6 +521,43 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      */
     private static boolean queueRemoved(@Nullable GridCacheQueueHeader header, GridUuid uuid) {
         return header == null || !uuid.equals(header.uuid());
+    }
+
+    /**
+     * Queue predicate for continuous query.
+     */
+    private static class QueuePredicate implements GridBiPredicate, Externalizable {
+        /** */
+        private String name;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public QueuePredicate() {
+            // No-op.
+        }
+
+        /**
+         * @param name Queue name.
+         */
+        private QueuePredicate(String name) {
+            this.name = name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(Object key, Object val) {
+            return key instanceof GridCacheQueueKey && ((GridCacheQueueKey)key).queueName().equals(name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            name = U.readString(in);
+        }
     }
 
     /**
@@ -695,7 +857,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
          * @return {@code True} if new elements can be added.
          */
         private boolean spaceAvailable(GridCacheQueueHeader header, int size) {
-            return !header.bounded() || (header.tail() - header.head() + size) <= header.capacity();
+            return !header.bounded() || (header.size() + size) <= header.capacity();
         }
 
         /** {@inheritDoc} */
