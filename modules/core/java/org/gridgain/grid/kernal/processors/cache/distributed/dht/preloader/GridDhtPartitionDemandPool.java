@@ -275,7 +275,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     private void preloadEvent(int part, int type, GridDiscoveryEvent discoEvt) {
         assert discoEvt != null;
 
-        cctx.events().addPreloadEvent(part, type, discoEvt.shadow(), discoEvt.type(), discoEvt.timestamp());
+        cctx.events().addPreloadEvent(part, type, discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
     }
 
     /**

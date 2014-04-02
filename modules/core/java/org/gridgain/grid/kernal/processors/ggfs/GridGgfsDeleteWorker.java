@@ -51,9 +51,6 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
     /** Logger. */
     private final GridLogger log;
 
-    /** Local node ID. */
-    private final UUID locNodeId;
-
     /** Lock. */
     private final Lock lock = new ReentrantLock();
 
@@ -85,7 +82,6 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
         data = ggfsCtx.data();
 
         evts = ggfsCtx.kernalContext().event();
-        locNodeId = ggfsCtx.kernalContext().localNodeId();
 
         String ggfsName = ggfsCtx.ggfs().name();
 
@@ -240,7 +236,8 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
 
                     if (evts.isRecordable(EVT_GGFS_FILE_PURGED)) {
                         if (info.path() != null)
-                            evts.record(new GridGgfsEvent(info.path(), locNodeId, EVT_GGFS_FILE_PURGED));
+                            evts.record(new GridGgfsEvent(info.path(),
+                                ggfsCtx.kernalContext().discovery().localNode(), EVT_GGFS_FILE_PURGED));
                         else
                             LT.warn(log, null, "Removing file without path info: " + info);
                     }
