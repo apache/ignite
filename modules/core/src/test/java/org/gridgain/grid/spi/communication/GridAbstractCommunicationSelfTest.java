@@ -47,13 +47,23 @@ public abstract class GridAbstractCommunicationSelfTest<T extends GridCommunicat
     /** */
     private static final Object mux = new Object();
 
+    /** */
+    private static final ObjectName mBeanName;
+
     static {
         GridTcpCommunicationMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE,
             new CO<GridTcpCommunicationMessageAdapter>() {
-            @Override public GridTcpCommunicationMessageAdapter apply() {
-                return new GridTestMessage();
-            }
-        });
+                @Override public GridTcpCommunicationMessageAdapter apply() {
+                    return new GridTestMessage();
+                }
+            });
+
+        try {
+            mBeanName = new ObjectName("mbeanAdaptor:protocol=HTTP");
+        }
+        catch (MalformedObjectNameException e) {
+            throw new GridRuntimeException(e);
+        }
     }
 
     /** */
@@ -290,7 +300,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends GridCommunicat
         mbeanAdaptor.setPort(
             Integer.valueOf(GridTestProperties.getProperty("comm.mbeanserver.selftest.baseport")) + idx);
 
-        mbeanSrv.registerMBean(mbeanAdaptor, new ObjectName("mbeanAdaptor:protocol=HTTP"));
+        mbeanSrv.registerMBean(mbeanAdaptor, mBeanName);
 
         mbeanAdaptor.start();
 
@@ -299,18 +309,16 @@ public abstract class GridAbstractCommunicationSelfTest<T extends GridCommunicat
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        assert spis.size() > 1;
-        assert spis.size() == spiRsrcs.size();
-
         for (GridCommunicationSpi<GridTcpCommunicationMessageAdapter> spi : spis.values()) {
             spi.setListener(null);
 
             spi.spiStop();
         }
 
-        for (GridTestResources rsrcs : spiRsrcs)
+        for (GridTestResources rsrcs : spiRsrcs) {
             rsrcs.stopThreads();
 
-        tearDown();
+            rsrcs.getMBeanServer().unregisterMBean(mBeanName);
+        }
     }
 }

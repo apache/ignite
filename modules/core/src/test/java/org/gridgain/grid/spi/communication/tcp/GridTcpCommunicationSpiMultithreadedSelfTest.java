@@ -59,6 +59,9 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
     /** Initialized nodes */
     private static final List<GridNode> nodes = new ArrayList<>();
 
+    /** */
+    private static final ObjectName mBeanName;
+
     /** Flag indicating if listener should reject messages. */
     private static boolean reject;
 
@@ -69,6 +72,13 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
                 return new GridTestMessage();
             }
         });
+
+        try {
+            mBeanName = new ObjectName("mbeanAdaptor:protocol=HTTP");
+        }
+        catch (MalformedObjectNameException e) {
+            throw new GridRuntimeException(e);
+        }
     }
 
     /**
@@ -489,7 +499,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
         mbeanAdaptor.setPort(
             Integer.valueOf(GridTestProperties.getProperty("comm.mbeanserver.selftest.baseport")) + idx);
 
-        mbeanSrv.registerMBean(mbeanAdaptor, new ObjectName("mbeanAdaptor:protocol=HTTP"));
+        mbeanSrv.registerMBean(mbeanAdaptor, mBeanName);
 
         mbeanAdaptor.start();
 
@@ -498,9 +508,6 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        assert spis.size() > 1;
-        assert spis.size() == spiRsrcs.size();
-
         for (GridCommunicationSpi<GridTcpCommunicationMessageAdapter> spi : spis.values()) {
             spi.setListener(null);
 
@@ -509,13 +516,13 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
         for (GridTestResources rsrcs : spiRsrcs) {
             rsrcs.stopThreads();
+
+            rsrcs.getMBeanServer().unregisterMBean(mBeanName);
         }
 
         lsnrs.clear();
         spiRsrcs.clear();
         spis.clear();
         nodes.clear();
-
-        tearDown();
     }
 }
