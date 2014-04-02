@@ -124,10 +124,42 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
         if (!cctx.events().isRecordable(type))
             LT.warn(log, null, "Added event without checking if event is recordable: " + U.gridEventName(type));
 
-        // Events are not made for internal entry.
-        if (!(key instanceof GridCacheInternal))
-            cctx.gridEvents().record(new GridCacheEvent(cctx.name(), cctx.nodeId(), evtNodeId,
+        // Events are not fired for internal entry.
+        if (!(key instanceof GridCacheInternal)) {
+            GridNode evtNode = cctx.discovery().node(evtNodeId);
+
+            if (evtNode == null)
+                evtNode = findNodeInHistory(evtNodeId);
+
+            if (evtNode == null)
+                LT.warn(log, null, "Failed to find event node in grid topology history " +
+                    "(try to increase topology history size configuration property of configured " +
+                    "discovery SPI): " + evtNodeId);
+
+            cctx.gridEvents().record(new GridCacheEvent(cctx.name(), cctx.localNode(), evtNode,
                 "Cache event.", type, part, cctx.isNear(), key, xid, lockId, newVal, hasNewVal, oldVal, hasOldVal));
+        }
+    }
+
+    /**
+     * Tries to find node in history by specified ID.
+     *
+     * @param nodeId Node ID.
+     * @return Found node or {@code null} if history doesn't contain this node.
+     */
+    @Nullable private GridNode findNodeInHistory(UUID nodeId) {
+        for (long topVer = cctx.discovery().topologyVersion() - 1; topVer > 0; topVer--) {
+            Collection<GridNode> top = cctx.discovery().topology(topVer);
+
+            if (top == null)
+                break;
+
+            for (GridNode node : top)
+                if (F.eq(node.id(), nodeId))
+                    return node;
+        }
+
+        return null;
     }
 
     /**
@@ -139,7 +171,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param discoType Discovery event type.
      * @param discoTs Discovery event timestamp.
      */
-    public void addPreloadEvent(int part, int type, GridNodeShadow discoNode, int discoType, long discoTs) {
+    public void addPreloadEvent(int part, int type, GridNode discoNode, int discoType, long discoTs) {
         assert discoNode != null;
         assert type > 0;
         assert discoType > 0;
@@ -148,8 +180,8 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
         if (!cctx.events().isRecordable(type))
             LT.warn(log, null, "Added event without checking if event is recordable: " + U.gridEventName(type));
 
-        cctx.gridEvents().record(new GridCachePreloadingEvent(cctx.name(), locNodeId, "Cache preloading event.",
-            type, part, discoNode, discoType, discoTs));
+        cctx.gridEvents().record(new GridCachePreloadingEvent(cctx.name(), cctx.localNode(),
+            "Cache preloading event.", type, part, discoNode, discoType, discoTs));
     }
 
     /**
@@ -162,8 +194,8 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
             LT.warn(log, null, "Added event without checking if event is recordable: " +
                 U.gridEventName(EVT_CACHE_PRELOAD_PART_UNLOADED));
 
-        cctx.gridEvents().record(new GridCachePreloadingEvent(cctx.name(), locNodeId, "Cache unloading event.",
-                EVT_CACHE_PRELOAD_PART_UNLOADED, part, null, 0, 0));
+        cctx.gridEvents().record(new GridCachePreloadingEvent(cctx.name(), cctx.localNode(),
+            "Cache unloading event.", EVT_CACHE_PRELOAD_PART_UNLOADED, part, null, 0, 0));
     }
 
     /**

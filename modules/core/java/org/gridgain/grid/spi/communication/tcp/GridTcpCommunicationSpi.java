@@ -484,7 +484,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
             assert evt instanceof GridDiscoveryEvent;
             assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-            onNodeLeft(((GridDiscoveryEvent)evt).eventNodeId());
+            onNodeLeft(((GridDiscoveryEvent)evt).eventNode().id());
         }
     };
 

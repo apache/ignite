@@ -391,7 +391,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                 assert discoEvt != null;
 
-                assert exchId.nodeId().equals(discoEvt.shadow().id());
+                assert exchId.nodeId().equals(discoEvt.eventNode().id());
 
                 // Must initialize topology after we get discovery event.
                 initTopology();

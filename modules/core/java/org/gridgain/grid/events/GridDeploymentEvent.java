@@ -73,12 +73,12 @@ public class GridDeploymentEvent extends GridEventAdapter {
     /**
      * Creates deployment event with given parameters.
      *
-     * @param nodeId Node ID.
+     * @param node Node.
      * @param msg Optional event message.
      * @param type Event type.
      */
-    public GridDeploymentEvent(UUID nodeId, String msg, int type) {
-        super(nodeId, msg, type);
+    public GridDeploymentEvent(GridNode node, String msg, int type) {
+        super(node, msg, type);
     }
 
     /**
@@ -102,7 +102,7 @@ public class GridDeploymentEvent extends GridEventAdapter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDeploymentEvent.class, this,
-            "nodeId8", U.id8(nodeId()),
+            "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),
             "tstamp", timestamp());
