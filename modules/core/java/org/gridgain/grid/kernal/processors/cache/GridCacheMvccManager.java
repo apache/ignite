@@ -152,11 +152,11 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
             GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
             if (log.isDebugEnabled())
-                log.debug("Processing node left [nodeId=" + discoEvt.eventNodeId() + "]");
+                log.debug("Processing node left [nodeId=" + discoEvt.eventNode().id() + "]");
 
             for (GridDistributedCacheEntry<K, V> entry : locked.values()) {
                 try {
-                    entry.removeExplicitNodeLocks(discoEvt.eventNodeId());
+                    entry.removeExplicitNodeLocks(discoEvt.eventNode().id());
                 }
                 catch (GridCacheEntryRemovedException ignore) {
                     if (log.isDebugEnabled())
@@ -174,7 +174,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         continue;
                     }
 
-                    fut.onNodeLeft(discoEvt.eventNodeId());
+                    fut.onNodeLeft(discoEvt.eventNode().id());
 
                     if (fut.isCancelled() || fut.isDone())
                         removeFuture(fut);
@@ -185,7 +185,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 if (fut instanceof GridCacheFuture) {
                     GridCacheFuture cacheFut = (GridCacheFuture)fut;
 
-                    cacheFut.onNodeLeft(discoEvt.eventNodeId());
+                    cacheFut.onNodeLeft(discoEvt.eventNode().id());
 
                     if (cacheFut.isCancelled() || cacheFut.isDone())
                         atomicFuts.remove(cacheFut.futureId(), fut);

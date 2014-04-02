@@ -417,7 +417,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                 GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
-                if (resHolderId.equals(discoEvt.eventNodeId())) {
+                if (resHolderId.equals(discoEvt.eventNode().id())) {
                     lock.lock();
 
                     try {

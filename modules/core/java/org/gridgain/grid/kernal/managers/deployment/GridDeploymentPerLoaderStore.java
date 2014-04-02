@@ -59,7 +59,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
             @Override public void onEvent(GridEvent evt) {
                 assert evt instanceof GridDiscoveryEvent;
 
-                UUID nodeId = ((GridDiscoveryEvent)evt).eventNodeId();
+                UUID nodeId = ((GridDiscoveryEvent)evt).eventNode().id();
 
                 if (evt.type() == EVT_NODE_LEFT ||
                     evt.type() == EVT_NODE_FAILED) {
@@ -282,7 +282,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
                     false);
 
                 dep = new IsolatedDeployment(meta.deploymentMode(), clsLdr, meta.classLoaderId(),
-                    meta.userVersion(), meta.senderNodeId(), meta.className());
+                    meta.userVersion(), snd, meta.className());
 
                 cache.put(meta.classLoaderId(), dep);
 
@@ -386,21 +386,21 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
      */
     private class IsolatedDeployment extends GridDeployment {
         /** Sender node ID. */
-        private final UUID sndNodeId;
+        private final GridNode sndNode;
 
         /**
          * @param depMode Deployment mode.
          * @param clsLdr Class loader.
          * @param clsLdrId Class loader ID.
          * @param userVer User version.
-         * @param sndNodeId Sender node ID.
+         * @param sndNode Sender node.
          * @param sampleClsName Sample class name.
          */
         IsolatedDeployment(GridDeploymentMode depMode, ClassLoader clsLdr, GridUuid clsLdrId,
-            String userVer, UUID sndNodeId, String sampleClsName) {
+            String userVer, GridNode sndNode, String sampleClsName) {
             super(depMode, clsLdr, clsLdrId, userVer, sampleClsName, false);
 
-            this.sndNodeId = sndNodeId;
+            this.sndNode = sndNode;
         }
 
         /**
@@ -409,7 +409,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
          * @return Property senderNodeId.
          */
         UUID senderNodeId() {
-            return sndNodeId;
+            return sndNode.id();
         }
 
         /** {@inheritDoc} */
@@ -435,7 +435,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
 
                 // Record task event.
                 evt.type(isTask ? EVT_TASK_DEPLOYED : EVT_CLASS_DEPLOYED);
-                evt.nodeId(sndNodeId);
+                evt.node(sndNode);
                 evt.message(msg);
                 evt.alias(cls.getName());
 
@@ -466,7 +466,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
                     if (evts.isRecordable(!isTask ? EVT_CLASS_UNDEPLOYED : EVT_TASK_UNDEPLOYED)) {
                         GridDeploymentEvent evt = new GridDeploymentEvent();
 
-                        evt.nodeId(sndNodeId);
+                        evt.node(sndNode);
                         evt.message(msg);
                         evt.type(!isTask ? EVT_CLASS_UNDEPLOYED : EVT_TASK_UNDEPLOYED);
                         evt.alias(depCls.getKey());

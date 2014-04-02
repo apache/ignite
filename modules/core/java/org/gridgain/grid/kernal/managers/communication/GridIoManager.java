@@ -189,7 +189,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
 
                 GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
-                UUID nodeId = discoEvt.eventNodeId();
+                UUID nodeId = discoEvt.eventNode().id();
 
                 switch (evt.type()) {
                     case EVT_NODE_JOINED:

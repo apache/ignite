@@ -343,7 +343,7 @@ class VisorAlertCommand {
                 override def apply(evt: GridEvent): Boolean = {
                     val discoEvt = evt.asInstanceOf[GridDiscoveryEvent]
 
-                    val node = grid.node(discoEvt.eventNodeId)
+                    val node = grid.node(discoEvt.eventNode().id())
 
                     if (node != null)
                         alerts foreach (t => {
