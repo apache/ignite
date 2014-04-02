@@ -26,8 +26,8 @@ import java.util.*;
  */
 public class CacheCountDownLatchExample {
     /** Cache name. */
-    // private static final String CACHE_NAME = "replicated";
     private static final String CACHE_NAME = "partitioned_tx";
+    // private static final String CACHE_NAME = "replicated_tx";
 
     /** Number of latch initial count */
     private static final int INITIAL_COUNT = 10;

@@ -28,8 +28,8 @@ import java.util.*;
  */
 public class CacheQueueExample {
     /** Cache name. */
-    // private static final String CACHE_NAME = "replicated";
     private static final String CACHE_NAME = "partitioned_tx";
+    // private static final String CACHE_NAME = "replicated_tx";
 
     /** Number of retries */
     private static final int RETRIES = 20;
