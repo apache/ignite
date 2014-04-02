@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.testsuites.bamboo;
+package org.gridgain.client.suite;
 
 import junit.framework.*;
 import org.gridgain.client.*;
@@ -29,7 +29,7 @@ public class GridClientTestSuite extends TestSuite {
      * @return Suite that contains all tests for REST.
      * @throws IOException If failed.
      */
-    public static TestSuite suite() throws IOException {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Gridgain Clients Test Suite");
 
         suite.addTest(new TestSuite(GridRouterFactorySelfTest.class));
@@ -46,7 +46,6 @@ public class GridClientTestSuite extends TestSuite {
         // Test jetty rest processor
         suite.addTest(new TestSuite(GridJettyRestProcessorSignedSelfTest.class));
         suite.addTest(new TestSuite(GridJettyRestProcessorUnsignedSelfTest.class));
-        suite.addTest(new TestSuite(GridClientHttpRestSecuritySelfTest.class));
 
         // Test TCP rest processor with original memcache client.
         suite.addTest(new TestSuite(GridClientMemcachedProtocolSelfTest.class));
@@ -90,8 +89,6 @@ public class GridClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridClientHttpsMultiThreadedSelfTest.class));
 
         // Test client authentication.
-        suite.addTest(new TestSuite(GridClientTcpSecuritySelfTest.class));
-        suite.addTest(new TestSuite(GridClientHttpSecuritySelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpSslAuthenticationSelfTest.class));
 
         suite.addTest(new TestSuite(GridClientTcpConnectivitySelfTest.class));
