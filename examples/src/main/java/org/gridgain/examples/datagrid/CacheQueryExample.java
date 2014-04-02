@@ -42,7 +42,7 @@ import java.util.*;
  *         collocated mode. Refer to {@link GridCacheAffinityKey} javadoc for more details.
  *     </li>
  *     <li>
- *         Note that if you created query on to local or replicated cache, all data will
+ *         Note that if you created query on to replicated cache, all data will
  *         be queried only on one node, not depending on what caches participate in
  *         the query (some data from partitioned cache can be lost). And visa versa,
  *         if you created it on partitioned cache, data from replicated caches
@@ -61,7 +61,6 @@ public class CacheQueryExample {
     private static final String CACHE_NAME = "partitioned";
     // private static final String CACHE_NAME = "partitioned_tx";
     // private static final String CACHE_NAME = "replicated";
-    // private static final String CACHE_NAME = "local";
 
     /**
      * Executes example.

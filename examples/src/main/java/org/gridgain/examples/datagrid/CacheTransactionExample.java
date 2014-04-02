@@ -31,7 +31,6 @@ public class CacheTransactionExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned_tx";
     //private static final String CACHE_NAME = "replicated";
-    //private static final String CACHE_NAME = "local";
 
     /**
      * Executes example.
