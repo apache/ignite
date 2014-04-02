@@ -108,10 +108,13 @@
             <resource>
                 <directory>src/main/java</directory>
             </resource>
-            <resource>
-                <directory>src/main/resources</directory>
-            </resource>
         </resources>
+
+        <testResources>
+            <testResource>
+                <directory>src/test/config/aop/aspectj</directory>
+            </testResource>
+        </testResources>
 
         <plugins>
             <plugin>
