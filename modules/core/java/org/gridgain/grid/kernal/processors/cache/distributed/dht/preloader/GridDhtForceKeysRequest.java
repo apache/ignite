@@ -113,7 +113,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     /**
      * @return Topology version for which keys are requested.
      */
-    public long topologyVersion() {
+    @Override public long topologyVersion() {
         return topVer;
     }
 

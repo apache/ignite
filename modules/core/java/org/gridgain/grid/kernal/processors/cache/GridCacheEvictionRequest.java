@@ -101,7 +101,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
     /**
      * @return Topology version.
      */
-    long topologyVersion() {
+    @Override public long topologyVersion() {
         return topVer;
     }
 
