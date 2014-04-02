@@ -352,8 +352,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
                 log.debug("Received nodes addresses: " + rmtAddrs);
 
             if (rmtAddrs.isEmpty() && sndError)
-                U.quietAndWarn(log, "Failed to send multicast address request. " +
-                    "Check multicast is enabled on this node.");
+                U.quietAndWarn(log, "Failed to send multicast message (is multicast enabled on this node?).");
 
             return rmtAddrs;
         }
