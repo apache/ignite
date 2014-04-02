@@ -1776,10 +1776,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         try {
                             // Check if lock is being explicitly acquired by the same thread.
                             if (!implicit && cctx.kernalContext().config().isCacheSanityCheckEnabled() &&
-                                entry.lockedByThread(xidVer))
+                                entry.lockedByThread(threadId, xidVer))
                                 throw new GridException("Cannot access key within transaction if lock is " +
                                     "externally held [key=" + key + ", entry=" + entry + ", xidVer=" + xidVer +
-                                    ", threadId=" + Thread.currentThread().getId() +
+                                    ", threadId=" + threadId +
                                     ", locNodeId=" + cctx.localNodeId() + ']');
 
                             V old = null;

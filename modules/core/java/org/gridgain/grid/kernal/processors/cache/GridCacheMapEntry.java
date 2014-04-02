@@ -2623,11 +2623,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lockedByThread(GridCacheVersion exclude) throws GridCacheEntryRemovedException {
-        return lockedByThread(Thread.currentThread().getId(), exclude);
-    }
-
-    /** {@inheritDoc} */
     @Override public synchronized boolean lockedLocally(GridCacheVersion lockVer) throws GridCacheEntryRemovedException {
         checkObsolete();
 
@@ -2643,7 +2638,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         GridCacheMvcc<K> mvcc = mvccExtras();
 
-        return mvcc != null && mvcc.isLocallyOwnedByThread(threadId, exclude);
+        return mvcc != null && mvcc.isLocallyOwnedByThread(threadId, false, exclude);
     }
 
     /** {@inheritDoc} */
@@ -2660,7 +2655,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         GridCacheMvcc<K> mvcc = mvccExtras();
 
-        return mvcc != null && mvcc.isLocallyOwnedByThread(threadId);
+        return mvcc != null && mvcc.isLocallyOwnedByThread(threadId, true);
     }
 
     /** {@inheritDoc} */
@@ -2676,7 +2671,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     @Override public synchronized boolean lockedByThreadUnsafe(long threadId) {
         GridCacheMvcc<K> mvcc = mvccExtras();
 
-        return mvcc != null && mvcc.isLocallyOwnedByThread(threadId);
+        return mvcc != null && mvcc.isLocallyOwnedByThread(threadId, true);
     }
 
     /** {@inheritDoc} */

@@ -653,13 +653,6 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
     public boolean lockedByThread() throws GridCacheEntryRemovedException;
 
     /**
-     * @param exclude Version to exclude from check.
-     * @return {@code True} if lock is owned by current thread.
-     * @throws GridCacheEntryRemovedException If entry was removed.
-     */
-    public boolean lockedByThread(GridCacheVersion exclude) throws GridCacheEntryRemovedException;
-
-    /**
      * @param lockVer Lock ID.
      * @param threadId Thread ID.
      * @return {@code True} if locked either locally or by thread.
