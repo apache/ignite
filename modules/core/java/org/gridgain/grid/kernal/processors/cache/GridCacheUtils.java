@@ -1128,7 +1128,7 @@ public class GridCacheUtils {
      */
     public static <T> T outTx(Callable<T> cmd, GridCacheContext ctx) throws GridException {
         if (ctx.tm().inUserTx())
-            return ctx.closures().callLocalSafe(cmd, true).get();
+            return ctx.closures().callLocalSafe(cmd, false).get();
         else {
             try {
                 return cmd.call();
