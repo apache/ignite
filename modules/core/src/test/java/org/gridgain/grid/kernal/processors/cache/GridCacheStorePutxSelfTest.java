@@ -74,7 +74,7 @@ public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testNoTx() throws Exception {
+    public void testPutxShouldNotTriggerLoad() throws Exception {
         assertTrue(cache().putx(1, 1));
         assertTrue(cache().putx(2, 2, (GridPredicate)null));
 
@@ -84,7 +84,7 @@ public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testTx() throws Exception {
+    public void testPutxShouldNotTriggerLoadWithTx() throws Exception {
         GridCache<Integer, Integer> cache = cache();
 
         try (GridCacheTx tx = cache.txStart()) {
