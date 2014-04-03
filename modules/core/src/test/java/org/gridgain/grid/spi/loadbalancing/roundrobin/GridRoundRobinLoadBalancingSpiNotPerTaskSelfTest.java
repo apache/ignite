@@ -79,8 +79,8 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
 
         checkCyclicBalancing(getSpi(), allNodes, orderedNodes, ses1, ses2);
 
-        getSpiContext().triggerEvent(new GridTaskEvent(getNodeId(), null, EVT_TASK_FINISHED, ses1.getId(), null));
-        getSpiContext().triggerEvent(new GridTaskEvent(getNodeId(), null, EVT_TASK_FAILED, ses2.getId(), null));
+        getSpiContext().triggerEvent(new GridTaskEvent(null, null, EVT_TASK_FINISHED, ses1.getId(), null));
+        getSpiContext().triggerEvent(new GridTaskEvent(null, null, EVT_TASK_FAILED, ses2.getId(), null));
     }
 
     /**

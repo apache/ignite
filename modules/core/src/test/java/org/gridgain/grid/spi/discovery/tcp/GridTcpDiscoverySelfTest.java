@@ -334,7 +334,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                         GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
                         GridTcpDiscoveryNode node = ((GridTcpDiscoveryNode)discoMap.get(g1.name()).
-                            getNode(discoEvt.eventNodeId()));
+                            getNode(discoEvt.eventNode().id()));
 
                         assert node != null && node.visible();
 
@@ -543,7 +543,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                         info(evt.message());
 
-                        UUID id = ((GridDiscoveryEvent) evt).eventNodeId();
+                        UUID id = ((GridDiscoveryEvent) evt).eventNode().id();
 
                         if (id.equals(g1.localNode().id()))
                             latch2_1.countDown();
@@ -565,7 +565,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     info(evt.message());
 
-                    UUID id = ((GridDiscoveryEvent) evt).eventNodeId();
+                    UUID id = ((GridDiscoveryEvent) evt).eventNode().id();
 
                     if (id.equals(g1.localNode().id()))
                         latch1_1.countDown();
@@ -626,7 +626,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                 @Override public boolean apply(GridEvent evt) {
                     info(evt.message());
 
-                    UUID id = ((GridDiscoveryEvent) evt).eventNodeId();
+                    UUID id = ((GridDiscoveryEvent) evt).eventNode().id();
 
                     if (id.equals(g1.localNode().id()))
                         latch2_1.countDown();
@@ -643,7 +643,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                 @Override public boolean apply(GridEvent evt) {
                     info(evt.message());
 
-                    UUID id = ((GridDiscoveryEvent) evt).eventNodeId();
+                    UUID id = ((GridDiscoveryEvent) evt).eventNode().id();
 
                     if (id.equals(g1.localNode().id()))
                         latch1_1.countDown();

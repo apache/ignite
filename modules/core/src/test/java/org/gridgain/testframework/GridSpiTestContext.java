@@ -148,8 +148,7 @@ public class GridSpiTestContext implements GridSpiContext {
                 if (!nodes.contains(node)) {
                     iter.remove();
 
-                    notifyListener(new GridDiscoveryEvent(locNode.id(), "Node left",
-                        EVT_NODE_LEFT, node.id()));
+                    notifyListener(new GridDiscoveryEvent(locNode, "Node left", EVT_NODE_LEFT, node));
                 }
             }
         }
@@ -169,8 +168,7 @@ public class GridSpiTestContext implements GridSpiContext {
     public void addNode(GridNode node) {
         rmtNodes.add(node);
 
-        notifyListener(new GridDiscoveryEvent(locNode.id(), "Node joined",
-            EVT_NODE_JOINED, node.id()));
+        notifyListener(new GridDiscoveryEvent(locNode, "Node joined", EVT_NODE_JOINED, node));
     }
 
     /**
@@ -178,8 +176,7 @@ public class GridSpiTestContext implements GridSpiContext {
      */
     public void removeNode(GridNode node) {
         if (rmtNodes.remove(node)) {
-            notifyListener(new GridDiscoveryEvent(locNode.id(), "Node left",
-                EVT_NODE_LEFT, node.id()));
+            notifyListener(new GridDiscoveryEvent(locNode, "Node left", EVT_NODE_LEFT, node));
         }
     }
 
@@ -193,8 +190,7 @@ public class GridSpiTestContext implements GridSpiContext {
             if (node.id().equals(nodeId)) {
                 iter.remove();
 
-                notifyListener(new GridDiscoveryEvent(locNode.id(), "Node left",
-                    EVT_NODE_LEFT, node.id()));
+                notifyListener(new GridDiscoveryEvent(locNode, "Node left", EVT_NODE_LEFT, node));
             }
         }
     }
@@ -204,8 +200,7 @@ public class GridSpiTestContext implements GridSpiContext {
      */
     public void failNode(GridNode node) {
         if (rmtNodes.remove(node)) {
-            notifyListener(new GridDiscoveryEvent(locNode.id(), "Node failed",
-                EVT_NODE_FAILED, node.id()));
+            notifyListener(new GridDiscoveryEvent(locNode, "Node failed", EVT_NODE_FAILED, node));
         }
     }
 
@@ -214,19 +209,16 @@ public class GridSpiTestContext implements GridSpiContext {
      */
     public void updateMetrics(GridNode node) {
         if (locNode.equals(node) || rmtNodes.contains(node)) {
-            notifyListener(new GridDiscoveryEvent(locNode.id(), "Metrics updated.",
-                EVT_NODE_METRICS_UPDATED, node.id()));
+            notifyListener(new GridDiscoveryEvent(locNode, "Metrics updated.", EVT_NODE_METRICS_UPDATED, node));
         }
     }
 
     /** */
     public void updateAllMetrics() {
-        notifyListener(new GridDiscoveryEvent(locNode.id(), "Metrics updated",
-            EVT_NODE_METRICS_UPDATED, locNode.id()));
+        notifyListener(new GridDiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, locNode));
 
         for (GridNode node : rmtNodes) {
-            notifyListener(new GridDiscoveryEvent(locNode.id(), "Metrics updated",
-                EVT_NODE_METRICS_UPDATED, node.id()));
+            notifyListener(new GridDiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, node));
         }
     }
 
@@ -302,7 +294,7 @@ public class GridSpiTestContext implements GridSpiContext {
     public void triggerTaskEvent(int type, String taskName, GridUuid taskSesId, String msg) {
         assert type > 0;
 
-        triggerEvent(new GridTaskEvent(locNode.id(), msg, type, taskSesId, taskName));
+        triggerEvent(new GridTaskEvent(locNode, msg, type, taskSesId, taskName));
     }
 
     /**
@@ -522,7 +514,7 @@ public class GridSpiTestContext implements GridSpiContext {
     /**
      * Cached object.
      */
-    private class CachedObject<V> {
+    private static class CachedObject<V> {
         /** */
         private long expire;
 
