@@ -13,6 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * Facade for working with distributed cache data structures. All cache data structures are similar
  * in APIs to {@code 'java.util.concurrent'} package, but all operations on them are grid-aware.
@@ -113,6 +115,10 @@ public interface GridCacheDataStructures {
      * @throws GridException If remove failed.
      */
     public boolean removeQueue(String name, int batchSize) throws GridException;
+
+    @Nullable public <T> Set<T> set(String name, boolean create) throws GridException;
+
+    public boolean removeSet(String name) throws GridException;
 
     /**
      * Will get a atomic reference from cache and create one if it has not been created yet and {@code create} flag

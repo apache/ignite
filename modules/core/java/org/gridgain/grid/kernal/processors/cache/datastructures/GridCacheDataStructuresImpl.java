@@ -14,6 +14,8 @@ import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * Data structures implementation object.
  */
@@ -85,6 +87,16 @@ public class GridCacheDataStructuresImpl<K, V> implements GridCacheDataStructure
     /** {@inheritDoc} */
     @Override public boolean removeQueue(String name, int batchSize) throws GridException {
         return dsMgr.removeQueue(name, batchSize);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> Set<T> set(String name, boolean create) throws GridException {
+        return dsMgr.set(name, create);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removeSet(String name) throws GridException {
+        return dsMgr.removeSet(name);
     }
 
     /** {@inheritDoc} */

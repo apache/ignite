@@ -15,6 +15,7 @@ import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
@@ -296,6 +297,12 @@ public class GridTcpCommunicationMessageFactory {
 
             case 78:
                 return new GridJobStealingRequest();
+
+            case 79:
+                return new GridCacheSetIteratorRequest();
+
+            case 80:
+                return new GridCacheSetIteratorResponse();
 
             default:
                 return createCustom(type);
