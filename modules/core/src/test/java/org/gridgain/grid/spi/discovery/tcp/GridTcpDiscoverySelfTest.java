@@ -14,11 +14,7 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.logger.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.spi.authentication.*;
-import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.internal.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.*;
@@ -57,9 +53,6 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
     /** */
     private UUID nodeId;
-
-    /** */
-    private GridAuthenticationSpi authSpi;
 
     /**
      * @throws Exception If fails.
@@ -118,9 +111,6 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         if (nodeId != null)
             cfg.setNodeId(nodeId);
-
-        if (authSpi != null)
-            cfg.setAuthenticationSpi(authSpi);
 
         if (gridName.contains("NonSharedIpFinder")) {
             GridTcpDiscoveryVmIpFinder finder = new GridTcpDiscoveryVmIpFinder();
@@ -1002,36 +992,6 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
-    public void _testAuthenticationFailure() throws Exception {
-        try {
-            authSpi = new AlwaysFalseAuthenticationSpi();
-
-            startGrid(1);
-
-            authSpi = null;
-
-            // Authentication should fail.
-            GridTestUtils.assertThrows(
-                log,
-                new Callable<Object>() {
-                    @Nullable @Override public Object call() throws Exception {
-                        // Exception will be thrown and output to log.
-                        startGrid(2);
-
-                        return null;
-                    }
-                },
-                GridException.class,
-                null);
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If any error occurs.
-     */
     public void testLoopbackProblemFirstNodeOnLoopback() throws Exception {
         // On Windows and Mac machines two nodes can reside on the same port
         // (if one node has localHost="127.0.0.1" and another has localHost="0.0.0.0").
@@ -1187,24 +1147,6 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                 throw new RuntimeException("Avoid message sending: " + msg.getClass());
             }
-        }
-    }
-
-    /**
-     *
-     */
-    private static class AlwaysFalseAuthenticationSpi extends GridNoopAuthenticationSpi {
-        /** */
-        @GridLoggerResource
-        private GridLogger log;
-
-        /** {@inheritDoc} */
-        @Override public boolean authenticate(GridSecuritySubjectType subjType, byte[] subjId,
-            @Nullable Object creds) throws GridSpiException {
-            U.warn(log, "Returning 'false' on authentication.");
-
-            // Always false.
-            return false;
         }
     }
 }
