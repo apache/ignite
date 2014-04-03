@@ -8248,4 +8248,15 @@ public abstract class GridUtils {
 
         return e;
     }
+
+    /**
+     * Extracts full name of parent class from JDK8 lambda class name.
+     *
+     * @param clsName JDK8 lambda class name.
+     * @return Full name of parent class for JDK8 lambda class name or {@code null} if specified name is not related
+     * to lambda.
+     */
+    public static String lambdaParent(String clsName) {
+        return clsName.contains("$Lambda$") ? clsName.substring(0, clsName.indexOf("$$Lambda$")) : null;
+    }
 }

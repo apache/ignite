@@ -239,10 +239,11 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
 
         String clsName = cls.getName();
 
-        if (clsName.contains("$Lambda$")) {
-            String parentClsName = clsName.substring(0, clsName.indexOf("$$Lambda$"));
+        String lambdaParent = U.lambdaParent(clsName);
+
+        if (lambdaParent != null) {
             try {
-                cls = Class.forName(parentClsName);
+                cls = Class.forName(lambdaParent);
             }
             catch (ClassNotFoundException e) {
                 throw new GridException("Cannot deploy parent class for lambda: " + clsName, e);
@@ -386,8 +387,10 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
         if (locDep != null)
             return locDep;
 
-        if (clsName.contains("$Lambda$"))
-            clsName = clsName.substring(0, clsName.indexOf("$$Lambda$"));
+        String lambdaParent = U.lambdaParent(clsName);
+
+        if (lambdaParent != null)
+            clsName = lambdaParent;
 
         GridDeploymentMetadata meta = new GridDeploymentMetadata();
 
