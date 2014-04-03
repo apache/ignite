@@ -23,6 +23,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -87,6 +88,21 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
      */
     public GridCacheEnterpriseDataStructuresManager() {
         dsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void start0() {
+        cctx.io().addHandler(GridCacheSetIteratorRequest.class, new CI2<UUID, GridCacheSetIteratorRequest<K, V>>() {
+            @Override public void apply(UUID nodeId, GridCacheSetIteratorRequest<K, V> req) {
+                processSetIteratorRequest(nodeId, req);
+            }
+        });
+
+        cctx.io().addHandler(GridCacheSetIteratorResponse.class, new CI2<UUID, GridCacheSetIteratorResponse<K, V>>() {
+            @Override public void apply(UUID nodeId, GridCacheSetIteratorResponse<K, V> req) {
+                processSetIteratorResponse(nodeId, req);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -799,6 +815,41 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         }
     }
 
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Nullable @Override public <T> Set<T> set(String name, boolean create) throws GridException {
+        waitInitialization();
+
+        GridCacheSetKey key = new GridCacheSetKey(name);
+
+        GridCacheSetHeader hdr;
+
+        GridCacheAdapter cache = cctx.cache();
+
+        if (create) {
+            hdr = new GridCacheSetHeader(GridUuid.randomUuid());
+
+            GridCacheSetHeader old = (GridCacheSetHeader)cache.putIfAbsent(key, hdr);
+
+            if (old != null)
+                hdr = old;
+        }
+        else
+            hdr = (GridCacheSetHeader)cache.get(key);
+
+        if (hdr == null)
+            return null;
+
+        return new GridCacheSet<>(cctx, name, hdr.setId());
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removeSet(String name) throws GridException {
+        waitInitialization();
+
+        return false;
+    }
+
     /**
      * Remove internal entry by key from cache.
      *
@@ -840,8 +891,328 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         );
     }
 
+    /** */
+    private ConcurrentMap<GridUuid, GridConcurrentHashSet<GridCacheSetItemKey>> setData =
+        new ConcurrentHashMap8<>(INITIAL_CAPACITY);
+
+    /** */
+    private ConcurrentMap<Long, SetIterator> iterMap = new ConcurrentHashMap8<>();
+
+    /** */
+    private ConcurrentMap<IteratorKey, Iterator<GridCacheSetItemKey>> locIterMap = new ConcurrentHashMap8<>();
+
+
+    @SuppressWarnings("unchecked")
+    private void processSetIteratorRequest(UUID nodeId, GridCacheSetIteratorRequest<K, V> req) {
+        log.info("Process request " + nodeId + " " + req);
+
+        try {
+            IteratorKey key = new IteratorKey(req.id(), nodeId);
+
+            Iterator<GridCacheSetItemKey> it = locIterMap.get(key);
+
+            if (it == null) {
+                GridConcurrentHashSet<GridCacheSetItemKey> data = setData.get(req.setId());
+
+                if (data == null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Received request for non-existing set");
+
+                    sendResponse(nodeId, new GridCacheSetIteratorResponse<>(req.id(), Collections.emptyList(), true));
+                }
+
+                log.info("Created iter: " + data);
+
+                it = data.iterator();
+
+                locIterMap.put(key, it);
+            }
+
+            List<Object> data = new ArrayList<>(req.pageSize());
+
+            boolean last = false;
+
+            boolean filterBackup = cctx.config().getBackups() > 0 || CU.isNearEnabled(cctx);
+
+            GridCacheAffinityManager aff = cctx.affinity();
+
+            while (data.size() < req.pageSize()) {
+                GridCacheSetItemKey next = it.hasNext() ? it.next() : null;
+
+                if (next == null) {
+                    last = true;
+
+                    break;
+                }
+
+                if (filterBackup && !aff.primary(cctx.localNode(), next, req.topologyVersion()))
+                    continue;
+
+                data.add(next.item());
+            }
+
+            if (last)
+                locIterMap.remove(key);
+
+            sendResponse(nodeId, new GridCacheSetIteratorResponse<>(req.id(), data, last));
+        }
+        catch (Throwable e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sendResponse(UUID nodeId, GridCacheSetIteratorResponse res) {
+        log.info("Send response " + nodeId + " " + res);
+
+        if (nodeId.equals(cctx.localNodeId())) {
+            processSetIteratorResponse(nodeId, res);
+
+            return;
+        }
+
+        try {
+            cctx.io().send(nodeId, res);
+        }
+        catch (GridTopologyException ignore) {
+            if (log.isDebugEnabled())
+                log.debug("");
+        }
+        catch (GridException e) {
+            log.error("Failed to send iterator response", e);
+        }
+    }
+
+    private void processSetIteratorResponse(UUID nodeId, GridCacheSetIteratorResponse<K, V> res) {
+        log.info("Process response " + nodeId + " " + res);
+
+        res.nodeId(nodeId);
+
+        SetIterator iter = iterMap.get(res.id());
+
+        if (iter == null) {
+            if (log.isDebugEnabled())
+                log.debug("");
+        }
+        else
+            iter.onResponse(res);
+    }
+
+    /**
+     * @param key Set item key.
+     * @param rmv {@code True} if item was removed.
+     */
+    private void onSetItemUpdated(GridCacheSetItemKey key, boolean rmv) {
+        GridConcurrentHashSet<GridCacheSetItemKey> set = setData.get(key.setId());
+
+        if (set == null) {
+            GridConcurrentHashSet<GridCacheSetItemKey> old = setData.putIfAbsent(key.setId(),
+                set = new GridConcurrentHashSet<>());
+
+            if (old != null)
+                set = old;
+        }
+
+        if (rmv)
+            set.remove(key);
+        else
+            set.add(key);
+    }
+
+    private static class IteratorKey {
+        /** */
+        private final long id;
+
+        /** */
+        private final UUID nodeId;
+
+        private IteratorKey(long id, UUID nodeId) {
+            this.id = id;
+            this.nodeId = nodeId;
+        }
+
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            IteratorKey that = (IteratorKey) o;
+
+            return id == that.id && nodeId.equals(that.nodeId);
+        }
+
+        @Override public int hashCode() {
+            int result = (int) (id ^ (id >>> 32));
+
+            result = 31 * result + nodeId.hashCode();
+
+            return result;
+        }
+    }
+
+    /** */
+    private static AtomicLong iterId = new AtomicLong();
+
+    Iterator<Object> setIterator(GridUuid uuid) throws GridException {
+        long topVer = cctx.discovery().topologyVersion();
+
+        long id = iterId.incrementAndGet();
+
+        GridCacheSetIteratorRequest req = new GridCacheSetIteratorRequest(id, uuid, topVer, 10);
+
+        Collection<UUID> nodeIds = new HashSet<>(F.viewReadOnly(CU.affinityNodes(cctx, topVer), F.node2id()));
+
+        SetIterator iter = new SetIterator(nodeIds, req);
+
+        iterMap.put(id, iter);
+
+        return iter;
+    }
+
+    private void sendIteratorRequest(final GridCacheSetIteratorRequest req, Collection<UUID> nodeIds)
+        throws GridException {
+        log.info("Send iterator request " + req + " " + nodeIds);
+
+        assert !nodeIds.isEmpty();
+
+        for (UUID nodeId : nodeIds) {
+            if (nodeId.equals(cctx.localNodeId())) {
+                cctx.closures().callLocalSafe(new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        processSetIteratorRequest(cctx.localNodeId(), req);
+
+                        return null;
+                    }
+                });
+            }
+            else {
+                cctx.io().send(nodeId, req.clone());
+            }
+        }
+    }
+
+    private class SetIterator implements Iterator<Object> {
+        /** */
+        private Collection<UUID> nodes;
+
+        /** */
+        private Collection<UUID> rcvNodes;
+
+        /** */
+        private Collection<UUID> doneNodes;
+
+        /** */
+        private LinkedBlockingQueue<GridCacheSetIteratorResponse> q = new LinkedBlockingQueue<>();
+
+        /** */
+        private Iterator<Object> it;
+
+        /** */
+        private Object next;
+
+        /** */
+        private Object cur;
+
+        /** */
+        private GridCacheSetIteratorRequest req;
+
+        private boolean init;
+
+        /**
+         * @param nodes
+         */
+        private SetIterator(Collection<UUID> nodes, GridCacheSetIteratorRequest req) {
+            this.nodes = nodes;
+            this.req = req;
+            rcvNodes = new HashSet<>();
+            doneNodes = new HashSet<>();
+        }
+
+        /**
+         * @param res Iterator response.
+         */
+        void onResponse(GridCacheSetIteratorResponse res) {
+            boolean add = q.add(res);
+
+            assert add;
+        }
+
+        void onNodeLeft() {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object next() {
+            if (next == null)
+                throw new NoSuchElementException();
+
+            cur = next;
+            next = next0();
+
+            return cur;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            if (!init) {
+                next = next0();
+
+                init = true;
+            }
+
+            return next != null;
+        }
+
+        /**
+         * @return Next element.
+         */
+        @SuppressWarnings("unchecked")
+        public Object next0() {
+            try {
+                while (it == null || !it.hasNext()) {
+                    if (!init || rcvNodes.size() == nodes.size()) {
+                        nodes.removeAll(doneNodes);
+
+                        rcvNodes.clear();
+
+                        log.info("Received all, left " + nodes);
+
+                        if (nodes.isEmpty())
+                            return null;
+
+                        sendIteratorRequest(req, nodes);
+                    }
+
+                    GridCacheSetIteratorResponse res = q.take();
+
+                    rcvNodes.add(res.nodeId());
+
+                    if (res.last()) {
+                        log.info("Last from " + res.nodeId());
+
+                        doneNodes.add(res.nodeId());
+                    }
+
+                    it = res.data().iterator();
+                }
+
+                return it.next();
+            }
+            catch (Exception e) {
+                throw new GridRuntimeException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void onTxCommitted(GridCacheTxEx<K, V> tx) {
+        // TODO: called twice locally.
         if (!cctx.isDht() && tx.internal() && (!cctx.isColocated() || cctx.isReplicated())) {
             try {
                 waitInitialization();
@@ -859,7 +1230,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
             for (GridCacheTxEntry<K, V> entry : entries) {
                 // Check updated or created GridCacheInternalKey keys.
-                if ((entry.op() == CREATE || entry.op() == UPDATE) && entry.key() instanceof GridCacheInternalKey) {
+                if ((entry.op() == CREATE || entry.op() == UPDATE) && entry.key() instanceof GridCacheInternal) {
                     GridCacheInternal key = (GridCacheInternal)entry.key();
 
                     if (entry.value() instanceof GridCacheQueueHeader) {
@@ -911,11 +1282,16 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
                                 ", actual=" + latch.getClass() + ", value=" + latch + ']');
                         }
                     }
+                    else if (key instanceof GridCacheSetItemKey)
+                        onSetItemUpdated((GridCacheSetItemKey) key, false);
                 }
 
                 // Check deleted GridCacheInternal keys.
                 if (entry.op() == DELETE && entry.key() instanceof GridCacheInternal) {
                     GridCacheInternal key = (GridCacheInternal)entry.key();
+
+                    if (key instanceof GridCacheSetItemKey)
+                        onSetItemUpdated((GridCacheSetItemKey) key, true);
 
                     // Entry's val is null if entry deleted.
                     GridCacheRemovable obj = dsMap.remove(key);

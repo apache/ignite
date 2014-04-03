@@ -14,6 +14,8 @@ import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * Data structures proxy object.
  */
@@ -164,6 +166,30 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
 
         try {
             return delegate.removeQueue(name, batchSize);
+        }
+        finally {
+            gate.leave(old);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> Set<T> set(String name, boolean create) throws GridException{
+        GridCacheProjectionImpl<K, V> old = gate.enter(null);
+
+        try {
+            return delegate.set(name, create);
+        }
+        finally {
+            gate.leave(old);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removeSet(String name) throws GridException {
+        GridCacheProjectionImpl<K, V> old = gate.enter(null);
+
+        try {
+            return delegate.removeSet(name);
         }
         finally {
             gate.leave(old);

@@ -14,6 +14,8 @@ import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * Manager of data structures.
  */
@@ -127,6 +129,25 @@ public abstract class GridCacheDataStructuresManager<K, V> extends GridCacheMana
      * @throws GridException If removing failed.
      */
     public abstract boolean removeQueue(String name, int batchSize) throws GridException;
+
+    /**
+     * Gets or creates new set.
+     *
+     * @param name Name of set.
+     * @param create If {@code true} set will be created in case it is not in cache.
+     * @return Set.
+     * @throws GridException If failed.
+     */
+    @Nullable public abstract <T> Set<T> set(String name, boolean create) throws GridException;
+
+    /**
+     * Removes set from cache.
+     *
+     * @param name Set name.
+     * @return {@code True} if set was removed.
+     * @throws GridException If failed.
+     */
+    public abstract boolean removeSet(String name) throws GridException;
 
     /**
      * Gets or creates count down latch. If count down latch is not found in cache,
