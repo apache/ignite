@@ -151,7 +151,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
                 if (e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED) {
                     for (GridDhtAssignmentFetchFuture<K, V> fut : pendingAssignmentFetchFuts.values())
-                        fut.onNodeLeft(e.eventNodeId());
+                        fut.onNodeLeft(e.eventNode().id());
                 }
             }
             finally {
