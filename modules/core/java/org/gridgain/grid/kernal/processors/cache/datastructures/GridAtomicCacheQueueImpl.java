@@ -29,10 +29,8 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
      * @param queueName Queue name.
      * @param hdr Queue header.
      * @param cctx Cache context.
-     * @throws GridException If failed.
      */
-    public GridAtomicCacheQueueImpl(String queueName, GridCacheQueueHeader hdr, GridCacheContext<?, ?> cctx)
-        throws GridException {
+    public GridAtomicCacheQueueImpl(String queueName, GridCacheQueueHeader hdr, GridCacheContext<?, ?> cctx) {
         super(queueName, hdr, cctx);
     }
 

@@ -19,9 +19,9 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Queue header item.
+ * Queue header.
  */
-public class GridCacheQueueHeader implements Externalizable, GridCacheInternal {
+public class GridCacheQueueHeader implements GridCacheInternal, Externalizable {
     /** */
     private GridUuid uuid;
 

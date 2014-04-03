@@ -33,11 +33,11 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
     /** Listeners. */
     private final ConcurrentMap<UUID, ListenerInfo<K, V>> lsnrs = new ConcurrentHashMap8<>();
 
-    /** Internal entries listeners. */
-    private final ConcurrentMap<UUID, ListenerInfo<K, V>> intLsnrs = new ConcurrentHashMap8<>();
-
     /** Listeners count. */
     private final AtomicInteger lsnrCnt = new AtomicInteger();
+
+    /** Internal entries listeners. */
+    private final ConcurrentMap<UUID, ListenerInfo<K, V>> intLsnrs = new ConcurrentHashMap8<>();
 
     /** Internal listeners count. */
     private final AtomicInteger intLsnrCnt = new AtomicInteger();

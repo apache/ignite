@@ -49,7 +49,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** Deployable object for Projection predicate. */
     private DeployableObject prjPredDep;
 
-    /** */
+    /** Internal flag. */
     private boolean internal;
 
     /**

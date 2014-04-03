@@ -13,6 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -21,6 +23,7 @@ import org.gridgain.grid.util.worker.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -51,7 +54,10 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     private final ConcurrentMap<GridCacheInternal, GridCacheRemovable> dsMap;
 
     /** Queues map. */
-    private final Map<GridUuid, GridCacheQueueAdapter> queuesMap;
+    private final ConcurrentMap<GridUuid, GridCacheQueueAdapter> queuesMap;
+
+    /** Query notifying about queue update. */
+    private GridCacheContinuousQueryAdapter queueQry;
 
     /** Cache contains only {@code GridCacheAtomicValue}. */
     private GridCacheProjection<GridCacheInternalKey, GridCacheAtomicLongValue> atomicLongView;
@@ -85,12 +91,12 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
      */
     public GridCacheEnterpriseDataStructuresManager() {
         dsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
-        queuesMap = new HashMap<>();
+        queuesMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected void onKernalStart0() {
+    @Override protected void onKernalStart0() throws GridException {
         try {
             dsView = cctx.cache().<GridCacheInternal, GridCacheInternal>projection
                 (GridCacheInternal.class, GridCacheInternal.class).flagsOn(CLONE);
@@ -119,6 +125,48 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
                 queueCleanupWorker = new QueueCleanupWorker();
 
                 new GridThread(queueCleanupWorker).start();
+
+                queueQry = (GridCacheContinuousQueryAdapter)cctx.cache().queries().createContinuousQuery();
+
+                queueQry.filter(new QueueHeaderPredicate());
+
+                queueQry.callback(new GridBiPredicate<UUID, Collection<Map.Entry>>() {
+                    @Override public boolean apply(UUID uuid, Collection<Map.Entry> entries) {
+                        for (Map.Entry e : entries) {
+                            GridCacheQueueKey key = (GridCacheQueueKey)e.getKey();
+                            GridCacheQueueHeader hdr = (GridCacheQueueHeader)e.getValue();
+
+                            for (final GridCacheQueueAdapter queue : queuesMap.values()) {
+                                if (queue.name().equals(key.queueName())) {
+                                    if (hdr == null) {
+                                        /*
+                                         * Potentially there can be queues with the same names, need to check that
+                                         * queue was really removed.
+                                         */
+                                        cctx.closures().callLocalSafe(new Callable<Void>() {
+                                            @Override public Void call() throws Exception {
+                                                try {
+                                                    queue.size();
+                                                }
+                                                catch (GridCacheDataStructureRemovedRuntimeException ignore) {
+                                                    queuesMap.remove(queue.queueId());
+                                                }
+
+                                                return null;
+                                            }
+                                        }, false);
+                                    }
+                                    else
+                                        queue.onHeaderChanged(hdr);
+                                }
+                            }
+                        }
+
+                        return true;
+                    }
+                });
+
+                queueQry.execute(cctx.isLocal() || cctx.isReplicated() ? cctx.grid().forLocal() : null, true);
             }
 
             initFlag = true;
@@ -131,6 +179,15 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
         super.onKernalStop0(cancel);
+
+        if (queueQry != null) {
+            try {
+                queueQry.close();
+            }
+            catch (GridException e) {
+                U.warn(log, "Failed to cancel queue header query.", e);
+            }
+        }
 
         if (queueCleanupWorker != null) {
             U.cancel(queueCleanupWorker);
@@ -538,25 +595,19 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         if (header == null)
             return null;
 
-        synchronized (queuesMap) {
-            GridCacheQueueAdapter queue = queuesMap.get(header.uuid());
+        GridCacheQueueAdapter queue = queuesMap.get(header.uuid());
 
-            if (queue == null) {
-                queue = cctx.atomic() ? new GridAtomicCacheQueueImpl<>(name, header, cctx) :
-                    new GridTransactionalCacheQueueImpl<>(name, header, cctx);
+        if (queue == null) {
+            queue = cctx.atomic() ? new GridAtomicCacheQueueImpl<>(name, header, cctx) :
+                new GridTransactionalCacheQueueImpl<>(name, header, cctx);
 
-                queuesMap.put(header.uuid(), queue);
-            }
+            GridCacheQueueAdapter old = queuesMap.putIfAbsent(header.uuid(), queue);
 
-            return queue;
+            if (old != null)
+                queue = old;
         }
-    }
 
-    /** {@inheritDoc} */
-    @Override public void queueRemoved(GridUuid uuid) {
-        synchronized (queuesMap) {
-            queuesMap.remove(uuid);
-        }
+        return queue;
     }
 
     /** {@inheritDoc} */
@@ -884,6 +935,33 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         X.println(">>> ");
         X.println(">>> Data structure manager memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
         X.println(">>>   dsMapSize: " + dsMap.size());
+    }
+
+    /**
+     * Predicate for queue continuous query.
+     */
+    private static class QueueHeaderPredicate implements GridBiPredicate, Externalizable {
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public QueueHeaderPredicate() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(Object key, Object val) {
+            return key instanceof GridCacheQueueKey;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) {
+            // No-op.
+        }
     }
 
     /**

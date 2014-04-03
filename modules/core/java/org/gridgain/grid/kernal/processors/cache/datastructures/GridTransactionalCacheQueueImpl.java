@@ -30,10 +30,8 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
      * @param queueName Queue name.
      * @param hdr Queue header.
      * @param cctx Cache context.
-     * @throws GridException If failed.
      */
-    public GridTransactionalCacheQueueImpl(String queueName, GridCacheQueueHeader hdr, GridCacheContext<?, ?> cctx)
-        throws GridException {
+    public GridTransactionalCacheQueueImpl(String queueName, GridCacheQueueHeader hdr, GridCacheContext<?, ?> cctx) {
         super(queueName, hdr, cctx);
     }
 

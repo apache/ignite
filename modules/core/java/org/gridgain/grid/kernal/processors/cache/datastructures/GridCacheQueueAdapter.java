@@ -14,9 +14,9 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -24,7 +24,6 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
 
@@ -38,57 +37,48 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /** */
     protected static final int MAX_UPDATE_RETRIES = 100;
 
-    /** */
+    /** Logger. */
     protected final GridLogger log;
 
-    /** */
+    /** Cache context. */
     protected final GridCacheContext<?, ?> cctx;
 
-    /** */
+    /** Cache. */
     protected final GridCacheAdapter cache;
 
-    /** */
+    /** Queue name. */
     protected final String queueName;
 
-    /** */
+    /** Queue header key. */
     protected final GridCacheQueueKey queueKey;
 
-    /** */
+    /** Queue UUID. */
     protected final GridUuid uuid;
 
-    /** */
+    /** Queue capacity. */
     private final int cap;
 
-    /** */
+    /** Collocation flag. */
     private final boolean collocated;
 
-    /** */
+    /** Removed flag. */
     private volatile boolean rmvd;
 
-    /** */
-    private Lock lock = new ReentrantLock();
+    /** Read blocking operations semaphore. */
+    @GridToStringExclude
+    private final Semaphore readSem;
 
-    /** */
-    private Condition addCond = lock.newCondition();
-
-    /** */
-    private Condition pollCond = lock.newCondition();
-
-    /** */
-    private boolean full;
-
-    /** */
-    private boolean empty;
+    /** Write blocking operations semaphore. */
+    @GridToStringExclude
+    private final Semaphore writeSem;
 
     /**
      * @param queueName Queue name.
      * @param hdr Queue hdr.
      * @param cctx Cache context.
-     * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    protected GridCacheQueueAdapter(String queueName, GridCacheQueueHeader hdr, GridCacheContext<?, ?> cctx)
-        throws GridException {
+    protected GridCacheQueueAdapter(String queueName, GridCacheQueueHeader hdr, GridCacheContext<?, ?> cctx) {
         this.cctx = cctx;
         this.queueName = queueName;
         uuid = hdr.uuid();
@@ -99,54 +89,9 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         log = cctx.logger(getClass());
 
-        GridCacheContinuousQueryAdapter qry = (GridCacheContinuousQueryAdapter)cache.queries().createContinuousQuery();
+        readSem = new Semaphore(hdr.size(), true);
 
-        qry.filter(new QueuePredicate(queueName));
-
-        qry.callback(new GridBiPredicate<UUID, Collection<Map.Entry>>() {
-            @Override public boolean apply(UUID uuid, Collection<Map.Entry> entries) {
-                for (Map.Entry e : entries) {
-                    GridCacheQueueHeader hdr = (GridCacheQueueHeader)e.getValue();
-
-                    lock.lock();
-
-                    try {
-                        if (hdr == null) {
-                            rmvd = true;
-
-                            GridCacheQueueAdapter queue = GridCacheQueueAdapter.this;
-
-                            queue.cctx.dataStructures().queueRemoved(queue.uuid);
-
-                            full = false;
-                            empty = false;
-
-                            addCond.signalAll();
-                            pollCond.signalAll();
-
-                            return false;
-                        }
-                        else {
-                            full = hdr.full();
-                            empty = hdr.empty();
-
-                            if (!full)
-                                addCond.signalAll();
-
-                            if (!empty)
-                                pollCond.signalAll();
-                        }
-                    }
-                    finally {
-                        lock.unlock();
-                    }
-                }
-
-                return true;
-            }
-        });
-
-        qry.execute(cctx.isLocal() || cctx.isReplicated() ? cctx.grid().forLocal() : null, true);
+        writeSem = bounded() ? new Semaphore(hdr.capacity() - hdr.size(), true) : null;
     }
 
     /** {@inheritDoc} */
@@ -257,19 +202,13 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         }
 
         while (true) {
-            lock.lock();
-
             try {
-                while (full)
-                    addCond.await();
+                writeSem.acquire();
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
                 throw new GridRuntimeException("Queue put interrupted.", e);
-            }
-            finally {
-                lock.unlock();
             }
 
             if (offer(item))
@@ -293,24 +232,19 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         long end = U.currentTimeMillis() + MILLISECONDS.convert(timeout, unit);
 
         while (U.currentTimeMillis() < end) {
-            lock.lock();
+            boolean retVal = false;
 
             try {
-                while (full) {
-                    if (!addCond.await(end - U.currentTimeMillis(), MILLISECONDS))
-                        return false;
-                }
+                if (writeSem.tryAcquire(end - U.currentTimeMillis(), MILLISECONDS))
+                    retVal = offer(item);
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
                 throw new GridRuntimeException("Queue put interrupted.", e);
             }
-            finally {
-                lock.unlock();
-            }
 
-            if (offer(item))
+            if (retVal)
                 return true;
         }
 
@@ -320,19 +254,13 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /** {@inheritDoc} */
     @Nullable @Override public T take() throws GridRuntimeException {
         while (true) {
-            lock.lock();
-
             try {
-                while (empty)
-                    pollCond.await();
+                readSem.acquire();
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
                 throw new GridRuntimeException("Queue take interrupted.", e);
-            }
-            finally {
-                lock.unlock();
             }
 
             T e = poll();
@@ -349,27 +277,20 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         long end = U.currentTimeMillis() + MILLISECONDS.convert(timeout, unit);
 
         while (U.currentTimeMillis() < end) {
-            lock.lock();
+            T retVal = null;
 
             try {
-                while (empty) {
-                    if (!pollCond.await(end - U.currentTimeMillis(), MILLISECONDS))
-                        return null;
-                }
+                if (readSem.tryAcquire(end - U.currentTimeMillis(), MILLISECONDS))
+                    retVal = poll();
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
                 throw new GridRuntimeException("Queue poll interrupted.", e);
             }
-            finally {
-                lock.unlock();
-            }
 
-            T e = poll();
-
-            if (e != null)
-                return e;
+            if (retVal != null)
+                return retVal;
         }
 
         return null;
@@ -486,11 +407,42 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * Marks queue as removed and throws {@link GridCacheDataStructureRemovedRuntimeException}.
      */
     private void onRemoved() {
-        cctx.dataStructures().queueRemoved(uuid);
-
         rmvd = true;
 
+        // Free all blocked resources.
+        if (bounded()) {
+            writeSem.drainPermits();
+            writeSem.release(Integer.MAX_VALUE);
+        }
+
+        readSem.drainPermits();
+        readSem.release(Integer.MAX_VALUE);
+
         throw new GridCacheDataStructureRemovedRuntimeException("Queue has been removed from cache: " + this);
+    }
+
+    /**
+     * @param hdr Queue header.
+     */
+    void onHeaderChanged(GridCacheQueueHeader hdr) {
+        if (!hdr.empty()) {
+            readSem.drainPermits();
+            readSem.release(hdr.size());
+        }
+
+        if (bounded()) {
+            writeSem.drainPermits();
+
+            if (!hdr.full())
+                writeSem.release(hdr.capacity() - hdr.size());
+        }
+    }
+
+    /**
+     * @return Queue UUID.
+     */
+    GridUuid queueId() {
+        return uuid;
     }
 
     /**
@@ -529,43 +481,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      */
     private static boolean queueRemoved(@Nullable GridCacheQueueHeader hdr, GridUuid uuid) {
         return hdr == null || !uuid.equals(hdr.uuid());
-    }
-
-    /**
-     * Queue predicate for continuous query.
-     */
-    private static class QueuePredicate implements GridBiPredicate, Externalizable {
-        /** */
-        private String name;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public QueuePredicate() {
-            // No-op.
-        }
-
-        /**
-         * @param name Queue name.
-         */
-        private QueuePredicate(String name) {
-            this.name = name;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(Object key, Object val) {
-            return key instanceof GridCacheQueueKey && ((GridCacheQueueKey)key).queueName().equals(name);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeString(out, name);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            name = U.readString(in);
-        }
     }
 
     /**

@@ -25,6 +25,7 @@ public class GridCacheQueueKey implements Externalizable, GridCacheInternal {
      * Required by {@link Externalizable}.
      */
     public GridCacheQueueKey() {
+        // No-op.
     }
 
     /**
