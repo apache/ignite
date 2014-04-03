@@ -279,8 +279,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridException If reload failed.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable
-    public V innerReload(GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException,
+    @Nullable public V innerReload(GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException,
         GridCacheEntryRemovedException;
 
     /**
@@ -401,6 +400,35 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         @Nullable GridCacheVersion drVer,
         boolean drResolve
     ) throws GridException, GridCacheEntryRemovedException;
+
+    /**
+     * Update method for local cache in atomic mode.
+     *
+     * @param ver Cache version.
+     * @param op Operation.
+     * @param writeObj Value. Type depends on operation.
+     * @param writeThrough Write through flag.
+     * @param retval Return value flag.
+     * @param ttl Time to live.
+     * @param evt Event flag.
+     * @param metrics Metrics update flag.
+     * @param filter Optional filter to check.
+     * @return Tuple containing success flag and old value.
+     * @throws GridException If update failed.
+     * @throws GridCacheEntryRemovedException If entry is obsolete.
+     */
+    public GridBiTuple<Boolean, V> innerUpdateLocal(
+        GridCacheVersion ver,
+        GridCacheOperation op,
+        @Nullable Object writeObj,
+        boolean writeThrough,
+        boolean retval,
+        long ttl,
+        boolean evt,
+        boolean metrics,
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
+    ) throws GridException, GridCacheEntryRemovedException;
+
 
     /**
      * Marks entry as obsolete and, if possible or required, removes it

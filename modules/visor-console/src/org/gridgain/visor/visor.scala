@@ -816,6 +816,41 @@ object visor extends VisorTag {
     }
 
     /**
+     * Extract node from command arguments.
+     *
+     * @param argLst Command arguments.
+     * @return error message or node ref.
+     */
+    def parseNode(argLst: ArgList) = {
+        val id8 = argValue("id8", argLst)
+        val id = argValue("id", argLst)
+
+        if (id8.isDefined && id.isDefined)
+            Left("Only one of '-id8' or '-id' is allowed.")
+        else if (id8.isDefined) {
+            nodeById8(id8.get) match {
+                case Nil => Left("Unknown 'id8' value: " + id8.get)
+                case node :: Nil => Right(Option(node))
+                case _ => Left("'id8' resolves to more than one node (use full 'id' instead): " + id8.get)
+            }
+        }
+        else if (id.isDefined)
+            try {
+                val node = Option(grid.node(java.util.UUID.fromString(id.get)))
+
+                if (node.isDefined)
+                    Right(node)
+                else
+                    Left("'id' does not match any node: " + id.get)
+            }
+            catch {
+                case e: IllegalArgumentException => Left("Invalid node 'id': " + id.get)
+            }
+        else
+            Right(None)
+    }
+
+    /**
      * Utility method that parses command arguments. Arguments represented as a string
      * into argument list represented as list of tuples (host, value) performing
      * variable substitution:
@@ -1427,6 +1462,9 @@ object visor extends VisorTag {
 
             val cfg = cfgMap.head._2
 
+            // Setting up 'Config URL' for properly print in console.
+            System.setProperty(GridSystemProperties.GG_CONFIG_URL, url.getPath)
+
             var cpuCnt = Runtime.getRuntime.availableProcessors
 
             if (cpuCnt < 4)
@@ -1560,9 +1598,9 @@ object visor extends VisorTag {
                 override def apply(e: GridEvent): Boolean = {
                     e match {
                         case de: GridDiscoveryEvent =>
-                            setVarIfAbsent(U.id8(de.eventNodeId), "n")
+                            setVarIfAbsent(U.id8(de.eventNode().id()), "n")
 
-                            val node = grid.node(de.eventNodeId)
+                            val node = grid.node(de.eventNode().id())
 
                             if (node != null) {
                                 val ip = node.addresses().headOption
@@ -1573,7 +1611,7 @@ object visor extends VisorTag {
                             else {
                                 if (repl)
                                     warn(
-                                        "New node not found: " + de.eventNodeId,
+                                        "New node not found: " + de.eventNode().id(),
                                         "Visor must have discovery configuration and local " +
                                             "host bindings identical with grid nodes."
                                     )
@@ -1590,12 +1628,12 @@ object visor extends VisorTag {
                 override def apply(e: GridEvent): Boolean = {
                     e match {
                         case (de: GridDiscoveryEvent) =>
-                            val nv = mfind(U.id8(de.eventNodeId))
+                            val nv = mfind(U.id8(de.eventNode().id()))
 
                             if (nv.isDefined)
                                 mem.remove(nv.get._1)
 
-                            val ip = de.shadow().addresses.headOption
+                            val ip = de.eventNode().addresses.headOption
 
                             if (ip.isDefined) {
                                 val last = !grid.nodes().exists(n =>
@@ -1621,7 +1659,7 @@ object visor extends VisorTag {
                 override def apply(e: GridEvent): Boolean = {
                     e match {
                         case de: GridDiscoveryEvent =>
-                            if (de.eventNodeId == grid.localNode.id) {
+                            if (de.eventNode().id() == grid.localNode.id) {
                                 if (repl) {
                                     warn("Closing visor due to topology segmentation.")
                                     warn("Contact your system administrator.")
@@ -2358,7 +2396,7 @@ object visor extends VisorTag {
                                 logImpl(
                                     out,
                                     formatDateTime(e.timestamp),
-                                    nodeId8Addr(e.nodeId()),
+                                    nodeId8Addr(e.node().id()),
                                     U.compact(e.shortDisplay)
                                 )
 

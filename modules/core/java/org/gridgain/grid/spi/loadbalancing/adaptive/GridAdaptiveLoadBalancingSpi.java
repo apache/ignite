@@ -350,21 +350,21 @@ public class GridAdaptiveLoadBalancingSpi extends GridSpiAdapter implements Grid
                         try {
                             switch (evt.type()) {
                                 case EVT_NODE_JOINED: {
-                                    nodeJobs.put(discoEvt.eventNodeId(), new AtomicInteger(0));
+                                    nodeJobs.put(discoEvt.eventNode().id(), new AtomicInteger(0));
 
                                     break;
                                 }
 
                                 case EVT_NODE_LEFT:
                                 case EVT_NODE_FAILED: {
-                                    nodeJobs.remove(discoEvt.eventNodeId());
+                                    nodeJobs.remove(discoEvt.eventNode().id());
 
                                     break;
                                 }
 
                                 case EVT_NODE_METRICS_UPDATED: {
                                     // Reset counter.
-                                    nodeJobs.put(discoEvt.eventNodeId(), new AtomicInteger(0));
+                                    nodeJobs.put(discoEvt.eventNode().id(), new AtomicInteger(0));
 
                                     break;
                                 }

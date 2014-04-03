@@ -193,7 +193,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
 
                 GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
-                UUID nodeId = discoEvt.eventNodeId();
+                UUID nodeId = discoEvt.eventNode().id();
 
                 switch (evt.type()) {
                     case EVT_NODE_JOINED:
@@ -1494,6 +1494,15 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      */
     public long getReceivedBytesCount() {
         return getSpi().getReceivedBytesCount();
+    }
+
+    /**
+     * Gets outbound messages queue size.
+     *
+     * @return Outbound messages queue size.
+     */
+    public int getOutboundMessagesQueueSize() {
+        return getSpi().getOutboundMessagesQueueSize();
     }
 
     /** {@inheritDoc} */

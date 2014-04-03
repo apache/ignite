@@ -72,25 +72,25 @@ public class GridAuthenticationEvent extends GridEventAdapter {
     /**
      * Creates authentication event with given parameters.
      *
-     * @param nodeId Node ID.
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridAuthenticationEvent(UUID nodeId, String msg, int type) {
-        super(nodeId, msg, type);
+    public GridAuthenticationEvent(GridNode node, String msg, int type) {
+        super(node, msg, type);
     }
 
     /**
      * Creates authentication event with given parameters.
      *
-     * @param nodeId Node ID.
+     * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
      * @param subjType Subject type.
      * @param subjId Subject ID.
      */
-    public GridAuthenticationEvent(UUID nodeId, String msg, int type, GridSecuritySubjectType subjType, byte[] subjId) {
-        super(nodeId, msg, type);
+    public GridAuthenticationEvent(GridNode node, String msg, int type, GridSecuritySubjectType subjType,
+        byte[] subjId) {
+        super(node, msg, type);
 
         this.subjType = subjType;
         this.subjId = subjId;
@@ -135,7 +135,7 @@ public class GridAuthenticationEvent extends GridEventAdapter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridAuthenticationEvent.class, this,
-            "nodeId8", U.id8(nodeId()),
+            "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),
             "tstamp", timestamp());

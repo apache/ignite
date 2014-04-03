@@ -629,7 +629,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         V old;
         V ret = null;
 
-        if (!F.isEmpty(filter) && !cctx.isAll(
+        if (!F.isEmptyOrNulls(filter) && !cctx.isAll(
             (new GridCacheFilterEvaluationEntry<>(key, rawGetOrUnmarshal(), this, true)), filter))
             return CU.<V>failed(failFast);
 
@@ -772,7 +772,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         if (ret != null) {
             // If return value is consistent, then done.
-            if (F.isEmpty(filter) || version().equals(startVer))
+            if (F.isEmptyOrNulls(filter) || version().equals(startVer))
                 return ret;
 
             // Try again (recursion).
@@ -836,7 +836,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
         }
 
-        if (F.isEmpty(filter) || match)
+        if (F.isEmptyOrNulls(filter) || match)
             return ret;
 
         // Try again (recursion).
@@ -913,7 +913,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     }
                 }
 
-                if (F.isEmpty(filter)) {
+                if (F.isEmptyOrNulls(filter)) {
                     touch = true;
 
                     return ret;
@@ -1197,6 +1197,122 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public GridBiTuple<Boolean, V> innerUpdateLocal(
+        GridCacheVersion ver,
+        GridCacheOperation op,
+        @Nullable Object writeObj,
+        boolean writeThrough,
+        boolean retval,
+        long ttl,
+        boolean evt,
+        boolean metrics,
+        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
+    ) throws GridException, GridCacheEntryRemovedException {
+        assert cctx.isLocal() && cctx.atomic();
+
+        V old;
+        boolean res = true;
+
+        synchronized (this) {
+            boolean needVal = retval || op == GridCacheOperation.TRANSFORM || !F.isEmpty(filter);
+
+            checkObsolete();
+
+            // Load and remove from swap if it is new.
+            if (isNew())
+                unswap(true);
+
+            long newTtl = ttl;
+
+            if (newTtl < 0)
+                newTtl = ttlExtras();
+
+            long newExpireTime = toExpireTime(newTtl);
+
+            // Possibly get old value form store.
+            old = needVal ? rawGetOrUnmarshalUnlocked() : val;
+
+            if (needVal && old == null) {
+                old = readThrough(null, key, false, CU.<K, V>empty());
+
+                update(old, null, 0, 0, ver);
+            }
+
+            // Check filter inside of synchronization.
+            if (!F.isEmpty(filter)) {
+                boolean pass = cctx.isAll(wrapFilterLocked(), filter);
+
+                if (!pass)
+                    return new GridBiTuple<>(false, old);
+            }
+
+            // Apply metrics.
+            if (metrics && needVal)
+                cctx.cache().metrics0().onRead(old != null);
+
+            V updated;
+
+            // Calculate new value.
+            if (op == GridCacheOperation.TRANSFORM) {
+                GridClosure<V, V> transform = (GridClosure<V, V>)writeObj;
+
+                assert transform != null;
+
+                updated = transform.apply(old);
+            }
+            else
+                updated = (V)writeObj;
+
+            op = updated == null ? GridCacheOperation.DELETE : GridCacheOperation.UPDATE;
+
+            boolean hadVal = hasValueUnlocked();
+
+            // Try write-through.
+            if (op == GridCacheOperation.UPDATE) {
+                if (writeThrough)
+                    // Must persist inside synchronization in non-tx mode.
+                    cctx.store().putToStore(null, key, updated, ver);
+
+                // Update index inside synchronization since it can be updated
+                // in load methods without actually holding entry lock.
+                updateIndex(updated, null, newExpireTime, ver, old);
+
+                update(updated, null, newExpireTime, newTtl, ver);
+
+                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT))
+                    cctx.events().addEvent(partition(), key, cctx.localNodeId(), null,
+                        (GridCacheVersion)null, EVT_CACHE_OBJECT_PUT, updated, updated != null, old,
+                        old != null || hadVal);
+            }
+            else {
+                if (writeThrough)
+                    // Must persist inside synchronization in non-tx mode.
+                    cctx.store().removeFromStore(null, key);
+
+                // Update index inside synchronization since it can be updated
+                // in load methods without actually holding entry lock.
+                clearIndex(old);
+
+                update(null, null, 0, 0, ver);
+
+                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED))
+                    cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, (GridCacheVersion)null,
+                        EVT_CACHE_OBJECT_REMOVED, null, false, old, old != null || hadVal);
+
+                res = hadVal;
+            }
+
+            if (metrics)
+                cctx.cache().metrics0().onWrite();
+
+            cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), false);
+        }
+
+        return new GridBiTuple<>(res, old);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridCacheUpdateAtomicResult<K, V> innerUpdate(
         GridCacheVersion newVer,
         UUID evtNodeId,
@@ -1235,7 +1351,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         long newDrExpireTime = -1L; // Explicit DR expire time which possibly will be sent to DHT node.
 
         synchronized (this) {
-            boolean needVal = retval || op == GridCacheOperation.TRANSFORM || !F.isEmpty(filter);
+            boolean needVal = retval || op == GridCacheOperation.TRANSFORM || !F.isEmptyOrNulls(filter);
 
             checkObsolete();
 
@@ -1369,7 +1485,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
 
             // Check filter inside of synchronization.
-            if (!F.isEmpty(filter)) {
+            if (!F.isEmptyOrNulls(filter)) {
                 boolean pass = cctx.isAll(wrapFilterLocked(), filter);
 
                 if (!pass)
@@ -1512,7 +1628,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      */
     private void drReplicate(GridDrType drType, @Nullable V val, @Nullable byte[] valBytes, GridCacheVersion ver)
         throws GridException{
-        if (cctx.isReplicationEnabled() && drType != DR_NONE && !isInternal()) {
+        if (cctx.isDrEnabled() && drType != DR_NONE && !isInternal()) {
             GridDrSenderCacheConfiguration drSndCfg = cctx.config().getDrSenderConfiguration();
 
             GridDrSenderCacheEntryFilter<K, V> drFilter = drSndCfg != null ?
@@ -1567,7 +1683,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             // For optimistic check.
             GridCacheVersion startVer = null;
 
-            if (!F.isEmpty(filter)) {
+            if (!F.isEmptyOrNulls(filter)) {
                 synchronized (this) {
                     startVer = this.ver;
                 }
@@ -1790,7 +1906,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     /** {@inheritDoc} */
     @Override public boolean invalidate(@Nullable GridPredicate<GridCacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException, GridException {
-        if (F.isEmpty(filter)) {
+        if (F.isEmptyOrNulls(filter)) {
             synchronized (this) {
                 checkObsolete();
 
@@ -2223,7 +2339,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (!cctx.isAll(wrap(false), filter))
                     return F.t(CU.<V>failed(failFast));
 
-                if (F.isEmpty(filter) || ver.equals(version()))
+                if (F.isEmptyOrNulls(filter) || ver.equals(version()))
                     return F.t(val);
             }
         }
@@ -2922,7 +3038,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     @Override public boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
         try {
-            if (F.isEmpty(filter)) {
+            if (F.isEmptyOrNulls(filter)) {
                 synchronized (this) {
                     V prev = saveValueForIndexUnlocked();
 

@@ -435,7 +435,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                 assert discoEvt != null;
 
-                assert exchId.nodeId().equals(discoEvt.shadow().id());
+                assert exchId.nodeId().equals(discoEvt.eventNode().id());
 
                 // Must initialize topology after we get discovery event.
                 initTopology();
@@ -483,7 +483,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 }
 
                 // Notify replication manager.
-                if (cctx.isReplicationEnabled())
+                if (cctx.isDrEnabled())
                     cctx.dr().beforeExchange(topVer, exchId.isLeft());
 
                 // Partition release future is done so we can flush the write-behind store.

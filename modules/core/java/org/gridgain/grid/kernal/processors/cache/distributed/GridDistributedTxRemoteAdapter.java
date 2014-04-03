@@ -511,7 +511,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                     // ensure proper lock ordering for removed entries.
                     cctx.tm().addCommittedTx(this);
 
-                    boolean replicate = cctx.isReplicationEnabled();
+                    boolean replicate = cctx.isDrEnabled();
 
                     long topVer = topologyVersion();
 

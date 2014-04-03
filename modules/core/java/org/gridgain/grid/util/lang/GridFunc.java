@@ -3971,6 +3971,23 @@ public class GridFunc {
     }
 
     /**
+     * Tests if the given array is {@code null}, empty or contains only {@code null} values.
+     *
+     * @param c Array to test.
+     * @return Whether or not the given array is {@code null}, empty or contains only {@code null} values.
+     */
+    public static <T> boolean isEmptyOrNulls(@Nullable T[] c) {
+        if (isEmpty(c))
+            return true;
+
+        for (T element : c)
+            if (element != null)
+                return false;
+
+        return true;
+    }
+
+    /**
      * Tests if the given array is either {@code null} or empty.
      *
      * @param c Array to test.
@@ -8473,7 +8490,7 @@ public class GridFunc {
             @Override public boolean apply(GridEvent e) {
                 assert e != null;
 
-                return F.isAll(e.nodeId(), in(nodeIds));
+                return F.isAll(e.node().id(), in(nodeIds));
             }
         };
     }
@@ -8496,7 +8513,7 @@ public class GridFunc {
                     assert e != null;
 
                     try {
-                        GridNode node = G.grid(gridName).node(e.nodeId());
+                        GridNode node = G.grid(gridName).node(e.node().id());
 
                         return isAll(node, p);
                     }
@@ -8520,7 +8537,7 @@ public class GridFunc {
             @Override public boolean apply(GridEvent e) {
                 assert e != null;
 
-                return !forAll(nodes, not(nodeForNodeId(e.nodeId())));
+                return !forAll(nodes, not(nodeForNodeId(e.node().id())));
             }
         };
     }
