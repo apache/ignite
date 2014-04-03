@@ -559,9 +559,10 @@ public class GridGgfsConfiguration {
     }
 
     /**
-     * Gets map of paths to {@code GGFS} modes.
+     * Gets map of path prefixes to {@code GGFS} modes used for them.
      * <p>
-     * If not provided, or no match is found, then {@link #getDefaultMode()} is used.
+     * If path doesn't correspond to any specified prefix or mappings are not provided, then
+     * {@link #getDefaultMode()} is used.
      * <p>
      * Several folders under {@code '/gridgain'} folder have predefined mappings which cannot be overridden.
      * <li>{@code /gridgain/primary} and all it's sub-folders will always work in {@code PRIMARY} mode.</li>
@@ -578,9 +579,10 @@ public class GridGgfsConfiguration {
     }
 
     /**
-     * Sets map of paths to {@code GGFS} modes.
+     * Sets map of path prefixes to {@code GGFS} modes used for them.
      * <p>
-     * If not provided, or no match is found, then {@link #getDefaultMode()} is used.
+     * If path doesn't correspond to any specified prefix or mappings are not provided, then
+     * {@link #getDefaultMode()} is used.
      *
      * @param pathModes Map of paths to {@code GGFS} modes.
      */

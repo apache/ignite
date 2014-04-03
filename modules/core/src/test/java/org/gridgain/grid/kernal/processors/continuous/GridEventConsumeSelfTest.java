@@ -845,7 +845,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             grid(0).events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
-                    if (nodeId.equals(((GridDiscoveryEvent) evt).eventNodeId()))
+                    if (nodeId.equals(((GridDiscoveryEvent) evt).eventNode().id()))
                         latch.countDown();
 
                     return true;
@@ -880,7 +880,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             grid(0).events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
-                    if (nodeId.equals(((GridDiscoveryEvent) evt).eventNodeId()))
+                    if (nodeId.equals(((GridDiscoveryEvent) evt).eventNode().id()))
                         discoLatch.countDown();
 
                     return true;

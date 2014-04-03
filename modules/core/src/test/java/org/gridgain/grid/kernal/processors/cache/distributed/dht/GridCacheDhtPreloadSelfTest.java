@@ -270,7 +270,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                     @Override public boolean apply(GridEvent e) {
                         GridCachePreloadingEvent evt = (GridCachePreloadingEvent)e;
 
-                        GridNodeShadow node = evt.discoveryNode();
+                        GridNode node = evt.discoveryNode();
 
                         return evt.type() == EVT_CACHE_PRELOAD_STOPPED && node.id().equals(nodeId) &&
                             evt.discoveryEventType() == EVT_NODE_LEFT;
@@ -533,7 +533,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                             @Override public boolean apply(GridEvent e) {
                                 GridCachePreloadingEvent evt = (GridCachePreloadingEvent)e;
 
-                                GridNodeShadow node = evt.discoveryNode();
+                                GridNode node = evt.discoveryNode();
 
                                 return evt.type() == EVT_CACHE_PRELOAD_STOPPED && node.id().equals(nodeId) &&
                                     evt.discoveryEventType() == EVT_NODE_LEFT;

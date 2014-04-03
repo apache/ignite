@@ -13,8 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.util.*;
-
 /**
  * Grid task event.
  * <p>
@@ -82,14 +80,14 @@ public class GridTaskEvent extends GridEventAdapter {
     /**
      * Creates task event with given parameters.
      *
-     * @param nodeId Node ID.
+     * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
      * @param sesId Task session ID.
      * @param taskName Task name.
      */
-    public GridTaskEvent(UUID nodeId, String msg, int type, GridUuid sesId, String taskName) {
-        super(nodeId, msg, type);
+    public GridTaskEvent(GridNode node, String msg, int type, GridUuid sesId, String taskName) {
+        super(node, msg, type);
 
         this.sesId = sesId;
         this.taskName = taskName;
@@ -98,12 +96,12 @@ public class GridTaskEvent extends GridEventAdapter {
     /**
      * Creates task event with given parameters.
      *
-     * @param nodeId Node ID.
+     * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
      */
-    public GridTaskEvent(UUID nodeId, String msg, int type) {
-        super(nodeId, msg, type);
+    public GridTaskEvent(GridNode node, String msg, int type) {
+        super(node, msg, type);
     }
 
     /**
@@ -185,7 +183,7 @@ public class GridTaskEvent extends GridEventAdapter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridTaskEvent.class, this,
-            "nodeId8", U.id8(nodeId()),
+            "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),
             "tstamp", timestamp());

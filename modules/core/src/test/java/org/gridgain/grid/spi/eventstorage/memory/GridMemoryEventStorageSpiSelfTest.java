@@ -125,7 +125,7 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<GridM
      * @throws Exception If error occurred.
      */
     private GridEvent createEvent() throws Exception {
-        return new GridDiscoveryEvent(getNodeId(), "Test Event", EVT_NODE_METRICS_UPDATED, getNodeId());
+        return new GridDiscoveryEvent(null, "Test Event", EVT_NODE_METRICS_UPDATED, null);
     }
 }
 

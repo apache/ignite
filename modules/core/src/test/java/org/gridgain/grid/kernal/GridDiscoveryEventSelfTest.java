@@ -43,8 +43,8 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static final GridClosure<GridNodeShadow, UUID> NODE_SHADOW_2ID = new GridClosure<GridNodeShadow, UUID>() {
-        @Override public UUID apply(GridNodeShadow n) {
+    private static final GridClosure<GridNode, UUID> NODE_2ID = new GridClosure<GridNode, UUID>() {
+        @Override public UUID apply(GridNode n) {
             return n.id();
         }
 
@@ -79,8 +79,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             UUID id0 = g0.localNode().id();
 
-            final ConcurrentMap<Integer, Collection<GridNodeShadow>> events =
-                new ConcurrentHashMap<>();
+            final ConcurrentMap<Integer, Collection<GridNode>> evts = new ConcurrentHashMap<>();
 
             g0.events().localListen(new GridPredicate<GridEvent>() {
                 private AtomicInteger cnt = new AtomicInteger();
@@ -88,7 +87,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 @Override public boolean apply(GridEvent evt) {
                     assert evt.type() == EVT_NODE_JOINED;
 
-                    events.put(cnt.getAndIncrement(), ((GridDiscoveryEvent) evt).topologyNodes());
+                    evts.put(cnt.getAndIncrement(), ((GridDiscoveryEvent) evt).topologyNodes());
 
                     return true;
                 }
@@ -100,31 +99,31 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             U.sleep(100);
 
-            assertEquals("Wrong count of events received", 3, events.size());
+            assertEquals("Wrong count of events received", 3, evts.size());
 
-            Collection<GridNodeShadow> top0 = events.get(0);
+            Collection<GridNode> top0 = evts.get(0);
 
             assertNotNull(top0);
             assertEquals(2, top0.size());
-            assertTrue(F.viewReadOnly(top0, NODE_SHADOW_2ID).contains(id0));
-            assertTrue(F.viewReadOnly(top0, NODE_SHADOW_2ID).contains(id1));
+            assertTrue(F.viewReadOnly(top0, NODE_2ID).contains(id0));
+            assertTrue(F.viewReadOnly(top0, NODE_2ID).contains(id1));
 
-            Collection<GridNodeShadow> top1 = events.get(1);
+            Collection<GridNode> top1 = evts.get(1);
 
             assertNotNull(top1);
             assertEquals(3, top1.size());
-            assertTrue(F.viewReadOnly(top1, NODE_SHADOW_2ID).contains(id0));
-            assertTrue(F.viewReadOnly(top1, NODE_SHADOW_2ID).contains(id1));
-            assertTrue(F.viewReadOnly(top1, NODE_SHADOW_2ID).contains(id2));
+            assertTrue(F.viewReadOnly(top1, NODE_2ID).contains(id0));
+            assertTrue(F.viewReadOnly(top1, NODE_2ID).contains(id1));
+            assertTrue(F.viewReadOnly(top1, NODE_2ID).contains(id2));
 
-            Collection<GridNodeShadow> top2 = events.get(2);
+            Collection<GridNode> top2 = evts.get(2);
 
             assertNotNull(top2);
             assertEquals(4, top2.size());
-            assertTrue(F.viewReadOnly(top2, NODE_SHADOW_2ID).contains(id0));
-            assertTrue(F.viewReadOnly(top2, NODE_SHADOW_2ID).contains(id1));
-            assertTrue(F.viewReadOnly(top2, NODE_SHADOW_2ID).contains(id2));
-            assertTrue(F.viewReadOnly(top2, NODE_SHADOW_2ID).contains(id3));
+            assertTrue(F.viewReadOnly(top2, NODE_2ID).contains(id0));
+            assertTrue(F.viewReadOnly(top2, NODE_2ID).contains(id1));
+            assertTrue(F.viewReadOnly(top2, NODE_2ID).contains(id2));
+            assertTrue(F.viewReadOnly(top2, NODE_2ID).contains(id3));
         }
         finally {
             stopAllGrids();
@@ -143,8 +142,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
             UUID id2 = startGrid(2).localNode().id();
             UUID id3 = startGrid(3).localNode().id();
 
-            final ConcurrentMap<Integer, Collection<GridNodeShadow>> evts =
-                new ConcurrentHashMap<>();
+            final ConcurrentMap<Integer, Collection<GridNode>> evts = new ConcurrentHashMap<>();
 
             g0.events().localListen(new GridPredicate<GridEvent>() {
                 private AtomicInteger cnt = new AtomicInteger();
@@ -166,32 +164,32 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             assertEquals("Wrong count of events received", 3, evts.size());
 
-            Collection<GridNodeShadow> top2 = evts.get(0);
+            Collection<GridNode> top2 = evts.get(0);
 
             assertNotNull(top2);
             assertEquals(3, top2.size());
-            assertTrue(F.viewReadOnly(top2, NODE_SHADOW_2ID).contains(id0));
-            assertTrue(F.viewReadOnly(top2, NODE_SHADOW_2ID).contains(id1));
-            assertTrue(F.viewReadOnly(top2, NODE_SHADOW_2ID).contains(id2));
-            assertFalse(F.viewReadOnly(top2, NODE_SHADOW_2ID).contains(id3));
+            assertTrue(F.viewReadOnly(top2, NODE_2ID).contains(id0));
+            assertTrue(F.viewReadOnly(top2, NODE_2ID).contains(id1));
+            assertTrue(F.viewReadOnly(top2, NODE_2ID).contains(id2));
+            assertFalse(F.viewReadOnly(top2, NODE_2ID).contains(id3));
 
-            Collection<GridNodeShadow> top1 = evts.get(1);
+            Collection<GridNode> top1 = evts.get(1);
 
             assertNotNull(top1);
             assertEquals(2, top1.size());
-            assertTrue(F.viewReadOnly(top1, NODE_SHADOW_2ID).contains(id0));
-            assertTrue(F.viewReadOnly(top1, NODE_SHADOW_2ID).contains(id1));
-            assertFalse(F.viewReadOnly(top1, NODE_SHADOW_2ID).contains(id2));
-            assertFalse(F.viewReadOnly(top1, NODE_SHADOW_2ID).contains(id3));
+            assertTrue(F.viewReadOnly(top1, NODE_2ID).contains(id0));
+            assertTrue(F.viewReadOnly(top1, NODE_2ID).contains(id1));
+            assertFalse(F.viewReadOnly(top1, NODE_2ID).contains(id2));
+            assertFalse(F.viewReadOnly(top1, NODE_2ID).contains(id3));
 
-            Collection<GridNodeShadow> top0 = evts.get(2);
+            Collection<GridNode> top0 = evts.get(2);
 
             assertNotNull(top0);
             assertEquals(1, top0.size());
-            assertTrue(F.viewReadOnly(top0, NODE_SHADOW_2ID).contains(id0));
-            assertFalse(F.viewReadOnly(top0, NODE_SHADOW_2ID).contains(id1));
-            assertFalse(F.viewReadOnly(top0, NODE_SHADOW_2ID).contains(id2));
-            assertFalse(F.viewReadOnly(top0, NODE_SHADOW_2ID).contains(id3));
+            assertTrue(F.viewReadOnly(top0, NODE_2ID).contains(id0));
+            assertFalse(F.viewReadOnly(top0, NODE_2ID).contains(id1));
+            assertFalse(F.viewReadOnly(top0, NODE_2ID).contains(id2));
+            assertFalse(F.viewReadOnly(top0, NODE_2ID).contains(id3));
         }
         finally {
             stopAllGrids();
@@ -207,8 +205,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             UUID id0 = g0.localNode().id();
 
-            final ConcurrentMap<Integer, Collection<GridNodeShadow>> evts =
-                new ConcurrentHashMap<>();
+            final ConcurrentMap<Integer, Collection<GridNode>> evts = new ConcurrentHashMap<>();
 
             g0.events().localListen(new GridPredicate<GridEvent>() {
                 private AtomicInteger cnt = new AtomicInteger();
@@ -238,76 +235,76 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             assertEquals("Wrong count of events received", 8, evts.size());
 
-            Collection<GridNodeShadow> top0 = evts.get(0);
+            Collection<GridNode> top0 = evts.get(0);
 
             assertNotNull(top0);
             assertEquals(2, top0.size());
-            assertTrue(F.viewReadOnly(top0, NODE_SHADOW_2ID).contains(id0));
-            assertTrue(F.viewReadOnly(top0, NODE_SHADOW_2ID).contains(id1));
+            assertTrue(F.viewReadOnly(top0, NODE_2ID).contains(id0));
+            assertTrue(F.viewReadOnly(top0, NODE_2ID).contains(id1));
 
-            Collection<GridNodeShadow> top1 = evts.get(1);
+            Collection<GridNode> top1 = evts.get(1);
 
             assertNotNull(top1);
             assertEquals(3, top1.size());
-            assertTrue(F.viewReadOnly(top1, NODE_SHADOW_2ID).contains(id0));
-            assertTrue(F.viewReadOnly(top1, NODE_SHADOW_2ID).contains(id1));
-            assertTrue(F.viewReadOnly(top1, NODE_SHADOW_2ID).contains(id2));
+            assertTrue(F.viewReadOnly(top1, NODE_2ID).contains(id0));
+            assertTrue(F.viewReadOnly(top1, NODE_2ID).contains(id1));
+            assertTrue(F.viewReadOnly(top1, NODE_2ID).contains(id2));
 
-            Collection<GridNodeShadow> top2 = evts.get(2);
+            Collection<GridNode> top2 = evts.get(2);
 
             assertNotNull(top2);
             assertEquals(4, top2.size());
-            assertTrue(F.viewReadOnly(top2, NODE_SHADOW_2ID).contains(id0));
-            assertTrue(F.viewReadOnly(top2, NODE_SHADOW_2ID).contains(id1));
-            assertTrue(F.viewReadOnly(top2, NODE_SHADOW_2ID).contains(id2));
-            assertTrue(F.viewReadOnly(top2, NODE_SHADOW_2ID).contains(id3));
+            assertTrue(F.viewReadOnly(top2, NODE_2ID).contains(id0));
+            assertTrue(F.viewReadOnly(top2, NODE_2ID).contains(id1));
+            assertTrue(F.viewReadOnly(top2, NODE_2ID).contains(id2));
+            assertTrue(F.viewReadOnly(top2, NODE_2ID).contains(id3));
 
-            Collection<GridNodeShadow> top3 = evts.get(3);
+            Collection<GridNode> top3 = evts.get(3);
 
             assertNotNull(top3);
             assertEquals(3, top3.size());
-            assertTrue(F.viewReadOnly(top3, NODE_SHADOW_2ID).contains(id0));
-            assertTrue(F.viewReadOnly(top3, NODE_SHADOW_2ID).contains(id1));
-            assertTrue(F.viewReadOnly(top3, NODE_SHADOW_2ID).contains(id2));
-            assertFalse(F.viewReadOnly(top3, NODE_SHADOW_2ID).contains(id3));
+            assertTrue(F.viewReadOnly(top3, NODE_2ID).contains(id0));
+            assertTrue(F.viewReadOnly(top3, NODE_2ID).contains(id1));
+            assertTrue(F.viewReadOnly(top3, NODE_2ID).contains(id2));
+            assertFalse(F.viewReadOnly(top3, NODE_2ID).contains(id3));
 
-            Collection<GridNodeShadow> top4 = evts.get(4);
+            Collection<GridNode> top4 = evts.get(4);
 
             assertNotNull(top4);
             assertEquals(2, top4.size());
-            assertTrue(F.viewReadOnly(top4, NODE_SHADOW_2ID).contains(id0));
-            assertTrue(F.viewReadOnly(top4, NODE_SHADOW_2ID).contains(id1));
-            assertFalse(F.viewReadOnly(top4, NODE_SHADOW_2ID).contains(id2));
-            assertFalse(F.viewReadOnly(top4, NODE_SHADOW_2ID).contains(id3));
+            assertTrue(F.viewReadOnly(top4, NODE_2ID).contains(id0));
+            assertTrue(F.viewReadOnly(top4, NODE_2ID).contains(id1));
+            assertFalse(F.viewReadOnly(top4, NODE_2ID).contains(id2));
+            assertFalse(F.viewReadOnly(top4, NODE_2ID).contains(id3));
 
-            Collection<GridNodeShadow> top5 = evts.get(5);
+            Collection<GridNode> top5 = evts.get(5);
 
             assertNotNull(top5);
             assertEquals(1, top5.size());
-            assertTrue(F.viewReadOnly(top5, NODE_SHADOW_2ID).contains(id0));
-            assertFalse(F.viewReadOnly(top5, NODE_SHADOW_2ID).contains(id1));
-            assertFalse(F.viewReadOnly(top5, NODE_SHADOW_2ID).contains(id2));
-            assertFalse(F.viewReadOnly(top5, NODE_SHADOW_2ID).contains(id3));
+            assertTrue(F.viewReadOnly(top5, NODE_2ID).contains(id0));
+            assertFalse(F.viewReadOnly(top5, NODE_2ID).contains(id1));
+            assertFalse(F.viewReadOnly(top5, NODE_2ID).contains(id2));
+            assertFalse(F.viewReadOnly(top5, NODE_2ID).contains(id3));
 
-            Collection<GridNodeShadow> top6 = evts.get(6);
+            Collection<GridNode> top6 = evts.get(6);
 
             assertNotNull(top6);
             assertEquals(2, top6.size());
-            assertTrue(F.viewReadOnly(top6, NODE_SHADOW_2ID).contains(id0));
-            assertTrue(F.viewReadOnly(top6, NODE_SHADOW_2ID).contains(id4));
-            assertFalse(F.viewReadOnly(top6, NODE_SHADOW_2ID).contains(id1));
-            assertFalse(F.viewReadOnly(top6, NODE_SHADOW_2ID).contains(id2));
-            assertFalse(F.viewReadOnly(top6, NODE_SHADOW_2ID).contains(id3));
+            assertTrue(F.viewReadOnly(top6, NODE_2ID).contains(id0));
+            assertTrue(F.viewReadOnly(top6, NODE_2ID).contains(id4));
+            assertFalse(F.viewReadOnly(top6, NODE_2ID).contains(id1));
+            assertFalse(F.viewReadOnly(top6, NODE_2ID).contains(id2));
+            assertFalse(F.viewReadOnly(top6, NODE_2ID).contains(id3));
 
-            Collection<GridNodeShadow> top7 = evts.get(7);
+            Collection<GridNode> top7 = evts.get(7);
 
             assertNotNull(top7);
             assertEquals(1, top7.size());
-            assertTrue(F.viewReadOnly(top7, NODE_SHADOW_2ID).contains(id0));
-            assertFalse(F.viewReadOnly(top7, NODE_SHADOW_2ID).contains(id1));
-            assertFalse(F.viewReadOnly(top7, NODE_SHADOW_2ID).contains(id2));
-            assertFalse(F.viewReadOnly(top7, NODE_SHADOW_2ID).contains(id3));
-            assertFalse(F.viewReadOnly(top7, NODE_SHADOW_2ID).contains(id4));
+            assertTrue(F.viewReadOnly(top7, NODE_2ID).contains(id0));
+            assertFalse(F.viewReadOnly(top7, NODE_2ID).contains(id1));
+            assertFalse(F.viewReadOnly(top7, NODE_2ID).contains(id2));
+            assertFalse(F.viewReadOnly(top7, NODE_2ID).contains(id3));
+            assertFalse(F.viewReadOnly(top7, NODE_2ID).contains(id4));
         }
         finally {
             stopAllGrids();
@@ -323,8 +320,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             UUID id0 = g0.localNode().id();
 
-            final ConcurrentMap<Integer, Collection<GridNodeShadow>> evts =
-                new ConcurrentHashMap<>();
+            final ConcurrentMap<Integer, Collection<GridNode>> evts = new ConcurrentHashMap<>();
 
             g0.events().localListen(new GridPredicate<GridEvent>() {
                 private AtomicInteger cnt = new AtomicInteger();
@@ -333,7 +329,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                     assert evt.type() == EVT_NODE_JOINED;
 
                     X.println(">>>>>>> Joined " + F.viewReadOnly(((GridDiscoveryEvent) evt).topologyNodes(),
-                        NODE_SHADOW_2ID));
+                        NODE_2ID));
 
                     evts.put(cnt.getAndIncrement(), ((GridDiscoveryEvent) evt).topologyNodes());
 
@@ -350,16 +346,16 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
             assertEquals(10, evts.size());
 
             for (int i = 0; i < 10; i++) {
-                Collection<GridNodeShadow> snapshot = evts.get(i);
+                Collection<GridNode> snapshot = evts.get(i);
 
                 assertEquals(2 + i, snapshot.size());
-                assertTrue(F.viewReadOnly(snapshot, NODE_SHADOW_2ID).contains(id0));
+                assertTrue(F.viewReadOnly(snapshot, NODE_2ID).contains(id0));
 
-                for (GridNodeShadow n : snapshot)
+                for (GridNode n : snapshot)
                     assertTrue("Wrong node order in snapshot [i=" + i + ", node=" + n + ']', n.order() <= 2 + i);
             }
 
-            Collection<UUID> ids = F.viewReadOnly(evts.get(9), NODE_SHADOW_2ID);
+            Collection<UUID> ids = F.viewReadOnly(evts.get(9), NODE_2ID);
 
             for (int i = 1; i <= 10; i++)
                 assertTrue(ids.contains(grid(i).localNode().id()));

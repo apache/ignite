@@ -68,8 +68,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /** */
     private byte[] jobBytes;
 
-    /** Task originating node ID. */
-    private final UUID taskNodeId;
+    /** Task originating node. */
+    private final GridNode taskNode;
 
     /** Flag set when visor or internal task is running. */
     private final boolean internal;
@@ -130,7 +130,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param jobCtx Job context.
      * @param jobBytes Grid job bytes.
      * @param job Job.
-     * @param taskNodeId Grid task node ID.
+     * @param taskNode Grid task node.
      * @param internal Whether or not task was marked with {@link GridInternal}
      * @param evtLsnr Job event listener.
      * @param holdLsnr Hold listener.
@@ -143,7 +143,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         GridJobContextImpl jobCtx,
         byte[] jobBytes,
         GridComputeJob job,
-        UUID taskNodeId,
+        GridNode taskNode,
         boolean internal,
         GridJobEventListener evtLsnr,
         GridJobHoldListener holdLsnr) {
@@ -152,7 +152,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         assert ctx != null;
         assert ses != null;
         assert jobCtx != null;
-        assert taskNodeId != null;
+        assert taskNode != null;
         assert evtLsnr != null;
         assert dep != null;
         assert holdLsnr != null;
@@ -164,7 +164,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         this.ses = ses;
         this.jobCtx = jobCtx;
         this.jobBytes = jobBytes;
-        this.taskNodeId = taskNodeId;
+        this.taskNode = taskNode;
         this.internal = internal;
         this.holdLsnr = holdLsnr;
 
@@ -265,8 +265,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /**
      * @return Parent task node ID.
      */
-    UUID getTaskNodeId() {
-        return taskNodeId;
+    GridNode getTaskNode() {
+        return taskNode;
     }
 
     /**
@@ -621,12 +621,12 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         evt.jobId(ses.getJobId());
         evt.message(msg);
-        evt.nodeId(locNodeId);
+        evt.node(ctx.discovery().localNode());
         evt.taskName(ses.getTaskName());
         evt.taskClassName(ses.getTaskClassName());
         evt.taskSessionId(ses.getId());
         evt.type(evtType);
-        evt.taskNodeId(ses.getTaskNodeId());
+        evt.taskNode(taskNode);
 
         ctx.event().record(evt);
     }
@@ -646,7 +646,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             sndReply = !sysCancelled;
 
         // We should save message ID here since listener callback will reset sequence.
-        GridNode sndNode = ctx.discovery().node(taskNodeId);
+        GridNode sndNode = ctx.discovery().node(taskNode.id());
 
         long msgId = sndNode != null && ses.isFullSupport() ?
             ctx.io().nextMessageId(taskTopic, sndNode.id()) : -1;
@@ -665,7 +665,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                     if (sndNode == null) {
                         onMasterNodeLeft();
 
-                        U.warn(log, "Failed to reply to sender node because it left grid [nodeId=" + taskNodeId +
+                        U.warn(log, "Failed to reply to sender node because it left grid [nodeId=" + taskNode.id() +
                             ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job + ']');
 
                         // Record job reply failure.
@@ -733,12 +733,12 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                         }
                         catch (GridException e) {
                             // Log and invoke the master-leave callback.
-                            if (isDeadNode(taskNodeId)) {
+                            if (isDeadNode(taskNode.id())) {
                                 onMasterNodeLeft();
 
                                 // Avoid stack trace for left nodes.
                                 U.warn(log, "Failed to reply to sender node because it left grid " +
-                                    "[nodeId=" + taskNodeId + ", jobId=" + ses.getJobId() +
+                                    "[nodeId=" + taskNode.id() + ", jobId=" + ses.getJobId() +
                                     ", ses=" + ses + ", job=" + job + ']');
                             }
                             else
@@ -747,12 +747,12 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
                             if (ctx.event().isRecordable(EVT_JOB_FAILED))
                                 evts = addEvent(evts, EVT_JOB_FAILED, "Failed to send reply for job [nodeId=" +
-                                    taskNodeId + ", job=" + job + ']');
+                                    taskNode.id() + ", job=" + job + ']');
                         }
                         // Catching interrupted exception because
                         // it gets thrown for some reason.
                         catch (Exception e) {
-                            String msg = "Failed to send reply for job [nodeId=" + taskNodeId + ", job=" + job + ']';
+                            String msg = "Failed to send reply for job [nodeId=" + taskNode.id() + ", job=" + job + ']';
 
                             U.error(log, msg, e);
 
@@ -805,11 +805,11 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
                     if (log.isDebugEnabled())
                         log.debug("Successfully executed GridComputeJobMasterLeaveAware.onMasterNodeLeft() callback " +
-                            "[nodeId=" + taskNodeId + ", jobId=" + ses.getJobId() + ", job=" + job + ']');
+                            "[nodeId=" + taskNode.id() + ", jobId=" + ses.getJobId() + ", job=" + job + ']');
                 }
                 catch (GridException e) {
                     U.error(log, "Failed to execute GridComputeJobMasterLeaveAware.onMasterNodeLeft() callback [nodeId=" +
-                        taskNodeId + ", jobId=" + ses.getJobId() + ", job=" + job + ']', e);
+                        taskNode.id() + ", jobId=" + ses.getJobId() + ", job=" + job + ']', e);
                 }
             }
 

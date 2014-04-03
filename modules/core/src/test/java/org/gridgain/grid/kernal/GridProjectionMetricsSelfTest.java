@@ -317,14 +317,14 @@ public class GridProjectionMetricsSelfTest extends GridCommonAbstractTest {
         @Override public boolean apply(GridEvent evt) {
             GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
-            Integer cnt = F.addIfAbsent(metricsRcvdCnt, discoEvt.eventNodeId(), 0);
+            Integer cnt = F.addIfAbsent(metricsRcvdCnt, discoEvt.eventNode().id(), 0);
 
             assert cnt != null;
 
             if (cnt < 2) {
                 latch.countDown();
 
-                metricsRcvdCnt.put(discoEvt.eventNodeId(), ++cnt);
+                metricsRcvdCnt.put(discoEvt.eventNode().id(), ++cnt);
             }
 
             return true;

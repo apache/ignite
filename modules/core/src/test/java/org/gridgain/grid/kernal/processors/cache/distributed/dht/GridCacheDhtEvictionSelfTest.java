@@ -174,9 +174,9 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         return new P1<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
-                info("Predicate called [e.nodeId()=" + e.nodeId() + ", nodeId=" + nodeId + ']');
+                info("Predicate called [e.nodeId()=" + e.node().id() + ", nodeId=" + nodeId + ']');
 
-                return e.nodeId().equals(nodeId);
+                return e.node().id().equals(nodeId);
             }
         };
     }
@@ -300,7 +300,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         GridFuture<GridEvent> futBackup = backupGrid.events().waitForLocal(new P1<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
-                return e.nodeId().equals(backupGrid.localNode().id()) && cntBackup.incrementAndGet() == keyCnt;
+                return e.node().id().equals(backupGrid.localNode().id()) && cntBackup.incrementAndGet() == keyCnt;
             }
         }, EVT_CACHE_ENTRY_EVICTED);
 
@@ -308,7 +308,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         GridFuture<GridEvent> futPrimary = primaryGrid.events().waitForLocal(new P1<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
-                return e.nodeId().equals(primaryGrid.localNode().id()) && cntPrimary.incrementAndGet() == keyCnt;
+                return e.node().id().equals(primaryGrid.localNode().id()) && cntPrimary.incrementAndGet() == keyCnt;
             }
         }, EVT_CACHE_ENTRY_EVICTED);
 

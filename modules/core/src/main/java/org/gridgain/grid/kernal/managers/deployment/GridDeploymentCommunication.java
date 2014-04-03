@@ -373,7 +373,7 @@ class GridDeploymentCommunication {
 
                 GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
-                UUID nodeId = discoEvt.eventNodeId();
+                UUID nodeId = discoEvt.eventNode().id();
 
                 if (!nodeId.equals(dstNode.id()))
                     // Not a destination node.

@@ -66,10 +66,10 @@ public class GridSameVmStartupSelfTest extends GridCommonAbstractTest {
 
                     if (evt instanceof GridDiscoveryEvent) {
                         // Local node can send METRICS_UPDATED event.
-                        assert ((GridDiscoveryEvent) evt).eventNodeId().equals(grid1LocNodeId) ||
+                        assert ((GridDiscoveryEvent) evt).eventNode().id().equals(grid1LocNodeId) ||
                             evt.type() == EVT_NODE_METRICS_UPDATED :
                             "Received event about invalid node [received=" +
-                                ((GridDiscoveryEvent) evt).eventNodeId() + ", expected=" + grid1LocNodeId +
+                                ((GridDiscoveryEvent) evt).eventNode().id() + ", expected=" + grid1LocNodeId +
                                 ", type=" + evt.type() + ']';
 
                         if (evt.type() == EVT_NODE_LEFT) {

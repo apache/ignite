@@ -462,7 +462,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
             info("Grid cache event [type=" + evt.type() + ", latch=" + latch.getCount() + ", evt=" + evt + ']');
 
             if (evts.contains(evt.type()))
-                if (grid == null || evt.nodeId().equals(grid.localNode().id())) {
+                if (grid == null || evt.node().id().equals(grid.localNode().id())) {
                     if (latch.getCount() > 0)
                         latch.countDown();
                     else

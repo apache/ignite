@@ -25,12 +25,10 @@ public class GridMemoryEventStorageMultiThreadedSelfTest extends GridSpiAbstract
      * @throws Exception If test failed
      */
     public void testMultiThreaded() throws Exception {
-        final UUID id = UUID.randomUUID();
-
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 for (int i = 0; i < 100000; i++)
-                    getSpi().record(new GridDiscoveryEvent(id, "Test event", 1, id));
+                    getSpi().record(new GridDiscoveryEvent(null, "Test event", 1, null));
 
                 return null;
             }

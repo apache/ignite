@@ -2862,14 +2862,14 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
          * @param type Event type.
          */
         private TestEvent(int type) {
-            super(UUID.randomUUID(), "test message", type);
+            super(new GridTestNode(UUID.randomUUID()), "test message", type);
         }
 
         /**
-         * @param nodeId Node id.
+         * @param node Node.
          */
-        private TestEvent(UUID nodeId) {
-            super(nodeId, "test message", 1);
+        private TestEvent(GridNode node) {
+            super(node, "test message", 1);
         }
     }
 
@@ -2975,10 +2975,10 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         Grid g3 = startGrid(3);
 
         try {
-            GridEvent evt1 = new TestEvent(g1.localNode().id());
-            GridEvent evt2 = new TestEvent(g3.localNode().id());
-            GridEvent evt3 = new TestEvent(g1.localNode().id());
-            GridEvent evt4 = new TestEvent(g2.localNode().id());
+            GridEvent evt1 = new TestEvent(g1.localNode());
+            GridEvent evt2 = new TestEvent(g3.localNode());
+            GridEvent evt3 = new TestEvent(g1.localNode());
+            GridEvent evt4 = new TestEvent(g2.localNode());
 
             Collection<GridNode> nodes = Arrays.asList(g1.localNode(), g3.localNode());
 
@@ -3006,10 +3006,10 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         final Grid g1 = startGrid(1);
         Grid g2 = startGrid(2);
 
-        GridEvent evt1 = new TestEvent(g1.localNode().id());
-        GridEvent evt2 = new TestEvent(g1.localNode().id());
-        GridEvent evt3 = new TestEvent(g1.localNode().id());
-        GridEvent evt4 = new TestEvent(g2.localNode().id());
+        GridEvent evt1 = new TestEvent(g1.localNode());
+        GridEvent evt2 = new TestEvent(g1.localNode());
+        GridEvent evt3 = new TestEvent(g1.localNode());
+        GridEvent evt4 = new TestEvent(g2.localNode());
 
         try {
             GridPredicate<GridEvent> p = F.eventNode(getTestGridName(1), null);
@@ -3077,7 +3077,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         GridEvent evt2 = new TestEvent(2);
         GridEvent evt3 = new TestEvent(3);
 
-        p = F.eventNodeId(evt1.nodeId());
+        p = F.eventNodeId(evt1.node().id());
 
         assert p.apply(evt1);
         assert !p.apply(evt2);

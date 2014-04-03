@@ -82,7 +82,7 @@ public class GridSwapSpaceManagerSelfTest extends GridCommonAbstractTest {
                 GridSwapSpaceEvent e = (GridSwapSpaceEvent) evt;
 
                 assert spaceName.equals(e.space());
-                assert grid.localNode().id().equals(e.nodeId());
+                assert grid.localNode().id().equals(e.node().id());
 
                 switch (evt.type()) {
                     case EVT_SWAP_SPACE_CLEARED:

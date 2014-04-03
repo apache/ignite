@@ -14,13 +14,12 @@ import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
+import static org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi.*;
+
 /**
  * Tests for topology snapshots history.
  */
 public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest {
-    /** Size of topology snapshots history for checking overflow case. */
-    private static final int HISTORY_SIZE = 4;
-
     /** */
     public GridTcpDiscoverySnapshotHistoryTest() {
         super(false);
@@ -30,16 +29,9 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
-
-        spi.setTopHistorySize(HISTORY_SIZE);
-
-        cfg.setDiscoverySpi(spi);
-
+        cfg.setDiscoverySpi(new GridTcpDiscoverySpi());
         cfg.setCacheConfiguration();
-
         cfg.setLocalHost("127.0.0.1");
-
         cfg.setRestEnabled(false);
 
         return cfg;
@@ -59,6 +51,30 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
             assertNotNull("Spi does not have annotation for history support", ann);
 
             assertTrue("History support is disabled for current spi", ann.value());
+        }
+        finally {
+            stopGrid();
+        }
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    public void testSettingNewTopologyHistorySize() throws Exception {
+        try {
+            final Grid g = startGrid();
+
+            GridTcpDiscoverySpi spi = (GridTcpDiscoverySpi)g.configuration().getDiscoverySpi();
+
+            assertEquals(DFLT_TOP_HISTORY_SIZE, spi.getTopHistorySize());
+
+            spi.setTopHistorySize(DFLT_TOP_HISTORY_SIZE + 1);
+
+            assertEquals(DFLT_TOP_HISTORY_SIZE + 1, spi.getTopHistorySize());
+
+            spi.setTopHistorySize(1);
+
+            assertEquals(DFLT_TOP_HISTORY_SIZE + 1, spi.getTopHistorySize());
         }
         finally {
             stopGrid();
@@ -130,26 +146,6 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
             stopGrid(g3.name());
 
             assertTopVer(4, g1, g2);
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If any error occurs.
-     */
-    public void testTopHistoryOverflow() throws Exception {
-        try {
-            final Grid g1 = startGrid(1);
-
-            for (int i = 2; i <= HISTORY_SIZE + 1; i++)
-                startGrid(i);
-
-            assertNull(g1.topology(1));
-
-            for (int i = 2; i <= HISTORY_SIZE; i++)
-                assertEquals(i, g1.topology(i).size());
         }
         finally {
             stopAllGrids();

@@ -16,8 +16,6 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
-import java.util.*;
-
 import static org.gridgain.grid.events.GridEventType.*;
 
 /**
@@ -69,7 +67,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
             info("Caught expected exception: " + e);
         }
 
-        grid.events().recordLocal(new GridEventAdapter(UUID.randomUUID(), "Test message.", usrType) {
+        grid.events().recordLocal(new GridEventAdapter(null, "Test message.", usrType) {
             // No-op.
         });
 
@@ -104,8 +102,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
         Grid grid = grid();
 
         try {
-            grid.events().recordLocal(new GridEventAdapter(UUID.randomUUID(), "Test message.",
-                GridEventType.EVT_NODE_FAILED) {
+            grid.events().recordLocal(new GridEventAdapter(null, "Test message.", GridEventType.EVT_NODE_FAILED) {
                 // No-op.
             });
 

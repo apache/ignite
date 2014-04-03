@@ -272,7 +272,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 @Override public boolean apply(GridEvent evt) {
                     assert evt.type() == EVT_NODE_JOINED;
 
-                    info(">>> Node has joined: " + evt.nodeId());
+                    info(">>> Node has joined: " + evt.node().id());
 
                     joinLatch.countDown();
 
@@ -424,7 +424,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 @Override public boolean apply(GridEvent evt) {
                     assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-                    info(">>> Node has left: " + evt.nodeId());
+                    info(">>> Node has left: " + evt.node().id());
 
                     leaveLatch.countDown();
 

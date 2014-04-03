@@ -418,7 +418,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
 
             grid(0).events().localListen(new GridPredicate<GridEvent>() {
                 @Override public boolean apply(GridEvent evt) {
-                    if (((GridDiscoveryEvent)evt).eventNodeId().equals(nodeId))
+                    if (((GridDiscoveryEvent)evt).eventNode().id().equals(nodeId))
                         latch.countDown();
 
                     return true;

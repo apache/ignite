@@ -180,9 +180,9 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
 
         return new P1<GridEvent>() {
             @Override public boolean apply(GridEvent e) {
-                info("Predicate called [e.nodeId()=" + e.nodeId() + ", nodeId=" + nodeId + ']');
+                info("Predicate called [e.nodeId()=" + e.node().id() + ", nodeId=" + nodeId + ']');
 
-                return e.nodeId().equals(nodeId);
+                return e.node().id().equals(nodeId);
             }
         };
     }

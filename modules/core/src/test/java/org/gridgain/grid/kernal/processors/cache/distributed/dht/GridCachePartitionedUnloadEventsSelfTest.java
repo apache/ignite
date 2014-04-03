@@ -104,8 +104,8 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
 
             assertEquals(EVT_CACHE_PRELOAD_OBJECT_UNLOADED, cacheEvt.type());
             assertEquals(g.cache(null).name(), cacheEvt.cacheName());
-            assertEquals(g.localNode().id(), cacheEvt.nodeId());
-            assertEquals(g.localNode().id(), cacheEvt.eventNodeId());
+            assertEquals(g.localNode().id(), cacheEvt.node().id());
+            assertEquals(g.localNode().id(), cacheEvt.eventNode().id());
             assertTrue("Unexpected key: " + cacheEvt.key(), keys.contains(cacheEvt.key()));
         }
     }
@@ -133,8 +133,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
                 }));
 
             assertEquals(g.cache(null).name(), unloadEvt.cacheName());
-            assertEquals(g.localNode().id(), unloadEvt.nodeId());
+            assertEquals(g.localNode().id(), unloadEvt.node().id());
         }
     }
-
 }

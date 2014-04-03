@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -59,21 +58,17 @@ import java.util.*;
  */
 public class GridDiscoveryEvent extends GridEventAdapter {
     /** */
-    private UUID evtNodeId;
-
-    /** */
-    private GridNodeShadow shadow;
+    private GridNode evtNode;
 
     /** Topology version. */
     private long topVer;
 
-    /** Collection of node shadows corresponding to topology version. */
-    private Collection<GridNodeShadow> topSnapshot;
+    /** Collection of nodes corresponding to topology version. */
+    private Collection<GridNode> topSnapshot;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
-        return name() + ": id8=" + U.id8(evtNodeId) +
-            (shadow != null ? ", ip=" + F.first(shadow.addresses()) : "");
+        return name() + ": id8=" + U.id8(evtNode.id()) + ", ip=" + F.first(evtNode.addresses());
     }
 
     /**
@@ -86,66 +81,46 @@ public class GridDiscoveryEvent extends GridEventAdapter {
     /**
      * Creates new discovery event with given parameters.
      *
-     * @param nodeId Local node ID.
+     * @param node Local node.
      * @param msg Optional event message.
      * @param type Event type.
-     * @param evtNodeId ID of the node that caused this event to be generated.
+     * @param evtNode Node that caused this event to be generated.
      */
-    public GridDiscoveryEvent(UUID nodeId, String msg, int type, UUID evtNodeId) {
-        super(nodeId, msg, type);
+    public GridDiscoveryEvent(GridNode node, String msg, int type, GridNode evtNode) {
+        super(node, msg, type);
 
-        this.evtNodeId = evtNodeId;
+        this.evtNode = evtNode;
     }
 
     /**
      * Creates new discovery event with given parameters.
      *
-     * @param nodeId Local node ID.
+     * @param node Local node.
      * @param msg Optional event message.
      * @param type Event type.
      */
-    public GridDiscoveryEvent(UUID nodeId, String msg, int type) {
-        super(nodeId, msg, type);
+    public GridDiscoveryEvent(GridNode node, String msg, int type) {
+        super(node, msg, type);
     }
 
     /**
-     * Sets ID of the node this event is referring to.
+     * Sets node this event is referring to.
      *
-     * @param evtNodeId Event node ID. Note that event node ID is different from node ID
-     *      available via {@link #nodeId()} method.
+     * @param evtNode Event node.
      */
-    public void eventNodeId(UUID evtNodeId) {
-        this.evtNodeId = evtNodeId;
+    public void eventNode(GridNode evtNode) {
+        this.evtNode = evtNode;
     }
 
     /**
-     * Gets ID of the node that caused this event to be generated. It is potentially different from the node
+     * Gets node that caused this event to be generated. It is potentially different from the node
      * on which this event was recorded. For example, node {@code A} locally recorded the event that a remote node
-     * {@code B} joined the topology. In this case this method will return ID of {@code B} and
-     * method {@link #nodeId()} will return ID of {@code A}
+     * {@code B} joined the topology. In this case this method will return ID of {@code B}.
      *
      * @return Event node ID.
      */
-    public UUID eventNodeId() {
-        return evtNodeId;
-    }
-
-    /**
-     * Sets node shadow.
-     *
-     * @param shadow Node shadow to set.
-     */
-    public void shadow(GridNodeShadow shadow) {
-        this.shadow = shadow;
-    }
-
-    /**
-     * Gets node shadow.
-     *
-     * @return Node shadow or {@code null} if one wasn't set.
-     */
-    @Nullable public GridNodeShadow shadow() {
-        return shadow;
+    public GridNode eventNode() {
+        return evtNode;
     }
 
     /**
@@ -166,7 +141,7 @@ public class GridDiscoveryEvent extends GridEventAdapter {
      *
      * @return Topology snapshot.
      */
-    public Collection<GridNodeShadow> topologyNodes() {
+    public Collection<GridNode> topologyNodes() {
         return topSnapshot;
     }
 
@@ -176,7 +151,7 @@ public class GridDiscoveryEvent extends GridEventAdapter {
      * @param topVer Topology version.
      * @param topSnapshot Topology snapshot.
      */
-    public void topologySnapshot(long topVer, Collection<GridNodeShadow> topSnapshot) {
+    public void topologySnapshot(long topVer, Collection<GridNode> topSnapshot) {
         this.topVer = topVer;
         this.topSnapshot = topSnapshot;
     }
@@ -184,7 +159,7 @@ public class GridDiscoveryEvent extends GridEventAdapter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDiscoveryEvent.class, this,
-            "nodeId8", U.id8(nodeId()),
+            "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),
             "tstamp", timestamp());
