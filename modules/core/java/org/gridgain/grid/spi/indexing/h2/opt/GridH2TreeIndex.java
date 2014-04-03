@@ -237,16 +237,6 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     }
 
     /**
-     * Finds row with key equal one in given search row.
-     *
-     * @param row Search row.
-     * @return Row.
-     */
-    public GridH2AbstractKeyValueRow findOneInSnapshot(GridSearchRowPointer row) {
-        return (GridH2AbstractKeyValueRow)snapshot.get().get(row);
-    }
-
-    /**
      * Returns sub-tree bounded by given values.
      *
      * @param first Lower bound.
