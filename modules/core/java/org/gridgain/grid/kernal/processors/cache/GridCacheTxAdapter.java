@@ -1067,8 +1067,14 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                 V val = txEntry.hasValue() ? txEntry.value() :
                     txEntry.cached().innerGet(this, false, false, true, true, metrics, false, CU.<K, V>empty());
 
-                for (GridClosure<V, V> clos : txEntry.transformClosures())
-                    val = clos.apply(val);
+                try {
+                    for (GridClosure<V, V> clos : txEntry.transformClosures())
+                        val = clos.apply(val);
+                }
+                catch (Throwable e) {
+                    throw new GridRuntimeException("Failed to apply transform closures during transaction commit, " +
+                        "transaction will be invalidated (unexpected exception was thrown)", e);
+                }
 
                 GridCacheOperation op = val == null ? DELETE : UPDATE;
 

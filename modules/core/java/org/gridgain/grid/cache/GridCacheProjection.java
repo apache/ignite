@@ -644,6 +644,9 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * given key in cache. Result of closure application is guaranteed to be atomic, however, closure
      * itself can be applied more than once.
      * <p>
+     * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
+     * method, the transaction will be invalidated and entries participating in transaction will be nullified.
+     * <p>
      * Unlike {@link #putx(Object, Object, GridPredicate[])} or {@link #put(Object, Object, GridPredicate[])}
      * methods, this method will not transfer the whole updated value over the network, but instead will
      * transfer the transforming closure that will be applied on each remote node involved in transaction.
@@ -669,6 +672,9 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Stores result of applying {@code transformer} closure to the previous value associated with
      * given key in cache. Result of closure application is guaranteed to be atomic, however, closure
      * itself can be applied more than once.
+     * <p>
+     * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
+     * method, the transaction will be invalidated and entries participating in transaction will be nullified.
      * <p>
      * Unlike {@link #putx(Object, Object, GridPredicate[])} method, this method will not transfer
      * the whole updated value over the network, but instead will transfer the transforming closure
@@ -991,6 +997,9 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * with corresponding keys in cache. Execution of closure is guaranteed to be atomic,
      * however, closure itself can be applied more than once.
      * <p>
+     * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
+     * method, the transaction will be invalidated and entries participating in transaction will be nullified.
+     * <p>
      * Unlike {@link #putAll(Map, GridPredicate[])} method, this method will not transfer
      * the whole updated value over the network, but instead will transfer the transforming closures
      * that will be applied on each remote node involved in transaction. It may add significant
@@ -1013,6 +1022,9 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Stores result of applying the specified transform closure to previous values associated
      * with the specified keys in cache. Execution of closure is guaranteed to be atomic,
      * however, closure itself can be applied more than once.
+     * <p>
+     * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
+     * method, the transaction will be invalidated and entries participating in transaction will be nullified.
      * <p>
      * Unlike {@link #putAll(Map, GridPredicate[])} method, this method will not transfer
      * the whole updated value over the network, but instead will transfer the transforming closure
@@ -1062,6 +1074,9 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * with corresponding keys in cache. Result of closure application is guaranteed to be atomic,
      * however, closure itself can be applied more than once.
      * <p>
+     * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
+     * method, the transaction will be invalidated and entries participating in transaction will be nullified.
+     * <p>
      * Unlike {@link #putAll(Map, GridPredicate[])} method, this method will not transfer
      * the whole updated value over the network, but instead will transfer the transforming closures
      * that will be applied on each remote node involved in transaction. It may add significant performance
@@ -1084,6 +1099,9 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Stores result of applying the specified transform closure to previous values associated
      * with the specified keys in cache. Result of closure application is guaranteed to be atomic,
      * however, closure itself can be applied more than once.
+     * <p>
+     * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
+     * method, the transaction will be invalidated and entries participating in transaction will be nullified.
      * <p>
      * Unlike {@link #putAll(Map, GridPredicate[])} method, this method will not transfer
      * the whole updated value over the network, but instead will transfer the transforming closure
