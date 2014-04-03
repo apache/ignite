@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -51,6 +52,8 @@ public class ComputeBroadcastExample {
      * @throws GridException If failed.
      */
     private static void hello(Grid g) throws GridException {
+        //g.compute().broadcast((Runnable & Serializable)() -> System.out.println(">>> Hello Node!")).get();
+
         // Print out hello message on all nodes.
         g.compute().broadcast(
             new GridRunnable() {
