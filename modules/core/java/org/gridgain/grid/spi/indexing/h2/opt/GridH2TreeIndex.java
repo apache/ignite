@@ -51,7 +51,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     @SuppressWarnings("unchecked")
     public GridH2TreeIndex(String name, GridH2Table tbl, boolean unique, int keyCol, int valCol,
         final GridUnsafeMemory memory, IndexColumn... cols) {
-        super(valCol, keyCol);
+        super(keyCol, valCol);
         if (!unique) {
             // For non unique index we add primary key at the end to avoid conflicts.
             cols = Arrays.copyOf(cols, cols.length + 1);
