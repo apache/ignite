@@ -74,11 +74,11 @@ public class GridGgfsEvent extends GridEventAdapter {
      * Constructs an event instance.
      *
      * @param path File or directory path.
-     * @param nodeId Node ID.
+     * @param node Node.
      * @param type Event type.
      */
-    public GridGgfsEvent(GridGgfsPath path, UUID nodeId, int type) {
-        super(nodeId, "GGFS event.", type);
+    public GridGgfsEvent(GridGgfsPath path, GridNode node, int type) {
+        super(node, "GGFS event.", type);
 
         this.path = path;
     }
@@ -90,11 +90,11 @@ public class GridGgfsEvent extends GridEventAdapter {
      *
      * @param path File or directory path.
      * @param newPath New file or directory path.
-     * @param nodeId Node ID.
+     * @param node Node.
      * @param type Event type.
      */
-    public GridGgfsEvent(GridGgfsPath path, GridGgfsPath newPath, UUID nodeId, int type) {
-        this(path, nodeId, type);
+    public GridGgfsEvent(GridGgfsPath path, GridGgfsPath newPath, GridNode node, int type) {
+        this(path, node, type);
 
         this.newPath = newPath;
     }
@@ -105,12 +105,12 @@ public class GridGgfsEvent extends GridEventAdapter {
      * {@link GridEventType#EVT_GGFS_FILE_CLOSED_WRITE}).
      *
      * @param path File path.
-     * @param nodeId Node ID.
+     * @param node Node.
      * @param type Event type.
      * @param dataSize Transferred data size in bytes.
      */
-    public GridGgfsEvent(GridGgfsPath path, UUID nodeId, int type, long dataSize) {
-        this(path, nodeId, type);
+    public GridGgfsEvent(GridGgfsPath path, GridNode node, int type, long dataSize) {
+        this(path, node, type);
 
         this.dataSize = dataSize;
     }
@@ -120,12 +120,12 @@ public class GridGgfsEvent extends GridEventAdapter {
      * ({@link GridEventType#EVT_GGFS_META_UPDATED}).
      *
      * @param path File path.
-     * @param nodeId Node ID.
+     * @param node Node.
      * @param type Event type.
      * @param meta Modified properties.
      */
-    public GridGgfsEvent(GridGgfsPath path, UUID nodeId, int type, Map<String, String> meta) {
-        this(path, nodeId, type);
+    public GridGgfsEvent(GridGgfsPath path, GridNode node, int type, Map<String, String> meta) {
+        this(path, node, type);
 
         this.meta = meta;
     }

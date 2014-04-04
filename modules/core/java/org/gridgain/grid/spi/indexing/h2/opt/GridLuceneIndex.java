@@ -93,7 +93,7 @@ public class GridLuceneIndex implements Closeable {
         GridIndexDescriptor idx = null;
 
         for (GridIndexDescriptor descriptor : type.indexes().values()) {
-            if (descriptor.text()) {
+            if (descriptor.type() == GridIndexType.FULLTEXT) {
                 idx = descriptor;
 
                 break;

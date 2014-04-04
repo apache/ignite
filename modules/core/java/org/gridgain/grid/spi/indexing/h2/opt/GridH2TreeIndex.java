@@ -9,15 +9,12 @@
 
 package org.gridgain.grid.spi.indexing.h2.opt;
 
-import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.snaptree.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.h2.engine.*;
 import org.h2.index.*;
-import org.h2.message.*;
 import org.h2.result.*;
 import org.h2.table.*;
 import org.h2.value.*;
@@ -31,23 +28,14 @@ import java.util.concurrent.*;
  * Base class for snapshotable tree indexes.
  */
 @SuppressWarnings("ComparatorNotSerializable")
-public class GridH2Index extends BaseIndex implements Comparator<GridSearchRowPointer> {
-    /** */
-    private static final ThreadLocal<GridIndexingQueryFilter<?, ?>[]> filters =
-        new ThreadLocal<>();
+public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridSearchRowPointer> {
 
     /** */
     protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree;
 
     /** */
-    private ThreadLocal<ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row>> snapshot =
+    private final ThreadLocal<ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row>> snapshot =
         new ThreadLocal<>();
-
-    /** */
-    protected final int keyCol;
-
-    /** */
-    protected final int valCol;
 
     /**
      * Constructor with index initialization.
@@ -61,8 +49,9 @@ public class GridH2Index extends BaseIndex implements Comparator<GridSearchRowPo
      * @param cols Index columns list.
      */
     @SuppressWarnings("unchecked")
-    public GridH2Index(String name, GridH2Table tbl, boolean unique, int keyCol, int valCol,
+    public GridH2TreeIndex(String name, GridH2Table tbl, boolean unique, int keyCol, int valCol,
         final GridUnsafeMemory memory, IndexColumn... cols) {
+        super(keyCol, valCol);
         if (!unique) {
             // For non unique index we add primary key at the end to avoid conflicts.
             cols = Arrays.copyOf(cols, cols.length + 1);
@@ -73,10 +62,7 @@ public class GridH2Index extends BaseIndex implements Comparator<GridSearchRowPo
         IndexColumn.mapColumns(cols, tbl);
 
         initBaseIndex(tbl, 0, name, cols,
-            unique ? IndexType.createUnique(false, false) : IndexType.createNonUnique(false, false));
-
-        this.keyCol = keyCol;
-        this.valCol = valCol;
+            unique ? IndexType.createUnique(false, false) : IndexType.createNonUnique(false, false, false));
 
         final GridH2RowDescriptor desc = tbl.rowDescriptor();
 
@@ -125,29 +111,20 @@ public class GridH2Index extends BaseIndex implements Comparator<GridSearchRowPo
     }
 
     /**
-     * Sets key filters for current thread.
-     *
-     * @param fs Filters.
-     */
-    public static void setFiltersForThread(GridIndexingQueryFilter<?, ?>[] fs) {
-        filters.set(fs);
-    }
-
-    /**
      * Takes snapshot to be used in current thread. If argument is null it will be taken from current trees.
      *
      * @param s Map to be used as snapshot if not null.
      * @return Taken snapshot or given argument back.
      */
     @SuppressWarnings("unchecked")
-    public ConcurrentNavigableMap<SearchRow, GridH2Row> takeSnapshot(@Nullable ConcurrentNavigableMap s) {
+    @Override public Object takeSnapshot(@Nullable Object s) {
         assert snapshot.get() == null;
 
         if (s == null)
             s = tree instanceof SnapTreeMap ? ((SnapTreeMap)tree).clone() :
                 ((GridOffHeapSnapTreeMap)tree).clone();
 
-        snapshot.set(s);
+        snapshot.set((ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row>)s);
 
         return s;
     }
@@ -155,7 +132,7 @@ public class GridH2Index extends BaseIndex implements Comparator<GridSearchRowPo
     /**
      * Releases snapshot for current thread.
      */
-    public void releaseSnapshot() {
+    @Override public void releaseSnapshot() {
         ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> s = snapshot.get();
 
         snapshot.remove();
@@ -177,38 +154,8 @@ public class GridH2Index extends BaseIndex implements Comparator<GridSearchRowPo
     }
 
     /** {@inheritDoc} */
-    @Override public void checkRename() {
-        throw DbException.getUnsupportedException("rename");
-    }
-
-    /** {@inheritDoc} */
     @Override public void close(Session ses) {
         assert snapshot.get() == null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void add(Session ses, Row row) {
-        throw DbException.getUnsupportedException("add");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void remove(Session ses, Row row) {
-        throw DbException.getUnsupportedException("remove row");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void remove(Session ses) {
-        throw DbException.getUnsupportedException("remove index");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void truncate(Session ses) {
-        throw DbException.getUnsupportedException("truncate");
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean needRebuild() {
-        return false;
     }
 
     /** {@inheritDoc} */
@@ -258,8 +205,8 @@ public class GridH2Index extends BaseIndex implements Comparator<GridSearchRowPo
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks) {
-        return getCostRangeIndex(masks, getRowCountApproximation());
+    @Override public double getCost(Session ses, int[] masks, TableFilter filter, SortOrder sortOrder) {
+        return getCostRangeIndex(masks, getRowCountApproximation(), filter, sortOrder);
     }
 
     /** {@inheritDoc} */
@@ -329,16 +276,6 @@ public class GridH2Index extends BaseIndex implements Comparator<GridSearchRowPo
     }
 
     /**
-     * Filters rows from expired ones and using predicate.
-     *
-     * @param iter Iterator over rows.
-     * @return Filtered iterator.
-     */
-    private Iterator<GridH2Row> filter(Iterator<GridH2Row> iter) {
-        return new FilteringIterator(iter, U.currentTimeMillis());
-    }
-
-    /**
      * Takes sup-map from given one.
      *
      * @param map Map.
@@ -402,121 +339,14 @@ public class GridH2Index extends BaseIndex implements Comparator<GridSearchRowPo
         return new SingleRowCursor((Row)res);
     }
 
-    /**
-     * Put row if absent.
-     *
-     * @param row Row.
-     * @param ifAbsent Put only if such a row does not exist.
-     * @return Existing row or null.
-     */
-    public GridH2Row put(GridH2Row row, boolean ifAbsent) {
+    /** {@inheritDoc} */
+    @Override public GridH2Row put(GridH2Row row, boolean ifAbsent) {
         return ifAbsent ? tree.putIfAbsent(row, row) : tree.put(row, row);
     }
 
-    /**
-     * Remove row from index.
-     *
-     * @param row Row.
-     * @return Removed row.
-     */
-    public GridH2Row remove(SearchRow row) {
+    /** {@inheritDoc} */
+    @Override public GridH2Row remove(SearchRow row) {
         return tree.remove(comparable(row, 0));
-    }
-    /**
-     * Iterator which filters by expiration time and predicate.
-     */
-    private class FilteringIterator implements Iterator<GridH2Row> {
-        /** */
-        private final Iterator<GridH2Row> iter;
-
-        /** */
-        private final GridIndexingQueryFilter<?, ?>[] fs = filters.get();
-
-        /** */
-        private final long time;
-
-        /** */
-        private GridH2Row curr;
-
-        /**
-         * @param iter Iterator.
-         * @param time Time for expired rows filtering.
-         */
-        private FilteringIterator(Iterator<GridH2Row> iter, long time) {
-            this.iter = iter;
-            this.time = time;
-
-            moveNext();
-        }
-
-        /**
-         * Get next row.
-         */
-        private void moveNext() {
-            curr = null;
-
-            while (iter.hasNext()) {
-                GridH2Row row = iter.next();
-
-                if (accept(row)) {
-                    curr = row;
-
-                    break;
-                }
-            }
-        }
-
-        /**
-         * @param row Row.
-         * @return If this row was accepted.
-         */
-        @SuppressWarnings("unchecked")
-        private boolean accept(SearchRow row) {
-            if (row instanceof GridH2AbstractKeyValueRow) {
-                if (((GridH2AbstractKeyValueRow) row).expirationTime() <= time)
-                    return false;
-            }
-
-            if (F.isEmpty(fs))
-                return true;
-
-            String spaceName = ((GridH2Table)getTable()).spaceName();
-
-            Object key = row.getValue(keyCol).getObject();
-            Object val = row.getValue(valCol).getObject();
-
-            assert key != null;
-            assert val != null;
-
-            for (GridIndexingQueryFilter f : fs) {
-                if (f != null && !f.apply(spaceName, key, val))
-                    return false;
-            }
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasNext() {
-            return curr != null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridH2Row next() {
-            if (!hasNext())
-                throw new NoSuchElementException();
-
-            GridH2Row res = curr;
-
-            moveNext();
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void remove() {
-            throw new UnsupportedOperationException();
-        }
     }
 
     /**
@@ -610,20 +440,14 @@ public class GridH2Index extends BaseIndex implements Comparator<GridSearchRowPo
         }
     }
 
-    /**
-     * Creates copy of this index.
-     *
-     * @param memory Memory.
-     * @return New index instance.
-     * @throws InterruptedException If copy operation was interrupted.
-     */
-    GridH2Index createCopy(GridUnsafeMemory memory) throws InterruptedException {
+    /** {@inheritDoc} */
+    @Override public GridH2TreeIndex rebuild(GridUnsafeMemory memory) throws InterruptedException {
         IndexColumn[] cols = getIndexColumns();
 
         if (!getIndexType().isUnique())
             cols = Arrays.copyOf(cols, cols.length - 1);
 
-        GridH2Index idx = new GridH2Index(getName(), (GridH2Table)getTable(), getIndexType().isUnique(), keyCol, valCol,
+        GridH2TreeIndex idx = new GridH2TreeIndex(getName(), (GridH2Table)getTable(), getIndexType().isUnique(), keyCol, valCol,
             memory, cols);
 
         Thread thread = Thread.currentThread();

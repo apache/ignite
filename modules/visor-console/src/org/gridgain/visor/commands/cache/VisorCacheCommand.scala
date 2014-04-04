@@ -29,6 +29,7 @@ import org.gridgain.scalar.scalar._
 import org.gridgain.visor._
 import visor._
 import org.gridgain.visor.commands.{VisorConsoleMultiNodeTask, VisorConsoleCommand, VisorTextTable}
+import VisorCacheCommand._
 
 /**
  * ==Overview==
@@ -59,7 +60,7 @@ import org.gridgain.visor.commands.{VisorConsoleMultiNodeTask, VisorConsoleComma
  * {{{
  *     cache
  *     cache -i
- *     cache {-c=<name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}
+ *     cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}
  *     cache -clear {-c=<cache-name>}
  *     cache -compact {-c=<cache-name>}
  *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}
@@ -75,9 +76,8 @@ import org.gridgain.visor.commands.{VisorConsoleMultiNodeTask, VisorConsoleComma
  *         ID8 of the node to get cache statistics from.
  *         Either '-id8' or '-id' can be specified.
  *         If neither is specified statistics will be gathered from all nodes.
- *     -c=<name>
+ *     -c=<cache-name>
  *         Name of the cache.
- *         By default - statistics for all caches will be printed.
  *     -s=lr|lw|hi|mi|re|wr|cn
  *         Defines sorting type. Sorted by:
  *            lr Last read.
@@ -119,17 +119,23 @@ import org.gridgain.visor.commands.{VisorConsoleMultiNodeTask, VisorConsoleComma
  *         Prints cache statistics for interactively selected node.
  *     cache -s=hi -r -a
  *         Prints detailed statistics about all caches sorted by number of hits in reverse order.
+ *     cache -compact
+ *         Compacts entries in interactively selected cache.
  *     cache -compact -c=cache
  *         Compacts entries in cache with name 'cache'.
+ *     cache -clear
+ *         Clears interactively selected cache.
  *     cache -clear -c=cache
  *         Clears cache with name 'cache'.
+ *     cache -scan
+ *         Prints list entries from interactively selected cache.
  *     cache -scan -c=cache
- *         List entries from cache with name 'cache' from all nodes with this cache.
- *     cache -c=@c0 -scan -p=50
- *         List entries from cache with name taken from 'c0' memory variable
+ *         Prints list entries from cache with name 'cache' from all nodes with this cache.
+ *     cache -scan -c=@c0 -p=50
+ *         Prints list entries from cache with name taken from 'c0' memory variable
  *         with page of 50 items from all nodes with this cache.
- *     cache -c=cache -scan -id8=12345678
- *         List entries from cache with name 'cache' and node '12345678' ID8.
+ *     cache -scan -c=cache -id8=12345678
+ *         Prints list entries from cache with name 'cache' and node '12345678' ID8.
  * }}}
  */
 class VisorCacheCommand {
@@ -157,24 +163,30 @@ class VisorCacheCommand {
      * <ex>cache -s=no -r</ex>
      *     Prints statistics about all caches sorted by number of nodes in reverse order.
      * <br>
+     * <ex>cache -compact</ex>
+     *      Compacts entries in interactively selected cache.
+     * <br>
      * <ex>cache -compact -c=cache</ex>
      *      Compacts entries in cache with name 'cache'.
      * <br>
      * <ex>cache -clear</ex>
-     *      Clears default cache.
+     *      Clears interactively selected cache.
      * <br>
      * <ex>cache -clear -c=cache</ex>
      *      Clears cache with name 'cache'.
      * <br>
-     * <ex>cache -c=cache -scan</ex>
-     *     List entries from cache with name 'cache' from all nodes with this cache.
+     * <ex>cache -scan</ex>
+     *     Prints list entries from interactively selected cache.
      * <br>
-     * <ex>cache -c=@c0 -scan -p=50</ex>
-     *     List entries from cache with name taken from 'c0' memory variable with page of 50 items
+     * <ex>cache -scan -c=cache</ex>
+     *     Prints list entries from cache with name 'cache' from all nodes with this cache.
+     * <br>
+     * <ex>cache -scan -c=@c0 -p=50</ex>
+     *     Prints list entries from cache with name taken from 'c0' memory variable with page of 50 items
      *     from all nodes with this cache.
      * <br>
-     * <ex>cache -c=cache -scan -id8=12345678</ex>
-     *     List entries from cache with name 'cache' and node '12345678' ID8.
+     * <ex>cache -scan -c=cache -id8=12345678</ex>
+     *     Prints list entries from cache with name 'cache' and node '12345678' ID8.
      *
      * @param args Command arguments.
      */
@@ -207,27 +219,31 @@ class VisorCacheCommand {
                     case Right(n) => n
                 }
 
-                if (Seq("clear", "compact", "scan").exists(hasArgFlag(_, argLst))) {
-                    val name = argValue("c", argLst)
+                val cacheName = argValue("c", argLst) match {
+                    case Some("<default>") | Some(CACHE_DFLT) =>
+                        argLst = argLst.filter(_._1 != "c") ++ Seq("c" -> null)
 
-                    if (name.isEmpty) {
+                        Some(null)
+                    case cn => cn
+                }
+
+                if (Seq("clear", "compact", "scan").exists(hasArgFlag(_, argLst))) {
+                    if (cacheName.isEmpty)
                         askForCache("Select cache from:", node) match {
-                            case Some(cacheName) => argLst = argLst ++ Seq("c" -> cacheName)
+                            case Some(name) => argLst = argLst ++ Seq("c" -> name)
                             case None => break()
                         }
-                    }
 
                     if (hasArgFlag("clear", argLst))
                         VisorCacheClearCommand().clear(argLst, node)
                     else if (hasArgFlag("compact", argLst))
                         VisorCacheCompactCommand().compact(argLst, node)
                     else if (hasArgFlag("scan", argLst))
-                        VisorCacheScanCommand().scan(argLst)
+                        VisorCacheScanCommand().scan(argLst, node)
 
                     break()
                 }
 
-                val name = argValue("c", argLst)
                 val all = hasArgFlag("a", argLst)
 
                 val sortType = argValue("s", argLst)
@@ -237,7 +253,7 @@ class VisorCacheCommand {
                     scold("Invalid '-s' argument in: " + args).^^
 
                 // Get cache stats data from all nodes.
-                val aggrData = cacheData(node, name)
+                val aggrData = cacheData(node, cacheName)
 
                 if (aggrData.isEmpty)
                     scold("No caches found.").^^
@@ -378,8 +394,11 @@ class VisorCacheCommand {
      * @param s Cache host.
      */
     private def mkCacheName(@Nullable s: String): String = {
-        if (s == null)
-            "<default>"
+        if (s == null) {
+            val v = mfind(CACHE_DFLT)
+
+            "<default>" + (if (v.isDefined) "(@" + v.get._1 + ')' else "")
+        }
         else {
             val v = mfind(s)
 
@@ -392,9 +411,7 @@ class VisorCacheCommand {
      *
      * @param s Cache host.
      */
-    private def registerCacheName(@Nullable s: String) =
-        if (s != null)
-            setVarIfAbsent(s, "c")
+    private def registerCacheName(@Nullable s: String) = setVarIfAbsent(if (s != null) s else CACHE_DFLT, "c")
 
     /**
      * ===Command===
@@ -456,7 +473,7 @@ class VisorCacheCommand {
             case "mi" => data.toList.sortBy(_.misses)
             case "rd" => data.toList.sortBy(_.reads)
             case "wr" => data.toList.sortBy(_.writes)
-            case "cn" => data.toList.sortBy(_.cacheName)
+            case "cn" => data.toList.sortWith((x, y) => x.cacheName == null || x.cacheName < y.cacheName)
 
             case _ =>
                 assert(false, "Unknown sorting type: " + arg)
@@ -485,7 +502,7 @@ class VisorCacheCommand {
             case "mi" => data.toList.sortBy(_.avgMisses)
             case "rd" => data.toList.sortBy(_.avgReads)
             case "wr" => data.toList.sortBy(_.avgWrites)
-            case "cn" => data.toList.sortBy(_.cacheName)
+            case "cn" => data.toList.sortWith((x, y) => x.cacheName == null || x.cacheName < y.cacheName)
 
             case _ =>
                 assert(false, "Unknown sorting type: " + arg)
@@ -550,7 +567,7 @@ class VisorCacheCommand {
             None
         else {
             try
-                Some(aggrData(a.toInt).cacheName)
+                Some(sortedAggrData(a.toInt).cacheName)
             catch {
                 case e: Throwable =>
                     warn("Invalid selection: " + a)
@@ -769,8 +786,8 @@ object VisorCacheCommand {
             "cache",
             "cache -i",
             "cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}",
-            "cache -clear {-c=<cache-name>}",
-            "cache -compact {-c=<cache-name>}",
+            "cache -clear {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
+            "cache -compact {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
             "cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}"
         ),
         args = Seq(
@@ -787,7 +804,6 @@ object VisorCacheCommand {
             ),
             "-c=<cache-name>" -> Seq(
                 "Name of the cache.",
-                "By default - statistics for all caches will be printed.",
                 "Note you can also use '@c0' ... '@cn' variables as shortcut to <cache-name>."
             ),
             "-clear" -> Seq(
@@ -846,17 +862,23 @@ object VisorCacheCommand {
             ),
             "cache -s=hi -r -a" ->
                 "Prints detailed statistics about all caches sorted by number of hits in reverse order.",
+            "cache -compact" -> "Compacts entries in interactively selected cache.",
             "cache -compact -c=cache" -> "Compacts entries in cache with name 'cache'.",
             "cache -compact -c=@c0" -> "Compacts cache with name taken from 'c0' memory variable.",
+            "cache -clear" -> "Clears interactively selected cache.",
             "cache -clear -c=cache" -> "Clears cache with name 'cache'.",
             "cache -clear -c=@c0" -> "Clears cache with name taken from 'c0' memory variable.",
-            "cache -c=cache -scan" -> "List entries from cache with name 'cache' from all nodes with this cache.",
-            "cache -c=@c0 -scan -p=50" -> ("List entries from cache with name taken from 'c0' memory variable" +
+            "cache -scan" -> "Prints list entries from interactively selected cache.",
+            "cache -scan -c=cache" -> "List entries from cache with name 'cache' from all nodes with this cache.",
+            "cache -scan -c=@c0 -p=50" -> ("Prints list entries from cache with name taken from 'c0' memory variable" +
                 " with page of 50 items from all nodes with this cache."),
-            "cache -c=cache -scan -id8=12345678" -> "List entries from cache with name 'cache' and node '12345678' ID8."
+            "cache -scan -c=cache -id8=12345678" -> "Prints list entries from cache with name 'cache' and node '12345678' ID8."
         ),
         ref = VisorConsoleCommand(cmd.cache, cmd.cache)
     )
+
+    /** Default cache key. */
+    protected val CACHE_DFLT = "<default>-" + UUID.randomUUID().toString
 
     /** Singleton command */
     private val cmd = new VisorCacheCommand

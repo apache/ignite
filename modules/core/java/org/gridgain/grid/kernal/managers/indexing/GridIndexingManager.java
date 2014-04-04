@@ -24,6 +24,7 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
+import org.h2.value.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -32,6 +33,8 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+
+import static org.gridgain.grid.spi.indexing.GridIndexType.*;
 
 /**
  * Manages cache indexing.
@@ -336,7 +339,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @throws GridException Thrown in case of any errors.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> boolean remove(String spi, String space, K key, @Nullable byte[] keyBytes) throws GridException {
+    public <K> boolean remove(String spi, String space, K key, @Nullable byte[] keyBytes) throws GridException {
         assert key != null;
 
         if (!busyLock.enterBusy())
@@ -592,13 +595,13 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             GridCacheQueryGroupIndex grpIdx = cls.getAnnotation(GridCacheQueryGroupIndex.class);
 
             if (grpIdx != null)
-                type.addIndex(grpIdx.name(), grpIdx.unique());
+                type.addIndex(grpIdx.name(), SORTED);
 
             GridCacheQueryGroupIndex.List grpIdxList = cls.getAnnotation(GridCacheQueryGroupIndex.List.class);
 
             if (grpIdxList != null && !F.isEmpty(grpIdxList.value())) {
                 for (GridCacheQueryGroupIndex idx : grpIdxList.value())
-                    type.addIndex(idx.name(), idx.unique());
+                    type.addIndex(idx.name(), SORTED);
             }
         }
 
@@ -661,7 +664,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             if (sqlAnn.index() || sqlAnn.unique()) {
                 String idxName = prop.name() + "_idx";
 
-                desc.addIndex(idxName, sqlAnn.unique());
+                desc.addIndex(idxName, DataType.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
 
                 desc.addFieldToIndex(idxName, prop.name(), 0, sqlAnn.descending());
             }
@@ -927,12 +930,12 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          * Adds index.
          *
          * @param idxName Index name.
-         * @param unique Unique index.
+         * @param type Index type.
          * @return Index descriptor.
          * @throws GridException In case of error.
          */
-        public IndexDescriptor addIndex(String idxName, boolean unique) throws GridException {
-            IndexDescriptor idx = new IndexDescriptor(unique, false);
+        public IndexDescriptor addIndex(String idxName, GridIndexType type) throws GridException {
+            IndexDescriptor idx = new IndexDescriptor(type);
 
             if (indexes.put(idxName, idx) != null)
                 throw new GridException("Index with name '" + idxName + "' already exists.");
@@ -954,7 +957,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             IndexDescriptor desc = indexes.get(idxName);
 
             if (desc == null)
-                desc = addIndex(idxName, false);
+                desc = addIndex(idxName, SORTED);
 
             desc.addField(field, orderNum, descending);
         }
@@ -966,7 +969,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          */
         public void addFieldToTextIndex(String field) {
             if (fullTextIdx == null) {
-                fullTextIdx = new IndexDescriptor(false, true);
+                fullTextIdx = new IndexDescriptor(FULLTEXT);
 
                 indexes.put(null, fullTextIdx);
             }
@@ -1062,18 +1065,15 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         private Collection<String> descendings;
 
         /** */
-        private final boolean unique;
-
-        /** */
-        private final boolean text;
+        private final GridIndexType type;
 
         /**
-         * @param unique Unique index.
-         * @param text Text index.
+         * @param type Type.
          */
-        private IndexDescriptor(boolean unique, boolean text) {
-            this.unique = unique;
-            this.text = text;
+        private IndexDescriptor(GridIndexType type) {
+            assert type != null;
+
+            this.type = type;
         }
 
         /** {@inheritDoc} */
@@ -1110,13 +1110,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean unique() {
-            return unique;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean text() {
-            return text;
+        @Override public GridIndexType type() {
+            return type;
         }
 
         /** {@inheritDoc} */

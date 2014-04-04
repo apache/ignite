@@ -298,15 +298,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
                 if (type == EVT_NODE_JOINED && node.id().equals(locNode.id())) {
                     GridDiscoveryEvent discoEvt = new GridDiscoveryEvent();
 
-                    discoEvt.nodeId(ctx.localNodeId());
-                    discoEvt.eventNodeId(node.id());
+                    discoEvt.node(ctx.discovery().localNode());
+                    discoEvt.eventNode(node);
                     discoEvt.type(EVT_NODE_JOINED);
-                    discoEvt.shadow(new GridDiscoveryNodeShadowAdapter(node));
 
                     discoEvt.topologySnapshot(topVer, new ArrayList<>(
-                        F.viewReadOnly(topSnapshot, new C1<GridNode, GridNodeShadow>() {
-                            @Override public GridNodeShadow apply(GridNode e) {
-                                return new GridDiscoveryNodeShadowAdapter(e);
+                        F.viewReadOnly(topSnapshot, new C1<GridNode, GridNode>() {
+                            @Override public GridNode apply(GridNode e) {
+                                return e;
                             }
                         }, daemonFilter)));
 
@@ -1149,9 +1148,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * Gets topology by specified version from history storage.
      *
      * @param topVer Topology version.
-     * @return Topology nodes.
+     * @return Topology nodes or {@code null} if there are no nodes for passed in version.
      */
-    public Collection<GridNode> topology(long topVer) {
+    @Nullable public Collection<GridNode> topology(long topVer) {
         if (!histSupported)
             throw new UnsupportedOperationException("Current discovery SPI does not support " +
                 "topology snapshots history (consider using TCP discovery SPI).");
@@ -1374,15 +1373,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             if (ctx.event().isRecordable(type)) {
                 GridDiscoveryEvent evt = new GridDiscoveryEvent();
 
-                evt.nodeId(ctx.localNodeId());
-                evt.eventNodeId(node.id());
+                evt.node(ctx.discovery().localNode());
+                evt.eventNode(node);
                 evt.type(type);
-                evt.shadow(new GridDiscoveryNodeShadowAdapter(node));
 
                 evt.topologySnapshot(topVer, new ArrayList<>(
-                    F.viewReadOnly(topSnapshot, new C1<GridNode, GridNodeShadow>() {
-                        @Override public GridNodeShadow apply(GridNode e) {
-                            return new GridDiscoveryNodeShadowAdapter(e);
+                    F.viewReadOnly(topSnapshot, new C1<GridNode, GridNode>() {
+                        @Override public GridNode apply(GridNode e) {
+                            return e;
                         }
                     }, daemonFilter)));
 

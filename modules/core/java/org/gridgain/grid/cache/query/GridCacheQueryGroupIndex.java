@@ -15,7 +15,7 @@ import java.lang.annotation.*;
  * Describes group index.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
+@Target(ElementType.TYPE)
 public @interface GridCacheQueryGroupIndex {
     /**
      * Group index name.
@@ -28,7 +28,9 @@ public @interface GridCacheQueryGroupIndex {
      * If this index is unique.
      *
      * @return True if this index is unique, false otherwise.
+     * @deprecated No longer supported, will be ignored.
      */
+    @Deprecated
     boolean unique() default false;
 
     /**
@@ -36,7 +38,7 @@ public @interface GridCacheQueryGroupIndex {
      */
     @SuppressWarnings("PublicInnerClass")
     @Retention(RetentionPolicy.RUNTIME)
-    @Target({ElementType.TYPE})
+    @Target(ElementType.TYPE)
     public static @interface List {
         /**
          * Gets array of group indexes.

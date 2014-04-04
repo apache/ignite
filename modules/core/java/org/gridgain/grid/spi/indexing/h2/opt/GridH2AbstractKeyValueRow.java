@@ -121,7 +121,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
             case Value.BYTES:
                 return ValueBytes.get((byte[])obj);
             case Value.JAVA_OBJECT:
-                return ValueJavaObject.getNoCopy(obj, null);
+                return ValueJavaObject.getNoCopy(obj, null, null);
             case Value.ARRAY:
                 Object[] arr = (Object[])obj;
 
@@ -134,6 +134,9 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
                 }
 
                 return ValueArray.get(valArr);
+
+            case Value.GEOMETRY:
+                return ValueGeometry.getFromGeometry(obj);
         }
 
         throw new GridSpiException("Failed to wrap value[type=" + type + ", value=" + obj + "]");

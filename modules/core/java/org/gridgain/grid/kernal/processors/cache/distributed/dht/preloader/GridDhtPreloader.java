@@ -91,7 +91,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
                 assert e.type() == EVT_NODE_JOINED || e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED;
 
-                final GridNodeShadow n = e.shadow();
+                final GridNode n = e.eventNode();
 
                 assert !loc.id().equals(n.id());
 

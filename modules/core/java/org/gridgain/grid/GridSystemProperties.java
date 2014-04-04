@@ -425,6 +425,11 @@ public final class GridSystemProperties {
     public static final String GG_ATOMIC_DEFERRED_ACK_TIMEOUT = "GRIDGAIN_ATOMIC_DEFERRED_ACK_TIMEOUT";
 
     /**
+     * If this property set then debug console will be opened for H2 indexing SPI.
+     */
+    public static final String GG_H2_DEBUG_CONSOLE = "GRIDGAIN_H2_DEBUG_CONSOLE";
+
+    /**
      * Enforces singleton.
      */
     private GridSystemProperties() {
