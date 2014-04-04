@@ -142,7 +142,7 @@ object visor extends VisorTag {
     /** Node segmentation listener. */
     private var nodeSegLsnr: GridPredicate[GridEvent] = null
 
-    /** Node stop listener.  */
+    /** Node stop listener. */
     private var nodeStopLsnr: GridGainListener = null
 
     /** Visor copyright blurb. */
@@ -855,7 +855,7 @@ object visor extends VisorTag {
      * variable substitution:
      *
      * `-p=@n` - A named parameter where `@n` will be considered as a reference to variable named `n`.
-     * `@ n` - An unnamed parameter  where `@n` will be considered as a reference to variable named `n`.
+     * `@ n` - An unnamed parameter where `@n` will be considered as a reference to variable named `n`.
      * `-p` - A flag doesn't support variable substitution.
      *
      * Note that recursive substitution isn't supported. If specified variable isn't set - the value
@@ -1011,7 +1011,7 @@ object visor extends VisorTag {
             }
 
         try
-            if (s.startsWith("lte"))  // <=
+            if (s.startsWith("lte")) // <=
                 Some(_ <= value(s.substring(3)))
             else if (s.startsWith("lt")) // <
                 Some(_ < value(s.substring(2)))
@@ -1597,7 +1597,7 @@ object visor extends VisorTag {
                 override def apply(e: GridEvent): Boolean = {
                     e match {
                         case de: GridDiscoveryEvent =>
-                            setVarIfAbsent(U.id8(de.eventNode().id()), "n")
+                            setVarIfAbsent(nid8(de.eventNode()), "n")
 
                             val node = grid.node(de.eventNode().id())
 
@@ -1627,7 +1627,7 @@ object visor extends VisorTag {
                 override def apply(e: GridEvent): Boolean = {
                     e match {
                         case (de: GridDiscoveryEvent) =>
-                            val nv = mfind(U.id8(de.eventNode().id()))
+                            val nv = mfind(nid8(de.eventNode()))
 
                             if (nv.isDefined)
                                 mem.remove(nv.get._1)
@@ -1746,10 +1746,10 @@ object visor extends VisorTag {
         if (g != null && g.localNode.id == id)
             "<visor>"
         else {
-            val id8 =  U.id8(id)
-            val v = mfind(id8)
-
             val n = grid.node(id)
+
+            val id8 = nid8(n)
+            val v = mfind(id8)
 
             id8 +
                 (if (v.isDefined) "(@" + v.get._1 + ")" else "") +
@@ -1768,7 +1768,9 @@ object visor extends VisorTag {
         assert(id != null)
         assert(isCon)
 
-        val id8 =  U.id8(id)
+        val n = grid.node(id)
+
+        val id8 = nid8(n)
         val v = mfind(id8)
 
         id8 + (if (v.isDefined) "(@" + v.get._1 + ")" else "")
@@ -2466,8 +2468,8 @@ object visor extends VisorTag {
         }
 
         logText("H/N/C" + pipe +
-            m.getTotalHosts.toString.padTo(4, ' ') +  pipe +
-            m.getTotalNodes.toString.padTo(4, ' ') +  pipe +
+            m.getTotalHosts.toString.padTo(4, ' ') + pipe +
+            m.getTotalNodes.toString.padTo(4, ' ') + pipe +
             m.getTotalCpus.toString.padTo(4, ' ') + pipe +
             bar(m.getAverageCpuLoad, m.getAverageHeapMemoryUsed / m.getAverageHeapMemoryMaximum) + pipe
         )
