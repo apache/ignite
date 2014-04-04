@@ -576,7 +576,7 @@ class VisorTasksCommand {
                 t.execs = t.execs + s
 
                 s.evts = s.evts :+ te
-                s.nodeIds = s.nodeIds + te.nodeId()
+                s.nodeIds = s.nodeIds + te.node().id()
                 s.startTs = math.min(s.startTs, te.timestamp())
                 s.endTs = math.max(s.endTs, te.timestamp())
 
@@ -584,12 +584,12 @@ class VisorTasksCommand {
                     case EVT_TASK_STARTED =>
                         if (s.state == UNDEFINED) s.state = STARTED
 
-                        s.origNodeId = te.nodeId()
+                        s.origNodeId = te.node().id()
 
                     case EVT_TASK_FINISHED =>
                         if (s.state == UNDEFINED || s.state == STARTED) s.state = FINISHED
 
-                        s.origNodeId = te.nodeId()
+                        s.origNodeId = te.node().id()
 
                     case EVT_TASK_FAILED => if (s.state == UNDEFINED || s.state == STARTED) s.state = FAILED
                     case EVT_TASK_TIMEDOUT => if (s.state == UNDEFINED || s.state == STARTED) s.state = TIMEDOUT
@@ -605,12 +605,12 @@ class VisorTasksCommand {
                 // Collect node IDs where jobs didn't finish ok.
                 je.`type` match {
                     case EVT_JOB_CANCELLED | EVT_JOB_FAILED | EVT_JOB_REJECTED | EVT_JOB_TIMEDOUT =>
-                        s.failedNodeIds = s.failedNodeIds + je.nodeId
+                        s.failedNodeIds = s.failedNodeIds + je.node().id()
                     case _ =>
                 }
 
                 s.evts = s.evts :+ je
-                s.nodeIds = s.nodeIds + je.nodeId()
+                s.nodeIds = s.nodeIds + je.node().id()
                 s.startTs = math.min(s.startTs, je.timestamp())
                 s.endTs = math.max(s.endTs, je.timestamp())
         }
@@ -1091,7 +1091,7 @@ class VisorTasksCommand {
 
                 se.foreach((e: GridEvent) => evtsT += (
                     formatDateTime(e.timestamp()),
-                    nodeId8Addr(e.nodeId()),
+                    nodeId8Addr(e.node().id()),
                     e.name
                     ))
 

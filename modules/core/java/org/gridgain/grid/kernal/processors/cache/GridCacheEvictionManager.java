@@ -216,7 +216,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
                         // Notify backup worker on each topology change.
-                        if (CU.affinityNode(cctx, discoEvt.shadow()))
+                        if (CU.affinityNode(cctx, discoEvt.eventNode()))
                             backupWorker.addEvent(discoEvt);
                     }
                 },
@@ -253,7 +253,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
                         for (EvictionFuture fut : futs.values())
-                            fut.onNodeLeft(discoEvt.eventNodeId());
+                            fut.onNodeLeft(discoEvt.eventNode().id());
                     }
                 },
                 EVT_NODE_FAILED, EVT_NODE_LEFT);
@@ -292,8 +292,8 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         if (plcEnabled && evictSync && !cctx.isNear()) {
             // Add dummy event to worker.
-            backupWorker.addEvent(new GridDiscoveryEvent(cctx.localNodeId(), "Dummy event.", EVT_NODE_JOINED,
-                cctx.localNodeId()));
+            backupWorker.addEvent(new GridDiscoveryEvent(cctx.localNode(), "Dummy event.",
+                EVT_NODE_JOINED, cctx.localNode()));
 
             backupWorkerThread = new GridThread(backupWorker);
             backupWorkerThread.start();

@@ -339,7 +339,7 @@ public class CacheQueryExample {
      */
     private static class Person implements Serializable {
         /** Person ID (create unique SQL index for this field). */
-        @GridCacheQuerySqlField(unique = true)
+        @GridCacheQuerySqlField(index = true)
         private UUID id;
 
         /** Organization ID (create non-unique SQL index for this field). */
@@ -421,7 +421,7 @@ public class CacheQueryExample {
      */
     private static class Organization implements Serializable {
         /** Organization ID (create unique SQL-based index for this field). */
-        @GridCacheQuerySqlField(unique = true)
+        @GridCacheQuerySqlField(index = true)
         private UUID id;
 
         /** Organization name (create non-unique SQL-based index for this field. */

@@ -9,19 +9,19 @@
  *
  */
 
-package org.gridgain.visor.commands.cclear
+package org.gridgain.visor.commands.cache
 
-import org.gridgain.visor._
-import VisorCacheClearCommand._
+import org.gridgain.grid.{GridGain => G}
 import org.gridgain.grid._
 import cache._
 import GridCacheMode._
 import GridCacheAtomicityMode._
-import org.gridgain.grid.{GridGain => G}
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
-import collection.JavaConversions._
 import org.jetbrains.annotations.Nullable
+import collection.JavaConversions._
+import org.gridgain.visor._
+import VisorCacheCommand._
 
 /**
  *
@@ -69,47 +69,47 @@ class VisorCacheClearCommandSpec extends VisorRuntimeBaseSpec(2) {
     behavior of "An 'cclear' visor command"
 
     it should "show correct result for default cache" in {
-        GridGain.grid("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        G.grid("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        GridGain.grid("node-1").cache[Int, Int](null).lock(1, 0)
+        G.grid("node-1").cache[Int, Int](null).lock(1, 0)
 
         visor.open("-e -g=node-1", false)
 
-        visor.cclear()
+        VisorCacheClearCommand().clear(Nil, None)
 
-        GridGain.grid("node-1").cache[Int, Int](null).unlock(1)
+        G.grid("node-1").cache[Int, Int](null).unlock(1)
 
-        visor.cclear()
+        VisorCacheClearCommand().clear(Nil, None)
 
         visor.close()
     }
 
     it should "show correct result for named cache" in {
-        GridGain.grid("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        G.grid("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        GridGain.grid("node-1").cache[Int, Int]("cache").lock(1, 0)
+        G.grid("node-1").cache[Int, Int]("cache").lock(1, 0)
 
         visor.open("-e -g=node-1", false)
 
-        visor.cclear("cache")
+        visor.cache("-clear -c=cache")
 
-        GridGain.grid("node-1").cache[Int, Int]("cache").unlock(1)
+        G.grid("node-1").cache[Int, Int]("cache").unlock(1)
 
-        visor.cclear("cache")
+        visor.cache("-clear -c=cache")
 
         visor.close()
     }
 
     it should "show correct help" in {
-        VisorCacheClearCommand
+        VisorCacheCommand
 
-        visor.help("cclear")
+        visor.help("cache")
     }
 
     it should "show empty projection error message" in {
         visor.open("-e -g=node-1", false)
 
-        visor.cclear("wrong")
+        visor.cache("-clear -c=wrong")
 
         visor.close()
     }

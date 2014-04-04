@@ -65,7 +65,7 @@ class GridRoundRobinGlobalLoadBalancer {
                 @Override public void onEvent(GridEvent evt) {
                     assert evt instanceof GridDiscoveryEvent;
 
-                    UUID nodeId = ((GridDiscoveryEvent)evt).eventNodeId();
+                    UUID nodeId = ((GridDiscoveryEvent)evt).eventNode().id();
 
                     synchronized (mux) {
                         if (evt.type() == EVT_NODE_JOINED) {

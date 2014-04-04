@@ -252,16 +252,16 @@ public class StreamingCheckInExample {
      */
     private static class Location {
         /** Check-in location on X axis (longitude). */
-        private double x;
+        private final double x;
 
         /** Check-in location on Y axis (latitude). */
-        private double y;
+        private final double y;
 
         /**
          * @param x X value.
          * @param y Y value.
          */
-        private Location(double x, double y) {
+        Location(double x, double y) {
             this.x = x;
             this.y = y;
         }
@@ -292,16 +292,16 @@ public class StreamingCheckInExample {
      */
     private static class Place {
         /** Place name. */
-        private String name;
+        private final String name;
 
         /** Location. */
-        private Location location;
+        private final Location location;
 
         /**
          * @param name Name.
          * @param location Location.
          */
-        private Place(String name, Location location) {
+        Place(String name, Location location) {
             this.name = name;
             this.location = location;
         }
@@ -331,16 +331,16 @@ public class StreamingCheckInExample {
      */
     private static class CheckInEvent {
         /** User name. */
-        private String userName;
+        private final String userName;
 
         /** User location. */
-        private Location location;
+        private final Location location;
 
         /**
          * @param userName User name.
          * @param location Location.
          */
-        private CheckInEvent(String userName, Location location) {
+        CheckInEvent(String userName, Location location) {
             this.userName = userName;
             this.location = location;
         }
@@ -371,16 +371,16 @@ public class StreamingCheckInExample {
      */
     private static class LocationInfo {
         /** User name. */
-        private String userName;
+        private final String userName;
 
         /** A detected check-in place. */
-        private Place place;
+        private final Place place;
 
         /**
          * @param userName User name.
          * @param place Place.
          */
-        private LocationInfo(String userName, Place place) {
+        LocationInfo(String userName, Place place) {
             this.userName = userName;
             this.place = place;
         }
@@ -506,7 +506,8 @@ public class StreamingCheckInExample {
     }
 
     /**
-     * Index updater for check-in events.
+     * Index updater for check-in events. Updaters are specified for {@link GridStreamerIndexProviderAdapter} in
+     * streamer configuration.
      */
     private static class CheckInEventIndexUpdater implements GridStreamerIndexUpdater<CheckInEvent, String, Location> {
         /** {@inheritDoc} */
@@ -536,7 +537,8 @@ public class StreamingCheckInExample {
     }
 
     /**
-     * Index updater for location info.
+     * Index updater for location info. Updaters are specified for {@link GridStreamerIndexProviderAdapter} in
+     * streamer configuration.
      */
     private static class PlacesIndexUpdater implements GridStreamerIndexUpdater<LocationInfo, String, Place> {
         /** {@inheritDoc} */

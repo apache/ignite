@@ -372,7 +372,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return {@code True} in case replication is enabled.
      */
-    public boolean isReplicationEnabled() {
+    public boolean isDrEnabled() {
         assert cache != null;
 
         return cacheCfg.getDrSenderConfiguration() != null && !cache.isNear();

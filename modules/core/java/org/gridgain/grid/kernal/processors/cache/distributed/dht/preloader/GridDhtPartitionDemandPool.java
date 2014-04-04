@@ -275,7 +275,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     private void preloadEvent(int part, int type, GridDiscoveryEvent discoEvt) {
         assert discoEvt != null;
 
-        cctx.events().addPreloadEvent(part, type, discoEvt.shadow(), discoEvt.type(), discoEvt.timestamp());
+        cctx.events().addPreloadEvent(part, type, discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
     }
 
     /**
@@ -662,7 +662,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                             entry.ttl(),
                             entry.expireTime(),
                             true,
-                            cctx.isReplicationEnabled() ? DR_PRELOAD : DR_NONE
+                            cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE
                         )) {
                             cctx.evicts().touch(cached); // Start tracking.
 

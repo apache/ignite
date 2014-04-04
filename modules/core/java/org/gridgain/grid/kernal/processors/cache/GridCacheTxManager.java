@@ -113,10 +113,10 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                     GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
-                    cctx.time().addTimeoutObject(new NodeFailureTimeoutObject(discoEvt.eventNodeId()));
+                    cctx.time().addTimeoutObject(new NodeFailureTimeoutObject(discoEvt.eventNode().id()));
 
                     if (txFinishSync != null)
-                        txFinishSync.onNodeLeft(discoEvt.eventNodeId());
+                        txFinishSync.onNodeLeft(discoEvt.eventNode().id());
                 }
             },
             EVT_NODE_FAILED, EVT_NODE_LEFT);

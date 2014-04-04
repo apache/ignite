@@ -9,18 +9,18 @@
  *
  */
 
-package org.gridgain.visor.commands.ccompact
+package org.gridgain.visor.commands.cache
 
-import org.gridgain.visor._
-import VisorCacheCompactCommand._
 import org.gridgain.grid._
+import org.gridgain.grid.{GridGain => G}
 import cache._
 import GridCacheMode._
-import org.gridgain.grid.{GridGain => G}
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
-import collection.JavaConversions._
 import org.jetbrains.annotations.Nullable
+import collection.JavaConversions._
+import org.gridgain.visor._
+import VisorCacheCommand._
 
 /**
  *
@@ -67,39 +67,39 @@ class VisorCacheCompactCommandSpec extends VisorRuntimeBaseSpec(2) {
     behavior of "An 'ccompact' visor command"
 
     it should "show correct result for default cache" in {
-        GridGain.grid("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        G.grid("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        GridGain.grid("node-1").cache[Int, Int](null).clear(1)
+        G.grid("node-1").cache[Int, Int](null).clear(1)
 
         visor.open("-e -g=node-1", false)
 
-        visor.ccompact()
+        VisorCacheCompactCommand().compact(Nil, None)
 
         visor.close()
     }
 
     it should "show correct result for named cache" in {
-        GridGain.grid("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        G.grid("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        GridGain.grid("node-1").cache[Int, Int]("cache").clear(1)
+        G.grid("node-1").cache[Int, Int]("cache").clear(1)
 
         visor.open("-e -g=node-1", false)
 
-        visor.ccompact("cache")
+        visor.cache("-compact -c=cache")
 
         visor.close()
     }
 
     it should "show correct help" in {
-        VisorCacheCompactCommand
+        VisorCacheCommand
 
-        visor.help("ccompact")
+        visor.help("cache")
     }
 
     it should "show empty projection error message" in {
         visor.open("-e -g=node-1", false)
 
-        visor.ccompact("wrong")
+        visor.cache("-compact -c=wrong")
 
         visor.close()
     }
