@@ -29,8 +29,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /** */
     protected static final ThreadLocal<GridIndexingQueryFilter<?, ?>[]> filters =
         new ThreadLocal<>();
+
     /** */
     protected final int keyCol;
+
     /** */
     protected final int valCol;
 
