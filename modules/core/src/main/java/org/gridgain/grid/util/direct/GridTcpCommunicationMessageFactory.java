@@ -299,10 +299,10 @@ public class GridTcpCommunicationMessageFactory {
                 return new GridJobStealingRequest();
 
             case 79:
-                return new GridCacheSetIteratorRequest();
+                return new GridCacheSetDataRequest();
 
             case 80:
-                return new GridCacheSetIteratorResponse();
+                return new GridCacheSetDataResponse();
 
             default:
                 return createCustom(type);
