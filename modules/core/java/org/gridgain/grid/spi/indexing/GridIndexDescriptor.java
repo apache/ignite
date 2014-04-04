@@ -34,16 +34,9 @@ public interface GridIndexDescriptor {
     public boolean descending(String field);
 
     /**
-     * Specifies whether this is a unique index.
+     * Gets index type.
      *
-     * @return {@code True} if index is unique, {@code false} otherwise.
+     * @return Type.
      */
-    public boolean unique();
-
-    /**
-     * Specified if this is SQL or Text index.
-     *
-     * @return {@code True} if it is a text index, {@code false} for SQL index.
-     */
-    public boolean text();
+    public GridIndexType type();
 }

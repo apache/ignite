@@ -20,8 +20,8 @@ import org.gridgain.visor.{VisorTextTableSpec, VisorScalarSpec}
 import org.gridgain.visor.commands.ack.VisorAckCommandSpec
 import org.gridgain.visor.commands.alert.VisorAlertCommandSpec
 import org.gridgain.visor.commands.cache.VisorCacheCommandSpec
-import org.gridgain.visor.commands.cclear.VisorCacheClearCommandSpec
-import org.gridgain.visor.commands.ccompact.VisorCacheCompactCommandSpec
+import org.gridgain.visor.commands.cache.VisorCacheClearCommandSpec
+import org.gridgain.visor.commands.cache.VisorCacheCompactCommandSpec
 import org.gridgain.visor.commands.config.VisorConfigurationCommandSpec
 import org.gridgain.visor.commands.cswap.VisorCacheSwapCommandSpec
 import org.gridgain.visor.commands.deploy.VisorDeployCommandSpec

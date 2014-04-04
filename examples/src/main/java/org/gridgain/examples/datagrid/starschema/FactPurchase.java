@@ -19,7 +19,7 @@ import org.gridgain.grid.cache.query.*;
  */
 public class FactPurchase {
     /** Primary key. */
-    @GridCacheQuerySqlField(unique = true)
+    @GridCacheQuerySqlField(index = true)
     private int id;
 
     /** Foreign key to store at which purchase occurred. */

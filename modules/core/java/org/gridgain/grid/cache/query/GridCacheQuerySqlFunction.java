@@ -39,7 +39,7 @@ import java.lang.annotation.*;
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD})
+@Target(ElementType.METHOD)
 public @interface GridCacheQuerySqlFunction {
     /**
      * Specifies alias for the function to be used form SQL queries.

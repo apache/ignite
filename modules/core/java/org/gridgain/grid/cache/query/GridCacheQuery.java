@@ -84,7 +84,7 @@ import org.jetbrains.annotations.*;
  * classes defined as follows:
  * <pre name="code" class="java">
  * public class Organization {
- *     &#64;GridCacheQuerySqlField(unique = true)
+ *     &#64;GridCacheQuerySqlField
  *     private long id;
  *
  *     &#64;GridCacheQuerySqlField
@@ -94,7 +94,7 @@ import org.jetbrains.annotations.*;
  *
  * public class Person {
  *     // Unique index.
- *     &#64;GridCacheQuerySqlField(unique=true)
+ *     &#64;GridCacheQuerySqlField
  *     private long id;
  *
  *     &#64;GridCacheQuerySqlField

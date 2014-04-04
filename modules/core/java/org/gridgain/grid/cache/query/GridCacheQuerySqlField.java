@@ -34,7 +34,9 @@ public @interface GridCacheQuerySqlField {
      * makes sense if {@link #index()} property is set to {@code true}.
      *
      * @return {@code True} if field index should be unique.
+     * @deprecated No longer supported, will be ignored.
      */
+    @Deprecated
     boolean unique() default false;
 
     /**
