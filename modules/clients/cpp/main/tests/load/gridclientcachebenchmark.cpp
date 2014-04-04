@@ -194,16 +194,34 @@ int main(int argc, const char** argv) {
     // initialize random seed
     srand(time(NULL));
 
+
     // Declare the supported options.
     options_description desc("Allowed options");
-    desc.add_options()("help", "produce help message")("host", value<string>(), "Host to connect to")("port", value<int>(),
-        "Port to connect to")("threads", value<int>(), "Number of threads")("testtype", value<string>(),
-        "Type of operations to run")("cachename", value<string>(), "Cache name")("warmupseconds", value<int>(),
-        "Seconds to warm up")("runseconds", value<int>(), "Seconds to run")("usetransactions",
-        boost::program_options::value<bool>(), "Use transactions (bool)");
+    desc.add_options()
+    		("help",	"produce help message")
+    		("host",	value<string>()->required(),	"Host to connect to")
+    		("port",	value<int>()->required(),	"Port to connect to")
+    		("threads",	value<int>()->required(),	"Number of threads")
+    		("testtype",	value<string>()->required(),	"Type of operations to run")
+    		("cachename",	value<string>()->required(),	"Cache name")
+    		("warmupseconds",	value<int>()->required(),	"Seconds to warm up")
+    		("runseconds",	value<int>()->required(),	"Seconds to run")
+    		("usetransactions",	boost::program_options::value<bool>()->required(),	"Use transactions (bool)");
 
+    try {
     store(parse_command_line(argc, argv, desc), vm);
     notify(vm);
+    } catch (exception &e)
+    {
+    	cerr << "Error parsing arguments: " << e.what() << endl;
+    	cerr << desc << endl;
+    	return 1;
+    }
+    if (vm.count("help"))
+    {
+    	cout << desc << endl;
+    	return 0;
+    }
 
     GridClientConfiguration cfg = clientConfig();
 
