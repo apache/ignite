@@ -47,7 +47,7 @@ public class StreamingPopularNumbersExample {
     private static final int CNT = 10_000_000;
 
     /** Comparator sorting random number entries by number popularity. */
-    private static final Comparator<GridStreamerIndexEntry<Integer, Integer, Long>> cmp =
+    private static final Comparator<GridStreamerIndexEntry<Integer, Integer, Long>> CMP =
         new Comparator<GridStreamerIndexEntry<Integer, Integer, Long>>() {
             @Override public int compare(GridStreamerIndexEntry<Integer, Integer, Long> e1,
                 GridStreamerIndexEntry<Integer, Integer, Long> e2) {
@@ -59,7 +59,7 @@ public class StreamingPopularNumbersExample {
     private static class PopularNumbersReducer implements GridReducer<Collection<GridStreamerIndexEntry<Integer, Integer, Long>>,
         Collection<GridStreamerIndexEntry<Integer, Integer, Long>>> {
         /** */
-        private List<GridStreamerIndexEntry<Integer, Integer, Long>> sorted = new ArrayList<>();
+        private final List<GridStreamerIndexEntry<Integer, Integer, Long>> sorted = new ArrayList<>();
 
         /** {@inheritDoc} */
         @Override public boolean collect(@Nullable Collection<GridStreamerIndexEntry<Integer, Integer, Long>> col) {
@@ -72,7 +72,7 @@ public class StreamingPopularNumbersExample {
 
         /** {@inheritDoc} */
         @Override public Collection<GridStreamerIndexEntry<Integer, Integer, Long>> reduce() {
-            Collections.sort(sorted, cmp);
+            Collections.sort(sorted, CMP);
 
             return sorted.subList(0, POPULAR_NUMBERS_CNT < sorted.size() ? POPULAR_NUMBERS_CNT : sorted.size());
         }
@@ -155,7 +155,7 @@ public class StreamingPopularNumbersExample {
 
                 try {
                     // Send reduce query to all 'popular-numbers' streamers
-                    // running on local and remote noes.
+                    // running on local and remote nodes.
                     Collection<GridStreamerIndexEntry<Integer, Integer, Long>> col = streamer.context().reduce(
                         // This closure will execute on remote nodes.
                         new GridClosure<GridStreamerContext,

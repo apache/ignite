@@ -57,6 +57,21 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-core</artifactId>
+            <version>${gridgain.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest_2.10</artifactId>
+            <version>1.9.2</version>
+            <scope>test</scope>
+        </dependency>
         <!-- ENTERPRISE DEPENDENCIES START -->
         <dependency>
             <groupId>org.gridgain</groupId>
@@ -81,9 +96,6 @@
             </resource>
             <resource>
                 <directory>src/main/java</directory>
-            </resource>
-            <resource>
-                <directory>gar</directory>
             </resource>
         </resources>
 
