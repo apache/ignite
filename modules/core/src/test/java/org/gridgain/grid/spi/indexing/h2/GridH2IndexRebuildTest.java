@@ -77,7 +77,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class TestValue1 {
         /** */
-        @GridCacheQuerySqlField(unique = true)
+        @GridCacheQuerySqlField(index = true)
         private long val1;
 
         /** */
@@ -108,7 +108,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class TestValue2 {
         /** */
-        @GridCacheQuerySqlField(unique = true)
+        @GridCacheQuerySqlField(index = true)
         private long val1;
 
         /** */

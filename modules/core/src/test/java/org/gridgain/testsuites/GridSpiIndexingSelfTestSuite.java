@@ -43,6 +43,9 @@ public class GridSpiIndexingSelfTestSuite extends TestSuite {
         // Index rebuilding.
         suite.addTest(new TestSuite(GridH2IndexRebuildTest.class));
 
+        // Geo.
+        suite.addTestSuite(GridH2IndexingSpiGeoSelfTest.class);
+
         return suite;
     }
 }

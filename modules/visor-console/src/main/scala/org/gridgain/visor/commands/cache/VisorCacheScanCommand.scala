@@ -22,7 +22,7 @@ import org.gridgain.grid.util.typedef.CAX
 import org.gridgain.visor.commands._
 import org.gridgain.visor.visor._
 import org.gridgain.grid.cache.GridCacheMode
-import org.gridgain.grid.GridException
+import org.gridgain.grid.{GridNode, GridException}
 
 /**
  * ==Overview==
@@ -95,53 +95,9 @@ class VisorCacheScanCommand {
      *
      * @param argLst Command arguments.
      */
-    def scan(argLst: ArgList) {
-        val id8Arg = argValue("id8", argLst)
-        val idArg = argValue("id", argLst)
+    def scan(argLst: ArgList, node: Option[GridNode]) {
         val pageArg = argValue("p", argLst)
         val cacheArg = argValue("c", argLst)
-
-        var nid: UUID = null
-
-        if (id8Arg.isDefined) {
-            id8Arg match {
-                case Some(v) if v.startsWith("@") =>
-                    warn("Can't find node variable with specified name: " + v,
-                        "Type 'nodes' to see available nodes variables."
-                    )
-
-                    return
-                case Some(id8) =>
-                    val ns = nodeById8(id8)
-
-                    if (ns.isEmpty)
-                        scold("Unknown 'id8' value: " + id8)
-                    else if (ns.size != 1)
-                        scold("'id8' resolves to more than one node (use full 'id' instead): " + id8)
-                    else
-                        nid = ns.head.id
-
-                    if (nid == null)
-                        return
-            }
-        }
-        else if (idArg.isDefined) {
-            val id = idArg.get
-            try {
-                val node = grid.node(UUID.fromString(id))
-
-                if (node != null)
-                    nid = node.id
-                else
-                    scold("'id' does not match any node: " + id)
-            }
-            catch {
-                case e: IllegalArgumentException => scold("Invalid node 'id': " + id)
-            }
-
-            if (nid == null)
-                return
-        }
 
         var pageSize = 25
 
@@ -165,10 +121,7 @@ class VisorCacheScanCommand {
         }
 
         val cacheName = cacheArg match {
-            case None =>
-                scold("Cache name is empty.")
-
-                return
+            case None => null // default cache.
 
             case Some(s) if s.startsWith("@") =>
                 warn("Can't find cache variable with specified name: " + s,
@@ -180,7 +133,10 @@ class VisorCacheScanCommand {
             case Some(name) => name
         }
 
-        val cachePrj = if (nid != null) grid.forNodeId(nid).forCache(cacheName) else grid.forCache(cacheName)
+        val cachePrj = node match {
+            case Some(n) => grid.forNode(n).forCache(cacheName)
+            case _ => grid.forCache(cacheName)
+        }
 
         if (cachePrj.nodes().isEmpty) {
             warn("Can't find nodes with specified cache: " + cacheName,
@@ -192,8 +148,7 @@ class VisorCacheScanCommand {
 
         val qryPrj = cachePrj.forRandom()
 
-        if (nid == null)
-            nid = qryPrj.node().id()
+        val nid = qryPrj.node().id()
 
         var res =
             try
@@ -217,13 +172,17 @@ class VisorCacheScanCommand {
                     return
             }
 
+        def escapeCacheName(name: String) = if (name == null) "<default>" else name
+
         if (res.rows.isEmpty) {
-            println("Cache is empty")
+            println("Cache: " + escapeCacheName(cacheName) + " is empty")
 
             return
         }
 
         def render() {
+            println("Entries in cache: " + escapeCacheName(cacheName))
+
             val t = VisorTextTable()
 
             t #= ("Key Class", "Key", "Value Class", "Value")

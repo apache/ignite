@@ -1588,62 +1588,6 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests local candidates with remote version in the middle on key3.
-     *
-     * TODO: uncomment when GG-1949 fixed
-     *
-     * @throws Exception If failed.
-     */
-//    public void testReverseOrder5() throws Exception {
-//        UUID id = UUID.randomUUID();
-//
-//        GridCacheAdapter<String, String> cache = grid.internalCache();
-//
-//        GridCacheTestEntryEx<String, String> entry1 = new GridCacheTestEntryEx<String, String>(cache.context(), "1");
-//        GridCacheTestEntryEx<String, String> entry2 = new GridCacheTestEntryEx<String, String>(cache.context(), "2");
-//        GridCacheTestEntryEx<String, String> entry3 = new GridCacheTestEntryEx<String, String>(cache.context(), "3");
-//
-//        GridCacheVersion ver1 = new GridCacheVersion(1, GridUuid.randomUuid());
-//        GridCacheVersion ver2 = new GridCacheVersion(2, GridUuid.randomUuid());
-//        GridCacheVersion ver3 = new GridCacheVersion(3, GridUuid.randomUuid());
-//
-//        // Key1
-//        GridCacheMvccCandidate<String> v1k1 = entry1.addLocal(1, ver1, 0, true, false, true);
-//        GridCacheMvccCandidate<String> v2k1 = entry1.addRemote(id, 2, ver2, 0, false, true);
-//
-//        // Key2
-//        GridCacheMvccCandidate<String> v1k2 = entry2.addLocal(1, ver1, 0, true, false, true);
-//        GridCacheMvccCandidate<String> v3k2 = entry2.addLocal(3, ver3, 0, true, false, true);
-//
-//        // Key3
-//        GridCacheMvccCandidate<String> v3k3 = entry3.addLocal(3, ver3, 0, true, false, true);
-//        GridCacheMvccCandidate<String> v2k3 = entry3.addRemote(id, 2, ver2, 0, false, true);
-//
-//        linkCandidates(v1k1, v1k2);
-//        linkCandidates(v3k2, v3k3);
-//
-//        entry2.readyLocal(ver3);
-//
-//        // Ver1 checks.
-//        checkLocal(v1k1, ver1, false, false, false);
-//        checkLocal(v1k2, ver1, false, false, false);
-//
-//        // Ver3 checks.
-//        checkLocal(v3k2, ver3, true, true, false);
-//        checkLocal(v3k3, ver3, false, false, false);
-//
-//        entry3.readyLocal(ver3);
-//
-//        // Ver1 checks.
-//        checkLocal(v1k1, ver1, false, false, false);
-//        checkLocal(v1k2, ver1, false, false, false);
-//
-//        // Ver3 checks.
-//        checkLocal(v3k2, ver3, true, true, false);
-//        checkLocal(v3k3, ver3, true, true, false);
-//    }
-
-    /**
      * Gets version based on order.
      *
      * @param order Order.

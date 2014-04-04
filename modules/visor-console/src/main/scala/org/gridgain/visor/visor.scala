@@ -749,7 +749,6 @@ object visor extends VisorTag {
         }
     }
 
-
     /**
      * Try get variable value with given name.
      *

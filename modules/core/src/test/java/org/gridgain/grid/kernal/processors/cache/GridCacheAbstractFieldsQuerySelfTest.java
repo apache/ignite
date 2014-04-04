@@ -430,11 +430,9 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         List<List<?>> res = new ArrayList<>(fut.get());
 
-        assert res != null;
-
         dedup(res);
 
-        assert res.size() == 3;
+        assertEquals(3, res.size());
 
         Collections.sort(res, new Comparator<List<?>>() {
             @Override public int compare(List<?> row1, List<?> row2) {
@@ -582,11 +580,9 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         List<List<?>> res = new ArrayList<>(fut.get());
 
-        assert res != null;
-
         dedup(res);
 
-        assert res.size() == 3;
+        assertEquals(3, res.size());
 
         Collections.sort(res, new Comparator<List<?>>() {
             @Override public int compare(List<?> row1, List<?> row2) {

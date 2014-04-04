@@ -72,9 +72,9 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
                 IndexColumn str = tbl.indexColumn(2, SortOrder.DESCENDING);
                 IndexColumn x = tbl.indexColumn(3, SortOrder.DESCENDING);
 
-                idxs.add(new GridH2Index(PK_NAME, tbl, true, 0, 1, null, id));
-                idxs.add(new GridH2Index(NON_UNIQUE_IDX_NAME, tbl, false, 0, 1, null, x, t));
-                idxs.add(new GridH2Index(STR_UK_NAME, tbl, true, 0, 1, null, str));
+                idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, 0, 1, null, id));
+                idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, 0, 1, null, x, t));
+                idxs.add(new GridH2TreeIndex(STR_UK_NAME, tbl, true, 0, 1, null, str));
 
                 return idxs;
             }
@@ -127,13 +127,13 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
         assertEquals(MAX_X, tbl.getRowCountApproximation());
         assertEquals(MAX_X, tbl.getRowCount(null));
 
-        for (GridH2Index idx : tbl.indexes()) {
+        for (GridH2IndexBase idx : tbl.indexes()) {
             assertEquals(MAX_X, idx.getRowCountApproximation());
             assertEquals(MAX_X, idx.getRowCount(null));
         }
 
         // Check correct rows order.
-        checkOrdered(tbl.indexes().get(0), new Comparator<SearchRow>() {
+        checkOrdered((GridH2TreeIndex)tbl.indexes().get(0), new Comparator<SearchRow>() {
             @Override public int compare(SearchRow o1, SearchRow o2) {
                 UUID id1 = (UUID)o1.getValue(0).getObject();
                 UUID id2 = (UUID)o2.getValue(0).getObject();
@@ -142,7 +142,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        checkOrdered(tbl.indexes().get(1), new Comparator<SearchRow>() {
+        checkOrdered((GridH2TreeIndex)tbl.indexes().get(1), new Comparator<SearchRow>() {
             @Override public int compare(SearchRow o1, SearchRow o2) {
                 Long x1 = (Long)o1.getValue(3).getObject();
                 Long x2 = (Long)o2.getValue(3).getObject();
@@ -159,7 +159,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        checkOrdered(tbl.indexes().get(2), new Comparator<SearchRow>() {
+        checkOrdered((GridH2TreeIndex)tbl.indexes().get(2), new Comparator<SearchRow>() {
             @Override public int compare(SearchRow o1, SearchRow o2) {
                 String s1 = (String)o1.getValue(2).getObject();
                 String s2 = (String)o2.getValue(2).getObject();
@@ -259,7 +259,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
      *
      * @param idx Index.
      */
-    private void dumpRows(GridH2Index idx) {
+    private void dumpRows(GridH2TreeIndex idx) {
         Iterator<GridH2Row> iter = idx.rows();
 
         while (iter.hasNext())
@@ -496,7 +496,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRebuildIndexes() throws Exception {
-        List<GridH2Index> idxsBefore = tbl.indexes();
+        ArrayList<GridH2IndexBase> idxsBefore = tbl.indexes();
 
         assertEquals(3, idxsBefore.size());
 
@@ -511,18 +511,18 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
             tbl.doUpdate(row, false);
         }
 
-        for (GridH2Index idx : idxsBefore)
+        for (GridH2IndexBase idx : idxsBefore)
             assertEquals(MAX_X, idx.getRowCountApproximation());
 
         tbl.rebuildIndexes();
 
-        List<GridH2Index> idxsAfter = tbl.indexes();
+        ArrayList<GridH2IndexBase> idxsAfter = tbl.indexes();
 
         assertEquals(3, idxsAfter.size());
 
         for (int i = 0; i < 3; i++) {
-            GridH2Index idxBefore = idxsBefore.get(i);
-            GridH2Index idxAfter = idxsAfter.get(i);
+            GridH2IndexBase idxBefore = idxsBefore.get(i);
+            GridH2IndexBase idxAfter = idxsAfter.get(i);
 
             assertNotSame(idxBefore, idxAfter);
             assertEquals(idxBefore.getName(), idxAfter.getName());
@@ -590,12 +590,12 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
      */
     private Set<Row> checkIndexesConsistent(ArrayList<Index> idxs, @Nullable Set<Row> rowSet) {
         for (Index idx : idxs) {
-            if (!(idx instanceof GridH2Index))
+            if (!(idx instanceof GridH2TreeIndex))
                 continue;
 
             Set<Row> set = new HashSet<>();
 
-            Iterator<GridH2Row> iter = ((GridH2Index)idx).rows();
+            Iterator<GridH2Row> iter = ((GridH2TreeIndex)idx).rows();
 
             while(iter.hasNext())
                 assertTrue(set.add(iter.next()));
@@ -616,10 +616,10 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
      */
     private void checkOrdered(ArrayList<Index> idxs) {
         for (Index idx : idxs) {
-            if (!(idx instanceof GridH2Index))
+            if (!(idx instanceof GridH2TreeIndex))
                 continue;
 
-            GridH2Index h2Idx = (GridH2Index)idx;
+            GridH2TreeIndex h2Idx = (GridH2TreeIndex)idx;
 
             checkOrdered(h2Idx, h2Idx);
         }
@@ -629,7 +629,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
      * @param idx Index.
      * @param cmp Comparator.
      */
-    private void checkOrdered(GridH2Index idx, Comparator<? super GridH2Row> cmp) {
+    private void checkOrdered(GridH2TreeIndex idx, Comparator<? super GridH2Row> cmp) {
         Iterator<GridH2Row> rows = idx.rows();
 
         GridH2Row min = null;

@@ -449,13 +449,8 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
         }
 
         /** {@inheritDoc} */
-        @Override public boolean unique() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean text() {
-            return true;
+        @Override public GridIndexType type() {
+            return GridIndexType.FULLTEXT;
         }
     }
 

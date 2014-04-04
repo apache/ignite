@@ -56,12 +56,8 @@ public class GridLuceneIndexLoadTest {
                         return false;
                     }
 
-                    @Override public boolean unique() {
-                        return false;
-                    }
-
-                    @Override public boolean text() {
-                        return true;
+                    @Override public GridIndexType type() {
+                        return GridIndexType.FULLTEXT;
                     }
                 });
             }

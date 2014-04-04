@@ -848,7 +848,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         Collection<Integer> res = q.execute(new SumRemoteReducer()).get();
 
-        assert F.sumInt(res) == 9;
+        assertEquals(9, F.sumInt(res));
     }
 
     /**
