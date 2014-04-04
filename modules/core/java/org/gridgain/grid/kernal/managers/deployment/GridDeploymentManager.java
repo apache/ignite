@@ -242,9 +242,11 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
         String lambdaParent = U.lambdaEnclosingClassName(clsName);
 
         if (lambdaParent != null) {
+            clsName = lambdaParent;
+
             // Need to override passed in class if class is Lambda.
             try {
-                cls = Class.forName(lambdaParent, true, clsLdr);
+                cls = Class.forName(clsName, true, clsLdr);
             }
             catch (ClassNotFoundException e) {
                 throw new GridException("Cannot deploy parent class for lambda: " + clsName, e);
@@ -264,7 +266,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
 
             GridDeploymentMetadata meta = new GridDeploymentMetadata();
 
-            meta.alias(cls.getName());
+            meta.alias(clsName);
             meta.classLoader(clsLdr);
 
             // Check for nested execution. In that case, if task
