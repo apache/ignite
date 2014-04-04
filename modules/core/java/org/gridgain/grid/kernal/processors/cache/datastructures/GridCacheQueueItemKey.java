@@ -20,7 +20,7 @@ import java.io.*;
  */
 class GridCacheQueueItemKey implements Externalizable, GridCacheInternal {
     /** */
-    private GridUuid uuid;
+    private GridUuid queueId;
 
     /** */
     private String queueName;
@@ -36,21 +36,14 @@ class GridCacheQueueItemKey implements Externalizable, GridCacheInternal {
     }
 
     /**
-     * @param uuid Queue UUID.
+     * @param queueId Queue unique ID.
      * @param queueName Queue name.
      * @param idx Item index.
      */
-    GridCacheQueueItemKey(GridUuid uuid, String queueName, long idx) {
-        this.uuid = uuid;
+    GridCacheQueueItemKey(GridUuid queueId, String queueName, long idx) {
+        this.queueId = queueId;
         this.queueName = queueName;
         this.idx = idx;
-    }
-
-    /**
-     * @return Queue UUID.
-     */
-    public GridUuid queueId() {
-        return uuid;
     }
 
     /**
@@ -58,6 +51,13 @@ class GridCacheQueueItemKey implements Externalizable, GridCacheInternal {
      */
     public Long index() {
         return idx;
+    }
+
+    /**
+     * @return Queue UUID.
+     */
+    public GridUuid queueId() {
+        return queueId;
     }
 
     /**
@@ -69,14 +69,14 @@ class GridCacheQueueItemKey implements Externalizable, GridCacheInternal {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, uuid);
+        U.writeGridUuid(out, queueId);
         U.writeString(out, queueName);
         out.writeLong(idx);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        uuid = U.readGridUuid(in);
+        queueId = U.readGridUuid(in);
         queueName = U.readString(in);
         idx = in.readLong();
     }
@@ -91,12 +91,12 @@ class GridCacheQueueItemKey implements Externalizable, GridCacheInternal {
 
         GridCacheQueueItemKey itemKey = (GridCacheQueueItemKey)o;
 
-        return idx == itemKey.idx && uuid.equals(itemKey.uuid);
+        return idx == itemKey.idx && queueId.equals(itemKey.queueId);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = uuid.hashCode();
+        int result = queueId.hashCode();
 
         result = 31 * result + (int)(idx ^ (idx >>> 32));
 

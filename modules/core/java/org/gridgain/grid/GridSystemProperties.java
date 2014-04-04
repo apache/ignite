@@ -9,7 +9,6 @@
 
 package org.gridgain.grid;
 
-import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -424,11 +423,6 @@ public final class GridSystemProperties {
      * Atomic cache deferred update timeout.
      */
     public static final String GG_ATOMIC_DEFERRED_ACK_TIMEOUT = "GRIDGAIN_ATOMIC_DEFERRED_ACK_TIMEOUT";
-
-    /**
-     * Frequency at which process removing orphaned items of {@link GridCacheQueue} is run.
-     */
-    public static final String GG_CACHE_QUEUE_CLEANUP_FREQUENCY = "GRIDGAIN_CACHE_QUEUE_CLEANUP_FREQUENCY";
 
     /**
      * Enforces singleton.

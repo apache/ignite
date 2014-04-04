@@ -443,6 +443,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (rslvrMode != DR_AUTO && drRcvCfg.getConflictResolver() == null)
                 throw new GridException("Conflict resolver must be not null with " + rslvrMode + " resolving policy");
         }
+
+        assertParameter(cc.getCacheQueueCleanupFrequency() > 0, "cfg.getCacheQueueCleanupFrequency() > 0");
+        assertParameter(cc.getCacheQueueCleanupThreadsCount() > 0, "cfg.getCacheQueueCleanupThreadsCount() > 0");
     }
 
     /**
@@ -611,7 +614,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheQueryManager qryMgr = queryManager(cfg);
             GridCacheContinuousQueryManager contQryMgr = new GridCacheContinuousQueryManager();
             GridCacheIoManager ioMgr = new GridCacheIoManager();
-            GridCacheDataStructuresManager dataStructuresMgr = new GridCacheEnterpriseDataStructuresManager();
+            GridCacheDataStructuresManager dataStructuresMgr = new GridCacheDataStructuresManager();
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = createComponent(GridCacheDrManager.class);
 

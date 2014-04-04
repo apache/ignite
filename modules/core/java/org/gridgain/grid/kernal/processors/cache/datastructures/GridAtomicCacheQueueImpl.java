@@ -38,7 +38,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     @SuppressWarnings("unchecked")
     @Override public boolean offer(T item) throws GridRuntimeException {
         try {
-            Long idx = transformHeader(new AddClosure(uuid, 1));
+            Long idx = transformHeader(new AddClosure(id, 1));
 
             if (idx == null)
                 return false;
@@ -76,49 +76,49 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     @SuppressWarnings("unchecked")
     @Nullable @Override public T poll() throws GridRuntimeException {
         try {
-            Long idx = transformHeader(new PollClosure(uuid));
-
-            if (idx == null)
-                return null;
-
-            checkRemoved(idx);
-
-            GridCacheQueueItemKey key = itemKey(idx);
-
-            int cnt = 0;
-
-            long stop = 0;
-
             while (true) {
-                try {
-                    T data = (T)cache.remove(key, null);
+                Long idx = transformHeader(new PollClosure(id));
 
-                    if (data != null)
-                        return data;
+                if (idx == null)
+                    return null;
 
-                    if (stop == 0)
-                        stop = U.currentTimeMillis() + RETRY_TIMEOUT;
+                checkRemoved(idx);
 
-                    while (U.currentTimeMillis() < stop ) {
-                        data = (T)cache.remove(key, null);
+                GridCacheQueueItemKey key = itemKey(idx);
+
+                int cnt = 0;
+
+                long stop = 0;
+
+                while (true) {
+                    try {
+                        T data = (T)cache.remove(key, null);
 
                         if (data != null)
                             return data;
+
+                        if (stop == 0)
+                            stop = U.currentTimeMillis() + RETRY_TIMEOUT;
+
+                        while (U.currentTimeMillis() < stop ) {
+                            data = (T)cache.remove(key, null);
+
+                            if (data != null)
+                                return data;
+                        }
+
+                        break;
                     }
+                    catch (GridCachePartialUpdateException e) {
+                        if (cnt++ == MAX_UPDATE_RETRIES)
+                            throw e;
+                        else
+                            U.warn(log, "Failed to remove queue item, will retry [err=" + e + ']');
+                    }
+                }
 
-                    break;
-                }
-                catch (GridCachePartialUpdateException e) {
-                    if (cnt++ == MAX_UPDATE_RETRIES)
-                        throw e;
-                    else
-                        U.warn(log, "Failed to remove queue item, will retry [err=" + e + ']');
-                }
+                U.warn(log, "Failed to get item, will retry poll [queue=" + queueName + ", idx=" + idx + ']');
             }
-
-            U.warn(log, "Failed to get item, will retry poll [queue=" + queueName + ", idx=" + idx + ']');
-
-            return poll();
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
@@ -131,7 +131,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
         A.notNull(items, "items");
 
         try {
-            Long idx = transformHeader(new AddClosure(uuid, items.size()));
+            Long idx = transformHeader(new AddClosure(id, items.size()));
 
             if (idx == null)
                 return false;
@@ -172,7 +172,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void removeItem(long rmvIdx) throws GridException {
-        Long idx = (Long)cache.transformCompute(queueKey, new RemoveClosure(uuid, rmvIdx));
+        Long idx = (Long)cache.transformCompute(queueKey, new RemoveClosure(id, rmvIdx));
 
         if (idx != null) {
             checkRemoved(idx);

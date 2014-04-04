@@ -7,18 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache;
+package org.gridgain.grid.cache;
 
 import org.gridgain.grid.lang.*;
 
 /**
  * Transform closure additionally computing return value, used by cache operation
- * {@link GridCacheAdapter#transformCompute(Object, GridCacheTransformComputeClosure)}.
+ * {@link GridCacheProjection#transformCompute(Object, GridCacheTransformComputeClosure)}.
  */
 public interface GridCacheTransformComputeClosure<V, R> extends GridClosure<V, V> {
     /**
-     * @param val Old value.
-     * @return Value to be returned as result of {@link GridCacheAdapter#transformCompute}.
+     * @param val Old cache value.
+     * @return Value to be returned as result of {@link GridCacheProjection#transformCompute}.
      */
     public R compute(V val);
 }

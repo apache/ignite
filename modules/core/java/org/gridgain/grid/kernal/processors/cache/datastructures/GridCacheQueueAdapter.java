@@ -50,10 +50,10 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     protected final String queueName;
 
     /** Queue header key. */
-    protected final GridCacheQueueKey queueKey;
+    protected final GridCacheQueueHeaderKey queueKey;
 
-    /** Queue UUID. */
-    protected final GridUuid uuid;
+    /** Queue unique ID. */
+    protected final GridUuid id;
 
     /** Queue capacity. */
     private final int cap;
@@ -81,10 +81,10 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     protected GridCacheQueueAdapter(String queueName, GridCacheQueueHeader hdr, GridCacheContext<?, ?> cctx) {
         this.cctx = cctx;
         this.queueName = queueName;
-        uuid = hdr.uuid();
+        id = hdr.id();
         cap = hdr.capacity();
         collocated = hdr.collocated();
-        queueKey = new GridCacheQueueKey(queueName);
+        queueKey = new GridCacheQueueHeaderKey(queueName);
         cache = cctx.cache();
 
         log = cctx.logger(getClass());
@@ -211,6 +211,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
                 throw new GridRuntimeException("Queue put interrupted.", e);
             }
 
+            checkStopping();
+
             if (offer(item))
                 return;
         }
@@ -235,8 +237,11 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             boolean retVal = false;
 
             try {
-                if (writeSem.tryAcquire(end - U.currentTimeMillis(), MILLISECONDS))
+                if (writeSem.tryAcquire(end - U.currentTimeMillis(), MILLISECONDS)) {
+                    checkStopping();
+
                     retVal = offer(item);
+                }
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -263,6 +268,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
                 throw new GridRuntimeException("Queue take interrupted.", e);
             }
 
+            checkStopping();
+
             T e = poll();
 
             if (e != null)
@@ -280,8 +287,11 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             T retVal = null;
 
             try {
-                if (readSem.tryAcquire(end - U.currentTimeMillis(), MILLISECONDS))
+                if (readSem.tryAcquire(end - U.currentTimeMillis(), MILLISECONDS)) {
+                    checkStopping();
+
                     retVal = poll();
+                }
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -313,14 +323,14 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         try {
             GridBiTuple<Long, Long> t = (GridBiTuple<Long, Long>)cache.transformCompute(queueKey,
-                new ClearClosure(uuid));
+                new ClearClosure(id));
 
             if (t == null)
                 return;
 
             checkRemoved(t.get1());
 
-            removeKeys(cache, uuid, queueName, collocated(), t.get1(), t.get2(), batchSize);
+            removeKeys(t.get1(), t.get2(), batchSize);
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
@@ -354,22 +364,17 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
-     * @param cache Cache.
-     * @param uuid Queue UUID.
-     * @param queueName Queue name.
-     * @param collocated Collocation flag.
-     * @param startIdx Start key index.
-     * @param endIdx End key index.
+     * @param startIdx Start item index.
+     * @param endIdx End item index.
      * @param batchSize Batch size.
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    static void removeKeys(GridCacheProjection cache, GridUuid uuid, String queueName, boolean collocated,
-        long startIdx, long endIdx, int batchSize) throws GridException {
+    private void removeKeys(long startIdx, long endIdx, int batchSize) throws GridException {
         Collection<GridCacheQueueItemKey> keys = new ArrayList<>(batchSize > 0 ? batchSize : 10);
 
         for (long idx = startIdx; idx < endIdx; idx++) {
-            keys.add(itemKey(uuid, queueName, collocated, idx));
+            keys.add(itemKey(id, queueName, collocated, idx));
 
             if (batchSize > 0 && keys.size() == batchSize) {
                 cache.removeAll(keys);
@@ -399,7 +404,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @param hdr Queue hdr.
      */
     protected final void checkRemoved(@Nullable GridCacheQueueHeader hdr) {
-        if (queueRemoved(hdr, uuid))
+        if (queueRemoved(hdr, id))
             onRemoved();
     }
 
@@ -409,7 +414,15 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     private void onRemoved() {
         rmvd = true;
 
-        // Free all blocked resources.
+        releaseSemaphores();
+
+        throw new GridCacheDataStructureRemovedRuntimeException("Queue has been removed from cache: " + this);
+    }
+
+    /**
+     * Release all semaphores used in blocking operations (used in case queue was removed or grid is stopping).
+     */
+    private void releaseSemaphores() {
         if (bounded()) {
             writeSem.drainPermits();
             writeSem.release(Integer.MAX_VALUE);
@@ -417,8 +430,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         readSem.drainPermits();
         readSem.release(Integer.MAX_VALUE);
-
-        throw new GridCacheDataStructureRemovedRuntimeException("Queue has been removed from cache: " + this);
     }
 
     /**
@@ -439,10 +450,25 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
-     * @return Queue UUID.
+     * Grid stop callback.
      */
-    GridUuid queueId() {
-        return uuid;
+    void onKernalStop() {
+        releaseSemaphores();
+    }
+
+    /**
+     * Throws {@link GridRuntimeException} in case if grid is stopping.
+     */
+    private void checkStopping() {
+        if (cctx.kernalContext().isStopping())
+            throw new GridRuntimeException("Grid is stopping");
+    }
+
+    /**
+     * @return Queue unique ID.
+     */
+    GridUuid id() {
+        return id;
     }
 
     /**
@@ -459,28 +485,28 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @return Item key.
      */
     protected GridCacheQueueItemKey itemKey(Long idx) {
-        return itemKey(uuid, queueName, collocated(), idx);
+        return itemKey(id, queueName, collocated(), idx);
     }
 
     /**
-     * @param uuid Queue UUID.
+     * @param id Queue unique ID.
      * @param queueName Queue name.
      * @param collocated Collocation flag.
      * @param idx Item index.
      * @return Item key.
      */
-    private static GridCacheQueueItemKey itemKey(GridUuid uuid, String queueName, boolean collocated, long idx) {
-        return collocated ? new CollocatedItemKey(uuid, queueName, idx) :
-            new GridCacheQueueItemKey(uuid, queueName, idx);
+    private static GridCacheQueueItemKey itemKey(GridUuid id, String queueName, boolean collocated, long idx) {
+        return collocated ? new CollocatedItemKey(id, queueName, idx) :
+            new GridCacheQueueItemKey(id, queueName, idx);
     }
 
     /**
      * @param hdr Queue header.
-     * @param uuid Expected queue UUID.
+     * @param id Expected queue unique ID.
      * @return {@code True} if queue was removed.
      */
-    private static boolean queueRemoved(@Nullable GridCacheQueueHeader hdr, GridUuid uuid) {
-        return hdr == null || !uuid.equals(hdr.uuid());
+    private static boolean queueRemoved(@Nullable GridCacheQueueHeader hdr, GridUuid id) {
+        return hdr == null || !id.equals(hdr.id());
     }
 
     /**
@@ -579,12 +605,12 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         }
 
         /**
-         * @param uuid Queue UUID.
+         * @param id Queue unique ID.
          * @param queueName Queue name.
          * @param idx Item index.
          */
-        private CollocatedItemKey(GridUuid uuid, String queueName, long idx) {
-            super(uuid, queueName, idx);
+        private CollocatedItemKey(GridUuid id, String queueName, long idx) {
+            super(id, queueName, idx);
         }
 
         /**
@@ -602,7 +628,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         GridBiTuple<Long, Long>>,
         Externalizable {
         /** */
-        private GridUuid uuid;
+        private GridUuid id;
 
         /**
          * Required by {@link Externalizable}.
@@ -612,15 +638,15 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         }
 
         /**
-         * @param uuid Queue UUID.
+         * @param id Queue unique ID.
          */
-        public ClearClosure(GridUuid uuid) {
-            this.uuid = uuid;
+        public ClearClosure(GridUuid id) {
+            this.id = id;
         }
 
         /** {@inheritDoc} */
         @Override public GridBiTuple<Long, Long> compute(@Nullable GridCacheQueueHeader hdr) {
-            if (queueRemoved(hdr, uuid))
+            if (queueRemoved(hdr, id))
                 return new GridBiTuple<>(QUEUE_REMOVED_IDX, QUEUE_REMOVED_IDX);
 
             return hdr.empty() ? null : new GridBiTuple<>(hdr.head(), hdr.tail());
@@ -628,21 +654,21 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         /** {@inheritDoc} */
         @Override public GridCacheQueueHeader apply(@Nullable GridCacheQueueHeader hdr) {
-            if (queueRemoved(hdr, uuid) || hdr.empty())
+            if (queueRemoved(hdr, id) || hdr.empty())
                 return hdr;
 
-            return new GridCacheQueueHeader(hdr.uuid(), hdr.capacity(), hdr.collocated(), hdr.tail(),
+            return new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(), hdr.tail(),
                 hdr.tail(), null);
         }
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeGridUuid(out, uuid);
+            U.writeGridUuid(out, id);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            uuid = U.readGridUuid(in);
+            id = U.readGridUuid(in);
         }
     }
 
@@ -651,7 +677,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     protected static class PollClosure implements GridCacheTransformComputeClosure<GridCacheQueueHeader, Long>,
         Externalizable {
         /** */
-        private GridUuid uuid;
+        private GridUuid id;
 
         /**
          * Required by {@link Externalizable}.
@@ -661,15 +687,15 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         }
 
         /**
-         * @param uuid Queue UUID.
+         * @param id Queue unique ID.
          */
-        public PollClosure(GridUuid uuid) {
-            this.uuid = uuid;
+        public PollClosure(GridUuid id) {
+            this.id = id;
         }
 
         /** {@inheritDoc} */
         @Override public Long compute(@Nullable GridCacheQueueHeader hdr) {
-            if (queueRemoved(hdr, uuid))
+            if (queueRemoved(hdr, id))
                 return QUEUE_REMOVED_IDX;
 
             if (hdr.empty())
@@ -694,37 +720,37 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         /** {@inheritDoc} */
         @Override public GridCacheQueueHeader apply(@Nullable GridCacheQueueHeader hdr) {
-            if (queueRemoved(hdr, uuid) || hdr.empty())
+            if (queueRemoved(hdr, id) || hdr.empty())
                 return hdr;
 
             Set<Long> removedIdx = hdr.removedIndexes();
 
             if (removedIdx == null)
-                return new GridCacheQueueHeader(hdr.uuid(), hdr.capacity(), hdr.collocated(),
+                return new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
                     hdr.head() + 1, hdr.tail(), removedIdx);
 
             long next = hdr.head() + 1;
 
             do {
                 if (!removedIdx.remove(next))
-                    return new GridCacheQueueHeader(hdr.uuid(), hdr.capacity(), hdr.collocated(),
+                    return new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
                         next + 1, hdr.tail(), removedIdx.isEmpty() ? null : new HashSet<>(removedIdx));
 
                 next++;
             } while (next != hdr.tail());
 
-            return new GridCacheQueueHeader(hdr.uuid(), hdr.capacity(), hdr.collocated(),
+            return new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
                 next, hdr.tail(), removedIdx.isEmpty() ? null : new HashSet<>(removedIdx));
         }
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeGridUuid(out, uuid);
+            U.writeGridUuid(out, id);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            uuid = U.readGridUuid(in);
+            id = U.readGridUuid(in);
         }
     }
 
@@ -733,7 +759,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     protected static class AddClosure implements GridCacheTransformComputeClosure<GridCacheQueueHeader, Long>,
         Externalizable {
         /** */
-        private GridUuid uuid;
+        private GridUuid id;
 
         /** */
         private int size;
@@ -746,17 +772,17 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         }
 
         /**
-         * @param uuid Queue UUID.
+         * @param id Queue unique ID.
          * @param size Number of elements to add.
          */
-        public AddClosure(GridUuid uuid, int size) {
-            this.uuid = uuid;
+        public AddClosure(GridUuid id, int size) {
+            this.id = id;
             this.size = size;
         }
 
         /** {@inheritDoc} */
         @Override public Long compute(@Nullable GridCacheQueueHeader hdr) {
-            if (queueRemoved(hdr, uuid))
+            if (queueRemoved(hdr, id))
                 return QUEUE_REMOVED_IDX;
 
             if (!spaceAvailable(hdr, size))
@@ -767,10 +793,10 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         /** {@inheritDoc} */
         @Override public GridCacheQueueHeader apply(@Nullable GridCacheQueueHeader hdr) {
-            if (queueRemoved(hdr, uuid) || !spaceAvailable(hdr, size))
+            if (queueRemoved(hdr, id) || !spaceAvailable(hdr, size))
                 return hdr;
 
-            return new GridCacheQueueHeader(hdr.uuid(), hdr.capacity(), hdr.collocated(), hdr.head(),
+            return new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(), hdr.head(),
                 hdr.tail() + size, hdr.removedIndexes());
         }
 
@@ -785,13 +811,13 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeGridUuid(out, uuid);
+            U.writeGridUuid(out, id);
             out.writeInt(size);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            uuid = U.readGridUuid(in);
+            id = U.readGridUuid(in);
             size = in.readInt();
         }
     }
@@ -801,7 +827,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     protected static class RemoveClosure implements GridCacheTransformComputeClosure<GridCacheQueueHeader, Long>,
         Externalizable {
         /** */
-        private GridUuid uuid;
+        private GridUuid id;
 
         /** */
         private Long idx;
@@ -814,17 +840,17 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         }
 
         /**
-         * @param uuid Queue UUID.
+         * @param id Queue UUID.
          * @param idx Index of item to be removed.
          */
-        public RemoveClosure(GridUuid uuid, Long idx) {
-            this.uuid = uuid;
+        public RemoveClosure(GridUuid id, Long idx) {
+            this.id = id;
             this.idx = idx;
         }
 
         /** {@inheritDoc} */
         @Override public Long compute(@Nullable GridCacheQueueHeader hdr) {
-            if (queueRemoved(hdr, uuid))
+            if (queueRemoved(hdr, id))
                 return QUEUE_REMOVED_IDX;
 
             if (hdr.empty() || idx < hdr.head() || F.contains(hdr.removedIndexes(), idx))
@@ -835,13 +861,13 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         /** {@inheritDoc} */
         @Override public GridCacheQueueHeader apply(@Nullable GridCacheQueueHeader hdr) {
-            if (queueRemoved(hdr, uuid) || hdr.empty())
+            if (queueRemoved(hdr, id) || hdr.empty())
                 return hdr;
 
             assert idx < hdr.tail();
 
             if (idx < hdr.head())
-                return new GridCacheQueueHeader(hdr.uuid(), hdr.capacity(), hdr.collocated(),
+                return new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
                     hdr.head(), hdr.tail(), hdr.removedIndexes());
 
             if (idx == hdr.head()) {
@@ -850,13 +876,13 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
                 long head = hdr.head() + 1;
 
                 if (!F.contains(rmvIdxs, head))
-                    return new GridCacheQueueHeader(hdr.uuid(), hdr.capacity(), hdr.collocated(),
+                    return new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
                         head, hdr.tail(), hdr.removedIndexes());
 
                 while (rmvIdxs.remove(head))
                     head++;
 
-                return new GridCacheQueueHeader(hdr.uuid(), hdr.capacity(), hdr.collocated(),
+                return new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
                     head, hdr.tail(), new HashSet<>(rmvIdxs));
             }
 
@@ -873,19 +899,19 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
                 rmvIdxs.add(idx);
             }
 
-            return new GridCacheQueueHeader(hdr.uuid(), hdr.capacity(), hdr.collocated(),
+            return new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
                 hdr.head(), hdr.tail(), rmvIdxs);
         }
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeGridUuid(out, uuid);
+            U.writeGridUuid(out, id);
             out.writeLong(idx);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            uuid = U.readGridUuid(in);
+            id = U.readGridUuid(in);
             idx = in.readLong();
         }
     }
@@ -900,13 +926,13 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         GridCacheQueueAdapter that = (GridCacheQueueAdapter) o;
 
-        return uuid.equals(that.uuid);
+        return id.equals(that.id);
 
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return uuid.hashCode();
+        return id.hashCode();
     }
 
     /** {@inheritDoc} */

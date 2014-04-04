@@ -2064,15 +2064,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         });
     }
 
-    /**
-     * @param key Key.
-     * @param transformer Closure computing new value to be stored in cache (result of
-     *      {@link GridCacheTransformComputeClosure#apply}) and return value (result of
-     *      {@link GridCacheTransformComputeClosure#compute}).
-     * @return Value computed by the closure method {@link GridCacheTransformComputeClosure#compute}.
-     * @throws GridException If failed.
-     */
-    public <R> R transformCompute(final K key, final GridCacheTransformComputeClosure<V, R> transformer)
+    /** {@inheritDoc} */
+    @Override public <R> R transformCompute(final K key, final GridCacheTransformComputeClosure<V, R> transformer)
         throws GridException {
         A.notNull(key, "key", transformer, "transformer");
 

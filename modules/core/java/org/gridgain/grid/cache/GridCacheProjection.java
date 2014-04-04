@@ -667,6 +667,19 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
 
     /**
      * Stores result of applying {@code transformer} closure to the previous value associated with
+     * given key in cache. In addition to the new cache value closure computes another value which is returned
+     * as result of this method.
+     *
+     * @param key Key.
+     * @param transformer Closure to be applied to the previous value in cache.
+     * @return Value computed by the closure method {@link GridCacheTransformComputeClosure#compute}.
+     * @throws GridException If failed.
+     */
+    public <R> R transformCompute(K key, GridCacheTransformComputeClosure<V, R> transformer)
+        throws GridException;
+
+    /**
+     * Stores result of applying {@code transformer} closure to the previous value associated with
      * given key in cache. Result of closure application is guaranteed to be atomic, however, closure
      * itself can be applied more than once.
      * <p>

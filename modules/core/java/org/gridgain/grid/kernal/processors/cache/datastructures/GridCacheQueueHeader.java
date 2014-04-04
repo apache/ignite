@@ -23,7 +23,7 @@ import java.util.*;
  */
 public class GridCacheQueueHeader implements GridCacheInternal, Externalizable {
     /** */
-    private GridUuid uuid;
+    private GridUuid id;
 
     /** */
     private long head;
@@ -48,19 +48,19 @@ public class GridCacheQueueHeader implements GridCacheInternal, Externalizable {
     }
 
     /**
-     * @param uuid Queue unique ID.
+     * @param id Queue unique ID.
      * @param cap Capacity.
      * @param collocated Collocation flag.
      * @param head Queue head index.
      * @param tail Queue tail index.
      * @param rmvIdxs Indexes of removed items.
      */
-    public GridCacheQueueHeader(GridUuid uuid, int cap, boolean collocated, long head, long tail,
+    public GridCacheQueueHeader(GridUuid id, int cap, boolean collocated, long head, long tail,
         @Nullable Set<Long> rmvIdxs) {
-        assert uuid != null;
+        assert id != null;
         assert head <= tail;
 
-        this.uuid = uuid;
+        this.id = id;
         this.cap = cap;
         this.collocated = collocated;
         this.head = head;
@@ -69,10 +69,10 @@ public class GridCacheQueueHeader implements GridCacheInternal, Externalizable {
     }
 
     /**
-     * @return Queue UUID.
+     * @return Queue unique ID.
      */
-    public GridUuid uuid() {
-        return uuid;
+    public GridUuid id() {
+        return id;
     }
 
     /**
@@ -146,7 +146,7 @@ public class GridCacheQueueHeader implements GridCacheInternal, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, uuid);
+        U.writeGridUuid(out, id);
         out.writeInt(cap);
         out.writeBoolean(collocated);
         out.writeLong(head);
@@ -163,7 +163,7 @@ public class GridCacheQueueHeader implements GridCacheInternal, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        uuid = U.readGridUuid(in);
+        id = U.readGridUuid(in);
         cap = in.readInt();
         collocated = in.readBoolean();
         head = in.readLong();

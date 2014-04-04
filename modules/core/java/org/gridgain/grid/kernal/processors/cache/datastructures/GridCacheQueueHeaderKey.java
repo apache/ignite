@@ -17,21 +17,21 @@ import java.io.*;
 /**
  * Queue header key.
  */
-public class GridCacheQueueKey implements Externalizable, GridCacheInternal {
+public class GridCacheQueueHeaderKey implements Externalizable, GridCacheInternal {
     /** */
     private String name;
 
     /**
      * Required by {@link Externalizable}.
      */
-    public GridCacheQueueKey() {
+    public GridCacheQueueHeaderKey() {
         // No-op.
     }
 
     /**
      * @param name Queue name.
      */
-    public GridCacheQueueKey(String name) {
+    public GridCacheQueueHeaderKey(String name) {
         this.name = name;
     }
 
@@ -60,7 +60,7 @@ public class GridCacheQueueKey implements Externalizable, GridCacheInternal {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        GridCacheQueueKey queueKey = (GridCacheQueueKey)o;
+        GridCacheQueueHeaderKey queueKey = (GridCacheQueueHeaderKey)o;
 
         return name.equals(queueKey.name);
     }
@@ -72,6 +72,6 @@ public class GridCacheQueueKey implements Externalizable, GridCacheInternal {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheQueueKey.class, this);
+        return S.toString(GridCacheQueueHeaderKey.class, this);
     }
 }

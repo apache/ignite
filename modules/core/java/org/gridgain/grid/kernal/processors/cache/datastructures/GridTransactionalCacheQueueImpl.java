@@ -17,7 +17,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
@@ -41,48 +40,44 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
         A.notNull(item, "item");
 
         try {
-            return CU.outTx(new Callable<Boolean>() {
-                @Override public Boolean call() throws Exception {
-                    boolean retVal;
+            boolean retVal;
 
-                    int cnt = 0;
+            int cnt = 0;
 
-                    while (true) {
-                        try {
-                            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(uuid, 1));
+            while (true) {
+                try {
+                    try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(id, 1));
 
-                                if (idx != null) {
-                                    checkRemoved(idx);
+                        if (idx != null) {
+                            checkRemoved(idx);
 
-                                    boolean putx = cache.putx(itemKey(idx), item, null);
+                            boolean putx = cache.putx(itemKey(idx), item, null);
 
-                                    assert putx;
+                            assert putx;
 
-                                    retVal = true;
-                                }
-                                else
-                                    retVal = false;
-
-                                tx.commit();
-
-                                break;
-                            }
+                            retVal = true;
                         }
-                        catch (GridEmptyProjectionException e) {
-                            throw e;
-                        }
-                        catch (GridTopologyException e) {
-                            if (cnt++ == MAX_UPDATE_RETRIES)
-                                throw e;
-                            else
-                                U.warn(log, "Failed to add item, will retry [err=" + e + ']');
-                        }
+                        else
+                            retVal = false;
+
+                        tx.commit();
+
+                        break;
                     }
-
-                    return retVal;
                 }
-            }, cctx);
+                catch (GridEmptyProjectionException e) {
+                    throw e;
+                }
+                catch (GridTopologyException e) {
+                    if (cnt++ == MAX_UPDATE_RETRIES)
+                        throw e;
+                    else
+                        U.warn(log, "Failed to add item, will retry [err=" + e + ']');
+                }
+            }
+
+            return retVal;
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
@@ -93,44 +88,40 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     @SuppressWarnings("unchecked")
     @Nullable @Override public T poll() throws GridRuntimeException {
         try {
-            return CU.outTx(new Callable<T>() {
-                @Override public T call() throws Exception {
-                    int cnt = 0;
+            int cnt = 0;
 
-                    T retVal;
+            T retVal;
 
-                    while (true) {
-                        try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                            Long idx = (Long)cache.transformCompute(queueKey, new PollClosure(uuid));
+            while (true) {
+                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    Long idx = (Long)cache.transformCompute(queueKey, new PollClosure(id));
 
-                            if (idx != null) {
-                                checkRemoved(idx);
+                    if (idx != null) {
+                        checkRemoved(idx);
 
-                                retVal = (T)cache.remove(itemKey(idx), null);
+                        retVal = (T)cache.remove(itemKey(idx), null);
 
-                                assert retVal != null;
-                            }
-                            else
-                                retVal = null;
-
-                            tx.commit();
-
-                            break;
-                        }
-                        catch (GridEmptyProjectionException e) {
-                            throw e;
-                        }
-                        catch(GridTopologyException e) {
-                            if (cnt++ == MAX_UPDATE_RETRIES)
-                                throw e;
-                            else
-                                U.warn(log, "Failed to poll, will retry [err=" + e + ']');
-                        }
+                        assert retVal != null;
                     }
+                    else
+                        retVal = null;
 
-                    return retVal;
+                    tx.commit();
+
+                    break;
                 }
-            }, cctx);
+                catch (GridEmptyProjectionException e) {
+                    throw e;
+                }
+                catch(GridTopologyException e) {
+                    if (cnt++ == MAX_UPDATE_RETRIES)
+                        throw e;
+                    else
+                        U.warn(log, "Failed to poll, will retry [err=" + e + ']');
+                }
+            }
+
+            return retVal;
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
@@ -143,52 +134,48 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
         A.notNull(items, "items");
 
         try {
-            return CU.outTx(new Callable<Boolean>() {
-                @Override public Boolean call() throws Exception {
-                    boolean retVal;
+            boolean retVal;
 
-                    int cnt = 0;
+            int cnt = 0;
 
-                    while (true) {
-                        try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                            Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(uuid, items.size()));
+            while (true) {
+                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(id, items.size()));
 
-                            if (idx != null) {
-                                checkRemoved(idx);
+                    if (idx != null) {
+                        checkRemoved(idx);
 
-                                Map<GridCacheQueueItemKey, T> putMap = new HashMap<>();
+                        Map<GridCacheQueueItemKey, T> putMap = new HashMap<>();
 
-                                for (T item : items) {
-                                    putMap.put(itemKey(idx), item);
+                        for (T item : items) {
+                            putMap.put(itemKey(idx), item);
 
-                                    idx++;
-                                }
-
-                                cache.putAll(putMap, null);
-
-                                retVal = true;
-                            }
-                            else
-                                retVal = false;
-
-                            tx.commit();
-
-                            break;
+                            idx++;
                         }
-                        catch (GridEmptyProjectionException e) {
-                            throw e;
-                        }
-                        catch(GridTopologyException e) {
-                            if (cnt++ == MAX_UPDATE_RETRIES)
-                                throw e;
-                            else
-                                U.warn(log, "Failed to addAll, will retry [err=" + e + ']');
-                        }
+
+                        cache.putAll(putMap, null);
+
+                        retVal = true;
                     }
+                    else
+                        retVal = false;
 
-                    return retVal;
+                    tx.commit();
+
+                    break;
                 }
-            }, cctx);
+                catch (GridEmptyProjectionException e) {
+                    throw e;
+                }
+                catch(GridTopologyException e) {
+                    if (cnt++ == MAX_UPDATE_RETRIES)
+                        throw e;
+                    else
+                        U.warn(log, "Failed to addAll, will retry [err=" + e + ']');
+                }
+            }
+
+            return retVal;
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
@@ -199,84 +186,34 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
     @SuppressWarnings("unchecked")
     @Override protected void removeItem(final long rmvIdx) throws GridException {
         try {
-            CU.outTx(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    int cnt = 0;
+            int cnt = 0;
 
-                    while (true) {
-                        try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                            Long idx = (Long)cache.transformCompute(queueKey, new RemoveClosure(uuid, rmvIdx));
+            while (true) {
+                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    Long idx = (Long)cache.transformCompute(queueKey, new RemoveClosure(id, rmvIdx));
 
-                            if (idx != null) {
-                                checkRemoved(idx);
+                    if (idx != null) {
+                        checkRemoved(idx);
 
-                                boolean rmv = cache.removex(itemKey(idx));
+                        boolean rmv = cache.removex(itemKey(idx));
 
-                                assert rmv;
-                            }
-
-                            tx.commit();
-
-                            break;
-                        }
-                        catch (GridEmptyProjectionException e) {
-                            throw e;
-                        }
-                        catch(GridTopologyException e) {
-                            if (cnt++ == MAX_UPDATE_RETRIES)
-                                throw e;
-                            else
-                                U.warn(log, "Failed to remove item, will retry [err=" + e + ", idx=" + rmvIdx + ']');
-                        }
+                        assert rmv;
                     }
 
-                    return null;
-                }
-            }, cctx);
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
-        }
-    }
+                    tx.commit();
 
-    /** {@inheritDoc} */
-    @Override public void clear(int batchSize) throws GridRuntimeException {
-        try {
-            CU.outTx(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    GridTransactionalCacheQueueImpl.super.clear();
-
-                    return null;
+                    break;
                 }
-            }, cctx);
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public T peek() throws GridRuntimeException {
-        try {
-            return CU.outTx(new Callable<T>() {
-                @Override public T call() throws Exception {
-                    return GridTransactionalCacheQueueImpl.super.peek();
+                catch (GridEmptyProjectionException e) {
+                    throw e;
                 }
-            }, cctx);
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public int size() {
-        try {
-            return CU.outTx(new Callable<Integer>() {
-                @Override public Integer call() throws Exception {
-                    return GridTransactionalCacheQueueImpl.super.size();
+                catch(GridTopologyException e) {
+                    if (cnt++ == MAX_UPDATE_RETRIES)
+                        throw e;
+                    else
+                        U.warn(log, "Failed to remove item, will retry [err=" + e + ", idx=" + rmvIdx + ']');
                 }
-            }, cctx);
+            }
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);

@@ -687,6 +687,14 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
     }
 
     /** {@inheritDoc} */
+    @Override public <R> R transformCompute(K key, GridCacheTransformComputeClosure<V, R> transformer)
+        throws GridException {
+        A.notNull(key, "key", transformer, "transformer");
+
+        return cache.transformCompute(key, transformer);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridFuture<Boolean> putxAsync(K key, V val,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return putxAsync(key, val, null, -1, filter);
