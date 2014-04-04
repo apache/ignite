@@ -969,6 +969,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
      */
     private class QueueCleanupWorker extends GridWorker {
         /**
+         *
          */
         private QueueCleanupWorker() {
             super(cctx.gridName(), "queue-cleanup-worker", log);
