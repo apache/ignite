@@ -11,6 +11,7 @@ package org.gridgain.grid.cache.affinity.fair;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -160,6 +161,8 @@ public class GridCachePartitionFairAffinityNodesSelfTest extends GridCommonAbstr
 
             started.add(0);
 
+            int topVer = 1;
+
             for (boolean start : seq) {
                 if (start) {
                     int nextIdx = nextIndex(started);
@@ -176,17 +179,23 @@ public class GridCachePartitionFairAffinityNodesSelfTest extends GridCommonAbstr
                     started.remove(idx);
                 }
 
+                topVer++;
+
                 info("Grid 0: " + grid(0).localNode().id());
 
                 for (int i : started) {
                     if (i != 0) {
-                        info("Grid " + i + ": " + grid(i).localNode().id());
+                        GridEx grid = grid(i);
+
+                        ((GridKernal)grid).internalCache().context().affinity().affinityReadyFuture(topVer).get();
+
+                        info("Grid " + i + ": " + grid.localNode().id());
 
                         for (int part = 0; part < parts; part++) {
                             List<GridNode> firstNodes = (List<GridNode>)grid(0).cache(null).affinity()
                                 .mapPartitionToPrimaryAndBackups(part);
 
-                            List<GridNode> secondNodes = (List<GridNode>)grid(i).cache(null).affinity()
+                            List<GridNode> secondNodes = (List<GridNode>)grid.cache(null).affinity()
                                 .mapPartitionToPrimaryAndBackups(part);
 
                             assertEquals(firstNodes.size(), secondNodes.size());
