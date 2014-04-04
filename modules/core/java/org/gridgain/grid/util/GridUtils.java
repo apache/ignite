@@ -8253,8 +8253,8 @@ public abstract class GridUtils {
      * Extracts full name of enclosing class from JDK8 lambda class name.
      *
      * @param clsName JDK8 lambda class name.
-     * @return Full name of parent class for JDK8 lambda class name or {@code null} if specified name is not related
-     * to lambda.
+     * @return Full name of enclosing class for JDK8 lambda class name or
+     *      {@code null} if passed in name is not related to lambda.
      */
     @Nullable public static String lambdaEnclosingClassName(String clsName) {
         int idx = clsName.indexOf("$$Lambda$");
