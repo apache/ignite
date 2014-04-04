@@ -98,6 +98,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /** Enterprise release flag. */
     private static final boolean ent;
 
+    /** Compound GridGain version. */
+    private static final String COMPOUND_VERSION;
+
     /**
      *
      */
@@ -112,6 +115,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         }
 
         ent = ent0;
+
+        COMPOUND_VERSION = EDITION + "-" + (ent ? "ent" : "os") + "-" + VER;
     }
 
     /** Ant-augmented compatible versions. */
@@ -270,7 +275,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** {@inheritDoc} */
     @Override public String getFullVersion() {
-        return VER + '-' + ctx.build();
+        return COMPOUND_VERSION + '-' + ctx.build();
     }
 
     /** {@inheritDoc} */
@@ -587,7 +592,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         final GridUpdateNotifier verChecker;
 
         if (notifyEnabled) {
-            verChecker = new GridUpdateNotifier(gridName, false);
+            verChecker = new GridUpdateNotifier(gridName, COMPOUND_VERSION, false);
 
             verChecker.checkForNewVersion(cfg.getExecutorService(), log);
         }
@@ -630,7 +635,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             rsrcProc.setSpringContext(springCtx);
 
             // Set node version.
-            ctx.version(VER);
+            ctx.version(COMPOUND_VERSION);
 
             ctx.build(build);
 
@@ -1005,7 +1010,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                 "GridGain node started with the following parameters:" + NL +
                     NL +
                     "----" + NL +
-                    "GridGain ver. " + VER + '#' + ctx.build() + "-sha1:" + REV_HASH + NL +
+                    "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH + NL +
                     "Grid name: " + gridName + NL +
                     "Node ID: " + nid + NL +
                     "Node order: " + localNode().order() + NL +
@@ -1220,7 +1225,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // Stick in some system level attributes
         add(attrs, ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
-        add(attrs, ATTR_BUILD_VER, VER);
+        add(attrs, ATTR_BUILD_VER, COMPOUND_VERSION);
         add(attrs, ATTR_BUILD_DATE, build);
         add(attrs, ATTR_COMPATIBLE_VERS, (Serializable)compatibleVersions());
         add(attrs, ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
@@ -1631,7 +1636,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         if (System.getProperty(GG_NO_ASCII) == null) {
             String rev = REV_HASH.length() > 8 ? REV_HASH.substring(0, 8) : REV_HASH;
-            String ver = "ver. " + VER + '#' + build + "-sha1:" + rev;
+            String ver = "ver. " + COMPOUND_VERSION + '#' + build + "-sha1:" + rev;
 
             // Big thanks to: http://patorjk.com/software/taag
             // Font name "Small Slant"
@@ -1684,7 +1689,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         if (log.isInfoEnabled()) {
             log.info("");
 
-            String ack = "GridGain ver. " + VER + '#' + ctx.build() + "-sha1:" + REV_HASH;
+            String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH;
 
             String dash = U.dash(ack.length());
 
@@ -1943,7 +1948,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             if (log.isInfoEnabled())
                 if (!errOnStop) {
-                    String ack = "GridGain ver. " + VER + '#' + ctx.build() + "-sha1:" + REV_HASH + " stopped OK";
+                    String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH +
+                        " stopped OK";
 
                     String dash = U.dash(ack.length());
 
@@ -1957,7 +1963,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         NL);
                 }
                 else {
-                    String ack = "GridGain ver. " + VER + '#' + ctx.build() + "-sha1:" + REV_HASH +
+                    String ack = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH +
                         " stopped with ERRORS";
 
                     String dash = U.dash(ack.length());
@@ -1979,7 +1985,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             if (isSmtpEnabled() && isAdminEmailsSet() && cfg.isLifeCycleEmailNotification()) {
                 String errOk = errOnStop ? "with ERRORS" : "OK";
 
-                String headline = "GridGain ver. " + VER + '#' + ctx.build() + " stopped " + errOk + ":";
+                String headline = "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + " stopped " + errOk + ":";
                 String subj = "GridGain node stopped " + errOk + ": " + nid8;
 
                 GridProductLicense lic = ctx.license().license();
@@ -1988,7 +1994,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     headline + NL +
                         NL +
                         "----" + NL +
-                        "GridGain ver. " + VER + '#' + ctx.build() + "-sha1:" + REV_HASH + NL +
+                        "GridGain ver. " + COMPOUND_VERSION + '#' + ctx.build() + "-sha1:" + REV_HASH + NL +
                         "Grid name: " + gridName + NL +
                         "Node ID: " + nid + NL +
                         "Node uptime: " + X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + NL +
