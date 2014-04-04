@@ -661,7 +661,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             if (!sqlAnn.name().isEmpty())
                 prop.name(sqlAnn.name());
 
-            if (sqlAnn.index()) {
+            if (sqlAnn.index() || sqlAnn.unique()) {
                 String idxName = prop.name() + "_idx";
 
                 desc.addIndex(idxName, DataType.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);

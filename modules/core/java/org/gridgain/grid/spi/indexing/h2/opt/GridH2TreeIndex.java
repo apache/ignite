@@ -51,7 +51,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     @SuppressWarnings("unchecked")
     public GridH2TreeIndex(String name, GridH2Table tbl, boolean unique, int keyCol, int valCol,
         final GridUnsafeMemory memory, IndexColumn... cols) {
-        super(valCol, keyCol);
+        super(keyCol, valCol);
         if (!unique) {
             // For non unique index we add primary key at the end to avoid conflicts.
             cols = Arrays.copyOf(cols, cols.length + 1);
@@ -234,16 +234,6 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      */
     public GridH2AbstractKeyValueRow findOne(GridSearchRowPointer row) {
         return (GridH2AbstractKeyValueRow)tree.get(row);
-    }
-
-    /**
-     * Finds row with key equal one in given search row.
-     *
-     * @param row Search row.
-     * @return Row.
-     */
-    public GridH2AbstractKeyValueRow findOneInSnapshot(GridSearchRowPointer row) {
-        return (GridH2AbstractKeyValueRow)snapshot.get().get(row);
     }
 
     /**
