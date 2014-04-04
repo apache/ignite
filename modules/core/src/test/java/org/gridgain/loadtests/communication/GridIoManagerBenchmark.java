@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.loadtests.util.*;
@@ -301,11 +300,13 @@ public class GridIoManagerBenchmark {
             while (disc.allNodes().size() < 2)
                 Thread.sleep(1000);
 
-            return disc.nodes(new GridPredicate<GridNode>() {
-                @Override public boolean apply(GridNode e) {
-                    return !disc.localNode().equals(e);
-                }
-            }).iterator().next();
+            for (GridNode node : disc.allNodes())
+                if (!F.eqNodes(node, disc.localNode()))
+                    return node;
+
+            assert false;
+
+            return null;
         }
     }
 

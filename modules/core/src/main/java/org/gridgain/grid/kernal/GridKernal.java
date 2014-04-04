@@ -1093,7 +1093,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             long totalHeap = 0;
 
-            for (GridNode node : ctx.discovery().nodes()) {
+            for (GridNode node : ctx.discovery().allNodes()) {
                 if (macs.equals(node.attribute(ATTR_MACS))) {
                     long heap = node.metrics().getHeapMemoryMaximum();
 

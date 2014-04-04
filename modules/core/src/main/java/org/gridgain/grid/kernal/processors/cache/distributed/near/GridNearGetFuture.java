@@ -278,6 +278,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
         final Map<K, GridCacheVersion> saved = savedVers;
 
+        final int keysSize = keys.size();
+
         // Create mini futures.
         for (Map.Entry<GridNode, LinkedHashMap<K, Boolean>> entry : mappings.entrySet()) {
             final GridNode n = entry.getKey();
@@ -294,7 +296,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
                 if (!F.isEmpty(invalidParts)) {
-                    Collection<K> remapKeys = new ArrayList<>(keys.size());
+                    Collection<K> remapKeys = new ArrayList<>(keysSize);
 
                     for (K key : keys) {
                         if (key != null && invalidParts.contains(cctx.affinity().partition(key)))
