@@ -343,12 +343,16 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
         if (locDep != null)
             return locDep;
 
+        String lambdaEnclosingClsName = U.lambdaEnclosingClassName(rsrcName);
+
+        String clsName = lambdaEnclosingClsName == null ? rsrcName : lambdaEnclosingClsName;
+
         GridDeploymentMetadata meta = new GridDeploymentMetadata();
 
         meta.record(true);
         meta.deploymentMode(ctx.config().getDeploymentMode());
         meta.alias(rsrcName);
-        meta.className(rsrcName);
+        meta.className(clsName);
         meta.senderNodeId(ctx.localNodeId());
 
         return locStore.getDeployment(meta);
