@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 
-import java.io.*;
 import java.util.*;
 
 /**

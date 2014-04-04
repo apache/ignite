@@ -239,11 +239,12 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
 
         String clsName = cls.getName();
 
-        String lambdaParent = U.lambdaParent(clsName);
+        String lambdaParent = U.lambdaEnclosingClassName(clsName);
 
         if (lambdaParent != null) {
+            // Need to override passed in class if class is Lambda.
             try {
-                cls = Class.forName(lambdaParent);
+                cls = Class.forName(lambdaParent, true, clsLdr);
             }
             catch (ClassNotFoundException e) {
                 throw new GridException("Cannot deploy parent class for lambda: " + clsName, e);
@@ -282,19 +283,6 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
         }
         else
             return locDep != null ? locDep : locStore.explicitDeploy(cls, clsLdr);
-    }
-
-    /**
-     * Gets class loader based on given ID.
-     *
-     * @param ldrId Class loader ID.
-     * @return Class loader of {@code null} if not found.
-     */
-    @Nullable public GridDeployment getLocalDeployment(GridUuid ldrId) {
-        if (locDep != null)
-            return locDep.classLoaderId().equals(ldrId) ? locDep : null;
-        else
-            return locStore.getDeployment(ldrId);
     }
 
     /**
@@ -387,10 +375,10 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
         if (locDep != null)
             return locDep;
 
-        String lambdaParent = U.lambdaParent(clsName);
+        String lambdaEnclosingClsName = U.lambdaEnclosingClassName(clsName);
 
-        if (lambdaParent != null)
-            clsName = lambdaParent;
+        if (lambdaEnclosingClsName != null)
+            clsName = lambdaEnclosingClsName;
 
         GridDeploymentMetadata meta = new GridDeploymentMetadata();
 
