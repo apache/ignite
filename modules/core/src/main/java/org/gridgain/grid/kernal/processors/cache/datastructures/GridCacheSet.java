@@ -29,19 +29,27 @@ public class GridCacheSet<T> implements Set<T> {
     private final String name;
 
     /** */
-    private final GridUuid uuid;
+    private final GridUuid id;
 
     /**
      * @param ctx Cache context.
      * @param name Set name.
-     * @param uuid Set UUID.
+     * @param id Set unique ID.
      */
     @SuppressWarnings("unchecked")
-    public GridCacheSet(GridCacheContext ctx, String name, GridUuid uuid) {
+    public GridCacheSet(GridCacheContext ctx, String name, GridUuid id) {
         this.ctx = ctx;
         this.name = name;
-        this.uuid = uuid;
+        this.id = id;
+
         cache = ctx.cache();
+    }
+
+    /**
+     * @return Set ID.
+     */
+    public GridUuid id() {
+        return id;
     }
 
     /** {@inheritDoc} */
@@ -115,12 +123,12 @@ public class GridCacheSet<T> implements Set<T> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public Iterator<T> iterator() {
         try {
-            GridCacheEnterpriseDataStructuresManager ds =
-                (GridCacheEnterpriseDataStructuresManager) ctx.dataStructures();
+            GridCacheEnterpriseDataStructuresManager ds = (GridCacheEnterpriseDataStructuresManager) ctx.dataStructures();
 
-            return ds.setIterator(uuid);
+            return ds.setIterator(this);
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
@@ -138,10 +146,17 @@ public class GridCacheSet<T> implements Set<T> {
     }
 
     /**
+     * @return Cache context.
+     */
+    GridCacheContext context() {
+        return ctx;
+    }
+
+    /**
      * @param item Set item.
      * @return Item key.
      */
     private GridCacheSetItemKey itemKey(Object item) {
-        return new GridCacheSetItemKey(name, uuid, item);
+        return new GridCacheSetItemKey(name, id, item);
     }
 }

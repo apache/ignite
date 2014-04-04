@@ -24,14 +24,14 @@ class GridCacheSetItemKey implements GridCacheInternal, Externalizable {
     private String setName;
 
     /** */
-    private GridUuid uuid;
+    private GridUuid setId;
 
     /** */
     @GridToStringInclude
     private Object item;
 
     /**
-     * Required by {@link java.io.Externalizable}.
+     * Required by {@link Externalizable}.
      */
     public GridCacheSetItemKey() {
         // No-op.
@@ -39,12 +39,12 @@ class GridCacheSetItemKey implements GridCacheInternal, Externalizable {
 
     /**
      * @param setName Set name.
-     * @param uuid Set UUID.
+     * @param setId Set unique ID.
      * @param item Set item.
      */
-    GridCacheSetItemKey(String setName, GridUuid uuid, Object item) {
+    GridCacheSetItemKey(String setName, GridUuid setId, Object item) {
         this.setName = setName;
-        this.uuid = uuid;
+        this.setId = setId;
         this.item = item;
     }
 
@@ -59,7 +59,7 @@ class GridCacheSetItemKey implements GridCacheInternal, Externalizable {
      * @return Set UUID.
      */
     public GridUuid setId() {
-        return uuid;
+        return setId;
     }
 
     /**
@@ -71,7 +71,7 @@ class GridCacheSetItemKey implements GridCacheInternal, Externalizable {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = uuid.hashCode();
+        int result = setId.hashCode();
 
         result = 31 * result + item.hashCode();
 
@@ -88,20 +88,20 @@ class GridCacheSetItemKey implements GridCacheInternal, Externalizable {
 
         GridCacheSetItemKey that = (GridCacheSetItemKey)o;
 
-        return uuid.equals(that.uuid) && item.equals(that.item);
+        return setId.equals(that.setId) && item.equals(that.item);
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, setName);
-        U.writeGridUuid(out, uuid);
+        U.writeGridUuid(out, setId);
         out.writeObject(item);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         setName = U.readString(in);
-        uuid = U.readGridUuid(in);
+        setId = U.readGridUuid(in);
         item = in.readObject();
     }
 

@@ -9,69 +9,52 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
 /**
- * Set header key.
+ * Cache set header.
  */
-public class GridCacheSetKey implements Externalizable, GridCacheInternal {
+public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
     /** */
-    private String name;
+    private GridUuid id;
 
     /**
      * Required by {@link Externalizable}.
      */
-    public GridCacheSetKey() {
+    public GridCacheSetHeader() {
         // No-op.
     }
 
     /**
-     * @param name Set name.
+     * @return Set unique ID.
      */
-    public GridCacheSetKey(String name) {
-        this.name = name;
+    public GridUuid setId() {
+        return id;
     }
 
     /**
-     * @return Set name.
+     * @param id Set UUID.
      */
-    public String name() {
-        return name;
+    public GridCacheSetHeader(GridUuid id) {
+        this.id = id;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, name);
+        U.writeGridUuid(out, id);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        name = U.readString(in);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        GridCacheSetKey setKey = (GridCacheSetKey)o;
-
-        return name.equals(setKey.name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return name.hashCode();
+        id = U.readGridUuid(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheSetKey.class, this);
+        return S.toString(GridCacheSetHeader.class, this);
     }
 }

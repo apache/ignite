@@ -9,52 +9,69 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
 /**
- * Cache set header.
+ * Set header key.
  */
-public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
+public class GridCacheSetHeaderKey implements Externalizable, GridCacheInternal {
     /** */
-    private GridUuid uuid;
+    private String name;
 
     /**
      * Required by {@link Externalizable}.
      */
-    public GridCacheSetHeader() {
+    public GridCacheSetHeaderKey() {
         // No-op.
     }
 
     /**
-     * @return Set UUID.
+     * @param name Set name.
      */
-    public GridUuid setId() {
-        return uuid;
+    public GridCacheSetHeaderKey(String name) {
+        this.name = name;
     }
 
     /**
-     * @param uuid Set UUID.
+     * @return Set name.
      */
-    public GridCacheSetHeader(GridUuid uuid) {
-        this.uuid = uuid;
+    public String name() {
+        return name;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, uuid);
+        U.writeString(out, name);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        uuid = U.readGridUuid(in);
+        name = U.readString(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        GridCacheSetHeaderKey setKey = (GridCacheSetHeaderKey)o;
+
+        return name.equals(setKey.name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return name.hashCode();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheSetHeader.class, this);
+        return S.toString(GridCacheSetHeaderKey.class, this);
     }
 }

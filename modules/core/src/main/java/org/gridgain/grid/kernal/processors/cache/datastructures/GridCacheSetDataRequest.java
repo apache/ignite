@@ -14,12 +14,13 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.io.*;
 import java.nio.*;
 
 /**
- * TODO
+ * Set data request.
  */
-public class GridCacheSetIteratorRequest<K, V> extends GridCacheMessage<K, V> {
+public class GridCacheSetDataRequest<K, V> extends GridCacheMessage<K, V> {
     /** */
     private long id;
 
@@ -32,46 +33,99 @@ public class GridCacheSetIteratorRequest<K, V> extends GridCacheMessage<K, V> {
     /** */
     private int pageSize;
 
-    public GridCacheSetIteratorRequest() {
+    /** */
+    private boolean sizeOnly;
+
+    /** */
+    private boolean cancel;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridCacheSetDataRequest() {
         // No-op.
     }
 
-    public GridCacheSetIteratorRequest(long id, GridUuid setId, long topVer, int pageSize) {
+    /**
+     * Creates set data request.
+     *
+     * @param id Request id.
+     * @param setId Set unique ID.
+     * @param topVer Topology version.
+     * @param pageSize Page size.
+     * @param sizeOnly If {@code true} then only set data size is requested.
+     */
+    public GridCacheSetDataRequest(long id, GridUuid setId, long topVer, int pageSize, boolean sizeOnly) {
         this.id = id;
         this.setId = setId;
         this.topVer = topVer;
         this.pageSize = pageSize;
+        this.sizeOnly = sizeOnly;
     }
 
-    @Override public long topologyVersion() {
-        return topVer;
+    /**
+     * @return {@code True} if this is cancel request.
+     */
+    public boolean cancel() {
+        return cancel;
     }
 
+    /**
+     * @param cancel Cancel flag.
+     */
+    public void cancel(boolean cancel) {
+        this.cancel = cancel;
+    }
+
+    /**
+     * @return Request id.
+     */
     public long id() {
         return id;
     }
 
+    /**
+     * @return Set unique ID.
+     */
     public GridUuid setId() {
         return setId;
     }
 
+    /**
+     * @return Page size.
+     */
     public int pageSize() {
         return pageSize;
     }
 
+    /**
+     * @return {@code True} only if set data size is requested.
+     */
+    public boolean sizeOnly() {
+        return sizeOnly;
+    }
+
+    /** {@inheritDoc} */
     @Override public byte directType() {
         return 79;
     }
 
+    /** {@inheritDoc} */
+    @Override public long topologyVersion() {
+        return topVer;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridCacheSetIteratorRequest<K, V> clone() {
-        GridCacheSetIteratorRequest _clone = new GridCacheSetIteratorRequest();
+    @Override public GridTcpCommunicationMessageAdapter clone() {
+        GridCacheSetDataRequest _clone = new GridCacheSetDataRequest();
 
         clone0(_clone);
 
         return _clone;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
         commState.setBuffer(buf);
 
@@ -87,24 +141,36 @@ public class GridCacheSetIteratorRequest<K, V> extends GridCacheMessage<K, V> {
 
         switch (commState.idx) {
             case 2:
-                if (!commState.putLong(id))
+                if (!commState.putBoolean(cancel))
                     return false;
 
                 commState.idx++;
 
             case 3:
-                if (!commState.putInt(pageSize))
+                if (!commState.putLong(id))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putGridUuid(setId))
+                if (!commState.putInt(pageSize))
                     return false;
 
                 commState.idx++;
 
             case 5:
+                if (!commState.putGridUuid(setId))
+                    return false;
+
+                commState.idx++;
+
+            case 6:
+                if (!commState.putBoolean(sizeOnly))
+                    return false;
+
+                commState.idx++;
+
+            case 7:
                 if (!commState.putLong(topVer))
                     return false;
 
@@ -115,6 +181,7 @@ public class GridCacheSetIteratorRequest<K, V> extends GridCacheMessage<K, V> {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
         commState.setBuffer(buf);
 
@@ -123,6 +190,14 @@ public class GridCacheSetIteratorRequest<K, V> extends GridCacheMessage<K, V> {
 
         switch (commState.idx) {
             case 2:
+                if (buf.remaining() < 1)
+                    return false;
+
+                cancel = commState.getBoolean();
+
+                commState.idx++;
+
+            case 3:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -130,7 +205,7 @@ public class GridCacheSetIteratorRequest<K, V> extends GridCacheMessage<K, V> {
 
                 commState.idx++;
 
-            case 3:
+            case 4:
                 if (buf.remaining() < 4)
                     return false;
 
@@ -138,7 +213,7 @@ public class GridCacheSetIteratorRequest<K, V> extends GridCacheMessage<K, V> {
 
                 commState.idx++;
 
-            case 4:
+            case 5:
                 GridUuid setId0 = commState.getGridUuid();
 
                 if (setId0 == GRID_UUID_NOT_READ)
@@ -148,7 +223,15 @@ public class GridCacheSetIteratorRequest<K, V> extends GridCacheMessage<K, V> {
 
                 commState.idx++;
 
-            case 5:
+            case 6:
+                if (buf.remaining() < 1)
+                    return false;
+
+                sizeOnly = commState.getBoolean();
+
+                commState.idx++;
+
+            case 7:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -161,19 +244,22 @@ public class GridCacheSetIteratorRequest<K, V> extends GridCacheMessage<K, V> {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
         super.clone0(_msg);
 
-        GridCacheSetIteratorRequest _clone = (GridCacheSetIteratorRequest)_msg;
+        GridCacheSetDataRequest _clone = (GridCacheSetDataRequest)_msg;
 
         _clone.id = id;
         _clone.setId = setId;
         _clone.topVer = topVer;
         _clone.pageSize = pageSize;
+        _clone.sizeOnly = sizeOnly;
+        _clone.cancel = cancel;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheSetIteratorRequest.class, this);
+        return S.toString(GridCacheSetDataRequest.class, this);
     }
 }

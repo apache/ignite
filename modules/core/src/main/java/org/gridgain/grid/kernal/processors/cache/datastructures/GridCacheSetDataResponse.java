@@ -16,18 +16,22 @@ import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.io.*;
 import java.nio.*;
 import java.util.*;
 
 /**
- * TODO
+ * Set data response.
  */
-public class GridCacheSetIteratorResponse<K, V> extends GridCacheMessage<K, V> {
+public class GridCacheSetDataResponse<K, V> extends GridCacheMessage<K, V> {
     /** */
     private long id;
 
     /** */
     private boolean last;
+
+    /** */
+    private int size;
 
     /** */
     @GridDirectCollection(byte[].class)
@@ -42,39 +46,73 @@ public class GridCacheSetIteratorResponse<K, V> extends GridCacheMessage<K, V> {
     @GridDirectTransient
     private UUID nodeId;
 
-    public GridCacheSetIteratorResponse() {
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridCacheSetDataResponse() {
         // No-op.
     }
 
     /**
-     * @param id
-     * @param data
-     * @param last
+     * @param id Request ID.
+     * @param data Set items.
+     * @param last {@code True} if this is last response for request.
      */
-    public GridCacheSetIteratorResponse(long id, Collection<Object> data, boolean last) {
+    public GridCacheSetDataResponse(long id, Collection<Object> data, boolean last) {
         this.id = id;
         this.data = data;
         this.last = last;
     }
 
+    /**
+     * @param id Request ID.
+     * @param size Set size.
+     */
+    public GridCacheSetDataResponse(long id, int size) {
+        this.id = id;
+        this.size = size;
+    }
+
+    /**
+     * @return ID of the node sent response.
+     */
     public UUID nodeId() {
         return nodeId;
     }
 
+    /**
+     * @param nodeId ID of the node sent response.
+     */
     public void nodeId(UUID nodeId) {
         this.nodeId = nodeId;
     }
 
+    /**
+     * @return Set items.
+     */
     public Collection<Object> data() {
         return data;
     }
 
+    /**
+     * @return Request ID.
+     */
     public long id() {
         return id;
     }
 
+    /**
+     * @return {@code True} if this is last response for request.
+     */
     public boolean last() {
         return last;
+    }
+
+    /**
+     * @return Set size.
+     */
+    public int size() {
+        return size;
     }
 
     /** {@inheritDoc} */
@@ -97,14 +135,16 @@ public class GridCacheSetIteratorResponse<K, V> extends GridCacheMessage<K, V> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public GridTcpCommunicationMessageAdapter clone() {
-        GridCacheSetIteratorResponse _clone = new GridCacheSetIteratorResponse();
+        GridCacheSetDataResponse _clone = new GridCacheSetDataResponse();
 
         clone0(_clone);
 
         return _clone;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
         commState.setBuffer(buf);
 
@@ -157,11 +197,20 @@ public class GridCacheSetIteratorResponse<K, V> extends GridCacheMessage<K, V> {
 
                 commState.idx++;
 
+            case 5:
+                if (buf.remaining() < 4)
+                    return false;
+
+                size = commState.getInt();
+
+                commState.idx++;
+
         }
 
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
         commState.setBuffer(buf);
 
@@ -215,18 +264,26 @@ public class GridCacheSetIteratorResponse<K, V> extends GridCacheMessage<K, V> {
 
                 commState.idx++;
 
+            case 5:
+                if (!commState.putInt(size))
+                    return false;
+
+                commState.idx++;
+
         }
 
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
         super.clone0(_msg);
 
-        GridCacheSetIteratorResponse _clone = (GridCacheSetIteratorResponse)_msg;
+        GridCacheSetDataResponse _clone = (GridCacheSetDataResponse)_msg;
 
         _clone.id = id;
         _clone.last = last;
+        _clone.size = size;
         _clone.dataBytes = dataBytes;
         _clone.data = data;
         _clone.nodeId = nodeId;
@@ -234,6 +291,6 @@ public class GridCacheSetIteratorResponse<K, V> extends GridCacheMessage<K, V> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheSetIteratorResponse.class, this);
+        return S.toString(GridCacheSetDataResponse.class, this);
     }
 }
