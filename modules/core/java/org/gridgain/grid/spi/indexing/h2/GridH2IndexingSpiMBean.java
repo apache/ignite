@@ -103,44 +103,27 @@ public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
     public long getAllocatedOffHeapMemory();
 
     /**
-     * Gets H2 specific options as string.
-     *
-     * @return H2 Options.
-     */
-    @GridMBeanDescription("H2 Database options.")
-    public String getIndexH2Options();
-
-    /**
-     * Gets maximum index operation memory.
-     *
-     * @return Max operation memory.
-     */
-    @GridMBeanDescription("Maximum memory used for large operations (delete and insert), in bytes.")
-    public int getIndexMaxOperationMemory();
-
-    /**
-     * Gets user name for index database.
-     *
-     * @return User name.
-     */
-    @GridMBeanDescription("H2 User name.")
-    public String getIndexUsername();
-
-    /**
-     * Gets index database password.
-     *
-     * @return Password.
-     */
-    @GridMBeanDescription("H2 User password.")
-    public String getIndexPassword();
-
-    /**
      * Gets all registered in this SPI spaces comma separated.
      *
      * @return Collection of space names.
      */
     @GridMBeanDescription("All registered in this SPI spaces.")
     public String getSpaceNames();
+
+    /**
+     * Gets the optional search path consisting of space names to search SQL schema objects. Useful for cross cache
+     * queries to avoid writing fully qualified table names.
+     *
+     * @return Array of space names.
+     */
+    @Nullable public String[] getSearchPath();
+
+    /**
+     * Gets script path to be ran against H2 database after opening.
+     *
+     * @return Script path.
+     */
+    @Nullable public String getInitialScriptPath();
 
     /**
      * Get query execution time interpreted by SPI as long query for additional handling (e.g. print warning).
