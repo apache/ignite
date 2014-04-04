@@ -1781,7 +1781,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
                                                 // Don't put key-value pair into result map if value is null.
                                                 if (val != null) {
-                                                    if (set || F.isEmpty(filter))
+                                                    if (set || F.isEmptyOrNulls(filter))
                                                         map.put(key, ctx.cloneOnFlag(val));
                                                     else {
                                                         touch = false;
@@ -2859,7 +2859,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Override public void removeAll(GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         ctx.denyOnLocalRead();
 
-        if (F.isEmpty(filter))
+        if (F.isEmptyOrNulls(filter))
             filter = ctx.trueArray();
 
         final GridPredicate<GridCacheEntry<K, V>>[] p = filter;
@@ -4002,7 +4002,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         GridCacheVersion obsoleteVer = ctx.versions().next();
 
-        if (!ctx.evicts().evictSyncOrNearSync() && F.isEmpty(filter) && ctx.isSwapOrOffheapEnabled()) {
+        if (!ctx.evicts().evictSyncOrNearSync() && F.isEmptyOrNulls(filter) && ctx.isSwapOrOffheapEnabled()) {
             try {
                 ctx.evicts().batchEvict(keys, obsoleteVer);
             }

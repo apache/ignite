@@ -145,7 +145,7 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
 
                 GridDiscoveryEvent discoEvt = (GridDiscoveryEvent)evt;
 
-                UUID id = discoEvt.eventNodeId();
+                UUID id = discoEvt.eventNode().id();
 
                 // Remap regular mappings.
                 final Buffer buf = bufMappings.remove(id);

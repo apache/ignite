@@ -31,9 +31,6 @@ import static org.gridgain.grid.events.GridEventType.*;
  *
  */
 public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
-    /** Local node ID. */
-    private UUID locNodeId;
-
     /** */
     private GridMarshaller marsh;
 
@@ -90,7 +87,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
                         }
                     }
 
-                    ctx.event().record(new GridSwapSpaceEvent(locNodeId, msg, evtType, spaceName));
+                    ctx.event().record(new GridSwapSpaceEvent(ctx.discovery().localNode(), msg, evtType, spaceName));
                 }
 
                 // Always notify grid cache processor.
@@ -106,8 +103,6 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
         startSpi();
 
         marsh = ctx.config().getMarshaller();
-
-        locNodeId = ctx.localNodeId();
 
         if (log.isDebugEnabled())
             log.debug(startInfo());

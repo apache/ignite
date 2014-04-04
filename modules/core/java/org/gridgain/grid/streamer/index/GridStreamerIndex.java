@@ -15,7 +15,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * User view on streamer index. Streamer indexes are used for faxed look ups into streamer streamer windows.
+ * User view on streamer index. Streamer indexes are used for fast look ups into streamer windows.
  * <p>
  * Streamer index can be accessed from {@link GridStreamerWindow} via any of the following methods:
  * <ul>
@@ -26,6 +26,60 @@ import java.util.*;
  * <p>
  * Indexes are created and provided for streamer windows by {@link GridStreamerIndexProvider} which is
  * specified in streamer configuration.
+ * <h1 class="header">Example of how to use indexes</h1>
+ * <p>
+ * Stock price events are streamed into the system, the stock price event is an object containing stock symbol and price.
+ * We need to get minimum price for GOOG instrument.
+ * <p>
+ * Here is {@link GridStreamerIndexUpdater} that maintains index values up to date:
+ * <pre name="code" class="java">
+ * class StockPriceIndexUpdater implements GridStreamerIndexUpdater&lt;StockPriceEvent, String, Double&gt; {
+ *     &#64;Nullable &#64;Override public String indexKey(StockPriceEvent evt) {
+ *         return evt.getSymbol(); // Symbol is an index key.
+ *     }
+ *
+ *     &#64;Nullable &#64;Override public Double initialValue(StockPriceEvent evt, String key) {
+ *         return evt.getPrice(); // Set first event's price as an initial value.
+ *     }
+ *
+ *     &#64;Nullable &#64;Override public Double onAdded(GridStreamerIndexEntry&lt;StockPriceEvent, String, Double&gt; entry,
+ *         StockPriceEvent evt) throws GridException {
+ *         return Math.min(entry.value(), evt.getPrice()); // Update the minimum on new event.
+ *     }
+ *
+ *     &#64;Nullable &#64;Override
+ *     public Double onRemoved(GridStreamerIndexEntry&lt;StockPriceEvent, String, Double&gt; entry, StockPriceEvent evt) {
+ *         return entry.value(); // Leave minimum unchanged when event is evicted.
+ *     }
+ * }
+ * </pre>
+ * <p>
+ * Here is the code that queries minimum price for GOOG instrument using index:
+ * <pre name="code" class="java">
+ * double minGooglePrice = streamer.context().reduce(
+ *     // This closure will execute on remote nodes.
+ *     new GridClosure&lt;GridStreamerContext, Double&gt;() {
+ *         &#64;Nullable &#64;Override public Double apply(GridStreamerContext ctx) {
+ *             GridStreamerIndex&lt;StockPriceEvent, String, Double&gt; minIdx = ctx.&lt;StockPriceEvent&gt;window().index("min-price");
+ *
+ *             return minIdx.entry("GOOG").value();
+ *         }
+ *     },
+ *     new GridReducer&lt;Double, Double&gt;() {
+ *         private double minPrice = Integer.MAX_VALUE;
+ *
+ *         &#64;Override public boolean collect(Double price) {
+ *             minPrice = Math.min(minPrice, price); // Take minimum price from all nodes.
+ *
+ *             return true;
+ *         }
+ *
+ *         &#64;Override public Double reduce() {
+ *             return minPrice;
+ *         }
+ *     }
+ * );
+ * </pre>
  */
 public interface GridStreamerIndex<E, K, V> extends Iterable<GridStreamerIndexEntry<E, K, V>> {
     /**

@@ -57,6 +57,11 @@ public interface GridGgfs {
     public static final String PROP_PERMISSION = "permission";
 
     /**
+     * Kernal start callback.
+     */
+    public void onKernalStart();
+
+    /**
      * Stops GGFS cleaning all used resources.
      */
     public void stop();

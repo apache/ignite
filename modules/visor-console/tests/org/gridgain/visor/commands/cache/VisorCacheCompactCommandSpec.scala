@@ -9,25 +9,23 @@
  *
  */
 
-package org.gridgain.visor.commands.cclear
+package org.gridgain.visor.commands.cache
 
-import org.gridgain.visor._
-import org.gridgain.visor.commands.cache.VisorCacheCommand
-import VisorCacheCommand._
 import org.gridgain.grid._
+import org.gridgain.grid.{GridGain => G}
 import cache._
 import GridCacheMode._
-import GridCacheAtomicityMode._
-import org.gridgain.grid.{GridGain => G}
 import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
-import collection.JavaConversions._
 import org.jetbrains.annotations.Nullable
+import collection.JavaConversions._
+import org.gridgain.visor._
+import VisorCacheCommand._
 
 /**
  *
  */
-class VisorCacheClearCommandSpec extends VisorRuntimeBaseSpec(2) {
+class VisorCacheCompactCommandSpec extends VisorRuntimeBaseSpec(2) {
     /** IP finder. */
     val ipFinder = new GridTcpDiscoveryVmIpFinder(true)
 
@@ -61,26 +59,21 @@ class VisorCacheClearCommandSpec extends VisorRuntimeBaseSpec(2) {
         val cfg = new GridCacheConfiguration
 
         cfg.setCacheMode(REPLICATED)
-        cfg.setAtomicityMode(TRANSACTIONAL)
         cfg.setName(name)
 
         cfg
     }
 
-    behavior of "An 'cclear' visor command"
+    behavior of "An 'ccompact' visor command"
 
     it should "show correct result for default cache" in {
         G.grid("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        G.grid("node-1").cache[Int, Int](null).lock(1, 0)
+        G.grid("node-1").cache[Int, Int](null).clear(1)
 
         visor.open("-e -g=node-1", false)
 
-        visor.cache("-clear")
-
-        G.grid("node-1").cache[Int, Int](null).unlock(1)
-
-        visor.cache("-clear")
+        VisorCacheCompactCommand().compact(Nil, None)
 
         visor.close()
     }
@@ -88,15 +81,11 @@ class VisorCacheClearCommandSpec extends VisorRuntimeBaseSpec(2) {
     it should "show correct result for named cache" in {
         G.grid("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        G.grid("node-1").cache[Int, Int]("cache").lock(1, 0)
+        G.grid("node-1").cache[Int, Int]("cache").clear(1)
 
         visor.open("-e -g=node-1", false)
 
-        visor.cache("-clear -c=cache")
-
-        G.grid("node-1").cache[Int, Int]("cache").unlock(1)
-
-        visor.cache("-clear -c=cache")
+        visor.cache("-compact -c=cache")
 
         visor.close()
     }
@@ -110,7 +99,7 @@ class VisorCacheClearCommandSpec extends VisorRuntimeBaseSpec(2) {
     it should "show empty projection error message" in {
         visor.open("-e -g=node-1", false)
 
-        visor.cache("-clear -c=wrong")
+        visor.cache("-compact -c=wrong")
 
         visor.close()
     }

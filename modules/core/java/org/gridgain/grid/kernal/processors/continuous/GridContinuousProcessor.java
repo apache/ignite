@@ -119,7 +119,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             @Override public void onEvent(GridEvent evt) {
                 assert evt instanceof GridDiscoveryEvent;
 
-                UUID nodeId = ((GridDiscoveryEvent)evt).eventNodeId();
+                UUID nodeId = ((GridDiscoveryEvent)evt).eventNode().id();
 
                 Collection<GridContinuousMessage> reqs;
 

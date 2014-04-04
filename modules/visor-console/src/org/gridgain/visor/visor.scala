@@ -749,7 +749,6 @@ object visor extends VisorTag {
         }
     }
 
-
     /**
      * Try get variable value with given name.
      *
@@ -1598,9 +1597,9 @@ object visor extends VisorTag {
                 override def apply(e: GridEvent): Boolean = {
                     e match {
                         case de: GridDiscoveryEvent =>
-                            setVarIfAbsent(U.id8(de.eventNodeId), "n")
+                            setVarIfAbsent(U.id8(de.eventNode().id()), "n")
 
-                            val node = grid.node(de.eventNodeId)
+                            val node = grid.node(de.eventNode().id())
 
                             if (node != null) {
                                 val ip = node.addresses().headOption
@@ -1611,7 +1610,7 @@ object visor extends VisorTag {
                             else {
                                 if (repl)
                                     warn(
-                                        "New node not found: " + de.eventNodeId,
+                                        "New node not found: " + de.eventNode().id(),
                                         "Visor must have discovery configuration and local " +
                                             "host bindings identical with grid nodes."
                                     )
@@ -1628,12 +1627,12 @@ object visor extends VisorTag {
                 override def apply(e: GridEvent): Boolean = {
                     e match {
                         case (de: GridDiscoveryEvent) =>
-                            val nv = mfind(U.id8(de.eventNodeId))
+                            val nv = mfind(U.id8(de.eventNode().id()))
 
                             if (nv.isDefined)
                                 mem.remove(nv.get._1)
 
-                            val ip = de.shadow().addresses.headOption
+                            val ip = de.eventNode().addresses.headOption
 
                             if (ip.isDefined) {
                                 val last = !grid.nodes().exists(n =>
@@ -1659,7 +1658,7 @@ object visor extends VisorTag {
                 override def apply(e: GridEvent): Boolean = {
                     e match {
                         case de: GridDiscoveryEvent =>
-                            if (de.eventNodeId == grid.localNode.id) {
+                            if (de.eventNode().id() == grid.localNode.id) {
                                 if (repl) {
                                     warn("Closing visor due to topology segmentation.")
                                     warn("Contact your system administrator.")
@@ -2396,7 +2395,7 @@ object visor extends VisorTag {
                                 logImpl(
                                     out,
                                     formatDateTime(e.timestamp),
-                                    nodeId8Addr(e.nodeId()),
+                                    nodeId8Addr(e.node().id()),
                                     U.compact(e.shortDisplay)
                                 )
 

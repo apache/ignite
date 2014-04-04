@@ -90,7 +90,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         cctx.events().addListener(new GridLocalEventListener() {
             @Override public void onEvent(GridEvent evt) {
-                UUID nodeId = ((GridDiscoveryEvent)evt).eventNodeId();
+                UUID nodeId = ((GridDiscoveryEvent)evt).eventNode().id();
 
                 Map<Long, GridFutureAdapter<GridCloseableIterator<GridIndexingKeyValueRow<K, V>>>> futs =
                     qryIters.remove(nodeId);
