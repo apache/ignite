@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<!--
+    GridGain Spring configuration file to startup grid cache.
+
+    When starting a standalone GridGain node, you need to execute the following command:
+    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-cache.xml
+
+    When starting GridGain from Java IDE, pass path to this file into GridGain:
+    GridGain.start("examples/config/example-cache.xml");
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd">
+    <!--
+        Optional description.
+    -->
+    <description>
+        Spring file for grid configuration with benchmark.
+    </description>
+
+    <!--
+        Configuration below demonstrates how to setup caches within grid nodes.
+    -->
+    <bean id="base.grid.cfg" class="org.gridgain.grid.GridConfiguration" abstract="true">
+        <property name="deploymentMode" value="SHARED"/>
+
+        <property name="restEnabled" value="false"/>
+
+        <property name="localHost" ref="localHost"/>
+
+        <!--
+            TCP discovery SPI configuration with predefined addresses.
+            Use the addresses list to provide IP addresses of initial nodes in the grid
+            (at least one address must be provided).
+
+            Note:
+            =====
+            If running in distributed environment, you should change IP addresses to the actual IP addresses
+            of the servers on your network. Not all addresses need to be specified, only the addresses
+            of one or more servers which will always be started first.
+        -->
+        <property name="discoverySpi" ref="discoSpi"/>
+    </bean>
+
+    <beans profile="default">
+        <bean id="localHost" class="java.lang.String">
+            <constructor-arg value="127.0.0.1"/>
+        </bean>
+
+        <bean id="discoSpi" class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+            <property name="ackTimeout" value="5000"/>
+            <property name="socketTimeout" value="5000"/>
+            <property name="reconnectCount" value="5"/>
+            <property name="heartbeatFrequency" value="15000"/>
+            <property name="maxMissedHeartbeats" value="3"/>
+
+            <property name="ipFinder">
+                <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
+                    <property name="addresses">
+                        <list>
+                            <value>127.0.0.1:47500</value>
+                        </list>
+                    </property>
+                </bean>
+            </property>
+        </bean>
+    </beans>
+    <beans profile="fosters">
+        <!-- Empty local host value. -->
+        <bean id="localHost" class="java.lang.String"/>
+
+        <bean id="discoSpi" class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+            <property name="ipFinder">
+                <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
+                    <property name="addresses">
+                        <list>
+                            <value>10.1.10.210</value>
+                            <value>10.1.10.211</value>
+                            <value>10.1.10.212</value>
+                            <value>10.1.10.213</value>
+                            <value>10.1.10.214</value>
+                            <value>10.1.10.215</value>
+                        </list>
+                    </property>
+                </bean>
+            </property>
+        </bean>
+    </beans>
+</beans>

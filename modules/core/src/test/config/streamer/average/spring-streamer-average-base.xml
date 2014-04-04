@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<!--
+    GridGain Spring configuration file to startup grid cache.
+
+    When starting a standalone GridGain node, you need to execute the following command:
+    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-cache.xml
+
+    When starting GridGain from Java IDE, pass path to this file into GridGain:
+    GridGain.start("examples/config/example-cache.xml");
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd">
+    <!-- Import base configuration file. -->
+    <import resource="../spring-streamer-base.xml"/>
+
+    <!--
+        Configuration below demonstrates how to setup caches within grid nodes.
+    -->
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" parent="base.grid.cfg">
+        <property name="streamerConfiguration">
+            <list>
+                <bean class="org.gridgain.grid.streamer.GridStreamerConfiguration">
+                    <property name="windows">
+                        <bean class="org.gridgain.grid.streamer.window.GridStreamerBoundedSizeWindow">
+                            <property name="maximumSize" value="500"/>
+                            <property name="indexes">
+                                <list>
+                                    <bean class="org.gridgain.grid.streamer.index.tree.GridStreamerTreeIndexProvider">
+                                        <property name="updater">
+                                            <bean class="org.gridgain.loadtests.streamer.IndexUpdater"/>
+                                        </property>
+                                    </bean>
+                                </list>
+                            </property>
+                        </bean>
+                    </property>
+                    <property name="stages">
+                        <list>
+                            <bean class="org.gridgain.loadtests.streamer.average.TestStage"/>
+                        </list>
+                    </property>
+                    <property name="maximumConcurrentSessions" value="1000"/>
+                    <property name="router" ref="router.cfg" />
+                </bean>
+            </list>
+        </property>
+    </bean>
+
+    <!--
+        Load closures.
+    -->
+    <bean class="org.gridgain.loadtests.streamer.GridStreamerLoad">
+        <property name="closures">
+            <list>
+                <bean class="org.gridgain.loadtests.streamer.EventClosure" />
+                <bean class="org.gridgain.loadtests.streamer.QueryClosure" />
+            </list>
+        </property>
+    </bean>
+</beans>

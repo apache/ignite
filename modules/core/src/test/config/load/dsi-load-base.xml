@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd">
+
+    <description>
+        Base Spring file for grid configuration.
+    </description>
+
+    <bean abstract="true" id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+        <property name="gridName" value="dsi"/>
+
+        <property name="localHost" value="127.0.0.1"/>
+
+        <property name="marshaller">
+            <bean class="org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller">
+                <property name="classNames">
+                    <list>
+                        <value>org.gridgain.loadtests.dsi.GridDsiSession</value>
+                        <value>org.gridgain.loadtests.dsi.GridDsiPerfJob</value>
+                        <value>org.gridgain.loadtests.dsi.GridDsiRequestTask</value>
+                        <value>org.gridgain.loadtests.dsi.GridDsiResponseTask</value>
+                        <value>org.gridgain.loadtests.dsi.GridDsiRequest</value>
+                        <value>org.gridgain.loadtests.dsi.GridDsiResponse</value>
+                        <value>org.gridgain.loadtests.dsi.GridDsiMessage</value>
+                    </list>
+                </property>
+            </bean>
+        </property>
+
+        <property name="discoverySpi">
+            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean
+                            class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>127.0.0.1:47500</value>
+                                <value>127.0.0.1:47501</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+
+                <property name="ackTimeout" value="4000"/>
+                <property name="socketTimeout" value="4000"/>
+                <property name="heartbeatFrequency" value="6000"/>
+            </bean>
+        </property>
+
+        <property name="lifecycleBeans" ref="lifecycleBeans"/>
+
+        <property name="peerClassLoadingEnabled" value="false"/>
+
+        <property name="restEnabled" value="false"/>
+
+        <property name="deploymentMode" value="CONTINUOUS"/>
+
+        <property name="executorService">
+            <bean class="org.gridgain.grid.thread.GridThreadPoolExecutor">
+                <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() * 4}"/>
+                <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() * 4}"/>
+                <constructor-arg type="long">
+                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
+                </constructor-arg>
+                <constructor-arg type="java.util.concurrent.BlockingQueue">
+                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
+                </constructor-arg>
+            </bean>
+        </property>
+
+        <property name="systemExecutorService">
+            <bean class="org.gridgain.grid.thread.GridThreadPoolExecutor">
+                <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() * 8}"/>
+                <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() * 8}"/>
+                <constructor-arg type="long">
+                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
+                </constructor-arg>
+                <constructor-arg type="java.util.concurrent.BlockingQueue">
+                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
+                </constructor-arg>
+            </bean>
+        </property>
+
+        <property name="failoverSpi">
+            <bean class="org.gridgain.grid.spi.failover.always.GridAlwaysFailoverSpi">
+                <property name="maximumFailoverAttempts" value="1"/>
+            </bean>
+        </property>
+    </bean>
+</beans>
