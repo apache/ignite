@@ -65,7 +65,7 @@ public class GridProductImpl implements GridProduct {
         try {
             props.load(GridProductImpl.class.getClassLoader().getResourceAsStream(propsFile));
 
-            VER = props.getProperty("gridgain.version");
+            VER = props.getProperty(EDITION + ".ver");
 
             if (F.isEmpty(VER))
                 throw new RuntimeException("Cannot read '" + propsFile + "' property from gridgain.properties file.");
