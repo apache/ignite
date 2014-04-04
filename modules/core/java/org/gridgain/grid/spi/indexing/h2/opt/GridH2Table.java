@@ -52,7 +52,7 @@ public class GridH2Table extends TableBase {
     private final Set<Session> sessions = Collections.newSetFromMap(new ConcurrentHashMap8<Session, Boolean>());
 
     /** */
-    private volatile ConcurrentNavigableMap<SearchRow, GridH2Row>[] actualSnapshot;
+    private volatile Object[] actualSnapshot;
 
     /** */
     private final long writeLockWaitTime;
@@ -102,7 +102,12 @@ public class GridH2Table extends TableBase {
             manyUniqueIdxs = false;
 
         // Add scan index at 0 which is required by H2.
-        idxs.add(0, new ScanIndex((GridH2Index)idxs.get(0)));
+        idxs.add(0, new ScanIndex(index(0)));
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getDiskSpaceUsed() {
+        return 0;
     }
 
     /**
@@ -149,7 +154,7 @@ public class GridH2Table extends TableBase {
     private boolean onSwapUnswap(Object key, @Nullable Object val) throws GridException {
         assert key != null;
 
-        GridH2Index pk = index(1);
+        GridH2TreeIndex pk = pk();
 
         GridH2AbstractKeyValueRow row = desc.createRow(key, null, 0); // Create search row.
 
@@ -199,7 +204,7 @@ public class GridH2Table extends TableBase {
             }
         }
 
-        ConcurrentNavigableMap[] snapshot;
+        Object[] snapshot;
 
         for (long waitTime = writeLockWaitTime;; waitTime *= 2) { // Increase wait time to avoid starvation.
             snapshot = actualSnapshot;
@@ -252,22 +257,15 @@ public class GridH2Table extends TableBase {
      * @return New indexes data snapshot.
      */
     @SuppressWarnings("unchecked")
-    private ConcurrentNavigableMap<SearchRow, GridH2Row>[] takeIndexesSnapshot() {
+    private Object[] takeIndexesSnapshot() {
         int len = idxs.size();
 
-        ConcurrentNavigableMap[] snapshot = new ConcurrentNavigableMap[len - 1];
-
-        int size = 0;
+        Object[] snapshot = new ConcurrentNavigableMap[len - 1];
 
         for (int i = 1; i < len; i++) { // Take snapshots on all except first which is scan.
-            ConcurrentNavigableMap<SearchRow, GridH2Row> s = index(i).takeSnapshot(null);
+            Object s = index(i).takeSnapshot(null);
 
             snapshot[i - 1] = s;
-
-            if (i == 1)
-                size = s.size();
-            else
-                assert size == s.size();
         }
 
         return snapshot;
@@ -300,7 +298,7 @@ public class GridH2Table extends TableBase {
 
         try {
             for (int i = 1, len = idxs.size(); i < len; i++)
-                index(i).close();
+                index(i).close(null);
         }
         finally {
             l.unlock();
@@ -329,8 +327,17 @@ public class GridH2Table extends TableBase {
      * @param idx Index in list.
      * @return Index.
      */
-    private GridH2Index index(int idx) {
-        return (GridH2Index)idxs.get(idx);
+    private GridH2IndexBase index(int idx) {
+        return (GridH2IndexBase)idxs.get(idx);
+    }
+
+    /**
+     * Gets primary key.
+     *
+     * @return Primary key.
+     */
+    private GridH2TreeIndex pk() {
+        return (GridH2TreeIndex)idxs.get(1);
     }
 
     /**
@@ -355,7 +362,7 @@ public class GridH2Table extends TableBase {
             op = mem.begin();
 
         try {
-            GridH2Index pk = index(1);
+            GridH2TreeIndex pk = pk();
 
             if (!del) {
                 GridH2Row old = pk.put(row, false); // Put to PK.
@@ -377,7 +384,7 @@ public class GridH2Table extends TableBase {
                     // Put row if absent to all indexes sequentially.
                     // Start from 2 because 0 - Scan (don't need to update), 1 - PK (already updated).
                     while (++i < len) {
-                        GridH2Index idx = index(i);
+                        GridH2IndexBase idx = index(i);
 
                         // For non-unique index we just do put.
                         boolean ifAbsent = idx.getIndexType().isUnique();
@@ -487,8 +494,8 @@ public class GridH2Table extends TableBase {
      *
      * @return Indexes.
      */
-    ArrayList<GridH2Index> indexes() {
-        ArrayList<GridH2Index> res = new ArrayList<>(idxs.size() - 1);
+    ArrayList<GridH2IndexBase> indexes() {
+        ArrayList<GridH2IndexBase> res = new ArrayList<>(idxs.size() - 1);
 
         for (int i = 1, len = idxs.size(); i < len ; i++)
             res.add(index(i));
@@ -509,7 +516,7 @@ public class GridH2Table extends TableBase {
                 actualSnapshot = takeIndexesSnapshot(); // Allow read access while we are rebuilding indexes.
 
             for (int i = 1, len = idxs.size(); i < len; i++) {
-                GridH2Index newIdx = index(i).createCopy(memory);
+                GridH2IndexBase newIdx = index(i).rebuild(memory);
 
                 idxs.set(i, newIdx);
 
@@ -701,7 +708,7 @@ public class GridH2Table extends TableBase {
         /**
          * Create list of indexes. First must be primary key, after that all unique indexes and
          * only then non-unique indexes.
-         * All indexes must be subtypes of {@link GridH2Index}.
+         * All indexes must be subtypes of {@link GridH2TreeIndex}.
          *
          * @param tbl Table to create indexes for.
          * @return List of indexes.
@@ -721,15 +728,20 @@ public class GridH2Table extends TableBase {
         private static final IndexType TYPE = IndexType.createScan(false);
 
         /** */
-        private final GridH2Index delegate;
+        private final GridH2IndexBase delegate;
 
         /**
          * Constructor.
          *
          * @param delegate Index delegate to.
          */
-        private ScanIndex(GridH2Index delegate) {
+        private ScanIndex(GridH2IndexBase delegate) {
             this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getDiskSpaceUsed() {
+            return 0;
         }
 
         /** {@inheritDoc} */
@@ -798,7 +810,7 @@ public class GridH2Table extends TableBase {
         }
 
         /** {@inheritDoc} */
-        @Override public double getCost(Session ses, int[] masks) {
+        @Override public double getCost(Session ses, int[] masks, TableFilter tblFilter, SortOrder sortOrder) {
             return getRowCountApproximation() + Constants.COST_ROW_OFFSET;
         }
 
