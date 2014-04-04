@@ -40,7 +40,7 @@ package org.gridgain.visor.commands
  * {{{
  *     cache
  *     cache -i
- *     cache {-c=<name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}
+ *     cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}
  *     cache -clear {-c=<cache-name>}
  *     cache -compact {-c=<cache-name>}
  *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}
@@ -56,9 +56,8 @@ package org.gridgain.visor.commands
  *         ID8 of the node to get cache statistics from.
  *         Either '-id8' or '-id' can be specified.
  *         If neither is specified statistics will be gathered from all nodes.
- *     -c=<name>
+ *     -c=<cache-name>
  *         Name of the cache.
- *         By default - statistics for all caches will be printed.
  *     -s=lr|lw|hi|mi|re|wr|cn
  *         Defines sorting type. Sorted by:
  *            lr Last read.
@@ -100,17 +99,23 @@ package org.gridgain.visor.commands
  *         Prints cache statistics for interactively selected node.
  *     cache -s=hi -r -a
  *         Prints detailed statistics about all caches sorted by number of hits in reverse order.
+ *     cache -compact
+ *         Compacts entries in interactively selected cache.
  *     cache -compact -c=cache
  *         Compacts entries in cache with name 'cache'.
+ *     cache -clear
+ *         Clears interactively selected cache.
  *     cache -clear -c=cache
  *         Clears cache with name 'cache'.
+ *     cache -scan
+ *         Prints list entries from interactively selected cache.
  *     cache -scan -c=cache
- *         List entries from cache with name 'cache' from all nodes with this cache.
- *     cache -c=@c0 -scan -p=50
- *         List entries from cache with name taken from 'c0' memory variable
+ *         Prints list entries from cache with name 'cache' from all nodes with this cache.
+ *     cache -scan -c=@c0 -p=50
+ *         Prints list entries from cache with name taken from 'c0' memory variable
  *         with page of 50 items from all nodes with this cache.
- *     cache -c=cache -scan -id8=12345678
- *         List entries from cache with name 'cache' and node '12345678' ID8.
+ *     cache -scan -c=cache -id8=12345678
+ *         Prints list entries from cache with name 'cache' and node '12345678' ID8.
  * }}}
  */
 package object cache
