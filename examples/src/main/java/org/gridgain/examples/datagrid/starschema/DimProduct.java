@@ -19,7 +19,7 @@ import org.gridgain.grid.cache.query.*;
  */
 public class DimProduct {
     /** Primary key. */
-    @GridCacheQuerySqlField(unique = true)
+    @GridCacheQuerySqlField(index = true)
     private int id;
 
     /** Product name. */
