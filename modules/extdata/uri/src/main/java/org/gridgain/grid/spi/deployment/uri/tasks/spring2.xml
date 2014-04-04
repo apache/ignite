@@ -1,0 +1,35 @@
+<!--
+    @xml.file.header
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+-->
+
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+
+<!--
+    Spring configuration file for test classes in gar-file.
+-->
+<beans>
+    <description>Spring configuration file for test GridUriDeploymentTestTask2.</description>
+
+    <bean id="task.cfg" class="java.util.HashMap">
+        <constructor-arg>
+            <!--
+                Note: all keys hardcoded in test.
+            -->
+            <map>
+                <entry>
+                    <key><value>testKey1</value></key>
+                    <value>testValue1</value>
+                </entry>
+                <entry>
+                    <key><value>testKey2</value></key>
+                    <value>testValue2</value>
+                </entry>
+            </map>
+        </constructor-arg>
+    </bean>
+</beans>
