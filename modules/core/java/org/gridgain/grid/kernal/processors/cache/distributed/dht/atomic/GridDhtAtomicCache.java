@@ -957,6 +957,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         for (int i = 0; i < locked.size(); i++) {
             GridDhtCacheEntry<K, V> entry = locked.get(i);
 
+            if (entry == null)
+                continue;
+
             try {
                 if (!checkFilter(entry, req, res)) {
                     if (log.isDebugEnabled())
@@ -1149,6 +1152,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             // No GridCacheEntryRemovedException can be thrown.
             try {
                 GridDhtCacheEntry<K, V> entry = locked.get(i);
+
+                if (entry == null)
+                    continue;
 
                 GridCacheVersion newDrVer = req.drVersion(i);
                 long newDrTtl = req.drTtl(i);
@@ -1484,14 +1490,23 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             K key = keys.get(0);
 
             while (true) {
-                GridDhtCacheEntry<K, V> entry = entryExx(key, topVer);
+                try {
+                    GridDhtCacheEntry<K, V> entry = entryExx(key, topVer);
 
-                UNSAFE.monitorEnter(entry);
+                    UNSAFE.monitorEnter(entry);
 
-                if (entry.obsolete())
-                    UNSAFE.monitorExit(entry);
-                else
-                    return Collections.singletonList(entry);
+                    if (entry.obsolete())
+                        UNSAFE.monitorExit(entry);
+                    else
+                        return Collections.singletonList(entry);
+                }
+                catch (GridDhtInvalidPartitionException e) {
+                    // Ignore invalid partition exception in CLOCK ordering mode.
+                    if (ctx.config().getAtomicWriteOrderMode() == CLOCK)
+                        return Collections.singletonList(null);
+                    else
+                        throw e;
+                }
             }
         }
         else {
@@ -1499,30 +1514,48 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             while (true) {
                 for (K key : keys) {
-                    GridDhtCacheEntry<K, V> entry = entryExx(key, topVer);
+                    try {
+                        GridDhtCacheEntry<K, V> entry = entryExx(key, topVer);
 
-                    locked.add(entry);
+                        locked.add(entry);
+                    }
+                    catch (GridDhtInvalidPartitionException e) {
+                        // Ignore invalid partition exception in CLOCK ordering mode.
+                        if (ctx.config().getAtomicWriteOrderMode() == CLOCK)
+                            locked.add(null);
+                        else
+                            throw e;
+                    }
                 }
+
+                boolean retry = false;
 
                 for (int i = 0; i < locked.size(); i++) {
                     GridCacheMapEntry<K, V> entry = locked.get(i);
+
+                    if (entry == null)
+                        continue;
 
                     UNSAFE.monitorEnter(entry);
 
                     if (entry.obsolete()) {
                         // Unlock all locked.
-                        for (int j = 0; j <= i; j++)
-                            UNSAFE.monitorExit(locked.get(j));
+                        for (int j = 0; j <= i; j++) {
+                            if (locked.get(j) != null)
+                                UNSAFE.monitorExit(locked.get(j));
+                        }
 
                         // Clear entries.
                         locked.clear();
 
                         // Retry.
+                        retry = true;
+
                         break;
                     }
                 }
 
-                if (!locked.isEmpty())
+                if (!retry)
                     return locked;
             }
         }
@@ -1542,7 +1575,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         Collection<K> skip = null;
 
         for (GridCacheMapEntry<K, V> entry : locked) {
-            if (entry.deleted()) {
+            if (entry != null && entry.deleted()) {
                 if (skip == null)
                     skip = new HashSet<>(locked.size(), 1.0f);
 
@@ -1551,8 +1584,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
 
         // Release locks.
-        for (GridCacheMapEntry<K, V> entry : locked)
-            UNSAFE.monitorExit(entry);
+        for (GridCacheMapEntry<K, V> entry : locked) {
+            if (entry != null)
+                UNSAFE.monitorExit(entry);
+        }
 
         if (skip != null && skip.size() == locked.size())
             // Optimization.
@@ -1561,7 +1596,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         // Must touch all entries since update may have deleted entries.
         // Eviction manager will remove empty entries.
         for (GridCacheMapEntry<K, V> entry : locked) {
-            if (skip == null || !skip.contains(entry.key()))
+            if (entry != null && (skip == null || !skip.contains(entry.key())))
                 ctx.evicts().touch(entry, topVer);
         }
     }
