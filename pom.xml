@@ -32,6 +32,8 @@
 
     <modules>
         <module>modules/core</module>
+        <module>modules/extdata/p2p</module>
+        <module>modules/extdata/uri</module>
         <module>modules/clients</module>
         <module>examples</module>
         <module>modules/scalar</module>
@@ -39,4 +41,12 @@
         <module>modules/jdbc-driver</module>
         <module>modules/jdk8-backport</module>
     </modules>
+
+    <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/java</directory>
+            </testResource>
+        </testResources>
+    </build>
 </project>

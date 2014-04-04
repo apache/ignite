@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<!--
+  - Primary file system configuration for shmem tests.
+-->
+<configuration>
+    <property>
+        <name>fs.default.name</name>
+        <value>ggfs://primary/</value>
+    </property>
+
+    <property>
+        <name>fs.ggfs.impl</name>
+        <value>org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem</value>
+    </property>
+
+    <property>
+        <name>fs.AbstractFileSystem.ggfs.impl</name>
+        <value>org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem</value>
+    </property>
+
+    <property>
+        <name>fs.ggfs.primary.endpoint.type</name>
+        <value>shmem</value>
+    </property>
+
+    <property>
+        <name>fs.ggfs.primary.endpoint.port</name>
+        <value>10500</value>
+    </property>
+</configuration>

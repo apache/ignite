@@ -21,8 +21,12 @@ namespace GridGain.Client {
     /**
      * <summary>
      * This example demonstrates use of C# remote Compute Client API. To execute
-     * this example you should start an instance of <c>GridClientExampleNodeStartup</c>
+     * this example you should start an instance of <c>ClientExampleNodeStartup</c>
      * Java class which will start up a GridGain node with proper configuration.
+     * <para/>
+     * Note that this example requires <c>org.gridgain.examples.misc.client.api.ClientExampleTask</c>
+     * class to be present in remote nodes' classpath, so you cannot start remote nodes with default
+     * <c>ggstart.{sh|bat}</c> script.
      * <para/>
      * After node has been started this example creates a client and executes few test tasks.
      * <para/>
@@ -36,8 +40,7 @@ namespace GridGain.Client {
 
         /**
          * <summary>
-         * Starts up an empty node with specified cache configuration, then runs client cache example and client
-         * compute example.</summary>
+         * Starts up an empty node with specified configuration, then runs client compute example.</summary>
          *
          * <exception cref="GridClientException">If failed.</exception>
          */
@@ -174,24 +177,13 @@ namespace GridGain.Client {
         /**
          * <summary>
          * This method will create a client with default configuration. Note that this method expects that
-         * first node will bind rest binary protocol on default port. It also expects that partitioned cache is
-         * configured in grid.</summary>
+         * first node will bind rest binary protocol on default port.</summary>
          *
          * <returns>Client instance.</returns>
          * <exception cref="GridClientException">If client could not be created.</exception>
          */
         private static IGridClient CreateClient() {
-            var cacheCfg = new GridClientDataConfiguration();
-
-            // Set remote cache name.
-            cacheCfg.Name = "partitioned";
-
-            // Set client partitioned affinity for this cache.
-            cacheCfg.Affinity = new GridClientPartitionAffinity();
-
             var cfg = new GridClientConfiguration();
-
-            cfg.DataConfigurations.Add(cacheCfg);
 
             // Point client to a local node. Note that this server is only used
             // for initial connection. After having established initial connection
