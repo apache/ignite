@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd">
+
+    <description>Main Spring file for Worker grid configuration.</description>
+
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+        <property name="restEnabled" value="false"/>
+
+        <property name="localHost" value="127.0.0.1"/>
+
+        <property name="networkTimeout" value="20000"/>
+
+        <!--
+            Events and Performance
+            Note that by default all events in GridGain are enabled and therefore generated and stored by
+            whatever event storage SPI is configured. GridGain can and often does generate thousands events per
+            seconds under the load and therefore it creates a significant additional load on the system. If
+            these events are not needed by the application this load is unnecessary and leads to significant
+            performance degradation.
+
+            It is highly recommended to enable only those events that your application logic requires by using
+            either GridConfiguration.getExcludeEventTypes() orGridConfiguration.getIncludeEventTypes() methods
+            in GridGain configuration. Note that certain events are required for GridGain's internal operations
+            and such events will still be generated but not stored by event storage SPI if they are disabled in
+            GridGain configuration.
+        -->
+        <property name="includeEventTypes">
+            <list/>
+        </property>
+
+        <!-- Disable cache. -->
+        <property name="cacheConfiguration">
+            <list/>
+        </property>
+
+        <!-- Disable properties. -->
+        <property name="includeProperties">
+            <list/>
+        </property>
+
+        <!-- Disable pools -->
+        <property name="executorService">
+            <bean class="org.gridgain.grid.thread.GridThreadPoolExecutor">
+                <constructor-arg type="int" value="100"/>
+                <constructor-arg type="int" value="100"/>
+                <constructor-arg type="long">
+                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
+                </constructor-arg>
+                <constructor-arg type="java.util.concurrent.BlockingQueue">
+                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
+                </constructor-arg>
+            </bean>
+        </property>
+
+        <property name="systemExecutorService">
+            <bean class="org.gridgain.grid.thread.GridThreadPoolExecutor">
+                <constructor-arg type="int" value="100"/>
+                <constructor-arg type="int" value="100"/>
+                <constructor-arg type="long">
+                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
+                </constructor-arg>
+                <constructor-arg type="java.util.concurrent.BlockingQueue">
+                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
+                </constructor-arg>
+            </bean>
+        </property>
+
+        <property name="peerClassLoadingExecutorService">
+            <bean class="org.gridgain.grid.thread.GridThreadPoolExecutor">
+                <constructor-arg type="int" value="100"/>
+                <constructor-arg type="int" value="100"/>
+                <constructor-arg type="long">
+                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
+                </constructor-arg>
+                <constructor-arg type="java.util.concurrent.BlockingQueue">
+                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
+                </constructor-arg>
+            </bean>
+        </property>
+
+        <!-- Discovery SPI configuration. -->
+        <property name="discoverySpi">
+            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+                <property name="networkTimeout" value="20000"/>
+                <property name="socketTimeout" value="5000"/>
+                <property name="ackTimeout" value="5000"/>
+
+                <property name="heartbeatFrequency" value="10000"/>
+                <property name="maxMissedHeartbeats" value="6"/>
+
+                <property name="statisticsPrintFrequency" value="60000"/>
+
+                <property name="ipFinder">
+                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>127.0.0.1:47500</value>
+                                <value>127.0.0.1:47501</value>
+                                <value>127.0.0.1:47502</value>
+                                <value>127.0.0.1:47503</value>
+                                <value>127.0.0.1:47504</value>
+                                <value>127.0.0.1:47505</value>
+                                <value>127.0.0.1:47506</value>
+                                <value>127.0.0.1:47507</value>
+                                <value>127.0.0.1:47508</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+
+        <property name="loadBalancingSpi">
+            <bean class="org.gridgain.grid.spi.loadbalancing.roundrobin.GridRoundRobinLoadBalancingSpi">
+                <property name="perTask" value="false"/>
+            </bean>
+        </property>
+    </bean>
+</beans>

@@ -174,7 +174,7 @@ object ScalarSnowflakeSchemaExample {
  * @param addr Address.
  */
 class DimStore(
-    @ScalarCacheQuerySqlField(unique = true)
+    @ScalarCacheQuerySqlField
     val id: Int,
     @ScalarCacheQuerySqlField
     val name: String,
@@ -207,7 +207,7 @@ class DimStore(
  * @param qty Available product quantity.
  */
 class DimProduct(
-    @ScalarCacheQuerySqlField(unique = true)
+    @ScalarCacheQuerySqlField
     val id: Int,
     val name: String,
     @ScalarCacheQuerySqlField
