@@ -18,11 +18,10 @@ import org.jetbrains.annotations.*;
 import org.w3c.dom.*;
 import org.w3c.dom.Node;
 import org.w3c.tidy.*;
+
 import java.io.*;
 import java.net.*;
 import java.util.concurrent.*;
-
-import static org.gridgain.grid.kernal.GridProductImpl.*;
 
 /**
  * This class is responsible for notification about new version availability. Note that this class
@@ -31,7 +30,6 @@ import static org.gridgain.grid.kernal.GridProductImpl.*;
  * <p>
  * Note also that this connectivity is not necessary to successfully start the system as it will
  * gracefully ignore any errors occurred during notification and verification process.
- * See {@link #HTTP_URL} for specific access URL used.
  */
 class GridUpdateNotifier {
     /*
@@ -42,8 +40,7 @@ class GridUpdateNotifier {
      * *********************************************************
      */
     /** Access URL to be used to access latest version data. */
-    private static final String HTTP_URL =
-        /*@java.update.status.url*/"http://www.gridgain.org/update_status.php?test=vfvfvskfkeievskjv";
+    private static final String URL_SUFFIX = /*@java.update.status.url*/"/update_status.php?test=vfvfvskfkeievskjv";
 
     /** Throttling for logging out. */
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.
@@ -53,6 +50,9 @@ class GridUpdateNotifier {
 
     /** Edition name. */
     private final String edition;
+
+    /** Site. */
+    private final String url;
 
     /** Asynchronous checked. */
     private GridWorker checker;
@@ -82,10 +82,12 @@ class GridUpdateNotifier {
      * Creates new notifier with default values.
      *
      * @param gridName gridName
+     * @param edition GridGain edition.
      * @param ver Compound GridGain version.
+     * @param site Site.
      * @param reportOnlyNew Whether or not to report only new version.
      */
-    GridUpdateNotifier(String gridName, String ver, boolean reportOnlyNew) {
+    GridUpdateNotifier(String gridName, String edition, String ver, String site, boolean reportOnlyNew) {
         tidy = new Tidy();
 
         tidy.setQuiet(true);
@@ -95,7 +97,9 @@ class GridUpdateNotifier {
         tidy.setOutputEncoding("UTF8");
 
         this.ver = ver;
-        edition = EDITION;
+        this.edition = edition;
+
+        url = "http://" + site + URL_SUFFIX;
 
         this.gridName = gridName;
         this.reportOnlyNew = reportOnlyNew;
@@ -130,7 +134,7 @@ class GridUpdateNotifier {
     }
 
     /**
-     * Starts asynchronous process for retrieving latest version data from {@link #HTTP_URL}.
+     * Starts asynchronous process for retrieving latest version data.
      *
      * @param exec Executor service.
      * @param log Logger.
@@ -226,8 +230,8 @@ class GridUpdateNotifier {
             try {
                 GridProductLicense lic = licProc != null ? licProc.license() : null;
 
-                URLConnection conn = new URL(HTTP_URL +
-                    (HTTP_URL.endsWith(".php") ? '?' : '&') +
+                URLConnection conn = new URL(url +
+                    (url.endsWith(".php") ? '?' : '&') +
                     (topSize > 0 ? "t=" + topSize + "&" : "") +
                     (lic != null ? "l=" + lic.id() + "&" : "") +
                     "p=" + gridName)

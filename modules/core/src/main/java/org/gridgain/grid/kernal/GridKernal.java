@@ -592,7 +592,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         final GridUpdateNotifier verChecker;
 
         if (notifyEnabled) {
-            verChecker = new GridUpdateNotifier(gridName, COMPOUND_VERSION, false);
+            verChecker = new GridUpdateNotifier(gridName, EDITION, VER, SITE, false);
 
             verChecker.checkForNewVersion(cfg.getExecutorService(), log);
         }

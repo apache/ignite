@@ -26,14 +26,83 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    public void testNotifier() throws Exception {
-        final GridUpdateNotifier ntf = new GridUpdateNotifier(null, "platform-ent-x.x.x", false);
+    public void testPlatformEnt() throws Exception {
+        testNotifier("platform", true);
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testPlatformOs() throws Exception {
+        testNotifier("platform", false);
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testDataGridEnt() throws Exception {
+        testNotifier("datagrid", true);
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testDataGridOs() throws Exception {
+        testNotifier("datagrid", false);
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testHadoopEnt() throws Exception {
+        testNotifier("hadoop", true);
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testHadoopOs() throws Exception {
+        testNotifier("hadoop", false);
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testStreamingEnt() throws Exception {
+        testNotifier("streaming", true);
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testStreamingOs() throws Exception {
+        testNotifier("streaming", false);
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testMongoEnt() throws Exception {
+        testNotifier("mongo", true);
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testMongoOs() throws Exception {
+        testNotifier("mongo", false);
+    }
+
+    private void testNotifier(String edition, boolean ent) throws Exception {
+        String site = "www.gridgain." + (ent ? "com" : "org");
+
+        GridUpdateNotifier ntf = new GridUpdateNotifier(null, edition, "x.x.x", site, false);
 
         ntf.checkForNewVersion(new SelfExecutor(), log);
 
         String ver = ntf.latestVersion();
 
-        info("Latest version: " + ver);
+        info("Latest " + edition + " version: " + ver);
 
         assertNotNull("GridGain latest version has not been detected.", ver);
 
