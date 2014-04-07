@@ -44,7 +44,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** Protocols. */
     private final Collection<GridRestProtocol> protos = new ArrayList<>();
 
-    /**  Command handlers. */
+    /** Command handlers. */
     private final Collection<GridRestCommandHandler> handlers = new ArrayList<>();
 
     /** */
