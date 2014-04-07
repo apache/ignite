@@ -1125,6 +1125,8 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                         hasJob = false;
                     }
 
+                    final long topVer = cctx.discovery().topologyVersion();
+
                     GridCacheAdapter cache = cctx.cache();
 
                     Map<GridUuid, GridCacheQueueHeader> aliveQueues = new GridLeanMap<>();
@@ -1138,7 +1140,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                     Set<GridCacheEntryEx<Object, Object>> entries = cache.map().allEntries0();
 
                     for (GridCacheEntryEx<Object, Object> entry : entries) {
-                        if (!processEntry(entry))
+                        if (!processEntry(entry, topVer))
                             continue;
 
                         GridCacheQueueItemKey key = (GridCacheQueueItemKey)entry.key();
@@ -1214,17 +1216,19 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
         /**
          * @param e Cache entry.
+         * @param topVer Topology version.
          * @return {@code True} if this worker should process given entry.
          */
         @SuppressWarnings("IfMayBeConditional")
-        private boolean processEntry(GridCacheEntryEx<Object, Object> e) {
+        private boolean processEntry(GridCacheEntryEx<Object, Object> e, long topVer) {
             if (!(e.key() instanceof GridCacheQueueItemKey))
                 return false;
 
             if (cctx.isLocal())
                 return e.key().hashCode() % workersCnt == idx;
             else
-                return cctx.affinity().primary(cctx.localNode(), e.partition()) && e.partition() % workersCnt == idx;
+                return cctx.affinity().primary(cctx.localNode(), e.partition(), topVer) &&
+                    e.partition() % workersCnt == idx;
         }
 
         /**
