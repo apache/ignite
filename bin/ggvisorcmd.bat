@@ -74,13 +74,14 @@ if /i "%GRIDGAIN_HOME%\os\bin\" == "%~dp0" goto run
 
 :: This is Ant-augmented variable.
 set ANT_AUGMENTED_GGJAR=gridgain.jar
+set ANT_AUGMENTED_GGEXJAR=gridgain-examples.jar
 
 ::
 :: Set GRIDGAIN_LIBS
 ::
 call "%GRIDGAIN_HOME%\os\bin\include\setenv.bat"
 
-set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\%ANT_AUGMENTED_GGJAR%
+set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\%ANT_AUGMENTED_GGJAR%;%GRIDGAIN_HOME%\%ANT_AUGMENTED_GGEXJAR%
 set CP=%CP%;%GRIDGAIN_HOME%\os\modules\visor-console\libs\*
 ::
 :: Parse command line parameters.

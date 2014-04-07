@@ -55,8 +55,9 @@ GRIDGAIN_LIBS=${USER_LIBS}${SEP}${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/config/us
 # Set property JAR name during the Ant build.
 #
 ANT_AUGMENTED_GGJAR=gridgain.jar
+ANT_AUGMENTED_GGEXJAR=gridgain-examples.jar
 
-GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/${ANT_AUGMENTED_GGJAR}
+GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${GRIDGAIN_HOME}/${ANT_AUGMENTED_GGJAR}${SEP}${GRIDGAIN_HOME}/${ANT_AUGMENTED_GGEXJAR}
 
 # Uncomment if using JBoss.
 # JBOSS_HOME must point to JBoss installation folder.

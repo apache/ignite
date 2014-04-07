@@ -83,15 +83,16 @@ if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 
 :run
 
-:: This is Ant-augmented variable.
+:: This is Ant-augmented variables.
 set ANT_AUGMENTED_GGJAR=gridgain.jar
+set ANT_AUGMENTED_GGEXJAR=gridgain-examples.jar
 
 ::
 :: Set GRIDGAIN_LIBS
 ::
 call "%GRIDGAIN_HOME%\os\bin\include\setenv.bat"
 
-set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\%ANT_AUGMENTED_GGJAR%
+set CP=%GRIDGAIN_LIBS%;%GRIDGAIN_HOME%\%ANT_AUGMENTED_GGJAR%;%GRIDGAIN_HOME%\%ANT_AUGMENTED_GGEXJAR%
 
 ::
 :: Parse command line parameters.
