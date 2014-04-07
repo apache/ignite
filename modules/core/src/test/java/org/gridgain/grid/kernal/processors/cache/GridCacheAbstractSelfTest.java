@@ -339,7 +339,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @return {@code True} if key belongs to node with index idx.
      */
     protected boolean belongs(String key, int idx) {
-        return context(idx).affinity().localNode(key);
+        return context(idx).cache().affinity().isPrimaryOrBackup(context(idx).localNode(), key);
     }
 
     /**

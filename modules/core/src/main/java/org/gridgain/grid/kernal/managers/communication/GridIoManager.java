@@ -73,6 +73,9 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
     /** Internal management pool. */
     private ExecutorService mgmtPool;
 
+    /** Affinity assignment executor service. */
+    private ExecutorService affPool;
+
     /** Internal DR pool. */
     private ExecutorService drPool;
 
@@ -161,6 +164,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         sysPool = ctx.config().getSystemExecutorService();
         mgmtPool = ctx.config().getManagementExecutorService();
         drPool = ctx.drPool();
+        affPool = Executors.newFixedThreadPool(1);
 
         getSpi().setListener(commLsnr = new GridCommunicationListener<Serializable>() {
             @Override public void onMessage(UUID nodeId, Serializable msg, GridRunnable msgC) {
@@ -353,6 +357,8 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
 
         busyLock.writeLock();
 
+        U.shutdownNow(getClass(), affPool, log);
+
         boolean interrupted = false;
 
         while (workersCnt.sum() != 0) {
@@ -458,6 +464,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
                 case PUBLIC_POOL:
                 case SYSTEM_POOL:
                 case MANAGEMENT_POOL:
+                case AFFINITY_POOL:
                 case DR_POOL: {
                     if (msg.isOrdered())
                         processOrderedMessage(node, msg, plc, msgC);
@@ -492,6 +499,8 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
                 return pubPool;
             case MANAGEMENT_POOL:
                 return mgmtPool;
+            case AFFINITY_POOL:
+                return affPool;
             case DR_POOL:
                 assert drPool != null : "DR pool is not configured.";
 

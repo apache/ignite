@@ -650,12 +650,14 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         cache.lock(key, 0);
 
         try {
+            long topVer = grid(0).topologyVersion();
+
             GridNearCacheEntry<Integer, String> nearEntry1 = nearEntry(0, key);
 
             info("Peeked entry after lock [hash=" + hash(nearEntry1) + ", nearEntry=" + nearEntry1 + ']');
 
             assertNotNull(nearEntry1);
-            assertTrue("Invalid near entry: " + nearEntry1, nearEntry1.valid(-1));
+            assertTrue("Invalid near entry: " + nearEntry1, nearEntry1.valid(topVer));
 
             assertTrue(cache.isLocked(key));
             assertTrue(cache.isLockedByThread(key));
@@ -669,7 +671,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             assert nearEntry1 == nearEntry2;
 
             assertNotNull(nearEntry2);
-            assertTrue("Invalid near entry [hash=" + nearEntry2, nearEntry2.valid(-1));
+            assertTrue("Invalid near entry [hash=" + nearEntry2, nearEntry2.valid(topVer));
 
             assertEquals(val, cache.peek(key));
             assertEquals(val, dht(0).peek(key));
@@ -682,7 +684,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             assert nearEntry2 == nearEntry3;
 
             assertNotNull(nearEntry3);
-            assertTrue("Invalid near entry: " + nearEntry3, nearEntry3.valid(-1));
+            assertTrue("Invalid near entry: " + nearEntry3, nearEntry3.valid(topVer));
 
             assertNotNull(near(0).peekNearOnly(key));
             assertNull(near(1).peekNearOnly(key));
