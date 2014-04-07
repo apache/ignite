@@ -106,7 +106,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     /**
      * @throws Exception If failed.
      */
-    public void _testAddFailoverCollocated() throws Exception {
+    public void testAddFailoverCollocated() throws Exception {
         testAddFailover(true);
     }
 
