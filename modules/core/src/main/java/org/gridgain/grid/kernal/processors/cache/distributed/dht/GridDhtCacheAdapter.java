@@ -318,9 +318,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @throws GridDhtInvalidPartitionException if entry does not belong to this node and
      *      {@code allowDetached} is {@code false}.
      */
-    public GridCacheEntryEx<K, V> entryExx(K key, boolean allowDetached, boolean touch) {
+    public GridCacheEntryEx<K, V> entryExx(K key, long topVer, boolean allowDetached, boolean touch) {
         try {
-            return allowDetached && !ctx.affinity().localNode(key) ?
+            return allowDetached && !ctx.affinity().localNode(key, topVer) ?
                 new GridDhtDetachedCacheEntry<>(ctx, key, key.hashCode(), null, null, 0, 0) :
                 entryEx(key, touch);
         }
@@ -345,6 +345,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final boolean replicate = ctx.isDrEnabled();
 
+        final long topVer = ctx.affinity().affinityTopologyVersion();
+
         ctx.store().loadCache(new CI3<K, V, GridCacheVersion>() {
             @Override public void apply(K key, V val, @Nullable GridCacheVersion ver) {
                 assert ver == null;
@@ -362,7 +364,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         try {
                             entry = entryEx(key, false);
 
-                            entry.initialValue(val, null, ver0, ttl, -1, false, replicate ? DR_LOAD : DR_NONE);
+                            entry.initialValue(val, null, ver0, ttl, -1, false, topVer, replicate ? DR_LOAD : DR_NONE);
                         }
                         catch (GridException e) {
                             throw new GridRuntimeException("Failed to put cache value: " + entry, e);
@@ -373,7 +375,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         }
                         finally {
                             if (entry != null)
-                                entry.context().evicts().touch(entry);
+                                entry.context().evicts().touch(entry, topVer);
 
                             part.release();
                         }
@@ -394,8 +396,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     @Override public int primarySize() {
         int sum = 0;
 
+        long topVer = ctx.affinity().affinityTopologyVersion();
+
         for (GridDhtLocalPartition<K, V> p : topology().currentLocalPartitions()) {
-            if (p.primary())
+            if (p.primary(topVer))
                 sum += p.publicSize();
         }
 

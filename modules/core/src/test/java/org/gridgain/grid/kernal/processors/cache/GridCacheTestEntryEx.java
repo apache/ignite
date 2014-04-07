@@ -405,15 +405,14 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public V innerReload(
-        GridPredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override public V innerReload(GridPredicate<GridCacheEntry<K, V>>[] filter) {
         return val;
     }
 
     /** @inheritDoc */
     @Override public GridCacheUpdateTxResult<V> innerSet(@Nullable GridCacheTxEx<K, V> tx, UUID evtNodeId, UUID affNodeId,
         @Nullable V val, @Nullable byte[] valBytes, boolean writeThrough, boolean retval, long ttl,
-        boolean evt, boolean metrics, GridPredicate<GridCacheEntry<K, V>>[] filter, GridDrType drType,
+        boolean evt, boolean metrics, long topVer, GridPredicate<GridCacheEntry<K, V>>[] filter, GridDrType drType,
         long drExpireTime, @Nullable GridCacheVersion drVer) throws GridException,
         GridCacheEntryRemovedException {
         return new GridCacheUpdateTxResult<>(true, rawPut(val, ttl));
@@ -430,16 +429,16 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     @Override public GridCacheUpdateAtomicResult<K, V> innerUpdate(
         GridCacheVersion ver, UUID evtNodeId, UUID affNodeId, GridCacheOperation op, @Nullable Object val,
         @Nullable byte[] valBytes, boolean writeThrough, boolean retval, long ttl, boolean evt,
-        boolean metrics, boolean primary, boolean checkVer,
-        @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter, GridDrType drType, long drTtl,
-        long drExpireTime, @Nullable GridCacheVersion drVer, boolean drResolve) throws GridException,
+        boolean metrics, boolean primary, boolean checkVer, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter,
+        GridDrType drType, long drTtl, long drExpireTime, @Nullable GridCacheVersion drVer, boolean drResolve)
+        throws GridException,
         GridCacheEntryRemovedException {
         return new GridCacheUpdateAtomicResult<>(true, rawPut((V)val, 0), (V)val, 0L, 0L, null, null, true);
     }
 
     /** @inheritDoc */
     @Override public GridCacheUpdateTxResult<V> innerRemove(@Nullable GridCacheTxEx<K, V> tx, UUID evtNodeId, UUID affNodeId,
-        boolean writeThrough, boolean retval, boolean evt, boolean metrics,
+        boolean writeThrough, boolean retval, boolean evt, boolean metrics, long topVer,
         GridPredicate<GridCacheEntry<K, V>>[] filter, GridDrType drType, @Nullable GridCacheVersion drVer)
         throws GridException, GridCacheEntryRemovedException {
         obsoleteVer = ver;
@@ -564,7 +563,8 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
 
     /** @inheritDoc */
     @Override public boolean initialValue(V val, @Nullable byte[] valBytes, GridCacheVersion ver, long ttl,
-        long expireTime, boolean preload, GridDrType drType) throws GridException, GridCacheEntryRemovedException {
+        long expireTime, boolean preload, long topVer, GridDrType drType) throws GridException,
+        GridCacheEntryRemovedException {
         assert false; return false;
     }
 

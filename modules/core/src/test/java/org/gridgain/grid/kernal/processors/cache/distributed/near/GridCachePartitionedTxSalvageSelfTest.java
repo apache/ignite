@@ -231,10 +231,12 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     private Collection<Integer> nearKeys(Grid grid) {
         final Collection<Integer> keys = new ArrayList<>(KEY_CNT);
 
-        GridCacheAffinityManager<Object, Object> affMgr = ((GridKernal)grid).internalCache().context().affinity();
+        GridKernal kernal = (GridKernal)grid;
+
+        GridCacheAffinityManager<Object, Object> affMgr = kernal.internalCache().context().affinity();
 
         for (int i = 0; i < KEY_CNT * GRID_CNT * 1.5; i++) {
-            if (!affMgr.localNode((Object)i)) {
+            if (!affMgr.localNode((Object)i, kernal.context().discovery().topologyVersion())) {
                 keys.add(i);
 
                 if (keys.size() == KEY_CNT)

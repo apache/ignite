@@ -74,6 +74,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         ccfg.setCacheMode(PARTITIONED);
 
         ccfg.setBackups(1);
+        ccfg.setStoreValueBytes(false);
         ccfg.setAtomicWriteOrderMode(writeOrder);
         ccfg.setWriteSynchronizationMode(writeSync);
 
@@ -200,7 +201,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             Random rnd = new Random();
 
             // Restart random nodes.
-            for (int r = 0; r < 30; r++) {
+            for (int r = 0; r < 20; r++) {
                 int idx0 = rnd.nextInt(gridCnt - 1) + 1;
 
                 stopGrid(idx0);
@@ -260,7 +261,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                                 }
                             }
                             else
-                                assertNull(entry);
+                                assertTrue("Invalid entry: " + entry, entry == null || !entry.partitionValid());
                         }
                         catch (AssertionError e) {
                             if (r == 2)
@@ -289,7 +290,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             throws GridSpiException {
             try {
                 if (delayMessage((GridIoMessage)msg))
-                    U.sleep(ThreadLocalRandom8.current().nextInt(250));
+                    U.sleep(ThreadLocalRandom8.current().nextInt(250) + 1);
             }
             catch (GridInterruptedException e) {
                 throw new GridSpiException(e);

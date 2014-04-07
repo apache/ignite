@@ -237,18 +237,18 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
 
     /** {@inheritDoc} */
     @Override @Nullable protected GridFuture<Boolean> addReader(long msgId, GridDhtCacheEntry<K, V> cached,
-        GridCacheTxEntry<K, V> entry) {
+        GridCacheTxEntry<K, V> entry, long topVer) {
         // Don't add local node as reader.
         if (!cctx.nodeId().equals(nearNodeId)) {
             while (true) {
                 try {
-                    return cached.addReader(nearNodeId, msgId);
+                    return cached.addReader(nearNodeId, msgId, topVer);
                 }
                 catch (GridCacheEntryRemovedException ignore) {
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry when adding to DHT local transaction: " + cached);
 
-                    cached = cctx.dht().entryExx(entry.key());
+                    cached = cctx.dht().entryExx(entry.key(), topVer);
                 }
             }
         }

@@ -389,7 +389,12 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Override public long topologyVersion() {
-        return topVer.get();
+        long res = topVer.get();
+
+        if (res == -1)
+            return cctx.affinity().affinityTopologyVersion();
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -1065,7 +1070,14 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         else {
             try {
                 V val = txEntry.hasValue() ? txEntry.value() :
-                    txEntry.cached().innerGet(this, false, false, true, true, metrics, false, CU.<K, V>empty());
+                    txEntry.cached().innerGet(this,
+                        /*swap*/false,
+                        /*read through*/false,
+                        /*fail fast*/true,
+                        /*unmarshal*/true,
+                        /*metrics*/metrics,
+                        /*event*/false,
+                        CU.<K, V>empty());
 
                 for (GridClosure<V, V> clos : txEntry.transformClosures())
                     val = clos.apply(val);
@@ -1153,7 +1165,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         int part = cached != null ? cached.partition() : cctx.affinity().partition(e.key());
 
-        Collection<GridNode> affNodes = cctx.affinity().nodes(part);
+        Collection<GridNode> affNodes = cctx.affinity().nodes(part, topologyVersion());
 
         e.locallyMapped(F.contains(affNodes, cctx.localNode()));
 

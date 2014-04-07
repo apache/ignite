@@ -10,6 +10,7 @@
 package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
+import org.gridgain.grid.cache.affinity.fair.*;
 import org.gridgain.grid.cache.hibernate.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.cache.store.hibernate.*;
@@ -36,6 +37,9 @@ public class GridDataGridTestSuite extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain In-Memory Data Grid Test Suite");
+
+        // Affinity tests.
+        suite.addTestSuite(GridCachePartitionFairAffinityNodesSelfTest.class);
 
         // Swap tests.
         suite.addTestSuite(GridCacheSwapPreloadSelfTest.class);

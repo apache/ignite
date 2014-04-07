@@ -229,7 +229,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
         // Validate only original node is available.
         GridDiscoveryManager discoMgr = ((GridKernal)grid).context().discovery();
 
-        Collection<GridNode> nodes = discoMgr.nodes();
+        Collection<GridNode> nodes = discoMgr.allNodes();
 
         assert nodes.size() == 1 : "Expects only original node is available: " + nodes;
 

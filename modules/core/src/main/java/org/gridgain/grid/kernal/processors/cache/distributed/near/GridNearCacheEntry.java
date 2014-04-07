@@ -74,6 +74,8 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean valid(long topVer) {
+        assert topVer > 0 : "Topology version is invalid: " + topVer;
+
         UUID primaryNodeId = this.primaryNodeId;
 
         if (primaryNodeId == null)
@@ -86,9 +88,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         }
 
         // Make sure that primary node is alive before returning this value.
-        GridNode primary = topVer > 0 ?
-            cctx.affinity().primary(key(), topVer) :
-            cctx.affinity().primary(key());
+        GridNode primary = cctx.affinity().primary(key(), topVer);
 
         if (primary != null && primary.id().equals(primaryNodeId))
             return true;
@@ -328,9 +328,9 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     @SuppressWarnings({"RedundantTypeArguments"})
     public boolean loadedValue(@Nullable GridCacheTxEx tx, UUID primaryNodeId, V val, byte[] valBytes,
         GridCacheVersion ver, GridCacheVersion dhtVer, @Nullable GridCacheVersion expVer, long ttl, long expireTime,
-        boolean evt)
+        boolean evt, long topVer)
         throws GridException, GridCacheEntryRemovedException {
-        boolean valid = valid(tx != null ? tx.topologyVersion() : -1);
+        boolean valid = valid(tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion());
 
         if (valBytes != null && val == null && (isNewLocked() || !valid))
             val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());

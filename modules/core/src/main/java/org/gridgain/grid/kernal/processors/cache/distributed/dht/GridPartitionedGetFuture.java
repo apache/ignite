@@ -258,7 +258,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
         Map<GridNode, LinkedHashMap<K, Boolean>> mappings = new HashMap<>(CU.affinityNodes(cctx, topVer).size());
 
-        Map<K, V> locVals = new HashMap<>(keys.size());
+        final int keysSize = keys.size();
+
+        Map<K, V> locVals = new HashMap<>(keysSize);
 
         boolean hasRmtNodes = false;
 
@@ -296,7 +298,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
                 if (!F.isEmpty(invalidParts)) {
-                    Collection<K> remapKeys = new ArrayList<>(keys.size());
+                    Collection<K> remapKeys = new ArrayList<>(keysSize);
 
                     for (K key : keys) {
                         if (key != null && invalidParts.contains(cctx.affinity().partition(key)))
@@ -380,11 +382,17 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                         if (entry != null) {
                             boolean isNew = entry.isNewLocked();
 
-                            V v = entry.innerGet(tx, /*swap*/true, /*read-through*/false, /*fail-fast*/true,
-                                /*unmarshal*/true, /**update-metrics*/true, true, filters);
+                            V v = entry.innerGet(tx,
+                                /*swap*/true,
+                                /*read-through*/false,
+                                /*fail-fast*/true,
+                                /*unmarshal*/true,
+                                /**update-metrics*/true,
+                                /*event*/true,
+                                filters);
 
                             if (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))
-                                colocated.context().evicts().touch(entry);
+                                colocated.context().evicts().touch(entry, topVer);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {
@@ -441,7 +449,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     log.debug("Filter validation failed for entry: " + e);
 
                 if (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))
-                    colocated.context().evicts().touch(entry);
+                    colocated.context().evicts().touch(entry, topVer);
 
                 break;
             }

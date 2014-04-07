@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.marshaller.*;
@@ -248,12 +247,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
             assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
                 extrasSize(cache(0).entry(keys[2])), cache(0).entry(keys[2]).memorySize());
 
-            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + extrasSize(cache(1).entry(keys[0])),
-                cache(1).entry(keys[0]).memorySize());
-            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + extrasSize(cache(1).entry(keys[1])),
-                cache(1).entry(keys[1]).memorySize());
-            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + extrasSize(cache(1).entry(keys[2])),
-                cache(1).entry(keys[2]).memorySize());
+            // Do not test other node since there are no backups.
         }
         finally {
             stopAllGrids();
@@ -272,7 +266,9 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
         mthd.setAccessible(true);
 
-        GridCacheEntryEx entry0 = ((GridCacheEntryImpl) entry).entryEx(false);
+        GridCacheContext ctx = U.field(entry, "ctx");
+
+        GridCacheEntryEx entry0 = ((GridCacheEntryImpl) entry).entryEx(false, ctx.discovery().topologyVersion());
 
         return (Integer)mthd.invoke(entry0);
     }

@@ -215,13 +215,14 @@ public class GridTestNode extends GridMetadataAwareAdapter implements GridNode {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        StringBuilder buf = new StringBuilder();
-
-        buf.append(getClass().getSimpleName());
-        buf.append(" [attrs=").append(attrs);
-        buf.append(", id=").append(id);
-        buf.append(']');
-
-        return buf.toString();
+        return id.toString();
+//        StringBuilder buf = new StringBuilder();
+//
+//        buf.append(getClass().getSimpleName());
+//        buf.append(" [attrs=").append(attrs);
+//        buf.append(", id=").append(id);
+//        buf.append(']');
+//
+//        return buf.toString();
     }
 }

@@ -524,10 +524,12 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         Collection<? extends GridNode> subgrid = top != null ? ctx.discovery().nodes(top) : ctx.discovery().allNodes();
 
-        if (F.isEmpty(subgrid))
+        int size = subgrid.size();
+
+        if (size == 0)
             throw new GridEmptyProjectionException("Topology projection is empty.");
 
-        List<GridNode> shuffledNodes = new ArrayList<>(subgrid.size());
+        List<GridNode> shuffledNodes = new ArrayList<>(size);
 
         for (GridNode node : subgrid)
             shuffledNodes.add(node);
@@ -1214,55 +1216,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             onResponse(res);
         }
-    }
-
-    /**
-     * @param nodes Nodes.
-     */
-    void synchronizeNodes(Iterable<GridNode> nodes) {
-        Collection<GridJobExecuteResponse> responses = new ArrayList<>();
-
-        synchronized (mux) {
-            // First check if job cares about future responses.
-            if (state != State.WAITING)
-                return;
-
-            if (jobRes != null) {
-                for (GridJobResultImpl jr : jobRes.values()) {
-                    if (!jr.hasResponse()) {
-                        boolean found = false;
-
-                        for (GridNode node : nodes) {
-                            if (jr.getNode().id().equals(node.id())) {
-                                found = true;
-
-                                break;
-                            }
-                        }
-
-                        // If node does not exist.
-                        if (!found) {
-                            if (log.isDebugEnabled())
-                                log.debug("Creating fake response when synchronizing nodes for job result: " + jr);
-
-                            GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(jr.getNode().id(),
-                                ses.getId(), jr.getJobContext().getJobId(), null, null, null, null, null, null, false);
-
-                            fakeRes.setFakeException(new GridTopologyException("Node has left grid: " +
-                                jr.getNode()));
-
-                            // Artificial response in case if a job result
-                            // is waiting for a response from non-existent node.
-                            responses.add(fakeRes);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Simulate responses without holding synchronization.
-        for (GridJobExecuteResponse res : responses)
-            onResponse(res);
     }
 
     /**

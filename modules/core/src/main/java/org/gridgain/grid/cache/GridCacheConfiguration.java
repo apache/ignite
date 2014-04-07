@@ -293,7 +293,7 @@ public class GridCacheConfiguration {
     /** Write ordering mode. */
     private GridCacheAtomicWriteOrderMode atomicWriteOrderMode = DFLT_ATOMIC_WRITE_ORDER_MODE;
 
-    /** */
+    /** Number of backups for cache. */
     private int backups = DFLT_BACKUPS;
 
     /** Flag to enable transactional batch update. */

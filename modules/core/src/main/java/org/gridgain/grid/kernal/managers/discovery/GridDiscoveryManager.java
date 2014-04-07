@@ -96,13 +96,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             }
         };
 
-    /** Alive filter. */
-    private final GridPredicate<GridNode> aliveFilter = new P1<GridNode>() {
-        @Override public boolean apply(GridNode n) {
-            return node(n.id()) != null;
-        }
-    };
-
     /** Discovery event worker. */
     private final DiscoveryWorker discoWrk = new DiscoveryWorker();
 
@@ -847,21 +840,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
      * @param nodeIds Node IDs to check.
      * @return {@code True} if at least one ID belongs to an alive node.
      */
-    public boolean aliveAny(@Nullable Collection<UUID> nodeIds) {
-        if (nodeIds == null || nodeIds.isEmpty())
-            return false;
-
-        for (UUID id : nodeIds)
-            if (alive(id))
-                return true;
-
-        return false;
-    }
-
-    /**
-     * @param nodeIds Node IDs to check.
-     * @return {@code True} if at least one ID belongs to an alive node.
-     */
     public boolean aliveAll(@Nullable Collection<UUID> nodeIds) {
         if (nodeIds == null || nodeIds.isEmpty())
             return false;
@@ -927,22 +905,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
         assert nodeId != null;
 
         return discoCache().node(nodeId);
-    }
-
-    /**
-     * @param nodes Nodes.
-     * @return Alive nodes.
-     */
-    public Collection<GridNode> aliveNodes(Collection<? extends GridNode> nodes) {
-        return F.view((Collection<GridNode>)nodes, aliveFilter);
-    }
-
-    /**
-     * @param p Filters.
-     * @return Collection of nodes for given filters.
-     */
-    public Collection<GridNode> nodes(GridPredicate<GridNode>... p) {
-        return F.isEmpty(p) ? allNodes() : F.view(allNodes(), p);
     }
 
     /**
@@ -1031,16 +993,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     /** @return All non-daemon nodes in topology. */
     public Collection<GridNode> allNodes() {
         return discoCache().allNodes();
-    }
-
-    /**
-     * Gets collection of nodes with version equal or greater than {@code ver}.
-     *
-     * @param ver Version to check.
-     * @return Collection of nodes with version equal or greater than {@code ver}.
-     */
-    public Collection<GridNode> elderNodes(GridProductVersion ver) {
-        return discoCache().elderNodes(ver);
     }
 
     /**

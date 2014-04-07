@@ -171,8 +171,10 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             while (true) {
                 GridCacheEntryEx<K, V> entry = null;
 
+                long topVer = ctx.affinity().affinityTopologyVersion();
+
                 try {
-                    entry = entryEx(key);
+                    entry = entryEx(key, topVer);
 
                     GridCacheOperation op = (val != null || valBytes != null) ? UPDATE : DELETE;
 
@@ -210,7 +212,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                 }
                 finally {
                     if (entry != null)
-                        ctx.evicts().touch(entry);
+                        ctx.evicts().touch(entry, topVer);
                 }
             }
         }
