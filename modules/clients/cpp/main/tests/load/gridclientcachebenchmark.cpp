@@ -51,10 +51,14 @@ enum GridClientCacheTestType {
  *
  */
 void StatsPrinterThreadProc() {
+
+	int LastIters = gIters.load(); // Save global iterations count so while
     while (true) {
-        std::cout << "Operations for last second: " << gIters << std::endl;
-        gIters = 0;
-        boost::this_thread::sleep(boost::posix_time::seconds(1));
+    	boost::this_thread::sleep(boost::posix_time::seconds(1));
+
+    	int CurIters = gIters.load();
+        std::cout << "Operations for last second: " << CurIters - LastIters << std::endl;
+        LastIters = CurIters;
     }
 }
 
@@ -180,6 +184,7 @@ typedef std::shared_ptr<TestThread> TestThreadPtr;
 
 int main(int argc, const char** argv) {
 
+	gIters = 0;
     gExit = false;
     gWarmupDone = false;
 
@@ -237,9 +242,14 @@ int main(int argc, const char** argv) {
     boost::this_thread::sleep(boost::posix_time::seconds(vm["warmupseconds"].as<int>()));
     gWarmupDone = true;
 
+    int ItersBefore = gIters.load(); // Save Iterations before final benchmark
+
     // Let tests run for requested amount of time and then signal the exit
     boost::this_thread::sleep(boost::posix_time::seconds(vm["runseconds"].as<int>()));
     gExit = true;
+
+    int ItersAfter = gIters.load(); // Save iterations after final benchmark
+
 
     //join all threads
     for (std::vector<TestThreadPtr>::iterator i = workers.begin(); i != workers.end(); i++) {
@@ -250,6 +260,8 @@ int main(int argc, const char** argv) {
     client.reset();
 
     GridClientFactory::stopAll();
+
+    cout << "Average operations/s :" << (ItersAfter - ItersBefore) / vm["runseconds"].as<int>() << endl;
 
     return EXIT_SUCCESS;
 }
