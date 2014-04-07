@@ -863,7 +863,11 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     @Override public boolean removeSet(String name) throws GridException {
         waitInitialization();
 
-        return false;
+        GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
+
+        GridCacheAdapter cache = cctx.cache();
+
+        return cache.removex(key);
     }
 
     /**
