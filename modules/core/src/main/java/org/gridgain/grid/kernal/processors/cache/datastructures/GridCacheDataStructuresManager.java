@@ -26,6 +26,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
@@ -58,6 +59,9 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
     /** Query notifying about queue update. */
     private GridCacheContinuousQueryAdapter queueQry;
+
+    /** Queue query creation guard. */
+    private final AtomicBoolean queueQryGuard = new AtomicBoolean();
 
     /** Cache contains only {@code GridCacheAtomicValue}. */
     private GridCacheProjection<GridCacheInternalKey, GridCacheAtomicLongValue> atomicLongView;
@@ -136,53 +140,6 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
                     new GridThread(worker).start();
                 }
-
-                queueQry = (GridCacheContinuousQueryAdapter)cctx.cache().queries().createContinuousQuery();
-
-                queueQry.filter(new QueueHeaderPredicate());
-
-                queueQry.callback(new GridBiPredicate<UUID, Collection<Map.Entry>>() {
-                    @Override public boolean apply(UUID id, Collection<Map.Entry> entries) {
-                        for (Map.Entry e : entries) {
-                            GridCacheQueueHeaderKey key = (GridCacheQueueHeaderKey)e.getKey();
-                            GridCacheQueueHeader hdr = (GridCacheQueueHeader)e.getValue();
-
-                            if (hdr == null) {
-                                for (QueueCleanupWorker worker : queueCleanupWorkers)
-                                    worker.wakeUp();
-                            }
-
-                            for (final GridCacheQueueProxy queue : queuesMap.values()) {
-                                if (queue.name().equals(key.queueName())) {
-                                    if (hdr == null) {
-                                        /*
-                                         * Potentially there can be queues with the same names, need to check that
-                                         * queue was really removed.
-                                         */
-                                        cctx.closures().callLocalSafe(new Callable<Void>() {
-                                            @Override public Void call() throws Exception {
-                                                try {
-                                                    queue.size();
-                                                }
-                                                catch (GridCacheDataStructureRemovedRuntimeException ignore) {
-                                                    queuesMap.remove(queue.delegate().id());
-                                                }
-
-                                                return null;
-                                            }
-                                        }, false);
-                                    }
-                                    else
-                                        queue.delegate().onHeaderChanged(hdr);
-                                }
-                            }
-                        }
-
-                        return true;
-                    }
-                });
-
-                queueQry.execute(cctx.isLocal() || cctx.isReplicated() ? cctx.grid().forLocal() : null, true);
             }
 
             initFlag = true;
@@ -685,6 +642,55 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
         if (header == null)
             return null;
+
+        if (queueQryGuard.compareAndSet(false, true)) {
+            queueQry = (GridCacheContinuousQueryAdapter)cctx.cache().queries().createContinuousQuery();
+
+            queueQry.filter(new QueueHeaderPredicate());
+
+            queueQry.callback(new GridBiPredicate<UUID, Collection<Map.Entry>>() {
+                @Override public boolean apply(UUID id, Collection<Map.Entry> entries) {
+                    for (Map.Entry e : entries) {
+                        GridCacheQueueHeaderKey key = (GridCacheQueueHeaderKey)e.getKey();
+                        GridCacheQueueHeader hdr = (GridCacheQueueHeader)e.getValue();
+
+                        if (hdr == null) {
+                            for (QueueCleanupWorker worker : queueCleanupWorkers)
+                                worker.wakeUp();
+                        }
+
+                        for (final GridCacheQueueProxy queue : queuesMap.values()) {
+                            if (queue.name().equals(key.queueName())) {
+                                if (hdr == null) {
+                                        /*
+                                         * Potentially there can be queues with the same names, need to check that
+                                         * queue was really removed.
+                                         */
+                                    cctx.closures().callLocalSafe(new Callable<Void>() {
+                                        @Override public Void call() throws Exception {
+                                            try {
+                                                queue.size();
+                                            }
+                                            catch (GridCacheDataStructureRemovedRuntimeException ignore) {
+                                                queuesMap.remove(queue.delegate().id());
+                                            }
+
+                                            return null;
+                                        }
+                                    }, false);
+                                }
+                                else
+                                    queue.delegate().onHeaderChanged(hdr);
+                            }
+                        }
+                    }
+
+                    return true;
+                }
+            });
+
+            queueQry.execute(cctx.isLocal() || cctx.isReplicated() ? cctx.grid().forLocal() : null, true);
+        }
 
         GridCacheQueueProxy queue = queuesMap.get(header.id());
 
