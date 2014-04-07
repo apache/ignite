@@ -112,7 +112,6 @@ public:
     void run(GridClientCacheTestType opType) {
         try {
             TGridClientDataPtr data = client->data(vm["cachename"].as<string>());
-            int value = 42;
 
             switch (opType) {
                 case PUT: { // block of code to avoid "jump to the case label" compilation error
