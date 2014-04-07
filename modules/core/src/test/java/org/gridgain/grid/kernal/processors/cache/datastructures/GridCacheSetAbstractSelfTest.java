@@ -51,6 +51,8 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         cache().dataStructures().removeSet(SET_NAME);
 
+        assertNull(cache().dataStructures().set(SET_NAME, false, false));
+
         super.afterTest();
     }
 
@@ -348,6 +350,24 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
             assertFalse(set.iterator().hasNext());
         }
+
+        for (int i = 0; i < 10; i++)
+            assertTrue(set0.add(i));
+
+        iter = set0.iterator();
+
+        while (iter.hasNext()) {
+            Integer val = iter.next();
+
+            if (val % 2 == 0)
+                iter.remove();
+        }
+
+        for (int i = 0; i < gridCount(); i++) {
+            Set<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+
+            assertEquals(i % 2 != 0, set.contains(i));
+        }
     }
 
     /**
@@ -412,30 +432,37 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         if (cacheMode() != PARTITIONED)
             return;
 
-        Set<Integer> set0 = grid(0).cache("noBackupsCache").dataStructures().set(SET_NAME + "collocated", true, true);
+        final String setName = SET_NAME + "collocated";
 
-        for (int i = 0; i < 1000; i++)
-            set0.add(i);
+        Set<Integer> set0 = grid(0).cache("noBackupsCache").dataStructures().set(setName, true, true);
 
-        assertEquals(1000, set0.size());
+        try {
+            for (int i = 0; i < 1000; i++)
+                set0.add(i);
 
-        UUID setNodeId = null;
+            assertEquals(1000, set0.size());
 
-        for (int i = 0; i < gridCount(); i++) {
-            GridKernal grid = (GridKernal)grid(i);
+            UUID setNodeId = null;
 
-            Iterator<GridCacheEntryEx<Object, Object>> entries =
-                grid.context().cache().internalCache("noBackupsCache").map().allEntries0().iterator();
+            for (int i = 0; i < gridCount(); i++) {
+                GridKernal grid = (GridKernal)grid(i);
 
-            if (entries.hasNext()) {
-                if (setNodeId == null)
-                    setNodeId = grid.localNode().id();
-                else
-                    fail("For collocated set all items should be stored on single node.");
+                Iterator<GridCacheEntryEx<Object, Object>> entries =
+                        grid.context().cache().internalCache("noBackupsCache").map().allEntries0().iterator();
+
+                if (entries.hasNext()) {
+                    if (setNodeId == null)
+                        setNodeId = grid.localNode().id();
+                    else
+                        fail("For collocated set all items should be stored on single node.");
+                }
             }
-        }
 
-        assertNotNull(setNodeId);
+            assertNotNull(setNodeId);
+        }
+        finally {
+            grid(0).cache("noBackupsCache").dataStructures().removeSet(setName);
+        }
     }
 
     /**
