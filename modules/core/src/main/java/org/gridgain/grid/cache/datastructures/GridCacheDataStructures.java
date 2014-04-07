@@ -116,7 +116,7 @@ public interface GridCacheDataStructures {
      */
     public boolean removeQueue(String name, int batchSize) throws GridException;
 
-    @Nullable public <T> Set<T> set(String name, boolean create) throws GridException;
+    @Nullable public <T> Set<T> set(String name, boolean collocated, boolean create) throws GridException;
 
     public boolean removeSet(String name) throws GridException;
 

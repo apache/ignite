@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.logger.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -19,14 +20,20 @@ import java.util.concurrent.*;
  * Cache set iterator.
  */
 class GridCacheSetIterator<T> implements Iterator<T> {
+    /** */
+    private static final Object FAILED = new Object();
+
     /** Set. */
     private GridCacheSet set;
 
+    /** Logger. */
+    private GridLogger log;
+
     /** Nodes data request should be sent to. */
-    private Collection<UUID> nodes;
+    private Collection<UUID> nodeIds;
 
     /** Responses queue. */
-    private LinkedBlockingQueue<GridCacheSetDataResponse> resQueue = new LinkedBlockingQueue<>();
+    private LinkedBlockingQueue<Object> resQueue = new LinkedBlockingQueue<>();
 
     /** Current iterator. */
     private Iterator<T> it;
@@ -43,19 +50,28 @@ class GridCacheSetIterator<T> implements Iterator<T> {
     /** Initialization flag. */
     private boolean init;
 
+    /** */
+    private GridException err;
+
     /**
      * @param set Cache set.
-     * @param nodes Nodes data request should be sent to.
+     * @param nodeIds Node IDs data request should be sent to.
      * @param req Set data request.
-     * @throws org.gridgain.grid.GridException If failed.
      */
-    GridCacheSetIterator(GridCacheSet set, Collection<UUID> nodes, GridCacheSetDataRequest req)
-        throws GridException {
+    @SuppressWarnings("unchecked")
+    GridCacheSetIterator(GridCacheSet set, Collection<UUID> nodeIds, GridCacheSetDataRequest req) {
         this.set = set;
-        this.nodes = nodes;
+        this.nodeIds = nodeIds;
         this.req = req;
 
-        sendIteratorRequest(req, nodes);
+        log = set.context().logger(GridCacheSetIterator.class);
+    }
+
+    /**
+     * @throws GridException If failed.
+     */
+    void sendFirstRequest() throws GridException {
+        sendRequest(req, nodeIds);
     }
 
     /**
@@ -65,6 +81,22 @@ class GridCacheSetIterator<T> implements Iterator<T> {
         boolean add = resQueue.add(res);
 
         assert add;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @return {@code True} if coresponding response handler should be removed.
+     */
+    boolean onNodeLeft(UUID nodeId) {
+        if (nodeIds.remove(nodeId)) {
+            err = new GridException("Failed to get set data, node left grid: " + nodeId);
+
+            resQueue.add(FAILED);
+
+            return true;
+        }
+
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -77,7 +109,7 @@ class GridCacheSetIterator<T> implements Iterator<T> {
         cur = next;
         next = next0();
 
-        return (T)cur;
+        return cur;
     }
 
     /** {@inheritDoc} */
@@ -115,15 +147,52 @@ class GridCacheSetIterator<T> implements Iterator<T> {
     public T next0() {
         try {
             while (it == null || !it.hasNext()) {
-                if (nodes.isEmpty())
+                if (nodeIds.isEmpty()) {
+                    req.id();
+
                     return null;
+                }
 
-                GridCacheSetDataResponse res = resQueue.take();
+                GridCacheSetDataResponse res = null;
 
-                if (res.last())
-                    nodes.remove(res.nodeId());
-                else
-                    sendIteratorRequest(req, Collections.singleton(res.nodeId()));
+                while (res == null) {
+                    Object poll = resQueue.poll(1000, TimeUnit.MILLISECONDS);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Polled set data response " + res);
+
+                    if (poll == null)
+                        continue;
+
+                    if (poll == FAILED) {
+                        assert err != null;
+
+                        throw err;
+                    }
+                    else
+                        res = (GridCacheSetDataResponse)poll;
+                }
+
+                if (res.last()) {
+                    nodeIds.remove(res.nodeId());
+
+                    if (log.isDebugEnabled())
+                        log.debug("Received last set data response [nodeId=" + res.nodeId() +
+                            ", nodeIds=" + nodeIds + ']');
+
+                    if (nodeIds.isEmpty()) {
+                        GridCacheEnterpriseDataStructuresManager ds =
+                            (GridCacheEnterpriseDataStructuresManager)set.context().dataStructures();
+
+                        ds.removeSetResponseHandler(req.id());
+                    }
+                }
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Received data response [nodeId=" + res.nodeId() + ']');
+
+                    sendRequest(req, Collections.singleton(res.nodeId()));
+                }
 
                 it = res.data().iterator();
             }
@@ -141,25 +210,56 @@ class GridCacheSetIterator<T> implements Iterator<T> {
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void sendIteratorRequest(final GridCacheSetDataRequest req, Collection<UUID> nodeIds)
+    private void sendRequest(final GridCacheSetDataRequest req, Collection<UUID> nodeIds)
         throws GridException {
         assert !nodeIds.isEmpty();
 
-        // TODO: handle send errors.
+        final GridCacheEnterpriseDataStructuresManager ds =
+            ((GridCacheEnterpriseDataStructuresManager)set.context().dataStructures());
 
         for (UUID nodeId : nodeIds) {
             if (nodeId.equals(set.context().localNodeId())) {
                 set.context().closures().callLocalSafe(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        ((GridCacheEnterpriseDataStructuresManager)set.context().dataStructures()).
-                            processSetIteratorRequest(set.context().localNodeId(), req);
+                        ds.processSetDataRequest(set.context().localNodeId(), req);
 
                         return null;
                     }
                 });
             }
-            else
-                set.context().io().send(nodeId, (GridCacheMessage)req.clone());
+            else {
+                try {
+                    set.context().io().send(nodeId, (GridCacheMessage)req.clone());
+                }
+                catch (GridException e) {
+                    if (req.cancel()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to cancel set data request [nodeId=" + nodeId + ", err=" + e + ']');
+                    }
+                    else {
+                        cancel();
+
+                        throw e;
+                    }
+                }
+            }
         }
+    }
+
+    /**
+     * Sends cancel requests.
+     * @throws GridException If failed.
+     */
+    private void cancel() throws GridException {
+        GridCacheEnterpriseDataStructuresManager ds =
+            ((GridCacheEnterpriseDataStructuresManager)set.context().dataStructures());
+
+        ds.removeSetResponseHandler(req.id());
+
+        GridCacheSetDataRequest cancelReq = new GridCacheSetDataRequest(req.id(), set.id(), 0, 0, false);
+
+        cancelReq.cancel(true);
+
+        sendRequest(cancelReq, nodeIds);
     }
 }

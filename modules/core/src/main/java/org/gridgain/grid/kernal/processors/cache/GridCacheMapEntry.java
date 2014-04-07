@@ -1306,6 +1306,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 cctx.cache().metrics0().onWrite();
 
             cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), false);
+
+            cctx.dataStructures().onEntryUpdated(key, op == DELETE);
         }
 
         return new GridBiTuple<>(res, old);
@@ -1608,6 +1610,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             if (primary || cctx.isReplicated())
                 cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), false);
+
+            cctx.dataStructures().onEntryUpdated(key, op == DELETE);
         }
 
         if (log.isDebugEnabled())
@@ -2516,6 +2520,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 if (!skipQryNtf && cctx.isLocalNode(CU.primaryNode(cctx, key)))
                     cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), true);
+
+                if (!skipQryNtf)
+                    cctx.dataStructures().onEntryUpdated(key, false);
 
                 return true;
             }

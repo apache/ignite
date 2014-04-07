@@ -22,11 +22,23 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
     /** */
     private GridUuid id;
 
+    /** */
+    private boolean collocated;
+
     /**
      * Required by {@link Externalizable}.
      */
     public GridCacheSetHeader() {
         // No-op.
+    }
+
+    /**
+     * @param id Set UUID.
+     * @param collocated Collocation flag.
+     */
+    public GridCacheSetHeader(GridUuid id, boolean collocated) {
+        this.id = id;
+        this.collocated = collocated;
     }
 
     /**
@@ -37,20 +49,22 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
     }
 
     /**
-     * @param id Set UUID.
+     * @return Collocation flag.
      */
-    public GridCacheSetHeader(GridUuid id) {
-        this.id = id;
+    public boolean collocated() {
+        return collocated;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, id);
+        out.writeBoolean(collocated);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         id = U.readGridUuid(in);
+        collocated = in.readBoolean();
     }
 
     /** {@inheritDoc} */

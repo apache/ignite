@@ -134,11 +134,12 @@ public abstract class GridCacheDataStructuresManager<K, V> extends GridCacheMana
      * Gets or creates new set.
      *
      * @param name Name of set.
+     * @param collocated Collocation flag.
      * @param create If {@code true} set will be created in case it is not in cache.
      * @return Set.
      * @throws GridException If failed.
      */
-    @Nullable public abstract <T> Set<T> set(String name, boolean create) throws GridException;
+    @Nullable public abstract <T> Set<T> set(String name, boolean collocated, boolean create) throws GridException;
 
     /**
      * Removes set from cache.
@@ -182,6 +183,21 @@ public abstract class GridCacheDataStructuresManager<K, V> extends GridCacheMana
      * @param tx Committed transaction.
      */
     public abstract void onTxCommitted(GridCacheTxEx<K, V> tx);
+
+    /**
+     * Entry preload/update callback.
+     *
+     * @param key Key.
+     * @param rmv {@code True} if value was removed.
+     */
+    public abstract void onEntryUpdated(K key, boolean rmv);
+
+    /**
+     * Partition eviction callback.
+     *
+     * @param part Partition.
+     */
+    public abstract void onPartitionEvicted(int part);
 
     /**
      * Callback for partition map changes.
