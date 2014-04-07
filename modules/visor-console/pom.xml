@@ -62,9 +62,6 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>src</sourceDirectory>
-        <testSourceDirectory>tests</testSourceDirectory>
-
         <pluginManagement>
             <plugins>
                 <plugin>

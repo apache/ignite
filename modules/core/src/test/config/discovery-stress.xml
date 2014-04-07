@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd">
+
+    <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
+        <property name="peerClassLoadingEnabled" value="false"/>
+
+        <property name="cacheConfiguration">
+            <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <property name="cacheMode" value="PARTITIONED"/>
+                <property name="distributionMode" value="PARTITIONED_ONLY"/>
+                <property name="preloadMode" value="SYNC"/>
+                <property name="swapEnabled" value="false"/>
+                <property name="queryIndexEnabled" value="false"/>
+                <property name="writeSynchronizationMode" value="FULL_ASYNC"/>
+
+                <property name="evictionPolicy">
+                    <bean class="org.gridgain.grid.cache.eviction.fifo.GridCacheFifoEvictionPolicy">
+                        <property name="maxSize" value="20000000"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+
+        <property name="networkTimeout" value="10000"/>
+
+        <property name="discoverySpi">
+            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+                <property name="networkTimeout" value="10000"/>
+                <property name="ackTimeout" value="10000"/>
+                <property name="reconnectCount" value="3"/>
+                <property name="ipFinder">
+                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>fosters-210:47500</value>
+                                <value>fosters-211:47500</value>
+                                <value>fosters-212:47500</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+</beans>
