@@ -326,7 +326,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
                 while (!stop.get()) {
                     int idx = killIdxs.get(rnd.nextInt(0, killIdxs.size()));
 
-                    U.sleep(rnd.nextLong(500, 1000));
+                    U.sleep(rnd.nextLong(2000, 3000));
 
                     log.info("Killing node: " + idx);
 
