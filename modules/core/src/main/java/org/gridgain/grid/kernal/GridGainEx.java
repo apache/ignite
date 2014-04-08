@@ -1311,11 +1311,7 @@ public class GridGainEx {
             log = cfgLog.getLogger(G.class);
 
             // Check GridGain home folder (after log is available).
-            if (ggHome == null)
-                U.warn(log, "Failed to detect GridGain installation home. It was neither provided in " +
-                    "GridConfiguration nor it could be detected from " + GG_HOME +
-                    " system property or environmental variable.", "Failed to detect GridGain installation home.");
-            else {
+            if (ggHome != null) {
                 File ggHomeFile = new File(ggHome);
 
                 if (!ggHomeFile.exists() || !ggHomeFile.isDirectory())

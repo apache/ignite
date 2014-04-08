@@ -476,7 +476,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
      */
     private void printAffinityState(Iterable<Grid> grids) {
         for (Grid g : grids) {
-            GridAffinityCache affCache = getFieldValue(
+            GridAffinityAssignmentCache affCache = getFieldValue(
                 ((GridKernal)g).internalCache(PARTITIONED_CACHE_NAME).context().affinity(),
                 "aff");
 

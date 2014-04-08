@@ -513,6 +513,8 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
 
                     boolean replicate = cctx.isDrEnabled();
 
+                    long topVer = topologyVersion();
+
                     // Node that for near transactions we grab all entries.
                     for (GridCacheTxEntry<K, V> txEntry : (near() ? allEntries() : writeEntries())) {
                         try {
@@ -593,11 +595,11 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                         // Invalidate only for near nodes (backups cannot be invalidated).
                                         if (isInvalidate() && !cctx.isDht())
                                             cached.innerRemove(this, eventNodeId(), nodeId, false, false, true, true,
-                                                txEntry.filters(), replicate ? DR_BACKUP : DR_NONE,
+                                                topVer, txEntry.filters(), replicate ? DR_BACKUP : DR_NONE,
                                                 near() ? null : explicitVer);
                                         else {
                                             cached.innerSet(this, eventNodeId(), nodeId, val, valBytes, false, false,
-                                                txEntry.ttl(), true, true, txEntry.filters(),
+                                                txEntry.ttl(), true, true, topVer, txEntry.filters(),
                                                 replicate ? DR_BACKUP : DR_NONE, txEntry.drExpireTime(),
                                                 near() ? null : explicitVer);
 
@@ -624,7 +626,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                     }
                                     else if (op == DELETE) {
                                         cached.innerRemove(this, eventNodeId(), nodeId, false, false, true, true,
-                                            txEntry.filters(), replicate ? DR_BACKUP : DR_NONE,
+                                            topVer, txEntry.filters(), replicate ? DR_BACKUP : DR_NONE,
                                             near() ? null : explicitVer);
 
                                         // Keep near entry up to date.

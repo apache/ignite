@@ -147,6 +147,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         List<K> keys = req.nearKeys();
 
         if (keys != null) {
+            long topVer = ctx.affinity().affinityTopologyVersion();
+
             for (K key : keys) {
                 while (true) {
                     GridDistributedCacheEntry<K, V> entry = peekExx(key);
@@ -169,7 +171,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     log.debug("Removed lock [lockId=" + req.version() + ", key=" + key + ']');
 
                                 // Try to evict near entry dht-mapped locally.
-                                evictNearEntry(entry, obsoleteVer);
+                                evictNearEntry(entry, obsoleteVer, topVer);
                             }
                             else {
                                 if (log.isDebugEnabled())
@@ -180,7 +182,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         else if (log.isDebugEnabled())
                             log.debug("Received unlock request for entry that could not be found: " + req);
 
-                        ctx.evicts().touch(entry);
+                        ctx.evicts().touch(entry, topVer);
 
                         break;
                     }
@@ -361,7 +363,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             assert cands.isEmpty() : "Received non-empty candidates in dht lock request: " + cands;
 
                             if (!req.inTx())
-                                ctx.evicts().touch(entry);
+                                ctx.evicts().touch(entry, req.topologyVersion());
                         }
                         else {
                             if (evicted == null)
@@ -648,21 +650,22 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param e Transaction entry.
      * @return {@code True} if entry is locally mapped as a primary or back up node.
      */
-    protected boolean isNearLocallyMapped(GridCacheEntryEx<K, V> e) {
-        return F.contains(ctx.affinity().nodes(e.key()), ctx.localNode());
+    protected boolean isNearLocallyMapped(GridCacheEntryEx<K, V> e, long topVer) {
+        return F.contains(ctx.affinity().nodes(e.key(), topVer), ctx.localNode());
     }
 
     /**
      *
      * @param e Entry to evict if it qualifies for eviction.
      * @param obsoleteVer Obsolete version.
+     * @param topVer Topology version.
      * @return {@code True} if attempt was made to evict the entry.
      */
-    protected boolean evictNearEntry(GridCacheEntryEx<K, V> e, GridCacheVersion obsoleteVer) {
+    protected boolean evictNearEntry(GridCacheEntryEx<K, V> e, GridCacheVersion obsoleteVer, long topVer) {
         assert e != null;
         assert obsoleteVer != null;
 
-        if (isNearLocallyMapped(e)) {
+        if (isNearLocallyMapped(e, topVer)) {
             if (log.isDebugEnabled())
                 log.debug("Evicting dht-local entry from near cache [entry=" + e + ", tx=" + this + ']');
 
@@ -697,6 +700,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                     try {
                         GridCacheMvccCandidate<K> cand = entry.candidate(ctx.nodeId(), Thread.currentThread().getId());
 
+                        long topVer = -1;
+
                         if (cand != null) {
                             assert cand.nearLocal() : "Got non-near-local candidate in near cache: " + cand;
 
@@ -713,8 +718,10 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 map = new HashMap<>(affNodes.size());
                             }
 
+                            topVer = cand.topologyVersion();
+
                             // Send request to remove from remote nodes.
-                            GridNode primary = ctx.affinity().primary(key, cand.topologyVersion());
+                            GridNode primary = ctx.affinity().primary(key, topVer);
 
                             GridNearUnlockRequest<K, V> req = map.get(primary);
 
@@ -753,7 +760,12 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             }
                         }
 
-                        ctx.evicts().touch(entry);
+                        assert topVer != -1 || cand == null;
+
+                        if (topVer == -1)
+                            topVer = ctx.affinity().affinityTopologyVersion();
+
+                        ctx.evicts().touch(entry, topVer);
 
                         break;
                     }

@@ -90,7 +90,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
      */
     public void testPrimaryPartitionsOneNode() throws Exception {
         GridCacheAffinityFunctionContext ctx =
-            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), 1, 1);
+            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), null, null, 1, 1);
 
         List<List<GridNode>> assignment = affinity().assignPartitions(ctx);
 
@@ -132,7 +132,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
         assert !F.isEmpty(parts);
 
         GridCacheAffinityFunctionContext ctx =
-            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), 1, 1);
+            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), null, null, 1, 1);
 
         List<List<GridNode>> assignment = affinity().assignPartitions(ctx);
 
@@ -162,7 +162,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
         assert !F.isEmpty(parts);
 
         GridCacheAffinityFunctionContext ctx =
-            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), 1, 1);
+            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), null, null, 1, 1);
 
         List<List<GridNode>> assignment = affinity().assignPartitions(ctx);
 
@@ -195,7 +195,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
         assert !F.isEmpty(parts);
 
         GridCacheAffinityFunctionContext ctx =
-            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), 1, 1);
+            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), null, null, 1, 1);
 
         List<List<GridNode>> assignment = affinity().assignPartitions(ctx);
 
@@ -217,7 +217,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
         int part = RND.nextInt(affinity().partitions());
 
         GridCacheAffinityFunctionContext ctx =
-            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), 1, 1);
+            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), null, null, 1, 1);
 
         GridCacheAffinityFunction aff = affinity();
 
@@ -235,7 +235,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
         Map<Integer, GridNode> map = cache().affinity().mapPartitionsToNodes(F.asList(0, 1, 5, 19, 12));
 
         GridCacheAffinityFunctionContext ctx =
-            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), 1, 1);
+            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), null, null, 1, 1);
 
         GridCacheAffinityFunction aff = affinity();
 
@@ -254,7 +254,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
         Map<Integer, GridNode> map = cache().affinity().mapPartitionsToNodes(F.asList(0, 1, 5, 19, 12));
 
         GridCacheAffinityFunctionContext ctx =
-            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), 1, 1);
+            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), null, null, 1, 1);
 
         GridCacheAffinityFunction aff = affinity();
 
@@ -278,7 +278,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
         Map<Integer, GridNode> map = cache().affinity().mapPartitionsToNodes(parts);
 
         GridCacheAffinityFunctionContext ctx =
-            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), 1, 1);
+            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), null, null, 1, 1);
 
         GridCacheAffinityFunction aff = affinity();
 

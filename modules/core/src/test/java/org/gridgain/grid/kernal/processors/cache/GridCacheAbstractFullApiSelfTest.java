@@ -4759,7 +4759,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 int size = 0;
 
                 for (String key : keys) {
-                    if (ctx.affinity().localNode(key)) {
+                    if (ctx.affinity().localNode(key, ctx.discovery().topologyVersion())) {
                         GridCacheEntryEx<String, Integer> e =
                             ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
 
@@ -4789,7 +4789,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 int size = 0;
 
                 for (String key : keys)
-                    if (ctx.affinity().localNode(key))
+                    if (ctx.affinity().localNode(key, ctx.discovery().topologyVersion()))
                         size++;
 
                 assertEquals("Incorrect key size on cache #" + i, size, cache(i).size());

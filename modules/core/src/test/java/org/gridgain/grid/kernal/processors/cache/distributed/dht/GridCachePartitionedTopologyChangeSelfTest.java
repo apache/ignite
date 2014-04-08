@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
@@ -544,18 +545,18 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
      * @param node Node to calculate partitions for.
      * @return List of partitions.
      */
-    private List<Integer> partitions(GridKernal node, int partType) {
+    private List<Integer> partitions(Grid node, int partType) {
         List<Integer> res = new LinkedList<>();
 
-        GridCacheAffinityManager affMgr = node.internalCache().context().affinity();
+        GridCacheAffinity<Object> aff = node.cache(null).affinity();
 
-        for (int partCnt = affMgr.partitions(), i = 0; i < partCnt; i++) {
+        for (int partCnt = aff.partitions(), i = 0; i < partCnt; i++) {
             GridNode locNode = node.localNode();
 
             switch (partType) {
                 // Near, partition should not belong to node.
                 case PARTITION_READER: {
-                    if (!affMgr.localNode(i))
+                    if (!aff.isPrimaryOrBackup(locNode, i))
                         res.add(i);
 
                     break;
@@ -563,7 +564,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
                 // Node should be primary for partition.
                 case PARTITION_PRIMARY: {
-                    if (affMgr.primary(locNode, i))
+                    if (aff.isPrimary(locNode, i))
                         res.add(i);
 
                     break;
@@ -571,7 +572,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
                 // Node should be backup for partition.
                 case PARTITION_BACKUP: {
-                    if (affMgr.localNode(i) && !affMgr.primary(locNode, i))
+                    if (aff.isPrimaryOrBackup(locNode, i) && !aff.isPrimary(locNode, i))
                         res.add(i);
 
                     break;

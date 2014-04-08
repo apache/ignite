@@ -1318,7 +1318,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         Map<Integer, Integer> map = new HashMap<>();
 
-        for (int i = 0; i < 1000; i++)
+        final int keysCnt = 1000;
+
+        for (int i = 0; i < keysCnt; i++)
             map.put(i, i);
 
         cache.putAll(map);
@@ -1338,7 +1340,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                     for (Map.Entry<Integer, Integer> e : entries) {
                         keys.add(e.getKey());
 
-                        if (keys.size() >= 1000)
+                        if (keys.size() >= keysCnt)
                             latch.countDown();
                     }
 
@@ -1350,7 +1352,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
 
-            assertEquals(1000, keys.size());
+            assertEquals(keysCnt, keys.size());
 
             qry.close();
         }

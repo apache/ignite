@@ -666,7 +666,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                             // Will either return value from dht cache or null if this is a miss.
                             GridTuple3<GridCacheVersion, V, byte[]> val = entry.detached() ? null :
-                                ((GridDhtCacheEntry<K, V>)entry).versionedValue();
+                                ((GridDhtCacheEntry<K, V>)entry).versionedValue(topVer);
 
                             GridCacheVersion dhtVer = null;
 
