@@ -105,7 +105,7 @@ public class GridJobStealingRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 80;
+        return 78;
     }
 
     /** {@inheritDoc} */

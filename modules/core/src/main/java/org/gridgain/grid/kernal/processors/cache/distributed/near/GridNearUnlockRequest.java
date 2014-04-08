@@ -81,7 +81,7 @@ public class GridNearUnlockRequest<K, V> extends GridDistributedUnlockRequest<K,
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 58;
+        return 56;
     }
 
     /** {@inheritDoc} */

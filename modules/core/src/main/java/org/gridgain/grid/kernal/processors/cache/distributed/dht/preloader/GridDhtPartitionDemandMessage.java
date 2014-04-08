@@ -363,7 +363,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 45;
+        return 43;
     }
 
     /** {@inheritDoc} */

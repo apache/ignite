@@ -365,6 +365,6 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 78;
+        return 76;
     }
 }
