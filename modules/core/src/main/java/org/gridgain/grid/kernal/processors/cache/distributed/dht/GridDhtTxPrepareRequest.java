@@ -493,6 +493,6 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 33;
+        return 35;
     }
 }

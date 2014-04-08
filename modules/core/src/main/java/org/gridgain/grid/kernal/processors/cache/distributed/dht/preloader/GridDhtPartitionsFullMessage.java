@@ -228,7 +228,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 45;
+        return 47;
     }
 
     /** {@inheritDoc} */

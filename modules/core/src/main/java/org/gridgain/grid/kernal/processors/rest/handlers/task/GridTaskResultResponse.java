@@ -217,6 +217,6 @@ public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 74;
+        return 76;
     }
 }

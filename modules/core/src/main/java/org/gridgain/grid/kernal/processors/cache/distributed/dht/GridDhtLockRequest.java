@@ -428,7 +428,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 29;
+        return 31;
     }
 
     /** {@inheritDoc} */

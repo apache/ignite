@@ -302,7 +302,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 41;
+        return 43;
     }
 
     /** {@inheritDoc} */

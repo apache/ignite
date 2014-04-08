@@ -171,6 +171,6 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 36;
+        return 38;
     }
 }

@@ -148,160 +148,160 @@ public class GridTcpCommunicationMessageFactory {
                 return new GridDistributedUnlockRequest();
 
             case 29:
-                return new GridDhtLockRequest();
+                return new GridDhtAffinityAssignmentRequest();
 
             case 30:
-                return new GridDhtLockResponse();
+                return new GridDhtAffinityAssignmentResponse();
 
             case 31:
-                return new GridDhtTxFinishRequest();
+                return new GridDhtLockRequest();
 
             case 32:
-                return new GridDhtTxFinishResponse();
+                return new GridDhtLockResponse();
 
             case 33:
-                return new GridDhtTxPrepareRequest();
+                return new GridDhtTxFinishRequest();
 
             case 34:
-                return new GridDhtTxPrepareResponse();
+                return new GridDhtTxFinishResponse();
 
             case 35:
-                return new GridDhtUnlockRequest();
+                return new GridDhtTxPrepareRequest();
 
             case 36:
-                return new GridDhtAtomicDeferredUpdateResponse();
+                return new GridDhtTxPrepareResponse();
 
             case 37:
-                return new GridDhtAtomicUpdateRequest();
+                return new GridDhtUnlockRequest();
 
             case 38:
-                return new GridDhtAtomicUpdateResponse();
+                return new GridDhtAtomicDeferredUpdateResponse();
 
             case 39:
-                return new GridNearAtomicUpdateRequest();
+                return new GridDhtAtomicUpdateRequest();
 
             case 40:
-                return new GridNearAtomicUpdateResponse();
+                return new GridDhtAtomicUpdateResponse();
 
             case 41:
-                return new GridDhtForceKeysRequest();
+                return new GridNearAtomicUpdateRequest();
 
             case 42:
-                return new GridDhtForceKeysResponse();
+                return new GridNearAtomicUpdateResponse();
 
             case 43:
-                return new GridDhtPartitionDemandMessage();
+                return new GridDhtForceKeysRequest();
 
             case 44:
-                return new GridDhtPartitionSupplyMessage();
+                return new GridDhtForceKeysResponse();
 
             case 45:
-                return new GridDhtPartitionsFullMessage();
+                return new GridDhtPartitionDemandMessage();
 
             case 46:
-                return new GridDhtPartitionsSingleMessage();
+                return new GridDhtPartitionSupplyMessage();
 
             case 47:
-                return new GridDhtPartitionsSingleRequest();
+                return new GridDhtPartitionsFullMessage();
 
             case 48:
-                return new GridNearGetRequest();
+                return new GridDhtPartitionsSingleMessage();
 
             case 49:
-                return new GridNearGetResponse();
+                return new GridDhtPartitionsSingleRequest();
 
             case 50:
-                return new GridNearLockRequest();
+                return new GridNearGetRequest();
 
             case 51:
-                return new GridNearLockResponse();
+                return new GridNearGetResponse();
 
             case 52:
-                return new GridNearTxFinishRequest();
+                return new GridNearLockRequest();
 
             case 53:
-                return new GridNearTxFinishResponse();
+                return new GridNearLockResponse();
 
             case 54:
-                return new GridNearTxPrepareRequest();
+                return new GridNearTxFinishRequest();
 
             case 55:
-                return new GridNearTxPrepareResponse();
+                return new GridNearTxFinishResponse();
 
             case 56:
-                return new GridNearUnlockRequest();
+                return new GridNearTxPrepareRequest();
 
             case 57:
-                return new GridCacheQueryRequest();
+                return new GridNearTxPrepareResponse();
 
             case 58:
-                return new GridCacheQueryResponse();
+                return new GridNearUnlockRequest();
 
             case 59:
-                return new GridClockDeltaSnapshotMessage();
+                return new GridCacheQueryRequest();
 
             case 60:
-                return new GridContinuousMessage();
+                return new GridCacheQueryResponse();
 
             case 61:
-                return new GridDataLoadRequest();
+                return new GridClockDeltaSnapshotMessage();
 
             case 62:
-                return new GridDataLoadResponse();
+                return new GridContinuousMessage();
 
             case 63:
-                return new GridDrInternalRequest();
+                return new GridDataLoadRequest();
 
             case 64:
-                return new GridDrInternalResponse();
+                return new GridDataLoadResponse();
 
             case 65:
-                return new GridGgfsAckMessage();
+                return new GridDrInternalRequest();
 
             case 66:
-                return new GridGgfsBlockKey();
+                return new GridDrInternalResponse();
 
             case 67:
-                return new GridGgfsBlocksMessage();
+                return new GridGgfsAckMessage();
 
             case 68:
-                return new GridGgfsDeleteMessage();
+                return new GridGgfsBlockKey();
 
             case 69:
-                return new GridGgfsFileAffinityRange();
+                return new GridGgfsBlocksMessage();
 
             case 70:
-                return new GridGgfsFragmentizerRequest();
+                return new GridGgfsDeleteMessage();
 
             case 71:
-                return new GridGgfsFragmentizerResponse();
+                return new GridGgfsFileAffinityRange();
 
             case 72:
-                return new GridGgfsSyncMessage();
+                return new GridGgfsFragmentizerRequest();
 
             case 73:
-                return new GridTaskResultRequest();
+                return new GridGgfsFragmentizerResponse();
 
             case 74:
-                return new GridTaskResultResponse();
+                return new GridGgfsSyncMessage();
 
             case 75:
-                return new GridStreamerCancelRequest();
+                return new GridTaskResultRequest();
 
             case 76:
-                return new GridStreamerExecutionRequest();
+                return new GridTaskResultResponse();
 
             case 77:
-                return new GridStreamerResponse();
+                return new GridStreamerCancelRequest();
 
             case 78:
-                return new GridJobStealingRequest();
+                return new GridStreamerExecutionRequest();
 
             case 79:
-                return new GridDhtAffinityAssignmentRequest<>();
+                return new GridStreamerResponse();
 
             case 80:
-                return new GridDhtAffinityAssignmentResponse<>();
+                return new GridJobStealingRequest();
 
             default:
                 return createCustom(type);

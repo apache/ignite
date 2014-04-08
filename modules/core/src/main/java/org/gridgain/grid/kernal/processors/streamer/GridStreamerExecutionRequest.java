@@ -279,12 +279,12 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
                 commState.idx++;
 
             case 2:
-                Object depMode0 = commState.getEnum(GridDeploymentMode.class);
-
-                if (depMode0 == ENUM_NOT_READ)
+                if (buf.remaining() < 1)
                     return false;
 
-                depMode = (GridDeploymentMode)depMode0;
+                byte depMode0 = commState.getByte();
+
+                depMode = GridDeploymentMode.fromOrdinal(depMode0);
 
                 commState.idx++;
 
@@ -365,6 +365,6 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 76;
+        return 78;
     }
 }

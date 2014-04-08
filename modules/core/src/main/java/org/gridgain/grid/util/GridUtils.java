@@ -4758,41 +4758,15 @@ public abstract class GridUtils {
 
     /**
      * Writes enum to output stream accounting for {@code null} values.
+     * Note: method writes only one byte for every enum. Therefore, this method
+     * only for Enums with maximum count of values equals to 128.
      *
      * @param out Output stream to write to.
      * @param e Enum value to write, possibly {@code null}.
      * @throws IOException If write failed.
      */
     public static <E extends Enum> void writeEnum(DataOutput out, E e) throws IOException {
-        out.writeBoolean(e == null);
-
-        if (e != null)
-            out.writeInt(e.ordinal());
-    }
-
-    /**
-     * Reads enum from input stream accounting for {@code null} values.
-     *
-     * @param in Stream to read from.
-     * @param cls Enum class.
-     * @return Read enum value, possibly {@code null}.
-     * @throws IOException If read failed.
-     */
-    @Nullable public static <E extends Enum> E readEnum(DataInput in, Class<E> cls) throws IOException {
-        return !in.readBoolean() ? enumFromOrdinal(cls, in.readInt()) : null;
-    }
-
-    /**
-     * Gets enum value from its ordinal number.
-     *
-     * @param cls Enum class to get value of.
-     * @param ord Constant ordinal number.
-     * @return Enum value or {@code null} if value with such ordinal number is not found.
-     */
-    @Nullable public static <E extends Enum> E enumFromOrdinal(Class<E> cls, int ord) {
-        E vals[] = cls.getEnumConstants();
-
-        return vals != null && ord >= 0 && ord < vals.length ? vals[ord] : null;
+        out.writeByte(e == null ? -1 : e.ordinal());
     }
 
     /**

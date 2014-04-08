@@ -107,6 +107,6 @@ public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapte
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 75;
+        return 77;
     }
 }

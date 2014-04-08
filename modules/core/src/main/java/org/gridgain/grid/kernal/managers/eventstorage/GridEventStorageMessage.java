@@ -397,12 +397,12 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
                 commState.idx++;
 
             case 1:
-                Object depMode0 = commState.getEnum(GridDeploymentMode.class);
-
-                if (depMode0 == ENUM_NOT_READ)
+                if (buf.remaining() < 1)
                     return false;
 
-                depMode = (GridDeploymentMode)depMode0;
+                byte depMode0 = commState.getByte();
+
+                depMode = GridDeploymentMode.fromOrdinal(depMode0);
 
                 commState.idx++;
 

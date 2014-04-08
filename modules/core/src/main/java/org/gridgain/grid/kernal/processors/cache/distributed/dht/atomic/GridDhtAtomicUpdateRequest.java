@@ -871,12 +871,12 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 10:
-                Object syncMode0 = commState.getEnum(GridCacheWriteSynchronizationMode.class);
-
-                if (syncMode0 == ENUM_NOT_READ)
+                if (buf.remaining() < 1)
                     return false;
 
-                syncMode = (GridCacheWriteSynchronizationMode)syncMode0;
+                byte syncMode0 = commState.getByte();
+
+                syncMode = GridCacheWriteSynchronizationMode.fromOrdinal(syncMode0);
 
                 commState.idx++;
 
@@ -942,7 +942,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 37;
+        return 39;
     }
 
     /** {@inheritDoc} */

@@ -183,12 +183,12 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 2:
-                Object type0 = commState.getEnum(GridContinuousMessageType.class);
-
-                if (type0 == ENUM_NOT_READ)
+                if (buf.remaining() < 1)
                     return false;
 
-                type = (GridContinuousMessageType)type0;
+                byte type0 = commState.getByte();
+
+                type = GridContinuousMessageType.fromOrdinal(type0);
 
                 commState.idx++;
 
@@ -199,7 +199,7 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 60;
+        return 62;
     }
 
     /** {@inheritDoc} */

@@ -314,7 +314,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 42;
+        return 44;
     }
 
     /** {@inheritDoc} */

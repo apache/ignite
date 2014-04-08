@@ -80,7 +80,7 @@ public class GridDrStatus implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        reason = U.readEnum(in, GridDrPauseReason.class);
+        reason = GridDrPauseReason.fromOrdinal(in.readByte());
         errMsg = U.readString(in);
     }
 

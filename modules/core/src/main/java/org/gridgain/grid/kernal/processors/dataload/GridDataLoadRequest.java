@@ -354,12 +354,12 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                 commState.idx++;
 
             case 3:
-                Object depMode0 = commState.getEnum(GridDeploymentMode.class);
-
-                if (depMode0 == ENUM_NOT_READ)
+                if (buf.remaining() < 1)
                     return false;
 
-                depMode = (GridDeploymentMode)depMode0;
+                byte depMode0 = commState.getByte();
+
+                depMode = GridDeploymentMode.fromOrdinal(depMode0);
 
                 commState.idx++;
 
@@ -476,7 +476,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 61;
+        return 63;
     }
 
     /** {@inheritDoc} */

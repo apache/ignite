@@ -243,12 +243,12 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
                 commState.idx++;
 
             case 1:
-                Object depMode0 = commState.getEnum(GridDeploymentMode.class);
-
-                if (depMode0 == ENUM_NOT_READ)
+                if (buf.remaining() < 1)
                     return false;
 
-                depMode = (GridDeploymentMode)depMode0;
+                byte depMode0 = commState.getByte();
+
+                depMode = GridDeploymentMode.fromOrdinal(depMode0);
 
                 commState.idx++;
 
@@ -325,7 +325,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, clsLdrId);
-        out.writeByte(depMode != null ? depMode.ordinal() : -1);
+        U.writeEnum(out, depMode);
         U.writeString(out, userVer);
         out.writeBoolean(locDepOwner);
         U.writeMap(out, participants);
@@ -334,7 +334,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         clsLdrId = U.readGridUuid(in);
-        depMode = U.enumFromOrdinal(GridDeploymentMode.class, in.readByte());
+        depMode = GridDeploymentMode.fromOrdinal(in.readByte());
         userVer = U.readString(in);
         locDepOwner = in.readBoolean();
         participants = U.readMap(in);
