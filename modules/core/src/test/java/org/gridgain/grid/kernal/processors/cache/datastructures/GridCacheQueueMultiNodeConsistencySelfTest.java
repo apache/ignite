@@ -27,9 +27,6 @@ import static org.gridgain.grid.kernal.processors.cache.datastructures.GridCache
 
 /**
  * Consistency test for cache queue in multi node environment.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstractTest {
     /** */

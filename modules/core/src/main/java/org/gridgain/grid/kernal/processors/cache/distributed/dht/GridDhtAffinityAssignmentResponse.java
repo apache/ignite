@@ -58,7 +58,7 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
     /**
      * @return Topology version.
      */
-    public long topologyVersion() {
+    @Override public long topologyVersion() {
         return topVer;
     }
 
