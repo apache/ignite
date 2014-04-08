@@ -107,7 +107,7 @@ public class GridGgfsPaths implements Externalizable {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         secondaryUri = U.readString(in);
         secondaryCfgPath = U.readString(in);
-        dfltMode = U.readEnum(in, GridGgfsMode.class);
+        dfltMode = GridGgfsMode.fromOrdinal(in.readByte());
 
         if (in.readBoolean()) {
             int size = in.readInt();
@@ -118,7 +118,7 @@ public class GridGgfsPaths implements Externalizable {
                 GridGgfsPath path = new GridGgfsPath();
                 path.readExternal(in);
 
-                T2<GridGgfsPath, GridGgfsMode> entry = new T2<>(path, U.readEnum(in, GridGgfsMode.class));
+                T2<GridGgfsPath, GridGgfsMode> entry = new T2<>(path, GridGgfsMode.fromOrdinal(in.readByte()));
 
                 pathModes.add(entry);
             }

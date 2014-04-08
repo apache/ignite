@@ -818,12 +818,12 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 commState.idx++;
 
             case 10:
-                Object op0 = commState.getEnum(GridCacheOperation.class);
-
-                if (op0 == ENUM_NOT_READ)
+                if (buf.remaining() < 1)
                     return false;
 
-                op = (GridCacheOperation)op0;
+                byte op0 = commState.getByte();
+
+                op = GridCacheOperation.fromOrdinal(op0);
 
                 commState.idx++;
 
@@ -836,12 +836,12 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 commState.idx++;
 
             case 12:
-                Object syncMode0 = commState.getEnum(GridCacheWriteSynchronizationMode.class);
-
-                if (syncMode0 == ENUM_NOT_READ)
+                if (buf.remaining() < 1)
                     return false;
 
-                syncMode = (GridCacheWriteSynchronizationMode)syncMode0;
+                byte syncMode0 = commState.getByte();
+
+                syncMode = GridCacheWriteSynchronizationMode.fromOrdinal(syncMode0);
 
                 commState.idx++;
 
