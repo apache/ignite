@@ -299,9 +299,15 @@ public class GridTcpCommunicationMessageFactory {
                 return new GridJobStealingRequest();
 
             case 79:
-                return new GridCacheSetDataRequest();
+                return new GridDhtAffinityAssignmentRequest<>();
 
             case 80:
+                return new GridDhtAffinityAssignmentResponse<>();
+
+            case 81:
+                return new GridCacheSetDataRequest();
+
+            case 82:
                 return new GridCacheSetDataResponse();
 
             default:

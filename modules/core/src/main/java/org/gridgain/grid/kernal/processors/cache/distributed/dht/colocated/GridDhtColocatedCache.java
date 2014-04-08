@@ -126,22 +126,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /**
-     * Gets or creates cache entry for given key.
-     *
-     * @param key Key for entry.
-     * @param allowDetached Whether to allow detached entries. If {@code true} and node is not primary
-     *      for given key, a new detached entry will be created. Otherwise, entry will be obtained from
-     *      dht cache map.
-     * @return Cache entry.
-     * @throws GridDhtInvalidPartitionException If {@code allowDetached} is false and node is not primary
-     *      for given key.
-     */
-    GridDistributedCacheEntry<K, V> entryExx(K key, boolean allowDetached) {
-        return allowDetached && !ctx.affinity().primary(ctx.localNode(), key) ?
-            new GridDhtDetachedCacheEntry<>(ctx, key, key.hashCode(), null, null, 0, 0) : entryExx(key);
-    }
-
-    /**
      * Gets or creates entry for given key and given topology version.
      *
      * @param key Key for entry.
@@ -210,13 +194,15 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             });
         }
 
-        return loadAsync(keys, false, forcePrimary, filter);
+        long topVer = tx == null ? ctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
+
+        return loadAsync(keys, false, forcePrimary, topVer, filter);
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheEntryEx<K, V> entryExSafe(K key) {
+    @Override protected GridCacheEntryEx<K, V> entryExSafe(K key, long topVer) {
         try {
-            return ctx.affinity().localNode(key) ? entryEx(key) : null;
+            return ctx.affinity().localNode(key, topVer) ? entryEx(key) : null;
         }
         catch (GridDhtInvalidPartitionException ignored) {
             return null;
@@ -229,7 +215,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         // We need detached entry here because if there is an ongoing transaction,
         // we should see this entry and apply filter.
-        GridCacheEntryEx<K, V> e = entryExx(key, true, true);
+        GridCacheEntryEx<K, V> e = entryExx(key, ctx.affinity().affinityTopologyVersion(), true, true);
 
         try {
             return e != null && e.peek(SMART, filter) != null;
@@ -250,7 +236,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @return Loaded values.
      */
     public GridFuture<Map<K, V>> loadAsync(@Nullable Collection<? extends K> keys, boolean reload,
-        boolean forcePrimary, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
+        boolean forcePrimary, long topVer, @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
@@ -274,8 +260,14 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         if (entry != null) {
                             boolean isNew = entry.isNewLocked();
 
-                            V v = entry.innerGet(null, /*swap*/true, /*read-through*/false, /*fail-fast*/true,
-                                /*unmarshal*/true, /**update-metrics*/true, true, filter);
+                            V v = entry.innerGet(null,
+                                /*swap*/true,
+                                /*read-through*/false,
+                                /*fail-fast*/true,
+                                /*unmarshal*/true,
+                                /**update-metrics*/true,
+                                /*event*/true,
+                                filter);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {
@@ -312,7 +304,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     }
                     finally {
                         if (entry != null)
-                            context().evicts().touch(entry);
+                            context().evicts().touch(entry, topVer);
                     }
                 }
 

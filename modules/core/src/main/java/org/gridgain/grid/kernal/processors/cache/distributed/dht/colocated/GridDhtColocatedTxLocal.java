@@ -140,7 +140,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override protected GridFuture<Boolean> addReader(long msgId, GridDhtCacheEntry<K, V> cached,
-        GridCacheTxEntry<K, V> entry) {
+        GridCacheTxEntry<K, V> entry, long topVer) {
         // We are in colocated transaction, do not add local node as reader.
         return null;
     }
@@ -205,7 +205,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public GridFuture<Boolean> loadMissing(boolean async, final Collection<? extends K> keys,
         final GridBiInClosure<K, V> c) {
-        return cctx.colocated().loadAsync(keys, /*reload*/false, /*force primary*/false, null)
+        return cctx.colocated().loadAsync(keys, /*reload*/false, /*force primary*/false, topologyVersion(), null)
             .chain(new C1<GridFuture<Map<K, V>>, Boolean>() {
                 @Override public Boolean apply(GridFuture<Map<K, V>> f) {
                     try {
@@ -856,7 +856,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         GridCacheTxEntry<K, V> txEntry = entry(key);
 
         if (txEntry == null)
-            return cctx.colocated().entryExx(key, true);
+            return cctx.colocated().entryExx(key, topologyVersion(), true);
 
         GridCacheEntryEx<K, V> cached = txEntry.cached();
 
@@ -866,7 +866,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             return cached;
 
         if (cached.obsoleteVersion() != null) {
-            cached = cctx.colocated().entryExx(key, true);
+            cached = cctx.colocated().entryExx(key, topologyVersion(), true);
 
             txEntry.cached(cached, txEntry.keyBytes());
         }

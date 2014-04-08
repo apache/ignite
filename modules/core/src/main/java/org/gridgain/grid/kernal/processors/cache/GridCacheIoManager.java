@@ -207,7 +207,7 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
             unmarshall(nodeId, cacheMsg);
 
-            if (CU.allowForStartup(cacheMsg))
+            if (cacheMsg.allowForStartup())
                 processMessage(nodeId, cacheMsg, c);
             else {
                 GridFuture<?> startFut = cctx.preloader().startFuture();
@@ -327,6 +327,18 @@ public class GridCacheIoManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @throws GridTopologyException If receiver left.
      */
     public void send(GridNode node, GridCacheMessage<K, V> msg) throws GridException {
+        send(node, msg, SYSTEM_POOL);
+    }
+
+    /**
+     * Sends communication message.
+     *
+     * @param node Node to send the message to.
+     * @param msg Message to send.
+     * @throws GridException If sending failed.
+     * @throws GridTopologyException If receiver left.
+     */
+    public void send(GridNode node, GridCacheMessage<K, V> msg, GridIoPolicy plc) throws GridException {
         onSend(msg, node.id());
 
         if (log.isDebugEnabled())

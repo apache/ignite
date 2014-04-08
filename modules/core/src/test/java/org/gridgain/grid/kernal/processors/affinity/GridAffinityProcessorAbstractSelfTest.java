@@ -116,19 +116,12 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
             }
         }, IllegalArgumentException.class, null);
 
-        assertNotNull(grid2.cache(CACHE_NAME));
+        GridCache<Integer, Integer> cache = grid2.cache(CACHE_NAME);
+
+        assertNotNull(cache);
 
         GridAffinityProcessor affPrc1 = grid1.context().affinity();
         GridAffinityProcessor affPrc2 = grid2.context().affinity();
-
-        ConcurrentMap<String, GridFuture<GridAffinityCache>> affMap1 =
-            GridTestUtils.getFieldValue(affPrc1, "affMap");
-
-        ConcurrentMap<String, GridFuture<GridAffinityCache>> affMap2 =
-            GridTestUtils.getFieldValue(affPrc2, "affMap");
-
-        assertEquals("Validate initial state of affinity cache.", Collections.emptyMap(), affMap1);
-        assertEquals("Validate initial state of affinity cache.", Collections.emptyMap(), affMap1);
 
         // Create keys collection.
         Collection<Integer> keys = new ArrayList<>(1000);
@@ -140,63 +133,24 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
         // Validate affinity functions collection updated on first call.
         //
 
-        affPrc1.mapKeysToNodes(CACHE_NAME, keys);
+        Map<GridNode, Collection<Integer>> node1Map = affPrc1.mapKeysToNodes(CACHE_NAME, keys);
+        Map<GridNode, Collection<Integer>> node2Map = affPrc2.mapKeysToNodes(CACHE_NAME, keys);
+        Map<GridNode, Collection<Integer>> cacheMap = cache.affinity().mapKeysToNodes(keys);
 
-        assertEquals(1, affMap1.size());
-        assertEquals(0, affMap2.size());
+        assertEquals(cacheMap.size(), node1Map.size());
+        assertEquals(cacheMap.size(), node2Map.size());
 
-        GridFuture<GridAffinityCache> t1 = affMap1.get(CACHE_NAME);
+        for (Map.Entry<GridNode, Collection<Integer>> entry : cacheMap.entrySet()) {
+            GridNode node = entry.getKey();
 
-        assertNotNull(t1);
-        assertNotNull(t1.get());
-        assertTrue(t1.isDone());
+            Collection<Integer> mappedKeys = entry.getValue();
 
-        affPrc2.mapKeysToNodes(CACHE_NAME, keys);
+            Collection<Integer> mapped1 = node1Map.get(node);
+            Collection<Integer> mapped2 = node2Map.get(node);
 
-        assertEquals(1, affMap1.size());
-        assertEquals(1, affMap2.size());
-
-        GridFuture<GridAffinityCache> t2 = affMap2.get(CACHE_NAME);
-
-        assertNotNull(t2);
-        assertNotNull(t2.get());
-        assertTrue(t2.isDone());
-
-        //
-        // Validate affinity caches are clearen on topology update.
-        //
-
-        ConcurrentMap<Long, Object> affCache1 = GridTestUtils.getFieldValue(t1.get(), "affCache");
-        ConcurrentMap<Long, Object> affCache2 = GridTestUtils.getFieldValue(t2.get(), "affCache");
-
-        long topVer = grid1.context().discovery().topologyVersion();
-
-        assertNotNull(affCache1.get(topVer));
-        assertNotNull(affCache2.get(topVer));
-
-        withCache = true;
-
-        Grid last = startGrid(NODES_CNT * 2); // Add node with cache.
-
-        assertEquals(NODES_CNT * 2 + 1, last.nodes().size());
-
-        assertNull("Expect cache cleaned up on topology update: " + affCache1, affCache1.get(topVer));
-        assertNull("Expect cache cleaned up on topology update: " + affCache2, affCache2.get(topVer));
-
-        //
-        // Validate affinity function is cleaned from processor collection,
-        // when all cache nodes with such name leave topology.
-        //
-
-        for (int i = NODES_CNT; i < NODES_CNT * 2 + 1; i++)
-            stopGrid(i); // Stop all cache nodes.
-
-        long cleanUpDelay = GridTestUtils.<Long>getFieldValue(
-            GridAffinityProcessor.class, "AFFINITY_MAP_CLEAN_UP_DELAY");
-
-        Thread.sleep(cleanUpDelay * 6 / 5); // +20% time.
-
-        assertEquals("All cache nodes leave topology.", Collections.emptyMap(), affMap1);
+            assertTrue(mappedKeys.containsAll(mapped1) && mapped1.containsAll(mappedKeys));
+            assertTrue(mappedKeys.containsAll(mapped2) && mapped2.containsAll(mappedKeys));
+        }
     }
 
     /**

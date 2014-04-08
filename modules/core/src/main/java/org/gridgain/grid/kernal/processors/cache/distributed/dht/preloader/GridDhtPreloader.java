@@ -20,6 +20,7 @@ import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -29,6 +30,7 @@ import java.util.concurrent.locks.*;
 
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
+import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 import static org.gridgain.grid.util.GridConcurrentFactory.*;
 
 /**
@@ -66,7 +68,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     private final GridFutureAdapter<?> locExchFut;
 
     /** Pending futures. */
-    private final ConcurrentLinkedQueue<GridDhtPartitionsExchangeFuture<K, V>> pendingFuts =
+    private final ConcurrentLinkedQueue<GridDhtPartitionsExchangeFuture<K, V>> pendingExchangeFuts =
         new ConcurrentLinkedQueue<>();
 
     /** Busy lock to prevent activities from accessing exchanger while it's stopping. */
@@ -77,6 +79,10 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
     /** Atomic reference for pending timeout object. */
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
+
+    /** Pending affinity assignment futures. */
+    private ConcurrentMap<Long, GridDhtAssignmentFetchFuture<K, V>> pendingAssignmentFetchFuts =
+        new ConcurrentHashMap8<>();
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
@@ -117,7 +123,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
                 GridDhtPartitionsExchangeFuture<K, V> exchFut = exchangeFuture(exchId, e);
 
                 // Start exchange process.
-                pendingFuts.add(exchFut);
+                pendingExchangeFuts.add(exchFut);
 
                 // Event callback - without this callback future will never complete.
                 exchFut.onEvent(exchId, e);
@@ -132,8 +138,8 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
                         try {
                             // Unwind in the order of discovery events.
-                            for (GridDhtPartitionsExchangeFuture<K, V> f = pendingFuts.poll(); f != null;
-                                f = pendingFuts.poll()) {
+                            for (GridDhtPartitionsExchangeFuture<K, V> f = pendingExchangeFuts.poll(); f != null;
+                                f = pendingExchangeFuts.poll()) {
                                 demandPool.onDiscoveryEvent(n.id(), f);
                             }
                         }
@@ -142,6 +148,11 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
                         }
                     }
                 });
+
+                if (e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED) {
+                    for (GridDhtAssignmentFetchFuture<K, V> fut : pendingAssignmentFetchFuts.values())
+                        fut.onNodeLeft(e.eventNode().id());
+                }
             }
             finally {
                 leaveBusy();
@@ -211,6 +222,20 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
             new MessageHandler<GridDhtForceKeysResponse<K, V>>() {
                 @Override public void onMessage(GridNode node, GridDhtForceKeysResponse<K, V> msg) {
                     processForceKeyResponse(node, msg);
+                }
+            });
+
+        cctx.io().addHandler(GridDhtAffinityAssignmentRequest.class,
+            new MessageHandler<GridDhtAffinityAssignmentRequest<K, V>>() {
+                @Override protected void onMessage(GridNode node, GridDhtAffinityAssignmentRequest<K, V> msg) {
+                    processAffinityAssignmentRequest(node, msg);
+                }
+            });
+
+        cctx.io().addHandler(GridDhtAffinityAssignmentResponse.class,
+            new MessageHandler<GridDhtAffinityAssignmentResponse<K, V>>() {
+                @Override protected void onMessage(GridNode node, GridDhtAffinityAssignmentResponse<K, V> msg) {
+                    processAffinityAssignmentResponse(node, msg);
                 }
             });
 
@@ -369,6 +394,26 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     }
 
     /**
+     * @param topVer Requested topology version.
+     * @param fut Future to add.
+     */
+    public void addDhtAssignmentFetchFuture(long topVer, GridDhtAssignmentFetchFuture<K, V> fut) {
+        GridDhtAssignmentFetchFuture<K, V> old = pendingAssignmentFetchFuts.putIfAbsent(topVer, fut);
+
+        assert old == null : "More than one thread is trying to fetch partition assignments: " + topVer;
+    }
+
+    /**
+     * @param topVer Requested topology version.
+     * @param fut Future to remove.
+     */
+    public void removeDhtAssignmentFetchFuture(long topVer, GridDhtAssignmentFetchFuture<K, V> fut) {
+        boolean rmv = pendingAssignmentFetchFuts.remove(topVer, fut);
+
+        assert rmv : "Failed to remove assignment fetch future: " + topVer;
+    }
+
+    /**
      * @return {@code true} if entered to busy state.
      */
     private boolean enterBusy() {
@@ -506,6 +551,48 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     }
 
     /**
+     * @param node Node.
+     * @param req Request.
+     */
+    private void processAffinityAssignmentRequest(final GridNode node,
+        final GridDhtAffinityAssignmentRequest<K, V> req) {
+        final long topVer = req.topologyVersion();
+
+        if (log.isDebugEnabled())
+            log.debug("Processing affinity assignment request [node=" + node + ", req=" + req + ']');
+
+        cctx.affinity().affinityReadyFuture(req.topologyVersion()).listenAsync(new CI1<GridFuture<Long>>() {
+            @Override public void apply(GridFuture<Long> fut) {
+                if (log.isDebugEnabled())
+                    log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
+                        ", node=" + node + ']');
+
+                List<List<GridNode>> assignment = cctx.affinity().assignments(topVer);
+
+                try {
+                    cctx.io().send(node, new GridDhtAffinityAssignmentResponse<K, V>(topVer, assignment),
+                        AFFINITY_POOL);
+                }
+                catch (GridException e) {
+                    U.error(log, "Failed to send affinity assignment response to remote node [node=" + node + ']', e);
+                }
+            }
+        });
+    }
+
+    /**
+     * @param node Node.
+     * @param res Response.
+     */
+    private void processAffinityAssignmentResponse(GridNode node, GridDhtAffinityAssignmentResponse<K, V> res) {
+        if (log.isDebugEnabled())
+            log.debug("Processing affinity assignment response [node=" + node + ", res=" + res + ']');
+
+        for (GridDhtAssignmentFetchFuture<K, V> fut : pendingAssignmentFetchFuts.values())
+            fut.onResponse(node, res);
+    }
+
+    /**
      * Resends partitions on partition evict within configured timeout.
      *
      * @param part Evicted partition.
@@ -640,7 +727,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      */
     private boolean sendAllPartitions(Collection<? extends GridNode> nodes, GridDhtPartitionFullMap map)
         throws GridException {
-        GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(null, map, null);
+        GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(null, map, null, -1);
 
         if (log.isDebugEnabled())
             log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
