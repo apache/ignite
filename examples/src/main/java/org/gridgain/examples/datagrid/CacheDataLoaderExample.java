@@ -28,11 +28,6 @@ import org.gridgain.grid.dataload.*;
 public class CacheDataLoaderExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
-    // private static final String CACHE_NAME = "partitioned_tx";
-    // private static final String CACHE_NAME = "replicated";
-    // private static final String CACHE_NAME = "replicated_tx";
-    // private static final String CACHE_NAME = "local";
-    // private static final String CACHE_NAME = "local_tx";
 
     /** Number of entries to load. */
     private static final int ENTRY_COUNT = 500000;

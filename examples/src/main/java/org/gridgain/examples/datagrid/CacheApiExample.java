@@ -32,11 +32,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 public class CacheApiExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
-    // private static final String CACHE_NAME = "partitioned_tx";
-    // private static final String CACHE_NAME = "replicated";
-    // private static final String CACHE_NAME = "replicated_tx";
-    // private static final String CACHE_NAME = "local";
-    // private static final String CACHE_NAME = "local_tx";
 
     /**
      * Executes example.

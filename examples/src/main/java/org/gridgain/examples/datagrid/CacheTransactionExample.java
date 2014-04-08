@@ -30,8 +30,6 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 public class CacheTransactionExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned_tx";
-    // private static final String CACHE_NAME = "replicated_tx";
-    // private static final String CACHE_NAME = "local_tx";
 
     /**
      * Executes example.

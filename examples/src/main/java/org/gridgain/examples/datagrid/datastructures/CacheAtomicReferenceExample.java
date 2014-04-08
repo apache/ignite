@@ -27,7 +27,6 @@ import java.util.*;
 public final class CacheAtomicReferenceExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned_tx";
-    // private static final String CACHE_NAME = "replicated_tx";
 
     /**
      * Executes example.
