@@ -260,13 +260,13 @@ int main(int argc, const char** argv) {
     boost::this_thread::sleep(boost::posix_time::seconds(vm["warmupseconds"].as<int>()));
     gWarmupDone = true;
 
-    int ItersBefore = gIters.load(); // Save Iterations before final benchmark
+    int itersBeforeTest = gIters.load(); // Save Iterations before final benchmark
 
     // Let tests run for requested amount of time and then signal the exit
     boost::this_thread::sleep(boost::posix_time::seconds(vm["runseconds"].as<int>()));
     gExit = true;
 
-    int ItersAfter = gIters.load(); // Save iterations after final benchmark
+    int itersAfterTest = gIters.load(); // Save iterations after final benchmark
 
 
     //join all threads
@@ -279,7 +279,7 @@ int main(int argc, const char** argv) {
 
     GridClientFactory::stopAll();
 
-    cout << "Average operations/s :" << (ItersAfter - ItersBefore) / vm["runseconds"].as<int>() << endl;
+    cout << "Average operations/s :" << (itersAfterTest - itersBeforeTest) / vm["runseconds"].as<int>() << endl;
 
     return EXIT_SUCCESS;
 }
