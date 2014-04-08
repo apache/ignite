@@ -22,6 +22,7 @@ import org.gridgain.grid.util.{GridUtils => U}
 import query._
 import annotation.target.field
 import org.gridgain.grid.dataload.GridDataLoader
+import org.gridgain.grid.kernal.GridProductImpl
 
 /**
  * {{{
@@ -121,13 +122,7 @@ import org.gridgain.grid.dataload.GridDataLoader
  */
 object scalar extends ScalarConversions {
     /** Visor copyright blurb. */
-    private val COPYRIGHT = /*@scala.copyright*/"Copyright (C) 2013 GridGain Systems."
-
-    /** Visor version number. */
-    private val VER = /*@scala.version*/"x.x.xx"
-
-    /** Visor build number. */
-    private val BUILD = /*@scala.build*/"DDMMYYYY"
+    private val COPYRIGHT = GridProductImpl.COPYRIGHT
 
     /** Type alias for `GridCacheQuerySqlField`. */
     type ScalarCacheQuerySqlField = GridCacheQuerySqlField @field

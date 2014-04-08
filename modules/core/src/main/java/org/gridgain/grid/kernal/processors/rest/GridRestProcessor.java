@@ -41,16 +41,10 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** Array of parameter names which values should pass interception. */
     private static final String[] INTERCEPTED_PARAMS = {"key", "val", "val1", "val2", "p1"};
 
-    /** Ant-augmented string version number. */
-    private static final String VER_STR = /*@java.version*/"6.0.2";
-
-    /** Static version as numeric array (generated from {@link #VER_STR}). */
-    public static final byte[] VER_BYTES = U.intToBytes(VER_STR.hashCode());
-
     /** Protocols. */
     private final Collection<GridRestProtocol> protos = new ArrayList<>();
 
-    /**  Command handlers. */
+    /** Command handlers. */
     private final Collection<GridRestCommandHandler> handlers = new ArrayList<>();
 
     /** */
