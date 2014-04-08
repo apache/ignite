@@ -26,7 +26,7 @@ import org.gridgain.grid.util.lang.{GridFunc => F}
 import org.gridgain.grid.events._
 import org.gridgain.grid.events.GridEventType._
 import org.gridgain.grid.events.GridDiscoveryEvent
-import org.gridgain.grid.kernal.GridEx
+import org.gridgain.grid.kernal.{GridProductImpl, GridEx}
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.lang.{GridCallable, GridPredicate, GridBiTuple}
 import org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi
@@ -146,7 +146,7 @@ object visor extends VisorTag {
     private var nodeStopLsnr: GridGainListener = null
 
     /** Visor copyright blurb. */
-    private final val COPYRIGHT = /*@scala.copyright*/"Copyright (C) 2013 GridGain Systems."
+    private final val COPYRIGHT = GridProductImpl.COPYRIGHT
 
     /** */
     @volatile private var isCon: Boolean = false
