@@ -16,8 +16,9 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * This interface provides functionality to get information which node is primary and which nodes are
- * backups for partitioned cache.
+ * Provides affinity information to detect which node is primary and which nodes are
+ * backups for a partitioned cache. You can get an instance of this interface by calling
+ * {@code GridCache.affinity()} method.
  * <p>
  * Mapping of a key to a node is a three-step operation. First step will get an affinity key for given key
  * using {@link GridCacheAffinityKeyMapper}. If mapper is not specified, the original key will be used. Second step
