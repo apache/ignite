@@ -105,11 +105,21 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     /** */
     private ConcurrentMap<SetIteratorKey, Iterator<GridCacheSetItemKey>> locSetIterMap = new ConcurrentHashMap8<>();
 
+    /** */
+    private static final int MAX_CANCEL_IDS = 1000;
+
+    /** Received requests to cancel. */
+    private Collection<SetIteratorKey> cancelIds = new GridBoundedConcurrentOrderedSet<>(MAX_CANCEL_IDS);
+
+    /** */
+    private final ConcurrentMap<GridUuid, GridCacheSetProxy> setMap;
+
     /**
      * Default constructor.
      */
     public GridCacheEnterpriseDataStructuresManager() {
         dsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
+        setMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
     }
 
     /** {@inheritDoc} */
@@ -842,10 +852,32 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> Set<T> set(String name, boolean collocated, boolean create) throws GridException {
+    @Nullable @Override public <T> GridCacheSet<T> set(final String name, boolean collocated, final boolean create)
+        throws GridException {
         waitInitialization();
 
+        // Non collocated mode enabled only for PARTITIONED cache.
+        final boolean collocMode = cctx.cache().configuration().getCacheMode() != PARTITIONED || collocated;
+
+        if (cctx.atomic())
+            return set0(name, collocMode, create);
+
+        return CU.outTx(new Callable<GridCacheSet<T>>() {
+            @Override public GridCacheSet<T> call() throws Exception {
+                return set0(name, collocMode, create);
+            }
+        }, cctx);
+    }
+
+    /**
+     * @param name Name of set.
+     * @param collocated Collocation flag.
+     * @param create If {@code true} set will be created in case it is not in cache.
+     * @return Set.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private <T> GridCacheSet<T> set0(String name, boolean collocated, boolean create) throws GridException {
         GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
 
         GridCacheSetHeader hdr;
@@ -866,7 +898,17 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         if (hdr == null)
             return null;
 
-        return new GridCacheSet<>(cctx, name, hdr);
+        GridCacheSetProxy<T> set = setMap.get(hdr.id());
+
+        if (set == null) {
+            GridCacheSetProxy<T> old = setMap.putIfAbsent(hdr.id(),
+                set = new GridCacheSetProxy<T>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr)));
+
+            if (old != null)
+                set = old;
+        }
+
+        return set;
     }
 
     /** {@inheritDoc} */
@@ -950,6 +992,19 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         if (log.isDebugEnabled())
             log.debug("Received set data request [req=" + req + ", nodeId=" + nodeId + ']');
 
+        if (req.cancel()) {
+            SetIteratorKey key = new SetIteratorKey(req.id(), nodeId);
+
+            cancelIds.add(key);
+
+            if (locSetIterMap.remove(key) == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Received cancel request for unknown operation [req=" + req + ", nodeId=" + nodeId + ']');
+            }
+
+            return;
+        }
+
         SetDataHolder setData = setDataMap.get(req.setId());
 
         if (setData == null) {
@@ -980,8 +1035,9 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         else {
             SetIteratorKey key = new SetIteratorKey(req.id(), nodeId);
 
-            if (req.cancel()) {
-                locSetIterMap.remove(key);
+            if (cancelIds.contains(key)) {
+                if (log.isDebugEnabled())
+                    log.debug("Received request for cancelled operation [req=" + req + ", nodeId=" + nodeId + ']');
 
                 return;
             }
@@ -1097,7 +1153,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
      * @return Set iterator.
      * @throws GridException If failed.
      */
-    <T> Iterator<T> setIterator(GridCacheSet<?> set) throws GridException {
+    <T> GridCacheSetIterator<T> setIterator(GridCacheSetImpl<?> set) throws GridException {
         long topVer = cctx.discovery().topologyVersion();
 
         Collection<GridNode> nodes = set.dataNodes(topVer);
@@ -1139,7 +1195,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
      * @param set Set.
      * @return Size future.
      */
-    GridFuture<Integer> setSize(GridCacheSet<?> set) {
+    GridFuture<Integer> setSize(GridCacheSetImpl<?> set) {
         if (cctx.isLocal() || cctx.isReplicated()) {
             SetDataHolder setData = setDataMap.get(set.id());
 
@@ -1178,7 +1234,6 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
     /** {@inheritDoc} */
     @Override public void onTxCommitted(GridCacheTxEx<K, V> tx) {
-        // TODO: check why called twice locally.
         if (!cctx.isDht() && tx.internal() && (!cctx.isColocated() || cctx.isReplicated())) {
             try {
                 waitInitialization();
@@ -1481,7 +1536,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     /**
      * Set iterator key.
      */
-    private static class SetIteratorKey {
+    private static class SetIteratorKey implements Comparable<SetIteratorKey> {
         /** */
         private final long id;
 
@@ -1502,6 +1557,14 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
          */
         UUID nodeId() {
             return nodeId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compareTo(SetIteratorKey key) {
+            if (id == key.id)
+                return nodeId.compareTo(key.nodeId);
+
+            return id < key.id ? -1 : 1;
         }
 
         /** {@inheritDoc} */

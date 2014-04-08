@@ -139,7 +139,8 @@ public abstract class GridCacheDataStructuresManager<K, V> extends GridCacheMana
      * @return Set.
      * @throws GridException If failed.
      */
-    @Nullable public abstract <T> Set<T> set(String name, boolean collocated, boolean create) throws GridException;
+    @Nullable public abstract <T> GridCacheSet<T> set(String name, boolean collocated, boolean create)
+        throws GridException;
 
     /**
      * Removes set from cache.

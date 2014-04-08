@@ -11,6 +11,7 @@ package org.gridgain.grid.cache.datastructures;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -116,7 +117,7 @@ public interface GridCacheDataStructures {
      */
     public boolean removeQueue(String name, int batchSize) throws GridException;
 
-    @Nullable public <T> Set<T> set(String name, boolean collocated, boolean create) throws GridException;
+    @Nullable public <T> GridCacheSet<T> set(String name, boolean collocated, boolean create) throws GridException;
 
     public boolean removeSet(String name) throws GridException;
 

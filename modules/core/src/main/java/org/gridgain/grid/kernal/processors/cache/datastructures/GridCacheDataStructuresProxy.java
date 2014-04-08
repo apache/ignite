@@ -173,7 +173,8 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> Set<T> set(String name, boolean collocated, boolean create) throws GridException {
+    @Nullable @Override public <T> GridCacheSet<T> set(String name, boolean collocated, boolean create)
+        throws GridException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {

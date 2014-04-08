@@ -90,7 +90,8 @@ public class GridCacheDataStructuresImpl<K, V> implements GridCacheDataStructure
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> Set<T> set(String name, boolean collocated, boolean create) throws GridException {
+    @Nullable @Override public <T> GridCacheSet<T> set(String name, boolean collocated, boolean create)
+        throws GridException {
         return dsMgr.set(name, collocated, create);
     }
 

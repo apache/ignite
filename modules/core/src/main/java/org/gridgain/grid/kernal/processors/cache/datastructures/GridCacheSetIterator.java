@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.util.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -19,12 +20,12 @@ import java.util.concurrent.*;
 /**
  * Cache set iterator.
  */
-class GridCacheSetIterator<T> implements Iterator<T> {
+class GridCacheSetIterator<T> extends GridCloseableIteratorAdapter<T> {
     /** */
     private static final Object FAILED = new Object();
 
     /** Set. */
-    private GridCacheSet set;
+    private GridCacheSetImpl set;
 
     /** Logger. */
     private GridLogger log;
@@ -59,7 +60,7 @@ class GridCacheSetIterator<T> implements Iterator<T> {
      * @param req Set data request.
      */
     @SuppressWarnings("unchecked")
-    GridCacheSetIterator(GridCacheSet set, Collection<UUID> nodeIds, GridCacheSetDataRequest req) {
+    GridCacheSetIterator(GridCacheSetImpl set, Collection<UUID> nodeIds, GridCacheSetDataRequest req) {
         this.set = set;
         this.nodeIds = nodeIds;
         this.req = req;
@@ -85,7 +86,7 @@ class GridCacheSetIterator<T> implements Iterator<T> {
 
     /**
      * @param nodeId Node ID.
-     * @return {@code True} if coresponding response handler should be removed.
+     * @return {@code True} if corresponding response handler should be removed.
      */
     boolean onNodeLeft(UUID nodeId) {
         if (nodeIds.remove(nodeId)) {
@@ -100,7 +101,7 @@ class GridCacheSetIterator<T> implements Iterator<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public T next() {
+    @Override protected T onNext() throws GridException {
         init();
 
         if (next == null)
@@ -113,25 +114,14 @@ class GridCacheSetIterator<T> implements Iterator<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNext() {
+    @Override protected boolean onHasNext() throws GridException {
         init();
 
         return next != null;
     }
 
-    /**
-     * Initializes iterator.
-     */
-    private void init() {
-        if (!init) {
-            next = next0();
-
-            init = true;
-        }
-    }
-
     /** {@inheritDoc} */
-    @Override public void remove() {
+    @Override protected void onRemove() throws GridException {
         if (cur == null)
             throw new NoSuchElementException();
 
@@ -140,15 +130,21 @@ class GridCacheSetIterator<T> implements Iterator<T> {
         cur = null;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void onClose() throws GridException {
+        cancel();
+    }
+
     /**
      * @return Next element.
      */
     @SuppressWarnings("unchecked")
-    public T next0() {
+    private T next0() {
         try {
             while (it == null || !it.hasNext()) {
                 if (nodeIds.isEmpty()) {
-                    req.id();
+                    if (err != null)
+                        throw err;
 
                     return null;
                 }
@@ -159,7 +155,7 @@ class GridCacheSetIterator<T> implements Iterator<T> {
                     Object poll = resQueue.poll(1000, TimeUnit.MILLISECONDS);
 
                     if (log.isDebugEnabled())
-                        log.debug("Polled set data response " + res);
+                        log.debug("Polled set data response: " + res);
 
                     if (poll == null)
                         continue;
@@ -201,6 +197,17 @@ class GridCacheSetIterator<T> implements Iterator<T> {
         }
         catch (Exception e) {
             throw new GridRuntimeException(e);
+        }
+    }
+
+    /**
+     * Initializes iterator.
+     */
+    private void init() {
+        if (!init) {
+            next = next0();
+
+            init = true;
         }
     }
 
@@ -251,6 +258,9 @@ class GridCacheSetIterator<T> implements Iterator<T> {
      * @throws GridException If failed.
      */
     private void cancel() throws GridException {
+        if (nodeIds.isEmpty())
+            return;
+
         GridCacheEnterpriseDataStructuresManager ds =
             ((GridCacheEnterpriseDataStructuresManager)set.context().dataStructures());
 

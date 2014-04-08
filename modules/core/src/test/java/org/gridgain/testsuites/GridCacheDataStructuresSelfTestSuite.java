@@ -29,12 +29,15 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
         // Data structures.
         suite.addTest(new TestSuite(GridCacheLocalSequenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalQueueApiSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheLocalSetSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheLocalAtomicSetSelfTest.class));
 
         suite.addTest(new TestSuite(GridCacheReplicatedSequenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheReplicatedSequenceMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheReplicatedQueueApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheReplicatedQueueMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheReplicatedQueueRotativeMultiNodeTest.class));
+        suite.addTest(new TestSuite(GridCacheReplicatedSetSelfTest.class));
         // TODO: GG-5306
         // suite.addTest(new TestSuite(GridCacheReplicatedDataStructuresFailoverSelfTest.class));
 
@@ -43,6 +46,8 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedQueueApiSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedQueueMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedQueueCreateMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedSetSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedAtomicSetSelfTest.class));
         // TODO: GG-5620 Uncomment when fix
         //suite.addTest(new TestSuite(GridCachePartitionedQueueEntryMoveSelfTest.class));
 

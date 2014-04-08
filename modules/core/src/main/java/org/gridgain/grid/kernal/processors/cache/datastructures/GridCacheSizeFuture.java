@@ -45,7 +45,7 @@ public class GridCacheSizeFuture extends GridFutureAdapter<Integer> {
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    void init(final long reqId, final GridCacheSet<?> set) throws GridException {
+    void init(final long reqId, final GridCacheSetImpl<?> set) throws GridException {
         final long topVer = cctx.discovery().topologyVersion();
 
         Collection<GridNode> nodes = set.dataNodes(topVer);
@@ -83,11 +83,9 @@ public class GridCacheSizeFuture extends GridFutureAdapter<Integer> {
     void onResponse(GridCacheSetDataResponse res) {
         assert res.nodeId() != null;
 
-        if (nodeIds.remove(res.nodeId())) {
-            size.addAndGet(res.size());
+        size.addAndGet(res.size());
 
-            if (nodeIds.isEmpty())
-                onDone(size.get());
-        }
+        if (nodeIds.remove(res.nodeId()) && nodeIds.isEmpty())
+            onDone(size.get());
     }
 }
