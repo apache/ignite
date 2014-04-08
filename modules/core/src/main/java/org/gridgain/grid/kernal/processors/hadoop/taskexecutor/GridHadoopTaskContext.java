@@ -12,6 +12,8 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 /**
  * TODO write doc
  */
-public interface GridHadoopTaskContext<K, V> {
+public interface GridHadoopTaskContext extends AutoCloseable {
+    void write(Object key, Object val);
 
+    void progress();
 }

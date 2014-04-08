@@ -14,4 +14,8 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
  */
 public interface GridHadoopTask {
     public void run(GridHadoopTaskContext ctx);
+
+    enum Type {
+        MAP, REDUCE
+    }
 }

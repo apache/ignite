@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
-import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
+
+import java.util.*;
 
 /**
  * TODO write doc
@@ -26,11 +26,15 @@ public class GridHadoopProcessor extends GridProcessorAdapter {
         super(ctx);
     }
 
-    public GridFuture<?> submit(JobConf jobCfg) {
-
+    public Collection<GridHadoopJobId> getNextJobIds(int cnt) {
+        return null;
     }
 
-    public GridFuture<?> submit(Job job) {
+    public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJob job) {
+        return null;
+    }
 
+    public GridHadoopJobStatus status(GridHadoopJobId jobId) {
+        return null;
     }
 }

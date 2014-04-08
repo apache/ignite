@@ -9,25 +9,30 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
-import org.gridgain.grid.lang.*;
-import org.jetbrains.annotations.*;
+
+import java.io.*;
+import java.util.*;
 
 /**
  * TODO write doc
  */
-public class GridHadoopJobTracker {
-    public GridFuture<?> submit(GridHadoopJob info) {
+public class GridHadoopJobContext {
+
+    public GridHadoopJob job() {
         return null;
     }
 
-    @Nullable public GridHadoopJobStatus status(GridHadoopJobId jobId) {
+    public GridHadoopJobId jobId() {
         return null;
     }
 
-    public void onTaskFinished(GridHadoopTaskInfo taskInfo) {
+    public List<GridHadoopTaskInfo> mappers() {
+        return null;
+    }
 
+    public List<Serializable> mapsHandler() {
+        return null;
     }
 }

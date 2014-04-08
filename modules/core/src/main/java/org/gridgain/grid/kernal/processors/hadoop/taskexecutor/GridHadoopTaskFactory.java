@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
+import org.gridgain.grid.kernal.processors.hadoop.*;
+
 /**
  * TODO write doc
  */
-public class GridHadoopTaskExecutor {
-    void run(GridHadoopTask task) {
-
-    }
+public interface GridHadoopTaskFactory {
+    GridHadoopTask newTask(GridHadoopTaskInfo mapInfo);
 }

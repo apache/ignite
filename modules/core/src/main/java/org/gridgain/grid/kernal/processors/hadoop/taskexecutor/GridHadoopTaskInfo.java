@@ -9,11 +9,36 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
+import org.gridgain.grid.kernal.processors.hadoop.*;
+
+import java.util.*;
+
 /**
  * TODO write doc
  */
-public class GridHadoopTaskExecutor {
-    void run(GridHadoopTask task) {
+public class GridHadoopTaskInfo {
 
+    UUID nodeId() {
+        return null;
+    }
+
+    GridHadoopTask.Type type() {
+        return null;
+    }
+
+    GridHadoopJobId jobId() {
+        return null;
+    }
+
+    GridHadoopJob job() {
+        return null;
+    }
+
+    int taskNumber() {
+        return 0;
+    }
+
+    int attempt() {
+        return 0;
     }
 }
