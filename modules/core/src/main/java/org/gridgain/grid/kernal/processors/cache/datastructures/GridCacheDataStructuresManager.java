@@ -84,6 +84,9 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     /** Workers removing orphaned queue items. */
     private List<QueueCleanupWorker> queueCleanupWorkers;
 
+    /** Busy lock. */
+    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
+
     /** Init latch. */
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
@@ -100,7 +103,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected void onKernalStart0() throws GridException {
+    @Override protected void onKernalStart0() {
         try {
             dsView = cctx.cache().<GridCacheInternal, GridCacheInternal>projection
                 (GridCacheInternal.class, GridCacheInternal.class).flagsOn(CLONE);
@@ -152,6 +155,8 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
         super.onKernalStop0(cancel);
+
+        busyLock.block();
 
         if (queueQry != null) {
             try {
@@ -216,7 +221,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                         if (seqVal == null && !create)
                             return null;
 
-                            /* We should use offset because we already reserved left side of range.*/
+                        // We should use offset because we already reserved left side of range.
                         long off = cctx.config().getAtomicSequenceReserveSize() > 1 ?
                             cctx.config().getAtomicSequenceReserveSize() - 1 : 1;
 
@@ -650,42 +655,56 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
             queueQry.callback(new GridBiPredicate<UUID, Collection<Map.Entry>>() {
                 @Override public boolean apply(UUID id, Collection<Map.Entry> entries) {
-                    for (Map.Entry e : entries) {
-                        GridCacheQueueHeaderKey key = (GridCacheQueueHeaderKey)e.getKey();
-                        GridCacheQueueHeader hdr = (GridCacheQueueHeader)e.getValue();
+                    if (!busyLock.enterBusy())
+                        return false;
 
-                        if (hdr == null) {
-                            for (QueueCleanupWorker worker : queueCleanupWorkers)
-                                worker.wakeUp();
-                        }
+                    try {
+                        for (Map.Entry e : entries) {
+                            GridCacheQueueHeaderKey key = (GridCacheQueueHeaderKey)e.getKey();
+                            GridCacheQueueHeader hdr = (GridCacheQueueHeader)e.getValue();
 
-                        for (final GridCacheQueueProxy queue : queuesMap.values()) {
-                            if (queue.name().equals(key.queueName())) {
-                                if (hdr == null) {
+                            if (hdr == null) {
+                                for (QueueCleanupWorker worker : queueCleanupWorkers)
+                                    worker.wakeUp();
+                            }
+
+                            for (final GridCacheQueueProxy queue : queuesMap.values()) {
+                                if (queue.name().equals(key.queueName())) {
+                                    if (hdr == null) {
                                         /*
                                          * Potentially there can be queues with the same names, need to check that
                                          * queue was really removed.
                                          */
-                                    cctx.closures().callLocalSafe(new Callable<Void>() {
-                                        @Override public Void call() throws Exception {
-                                            try {
-                                                queue.size();
-                                            }
-                                            catch (GridCacheDataStructureRemovedRuntimeException ignore) {
-                                                queuesMap.remove(queue.delegate().id());
-                                            }
+                                        cctx.closures().callLocalSafe(new Callable<Void>() {
+                                            @Override public Void call() throws Exception {
+                                                if (!busyLock.enterBusy())
+                                                    return null;
 
-                                            return null;
-                                        }
-                                    }, false);
+                                                try {
+                                                    queue.size();
+                                                }
+                                                catch (GridCacheDataStructureRemovedRuntimeException ignore) {
+                                                    queuesMap.remove(queue.delegate().id());
+                                                }
+                                                finally {
+                                                    busyLock.leaveBusy();
+                                                }
+
+                                                return null;
+                                            }
+                                        }, false);
+                                    }
+                                    else
+                                        queue.delegate().onHeaderChanged(hdr);
                                 }
-                                else
-                                    queue.delegate().onHeaderChanged(hdr);
                             }
                         }
-                    }
 
-                    return true;
+                        return true;
+                    }
+                    finally {
+                        busyLock.leaveBusy();
+                    }
                 }
             });
 
@@ -1127,7 +1146,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
                     final long topVer = cctx.discovery().topologyVersion();
 
-                    GridCacheAdapter cache = cctx.cache();
+                    GridCache cache = cctx.kernalContext().cache().publicCache(cctx.name());
 
                     Map<GridUuid, GridCacheQueueHeader> aliveQueues = new GridLeanMap<>();
 
@@ -1137,9 +1156,9 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
                     int cnt = 0;
 
-                    Set<GridCacheEntryEx<Object, Object>> entries = cache.map().allEntries0();
+                    Set<GridCacheEntryEx<K, V>> entries = cctx.cache().map().allEntries0();
 
-                    for (GridCacheEntryEx<Object, Object> entry : entries) {
+                    for (GridCacheEntryEx<K, V> entry : entries) {
                         if (!processEntry(entry, topVer))
                             continue;
 
@@ -1220,7 +1239,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
          * @return {@code True} if this worker should process given entry.
          */
         @SuppressWarnings("IfMayBeConditional")
-        private boolean processEntry(GridCacheEntryEx<Object, Object> e, long topVer) {
+        private boolean processEntry(GridCacheEntryEx<K, V> e, long topVer) {
             if (!(e.key() instanceof GridCacheQueueItemKey))
                 return false;
 
