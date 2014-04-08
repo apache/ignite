@@ -250,7 +250,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @param mapped Mappings to check for duplicates.
      * @param topVer Topology version to map on.
      */
-    private void map(Collection<? extends K> keys, Map<GridNode, LinkedHashMap<K, Boolean>> mapped, long topVer) {
+    private void map(Collection<? extends K> keys, Map<GridNode, LinkedHashMap<K, Boolean>> mapped, final long topVer) {
         Collection<GridNode> affNodes = CU.affinityNodes(cctx, topVer);
 
         if (affNodes.isEmpty()) {
@@ -317,7 +317,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 add(fut.chain(new C1<GridFuture<Collection<GridCacheEntryInfo<K, V>>>, Map<K, V>>() {
                     @Override public Map<K, V> apply(GridFuture<Collection<GridCacheEntryInfo<K, V>>> fut) {
                         try {
-                            return loadEntries(n.id(), mappedKeys.keySet(), fut.get(), saved);
+                            return loadEntries(n.id(), mappedKeys.keySet(), fut.get(), saved, topVer);
                         }
                         catch (Exception e) {
                             U.error(log, "Failed to get values from dht cache [fut=" + fut + "]", e);
@@ -419,7 +419,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     }
                     finally {
                         if (entry != null && (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))) {
-                            dht.context().evicts().touch(entry);
+                            dht.context().evicts().touch(entry, topVer);
 
                             entry = null;
                         }
@@ -485,7 +485,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             }
             finally {
                 if (entry != null && !reload && tx == null)
-                    cctx.evicts().touch(entry);
+                    cctx.evicts().touch(entry, topVer);
             }
         }
 
@@ -514,7 +514,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @return Result map.
      */
     private Map<K, V> loadEntries(UUID nodeId, Collection<K> keys, Collection<GridCacheEntryInfo<K, V>> infos,
-        Map<K, GridCacheVersion> savedVers) {
+        Map<K, GridCacheVersion> savedVers, long topVer) {
         boolean empty = F.isEmpty(keys);
 
         Map<K, V> map = empty ? Collections.<K, V>emptyMap() : new GridLeanMap<K, V>(keys.size());
@@ -530,7 +530,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                     // Entries available locally in DHT should not be loaded into near cache for reading.
                     if (!cctx.cache().affinity().isPrimaryOrBackup(cctx.localNode(), info.key())) {
-                        GridNearCacheEntry<K, V> entry = cache().entryExx(info.key());
+                        GridNearCacheEntry<K, V> entry = cache().entryExx(info.key(), topVer);
 
                         GridCacheVersion saved = savedVers.get(info.key());
 
@@ -544,7 +544,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                             saved,
                             info.ttl(),
                             info.expireTime(),
-                            true);
+                            true,
+                            topVer);
                     }
                 }
                 catch (GridCacheEntryRemovedException ignore) {
@@ -696,22 +697,22 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                 topFut.listenAsync(new CIX1<GridFuture<Long>>() {
                     @Override public void applyx(GridFuture<Long> fut) throws GridException {
-                        long topVer = fut.get();
+                        long readyTopVer = fut.get();
 
                         // This will append new futures to compound list.
                         map(F.view(keys.keySet(), new P1<K>() {
                             @Override public boolean apply(K key) {
                                 return invalidParts.contains(cctx.affinity().partition(key));
                             }
-                        }), F.t(node, keys), topVer);
+                        }), F.t(node, keys), readyTopVer);
 
                         // It is critical to call onDone after adding futures to compound list.
-                        onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedVers));
+                        onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedVers, topVer));
                     }
                 });
             }
             else
-                onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedVers));
+                onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedVers, topVer));
         }
 
         /** {@inheritDoc} */

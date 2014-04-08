@@ -28,6 +28,9 @@ public enum GridIoPolicy {
     /** Management execution pool. */
     MANAGEMENT_POOL,
 
+    /** Affinity fetch pool. */
+    AFFINITY_POOL,
+
     /** DR execution pool. */
     DR_POOL;
 

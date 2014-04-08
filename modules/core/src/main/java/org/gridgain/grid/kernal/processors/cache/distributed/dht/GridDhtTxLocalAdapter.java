@@ -179,7 +179,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      * @return {@code True} if reader was added as a result of this call.
      */
     @Nullable protected abstract GridFuture<Boolean> addReader(long msgId, GridDhtCacheEntry<K, V> cached,
-        GridCacheTxEntry<K, V> entry);
+        GridCacheTxEntry<K, V> entry, long topVer);
 
     /**
      * @param commit Commit flag.
@@ -504,7 +504,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                     log.debug("Added entry to transaction: " + entry);
             }
 
-            return addReader(msgId, cctx.dht().entryExx(entry.key()), entry);
+            return addReader(msgId, cctx.dht().entryExx(entry.key()), entry, topologyVersion());
         }
         catch (GridDhtInvalidPartitionException ex) {
             addInvalidPartition(ex.partition());
@@ -556,6 +556,8 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
             int idx = 0;
             int drVerIdx = 0;
 
+            long topVer = topologyVersion();
+
             // Enlist locks into transaction.
             for (GridCacheEntryEx<K, V> entry : entries) {
                 K key = entry.key();
@@ -564,7 +566,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
 
                 // First time access.
                 if (txEntry == null) {
-                    GridDhtCacheEntry<K, V> cached = cctx.dht().entryExx(key, topologyVersion());
+                    GridDhtCacheEntry<K, V> cached = cctx.dht().entryExx(key, topVer);
 
                     cached.unswap(!read);
 
@@ -588,7 +590,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
 
                     txEntry.cached(cached, txEntry.keyBytes());
 
-                    addReader(msgId, cached, txEntry);
+                    addReader(msgId, cached, txEntry, topVer);
                 }
                 else {
                     if (skipped == null)

@@ -300,7 +300,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         }
 
         // Create partition.
-        GridDhtLocalPartition<K, V> locPart = top.localPartition(part, -1, false);
+        GridDhtLocalPartition<K, V> locPart = top.localPartition(part, topVer, false);
 
         if (log.isDebugEnabled())
             log.debug("Mapping local partition [loc=" + cctx.localNodeId() + ", topVer" + topVer +
@@ -488,6 +488,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                             info.ttl(),
                             info.expireTime(),
                             true,
+                            topVer,
                             replicate ? DR_PRELOAD : DR_NONE
                         )) {
                             if (rec && !entry.isInternal())

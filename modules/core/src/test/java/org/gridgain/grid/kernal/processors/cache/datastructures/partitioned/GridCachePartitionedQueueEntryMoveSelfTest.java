@@ -235,7 +235,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
      */
     private Collection<GridNode> nodes(GridCacheAffinityFunction aff, int part, Collection<GridNode> nodes) {
         List<List<GridNode>> assignment = aff.assignPartitions(
-            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(nodes), 1, BACKUP_CNT));
+            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(nodes), null, null, 1, BACKUP_CNT));
 
         return assignment.get(part);
     }

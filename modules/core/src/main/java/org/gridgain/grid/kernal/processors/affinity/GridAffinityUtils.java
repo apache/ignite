@@ -10,13 +10,14 @@
 package org.gridgain.grid.kernal.processors.affinity;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
@@ -30,20 +31,19 @@ import java.util.concurrent.*;
  */
 class GridAffinityUtils {
     /**
-     * Creates a job that will look up {@link GridCacheAffinityKeyMapper} and {@link GridCacheAffinityFunction} on a cache with
-     * given name. If they exist, this job will serialize and transfer them together with all deployment information
-     * needed to unmarshal objects on remote node. Result is returned as a {@link GridTuple3}, where first object is
-     * {@link GridAffinityMessage} for {@link GridCacheAffinityFunction}, second object is {@link GridAffinityMessage} for
-     * {@link GridCacheAffinityKeyMapper} and third object is optional {@link GridException} representing deployment
-     * exception. If exception field is not null, first two objects must be discarded. If cache with name {@code
-     * cacheName} does not exist on a node, the job will return {@code null}.
+     * Creates a job that will look up {@link GridCacheAffinityKeyMapper} and {@link GridCacheAffinityFunction} on a
+     * cache with given name. If they exist, this job will serialize and transfer them together with all deployment
+     * information needed to unmarshal objects on remote node. Result is returned as a {@link GridTuple3},
+     * where first object is {@link GridAffinityMessage} for {@link GridCacheAffinityFunction}, second object
+     * is {@link GridAffinityMessage} for {@link GridCacheAffinityKeyMapper} and third object is affinity assignment
+     * for given topology version.
      *
      * @param cacheName Cache name.
      * @return Affinity job.
      */
-    static Callable<GridTuple4<GridAffinityMessage, GridAffinityMessage, Integer, GridException>> affinityJob(
-        String cacheName) {
-        return new AffinityJob(cacheName);
+    static Callable<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>> affinityJob(String cacheName,
+        long topVer) {
+        return new AffinityJob(cacheName, topVer);
     }
 
     /**
@@ -112,7 +112,7 @@ class GridAffinityUtils {
      */
     @GridInternal
     private static class AffinityJob implements
-        Callable<GridTuple4<GridAffinityMessage, GridAffinityMessage, Integer, GridException>>, Externalizable {
+        Callable<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>>, Externalizable {
         /** */
         @GridInstanceResource
         private Grid grid;
@@ -124,11 +124,15 @@ class GridAffinityUtils {
         /** */
         private String cacheName;
 
+        /** */
+        private long topVer;
+
         /**
          * @param cacheName Cache name.
          */
-        private AffinityJob(@Nullable String cacheName) {
+        private AffinityJob(@Nullable String cacheName, long topVer) {
             this.cacheName = cacheName;
+            this.topVer = topVer;
         }
 
         /**
@@ -139,44 +143,35 @@ class GridAffinityUtils {
         }
 
         /** {@inheritDoc} */
-        @Override public GridTuple4<GridAffinityMessage, GridAffinityMessage, Integer, GridException> call()
+        @Override public GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment> call()
             throws Exception {
             assert grid != null;
             assert log != null;
 
             GridKernal kernal = ((GridKernal)grid);
 
-            GridCache cache = kernal.cachex(cacheName);
+            GridCacheContext<Object, Object> cctx = kernal.internalCache(cacheName).context();
 
-            assert cache != null;
+            assert cctx != null;
 
             GridKernalContext ctx = kernal.context();
 
-            GridTuple4<GridAffinityMessage, GridAffinityMessage, Integer, GridException> res =
-                new GridTuple4<>();
-
-            try {
-                res.set1(affinityMessage(ctx, cache.configuration().getAffinityMapper()));
-                res.set2(affinityMessage(ctx, cache.configuration().getAffinity()));
-                res.set3(cache.configuration().getBackups());
-            }
-            catch (GridException e) {
-                res.set4(e);
-
-                U.error(log, "Failed to transfer affinity.", e);
-            }
-
-            return res;
+            return F.t(
+                affinityMessage(ctx, cctx.config().getAffinity()),
+                affinityMessage(ctx, cctx.config().getAffinityMapper()),
+                new GridAffinityAssignment(topVer, cctx.affinity().assignments(topVer)));
         }
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeString(out, cacheName);
+            out.writeLong(topVer);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             cacheName = U.readString(in);
+            topVer = in.readLong();
         }
     }
 }
