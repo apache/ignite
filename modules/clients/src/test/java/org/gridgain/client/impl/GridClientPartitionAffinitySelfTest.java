@@ -328,8 +328,8 @@ public class GridClientPartitionAffinitySelfTest extends GridCommonAbstractTest 
         GridClientNode node = aff.node(key, nodes);
         int part = srvAff.partition(key);
 
-        GridCacheAffinityFunctionContext ctx = new GridCacheAffinityFunctionContextImpl(new ArrayList<>(srvNodes), 1,
-            0);
+        GridCacheAffinityFunctionContext ctx = new GridCacheAffinityFunctionContextImpl(new ArrayList<>(srvNodes),
+            null, null, 1, 0);
 
         GridNode srvNode = F.first(srvAff.assignPartitions(ctx).get(part));
 

@@ -232,16 +232,18 @@ public class GridCacheDgcManagerTxSelfTest extends GridCommonAbstractTest {
 
         Collection<GridNode> nodes = grid(0).nodes();
 
+        long topVer = cctx.discovery().topologyVersion();
+
         for (int key = startKey; key < keyCnt; key++) {
             // Resolve node to put key to (mix primary, backup and other nodes).
             GridNode node;
 
             if (key % 3 == 0)
-                node = F.first(cctx.affinity().nodes(new Integer(key)));
+                node = F.first(cctx.affinity().nodes(new Integer(key), topVer));
             else if (key % 3 == 1)
-                node = F.first(cctx.affinity().backups(new Integer(key)));
+                node = F.first(cctx.affinity().backups(new Integer(key), topVer));
             else
-                node = F.first(F.view(nodes, F.notContains(cctx.affinity().nodes(new Integer(key)))));
+                node = F.first(F.view(nodes, F.notContains(cctx.affinity().nodes(new Integer(key), topVer))));
 
             assert node != null;
 

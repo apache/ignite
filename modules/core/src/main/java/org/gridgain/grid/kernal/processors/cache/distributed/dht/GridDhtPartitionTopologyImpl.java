@@ -300,7 +300,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
                 // If preloader is disabled, then we simply clear out
                 // the partitions this node is not responsible for.
                 for (int p = 0; p < num; p++) {
-                    GridDhtLocalPartition<K, V> locPart = localPartition(p, -1, false, false);
+                    GridDhtLocalPartition<K, V> locPart = localPartition(p, topVer, false, false);
 
                     boolean belongs = cctx.affinity().localNode(p, topVer);
 
@@ -358,6 +358,8 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
 
         int num = cctx.affinity().partitions();
 
+        long topVer = exchId.topologyVersion();
+
         lock.writeLock().lock();
 
         try {
@@ -371,7 +373,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
             long updateSeq = this.updateSeq.incrementAndGet();
 
             for (int p = 0; p < num; p++) {
-                GridDhtLocalPartition<K, V> locPart = localPartition(p, -1, false, false);
+                GridDhtLocalPartition<K, V> locPart = localPartition(p, topVer, false, false);
 
                 if (cctx.affinity().localNode(p, topVer)) {
                     // This partition will be created during next topology event,
@@ -466,7 +468,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
                 if (!create)
                     return null;
 
-                if (!belongs && topVer < 0)
+                if (!belongs)
                     throw new GridDhtInvalidPartitionException(p, "Adding entry to evicted partition [part=" + p +
                         ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
 
@@ -474,7 +476,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
             }
 
             if (loc == null && create) {
-                if (!belongs && topVer < 0)
+                if (!belongs)
                     throw new GridDhtInvalidPartitionException(p, "Creating partition which does not belong [part=" +
                         p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
 
@@ -545,7 +547,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
          * ===================================================
          */
 
-        GridDhtLocalPartition<K, V> loc = localPartition(e.key(), false);
+        GridDhtLocalPartition<K, V> loc = localPartition(cctx.affinity().partition(e.key()), topologyVersion(), false);
 
         if (loc != null)
             loc.onRemoved(e);
@@ -567,8 +569,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
     /** {@inheritDoc} */
     @Override public Collection<GridNode> nodes(int p, long topVer) {
         // Don't remove redundant cast, or won't compile.
-        Collection<GridNode> affNodes = (Collection<GridNode>)(Collection<? extends GridNode>)
-            cctx.affinity().nodes(p, topVer);
+        Collection<GridNode> affNodes = cctx.affinity().nodes(p, topVer);
 
         Collection<UUID> affIds = new HashSet<>(F.viewReadOnly(affNodes, F.node2id()));
 

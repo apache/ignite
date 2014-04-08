@@ -17,11 +17,17 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * FIXDOC: Add class description.
+ * Cache affinity function context implementation. Simple bean that holds all required fields.
  */
 public class GridCacheAffinityFunctionContextImpl implements GridCacheAffinityFunctionContext {
     /** Topology snapshot. */
     private List<GridNode> topSnapshot;
+
+    /** Previous affinity assignment. */
+    private List<List<GridNode>> prevAssignment;
+
+    /** Discovery event that caused this topology change. */
+    private GridDiscoveryEvent discoEvt;
 
     /** Topology version. */
     private long topVer;
@@ -33,15 +39,18 @@ public class GridCacheAffinityFunctionContextImpl implements GridCacheAffinityFu
      * @param topSnapshot Topology snapshot.
      * @param topVer Topology version.
      */
-    public GridCacheAffinityFunctionContextImpl(List<GridNode> topSnapshot, long topVer, int backups) {
+    public GridCacheAffinityFunctionContextImpl(List<GridNode> topSnapshot, List<List<GridNode>> prevAssignment,
+        GridDiscoveryEvent discoEvt, long topVer, int backups) {
         this.topSnapshot = topSnapshot;
+        this.prevAssignment = prevAssignment;
+        this.discoEvt = discoEvt;
         this.topVer = topVer;
         this.backups = backups;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public List<GridNode> previousAssignment(int part) {
-        return null;
+        return prevAssignment.get(part);
     }
 
     /** {@inheritDoc} */
@@ -56,7 +65,7 @@ public class GridCacheAffinityFunctionContextImpl implements GridCacheAffinityFu
 
     /** {@inheritDoc} */
     @Nullable @Override public GridDiscoveryEvent discoveryEvent() {
-        return null;
+        return discoEvt;
     }
 
     /** {@inheritDoc} */

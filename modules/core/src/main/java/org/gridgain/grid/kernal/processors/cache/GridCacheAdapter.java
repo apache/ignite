@@ -966,7 +966,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @return Entry or <tt>null</tt>.
      */
     @Nullable public GridCacheEntryEx<K, V> peekEx(K key) {
-        return entry0(key, -1, false, false);
+        return entry0(key, ctx.affinity().affinityTopologyVersion(), false, false);
     }
 
     /**
@@ -983,7 +983,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @return Entry (never {@code null}).
      */
     public GridCacheEntryEx<K, V> entryEx(K key, boolean touch) {
-        GridCacheEntryEx<K, V> e = entry0(key, -1, true, touch);
+        GridCacheEntryEx<K, V> e = entry0(key, ctx.affinity().affinityTopologyVersion(), true, touch);
 
         assert e != null;
 
@@ -1030,7 +1030,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                     EVT_CACHE_ENTRY_CREATED, null, false, null, false);
 
             if (touch)
-                ctx.evicts().touch(cur);
+                ctx.evicts().touch(cur, topVer);
         }
 
         return cur;
@@ -1433,6 +1433,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         @Nullable final GridPredicate<GridCacheEntry<K, V>>... filter) {
         ctx.denyOnFlag(READ);
 
+        final long topVer = ctx.affinity().affinityTopologyVersion();
+
         if (!F.isEmpty(keys)) {
             try {
                 final String uid = CU.uuid(); // Get meta UUID for this thread.
@@ -1446,12 +1448,12 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                         continue;
 
                     // Skip primary or backup entries for near cache.
-                    if (ctx.isNear() && ctx.affinity().localNode(key))
+                    if (ctx.isNear() && ctx.affinity().localNode(key, topVer))
                         continue;
 
                     while (true) {
                         try {
-                            GridCacheEntryEx<K, V> entry = entryExSafe(key);
+                            GridCacheEntryEx<K, V> entry = entryExSafe(key, topVer);
 
                             if (entry == null)
                                 break;
@@ -1463,7 +1465,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                                 // Tag entry with current version.
                                 entry.addMeta(uid, ver);
                             else
-                                ctx.evicts().touch(entry);
+                                ctx.evicts().touch(entry, topVer);
 
                             break;
                         }
@@ -1509,7 +1511,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
                                         boolean set = entry.versionedValue(val, curVer, nextVer);
 
-                                        ctx.evicts().touch(entry);
+                                        ctx.evicts().touch(entry, topVer);
 
                                         if (map != null) {
                                             if (set || wasNew) {
@@ -1565,7 +1567,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                                 GridCacheEntryEx<K, V> entry = peekEx(key);
 
                                 if (entry != null)
-                                    ctx.evicts().touch(entry);
+                                    ctx.evicts().touch(entry, topVer);
                             }
                         }
 
@@ -1588,7 +1590,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param key Key.
      * @return Entry.
      */
-    @Nullable protected GridCacheEntryEx<K, V> entryExSafe(K key) {
+    @Nullable protected GridCacheEntryEx<K, V> entryExSafe(K key, long topVer) {
         return entryEx(key);
     }
 
@@ -1670,6 +1672,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             try {
                 assert keys != null;
 
+                final long topVer = tx == null ? ctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
+
                 final Map<K, V> map = new GridLeanMap<>(keys.size());
 
                 Map<K, GridCacheVersion> misses = null;
@@ -1707,7 +1711,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                                 map.put(key, ctx.cloneOnFlag(val));
 
                                 if (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))
-                                    ctx.evicts().touch(entry);
+                                    ctx.evicts().touch(entry, topVer);
 
                                 if (keys.size() == 1)
                                     // Safe to return because no locks are required in READ_COMMITTED mode.
@@ -1725,7 +1729,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                                 log.debug("Filter validation failed for entry: " + entry);
 
                             if (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))
-                                ctx.evicts().touch(entry);
+                                ctx.evicts().touch(entry, topVer);
 
                             break; // While loop.
                         }
@@ -1793,7 +1797,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
                                                 if (touch && (tx0 == null || (!tx0.implicit() &&
                                                     tx0.isolation() == READ_COMMITTED)))
-                                                    ctx.evicts().touch(entry);
+                                                    ctx.evicts().touch(entry, topVer);
 
                                                 break;
                                             }
@@ -1820,7 +1824,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                                             GridCacheEntryEx<K, V> entry = peekEx(key);
 
                                             if (entry != null)
-                                                ctx.evicts().touch(entry);
+                                                ctx.evicts().touch(entry, topVer);
                                         }
                                     }
                                 }
@@ -1843,7 +1847,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                                         GridCacheEntryEx<K, V> entry = peekEx(key);
 
                                         if (entry != null)
-                                            ctx.evicts().touch(entry);
+                                            ctx.evicts().touch(entry, topVer);
                                     }
                                 }
 
@@ -1874,7 +1878,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                             GridCacheEntryEx<K, V> entry = peekEx(key);
 
                             if (entry != null)
-                                ctx.evicts().touch(entry);
+                                ctx.evicts().touch(entry, topVer);
                         }
                     }
                 }
@@ -2896,16 +2900,16 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public GridCacheMetrics metrics() {
-        GridCacheMetricsAdapter copy = GridCacheMetricsAdapter.copyOf(metrics);
+        GridCacheMetricsAdapter cp = GridCacheMetricsAdapter.copyOf(metrics);
 
-        if (copy != null) {
-            GridDrSenderCacheMetricsAdapter drSndMetrics = copy.drSendMetrics0();
+        if (cp != null) {
+            GridDrSenderCacheMetricsAdapter drSndMetrics = cp.drSendMetrics0();
 
             if (drSndMetrics != null)
                 drSndMetrics.backupQueueSize(drBackupQueueSize());
         }
 
-        return copy;
+        return cp;
     }
 
     /**
@@ -3222,6 +3226,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public void loadCache(final GridBiPredicate<K, V> p, final long ttl, Object[] args) throws GridException {
         final boolean replicate = ctx.isDrEnabled();
+        final long topVer = ctx.affinity().affinityTopologyVersion();
 
         if (ctx.store().isLocalStore()) {
             try (final GridDataLoader<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex())) {
@@ -3268,7 +3273,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                     GridCacheEntryEx<K, V> entry = entryEx(key, false);
 
                     try {
-                        entry.initialValue(val, null, ver0, ttl, -1, false, replicate ? DR_LOAD : DR_NONE);
+                        entry.initialValue(val, null, ver0, ttl, -1, false, topVer, replicate ? DR_LOAD : DR_NONE);
                     }
                     catch (GridException e) {
                         throw new GridRuntimeException("Failed to put cache value: " + entry, e);
@@ -3278,7 +3283,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                             log.debug("Got removed entry during loadCache (will ignore): " + entry);
                     }
                     finally {
-                        ctx.evicts().touch(entry);
+                        ctx.evicts().touch(entry, topVer);
                     }
 
                     CU.unwindEvicts(ctx);
@@ -4279,18 +4284,19 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         validateCacheKey(key);
 
+        long topVer = ctx.affinity().affinityTopologyVersion();
+
         while (true) {
             try {
                 // Do not reload near entries, they will be reloaded in DHT cache.
-                if (ctx.isNear() && ctx.affinity().localNode(key))
+                if (ctx.isNear() && ctx.affinity().localNode(key, topVer))
                     return null;
 
                 return ctx.cloneOnFlag(entryEx(key).innerReload(filter));
             }
             catch (GridCacheEntryRemovedException ignored) {
-                if (log.isDebugEnabled()) {
+                if (log.isDebugEnabled())
                     log.debug("Attempted to reload a removed entry for key (will retry): " + key);
-                }
             }
         }
     }

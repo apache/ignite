@@ -48,21 +48,21 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     @Override public boolean isPrimary(GridNode n, K key) {
         A.notNull(n, "n", key, "key");
 
-        return cctx.affinity().primary(n, key);
+        return cctx.affinity().primary(n, key, topologyVersion());
     }
 
     /** {@inheritDoc} */
     @Override public boolean isBackup(GridNode n, K key) {
         A.notNull(n, "n", key, "key");
 
-        return cctx.affinity().backups(key).contains(n);
+        return cctx.affinity().backups(key, topologyVersion()).contains(n);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isPrimaryOrBackup(GridNode n, K key) {
         A.notNull(n, "n", key, "key");
 
-        return cctx.affinity().nodes(key).contains(n);
+        return cctx.affinity().nodes(key, topologyVersion()).contains(n);
     }
 
     /** {@inheritDoc} */
@@ -129,7 +129,7 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     @Override public GridNode mapPartitionToNode(int part) {
         A.ensure(part >= 0 && part < partitions(), "part >= 0 && part < total partitions");
 
-        return F.first(cctx.affinity().nodes(part));
+        return F.first(cctx.affinity().nodes(part, topologyVersion()));
     }
 
     /** {@inheritDoc} */
@@ -164,7 +164,7 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     @Override public Map<GridNode, Collection<K>> mapKeysToNodes(@Nullable Collection<? extends K> keys) {
         A.notNull(keys, "keys");
 
-        long topVer = cctx.discovery().topologyVersion();
+        long topVer = topologyVersion();
 
         int nodesCnt = cctx.discovery().cacheAffinityNodes(cctx.name(), topVer).size();
 
@@ -172,7 +172,7 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
         Map<GridNode, Collection<K>> res = new HashMap<>(nodesCnt, 1.0f);
 
         for (K key : keys) {
-            GridNode primary = cctx.affinity().primary(key);
+            GridNode primary = cctx.affinity().primary(key, topVer);
 
             if (primary != null) {
                 Collection<K> mapped = res.get(primary);
@@ -194,13 +194,22 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
     @Override public Collection<GridNode> mapKeyToPrimaryAndBackups(K key) {
         A.notNull(key, "key");
 
-        return cctx.affinity().nodes(partition(key));
+        return cctx.affinity().nodes(partition(key), topologyVersion());
     }
 
     /** {@inheritDoc} */
     @Override public Collection<GridNode> mapPartitionToPrimaryAndBackups(int part) {
         A.ensure(part >= 0 && part < partitions(), "part >= 0 && part < total partitions");
 
-        return cctx.affinity().nodes(part);
+        return cctx.affinity().nodes(part, topologyVersion());
+    }
+
+    /**
+     * Gets current topology version.
+     *
+     * @return Topology version.
+     */
+    private long topologyVersion() {
+        return cctx.affinity().affinityTopologyVersion();
     }
 }

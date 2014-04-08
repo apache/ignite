@@ -279,7 +279,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext"})
-    @Nullable public synchronized GridTuple3<GridCacheVersion, V, byte[]> versionedValue()
+    @Nullable public synchronized GridTuple3<GridCacheVersion, V, byte[]> versionedValue(long topVer)
         throws GridCacheEntryRemovedException {
         if (isNew() || !valid(-1) || deletedUnlocked())
             return null;
@@ -330,7 +330,8 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public GridFuture<Boolean> addReader(UUID nodeId, long msgId) throws GridCacheEntryRemovedException {
+    @Nullable public GridFuture<Boolean> addReader(UUID nodeId, long msgId, long topVer)
+        throws GridCacheEntryRemovedException {
         // Don't add local node as reader.
         if (cctx.nodeId().equals(nodeId))
             return null;
@@ -353,7 +354,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         }
 
         // If remote node is (primary?) or back up, don't add it as a reader.
-        if (U.nodeIds(cctx.affinity().nodes(partition())).contains(nodeId)) {
+        if (U.nodeIds(cctx.affinity().nodes(partition(), topVer)).contains(nodeId)) {
             if (log.isDebugEnabled())
                 log.debug("Ignoring near reader because remote node is affinity node [locNodeId=" + cctx.localNodeId()
                     + ", rmtNodeId=" + nodeId + ", key=" + key + ']');
