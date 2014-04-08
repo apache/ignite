@@ -13,8 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
 /**
  * Facade for working with distributed cache data structures. All cache data structures are similar
  * in APIs to {@code 'java.util.concurrent'} package, but all operations on them are grid-aware.
@@ -116,8 +114,27 @@ public interface GridCacheDataStructures {
      */
     public boolean removeQueue(String name, int batchSize) throws GridException;
 
-    @Nullable public <T> Set<T> set(String name, boolean collocated, boolean create) throws GridException;
+    /**
+     * Will get a named set from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Set name.
+     * @param collocated If {@code true} then all items within the same set will be collocated on the same node.
+     *      Otherwise elements of the same set maybe be cached on different nodes. This parameter works only
+     *      for {@link GridCacheMode#PARTITIONED} cache.
+     * @param create Flag indicating whether set should be created if does not exist.
+     * @return Set with given properties.
+     * @throws GridException If failed.
+     */
+    @Nullable public <T> GridCacheSet<T> set(String name, boolean collocated, boolean create) throws GridException;
 
+    /**
+     * Removes set from cache.
+     *
+     * @param name Set name.
+     * @return {@code True} if set has been removed and false if it's not cached.
+     * @throws GridException If failed.
+     */
     public boolean removeSet(String name) throws GridException;
 
     /**

@@ -14,8 +14,6 @@ import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
 /**
  * Data structures implementation object.
  */
@@ -90,7 +88,8 @@ public class GridCacheDataStructuresImpl<K, V> implements GridCacheDataStructure
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> Set<T> set(String name, boolean collocated, boolean create) throws GridException {
+    @Nullable @Override public <T> GridCacheSet<T> set(String name, boolean collocated, boolean create)
+        throws GridException {
         return dsMgr.set(name, collocated, create);
     }
 

@@ -14,8 +14,6 @@ import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
 /**
  * Manager of data structures.
  */
@@ -139,7 +137,8 @@ public abstract class GridCacheDataStructuresManager<K, V> extends GridCacheMana
      * @return Set.
      * @throws GridException If failed.
      */
-    @Nullable public abstract <T> Set<T> set(String name, boolean collocated, boolean create) throws GridException;
+    @Nullable public abstract <T> GridCacheSet<T> set(String name, boolean collocated, boolean create)
+        throws GridException;
 
     /**
      * Removes set from cache.

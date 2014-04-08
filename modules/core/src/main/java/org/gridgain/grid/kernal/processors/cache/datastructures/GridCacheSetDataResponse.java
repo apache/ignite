@@ -131,7 +131,7 @@ public class GridCacheSetDataResponse<K, V> extends GridCacheMessage<K, V> {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 80;
+        return 82;
     }
 
     /** {@inheritDoc} */

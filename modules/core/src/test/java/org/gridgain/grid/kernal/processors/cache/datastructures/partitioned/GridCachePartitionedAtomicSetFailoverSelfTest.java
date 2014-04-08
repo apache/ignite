@@ -10,19 +10,16 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures.partitioned;
 
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 
 /**
- * Set tests.
+ * Set failover tests.
  */
-public class GridCachePartitionedAtomicPrimaryWriteOrderSetSelfTest extends GridCachePartitionedAtomicSetSelfTest {
+public class GridCachePartitionedAtomicSetFailoverSelfTest extends GridCacheSetFailoverAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration ccfg = super.cacheConfiguration(gridName);
-
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
-
-        return ccfg;
+    @Override protected GridCacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 }

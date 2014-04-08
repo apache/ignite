@@ -25,7 +25,7 @@ public class GridCachePartitionedAtomicSetSelfTest extends GridCacheSetAbstractS
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        ccfg.setAtomicWriteOrderMode(CLOCK);
+        ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         return ccfg;
     }

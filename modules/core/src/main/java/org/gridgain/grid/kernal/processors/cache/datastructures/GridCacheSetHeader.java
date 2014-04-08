@@ -44,7 +44,7 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
     /**
      * @return Set unique ID.
      */
-    public GridUuid setId() {
+    public GridUuid id() {
         return id;
     }
 

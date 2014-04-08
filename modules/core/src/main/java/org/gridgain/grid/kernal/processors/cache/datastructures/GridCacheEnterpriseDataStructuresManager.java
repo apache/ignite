@@ -48,6 +48,9 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     /** */
     private static final int SET_ITER_PAGE_SIZE = 50;
 
+    /** */
+    private static final int MAX_CANCEL_IDS = 1000;
+
     /** Discovery events handler. */
     private final GridLocalEventListener discoLsnr = new DiscoveryListener();
 
@@ -96,20 +99,27 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     /** Queue remove candidates identified during preload. */
     private final BlockingQueue<GridCacheInternal> queueDelCands = new LinkedBlockingQueue<>();
 
-    /** */
-    private ConcurrentMap<GridUuid, SetDataHolder> setDataMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
+    /** Set data used for set iteration. */
+    private ConcurrentMap<GridUuid, SetDataHolder> setDataMap = new ConcurrentHashMap8<>();
 
-    /** */
+    /** Set data response handlers. */
     private ConcurrentMap<Long, SetDataResponseHandler> setHndMap = new ConcurrentHashMap8<>();
 
-    /** */
-    private ConcurrentMap<SetIteratorKey, Iterator<GridCacheSetItemKey>> locSetIterMap = new ConcurrentHashMap8<>();
+    /** Set iterators. */
+    private ConcurrentMap<SetRequestKey, Iterator<GridCacheSetItemKey>> setIterMap = new ConcurrentHashMap8<>();
+
+    /** Set iterator requests to cancel. */
+    private Collection<SetRequestKey> cancelSetReqIds = new GridBoundedConcurrentOrderedSet<>(MAX_CANCEL_IDS);
+
+    /** Sets map. */
+    private final ConcurrentMap<GridUuid, GridCacheSetProxy> setsMap;
 
     /**
      * Default constructor.
      */
     public GridCacheEnterpriseDataStructuresManager() {
         dsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
+        setsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
     }
 
     /** {@inheritDoc} */
@@ -842,10 +852,32 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> Set<T> set(String name, boolean collocated, boolean create) throws GridException {
+    @Nullable @Override public <T> GridCacheSet<T> set(final String name, boolean collocated, final boolean create)
+        throws GridException {
         waitInitialization();
 
+        // Non collocated mode enabled only for PARTITIONED cache.
+        final boolean collocMode = cctx.cache().configuration().getCacheMode() != PARTITIONED || collocated;
+
+        if (cctx.atomic())
+            return set0(name, collocMode, create);
+
+        return CU.outTx(new Callable<GridCacheSet<T>>() {
+            @Override public GridCacheSet<T> call() throws Exception {
+                return set0(name, collocMode, create);
+            }
+        }, cctx);
+    }
+
+    /**
+     * @param name Name of set.
+     * @param collocated Collocation flag.
+     * @param create If {@code true} set will be created in case it is not in cache.
+     * @return Set.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private <T> GridCacheSet<T> set0(String name, boolean collocated, boolean create) throws GridException {
         GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
 
         GridCacheSetHeader hdr;
@@ -866,7 +898,17 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         if (hdr == null)
             return null;
 
-        return new GridCacheSet<>(cctx, name, hdr);
+        GridCacheSetProxy<T> set = setsMap.get(hdr.id());
+
+        if (set == null) {
+            GridCacheSetProxy<T> old = setsMap.putIfAbsent(hdr.id(),
+                set = new GridCacheSetProxy<T>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr)));
+
+            if (old != null)
+                set = old;
+        }
+
+        return set;
     }
 
     /** {@inheritDoc} */
@@ -950,6 +992,19 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         if (log.isDebugEnabled())
             log.debug("Received set data request [req=" + req + ", nodeId=" + nodeId + ']');
 
+        if (req.cancel()) {
+            SetRequestKey key = new SetRequestKey(req.id(), nodeId);
+
+            cancelSetReqIds.add(key);
+
+            if (setIterMap.remove(key) == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Received cancel request for unknown operation [req=" + req + ", nodeId=" + nodeId + ']');
+            }
+
+            return;
+        }
+
         SetDataHolder setData = setDataMap.get(req.setId());
 
         if (setData == null) {
@@ -978,20 +1033,21 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
             sendSetDataResponse(nodeId, new GridCacheSetDataResponse<K, V>(req.id(), size));
         }
         else {
-            SetIteratorKey key = new SetIteratorKey(req.id(), nodeId);
+            SetRequestKey key = new SetRequestKey(req.id(), nodeId);
 
-            if (req.cancel()) {
-                locSetIterMap.remove(key);
+            if (cancelSetReqIds.contains(key)) {
+                if (log.isDebugEnabled())
+                    log.debug("Received request for cancelled operation [req=" + req + ", nodeId=" + nodeId + ']');
 
                 return;
             }
 
-            Iterator<GridCacheSetItemKey> it = locSetIterMap.get(key);
+            Iterator<GridCacheSetItemKey> it = setIterMap.get(key);
 
             if (it == null) {
                 it = setData.set().iterator();
 
-                locSetIterMap.put(key, it);
+                setIterMap.put(key, it);
             }
 
             List<Object> data = new ArrayList<>(req.pageSize());
@@ -1018,7 +1074,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
             }
 
             if (last)
-                locSetIterMap.remove(key);
+                setIterMap.remove(key);
 
             sendSetDataResponse(nodeId, new GridCacheSetDataResponse<K, V>(req.id(), data, last));
         }
@@ -1097,7 +1153,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
      * @return Set iterator.
      * @throws GridException If failed.
      */
-    <T> Iterator<T> setIterator(GridCacheSet<?> set) throws GridException {
+    <T> GridCacheSetIterator<T> setIterator(GridCacheSetImpl<?> set) throws GridException {
         long topVer = cctx.discovery().topologyVersion();
 
         Collection<GridNode> nodes = set.dataNodes(topVer);
@@ -1139,7 +1195,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
      * @param set Set.
      * @return Size future.
      */
-    GridFuture<Integer> setSize(GridCacheSet<?> set) {
+    GridFuture<Integer> setSize(GridCacheSetImpl<?> set) {
         if (cctx.isLocal() || cctx.isReplicated()) {
             SetDataHolder setData = setDataMap.get(set.id());
 
@@ -1178,7 +1234,6 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
 
     /** {@inheritDoc} */
     @Override public void onTxCommitted(GridCacheTxEx<K, V> tx) {
-        // TODO: check why called twice locally.
         if (!cctx.isDht() && tx.internal() && (!cctx.isColocated() || cctx.isReplicated())) {
             try {
                 waitInitialization();
@@ -1340,10 +1395,10 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
                     hndIter.remove();
             }
 
-            Iterator<SetIteratorKey> locSetIter = locSetIterMap.keySet().iterator();
+            Iterator<SetRequestKey> locSetIter = setIterMap.keySet().iterator();
 
             while (locSetIter.hasNext()) {
-                SetIteratorKey key = locSetIter.next();
+                SetRequestKey key = locSetIter.next();
 
                 if (evt0.eventNode().id().equals(key.nodeId))
                     locSetIter.remove();
@@ -1479,9 +1534,9 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
     }
 
     /**
-     * Set iterator key.
+     * Set request key.
      */
-    private static class SetIteratorKey {
+    private static class SetRequestKey implements Comparable<SetRequestKey> {
         /** */
         private final long id;
 
@@ -1492,7 +1547,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
          * @param id Iterator ID.
          * @param nodeId Node ID.
          */
-        private SetIteratorKey(long id, UUID nodeId) {
+        private SetRequestKey(long id, UUID nodeId) {
             this.id = id;
             this.nodeId = nodeId;
         }
@@ -1505,6 +1560,14 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
         }
 
         /** {@inheritDoc} */
+        @Override public int compareTo(SetRequestKey key) {
+            if (id == key.id)
+                return nodeId.compareTo(key.nodeId);
+
+            return id < key.id ? -1 : 1;
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
@@ -1512,7 +1575,7 @@ public final class GridCacheEnterpriseDataStructuresManager<K, V> extends GridCa
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            SetIteratorKey that = (SetIteratorKey)o;
+            SetRequestKey that = (SetRequestKey)o;
 
             return id == that.id && nodeId.equals(that.nodeId);
         }
