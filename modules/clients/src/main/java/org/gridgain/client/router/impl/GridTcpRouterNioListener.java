@@ -15,7 +15,6 @@ import org.gridgain.client.marshaller.*;
 import org.gridgain.client.marshaller.jdk.*;
 import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.client.marshaller.protobuf.*;
-import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
@@ -26,6 +25,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.kernal.GridProductImpl.*;
 import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
 
 /**
@@ -123,9 +123,9 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
 
             byte[] verBytes = hs.versionBytes();
 
-            if (!Arrays.equals(GridRestProcessor.VER_BYTES, verBytes)) {
+            if (!Arrays.equals(VER_BYTES, verBytes)) {
                 U.error(log, "Client version check failed [ses=" + ses +
-                    ", expected=" + Arrays.toString(GridRestProcessor.VER_BYTES)
+                    ", expected=" + Arrays.toString(VER_BYTES)
                     + ", actual=" + Arrays.toString(verBytes) + ']');
 
                 ses.send(GridClientHandshakeResponse.ERR_VERSION_CHECK_FAILED).listenAsync(

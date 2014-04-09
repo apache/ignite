@@ -24,9 +24,9 @@
 
             - PARTITIONED, ATOMIC
             - REPLICATED, ATOMIC
-            - LOCAL (non-distributed local cache)
+            - LOCAL (non-distributed local cache), ATOMIC
 
-            Any property from GridCacheConfiguration interface can be configured here.
+            Any property from GridCacheConfiguration class can be configured here.
             Note that absolutely all configuration properties are optional.
         -->
         <property name="cacheConfiguration">

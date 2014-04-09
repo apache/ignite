@@ -16,7 +16,6 @@ import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.dr.messages.internal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.nio.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 import sun.nio.ch.*;
@@ -1171,20 +1170,6 @@ public class GridTcpCommunicationMessageState {
      */
     public final boolean putEnum(@Nullable Enum<?> e) {
         return putByte(e != null ? (byte)e.ordinal() : -1);
-    }
-
-    /**
-     * @param cls Enum class.
-     * @return Enum or special {@link GridTcpCommunicationMessageAdapter#ENUM_NOT_READ}
-     *      value if it was not fully read.
-     */
-    public final Enum<?> getEnum(Class<? extends Enum<?>> cls) {
-        if (!buf.hasRemaining())
-            return ENUM_NOT_READ;
-
-        Byte ord = getByte();
-
-        return ord == null ? ENUM_NOT_READ : U.enumFromOrdinal(cls, ord);
     }
 
     /**

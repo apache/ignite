@@ -160,7 +160,7 @@ public class GridGgfsAttributes implements Externalizable {
         grpSize = in.readInt();
         metaCacheName = U.readString(in);
         dataCacheName = U.readString(in);
-        dfltMode = U.readEnum(in, GridGgfsMode.class);
+        dfltMode = GridGgfsMode.fromOrdinal(in.readByte());
         fragmentizerEnabled = in.readBoolean();
 
         if (in.readBoolean()) {
@@ -169,7 +169,7 @@ public class GridGgfsAttributes implements Externalizable {
             pathModes = new HashMap<>(size, 1.0f);
 
             for (int i = 0; i < size; i++)
-                pathModes.put(U.readString(in), U.readEnum(in, GridGgfsMode.class));
+                pathModes.put(U.readString(in), GridGgfsMode.fromOrdinal(in.readByte()));
         }
     }
 }

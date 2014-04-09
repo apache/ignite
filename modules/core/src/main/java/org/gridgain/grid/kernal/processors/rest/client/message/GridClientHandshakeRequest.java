@@ -15,7 +15,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.processors.rest.GridRestProcessor.*;
+import static org.gridgain.grid.kernal.GridProductImpl.*;
 
 /**
  * A client handshake request, containing version info and

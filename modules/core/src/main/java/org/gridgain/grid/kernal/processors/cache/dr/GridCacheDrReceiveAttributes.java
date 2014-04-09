@@ -64,7 +64,7 @@ public class GridCacheDrReceiveAttributes implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        conflictRslvrMode = U.readEnum(in, GridDrReceiverCacheConflictResolverMode.class);
+        conflictRslvrMode = GridDrReceiverCacheConflictResolverMode.fromOrdinal(in.readByte());
         conflictRslvrClsName = U.readString(in);
     }
 
