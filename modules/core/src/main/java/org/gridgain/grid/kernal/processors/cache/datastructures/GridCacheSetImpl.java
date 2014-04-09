@@ -13,15 +13,23 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
+import org.gridgain.grid.cache.query.GridCacheQueryFuture;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryAdapter;
+import org.gridgain.grid.lang.GridReducer;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.util.GridCloseableIteratorAdapter;
+import org.gridgain.grid.util.GridConcurrentHashSet;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+
+import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.SET;
 
 /**
  * Cache set implementation.
@@ -109,14 +117,57 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         try {
             checkRemoved();
 
-            GridCacheEnterpriseDataStructuresManager ds = (GridCacheEnterpriseDataStructuresManager)ctx.dataStructures();
+            if (ctx.isLocal() || ctx.isReplicated()) {
+                GridConcurrentHashSet<GridCacheSetItemKey> set = ctx.dataStructures().setData(id);
 
-            GridFuture<Integer> fut = ds.setSize(this);
+                return set != null ? set.size() : 0;
+            }
 
-            return fut.get();
+            GridCacheQueryAdapter qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
+                new GridSetQueryPredicate<>(id, collocated), false);
+
+            Collection<GridNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
+
+            qry.projection(ctx.grid().forNodes(nodes));
+
+            Collection<Integer> col = (Collection)qry.execute(new SumReducer()).get();
+
+            int sum = 0;
+
+            for (Integer val : col)
+                sum += val;
+
+            return sum;
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
+        }
+    }
+
+    private static class SumReducer implements GridReducer<Object, Integer>, Externalizable {
+        /** */
+        private int cntr;
+
+        public SumReducer() {
+            // No-op.
+        }
+
+        @Override public boolean collect(@Nullable Object o) {
+            cntr++;
+
+            return true;
+        }
+
+        @Override public Integer reduce() {
+            return cntr;
+        }
+
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            // No-op.
+        }
+
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            // No-op.
         }
     }
 
@@ -124,9 +175,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     @Override public boolean isEmpty() {
         checkRemoved();
 
-        GridCacheEnterpriseDataStructuresManager ds = (GridCacheEnterpriseDataStructuresManager)ctx.dataStructures();
+        GridConcurrentHashSet<GridCacheSetItemKey> set = ctx.dataStructures().setData(id);
 
-        return ds.setDataEmpty(id) && size() == 0;
+        return (set == null || set.isEmpty()) && size() == 0;
     }
 
     /** {@inheritDoc} */
@@ -316,9 +367,16 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         try {
             checkRemoved();
 
-            GridCacheEnterpriseDataStructuresManager ds = (GridCacheEnterpriseDataStructuresManager)ctx.dataStructures();
+            GridCacheQueryAdapter qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
+                new GridSetQueryPredicate<>(id, collocated), false);
 
-            return ds.setIterator(this);
+            Collection<GridNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
+
+            qry.projection(ctx.grid().forNodes(nodes));
+
+            GridCacheQueryFuture<T> fut = qry.execute();
+
+            return new SetIterator<>(fut);
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
@@ -424,6 +482,77 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
      */
     private GridCacheSetItemKey itemKey(Object item) {
         return collocated ? new CollocatedItemKey(name, id, item) : new GridCacheSetItemKey(name, id, item);
+    }
+
+    /**
+     */
+    private class SetIterator<T> extends GridCloseableIteratorAdapter<T> {
+        /** Query future. */
+        private final GridCacheQueryFuture<T> fut;
+
+        /** Init flag. */
+        private boolean init;
+
+        /** Next item. */
+        private T next;
+
+        /** Current item. */
+        private T cur;
+
+        /**
+         * @param fut Query future.
+         */
+        private SetIterator(GridCacheQueryFuture<T> fut) {
+            this.fut = fut;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected T onNext() throws GridException {
+            init();
+
+            if (next == null)
+                throw new NoSuchElementException();
+
+            cur = next;
+
+            Map.Entry e = (Map.Entry)fut.next();
+
+            next = e != null ? (T)e.getKey() : null;
+
+            return cur;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean onHasNext() throws GridException {
+            init();
+
+            return next != null;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onClose() throws GridException {
+            fut.cancel();
+        }
+
+        /**
+         * @throws GridException If failed.
+         */
+        private void init() throws GridException {
+            if (!init) {
+                Map.Entry e = (Map.Entry)fut.next();
+
+                next = e != null ? (T)e.getKey() : null;
+
+                init = true;
+            }
+        }
+
+        @Override protected void onRemove() throws GridException {
+            if (cur == null)
+                throw new NoSuchElementException();
+
+            GridCacheSetImpl.this.remove(cur);
+        }
     }
 
     /**

@@ -19,7 +19,7 @@ import java.io.*;
 /**
  * Set item key.
  */
-class GridCacheSetItemKey implements GridCacheInternal, Externalizable {
+public class GridCacheSetItemKey implements GridCacheInternal, Externalizable {
     /** */
     private String setName;
 

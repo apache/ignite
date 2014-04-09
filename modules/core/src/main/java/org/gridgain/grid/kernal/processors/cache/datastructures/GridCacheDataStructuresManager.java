@@ -82,12 +82,19 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     /** Init flag. */
     private boolean initFlag;
 
+    /** Set data used for set iteration. */
+    private ConcurrentMap<GridUuid, GridConcurrentHashSet<GridCacheSetItemKey>> setDataMap = new ConcurrentHashMap8<>();
+
+    /** Sets map. */
+    private final ConcurrentMap<GridUuid, GridCacheSetProxy> setsMap;
+
     /**
      * Default constructor.
      */
     public GridCacheDataStructuresManager() {
         dsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
         queuesMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
+        setsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
     }
 
     /** {@inheritDoc} */
@@ -1046,6 +1053,151 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         X.println(">>> ");
         X.println(">>> Data structure manager memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
         X.println(">>>   dsMapSize: " + dsMap.size());
+    }
+
+    /**
+     * Gets a set from cache or creates one if it's not cached.
+     *
+     * @param name Set name.
+     * @param collocated Collocation flag.
+     * @param create If {@code true} set will be created in case it is not in cache.
+     * @return Set instance.
+     * @throws GridException If failed.
+     */
+    @Nullable public <T> GridCacheSet<T> set(final String name, boolean collocated, final boolean create)
+        throws GridException {
+        waitInitialization();
+
+        // Non collocated mode enabled only for PARTITIONED cache.
+        final boolean collocMode = cctx.cache().configuration().getCacheMode() != PARTITIONED || collocated;
+
+        if (cctx.atomic())
+            return set0(name, collocMode, create);
+
+        return CU.outTx(new Callable<GridCacheSet<T>>() {
+            @Override public GridCacheSet<T> call() throws Exception {
+                return set0(name, collocMode, create);
+            }
+        }, cctx);
+    }
+
+    /**
+     * @param id Set ID.
+     * @return Data for given set.
+     */
+    public @Nullable GridConcurrentHashSet<GridCacheSetItemKey> setData(GridUuid id) {
+        return setDataMap.get(id);
+    }
+
+    /**
+     * @param name Name of set.
+     * @param collocated Collocation flag.
+     * @param create If {@code true} set will be created in case it is not in cache.
+     * @return Set.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private <T> GridCacheSet<T> set0(String name, boolean collocated, boolean create) throws GridException {
+        GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
+
+        GridCacheSetHeader hdr;
+
+        GridCacheAdapter cache = cctx.cache();
+
+        if (create) {
+            hdr = new GridCacheSetHeader(GridUuid.randomUuid(), collocated);
+
+            GridCacheSetHeader old = (GridCacheSetHeader)cache.putIfAbsent(key, hdr);
+
+            if (old != null)
+                hdr = old;
+        }
+        else
+            hdr = (GridCacheSetHeader)cache.get(key);
+
+        if (hdr == null)
+            return null;
+
+        GridCacheSetProxy<T> set = setsMap.get(hdr.id());
+
+        if (set == null) {
+            GridCacheSetProxy<T> old = setsMap.putIfAbsent(hdr.id(),
+                    set = new GridCacheSetProxy<T>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr)));
+
+            if (old != null)
+                set = old;
+        }
+
+        return set;
+    }
+
+    /**
+     * Removes set.
+     *
+     * @param name Set name.
+     * @return {@code True} if set was removed.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public boolean removeSet(String name) throws GridException {
+        waitInitialization();
+
+        GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
+
+        GridCacheAdapter cache = cctx.cache();
+
+        return cache.removex(key);
+    }
+
+    /**
+     * @param key Key.
+     * @param rmv {@code True} if entry was removed.
+     */
+    public void onEntryUpdated(K key, boolean rmv) {
+        if (key instanceof GridCacheSetItemKey)
+            onSetItemUpdated((GridCacheSetItemKey)key, rmv);
+    }
+
+    /**
+     * @param part Partition number.
+     */
+    public void onPartitionEvicted(int part) {
+        GridCacheAffinityManager aff = cctx.affinity();
+
+        for (GridConcurrentHashSet<GridCacheSetItemKey> set : setDataMap.values()) {
+            Iterator<GridCacheSetItemKey> iter = set.iterator();
+
+            while (iter.hasNext()) {
+                GridCacheSetItemKey key = iter.next();
+
+                if (aff.partition(key) == part)
+                    iter.remove();
+            }
+        }
+    }
+
+    /**
+     * @param key Set item key.
+     * @param rmv {@code True} if item was removed.
+     */
+    private void onSetItemUpdated(GridCacheSetItemKey key, boolean rmv) {
+        GridConcurrentHashSet<GridCacheSetItemKey> set = setDataMap.get(key.setId());
+
+        if (set == null) {
+            if (rmv)
+                return;
+
+            GridConcurrentHashSet<GridCacheSetItemKey> old = setDataMap.putIfAbsent(key.setId(),
+                    set = new GridConcurrentHashSet<>());
+
+            if (old != null)
+                set = old;
+        }
+
+        if (rmv)
+            set.remove(key);
+        else
+            set.add(key);
     }
 
     /**
