@@ -87,15 +87,9 @@ public class FactPurchase {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("FactPurchase ");
-        sb.append("[id=").append(id);
-        sb.append(", productId=").append(productId);
-        sb.append(", storeId=").append(storeId);
-        sb.append(", purchasePrice=").append(purchasePrice);
-        sb.append(']');
-
-        return sb.toString();
+        return "FactPurchase [id=" + id +
+            ", productId=" + productId +
+            ", storeId=" + storeId +
+            ", purchasePrice=" + purchasePrice + ']';
     }
 }
