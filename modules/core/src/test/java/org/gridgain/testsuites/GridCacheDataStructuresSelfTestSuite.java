@@ -26,11 +26,10 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain Cache Data Structures Test Suite");
 
+        // Data structures.
         suite.addTest(new TestSuite(GridCachePartitionedQueueFailoverDataConsistencySelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest.class));
 
-        /*
-        // Data structures.
         suite.addTest(new TestSuite(GridCacheLocalSequenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalQueueApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalAtomicQueueApiSelfTest.class));
@@ -53,8 +52,6 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedQueueRotativeMultiNodeTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueRotativeMultiNodeTest.class));
         suite.addTest(new TestSuite(GridCacheQueueCleanupSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedQueueFailoverDataConsistencySelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest.class));
 
         // TODO: GG-5620 Uncomment when fix
         //suite.addTest(new TestSuite(GridCachePartitionedQueueEntryMoveSelfTest.class));
@@ -77,7 +74,6 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(GridCachePartitionedNodeRestartTxSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedQueueJoinedNodeSelfTest.class));
-        */
 
         return suite;
     }
