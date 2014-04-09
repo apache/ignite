@@ -9,6 +9,7 @@
 
 package org.gridgain.examples.datagrid.datastructures;
 
+import org.gridgain.examples.datagrid.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.lang.*;
@@ -21,7 +22,7 @@ import java.util.*;
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
- * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  */
 public final class CacheAtomicStampedExample {
