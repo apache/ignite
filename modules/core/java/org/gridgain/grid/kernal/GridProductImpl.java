@@ -116,22 +116,28 @@ public class GridProductImpl implements GridProduct {
      */
     private static GridProductEdition editionFromString(String edition) {
         switch (edition) {
-            case "dev":
+            case "dev-ent":
+            case "dev-os":
                 return PLATFORM;
 
-            case "datagrid":
+            case "datagrid-ent":
+            case "datagrid-os":
                 return DATA_GRID;
 
-            case "hadoop":
+            case "hadoop-ent":
+            case "hadoop-os":
                 return HADOOP;
 
-            case "streaming":
+            case "streaming-ent":
+            case "streaming-os":
                 return STREAMING;
 
-            case "mongo":
+            case "mongo-ent":
+            case "mongo-os":
                 return MONGO;
 
-            case "platform":
+            case "platform-ent":
+            case "platform-os":
                 return PLATFORM;
         }
 

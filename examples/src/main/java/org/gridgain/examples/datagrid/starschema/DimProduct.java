@@ -85,15 +85,9 @@ public class DimProduct {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("DimProduct ");
-        sb.append("[id=").append(id);
-        sb.append(", name=").append(name);
-        sb.append(", price=").append(price);
-        sb.append(", qty=").append(qty);
-        sb.append(']');
-
-        return sb.toString();
+        return "DimProduct [id=" + id +
+            ", name=" + name +
+            ", price=" + price +
+            ", qty=" + qty + ']';
     }
 }
