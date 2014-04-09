@@ -59,6 +59,8 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
                     break;
                 }
                 catch (GridCachePartialUpdateException e) {
+                    log.error("Failed: " + e, e);
+
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else
@@ -111,6 +113,8 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
                         break;
                     }
                     catch (GridCachePartialUpdateException e) {
+                        log.error("Failed: " + e, e);
+
                         if (cnt++ == MAX_UPDATE_RETRIES)
                             throw e;
                         else

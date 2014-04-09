@@ -26,6 +26,10 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain Cache Data Structures Test Suite");
 
+        suite.addTest(new TestSuite(GridCachePartitionedQueueFailoverDataConsistencySelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest.class));
+
+        /*
         // Data structures.
         suite.addTest(new TestSuite(GridCacheLocalSequenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalQueueApiSelfTest.class));
@@ -73,6 +77,7 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(GridCachePartitionedNodeRestartTxSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedQueueJoinedNodeSelfTest.class));
+        */
 
         return suite;
     }

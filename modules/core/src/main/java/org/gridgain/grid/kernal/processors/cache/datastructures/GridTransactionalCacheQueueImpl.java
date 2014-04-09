@@ -70,6 +70,8 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                     throw e;
                 }
                 catch (GridTopologyException e) {
+                    log.error("Failed: " + e, e);
+
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else
@@ -114,6 +116,8 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                     throw e;
                 }
                 catch(GridTopologyException e) {
+                    log.error("Failed: " + e, e);
+
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else
