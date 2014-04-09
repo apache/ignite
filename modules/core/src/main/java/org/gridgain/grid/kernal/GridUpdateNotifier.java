@@ -18,6 +18,7 @@ import org.jetbrains.annotations.*;
 import org.w3c.dom.*;
 import org.w3c.dom.Node;
 import org.w3c.tidy.*;
+
 import java.io.*;
 import java.net.*;
 import java.util.concurrent.*;
@@ -29,7 +30,6 @@ import java.util.concurrent.*;
  * <p>
  * Note also that this connectivity is not necessary to successfully start the system as it will
  * gracefully ignore any errors occurred during notification and verification process.
- * See {@link #HTTP_URL} for specific access URL used.
  */
 class GridUpdateNotifier {
     /*
@@ -40,17 +40,19 @@ class GridUpdateNotifier {
      * *********************************************************
      */
     /** Access URL to be used to access latest version data. */
-    private static final String HTTP_URL =
-        /*@java.update.status.url*/"http://www.gridgain.org/update_status.php?test=vfvfvskfkeievskjv";
-
-    /** Ant-augmented edition name. */
-    private static final String EDITION = /*@java.edition*/"dev";
-
-    /** Ant-augmented version. */
-    private static final String VER = /*@java.version*/"ent-x.x.x";
+    private static final String URL_SUFFIX = /*@java.update.status.url*/"/update_status.php?test=vfvfvskfkeievskjv";
 
     /** Throttling for logging out. */
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.
+
+    /** Grid version. */
+    private final String ver;
+
+    /** Edition name. */
+    private final String edition;
+
+    /** Site. */
+    private final String url;
 
     /** Asynchronous checked. */
     private GridWorker checker;
@@ -80,9 +82,12 @@ class GridUpdateNotifier {
      * Creates new notifier with default values.
      *
      * @param gridName gridName
+     * @param edition GridGain edition.
+     * @param ver Compound GridGain version.
+     * @param site Site.
      * @param reportOnlyNew Whether or not to report only new version.
      */
-    GridUpdateNotifier(String gridName, boolean reportOnlyNew) {
+    GridUpdateNotifier(String gridName, String edition, String ver, String site, boolean reportOnlyNew) {
         tidy = new Tidy();
 
         tidy.setQuiet(true);
@@ -90,6 +95,11 @@ class GridUpdateNotifier {
         tidy.setShowWarnings(false);
         tidy.setInputEncoding("UTF8");
         tidy.setOutputEncoding("UTF8");
+
+        this.ver = ver;
+        this.edition = edition;
+
+        url = "http://" + site + URL_SUFFIX;
 
         this.gridName = gridName;
         this.reportOnlyNew = reportOnlyNew;
@@ -124,7 +134,7 @@ class GridUpdateNotifier {
     }
 
     /**
-     * Starts asynchronous process for retrieving latest version data from {@link #HTTP_URL}.
+     * Starts asynchronous process for retrieving latest version data.
      *
      * @param exec Executor service.
      * @param log Logger.
@@ -160,12 +170,12 @@ class GridUpdateNotifier {
         String latestVer = this.latestVer;
 
         if (latestVer != null)
-            if (latestVer.equals(VER)) {
+            if (latestVer.equals(ver)) {
                 if (!reportOnlyNew)
                     throttle(log, false, "Your version is up to date.");
             }
             else
-                throttle(log, true, "New version is available at www.gridgain.com: " + latestVer);
+                throttle(log, true, "New version is available at " + GridKernal.SITE + ": " + latestVer);
         else
             if (!reportOnlyNew)
                 throttle(log, false, "Update status is not available.");
@@ -220,8 +230,8 @@ class GridUpdateNotifier {
             try {
                 GridProductLicense lic = licProc != null ? licProc.license() : null;
 
-                URLConnection conn = new URL(HTTP_URL +
-                    (HTTP_URL.endsWith(".php") ? '?' : '&') +
+                URLConnection conn = new URL(url +
+                    (url.endsWith(".php") ? '?' : '&') +
                     (topSize > 0 ? "t=" + topSize + "&" : "") +
                     (lic != null ? "l=" + lic.id() + "&" : "") +
                     "p=" + gridName)
@@ -275,7 +285,7 @@ class GridUpdateNotifier {
 
                 String name = meta.getAttribute("name");
 
-                if ((EDITION + "-version").equals(name)) {
+                if ((edition + "-version").equals(name)) {
                     String content = meta.getAttribute("content");
 
                     if (content != null && !content.isEmpty())

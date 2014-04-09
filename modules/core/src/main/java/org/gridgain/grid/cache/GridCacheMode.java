@@ -60,7 +60,7 @@ public enum GridCacheMode {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static GridCacheMode fromOrdinal(byte ord) {
+    @Nullable public static GridCacheMode fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

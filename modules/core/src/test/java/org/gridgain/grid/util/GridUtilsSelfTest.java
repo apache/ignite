@@ -454,17 +454,6 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     */
-    public void testEnumFromOrdinal() {
-        assert TestEnum.E1 == U.enumFromOrdinal(TestEnum.class, 0);
-        assert TestEnum.E2 == U.enumFromOrdinal(TestEnum.class, 1);
-        assert TestEnum.E3 == U.enumFromOrdinal(TestEnum.class, 2);
-
-        assert U.enumFromOrdinal(TestEnum.class, TestEnum.values().length) == null;
-    }
-
-    /**
      * Test UUID to bytes array conversion.
      */
     public void testsGetBytes() {

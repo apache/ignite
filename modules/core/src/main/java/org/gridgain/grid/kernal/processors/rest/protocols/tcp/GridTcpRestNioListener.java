@@ -27,6 +27,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.kernal.GridProductImpl.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 
 /**
@@ -109,9 +110,9 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
                 byte[] verBytes = hs.versionBytes();
 
-                if (!Arrays.equals(GridRestProcessor.VER_BYTES, verBytes)) {
+                if (!Arrays.equals(VER_BYTES, verBytes)) {
                     log.error("Client version check failed [ses=" + ses +
-                        ", expected=" + Arrays.toString(GridRestProcessor.VER_BYTES)
+                        ", expected=" + Arrays.toString(VER_BYTES)
                         + ", actual=" + Arrays.toString(verBytes) + ']');
 
                     ses.send(GridClientHandshakeResponse.ERR_VERSION_CHECK_FAILED).listenAsync(

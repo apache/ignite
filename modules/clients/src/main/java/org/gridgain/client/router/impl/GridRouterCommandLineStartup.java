@@ -27,22 +27,12 @@ import java.net.*;
 import java.text.*;
 import java.util.*;
 
+import static org.gridgain.grid.kernal.GridProductImpl.*;
+
 /**
  * Loader class for router.
  */
 public class GridRouterCommandLineStartup {
-    /** Ant-augmented version number. */
-    private static final String VER = /*@java.version*/"ent-x.x.x";
-
-    /** Ant-augmented build number. */
-    private static final long BUILD = /*@java.build*/0;
-
-    /** Ant-augmented revision hash. */
-    private static final String REV_HASH = /*@java.revision*/"DEV";
-
-    /** Ant-augmented copyright blurb. */
-    private static final String COPYRIGHT = /*@java.copyright*/"Copyright (C) 2013 GridGain Systems.";
-
     /** Logger. */
     @SuppressWarnings("FieldCanBeLocal")
     private GridLogger log;
@@ -120,7 +110,7 @@ public class GridRouterCommandLineStartup {
      * @throws GridException If failed.
      */
     public static void main(String[] args) throws GridException {
-        String buildDate = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD));
+        String buildDate = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD * 1000));
 
         String rev = REV_HASH.length() > 8 ? REV_HASH.substring(0, 8) : REV_HASH;
         String ver = "ver. " + VER + '#' + buildDate + "-sha1:" + rev;

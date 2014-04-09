@@ -424,9 +424,6 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 commState.idx++;
 
             case 7:
-                commState.idx++;
-
-            case 8:
                 if (!commState.putLong(reqId))
                     return false;
 
@@ -531,9 +528,6 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 commState.idx++;
 
             case 7:
-                commState.idx++;
-
-            case 8:
                 if (buf.remaining() < 8)
                     return false;
 
