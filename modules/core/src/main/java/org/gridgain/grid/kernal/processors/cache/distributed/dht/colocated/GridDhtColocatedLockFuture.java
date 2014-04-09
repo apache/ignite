@@ -1004,9 +1004,12 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
         GridNode primary = cctx.affinity().primary(key, topVer);
 
-        if (cctx.discovery().node(primary.id()) == null)
+        if (cctx.discovery().node(primary.id()) == null) {
+            log.info("No primary " + topVer);
+
             // If primary node left the grid before lock acquisition, fail the whole future.
             throw newTopologyException(null, primary.id());
+        }
 
         if (inTx() && tx.groupLock() && !primary.isLocal())
             throw new GridException("Failed to start group lock transaction (local node is not primary for " +

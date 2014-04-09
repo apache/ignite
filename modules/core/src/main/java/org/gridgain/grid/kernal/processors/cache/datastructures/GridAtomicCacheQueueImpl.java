@@ -230,6 +230,8 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
                 return (Long)cache.transformAndCompute(queueKey, c);
             }
             catch (GridCachePartialUpdateException e) {
+                log.error("Failed: " + e, e);
+
                 if (cnt++ == MAX_UPDATE_RETRIES)
                     throw e;
                 else
