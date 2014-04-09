@@ -9,11 +9,20 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
+import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
+
 /**
  * TODO write doc
  */
 public class GridHadoopTaskExecutor {
-    void run(GridHadoopTask task) {
+    void run(GridHadoopTask task) throws Exception {
+        try (GridHadoopResultCollector collector = null) { // ctx.shuffle().collector(task.info());
 
+            GridHadoopTaskContext ctx = null;
+
+            task.run(ctx);
+
+            collector.finish();
+        }
     }
 }
