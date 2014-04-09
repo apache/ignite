@@ -51,13 +51,15 @@ enum GridClientCacheTestType {
  *
  */
 void StatsPrinterThreadProc() {
-
 	int LastIters = gIters.load(); // Save global iterations count so while
+
     while (true) {
     	boost::this_thread::sleep(boost::posix_time::seconds(1));
 
     	int CurIters = gIters.load();
+
         std::cout << "Operations for last second: " << CurIters - LastIters << std::endl;
+
         LastIters = CurIters;
     }
 }
@@ -183,7 +185,6 @@ private:
 typedef std::shared_ptr<TestThread> TestThreadPtr;
 
 int main(int argc, const char** argv) {
-
 	gIters = 0;
     gExit = false;
     gWarmupDone = false;
@@ -193,7 +194,6 @@ int main(int argc, const char** argv) {
 
     // initialize random seed
     srand(time(NULL));
-
 
     // Declare the supported options.
     options_description desc("Allowed options");
@@ -209,16 +209,16 @@ int main(int argc, const char** argv) {
     		("usetransactions",	boost::program_options::value<bool>()->required(),	"Use transactions (bool)");
 
     try {
-    store(parse_command_line(argc, argv, desc), vm);
-    notify(vm);
-    } catch (exception &e)
-    {
+        store(parse_command_line(argc, argv, desc), vm);
+        notify(vm);
+    }
+    catch (exception &e) {
     	cerr << "Error parsing arguments: " << e.what() << endl;
     	cerr << desc << endl;
     	return 1;
     }
-    if (vm.count("help"))
-    {
+
+    if (vm.count("help")) {
     	cout << desc << endl;
     	return 0;
     }
@@ -267,7 +267,6 @@ int main(int argc, const char** argv) {
     gExit = true;
 
     int itersAfterTest = gIters.load(); // Save iterations after final benchmark
-
 
     //join all threads
     for (std::vector<TestThreadPtr>::iterator i = workers.begin(); i != workers.end(); i++) {
