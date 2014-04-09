@@ -77,8 +77,8 @@ public class GridCacheDrSendAttributes implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        mode = U.readEnum(in, GridDrSenderCacheMode.class);
-        sndHubLoadBalancingPlc =U.readEnum(in, GridDrSenderHubLoadBalancingMode.class);
+        mode = GridDrSenderCacheMode.fromOrdinal(in.readByte());
+        sndHubLoadBalancingPlc = GridDrSenderHubLoadBalancingMode.fromOrdinal(in.readByte());
         entryFilterClsName = U.readString(in);
     }
 
