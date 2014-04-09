@@ -395,7 +395,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
      */
     public void testQueueRemoveMultithreadBounded() throws Exception {
         // Random queue name.
-        String queueName = UUID.randomUUID().toString();
+        final String queueName = UUID.randomUUID().toString();
 
         final AtomicInteger rmvNum = new AtomicInteger(0);
 
@@ -439,7 +439,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
             Thread th = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
-                        if (((GridCacheQueueEx)queue).removeQueue(0)) {
+                        if (grid().cache(null).dataStructures().removeQueue(queueName, 0)) {
                             rmvNum.incrementAndGet();
 
                             if (log.isDebugEnabled())
@@ -483,7 +483,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
      */
     public void testQueueRemoveMultithreadUnbounded() throws Exception {
         // Random queue name.
-        String queueName = UUID.randomUUID().toString();
+        final String queueName = UUID.randomUUID().toString();
 
         final AtomicInteger rmvNum = new AtomicInteger(0);
 
@@ -527,7 +527,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
             Thread th = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
-                        if (((GridCacheQueueEx)queue).removeQueue(0)) {
+                        if (grid().cache(null).dataStructures().removeQueue(queueName, 0)) {
                             rmvNum.incrementAndGet();
 
                             if (log.isDebugEnabled())

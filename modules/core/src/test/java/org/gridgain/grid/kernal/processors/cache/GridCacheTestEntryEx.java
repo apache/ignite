@@ -594,11 +594,6 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public boolean lockedByThread(GridCacheVersion exclude) {
-        return lockedByThread(Thread.currentThread().getId(), exclude);
-    }
-
-    /** @inheritDoc */
     @Override public boolean lockedLocally(GridCacheVersion lockVer) {
         return mvcc.isLocallyOwned(lockVer);
     }
@@ -611,12 +606,12 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
 
     /** @inheritDoc */
     @Override public boolean lockedByThread(long threadId, GridCacheVersion exclude) {
-        return mvcc.isLocallyOwnedByThread(threadId, exclude);
+        return mvcc.isLocallyOwnedByThread(threadId, false, exclude);
     }
 
     /** @inheritDoc */
     @Override public boolean lockedByThread(long threadId) {
-        return mvcc.isLocallyOwnedByThread(threadId);
+        return mvcc.isLocallyOwnedByThread(threadId, true);
     }
 
     /** @inheritDoc */
@@ -626,7 +621,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
 
     /** @inheritDoc */
     @Override public boolean lockedByThreadUnsafe(long threadId) {
-        return mvcc.isLocallyOwnedByThread(threadId);
+        return mvcc.isLocallyOwnedByThread(threadId, true);
     }
 
     /** @inheritDoc */

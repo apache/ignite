@@ -21,7 +21,6 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  * Queue rotative multi node tests.
  */
 public class GridCacheReplicatedQueueRotativeMultiNodeTest extends GridCacheQueueRotativeMultiNodeAbstractTest {
-
     /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
