@@ -573,12 +573,12 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 commState.idx++;
 
             case 8:
-                Object concurrency0 = commState.getEnum(GridCacheTxConcurrency.class);
-
-                if (concurrency0 == ENUM_NOT_READ)
+                if (buf.remaining() < 1)
                     return false;
 
-                concurrency = (GridCacheTxConcurrency)concurrency0;
+                byte concurrency0 = commState.getByte();
+
+                concurrency = GridCacheTxConcurrency.fromOrdinal(concurrency0);
 
                 commState.idx++;
 
@@ -611,12 +611,12 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 commState.idx++;
 
             case 12:
-                Object isolation0 = commState.getEnum(GridCacheTxIsolation.class);
-
-                if (isolation0 == ENUM_NOT_READ)
+                if (buf.remaining() < 1)
                     return false;
 
-                isolation = (GridCacheTxIsolation)isolation0;
+                byte isolation0 = commState.getByte();
+
+                isolation = GridCacheTxIsolation.fromOrdinal(isolation0);
 
                 commState.idx++;
 

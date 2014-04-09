@@ -214,7 +214,7 @@ public class GridRestRequest implements Externalizable {
         U.writeUuid(out, clientId);
         out.writeObject(cred);
         U.writeByteArray(out, sesTok);
-        U.writeEnum(out, cmd);
+        U.writeEnum0(out, cmd);
         U.writeString(out, path);
         U.writeMap(out, params);
     }
@@ -225,7 +225,7 @@ public class GridRestRequest implements Externalizable {
         clientId = U.readUuid(in);
         cred = in.readObject();
         sesTok = U.readByteArray(in);
-        cmd = U.readEnum(in, GridRestCommand.class);
+        cmd = GridRestCommand.fromOrdinal(U.readEnumOrdinal0(in));
         path = U.readString(in);
         params = U.readMap(in);
     }

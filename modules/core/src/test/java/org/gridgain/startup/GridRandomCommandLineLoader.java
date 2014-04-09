@@ -34,14 +34,13 @@ import static org.gridgain.grid.GridGainState.*;
  * to randomly start and stop GridGain from command line for tests. This loader is a Java
  * application with {@link #main(String[])} method that accepts command line arguments.
  * See below for details.
- *
  */
 public final class GridRandomCommandLineLoader {
     /** Name of the system property defining name of command line program. */
     private static final String GRIDGAIN_PROG_NAME = "GRIDGAIN_PROG_NAME";
 
     /** Copyright text. Ant processed. */
-    private static final String COPYRIGHT = "Copyright (C) 2013 GridGain Systems.";
+    private static final String COPYRIGHT = "Copyright (C) 2014 GridGain Systems.";
 
     /** Version. Ant processed. */
     private static final String VER = "x.x.x";

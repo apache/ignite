@@ -610,10 +610,10 @@ public class GridCacheAttributes implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeEnum(out, atomicityMode);
-        U.writeEnum(out, cacheMode);
-        U.writeEnum(out, dfltConcurrency);
-        U.writeEnum(out, dfltIsolation);
+        U.writeEnum0(out, atomicityMode);
+        U.writeEnum0(out, cacheMode);
+        U.writeEnum0(out, dfltConcurrency);
+        U.writeEnum0(out, dfltIsolation);
         out.writeLong(dfltLockTimeout);
         out.writeLong(dfltQryTimeout);
         out.writeLong(dfltTxTimeout);
@@ -625,9 +625,9 @@ public class GridCacheAttributes implements Externalizable {
         out.writeBoolean(evictSync);
         U.writeString(out, indexingSpiName);
         U.writeString(out, name);
-        U.writeEnum(out, partDistro);
+        U.writeEnum0(out, partDistro);
         out.writeInt(preloadBatchSize);
-        U.writeEnum(out, preloadMode);
+        U.writeEnum0(out, preloadMode);
         out.writeBoolean(qryIdxEnabled);
         out.writeInt(seqReserveSize);
         out.writeBoolean(storeEnabled);
@@ -641,7 +641,7 @@ public class GridCacheAttributes implements Externalizable {
         out.writeLong(writeBehindFlushFreq);
         out.writeInt(writeBehindFlushSize);
         out.writeInt(writeBehindFlushThreadCnt);
-        U.writeEnum(out, writeSyncMode);
+        U.writeEnum0(out, writeSyncMode);
 
         U.writeString(out, affClsName);
         U.writeString(out, affMapperClsName);
@@ -665,10 +665,10 @@ public class GridCacheAttributes implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        atomicityMode = U.readEnum(in, GridCacheAtomicityMode.class);
-        cacheMode = U.readEnum(in, GridCacheMode.class);
-        dfltConcurrency = U.readEnum(in, GridCacheTxConcurrency.class);
-        dfltIsolation = U.readEnum(in, GridCacheTxIsolation.class);
+        atomicityMode = GridCacheAtomicityMode.fromOrdinal(U.readEnumOrdinal0(in));
+        cacheMode = GridCacheMode.fromOrdinal(U.readEnumOrdinal0(in));
+        dfltConcurrency = GridCacheTxConcurrency.fromOrdinal(U.readEnumOrdinal0(in));
+        dfltIsolation = GridCacheTxIsolation.fromOrdinal(U.readEnumOrdinal0(in));
         dfltLockTimeout = in.readLong();
         dfltQryTimeout = in.readLong();
         dfltTxTimeout = in.readLong();
@@ -680,9 +680,9 @@ public class GridCacheAttributes implements Externalizable {
         evictSync  = in.readBoolean();
         indexingSpiName = U.readString(in);
         name = U.readString(in);
-        partDistro = U.readEnum(in, GridCacheDistributionMode.class);
+        partDistro = GridCacheDistributionMode.fromOrdinal(U.readEnumOrdinal0(in));
         preloadBatchSize = in.readInt();
-        preloadMode = U.readEnum(in, GridCachePreloadMode.class);
+        preloadMode = GridCachePreloadMode.fromOrdinal(U.readEnumOrdinal0(in));
         qryIdxEnabled = in.readBoolean();
         seqReserveSize = in.readInt();
         storeEnabled = in.readBoolean();
@@ -696,7 +696,7 @@ public class GridCacheAttributes implements Externalizable {
         writeBehindFlushFreq = in.readLong();
         writeBehindFlushSize = in.readInt();
         writeBehindFlushThreadCnt = in.readInt();
-        writeSyncMode = U.readEnum(in, GridCacheWriteSynchronizationMode.class);
+        writeSyncMode = GridCacheWriteSynchronizationMode.fromOrdinal(U.readEnumOrdinal0(in));
 
         affClsName = U.readString(in);
         affMapperClsName = U.readString(in);
