@@ -37,6 +37,9 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /** */
     protected static final int MAX_UPDATE_RETRIES = 100;
 
+    /** */
+    protected static final long RETRY_DELAY = 1;
+
     /** Logger. */
     protected final GridLogger log;
 

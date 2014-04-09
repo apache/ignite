@@ -72,8 +72,11 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                 catch (GridTopologyException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
-                    else
+                    else {
                         U.warn(log, "Failed to add item, will retry [err=" + e + ']');
+
+                        U.sleep(RETRY_DELAY);
+                    }
                 }
             }
 
@@ -116,8 +119,11 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                 catch(GridTopologyException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
-                    else
+                    else {
                         U.warn(log, "Failed to poll, will retry [err=" + e + ']');
+
+                        U.sleep(RETRY_DELAY);
+                    }
                 }
             }
 
@@ -170,8 +176,11 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                 catch(GridTopologyException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
-                    else
+                    else {
                         U.warn(log, "Failed to addAll, will retry [err=" + e + ']');
+
+                        U.sleep(RETRY_DELAY);
+                    }
                 }
             }
 
@@ -210,8 +219,11 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                 catch(GridTopologyException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
-                    else
+                    else {
                         U.warn(log, "Failed to remove item, will retry [err=" + e + ", idx=" + rmvIdx + ']');
+
+                        U.sleep(RETRY_DELAY);
+                    }
                 }
             }
         }
