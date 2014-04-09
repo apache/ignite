@@ -9,6 +9,7 @@
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -53,7 +54,20 @@ public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
         APPEND,
 
         /** Prepend requested value to already cached one. */
-        PREPEND
+        PREPEND;
+
+        /** Enumerated values. */
+        private static final GridCacheOperation[] VALS = values();
+
+        /**
+         * Efficiently gets enumerated value from its ordinal.
+         *
+         * @param ord Ordinal value.
+         * @return Enumerated value or {@code null} if ordinal out of range.
+         */
+        @Nullable public static GridCacheOperation fromOrdinal(int ord) {
+            return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+        }
     }
 
     /** Requested cache operation. */
@@ -205,7 +219,7 @@ public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        U.writeEnum(out, op);
+        U.writeEnum0(out, op);
 
         U.writeString(out, cacheName);
 
@@ -222,7 +236,7 @@ public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        op = U.readEnum(in, GridCacheOperation.class);
+        op = GridCacheOperation.fromOrdinal(U.readEnumOrdinal0(in));
 
         cacheName = U.readString(in);
 

@@ -88,7 +88,7 @@ public class GridGgfsPaths implements Externalizable {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, secondaryUri);
         U.writeString(out, secondaryCfgPath);
-        U.writeEnum(out, dfltMode);
+        U.writeEnum0(out, dfltMode);
 
         if (pathModes != null) {
             out.writeBoolean(true);
@@ -96,7 +96,7 @@ public class GridGgfsPaths implements Externalizable {
 
             for (T2<GridGgfsPath, GridGgfsMode> pathMode : pathModes) {
                 pathMode.getKey().writeExternal(out);
-                U.writeEnum(out, pathMode.getValue());
+                U.writeEnum0(out, pathMode.getValue());
             }
         }
         else
@@ -107,7 +107,7 @@ public class GridGgfsPaths implements Externalizable {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         secondaryUri = U.readString(in);
         secondaryCfgPath = U.readString(in);
-        dfltMode = U.readEnum(in, GridGgfsMode.class);
+        dfltMode = GridGgfsMode.fromOrdinal(U.readEnumOrdinal0(in));
 
         if (in.readBoolean()) {
             int size = in.readInt();
@@ -118,7 +118,7 @@ public class GridGgfsPaths implements Externalizable {
                 GridGgfsPath path = new GridGgfsPath();
                 path.readExternal(in);
 
-                T2<GridGgfsPath, GridGgfsMode> entry = new T2<>(path, U.readEnum(in, GridGgfsMode.class));
+                T2<GridGgfsPath, GridGgfsMode> entry = new T2<>(path, GridGgfsMode.fromOrdinal(U.readEnumOrdinal0(in)));
 
                 pathModes.add(entry);
             }

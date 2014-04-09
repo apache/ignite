@@ -14,9 +14,6 @@ import org.gridgain.grid.util.typedef.*;
 
 /**
  * Filter for event consume test.
- *
- * @author @java.author
- * @version @java.version
  */
 public class GridEventConsumeFilter implements P1<GridEvent> {
     /** {@inheritDoc} */

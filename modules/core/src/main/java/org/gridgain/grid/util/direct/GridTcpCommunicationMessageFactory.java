@@ -299,10 +299,10 @@ public class GridTcpCommunicationMessageFactory {
                 return new GridJobStealingRequest();
 
             case 79:
-                return new GridDhtAffinityAssignmentRequest<>();
+                return new GridDhtAffinityAssignmentRequest();
 
             case 80:
-                return new GridDhtAffinityAssignmentResponse<>();
+                return new GridDhtAffinityAssignmentResponse();
 
             case 81:
                 return new GridCacheSetDataRequest();

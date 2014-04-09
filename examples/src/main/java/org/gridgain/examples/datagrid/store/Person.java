@@ -88,14 +88,8 @@ public class Person implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        StringBuilder sb = new StringBuilder();
-
-        sb.
-            append("Person [id=").append(id).
-            append(", firstName=").append(firstName).
-            append(", lastName=").append(lastName).
-            append(']');
-
-        return sb.toString();
+        return "Person [id=" + id +
+            ", firstName=" + firstName +
+            ", lastName=" + lastName + ']';
     }
 }

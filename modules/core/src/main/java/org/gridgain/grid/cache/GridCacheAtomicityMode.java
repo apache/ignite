@@ -64,7 +64,7 @@ public enum GridCacheAtomicityMode {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static GridCacheAtomicityMode fromOrdinal(byte ord) {
+    @Nullable public static GridCacheAtomicityMode fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

@@ -4758,12 +4758,29 @@ public abstract class GridUtils {
 
     /**
      * Writes enum to output stream accounting for {@code null} values.
+     * Note: method writes only one byte for every enum. Therefore, this method
+     * only for Enums with maximum count of values equals to 128.
      *
      * @param out Output stream to write to.
      * @param e Enum value to write, possibly {@code null}.
      * @throws IOException If write failed.
      */
     public static <E extends Enum> void writeEnum(DataOutput out, E e) throws IOException {
+        out.writeByte(e == null ? -1 : e.ordinal());
+    }
+
+    /**
+     * Writes enum to output stream accounting for {@code null} values.
+     *
+     * @param out Output stream to write to.
+     * @param e Enum value to write, possibly {@code null}.
+     * @throws IOException If write failed.
+     *
+     * @deprecated Need to remove when release will not be to support
+     * backward compatible. Use {@code U.writeEnum(DataOutput, Enum)}.
+     */
+    @Deprecated
+    public static <E extends Enum> void writeEnum0(DataOutput out, E e) throws IOException {
         out.writeBoolean(e == null);
 
         if (e != null)
@@ -4771,28 +4788,18 @@ public abstract class GridUtils {
     }
 
     /**
-     * Reads enum from input stream accounting for {@code null} values.
+     * Reads enum ordinal from input stream accounting for {@code null} values.
      *
      * @param in Stream to read from.
-     * @param cls Enum class.
-     * @return Read enum value, possibly {@code null}.
+     * @return Read enum ordinal, possibly {@code -1} means {@code null}.
      * @throws IOException If read failed.
-     */
-    @Nullable public static <E extends Enum> E readEnum(DataInput in, Class<E> cls) throws IOException {
-        return !in.readBoolean() ? enumFromOrdinal(cls, in.readInt()) : null;
-    }
-
-    /**
-     * Gets enum value from its ordinal number.
      *
-     * @param cls Enum class to get value of.
-     * @param ord Constant ordinal number.
-     * @return Enum value or {@code null} if value with such ordinal number is not found.
+     * @deprecated Need to remove when release will not be to support
+     * backward compatible. Use {@code Enum.fromOrdinal(int)}.
      */
-    @Nullable public static <E extends Enum> E enumFromOrdinal(Class<E> cls, int ord) {
-        E vals[] = cls.getEnumConstants();
-
-        return vals != null && ord >= 0 && ord < vals.length ? vals[ord] : null;
+    @Deprecated
+    public static int readEnumOrdinal0(DataInput in) throws IOException {
+        return !in.readBoolean() ? in.readInt() : -1;
     }
 
     /**
@@ -8247,5 +8254,18 @@ public abstract class GridUtils {
             e.addSuppressed(th);
 
         return e;
+    }
+
+    /**
+     * Extracts full name of enclosing class from JDK8 lambda class name.
+     *
+     * @param clsName JDK8 lambda class name.
+     * @return Full name of enclosing class for JDK8 lambda class name or
+     *      {@code null} if passed in name is not related to lambda.
+     */
+    @Nullable public static String lambdaEnclosingClassName(String clsName) {
+        int idx = clsName.indexOf("$$Lambda$");
+
+        return idx != -1 ? clsName.substring(0, idx) : null;
     }
 }
