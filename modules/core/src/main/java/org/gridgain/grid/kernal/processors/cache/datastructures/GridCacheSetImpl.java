@@ -109,9 +109,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         try {
             checkRemoved();
 
-            GridCacheEnterpriseDataStructuresManager ds = (GridCacheEnterpriseDataStructuresManager)ctx.dataStructures();
-
-            GridFuture<Integer> fut = ds.setSize(this);
+            GridFuture<Integer> fut = ctx.dataStructures().setSize(this);
 
             return fut.get();
         }
@@ -124,9 +122,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     @Override public boolean isEmpty() {
         checkRemoved();
 
-        GridCacheEnterpriseDataStructuresManager ds = (GridCacheEnterpriseDataStructuresManager)ctx.dataStructures();
-
-        return ds.setDataEmpty(id) && size() == 0;
+        return ctx.dataStructures().setDataEmpty(id) && size() == 0;
     }
 
     /** {@inheritDoc} */
@@ -316,9 +312,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         try {
             checkRemoved();
 
-            GridCacheEnterpriseDataStructuresManager ds = (GridCacheEnterpriseDataStructuresManager)ctx.dataStructures();
-
-            return ds.setIterator(this);
+            return ctx.dataStructures().setIterator(this);
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);

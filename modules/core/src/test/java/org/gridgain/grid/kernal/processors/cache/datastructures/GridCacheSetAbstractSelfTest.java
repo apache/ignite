@@ -23,6 +23,7 @@ import org.gridgain.testframework.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
@@ -93,6 +94,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
             assertEquals("Iterator not removed for grid " + i, 0, map.size());
 
+            /*
             map = GridTestUtils.getFieldValue(ds, "setsMap");
 
             assertEquals("Set not removed for grid " + i, 0, map.size());
@@ -100,6 +102,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
             map = GridTestUtils.getFieldValue(ds, "setDataMap");
 
             assertEquals("Set data not removed for grid " + i, 0, map.size());
+            */
         }
     }
 
@@ -132,8 +135,13 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
     }
 
     /** {@inheritDoc} */
+    @Override protected GridCacheDistributionMode distributionMode() {
+        return PARTITIONED_ONLY;
+    }
+
+    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 60 * 1000;
+        return 2 * 60 * 1000;
     }
 
     /**

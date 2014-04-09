@@ -155,7 +155,7 @@ class GridCacheSetIterator<T> extends GridCloseableIteratorAdapter<T> {
                     Object poll = resQueue.poll(1000, TimeUnit.MILLISECONDS);
 
                     if (log.isDebugEnabled())
-                        log.debug("Polled set data response: " + res);
+                        log.debug("Polled set data response: " + poll);
 
                     if (poll == null)
                         continue;
@@ -176,12 +176,8 @@ class GridCacheSetIterator<T> extends GridCloseableIteratorAdapter<T> {
                         log.debug("Received last set data response [nodeId=" + res.nodeId() +
                             ", nodeIds=" + nodeIds + ']');
 
-                    if (nodeIds.isEmpty()) {
-                        GridCacheEnterpriseDataStructuresManager ds =
-                            (GridCacheEnterpriseDataStructuresManager)set.context().dataStructures();
-
-                        ds.removeSetResponseHandler(req.id());
-                    }
+                    if (nodeIds.isEmpty())
+                        set.context().dataStructures().removeSetResponseHandler(req.id());
                 }
                 else {
                     if (log.isDebugEnabled())
@@ -221,14 +217,11 @@ class GridCacheSetIterator<T> extends GridCloseableIteratorAdapter<T> {
         throws GridException {
         assert !nodeIds.isEmpty();
 
-        final GridCacheEnterpriseDataStructuresManager ds =
-            ((GridCacheEnterpriseDataStructuresManager)set.context().dataStructures());
-
         for (UUID nodeId : nodeIds) {
             if (nodeId.equals(set.context().localNodeId())) {
                 set.context().closures().callLocalSafe(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        ds.processSetDataRequest(set.context().localNodeId(), req);
+                        set.context().dataStructures().processSetDataRequest(set.context().localNodeId(), req);
 
                         return null;
                     }
@@ -261,10 +254,7 @@ class GridCacheSetIterator<T> extends GridCloseableIteratorAdapter<T> {
         if (nodeIds.isEmpty())
             return;
 
-        GridCacheEnterpriseDataStructuresManager ds =
-            ((GridCacheEnterpriseDataStructuresManager)set.context().dataStructures());
-
-        ds.removeSetResponseHandler(req.id());
+        set.context().dataStructures().removeSetResponseHandler(req.id());
 
         GridCacheSetDataRequest cancelReq = new GridCacheSetDataRequest(req.id(), set.id(), 0, 0, false);
 

@@ -56,10 +56,7 @@ public class GridCacheSizeFuture extends GridFutureAdapter<Integer> {
             if (node.isLocal()) {
                 cctx.closures().runLocalSafe(new Runnable() {
                     @Override public void run() {
-                        GridCacheEnterpriseDataStructuresManager ds =
-                            (GridCacheEnterpriseDataStructuresManager)cctx.dataStructures();
-
-                        ds.processSetDataRequest(cctx.localNodeId(),
+                        set.context().dataStructures().processSetDataRequest(cctx.localNodeId(),
                             new GridCacheSetDataRequest<>(reqId, set.id(), topVer, 0, true));
                     }
                 }, false);

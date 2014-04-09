@@ -31,9 +31,9 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest.class));
 
         suite.addTest(new TestSuite(GridCacheLocalSequenceApiSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheLocalQueueApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalSetSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalAtomicSetSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheLocalQueueApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalAtomicQueueApiSelfTest.class));
 
         suite.addTest(new TestSuite(GridCacheReplicatedSequenceApiSelfTest.class));
