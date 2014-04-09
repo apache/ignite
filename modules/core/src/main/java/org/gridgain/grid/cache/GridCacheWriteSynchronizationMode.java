@@ -54,7 +54,7 @@ public enum GridCacheWriteSynchronizationMode {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static GridCacheWriteSynchronizationMode fromOrdinal(byte ord) {
+    @Nullable public static GridCacheWriteSynchronizationMode fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

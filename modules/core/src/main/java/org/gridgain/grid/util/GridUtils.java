@@ -4770,6 +4770,39 @@ public abstract class GridUtils {
     }
 
     /**
+     * Writes enum to output stream accounting for {@code null} values.
+     *
+     * @param out Output stream to write to.
+     * @param e Enum value to write, possibly {@code null}.
+     * @throws IOException If write failed.
+     *
+     * @deprecated Need to remove when release will not be to support
+     * backward compatible. Use {@code U.writeEnum(DataOutput, Enum)}.
+     */
+    @Deprecated
+    public static <E extends Enum> void writeEnum0(DataOutput out, E e) throws IOException {
+        out.writeBoolean(e == null);
+
+        if (e != null)
+            out.writeInt(e.ordinal());
+    }
+
+    /**
+     * Reads enum ordinal from input stream accounting for {@code null} values.
+     *
+     * @param in Stream to read from.
+     * @return Read enum ordinal, possibly {@code -1} means {@code null}.
+     * @throws IOException If read failed.
+     *
+     * @deprecated Need to remove when release will not be to support
+     * backward compatible. Use {@code Enum.fromOrdinal(int)}.
+     */
+    @Deprecated
+    public static int readEnumOrdinal0(DataInput in) throws IOException {
+        return !in.readBoolean() ? in.readInt() : -1;
+    }
+
+    /**
      * Gets collection value by index.
      *
      * @param vals Collection of values.
