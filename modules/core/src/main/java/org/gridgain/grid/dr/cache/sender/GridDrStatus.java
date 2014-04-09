@@ -74,13 +74,13 @@ public class GridDrStatus implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeEnum(out, reason);
+        U.writeEnum0(out, reason);
         U.writeString(out, errMsg);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        reason = U.readEnum(in, GridDrPauseReason.class);
+        reason = GridDrPauseReason.fromOrdinal(U.readEnumOrdinal0(in));
         errMsg = U.readString(in);
     }
 

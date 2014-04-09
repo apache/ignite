@@ -54,7 +54,7 @@ public enum GridCachePreloadMode {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static GridCachePreloadMode fromOrdinal(byte ord) {
+    @Nullable public static GridCachePreloadMode fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

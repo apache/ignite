@@ -92,16 +92,14 @@ class GridCacheQueryMetricsKey implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeByte(type != null ? type.ordinal() : -1);
+        U.writeEnum(out, type);
         out.writeObject(cls);
         U.writeString(out, clause);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        byte ord = in.readByte();
-
-        type = ord >= 0 ? GridCacheQueryType.fromOrdinal(ord) : null;
+        type = GridCacheQueryType.fromOrdinal(in.readByte());
         cls = (Class<?>)in.readObject();
         clause = U.readString(in);
     }

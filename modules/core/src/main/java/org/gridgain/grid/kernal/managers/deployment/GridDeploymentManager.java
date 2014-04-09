@@ -237,6 +237,22 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
         if (clsLdr == null)
             clsLdr = getClass().getClassLoader();
 
+        String clsName = cls.getName();
+
+        String lambdaParent = U.lambdaEnclosingClassName(clsName);
+
+        if (lambdaParent != null) {
+            clsName = lambdaParent;
+
+            // Need to override passed in class if class is Lambda.
+            try {
+                cls = Class.forName(clsName, true, clsLdr);
+            }
+            catch (ClassNotFoundException e) {
+                throw new GridException("Cannot deploy parent class for lambda: " + clsName, e);
+            }
+        }
+
         if (clsLdr instanceof GridDeploymentClassLoader) {
             GridDeploymentInfo ldr = (GridDeploymentInfo)clsLdr;
 
@@ -250,7 +266,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
 
             GridDeploymentMetadata meta = new GridDeploymentMetadata();
 
-            meta.alias(cls.getName());
+            meta.alias(clsName);
             meta.classLoader(clsLdr);
 
             // Check for nested execution. In that case, if task
@@ -269,19 +285,6 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
         }
         else
             return locDep != null ? locDep : locStore.explicitDeploy(cls, clsLdr);
-    }
-
-    /**
-     * Gets class loader based on given ID.
-     *
-     * @param ldrId Class loader ID.
-     * @return Class loader of {@code null} if not found.
-     */
-    @Nullable public GridDeployment getLocalDeployment(GridUuid ldrId) {
-        if (locDep != null)
-            return locDep.classLoaderId().equals(ldrId) ? locDep : null;
-        else
-            return locStore.getDeployment(ldrId);
     }
 
     /**
@@ -340,12 +343,16 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
         if (locDep != null)
             return locDep;
 
+        String lambdaEnclosingClsName = U.lambdaEnclosingClassName(rsrcName);
+
+        String clsName = lambdaEnclosingClsName == null ? rsrcName : lambdaEnclosingClsName;
+
         GridDeploymentMetadata meta = new GridDeploymentMetadata();
 
         meta.record(true);
         meta.deploymentMode(ctx.config().getDeploymentMode());
         meta.alias(rsrcName);
-        meta.className(rsrcName);
+        meta.className(clsName);
         meta.senderNodeId(ctx.localNodeId());
 
         return locStore.getDeployment(meta);
@@ -373,6 +380,11 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
         @Nullable GridPredicate<GridNode> nodeFilter) {
         if (locDep != null)
             return locDep;
+
+        String lambdaEnclosingClsName = U.lambdaEnclosingClassName(clsName);
+
+        if (lambdaEnclosingClsName != null)
+            clsName = lambdaEnclosingClsName;
 
         GridDeploymentMetadata meta = new GridDeploymentMetadata();
 
