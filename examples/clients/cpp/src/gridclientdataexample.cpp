@@ -23,7 +23,7 @@
  * <p>
  * Note that this example requires <c>org.gridgain.examples.misc.client.api.ClientExampleTask</c>
  * class to be present in remote nodes' classpath. If remote nodes are run by <c>ggstart.{sh|bat}</c> script
- * then <c>gridgain-examples.jar</c> file should be placed to <c>GRIDGAIN_HOME/libs/ext</c> folder.
+ * then <c>GRIDGAIN_HOME/gridgain-examples.jar</c> file should be placed to <c>GRIDGAIN_HOME/libs/ext</c> folder.
  * <p>
  * After node has been started this example creates a client connection and performs some
  * In-Memory Data Grid related operations.

@@ -23,7 +23,7 @@ import java.util.*;
  * <p>
  * Note that this example requires {@link ClientExampleTask}
  * class to be present in remote nodes' classpath. If remote nodes are run by {@code ggstart.{sh|bat}} script
- * then {@code gridgain-examples.jar} file should be placed to {@code GRIDGAIN_HOME/libs/ext} folder.
+ * then {@code GRIDGAIN_HOME/gridgain-examples.jar} file should be placed to {@code GRIDGAIN_HOME/libs/ext} folder.
  * <p>
  * After node has been started this example creates a client
  * and performs several executions of the a test task using different API methods.
