@@ -666,17 +666,22 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
     public void transform(K key, GridClosure<V, V> transformer) throws GridException;
 
     /**
-     * Stores result of applying {@code transformer} closure to the previous value associated with
-     * given key in cache. In addition to the new cache value closure computes another value which is returned
-     * as result of this method.
+     * Applies {@code transformer} closure to the previous value associated with given key in cache,
+     * closure should return {@link GridBiTuple} instance where first value is new value stored in cache
+     * and second value is returned as result of this method.
+     * <h2 class="header">Transactions</h2>
+     * This method is transactional and will enlist the entry into ongoing transaction
+     * if there is one.
+     * <h2 class="header">Cache Flags</h2>
+     * This method is not available if any of the following flags are set on projection:
+     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
      *
-     * @param key Key.
+     * @param key Key to store in cache.
      * @param transformer Closure to be applied to the previous value in cache.
-     * @return Value computed by the closure method {@link GridCacheTransformComputeClosure#compute}.
-     * @throws GridException If failed.
+     * @return Value computed by the closure.
+     * @throws GridException On any error occurred while storing value in cache.
      */
-    public <R> R transformCompute(K key, GridCacheTransformComputeClosure<V, R> transformer)
-        throws GridException;
+    public <R> R transformAndCompute(K key, GridClosure<V, GridBiTuple<V, R>> transformer) throws GridException;
 
     /**
      * Stores result of applying {@code transformer} closure to the previous value associated with

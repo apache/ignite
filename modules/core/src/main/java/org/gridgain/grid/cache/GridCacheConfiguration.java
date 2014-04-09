@@ -184,12 +184,6 @@ public class GridCacheConfiguration {
     /** Default maximum number of query iterators that can be stored. */
     public static final int DFLT_MAX_QUERY_ITERATOR_CNT = 1024;
 
-    /** Default number of threads removing orphaned {@link GridCacheQueue} items. */
-    public static final int DFLT_QUEUE_CLEANUP_THREADS_CNT = 2;
-
-    /** Default frequency of {@link GridCacheQueue} items cleanup. */
-    public static final int DFLT_QUEUE_CLEANUP_FREQ = 10 * 60_000;
-
     /** Default continuous query buffers queue size. */
     @SuppressWarnings("UnusedDeclaration")
     @Deprecated
@@ -389,12 +383,6 @@ public class GridCacheConfiguration {
     /** */
     private GridDrSenderCacheConfiguration drSndCacheCfg;
 
-    /** */
-    private int queueCleanupThreadsCnt = DFLT_QUEUE_CLEANUP_THREADS_CNT;
-
-    /** */
-    private long queueCleanupFreq = DFLT_QUEUE_CLEANUP_FREQ;
-
     /** Empty constructor (all values are initialized to their defaults). */
     public GridCacheConfiguration() {
         /* No-op. */
@@ -456,8 +444,6 @@ public class GridCacheConfiguration {
         preloadPoolSize = cc.getPreloadThreadPoolSize();
         preloadTimeout = cc.getPreloadTimeout();
         preloadThrottle = cc.getPreloadThrottle();
-        queueCleanupFreq = cc.getCacheQueueCleanupFrequency();
-        queueCleanupThreadsCnt = cc.getCacheQueueCleanupThreadsCount();
         qryIdxEnabled = cc.isQueryIndexEnabled();
         refreshAheadRatio = cc.getRefreshAheadRatio();
         seqReserveSize = cc.getAtomicSequenceReserveSize();
@@ -1969,42 +1955,6 @@ public class GridCacheConfiguration {
      */
     public void setDrReceiverConfiguration(GridDrReceiverCacheConfiguration drRcvCacheCfg) {
         this.drRcvCacheCfg = drRcvCacheCfg;
-    }
-
-    /**
-     * Gets frequency at which process removing orphaned items of {@link GridCacheQueue} is run.
-     * <p>
-     * Defaults to {@link #DFLT_QUEUE_CLEANUP_FREQ}.
-     *
-     * @return Frequency of {@link GridCacheQueue} items cleanup in milliseconds.
-     */
-    public long getCacheQueueCleanupFrequency() {
-        return queueCleanupFreq;
-    }
-
-    /**
-     * @param queueCleanupFreq Frequency of {@link GridCacheQueue} items cleanup in milliseconds.
-     */
-    public void setCacheQueueCleanupFrequency(long queueCleanupFreq) {
-        this.queueCleanupFreq = queueCleanupFreq;
-    }
-
-    /**
-     * Gets number of threads removing orphaned items of {@link GridCacheQueue}.
-     * <p>
-     * Defaults to {@link #DFLT_QUEUE_CLEANUP_THREADS_CNT}.
-     *
-     * @return Number of threads removing orphaned items of {@link GridCacheQueue}.
-     */
-    public int getCacheQueueCleanupThreadsCount() {
-        return queueCleanupThreadsCnt;
-    }
-
-    /**
-     * @param queueCleanupThreadsCnt Number of threads removing orphaned items of {@link GridCacheQueue}.
-     */
-    public void setCacheQueueCleanupThreadsCount(int queueCleanupThreadsCnt) {
-        this.queueCleanupThreadsCnt = queueCleanupThreadsCnt;
     }
 
     /** {@inheritDoc} */

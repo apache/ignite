@@ -47,7 +47,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
             while (true) {
                 try {
                     try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(id, 1));
+                        Long idx = (Long)cache.transformAndCompute(queueKey, new AddClosure(id, 1));
 
                         if (idx != null) {
                             checkRemoved(idx);
@@ -94,7 +94,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
             while (true) {
                 try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    Long idx = (Long)cache.transformCompute(queueKey, new PollClosure(id));
+                    Long idx = (Long)cache.transformAndCompute(queueKey, new PollClosure(id));
 
                     if (idx != null) {
                         checkRemoved(idx);
@@ -140,7 +140,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
             while (true) {
                 try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    Long idx = (Long)cache.transformCompute(queueKey, new AddClosure(id, items.size()));
+                    Long idx = (Long)cache.transformAndCompute(queueKey, new AddClosure(id, items.size()));
 
                     if (idx != null) {
                         checkRemoved(idx);
@@ -190,7 +190,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
             while (true) {
                 try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    Long idx = (Long)cache.transformCompute(queueKey, new RemoveClosure(id, rmvIdx));
+                    Long idx = (Long)cache.transformAndCompute(queueKey, new RemoveClosure(id, rmvIdx));
 
                     if (idx != null) {
                         checkRemoved(idx);

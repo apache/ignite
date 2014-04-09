@@ -783,12 +783,12 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R transformCompute(K key, GridCacheTransformComputeClosure<V, R> transformer)
+    @Override public <R> R transformAndCompute(K key, GridClosure<V, GridBiTuple<V, R>> transformer)
         throws GridException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.transformCompute(key, transformer);
+            return delegate.transformAndCompute(key, transformer);
         }
         finally {
             gate.leave(prev);

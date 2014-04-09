@@ -2069,7 +2069,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R transformCompute(final K key, final GridCacheTransformComputeClosure<V, R> transformer)
+    @Override public <R> R transformAndCompute(final K key, final GridClosure<V, GridBiTuple<V, R>> transformer)
         throws GridException {
         A.notNull(key, "key", transformer, "transformer");
 
@@ -2083,7 +2083,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             }
 
             @Override public String toString() {
-                return "transformCompute [key=" + key + ", valTransform=" + transformer + ']';
+                return "transformAndCompute [key=" + key + ", valTransform=" + transformer + ']';
             }
         });
     }

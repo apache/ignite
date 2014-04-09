@@ -403,10 +403,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R transformCompute(K key, GridCacheTransformComputeClosure<V, R> transformer)
+    @Override public <R> R transformAndCompute(K key, GridClosure<V, GridBiTuple<V, R>> transformer)
         throws GridException {
-        return (R)updateAllAsync0(null, Collections.singletonMap(key, transformer), null, null, true, false, null, 0,
-            null).get();
+        return (R)updateAllAsync0(null,
+            Collections.singletonMap(key, new GridCacheTransformComputeClosure<>(transformer)), null, null, true,
+            false, null, 0, null).get();
     }
 
     /** {@inheritDoc} */
@@ -1286,7 +1287,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     if (op == TRANSFORM && writeVal instanceof GridCacheTransformComputeClosure) {
                         assert req.returnValue();
 
-                        ret = ((GridCacheTransformComputeClosure<V, ?>)writeVal).compute(updRes.oldValue());
+                        ret = ((GridCacheTransformComputeClosure<V, ?>)writeVal).returnValue();
                     }
 
                     retVal = new GridCacheReturn<>(ret, updRes.success());

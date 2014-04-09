@@ -464,9 +464,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R transformCompute(K key, GridCacheTransformComputeClosure<V, R> transformer)
+    @Override public <R> R transformAndCompute(K key, GridClosure<V, GridBiTuple<V, R>> transformer)
         throws GridException {
-        return dht.transformCompute(key, transformer);
+        return dht.transformAndCompute(key, transformer);
     }
 
     /** {@inheritDoc} */

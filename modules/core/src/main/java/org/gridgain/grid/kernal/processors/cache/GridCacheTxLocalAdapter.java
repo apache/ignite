@@ -1601,16 +1601,15 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R transformCompute(K key, GridCacheTransformComputeClosure<V, R> transformer)
+    @Override public <R> R transformCompute(K key, GridClosure<V, GridBiTuple<V, R>> transformer)
         throws GridException {
-        GridFuture<GridCacheReturn<V>> fut = putAllAsync0(null, Collections.singletonMap(key, transformer), null,
-            true, null, -1, CU.<K, V>empty());
+        GridFuture<GridCacheReturn<V>> fut = putAllAsync0(null,
+            Collections.singletonMap(key, new GridCacheTransformComputeClosure<>(transformer)), null, true, null,
+            -1, CU.<K, V>empty());
 
         GridCacheReturn<V> ret = fut.get();
 
-        assert ret.success();
-
-        return transformer.compute(ret.value());
+        return transformer.apply(ret.value()).get2();
     }
 
     /** {@inheritDoc} */

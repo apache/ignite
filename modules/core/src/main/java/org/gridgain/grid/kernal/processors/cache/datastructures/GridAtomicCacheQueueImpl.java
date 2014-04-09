@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -172,7 +173,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void removeItem(long rmvIdx) throws GridException {
-        Long idx = (Long)cache.transformCompute(queueKey, new RemoveClosure(id, rmvIdx));
+        Long idx = (Long)cache.transformAndCompute(queueKey, new RemoveClosure(id, rmvIdx));
 
         if (idx != null) {
             checkRemoved(idx);
@@ -216,13 +217,13 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private Long transformHeader(GridCacheTransformComputeClosure<GridCacheQueueHeader, Long> c)
+    @Nullable private Long transformHeader(GridClosure<GridCacheQueueHeader, GridBiTuple<GridCacheQueueHeader, Long>> c)
         throws GridException {
         int cnt = 0;
 
         while (true) {
             try {
-                return (Long)cache.transformCompute(queueKey, c);
+                return (Long)cache.transformAndCompute(queueKey, c);
             }
             catch (GridCachePartialUpdateException e) {
                 if (cnt++ == MAX_UPDATE_RETRIES)

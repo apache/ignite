@@ -15,11 +15,9 @@ import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.worker.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -41,12 +39,6 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 public final class GridCacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
-
-    /** Number of queue items to process before delaying cleanup. */
-    private static final long QUEUE_CLEANUP_THROTTLE_ITEMS = 10_000;
-
-    /** Queue cleanup throttle delay. */
-    private static final long QUEUE_CLEANUP_THROTTLE_DELAY = 5_000;
 
     /** Cache contains only {@code GridCacheInternal,GridCacheInternal}. */
     private GridCacheProjection<GridCacheInternal, GridCacheInternal> dsView;
@@ -80,9 +72,6 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
     /** Cache contains only entry {@code GridCacheQueueHeader}.  */
     private GridCacheProjection<GridCacheQueueHeaderKey, GridCacheQueueHeader> queueHdrView;
-
-    /** Workers removing orphaned queue items. */
-    private List<QueueCleanupWorker> queueCleanupWorkers;
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -125,25 +114,9 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                     (GridCacheInternalKey.class, GridCacheAtomicSequenceValue.class).flagsOn(CLONE);
             }
 
-            if (supportsQueue()) {
-                assert cctx.config().getCacheQueueCleanupFrequency() > 0;
-                assert cctx.config().getCacheQueueCleanupThreadsCount() > 0;
-
+            if (supportsQueue())
                 queueHdrView = cctx.cache().<GridCacheQueueHeaderKey, GridCacheQueueHeader>projection
                     (GridCacheQueueHeaderKey.class, GridCacheQueueHeader.class).flagsOn(CLONE);
-
-                int cleanupWorkersCnt = cctx.config().getCacheQueueCleanupThreadsCount();
-
-                queueCleanupWorkers = new ArrayList<>(cleanupWorkersCnt);
-
-                for (int i = 0; i < cleanupWorkersCnt; i++) {
-                    QueueCleanupWorker worker = new QueueCleanupWorker(cleanupWorkersCnt, i);
-
-                    queueCleanupWorkers.add(worker);
-
-                    new GridThread(worker).start();
-                }
-            }
 
             initFlag = true;
         }
@@ -165,14 +138,6 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             catch (GridException e) {
                 U.warn(log, "Failed to cancel queue header query.", e);
             }
-        }
-
-        if (queueCleanupWorkers != null) {
-            for (QueueCleanupWorker worker : queueCleanupWorkers)
-                U.cancel(worker);
-
-            for (QueueCleanupWorker worker : queueCleanupWorkers)
-                U.join(worker, log);
         }
 
         for (GridCacheQueueProxy q : queuesMap.values())
@@ -204,7 +169,8 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 return val;
 
             return CU.outTx(new Callable<GridCacheAtomicSequence>() {
-                @Override public GridCacheAtomicSequence call() throws Exception {
+                @Override
+                public GridCacheAtomicSequence call() throws Exception {
                     try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicSequenceValue seqVal = cast(dsView.get(key),
                             GridCacheAtomicSequenceValue.class);
@@ -321,7 +287,8 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 return atomicLong;
 
             return CU.outTx(new Callable<GridCacheAtomicLong>() {
-                @Override public GridCacheAtomicLong call() throws Exception {
+                @Override
+                public GridCacheAtomicLong call() throws Exception {
                     try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicLongValue val = cast(dsView.get(key),
                             GridCacheAtomicLongValue.class);
@@ -416,7 +383,8 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 return atomicRef;
 
             return CU.outTx(new Callable<GridCacheAtomicReference<T>>() {
-                @Override public GridCacheAtomicReference<T> call() throws Exception {
+                @Override
+                public GridCacheAtomicReference<T> call() throws Exception {
                     try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicReferenceValue val = cast(dsView.get(key),
                             GridCacheAtomicReferenceValue.class);
@@ -514,7 +482,8 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 return atomicStamped;
 
             return CU.outTx(new Callable<GridCacheAtomicStamped<T, S>>() {
-                @Override public GridCacheAtomicStamped<T, S> call() throws Exception {
+                @Override
+                public GridCacheAtomicStamped<T, S> call() throws Exception {
                     try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicStampedValue val = cast(dsView.get(key),
                             GridCacheAtomicStampedValue.class);
@@ -663,11 +632,6 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                             GridCacheQueueHeaderKey key = (GridCacheQueueHeaderKey)e.getKey();
                             GridCacheQueueHeader hdr = (GridCacheQueueHeader)e.getValue();
 
-                            if (hdr == null) {
-                                for (QueueCleanupWorker worker : queueCleanupWorkers)
-                                    worker.wakeUp();
-                            }
-
                             for (final GridCacheQueueProxy queue : queuesMap.values()) {
                                 if (queue.name().equals(key.queueName())) {
                                     if (hdr == null) {
@@ -740,23 +704,34 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         checkSupportsQueue();
 
         if (cctx.atomic())
-            return removeQueue0(name);
+            return removeQueue0(name, batchSize);
 
         return CU.outTx(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                return removeQueue0(name);
+                return removeQueue0(name, batchSize);
             }
         }, cctx);
     }
 
     /**
      * @param name Queue name.
+     * @param batchSize Batch size.
      * @return {@code True} if queue was removed.
      * @throws GridException If failed.
      */
-    private boolean removeQueue0(String name) throws GridException {
-        // Remove only header, queue items are removed by QueueCleanupWorkers.
-        return queueHdrView.removex(new GridCacheQueueHeaderKey(name));
+    private boolean removeQueue0(String name, final int batchSize) throws GridException {
+        GridCacheQueueHeader hdr = queueHdrView.remove(new GridCacheQueueHeaderKey(name));
+
+        if (hdr == null)
+            return false;
+
+        if (hdr.empty())
+            return true;
+
+        GridCacheQueueAdapter.removeKeys(cctx.cache(), hdr.id(), name, hdr.collocated(), hdr.head(), hdr.tail(),
+            batchSize);
+
+        return true;
     }
 
     /**
@@ -1097,167 +1072,6 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) {
             // No-op.
-        }
-    }
-
-    /**
-     * Worker removing orphaned queue items.
-     */
-    private class QueueCleanupWorker extends GridWorker {
-        /** */
-        private final int workersCnt;
-
-        /** */
-        private final int idx;
-
-        /** */
-        private boolean hasJob;
-
-        /**
-         * @param workersCnt Total number of worker threads.
-         * @param idx Index of this worker (used to divide keys between multiple workers).
-         */
-        private QueueCleanupWorker(int workersCnt, int idx) {
-            super(cctx.gridName(), "queue-cleanup-worker-" + idx, log);
-
-            this.workersCnt = workersCnt;
-            this.idx = idx;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
-            final int BATCH_SIZE = 10;
-
-            final long cleanupFreq = cctx.config().getCacheQueueCleanupFrequency();
-
-            while (!isCancelled()) {
-                try {
-                    synchronized (this) {
-                        long endWait = U.currentTimeMillis() + cleanupFreq;
-
-                        long waitTime;
-
-                        while (!hasJob && (waitTime = endWait - U.currentTimeMillis()) > 0)
-                            wait(waitTime);
-
-                        hasJob = false;
-                    }
-
-                    final long topVer = cctx.discovery().topologyVersion();
-
-                    GridCache cache = cctx.kernalContext().cache().publicCache(cctx.name());
-
-                    Map<GridUuid, GridCacheQueueHeader> aliveQueues = new GridLeanMap<>();
-
-                    Collection<GridUuid> deadQueues = new GridLeanSet<>();
-
-                    Collection<GridCacheQueueItemKey> rmvKeys = null;
-
-                    int cnt = 0;
-
-                    Set<GridCacheEntryEx<K, V>> entries = cctx.cache().map().allEntries0();
-
-                    for (GridCacheEntryEx<K, V> entry : entries) {
-                        if (!processEntry(entry, topVer))
-                            continue;
-
-                        GridCacheQueueItemKey key = (GridCacheQueueItemKey)entry.key();
-
-                        boolean rmv;
-
-                        if (deadQueues.contains(key.queueId()))
-                            rmv = true;
-                        else if (aliveQueues.containsKey(key.queueId()))
-                            rmv = removeItem(aliveQueues.get(key.queueId()), key);
-                        else {
-                            GridCacheQueueHeader header = (GridCacheQueueHeader)cache.get(
-                                new GridCacheQueueHeaderKey(key.queueName()));
-
-                            if (header == null || !header.id().equals(key.queueId())) {
-                                deadQueues.add(key.queueId());
-
-                                rmv = true;
-                            }
-                            else {
-                                aliveQueues.put(header.id(), header);
-
-                                rmv = removeItem(header, key);
-                            }
-                        }
-
-                        if (rmv) {
-                            if (log.isDebugEnabled())
-                                log.debug("Found orphaned queue item [key=" + key + ", cache=" + cctx.name() + ']');
-
-                            if (rmvKeys == null)
-                                rmvKeys = new ArrayList<>(BATCH_SIZE);
-
-                            rmvKeys.add(key);
-
-                            if (rmvKeys.size() == BATCH_SIZE) {
-                                cache.removeAll(rmvKeys);
-
-                                rmvKeys.clear();
-                            }
-                        }
-
-                        if (++cnt % QUEUE_CLEANUP_THROTTLE_ITEMS == 0) {
-                            if (isCancelled())
-                                return;
-
-                            U.sleep(QUEUE_CLEANUP_THROTTLE_DELAY);
-                        }
-                    }
-
-                    if (!F.isEmpty(rmvKeys))
-                        cache.removeAll(rmvKeys);
-                }
-                catch (GridInterruptedException ignore) {
-                    return;
-                }
-                catch (GridException e) {
-                    U.error(log, "Failed to cleanup orphaned queue items [cache=" + cctx.name() + ']', e);
-                }
-            }
-        }
-
-        /**
-         * Wakes up worker.
-         */
-        private void wakeUp() {
-            synchronized (this) {
-                hasJob = true;
-
-                notifyAll();
-            }
-        }
-
-        /**
-         * @param e Cache entry.
-         * @param topVer Topology version.
-         * @return {@code True} if this worker should process given entry.
-         */
-        @SuppressWarnings("IfMayBeConditional")
-        private boolean processEntry(GridCacheEntryEx<K, V> e, long topVer) {
-            if (!(e.key() instanceof GridCacheQueueItemKey))
-                return false;
-
-            if (cctx.isLocal())
-                return e.key().hashCode() % workersCnt == idx;
-            else
-                return cctx.affinity().primary(cctx.localNode(), e.partition(), topVer) &&
-                    e.partition() % workersCnt == idx;
-        }
-
-        /**
-         * @param header Queue header.
-         * @param key Item key.
-         * @return {@code True} if item is orphaned and should be removed.
-         */
-        @SuppressWarnings("SimplifiableIfStatement")
-        private boolean removeItem(GridCacheQueueHeader header, GridCacheQueueItemKey key) {
-            return cctx.transactional() ? key.index() < header.head() : key.index() < (header.head() - 1000);
         }
     }
 }

@@ -1155,47 +1155,41 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testTransformCompute() throws Exception {
-        GridCacheTransformComputeClosure<Integer, String> c = new GridCacheTransformComputeClosure<Integer, String>() {
-            @Override public String compute(Integer val) {
-                return val == null ? "null" : String.valueOf(val);
-            }
+        GridCacheProjection<String, Integer> cache = cache();
 
-            @Override public Integer apply(Integer val) {
-                return val == null ? 0 : val + 1;
+        GridClosure<Integer, GridBiTuple<Integer, String>> c;
+
+        c = new GridClosure<Integer, GridBiTuple<Integer, String>>() {
+            @Override public GridBiTuple<Integer, String> apply(Integer val) {
+                return val == null ? new GridBiTuple<>(0, "null") : new GridBiTuple<>(val + 1, String.valueOf(val));
             }
         };
 
-        GridCacheProjection<String, Integer> cache = cache();
-
-        assertEquals("null", cache.transformCompute("k0", c));
+        assertEquals("null", cache.transformAndCompute("k0", c));
 
         assertEquals((Integer)0, cache.get("k0"));
 
-        assertEquals("0", cache.transformCompute("k0", c));
+        assertEquals("0", cache.transformAndCompute("k0", c));
 
         assertEquals((Integer)1, cache.get("k0"));
 
         cache.put("k1", 1);
 
-        assertEquals("1", cache.transformCompute("k1", c));
+        assertEquals("1", cache.transformAndCompute("k1", c));
 
         assertEquals((Integer)2, cache.get("k1"));
 
-        assertEquals("2", cache.transformCompute("k1", c));
+        assertEquals("2", cache.transformAndCompute("k1", c));
 
         assertEquals((Integer)3, cache.get("k1"));
 
-        c = new GridCacheTransformComputeClosure<Integer, String>() {
-            @Override public String compute(Integer val) {
-                return null;
-            }
-
-            @Override public Integer apply(Integer val) {
-                return null;
+        c = new GridClosure<Integer, GridBiTuple<Integer, String>>() {
+            @Override public GridBiTuple<Integer, String> apply(Integer integer) {
+                return new GridBiTuple<>(null, null);
             }
         };
 
-        assertNull(cache.transformCompute("k1", c));
+        assertNull(cache.transformAndCompute("k1", c));
         assertNull(cache.get("k1"));
 
         for (int i = 0; i < gridCount(); i++)
