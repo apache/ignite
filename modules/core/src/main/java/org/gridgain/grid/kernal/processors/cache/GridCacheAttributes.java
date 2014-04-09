@@ -665,10 +665,10 @@ public class GridCacheAttributes implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        atomicityMode = U.readEnum(in, GridCacheAtomicityMode.class);
-        cacheMode = U.readEnum(in, GridCacheMode.class);
-        dfltConcurrency = U.readEnum(in, GridCacheTxConcurrency.class);
-        dfltIsolation = U.readEnum(in, GridCacheTxIsolation.class);
+        atomicityMode = GridCacheAtomicityMode.fromOrdinal(in.readByte());
+        cacheMode = GridCacheMode.fromOrdinal(in.readByte());
+        dfltConcurrency = GridCacheTxConcurrency.fromOrdinal(in.readByte());
+        dfltIsolation = GridCacheTxIsolation.fromOrdinal(in.readByte());
         dfltLockTimeout = in.readLong();
         dfltQryTimeout = in.readLong();
         dfltTxTimeout = in.readLong();
@@ -680,9 +680,9 @@ public class GridCacheAttributes implements Externalizable {
         evictSync  = in.readBoolean();
         indexingSpiName = U.readString(in);
         name = U.readString(in);
-        partDistro = U.readEnum(in, GridCacheDistributionMode.class);
+        partDistro = GridCacheDistributionMode.fromOrdinal(in.readByte());
         preloadBatchSize = in.readInt();
-        preloadMode = U.readEnum(in, GridCachePreloadMode.class);
+        preloadMode = GridCachePreloadMode.fromOrdinal(in.readByte());
         qryIdxEnabled = in.readBoolean();
         seqReserveSize = in.readInt();
         storeEnabled = in.readBoolean();
@@ -696,7 +696,7 @@ public class GridCacheAttributes implements Externalizable {
         writeBehindFlushFreq = in.readLong();
         writeBehindFlushSize = in.readInt();
         writeBehindFlushThreadCnt = in.readInt();
-        writeSyncMode = U.readEnum(in, GridCacheWriteSynchronizationMode.class);
+        writeSyncMode = GridCacheWriteSynchronizationMode.fromOrdinal(in.readByte());
 
         affClsName = U.readString(in);
         affMapperClsName = U.readString(in);
