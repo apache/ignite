@@ -689,12 +689,12 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 commState.idx++;
 
             case 13:
-                Object isolation0 = commState.getEnum(GridCacheTxIsolation.class);
-
-                if (isolation0 == ENUM_NOT_READ)
+                if (buf.remaining() < 1)
                     return false;
 
-                isolation = (GridCacheTxIsolation)isolation0;
+                byte isolation0 = commState.getByte();
+
+                isolation = GridCacheTxIsolation.fromOrdinal(isolation0);
 
                 commState.idx++;
 

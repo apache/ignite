@@ -290,12 +290,12 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 2:
-                Object plc0 = commState.getEnum(GridIoPolicy.class);
-
-                if (plc0 == ENUM_NOT_READ)
+                if (buf.remaining() < 1)
                     return false;
 
-                plc = (GridIoPolicy)plc0;
+                byte plc0 = commState.getByte();
+
+                plc = GridIoPolicy.fromOrdinal(plc0);
 
                 commState.idx++;
 
