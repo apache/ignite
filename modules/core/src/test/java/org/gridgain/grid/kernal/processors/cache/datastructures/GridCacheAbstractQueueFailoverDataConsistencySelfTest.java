@@ -106,7 +106,8 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     /**
      * @throws Exception If failed.
      */
-    public void testAddFailoverCollocated() throws Exception {
+    // TODO: GG-8072, enabled when fixed.
+    public void _testAddFailoverCollocated() throws Exception {
         testAddFailover(true);
     }
 
