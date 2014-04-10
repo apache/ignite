@@ -12,9 +12,12 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -31,6 +34,7 @@ import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
@@ -1138,15 +1142,152 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @return {@code True} if set was removed.
      * @throws GridException If failed.
      */
-    @SuppressWarnings("unchecked")
-    public boolean removeSet(String name) throws GridException {
+    public boolean removeSet(final String name) throws GridException {
         waitInitialization();
 
+        if (cctx.atomic())
+            return removeSet0(name);
+
+        return CU.outTx(new Callable<Boolean>() {
+            @Override public Boolean call() throws Exception {
+                return removeSet0(name);
+            }
+        }, cctx);
+    }
+
+    /**
+     * @param name Set name.
+     * @return {@code True} if set was removed.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private boolean removeSet0(String name) throws GridException {
         GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
 
-        GridCacheAdapter cache = cctx.cache();
+        GridCache cache = cctx.cache();
 
-        return cache.removex(key);
+        GridCacheSetHeader hdr = (GridCacheSetHeader)cache.remove(key);
+
+        if (hdr == null)
+            return false;
+
+        if (!cctx.isLocal()) {
+            cctx.topology().readLock();
+
+            try {
+                GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+
+                long topVer = fut.topologySnapshot().topologyVersion();
+
+                Collection<GridNode> nodes = CU.affinityNodes(cctx, topVer);
+
+                cctx.closures().callAsyncNoFailover(BROADCAST, new RemoveSetCallable(cctx.name(), hdr.id(), topVer),
+                        nodes, true).get();
+            }
+            finally {
+                cctx.topology().readUnlock();
+            }
+        }
+        else
+            removeSet(hdr.id(), 0);
+
+        return true;
+    }
+
+    /**
+     * @param setId Set ID.
+     */
+    @SuppressWarnings("unchecked")
+    private void removeSet(GridUuid setId, long topVer) throws GridException {
+        GridCacheSetProxy set = setsMap.remove(setId);
+
+        if (set != null)
+            set.delegate().removed(true);
+
+        GridConcurrentHashSet<GridCacheSetItemKey> setData = setDataMap.remove(setId);
+
+        if (setData != null) {
+            GridCache cache = cctx.cache();
+
+            final int BATCH_SIZE = 100;
+
+            Collection<GridCacheSetItemKey> keys = new ArrayList<>();
+
+            GridCacheAffinityManager aff = cctx.affinity();
+
+            for (GridCacheSetItemKey key : setData) {
+                if (!aff.primary(cctx.localNode(), key, topVer))
+                    continue;
+
+                keys.add(key);
+
+                if (keys.size() == BATCH_SIZE) {
+                    cache.removeAll(keys);
+
+                    keys.clear();
+                }
+            }
+
+            if (!keys.isEmpty())
+                cache.removeAll(keys);
+        }
+    }
+
+    /**
+     */
+    private static class RemoveSetCallable implements Callable<Void>, Externalizable {
+        /** Injected grid instance. */
+        @GridInstanceResource
+        private Grid grid;
+
+        /** */
+        private String cacheName;
+
+        /** */
+        private GridUuid setId;
+
+        /** */
+        private long topVer;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public RemoveSetCallable() {
+            // No-op.
+        }
+
+        /**
+         * @param cacheName Cache name.
+         * @param setId Set ID.
+         */
+        private RemoveSetCallable(String cacheName, GridUuid setId, long topVer) {
+            this.cacheName = cacheName;
+            this.setId = setId;
+            this.topVer = topVer;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() throws GridException {
+            GridCacheAdapter cache = ((GridKernal)grid).context().cache().internalCache(cacheName);
+
+            assert cache != null;
+
+            cache.context().dataStructures().removeSet(setId, topVer);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, cacheName);
+            U.writeGridUuid(out, setId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            cacheName = U.readString(in);
+            setId = U.readGridUuid(in);
+        }
     }
 
     /**

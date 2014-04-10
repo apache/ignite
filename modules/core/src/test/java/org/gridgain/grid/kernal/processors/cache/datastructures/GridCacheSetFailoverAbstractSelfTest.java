@@ -146,11 +146,15 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
                     // No-op.
                 }
 
-                assertTrue(set.contains(rnd.nextInt(ITEMS)));
+                int val = rnd.nextInt(ITEMS);
 
-                assertFalse(set.add(rnd.nextInt(ITEMS)));
+                assertTrue("Not contains " + val, set.contains(val));
 
-                assertFalse(set.contains(ITEMS + rnd.nextInt(ITEMS)));
+                assertFalse("Added " + val, set.add(val));
+
+                val = ITEMS + rnd.nextInt(ITEMS);
+
+                assertFalse("Contains " + val, set.contains(val));
             }
         }
         finally {

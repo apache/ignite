@@ -35,7 +35,10 @@ import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
  */
 public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCacheSet<T> {
     /** */
-    protected static final int MAX_UPDATE_RETRIES = 100;
+    private static final int MAX_UPDATE_RETRIES = 100;
+
+    /** */
+    private static final long RETRY_DELAY = 1;
 
     /** */
     private static final int BATCH_SIZE = 100;
@@ -389,22 +392,27 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     private <R> R retry(Callable<R> call) {
         int cnt = 0;
 
-        while (true) {
-            try {
-                return call.call();
-            }
-            catch (GridEmptyProjectionException e) {
-                throw new GridRuntimeException(e);
-            }
-            catch (GridCacheTxRollbackException | GridCachePartialUpdateException | GridTopologyException e) {
-                if (cnt++ == MAX_UPDATE_RETRIES)
+        try {
+            while (true) {
+                try {
+                    return call.call();
+                }
+                catch (GridEmptyProjectionException e) {
                     throw new GridRuntimeException(e);
-                else
-                    U.warn(log, "Failed to execute set operation, will retry [err=" + e + ']');
+                }
+                catch (GridCacheTxRollbackException | GridCachePartialUpdateException | GridTopologyException e) {
+                    if (cnt++ == MAX_UPDATE_RETRIES)
+                        throw e;
+                    else {
+                        U.warn(log, "Failed to execute set operation, will retry [err=" + e + ']');
+
+                        U.sleep(RETRY_DELAY);
+                    }
+                }
             }
-            catch (Exception e) {
-                throw new GridRuntimeException(e);
-            }
+        }
+        catch (Exception e) {
+            throw new GridRuntimeException(e);
         }
     }
 
