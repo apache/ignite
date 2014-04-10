@@ -169,7 +169,7 @@ public final class GridCacheXAResource implements XAResource {
      * @return Comma-separated flags string.
      */
     private String flags(int flags) {
-        StringBuffer res = new StringBuffer();
+        StringBuilder res = new StringBuilder();
 
         addFlag(res, flags, TMENDRSCAN, "TMENDRSCAN");
         addFlag(res, flags, TMFAIL, "TMFAIL");
@@ -185,17 +185,17 @@ public final class GridCacheXAResource implements XAResource {
     }
 
     /**
-     * @param buf String buffer.
+     * @param sb String builder.
      * @param flags Flags bit set.
      * @param mask Bit mask.
      * @param flagName String name of the flag specified by given mask.
-     * @return String buffer appended by flag if it's presented in bit set.
+     * @return String builder appended by flag if it's presented in bit set.
      */
-    private StringBuffer addFlag(StringBuffer buf, int flags, int mask, String flagName) {
+    private StringBuilder addFlag(StringBuilder sb, int flags, int mask, String flagName) {
         if ((flags & mask) > 0)
-            buf.append(buf.length() > 0 ? "," : "").append(flagName);
+            sb.append(sb.length() > 0 ? "," : "").append(flagName);
 
-        return buf;
+        return sb;
     }
 
     /** {@inheritDoc} */
