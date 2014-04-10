@@ -115,4 +115,11 @@ public final class GridMarshallerExclusions {
 
         return res;
     }
+
+    /**
+     * Intended for test purposes only.
+     */
+    public static void clearCache() {
+        cache.clear();
+    }
 }
