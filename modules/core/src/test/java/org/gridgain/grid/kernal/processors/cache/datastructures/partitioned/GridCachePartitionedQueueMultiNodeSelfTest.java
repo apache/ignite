@@ -35,7 +35,7 @@ public class GridCachePartitionedQueueMultiNodeSelfTest extends GridCacheQueueMu
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setDgcFrequency(0);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(NEAR_PARTITIONED);
+        cc.setDistributionMode(PARTITIONED_ONLY);
 
         c.setCacheConfiguration(cc);
 

@@ -36,6 +36,12 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
     /** Listeners count. */
     private final AtomicInteger lsnrCnt = new AtomicInteger();
 
+    /** Internal entries listeners. */
+    private final ConcurrentMap<UUID, ListenerInfo<K, V>> intLsnrs = new ConcurrentHashMap8<>();
+
+    /** Internal listeners count. */
+    private final AtomicInteger intLsnrCnt = new AtomicInteger();
+
     /** Query sequence number for message topic. */
     private final AtomicLong seq = new AtomicLong();
 
@@ -62,51 +68,75 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
         assert e != null;
         assert key != null;
 
-        if (lsnrCnt.get() > 0) {
-            if (e.isInternal())
-                return;
+        ConcurrentMap<UUID, ListenerInfo<K, V>> lsnrCol;
 
-            GridCacheContinuousQueryEntry<K, V> e0 = new GridCacheContinuousQueryEntry<>(
-                cctx, e.wrap(false), key, val, valBytes);
+        if (e.isInternal())
+            lsnrCol = intLsnrCnt.get() > 0 ? intLsnrs : null;
+        else
+            lsnrCol = lsnrCnt.get() > 0 ? lsnrs : null;
 
-            e0.initValue(cctx.marshaller(), cctx.deploy().globalLoader());
+        if (lsnrCol == null)
+            return;
 
-            for (ListenerInfo<K, V> lsnr : lsnrs.values())
-                lsnr.onEntryUpdate(e0);
-        }
+        GridCacheContinuousQueryEntry<K, V> e0 = new GridCacheContinuousQueryEntry<>(
+            cctx, e.wrap(false), key, val, valBytes);
+
+        e0.initValue(cctx.marshaller(), cctx.deploy().globalLoader());
+
+        for (ListenerInfo<K, V> lsnr : lsnrCol.values())
+            lsnr.onEntryUpdate(e0);
     }
 
     /**
      * @param id Listener ID.
      * @param lsnr Listener.
+     * @param internal Internal flag.
      * @return Whether listener was actually registered.
      */
-    boolean registerListener(UUID id, GridCacheContinuousQueryListener<K, V> lsnr) {
+    boolean registerListener(UUID id, GridCacheContinuousQueryListener<K, V> lsnr, boolean internal) {
         ListenerInfo<K, V> info = new ListenerInfo<>(lsnr);
 
-        boolean added = lsnrs.putIfAbsent(id, info) == null;
+        boolean added;
 
-        if (added)
-            lsnrCnt.incrementAndGet();
+        if (internal) {
+            added = intLsnrs.putIfAbsent(id, info) == null;
+
+            if (added)
+                intLsnrCnt.incrementAndGet();
+        }
+        else {
+            added = lsnrs.putIfAbsent(id, info) == null;
+
+            if (added)
+                lsnrCnt.incrementAndGet();
+        }
 
         return added;
     }
 
     /**
+     * @param internal Internal flag.
      * @param id Listener ID.
      */
-    void unregisterListener(UUID id) {
-        if (lsnrs.remove(id) != null)
-            lsnrCnt.decrementAndGet();
+    void unregisterListener(boolean internal, UUID id) {
+        if (internal) {
+            if (intLsnrs.remove(id) != null)
+                intLsnrCnt.decrementAndGet();
+        }
+        else {
+            if (lsnrs.remove(id) != null)
+                lsnrCnt.decrementAndGet();
+        }
     }
 
     /**
      * Iterates through existing data.
      *
+     * @param internal Internal flag.
      * @param id Listener ID.
      */
-    void iterate(UUID id) {
-        ListenerInfo<K, V> info = lsnrs.get(id);
+    void iterate(boolean internal, UUID id) {
+        ListenerInfo<K, V> info = internal ? intLsnrs.get(id) : lsnrs.get(id);
 
         assert info != null;
 

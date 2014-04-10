@@ -9,174 +9,176 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
-import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.util.*;
 
 /**
  * Queue header.
  */
-public class GridCacheQueueHeader<T> implements GridCacheInternal, Externalizable, Cloneable {
-    /** Queue id. */
-    @GridCacheQuerySqlField
-    private String qid;
+public class GridCacheQueueHeader implements GridCacheInternal, Externalizable {
+    /** */
+    private GridUuid id;
 
-    /** Maximum queue size. */
+    /** */
+    private long head;
+
+    /** */
+    private long tail;
+
+    /** */
     private int cap;
 
-    /** Actual queue size. */
-    private int size;
-
-    /** Sequence number. */
-    private long seq;
-
-    /** Collocation flag. */
+    /** */
     private boolean collocated;
 
+    /** */
+    @GridToStringInclude
+    private Set<Long> rmvIdxs;
+
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Required by {@link Externalizable}.
      */
     public GridCacheQueueHeader() {
         // No-op.
     }
 
     /**
-     * Default constructor.
-     *
-     * @param qid Name of queue.
-     * @param cap Capacity of queue.
+     * @param id Queue unique ID.
+     * @param cap Capacity.
      * @param collocated Collocation flag.
+     * @param head Queue head index.
+     * @param tail Queue tail index.
+     * @param rmvIdxs Indexes of removed items.
      */
-    public GridCacheQueueHeader(String qid, int cap, boolean collocated) {
-        assert qid != null;
-        assert cap > 0;
+    public GridCacheQueueHeader(GridUuid id, int cap, boolean collocated, long head, long tail,
+        @Nullable Set<Long> rmvIdxs) {
+        assert id != null;
+        assert head <= tail;
 
+        this.id = id;
         this.cap = cap;
-        this.qid = qid;
         this.collocated = collocated;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(cap);
-        out.writeInt(size);
-        out.writeLong(seq);
-        out.writeBoolean(collocated);
-        out.writeUTF(qid);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        cap = in.readInt();
-        size = in.readInt();
-        seq = in.readLong();
-        collocated = in.readBoolean();
-        qid = in.readUTF();
+        this.head = head;
+        this.tail = tail;
+        this.rmvIdxs = rmvIdxs;
     }
 
     /**
-     * @return Sequence number.
+     * @return Queue unique ID.
      */
-    public long sequence() {
-        return seq;
+    public GridUuid id() {
+        return id;
     }
 
     /**
-     * @return Incremented sequence number.
-     */
-    public long incrementSequence() {
-        return ++seq;
-    }
-
-    /**
-     * @return Maximum queue size.
+     * @return Capacity.
      */
     public int capacity() {
         return cap;
     }
 
     /**
-     * @return Collocation flag.
+     * @return Queue collocation flag.
      */
     public boolean collocated() {
         return collocated;
     }
 
     /**
-     * Gets actual queue size.
-     *
-     * @return Actual queue size.
+     * @return Head index.
+     */
+    public long head() {
+        return head;
+    }
+
+    /**
+     * @return Tail index.
+     */
+    public long tail() {
+        return tail;
+    }
+
+    /**
+     * @return {@code True} if queue is bounded.
+     */
+    public boolean bounded() {
+        return cap < Integer.MAX_VALUE;
+    }
+
+    /**
+     * @return {@code True} if queue is empty.
+     */
+    public boolean empty() {
+        return head == tail;
+    }
+
+    /**
+     * @return {@code True} if queue is full.
+     */
+    public boolean full() {
+        return bounded() && size() == capacity();
+    }
+
+    /**
+     * @return Queue size.
      */
     public int size() {
+        int rmvSize = F.isEmpty(removedIndexes()) ? 0 : removedIndexes().size();
+
+        int size = (int)(tail() - head() - rmvSize);
+
+        assert size >= 0 : size;
+
         return size;
     }
 
     /**
-     * Sets actual queue size.
-     *
-     * @param size Actual queue size.
+     * @return Indexes of removed items.
      */
-    public void size(int size) {
-        this.size = size;
-    }
-
-    /**
-     * Increments queue size.
-     */
-    public void incrementSize() {
-        size++;
-    }
-
-    /**
-     * Decrements queue size.
-     */
-    public void decrementSize() {
-        assert size > 0;
-
-        size--;
-    }
-
-    /**
-     * Checks whether queue is full.
-     *
-     * @return {@code true} if queue is full.
-     */
-    public boolean full() {
-        return cap > 0 && size == cap;
-    }
-
-    /**
-     * Checks whether queue is empty.
-     *
-     * @return {@code true} if queue is empty.
-     */
-    public boolean empty() {
-        return size == 0;
+    @Nullable public Set<Long> removedIndexes() {
+        return rmvIdxs;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeGridUuid(out, id);
+        out.writeInt(cap);
+        out.writeBoolean(collocated);
+        out.writeLong(head);
+        out.writeLong(tail);
+        out.writeBoolean(rmvIdxs != null);
 
-        if (!(obj instanceof GridCacheQueueHeader))
-            return false;
+        if (rmvIdxs != null) {
+            out.writeInt(rmvIdxs.size());
 
-        GridCacheQueueHeader hdr = (GridCacheQueueHeader)obj;
-
-        return qid.equals(hdr.qid);
+            for (Long idx : rmvIdxs)
+                out.writeLong(idx);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return qid.hashCode();
-    }
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        id = U.readGridUuid(in);
+        cap = in.readInt();
+        collocated = in.readBoolean();
+        head = in.readLong();
+        tail = in.readLong();
 
-    /** {@inheritDoc} */
-    @Override public Object clone() throws CloneNotSupportedException {
-        return super.clone();
+        if (in.readBoolean()) {
+            int size = in.readInt();
+
+            rmvIdxs = new HashSet<>();
+
+            for (int i = 0; i < size; i++)
+                rmvIdxs.add(in.readLong());
+        }
     }
 
     /** {@inheritDoc} */

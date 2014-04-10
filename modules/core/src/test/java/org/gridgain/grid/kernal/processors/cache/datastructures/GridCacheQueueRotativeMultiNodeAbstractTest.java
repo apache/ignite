@@ -19,18 +19,16 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
-import java.io.*;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Queue multi node tests.
  */
-public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCommonAbstractTest
-    implements Externalizable {
+public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCommonAbstractTest {
     /** */
     protected static final int GRID_CNT = 4;
 
@@ -44,7 +42,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     private static final int QUEUE_CAPACITY = 100000;
 
     /** */
-    private static CountDownLatch lthTake = new CountDownLatch(1);
+    private static CountDownLatch lthTake;
 
     /**
      * Constructs test.
@@ -58,7 +56,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         for (int i = 0; i < GRID_CNT; i++)
             startGrid(i);
 
-        assert G.allGrids().size() == GRID_CNT;
+        assert G.allGrids().size() == GRID_CNT : G.allGrids().size();
     }
 
     /** {@inheritDoc} */
@@ -127,7 +125,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         for (int i = GRID_CNT; i < GRID_CNT * 3; i++) {
             startGrid(i);
 
-            grid(i).forLocal().compute().call(new PutTakeJob(queueName, RETRIES));
+            grid(i).forLocal().compute().call(new PutTakeJob(queueName, RETRIES)).get();
 
             // last node must be alive.
             if (i < (GRID_CNT * 3) - 1)
@@ -145,9 +143,11 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
      * @throws Exception If failed.
      */
     public void testTakeRemoveRotativeNodes() throws Exception {
+        lthTake = new CountDownLatch(1);
+
         final String queueName = UUID.randomUUID().toString();
 
-        GridCacheQueue<Integer> queue = grid(0).cache(null).dataStructures()
+        final GridCacheQueue<Integer> queue = grid(0).cache(null).dataStructures()
             .queue(queueName, QUEUE_CAPACITY, true, true);
 
         assertTrue(queue.isEmpty());
@@ -165,31 +165,27 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
         th.start();
 
-        assert lthTake.await(5, TimeUnit.MINUTES) : "Timeout happened.";
+        assert lthTake.await(1, TimeUnit.MINUTES) : "Timeout happened.";
 
-        grid(2).compute().call(new RemoveQueueJob(queueName)).get();
+        assertTrue(grid(2).compute().call(new RemoveQueueJob(queueName)).get());
 
-        assert queue.removed();
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                queue.poll();
+
+                return null;
+            }
+        }, GridCacheDataStructureRemovedRuntimeException.class, null);
 
         info("Queue was removed: " + queue);
 
         th.join();
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // No-op.
-    }
-
     /**
      * Test job putting data to queue.
      */
-    protected class PutJob implements GridCallable<Integer> {
+    protected static class PutJob implements GridCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource
@@ -236,7 +232,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     /**
      * Test job putting data to queue.
      */
-    protected class GetJob implements GridCallable<Integer> {
+    protected static class GetJob implements GridCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource
@@ -293,7 +289,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     /**
      * Test job putting and taking data to/from queue.
      */
-    protected class PutTakeJob implements GridCallable<Integer> {
+    protected static class PutTakeJob implements GridCallable<Integer> {
         /** */
         @GridToStringExclude
         @GridInstanceResource
@@ -347,7 +343,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     /**
      * Test job taking data from queue.
      */
-    protected class TakeJob implements GridCallable<Boolean> {
+    protected static class TakeJob implements GridCallable<Boolean> {
         /** */
         @GridInstanceResource
         private Grid grid;
@@ -395,7 +391,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     /**
      * Job removing queue.
      */
-    protected class RemoveQueueJob implements GridCallable<Boolean> {
+    protected static class RemoveQueueJob implements GridCallable<Boolean> {
         /** */
         @GridInstanceResource
         private Grid grid;
@@ -417,7 +413,9 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
             grid.log().info("Running job [node=" + grid.localNode().id() + ", job=" + this + "]");
 
             GridCacheQueue<Integer> queue = grid.cache(null).dataStructures()
-                .queue(queueName, QUEUE_CAPACITY, true, true);
+                .queue(queueName, QUEUE_CAPACITY, true, false);
+
+            assert queue != null;
 
             assert queue.capacity() == QUEUE_CAPACITY;
 
