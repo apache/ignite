@@ -7,15 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop;
-
-import org.apache.hadoop.conf.*;
+package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
 /**
- * TODO write doc
- */
-public class GridHadoopJob {
-    Configuration configuration() {
-        return null;
-    }
+* TODO write doc
+*/
+public enum GridHadoopTaskType {
+    MAP, REDUCE
 }

@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -20,7 +19,7 @@ import java.util.*;
  */
 public class GridHadoopJobContext {
 
-    public GridHadoopJob job() {
+    public GridHadoopJobInfo job() {
         return null;
     }
 
@@ -32,7 +31,7 @@ public class GridHadoopJobContext {
         return null;
     }
 
-    public List<Serializable> mapsHandler() {
+    public List<GridHadoopTaskInfo> reducers(){
         return null;
     }
 }

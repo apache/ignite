@@ -15,5 +15,5 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
  * TODO write doc
  */
 public interface GridHadoopTaskFactory {
-    GridHadoopTask newTask(GridHadoopTaskInfo taskInfo);
+    public GridHadoopTask newTask(GridHadoopTaskInfo taskInfo);
 }

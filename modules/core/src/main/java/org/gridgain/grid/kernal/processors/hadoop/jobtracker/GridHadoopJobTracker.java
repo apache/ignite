@@ -12,14 +12,13 @@ package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
-import org.gridgain.grid.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
  * TODO write doc
  */
 public class GridHadoopJobTracker {
-    public GridFuture<?> submit(GridHadoopJob info) {
+    public GridFuture<?> submit(GridHadoopJobInfo info) {
         return null;
     }
 
@@ -27,7 +26,7 @@ public class GridHadoopJobTracker {
         return null;
     }
 
-    public void onTaskFinished(GridHadoopTaskInfo taskInfo) {
+    public void onTaskFinished(GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
 
     }
 }

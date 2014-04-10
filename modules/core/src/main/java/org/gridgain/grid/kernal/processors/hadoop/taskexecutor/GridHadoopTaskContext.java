@@ -9,11 +9,25 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
+import org.gridgain.grid.kernal.processors.hadoop.*;
+
 /**
  * TODO write doc
  */
 public class GridHadoopTaskContext {
+    public GridHadoopTaskInfo taskInfo() {
+        return null;
+    }
 
+    public GridHadoopJobInfo jobInfo() {
+        return null;
+    }
 
+    public GridHadoopTaskOutput output() {
+        return null;
+    }
 
+    public GridHadoopTaskInput input() {
+        return null;
+    }
 }

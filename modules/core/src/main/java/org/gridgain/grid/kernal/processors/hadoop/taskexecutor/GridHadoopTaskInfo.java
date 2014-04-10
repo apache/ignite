@@ -18,27 +18,23 @@ import java.util.*;
  */
 public class GridHadoopTaskInfo {
 
-    UUID nodeId() {
+    public UUID nodeId() {
         return null;
     }
 
-    GridHadoopTask.Type type() {
+    public GridHadoopTaskType type() {
         return null;
     }
 
-    GridHadoopJobId jobId() {
+    public GridHadoopJobId jobId() {
         return null;
     }
 
-    GridHadoopJob job() {
-        return null;
-    }
-
-    int taskNumber() {
+    public int taskNumber() {
         return 0;
     }
 
-    int attempt() {
+    public int attempt() {
         return 0;
     }
 }

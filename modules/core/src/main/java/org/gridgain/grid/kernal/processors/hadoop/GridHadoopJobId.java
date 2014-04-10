@@ -9,10 +9,33 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.io.*;
+import java.util.*;
 
 /**
- * TODO write doc
+ * Job ID.
  */
-public interface GridHadoopJobId extends Externalizable {
+public class GridHadoopJobId implements Externalizable {
+    /** */
+    private UUID nodeId;
+
+    /** */
+    private int jobId;
+
+    public GridHadoopJobId(UUID nodeId, int jobId) {
+        this.nodeId = nodeId;
+        this.jobId = jobId;
+    }
+
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeUuid(out, nodeId);
+        out.writeInt(jobId);
+    }
+
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        nodeId = U.readUuid(in);
+        jobId = in.readInt();
+    }
 }

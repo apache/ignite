@@ -7,20 +7,15 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
+package org.gridgain.grid.kernal.processors.hadoop;
 
-import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
-
-import java.io.*;
+import org.apache.hadoop.conf.*;
 
 /**
  * TODO write doc
  */
-public interface GridHadoopMapResultHandler {
-
-    void init(GridHadoopTaskContext ctx);
-
-    void onWrite(Object key, Object val, int reducer);
-
-    Serializable onFinish();
+public class GridHadoopJobInfo {
+    Configuration configuration() {
+        return null;
+    }
 }

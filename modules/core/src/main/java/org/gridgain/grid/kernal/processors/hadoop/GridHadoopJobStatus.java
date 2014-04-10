@@ -19,5 +19,7 @@ public class GridHadoopJobStatus {
         return null;
     }
 
-
+    public GridHadoopJobInfo jobInfo() {
+        return null;
+    }
 }

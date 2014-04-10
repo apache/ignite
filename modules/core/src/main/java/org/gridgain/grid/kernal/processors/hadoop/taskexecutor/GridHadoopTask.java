@@ -13,12 +13,5 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
  * TODO write doc
  */
 public interface GridHadoopTask {
-
-    public GridHadoopTaskInfo info();
-
     public void run(GridHadoopTaskContext ctx);
-
-    enum Type {
-        MAP, REDUCE
-    }
 }

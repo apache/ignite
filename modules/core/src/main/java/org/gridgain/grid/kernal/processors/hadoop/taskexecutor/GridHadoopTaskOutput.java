@@ -7,12 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.shuffle;
+package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
 /**
  * TODO write doc
  */
-public interface GridHadoopResultCollector extends AutoCloseable {
+public interface GridHadoopTaskOutput extends AutoCloseable {
 
     void write(Object key, Object val);
 

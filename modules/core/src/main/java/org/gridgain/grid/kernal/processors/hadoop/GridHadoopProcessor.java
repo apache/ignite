@@ -30,7 +30,7 @@ public class GridHadoopProcessor extends GridProcessorAdapter {
         return null;
     }
 
-    public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJob job) {
+    public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
         return null;
     }
 

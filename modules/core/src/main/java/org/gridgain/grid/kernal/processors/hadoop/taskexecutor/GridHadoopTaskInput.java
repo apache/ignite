@@ -7,16 +7,20 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.shuffle;
+package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
-import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
+import java.util.*;
 
 /**
  * TODO write doc
  */
-public class GridHadoopShuffle {
+public interface GridHadoopTaskInput {
 
-    public GridHadoopResultCollector collector(GridHadoopTaskInfo taskInfo) {
-        return null;
-    }
+    boolean next();
+
+    Object key();
+
+    Object value();
+
+    Iterator<?> values();
 }
