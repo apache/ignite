@@ -431,9 +431,6 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
                 }
             }
 
-            if (!cctx.preloadEnabled())
-                cctx.dataStructures().onPartitionsChange();
-
             consistencyCheck();
         }
         finally {

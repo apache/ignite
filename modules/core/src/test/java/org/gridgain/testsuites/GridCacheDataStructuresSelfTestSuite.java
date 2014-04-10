@@ -27,8 +27,12 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Gridgain Cache Data Structures Test Suite");
 
         // Data structures.
+        suite.addTest(new TestSuite(GridCachePartitionedQueueFailoverDataConsistencySelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest.class));
+
         suite.addTest(new TestSuite(GridCacheLocalSequenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalQueueApiSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheLocalAtomicQueueApiSelfTest.class));
 
         suite.addTest(new TestSuite(GridCacheReplicatedSequenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheReplicatedSequenceMultiNodeSelfTest.class));
@@ -41,13 +45,17 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedSequenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedSequenceMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedQueueApiSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueApiSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedQueueMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedQueueCreateMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedQueueRotativeMultiNodeTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueRotativeMultiNodeTest.class));
+        suite.addTest(new TestSuite(GridCacheQueueCleanupSelfTest.class));
+
         // TODO: GG-5620 Uncomment when fix
         //suite.addTest(new TestSuite(GridCachePartitionedQueueEntryMoveSelfTest.class));
 
-        // TODO: GG-4049: uncomment when fix
-        // suite.addTest(new TestSuite(GridCachePartitionedQueueRotativeMultiNodeTest.class));
         // TODO: GG-2699
         //suite.addTest(new TestSuite(GridCachePartitionedDataStructuresFailoverSelfTest.class));
         // TODO: GG-4807 Uncomment when fix
