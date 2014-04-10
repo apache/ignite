@@ -15,6 +15,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -84,16 +85,12 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         for (int i = 0; i < gridCount(); i++) {
             GridKernal grid = (GridKernal)grid(i);
 
-            /*
-            GridCacheDataStructuresManager ds = grid.internalCache(null).context().dataStructures();
+            GridCacheQueryManager queries = grid.internalCache(null).context().queries();
 
-            Map map = GridTestUtils.getFieldValue(ds, "setHndMap");
+            Map map = GridTestUtils.getFieldValue(queries, GridCacheQueryManager.class, "qryIters");
 
-            assertEquals("Handler not removed for grid " + i, 0, map.size());
-
-            map = GridTestUtils.getFieldValue(ds, "setIterMap");
-
-            assertEquals("Iterator not removed for grid " + i, 0, map.size());
+            for (Object obj : map.values())
+                assertEquals("Iterators not removed for grid " + i, 0, ((Map)obj).size());
 
             /*
             map = GridTestUtils.getFieldValue(ds, "setsMap");

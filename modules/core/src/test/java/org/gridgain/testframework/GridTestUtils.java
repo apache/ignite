@@ -930,16 +930,28 @@ public final class GridTestUtils {
      * @return Field value.
      * @throws GridRuntimeException In case of error.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static <T> T getFieldValue(Object obj, String... fieldNames) throws GridRuntimeException {
+        return getFieldValue(obj, obj instanceof Class ? (Class)obj : obj.getClass(), fieldNames);
+    }
+
+    /**
+     * Get object field value via reflection.
+     *
+     * @param obj Object or class to get field value from.
+     * @param cls Class.
+     * @param fieldNames Field names to get value for: obj->field1->field2->...->fieldN.
+     * @param <T> Expected field class.
+     * @return Field value.
+     * @throws GridRuntimeException In case of error.
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    public static <T> T getFieldValue(Object obj, Class cls, String... fieldNames) throws GridRuntimeException {
         assert obj != null;
         assert fieldNames != null;
         assert fieldNames.length >= 1;
 
         try {
             for (String fieldName : fieldNames) {
-                Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
-
                 try {
                     // Resolve inner field.
                     Field field = cls.getDeclaredField(fieldName);
