@@ -25,8 +25,8 @@ namespace GridGain.Client {
      * Java class which will start up a GridGain node with proper configuration.
      * <para/>
      * Note that this example requires <c>org.gridgain.examples.misc.client.api.ClientExampleTask</c>
-     * class to be present in remote nodes' classpath, so you cannot start remote nodes with default
-     * <c>ggstart.{sh|bat}</c> script.
+     * class to be present in remote nodes' classpath. If remote nodes are run by <c>ggstart.{sh|bat}</c> script
+     * then <c>GRIDGAIN_HOME/gridgain-examples.jar</c> file should be placed to <c>GRIDGAIN_HOME/libs/ext</c> folder.
      * <para/>
      * After node has been started this example creates a client and executes few test tasks.
      * <para/>
