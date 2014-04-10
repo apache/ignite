@@ -10,21 +10,63 @@
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 import org.jetbrains.annotations.*;
 
+import java.util.concurrent.atomic.*;
+
 /**
- * TODO write doc
+ * Hadoop job tracker.
  */
 public class GridHadoopJobTracker {
+    /** Hadoop context. */
+    private final GridHadoopContext ctx;
+
+    /** */
+    private AtomicInteger jobIdGenerator = new AtomicInteger();
+
+    /** System cache. */
+    private GridCache<Object, Object> sysCache;
+
+    /**
+     * @param ctx Hadoop context.
+     */
+    public GridHadoopJobTracker(GridHadoopContext ctx) {
+        this.ctx = ctx;
+    }
+
+    /**
+     * Submits execution of Hadoop job to grid.
+     *
+     * @param info Job info.
+     * @return Job completion future.
+     */
     public GridFuture<?> submit(GridHadoopJobInfo info) {
+        GridHadoopJobId jobId = new GridHadoopJobId(ctx.localNodeId(), jobIdGenerator.getAndIncrement());
+
+        GridHadoopJobMetadata meta = new GridHadoopJobMetadata(jobId);
+
         return null;
     }
 
+    /**
+     * Gets hadoop job status for given job ID.
+     *
+     * @param jobId Job ID to get status for.
+     * @return Job status for given job ID or {@code null} if job was not found.
+     */
     @Nullable public GridHadoopJobStatus status(GridHadoopJobId jobId) {
         return null;
     }
 
+    /**
+     * Callback from task executor invoked when a task has been finished.
+     *
+     * @param taskInfo Task info.
+     * @param status Task status.
+     */
     public void onTaskFinished(GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
 
     }

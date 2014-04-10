@@ -9,8 +9,39 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.gridgain.grid.kernal.*;
+
+import java.util.*;
+
 /**
- * TODO write doc
+ * Hadoop accelerator context.
  */
 public class GridHadoopContext {
+    /** Kernal context. */
+    private GridKernalContext ctx;
+
+    /**
+     * @param ctx Kernal context.
+     */
+    public GridHadoopContext(GridKernalContext ctx) {
+        this.ctx = ctx;
+    }
+
+    /**
+     * Gets kernal context.
+     *
+     * @return Grid kernal context instance.
+     */
+    public GridKernalContext kernalContext() {
+        return ctx;
+    }
+
+    /**
+     * Gets local node ID. Shortcut for {@code kernalContext().localNodeId()}.
+     *
+     * @return Local node ID.
+     */
+    public UUID localNodeId() {
+        return ctx.localNodeId();
+    }
 }
