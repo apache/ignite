@@ -707,7 +707,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         assertNotNull(set0);
 
-        Collection<Set<Integer>> sets = new ArrayList<>();
+        final Collection<Set<Integer>> sets = new ArrayList<>();
 
         for (int i = 0; i < gridCount(); i++) {
             GridCacheSet<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
@@ -736,8 +736,10 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
             fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     try {
-                        while (!stop.get())
-                            set0.add(val.incrementAndGet());
+                        while (!stop.get()) {
+                            for (Set<Integer> set : sets)
+                                set.add(val.incrementAndGet());
+                        }
                     }
                     catch (GridCacheDataStructureRemovedRuntimeException e) {
                         log.info("Set removed: " + e);
