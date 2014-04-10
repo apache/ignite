@@ -97,9 +97,10 @@ public class GridCachePreloadLifecycleAbstractTest extends GridCommonAbstractTes
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        lifecycleBean = null;
+
         stopAllGrids();
     }
-
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 4 * 60 * 1000; // 4 min.

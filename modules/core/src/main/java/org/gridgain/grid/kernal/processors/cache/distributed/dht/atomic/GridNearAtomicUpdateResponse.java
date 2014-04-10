@@ -45,7 +45,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
     /** Return value. */
     @GridDirectTransient
-    private GridCacheReturn<V> retVal;
+    private GridCacheReturn<Object> retVal;
 
     /** Serialized return value. */
     private byte[] retValBytes;
@@ -149,14 +149,14 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
     /**
      * @return Return value.
      */
-    public GridCacheReturn<V> returnValue() {
+    public GridCacheReturn<Object> returnValue() {
         return retVal;
     }
 
     /**
      * @param retVal Return value.
      */
-    public void returnValue(GridCacheReturn<V> retVal) {
+    public void returnValue(GridCacheReturn<Object> retVal) {
         this.retVal = retVal;
     }
 

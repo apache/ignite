@@ -1182,7 +1182,7 @@ public final class GridCacheMvcc<K> {
      * @return {@code True} if lock is owner by current thread.
      */
     public boolean isLocallyOwnedByCurrentThread() {
-        return isLocallyOwnedByThread(Thread.currentThread().getId());
+        return isLocallyOwnedByThread(Thread.currentThread().getId(), true);
     }
 
     /**
@@ -1190,11 +1190,11 @@ public final class GridCacheMvcc<K> {
      * @param exclude Versions to ignore.
      * @return {@code True} if lock is owned by the thread with given ID.
      */
-    public boolean isLocallyOwnedByThread(long threadId, GridCacheVersion... exclude) {
+    public boolean isLocallyOwnedByThread(long threadId, boolean allowDhtLoc, GridCacheVersion... exclude) {
         GridCacheMvccCandidate<K> owner = localOwner();
 
         return owner != null && owner.threadId() == threadId && owner.nodeId().equals(cctx.nodeId()) &&
-            !U.containsObjectArray(exclude, owner.version());
+            (allowDhtLoc || !owner.dhtLocal()) && !U.containsObjectArray(exclude, owner.version());
     }
 
     /**

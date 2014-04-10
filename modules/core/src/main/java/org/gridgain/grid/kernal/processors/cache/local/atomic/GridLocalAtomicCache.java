@@ -317,6 +317,19 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public <R> R transformAndCompute(K key, GridClosure<V, GridBiTuple<V, R>> transformer)
+        throws GridException {
+        return (R)updateAllInternal(TRANSFORM,
+            Collections.singleton(key),
+            Collections.singleton(new GridCacheTransformComputeClosure<>(transformer)),
+            -1,
+            true,
+            false,
+            null,
+            ctx.isStoreEnabled());
+    }
+
+    /** {@inheritDoc} */
     @Override public GridFuture<?> transformAsync(K key,
         GridClosure<V, V> transformer,
         @Nullable GridCacheEntryEx<K, V> entry,
@@ -705,7 +718,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         Iterator<?> valsIter = vals != null ? vals.iterator() : null;
 
-        GridBiTuple<Boolean, V> res = null;
+        GridBiTuple<Boolean, ?> res = null;
 
         GridCachePartialUpdateException err = null;
 
@@ -732,8 +745,16 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         true,
                         filter);
 
-                    if (res == null)
-                        res = t;
+                    if (res == null) {
+                        if (op == TRANSFORM && val instanceof GridCacheTransformComputeClosure) {
+                            assert retval;
+
+                            res = new GridBiTuple<>(t.get1(),
+                                ((GridCacheTransformComputeClosure<V, ?>)val).returnValue());
+                        }
+                        else
+                            res = t;
+                    }
 
                     break; // While.
                 }

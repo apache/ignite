@@ -97,6 +97,14 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
 
     /**
      * @param key Key.
+     * @param transformer Closure.
+     * @return Value computed by the given closure.
+     * @throws GridException If failed.
+     */
+    public <R> R transformCompute(K key, GridClosure<V, GridBiTuple<V, R>> transformer) throws GridException;
+
+    /**
+     * @param key Key.
      * @param val Value.
      * @param cached Cached cache entry, if called from entry wrapper.
      * @param ttl Time to live for entry. If negative, leave unchanged.

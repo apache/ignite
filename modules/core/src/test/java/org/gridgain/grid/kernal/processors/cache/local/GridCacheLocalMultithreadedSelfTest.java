@@ -44,6 +44,13 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        cache = null;
+    }
+
+    /** {@inheritDoc} */
     @Override protected GridConfiguration getConfiguration() throws Exception {
         GridConfiguration cfg = super.getConfiguration();
 
