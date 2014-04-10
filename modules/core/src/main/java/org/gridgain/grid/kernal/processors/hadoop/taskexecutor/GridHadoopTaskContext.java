@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
-import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 
 /**
  * TODO write doc

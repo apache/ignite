@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

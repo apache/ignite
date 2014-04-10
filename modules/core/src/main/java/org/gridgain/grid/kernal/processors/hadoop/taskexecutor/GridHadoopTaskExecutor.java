@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
-import org.gridgain.grid.kernal.processors.hadoop.*;
-
 /**
  * TODO write doc
  */
@@ -27,9 +25,5 @@ public class GridHadoopTaskExecutor {
 
     private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo taskInfo) {
         return null;
-    }
-
-    public void jobFinished(GridHadoopJobId jobId) {
-
     }
 }
