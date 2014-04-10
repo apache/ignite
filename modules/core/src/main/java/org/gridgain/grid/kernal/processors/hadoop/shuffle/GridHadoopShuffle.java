@@ -7,31 +7,25 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
+package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 
-import java.util.*;
-
 /**
  * TODO write doc
  */
-public class GridHadoopJobContext {
+public class GridHadoopShuffle {
 
-    public GridHadoopJobInfo job() {
+    public GridHadoopTaskOutput getMapperOutput(GridHadoopTaskInfo mapperInfo) {
         return null;
     }
 
-    public GridHadoopJobId jobId() {
+    public GridHadoopTaskInput getReducerInput(GridHadoopTaskInfo reducerInfo) {
         return null;
     }
 
-    public List<GridHadoopTaskInfo> mappers() {
-        return null;
-    }
+    public void jobFinished(GridHadoopJobId jobId) {
 
-    public List<GridHadoopTaskInfo> reducers(){
-        return null;
     }
 }
