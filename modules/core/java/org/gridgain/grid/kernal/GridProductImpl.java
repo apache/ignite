@@ -116,8 +116,7 @@ public class GridProductImpl implements GridProduct {
      */
     private static GridProductEdition editionFromString(String edition) {
         switch (edition) {
-            case "dev-ent":
-            case "dev-os":
+            case "dev":
                 return PLATFORM;
 
             case "datagrid-ent":
