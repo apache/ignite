@@ -327,7 +327,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
         spi.unregisterType(typeBA.space(), typeBA);
 
         // Should not store but should not fail as well.
-        spi.store(typeAA.space(), typeAA, entity(10), entity(aa(1, "Fail", 100500)), "v220".getBytes(), 0);
+        spi.store(typeAA.space(), typeAA, entity(10), entity(aa(1, "Fail", 100500)), "v220".getBytes(), 0);;
 
         assertEquals(-1, spi.size(typeAA.space(), typeAA));
     }
