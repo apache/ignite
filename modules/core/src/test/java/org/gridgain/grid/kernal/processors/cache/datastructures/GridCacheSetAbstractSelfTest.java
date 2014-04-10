@@ -95,6 +95,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
             assertEquals("Iterator not removed for grid " + i, 0, map.size());
 
+            /*
             map = GridTestUtils.getFieldValue(ds, "setsMap");
 
             assertEquals("Set not removed for grid " + i, 0, map.size());

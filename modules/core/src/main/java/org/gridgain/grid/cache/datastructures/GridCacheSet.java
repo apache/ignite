@@ -18,7 +18,7 @@ import java.util.*;
  * Set implementation based on on In-Memory Data Grid.
  * <h1 class="header">Overview</h1>
  * Cache set implements {@link Set} interface and provides all methods from collections.
- * Note that all {@link Collection} methods in the queue may throw {@link GridRuntimeException} in case of failure
+ * Note that all {@link Collection} methods in the set may throw {@link GridRuntimeException} in case of failure
  * or if set was removed.
  * <p>
  * During set iteration elements are loaded from remote cache nodes, if iteration is stopped before last element
@@ -31,7 +31,7 @@ import java.util.*;
  * <h1 class="header">Collocated vs Non-collocated</h1>
  * Set items can be placed on one node or distributed throughout grid nodes
  * (governed by {@code collocated} parameter). {@code Non-collocated} mode is provided only
- * for partitioned caches. If {@code collocated} parameter is {@code true}, then all queue items
+ * for partitioned caches. If {@code collocated} parameter is {@code true}, then all set items
  * will be collocated on one node, otherwise items will be distributed through all grid nodes.
  * @see GridCacheDataStructures#set(String, boolean, boolean)
  * @see GridCacheDataStructures#removeSet(String)

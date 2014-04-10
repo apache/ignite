@@ -13,23 +13,22 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
-import org.gridgain.grid.cache.query.GridCacheQueryFuture;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryAdapter;
-import org.gridgain.grid.lang.GridReducer;
+import org.gridgain.grid.kernal.processors.cache.query.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.GridCloseableIteratorAdapter;
-import org.gridgain.grid.util.GridConcurrentHashSet;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.SET;
+import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 
 /**
  * Cache set implementation.
