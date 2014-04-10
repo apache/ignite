@@ -12,11 +12,8 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.managers.indexing.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -69,7 +66,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
             startGrid(GRID_CNT); // Start additional node.
 
             for (int i = 0; i < ENTRY_CNT; i++) {
-                GridCacheInternalKey internalKey = new GridCacheInternalKeyImpl("queue" + i);
+                GridCacheQueueHeaderKey internalKey = new GridCacheQueueHeaderKey("queue" + i);
 
                 Collection<GridNode> nodes = cache.affinity().mapKeyToPrimaryAndBackups(internalKey);
 
@@ -82,26 +79,6 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
                         ((GridNearCacheAdapter)((GridKernal)g).internalCache()).dht().containsKey(internalKey, null));
                 }
             }
-
-            GridDhtCacheAdapter dht = ((GridNearCacheAdapter)((GridKernal)grid(GRID_CNT)).internalCache()).dht();
-
-            int cacheSize = dht.map().size();
-
-            GridIndexingManager idxMgr = dht.context().kernalContext().indexing();
-
-            Collection<GridIndexingTypeDescriptor> types = idxMgr.types(null);
-
-            info("Types: " + types);
-
-            int idxSize = 0;
-
-            for (GridIndexingTypeDescriptor type : types)
-                idxSize += idxMgr.size(null, null, type.valueClass());
-
-            info("Index size: " + idxSize);
-
-            assertTrue("Check failed [cacheSize=" + cacheSize + ", idxSize=" + idxSize + ']',
-                cacheSize == idxSize || cacheSize - 1 == idxSize);
         }
         finally {
             stopGrid(GRID_CNT);

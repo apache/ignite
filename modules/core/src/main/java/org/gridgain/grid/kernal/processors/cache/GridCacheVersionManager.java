@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -188,7 +189,8 @@ public class GridCacheVersionManager<K, V> extends GridCacheManagerAdapter<K, V>
             topVer += (gridStartTime - TOP_VER_BASE_TIME) / 1000;
         }
 
-        long globalTime = cctx.kernalContext().clockSync().adjustedTime(topVer);
+        long globalTime = cctx.config().getAtomicWriteOrderMode() == GridCacheAtomicWriteOrderMode.CLOCK ?
+            cctx.kernalContext().clockSync().adjustedTime(topVer) : 0;
 
         int locNodeOrder = (int)cctx.localNode().order();
 

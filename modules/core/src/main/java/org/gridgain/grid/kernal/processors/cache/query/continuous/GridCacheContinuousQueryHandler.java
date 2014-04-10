@@ -49,6 +49,9 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** Deployable object for Projection predicate. */
     private DeployableObject prjPredDep;
 
+    /** Internal flag. */
+    private boolean internal;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -62,10 +65,11 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      * @param cb Local callback.
      * @param filter Filter.
      * @param prjPred Projection predicate.
+     * @param internal If {@code true} then query is notified about internal entries updates.
      */
     GridCacheContinuousQueryHandler(@Nullable String cacheName, Object topic,
         GridBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb, @Nullable GridBiPredicate<K, V> filter,
-        @Nullable GridPredicate<GridCacheEntry<K, V>> prjPred) {
+        @Nullable GridPredicate<GridCacheEntry<K, V>> prjPred, boolean internal) {
         assert topic != null;
         assert cb != null;
 
@@ -74,6 +78,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         this.cb = cb;
         this.filter = filter;
         this.prjPred = prjPred;
+        this.internal = internal;
     }
 
     /** {@inheritDoc} */
@@ -134,12 +139,12 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             }
         };
 
-        return cacheContext(ctx).continuousQueries().registerListener(routineId, lsnr);
+        return cacheContext(ctx).continuousQueries().registerListener(routineId, lsnr, internal);
     }
 
     /** {@inheritDoc} */
     @Override public void onListenerRegistered(UUID routineId, GridKernalContext ctx) {
-        cacheContext(ctx).continuousQueries().iterate(routineId);
+        cacheContext(ctx).continuousQueries().iterate(internal, routineId);
     }
 
     /** {@inheritDoc} */
@@ -147,7 +152,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert routineId != null;
         assert ctx != null;
 
-        cacheContext(ctx).continuousQueries().unregisterListener(routineId);
+        cacheContext(ctx).continuousQueries().unregisterListener(internal, routineId);
     }
 
     /** {@inheritDoc} */
@@ -252,6 +257,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             out.writeObject(prjPredDep);
         else
             out.writeObject(prjPred);
+
+        out.writeBoolean(internal);
     }
 
     /** {@inheritDoc} */
@@ -272,6 +279,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             prjPredDep = (DeployableObject)in.readObject();
         else
             prjPred = (GridPredicate<GridCacheEntry<K, V>>)in.readObject();
+
+        internal = in.readBoolean();
     }
 
     /**

@@ -783,6 +783,19 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
+    @Override public <R> R transformAndCompute(K key, GridClosure<V, GridBiTuple<V, R>> transformer)
+        throws GridException {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.transformAndCompute(key, transformer);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public GridFuture<Boolean> putxAsync(K key, V val,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
