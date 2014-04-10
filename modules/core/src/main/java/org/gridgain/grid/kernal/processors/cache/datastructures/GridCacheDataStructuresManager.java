@@ -86,7 +86,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     /** Init flag. */
     private boolean initFlag;
 
-    /** Set data used for set iteration. */
+    /** Set keys used for set iteration. */
     private ConcurrentMap<GridUuid, GridConcurrentHashSet<GridCacheSetItemKey>> setDataMap = new ConcurrentHashMap8<>();
 
     /** Sets map. */
@@ -1033,33 +1033,6 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     }
 
     /**
-     * Tries to cast the object to expected type.
-     *
-     * @param obj Object which will be casted.
-     * @param cls Class
-     * @param <R> Type of expected result.
-     * @return Object has casted to expected type.
-     * @throws GridException If {@code obj} has different to {@code cls} type.
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable private <R> R cast(@Nullable Object obj, Class<R> cls) throws GridException {
-        if (obj == null)
-            return null;
-
-        if (cls.isInstance(obj))
-            return (R)obj;
-        else
-            throw new GridException("Failed to cast object [expected=" + cls + ", actual=" + obj.getClass() + ']');
-    }
-
-    /** {@inheritDoc} */
-    @Override public void printMemoryStats() {
-        X.println(">>> ");
-        X.println(">>> Data structure manager memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
-        X.println(">>>   dsMapSize: " + dsMap.size());
-    }
-
-    /**
      * Gets a set from cache or creates one if it's not cached.
      *
      * @param name Set name.
@@ -1083,48 +1056,6 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 return set0(name, collocMode, create);
             }
         }, cctx);
-    }
-
-    /**
-     * @param name Name of set.
-     * @param collocated Collocation flag.
-     * @param create If {@code true} set will be created in case it is not in cache.
-     * @return Set.
-     * @throws GridException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    private <T> GridCacheSet<T> set0(String name, boolean collocated, boolean create) throws GridException {
-        GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
-
-        GridCacheSetHeader hdr;
-
-        GridCacheAdapter cache = cctx.cache();
-
-        if (create) {
-            hdr = new GridCacheSetHeader(GridUuid.randomUuid(), collocated);
-
-            GridCacheSetHeader old = (GridCacheSetHeader)cache.putIfAbsent(key, hdr);
-
-            if (old != null)
-                hdr = old;
-        }
-        else
-            hdr = (GridCacheSetHeader)cache.get(key);
-
-        if (hdr == null)
-            return null;
-
-        GridCacheSetProxy<T> set = setsMap.get(hdr.id());
-
-        if (set == null) {
-            GridCacheSetProxy<T> old = setsMap.putIfAbsent(hdr.id(),
-                    set = new GridCacheSetProxy<T>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr)));
-
-            if (old != null)
-                set = old;
-        }
-
-        return set;
     }
 
     /**
@@ -1182,7 +1113,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @param id Set ID.
      * @return Data for given set.
      */
-    public @Nullable GridConcurrentHashSet<GridCacheSetItemKey> setData(GridUuid id) {
+    @Nullable public GridConcurrentHashSet<GridCacheSetItemKey> setData(GridUuid id) {
         return setDataMap.get(id);
     }
 
@@ -1198,7 +1129,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 return;
 
             GridConcurrentHashSet<GridCacheSetItemKey> old = setDataMap.putIfAbsent(key.setId(),
-                    set = new GridConcurrentHashSet<GridCacheSetItemKey>());
+                    set = new GridConcurrentHashSet<>());
 
             if (old != null)
                 set = old;
@@ -1208,6 +1139,49 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             set.remove(key);
         else
             set.add(key);
+    }
+
+
+    /**
+     * @param name Name of set.
+     * @param collocated Collocation flag.
+     * @param create If {@code true} set will be created in case it is not in cache.
+     * @return Set.
+     * @throws GridException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private <T> GridCacheSet<T> set0(String name, boolean collocated, boolean create) throws GridException {
+        GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
+
+        GridCacheSetHeader hdr;
+
+        GridCacheAdapter cache = cctx.cache();
+
+        if (create) {
+            hdr = new GridCacheSetHeader(GridUuid.randomUuid(), collocated);
+
+            GridCacheSetHeader old = (GridCacheSetHeader)cache.putIfAbsent(key, hdr);
+
+            if (old != null)
+                hdr = old;
+        }
+        else
+            hdr = (GridCacheSetHeader)cache.get(key);
+
+        if (hdr == null)
+            return null;
+
+        GridCacheSetProxy<T> set = setsMap.get(hdr.id());
+
+        if (set == null) {
+            GridCacheSetProxy<T> old = setsMap.putIfAbsent(hdr.id(),
+                    set = new GridCacheSetProxy<>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr)));
+
+            if (old != null)
+                set = old;
+        }
+
+        return set;
     }
 
     /**
@@ -1236,11 +1210,11 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
                 Collection<GridNode> nodes = CU.affinityNodes(cctx, topVer);
 
-                cctx.closures().callAsyncNoFailover(BROADCAST, new BlockSetCallable(cctx.name(), hdr.id()),
-                        nodes, true).get();
+                cctx.closures().callAsyncNoFailover(BROADCAST, new BlockSetCallable(cctx.name(), hdr.id()), nodes,
+                    true).get();
 
-                cctx.closures().callAsyncNoFailover(BROADCAST, new RemoveSetCallable(cctx.name(), hdr.id(), topVer),
-                        nodes, true).get();
+                 cctx.closures().callAsyncNoFailover(BROADCAST, new RemoveSetCallable(cctx.name(), hdr.id(), topVer),
+                    nodes, true).get();
             }
             finally {
                 cctx.topology().readUnlock();
@@ -1259,7 +1233,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @param setId Set ID.
      */
     @SuppressWarnings("unchecked")
-    private void blockSet(GridUuid setId) throws GridException {
+    private void blockSet(GridUuid setId) {
         GridCacheSetProxy set = setsMap.remove(setId);
 
         if (set != null)
@@ -1268,6 +1242,8 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
     /**
      * @param setId Set ID.
+     * @param topVer Topology version.
+     * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
     private void removeSet(GridUuid setId, long topVer) throws GridException {
@@ -1308,6 +1284,34 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         setDataMap.remove(setId);
     }
 
+
+    /**
+     * Tries to cast the object to expected type.
+     *
+     * @param obj Object which will be casted.
+     * @param cls Class
+     * @param <R> Type of expected result.
+     * @return Object has casted to expected type.
+     * @throws GridException If {@code obj} has different to {@code cls} type.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable private <R> R cast(@Nullable Object obj, Class<R> cls) throws GridException {
+        if (obj == null)
+            return null;
+
+        if (cls.isInstance(obj))
+            return (R)obj;
+        else
+            throw new GridException("Failed to cast object [expected=" + cls + ", actual=" + obj.getClass() + ']');
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printMemoryStats() {
+        X.println(">>> ");
+        X.println(">>> Data structure manager memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
+        X.println(">>>   dsMapSize: " + dsMap.size());
+    }
+
     /**
      * Predicate for queue continuous query.
      */
@@ -1336,7 +1340,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     }
 
     /**
-     * Waits for completion of all started set operations and blocks all subsequent set operations.
+     * Waits for completion of all started set operations and blocks all subsequent operations.
      */
     private static class BlockSetCallable implements Callable<Void>, Externalizable {
         /** Injected grid instance. */
@@ -1421,6 +1425,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         /**
          * @param cacheName Cache name.
          * @param setId Set ID.
+         * @param topVer Topology version.
          */
         private RemoveSetCallable(String cacheName, GridUuid setId, long topVer) {
             this.cacheName = cacheName;

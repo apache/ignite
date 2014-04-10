@@ -55,7 +55,7 @@ public class GridSetQueryPredicate<K, V> implements GridBiPredicate<K, V>, Exter
     public void init(GridCacheContext ctx) {
         this.ctx = ctx;
 
-        filter = filterData();
+        filter = filterKeys();
     }
 
     /**
@@ -82,7 +82,7 @@ public class GridSetQueryPredicate<K, V> implements GridBiPredicate<K, V>, Exter
     /**
      * @return {@code True} if need to filter out non-primary keys during processing of set data query.
      */
-    private boolean filterData() {
+    private boolean filterKeys() {
         return !collocated && !(ctx.isLocal() || ctx.isReplicated()) &&
                 (ctx.config().getBackups() > 0 || CU.isNearEnabled(ctx));
     }

@@ -14,7 +14,6 @@ import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
@@ -28,11 +27,6 @@ public class GridCachePartitionedAtomicSetSelfTest extends GridCacheSetAbstractS
         ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         return ccfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
     }
 
     /** {@inheritDoc} */

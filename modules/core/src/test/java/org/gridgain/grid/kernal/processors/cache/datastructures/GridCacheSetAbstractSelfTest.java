@@ -701,12 +701,13 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
      * @param collocated Collocation flag.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("WhileLoopReplaceableByForEach")
     private void testCleanup(boolean collocated) throws Exception {
         final Set<Integer> set0 = cache().dataStructures().set(SET_NAME, collocated, true);
 
         assertNotNull(set0);
 
-        List<Set<Integer>> sets = new ArrayList<>();
+        Collection<Set<Integer>> sets = new ArrayList<>();
 
         for (int i = 0; i < gridCount(); i++) {
             GridCacheSet<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
@@ -716,7 +717,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
             sets.add(set);
         }
 
-        List<Integer> items = new ArrayList<>(10_000);
+        Collection<Integer> items = new ArrayList<>(10_000);
 
         for (int i = 0; i < 10_000; i++)
             items.add(i);

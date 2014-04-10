@@ -94,7 +94,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
 
         final int ITEMS = 10_000;
 
-        List<Integer> items = new ArrayList<>(ITEMS);
+        Collection<Integer> items = new ArrayList<>(ITEMS);
 
         for (int i = 0; i < ITEMS; i++)
             items.add(i);

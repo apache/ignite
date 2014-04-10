@@ -21,9 +21,6 @@ import java.io.*;
  */
 public class GridCacheSetItemKey implements GridCacheInternal, Externalizable {
     /** */
-    private String setName;
-
-    /** */
     private GridUuid setId;
 
     /** */
@@ -38,21 +35,12 @@ public class GridCacheSetItemKey implements GridCacheInternal, Externalizable {
     }
 
     /**
-     * @param setName Set name.
      * @param setId Set unique ID.
      * @param item Set item.
      */
-    GridCacheSetItemKey(String setName, GridUuid setId, Object item) {
-        this.setName = setName;
+    GridCacheSetItemKey(GridUuid setId, Object item) {
         this.setId = setId;
         this.item = item;
-    }
-
-    /**
-     * @return Set name.
-     */
-    public String setName() {
-        return setName;
     }
 
     /**
@@ -93,14 +81,12 @@ public class GridCacheSetItemKey implements GridCacheInternal, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, setName);
         U.writeGridUuid(out, setId);
         out.writeObject(item);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        setName = U.readString(in);
         setId = U.readGridUuid(in);
         item = in.readObject();
     }
