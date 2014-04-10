@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -32,6 +33,9 @@ public class GridCacheSetProxy<T> implements GridCacheSet<T> {
     /** Cache gateway. */
     private final GridCacheGateway gate;
 
+    /** Busy lock. */
+    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
+
     /**
      * @param cctx Cache context.
      * @param delegate Delegate set.
@@ -44,298 +48,391 @@ public class GridCacheSetProxy<T> implements GridCacheSet<T> {
     }
 
     /**
-     * @return Delegate set.
+     * Remove callback.
      */
-    GridCacheSetImpl<T> delegate() {
-        return delegate;
+    void blockOnRemove() {
+        delegate.removed(true);
+
+        busyLock.block();
     }
 
     /** {@inheritDoc} */
     @Override public int size() {
-        gate.enter();
+        enterBusy();
 
         try {
-            if (cctx.transactional())
-                return CU.outTx(new Callable<Integer>() {
-                    @Override public Integer call() throws Exception {
-                        return delegate.size();
-                    }
-                }, cctx);
+            gate.enter();
 
-            return delegate.size();
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+            try {
+                if (cctx.transactional())
+                    return CU.outTx(new Callable<Integer>() {
+                        @Override public Integer call() throws Exception {
+                            return delegate.size();
+                        }
+                    }, cctx);
+
+                return delegate.size();
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+            finally {
+                gate.leave();
+            }
         }
         finally {
-            gate.leave();
+            leaveBusy();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
-        gate.enter();
+        enterBusy();
 
         try {
-            if (cctx.transactional())
-                return CU.outTx(new Callable<Boolean>() {
-                    @Override public Boolean call() throws Exception {
-                        return delegate.isEmpty();
-                    }
-                }, cctx);
+            gate.enter();
 
-            return delegate.isEmpty();
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+            try {
+                if (cctx.transactional())
+                    return CU.outTx(new Callable<Boolean>() {
+                        @Override public Boolean call() throws Exception {
+                            return delegate.isEmpty();
+                        }
+                    }, cctx);
+
+                return delegate.isEmpty();
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+            finally {
+                gate.leave();
+            }
         }
         finally {
-            gate.leave();
+            leaveBusy();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean contains(final Object o) {
-        gate.enter();
+        enterBusy();
 
         try {
-            if (cctx.transactional())
-                return CU.outTx(new Callable<Boolean>() {
-                    @Override public Boolean call() throws Exception {
-                        return delegate.contains(o);
-                    }
-                }, cctx);
+            gate.enter();
 
-            return delegate.contains(o);
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+            try {
+                if (cctx.transactional())
+                    return CU.outTx(new Callable<Boolean>() {
+                        @Override public Boolean call() throws Exception {
+                            return delegate.contains(o);
+                        }
+                    }, cctx);
+
+                return delegate.contains(o);
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+            finally {
+                gate.leave();
+            }
         }
         finally {
-            gate.leave();
+            leaveBusy();
         }
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public Object[] toArray() {
-        gate.enter();
+        enterBusy();
 
         try {
-            if (cctx.transactional())
-                return CU.outTx(new Callable<Object[]>() {
-                    @Override public Object[] call() throws Exception {
-                        return delegate.toArray();
-                    }
-                }, cctx);
+            gate.enter();
 
-            return delegate.toArray();
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+            try {
+                if (cctx.transactional())
+                    return CU.outTx(new Callable<Object[]>() {
+                        @Override public Object[] call() throws Exception {
+                            return delegate.toArray();
+                        }
+                    }, cctx);
+
+                return delegate.toArray();
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+            finally {
+                gate.leave();
+            }
         }
         finally {
-            gate.leave();
+            leaveBusy();
         }
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T1> T1[] toArray(final T1[] a) {
-        gate.enter();
+        enterBusy();
 
         try {
-            if (cctx.transactional())
-                return CU.outTx(new Callable<T1[]>() {
-                    @Override public T1[] call() throws Exception {
-                        return delegate.toArray(a);
-                    }
-                }, cctx);
+            gate.enter();
 
-            return delegate.toArray(a);
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+            try {
+                if (cctx.transactional())
+                    return CU.outTx(new Callable<T1[]>() {
+                        @Override public T1[] call() throws Exception {
+                            return delegate.toArray(a);
+                        }
+                    }, cctx);
+
+                return delegate.toArray(a);
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+            finally {
+                gate.leave();
+            }
         }
         finally {
-            gate.leave();
+            leaveBusy();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean add(final T t) {
-        gate.enter();
+        enterBusy();
 
         try {
-            if (cctx.transactional())
-                return CU.outTx(new Callable<Boolean>() {
-                    @Override public Boolean call() throws Exception {
-                        return delegate.add(t);
-                    }
-                }, cctx);
+            gate.enter();
 
-            return delegate.add(t);
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+            try {
+                if (cctx.transactional())
+                    return CU.outTx(new Callable<Boolean>() {
+                        @Override public Boolean call() throws Exception {
+                            return delegate.add(t);
+                        }
+                    }, cctx);
+
+                return delegate.add(t);
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+            finally {
+                gate.leave();
+            }
         }
         finally {
-            gate.leave();
+            leaveBusy();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean remove(final Object o) {
-        gate.enter();
+        enterBusy();
 
         try {
-            if (cctx.transactional())
-                return CU.outTx(new Callable<Boolean>() {
-                    @Override public Boolean call() throws Exception {
-                        return delegate.remove(o);
-                    }
-                }, cctx);
+            gate.enter();
 
-            return delegate.remove(o);
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+            try {
+                if (cctx.transactional())
+                    return CU.outTx(new Callable<Boolean>() {
+                        @Override public Boolean call() throws Exception {
+                            return delegate.remove(o);
+                        }
+                    }, cctx);
+
+                return delegate.remove(o);
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+            finally {
+                gate.leave();
+            }
         }
         finally {
-            gate.leave();
+            leaveBusy();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean containsAll(final Collection<?> c) {
-        gate.enter();
+        enterBusy();
 
         try {
-            if (cctx.transactional())
-                return CU.outTx(new Callable<Boolean>() {
-                    @Override public Boolean call() throws Exception {
-                        return delegate.containsAll(c);
-                    }
-                }, cctx);
+            gate.enter();
 
-            return delegate.containsAll(c);
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+            try {
+                if (cctx.transactional())
+                    return CU.outTx(new Callable<Boolean>() {
+                        @Override public Boolean call() throws Exception {
+                            return delegate.containsAll(c);
+                        }
+                    }, cctx);
+
+                return delegate.containsAll(c);
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+            finally {
+                gate.leave();
+            }
         }
         finally {
-            gate.leave();
+            leaveBusy();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean addAll(final Collection<? extends T> c) {
-        gate.enter();
+        enterBusy();
 
         try {
-            if (cctx.transactional())
-                return CU.outTx(new Callable<Boolean>() {
-                    @Override public Boolean call() throws Exception {
-                        return delegate.addAll(c);
-                    }
-                }, cctx);
+            gate.enter();
 
-            return delegate.addAll(c);
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+            try {
+                if (cctx.transactional())
+                    return CU.outTx(new Callable<Boolean>() {
+                        @Override public Boolean call() throws Exception {
+                            return delegate.addAll(c);
+                        }
+                    }, cctx);
+
+                return delegate.addAll(c);
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+            finally {
+                gate.leave();
+            }
         }
         finally {
-            gate.leave();
+            leaveBusy();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean retainAll(final Collection<?> c) {
-        gate.enter();
+        enterBusy();
 
         try {
-            if (cctx.transactional())
-                return CU.outTx(new Callable<Boolean>() {
-                    @Override public Boolean call() throws Exception {
-                        return delegate.retainAll(c);
-                    }
-                }, cctx);
+            gate.enter();
 
-            return delegate.retainAll(c);
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+            try {
+                if (cctx.transactional())
+                    return CU.outTx(new Callable<Boolean>() {
+                        @Override public Boolean call() throws Exception {
+                            return delegate.retainAll(c);
+                        }
+                    }, cctx);
+
+                return delegate.retainAll(c);
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+            finally {
+                gate.leave();
+            }
         }
         finally {
-            gate.leave();
+            leaveBusy();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean removeAll(final Collection<?> c) {
-        gate.enter();
+        enterBusy();
 
         try {
-            if (cctx.transactional())
-                return CU.outTx(new Callable<Boolean>() {
-                    @Override public Boolean call() throws Exception {
-                        return delegate.removeAll(c);
-                    }
-                }, cctx);
+            gate.enter();
 
-            return delegate.removeAll(c);
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+            try {
+                if (cctx.transactional())
+                    return CU.outTx(new Callable<Boolean>() {
+                        @Override public Boolean call() throws Exception {
+                            return delegate.removeAll(c);
+                        }
+                    }, cctx);
+
+                return delegate.removeAll(c);
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+            finally {
+                gate.leave();
+            }
         }
         finally {
-            gate.leave();
+            leaveBusy();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        gate.enter();
+        enterBusy();
 
         try {
-            if (cctx.transactional()) {
-                CU.outTx(new Callable<Void>() {
-                    @Override
-                    public Void call() throws Exception {
-                        delegate.clear();
+            gate.enter();
 
-                        return null;
-                    }
-                }, cctx);
+            try {
+                if (cctx.transactional()) {
+                    CU.outTx(new Callable<Void>() {
+                        @Override
+                        public Void call() throws Exception {
+                            delegate.clear();
+
+                            return null;
+                        }
+                    }, cctx);
+                }
+                else
+                    delegate.clear();
             }
-            else
-                delegate.clear();
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+            finally {
+                gate.leave();
+            }
         }
         finally {
-            gate.leave();
+            leaveBusy();
         }
     }
 
     @Override public GridCloseableIterator<T> iteratorEx() {
-        gate.enter();
+        enterBusy();
 
         try {
-            if (cctx.transactional())
-                return CU.outTx(new Callable<GridCloseableIterator<T>>() {
-                    @Override public GridCloseableIterator<T> call() throws Exception {
-                        return delegate.iteratorEx();
-                    }
-                }, cctx);
+            gate.enter();
 
-            return delegate.iteratorEx();
-        }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+            try {
+                if (cctx.transactional())
+                    return CU.outTx(new Callable<GridCloseableIterator<T>>() {
+                        @Override public GridCloseableIterator<T> call() throws Exception {
+                            return delegate.iteratorEx();
+                        }
+                    }, cctx);
+
+                return delegate.iteratorEx();
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
+            finally {
+                gate.leave();
+            }
         }
         finally {
-            gate.leave();
+            leaveBusy();
         }
     }
 
@@ -358,5 +455,20 @@ public class GridCacheSetProxy<T> implements GridCacheSet<T> {
     /** {@inheritDoc} */
     @Override public boolean removed() {
         return delegate.removed();
+    }
+
+    /**
+     * Enters busy state.
+     */
+    private void enterBusy() {
+        if (!busyLock.enterBusy())
+            throw new GridCacheDataStructureRemovedRuntimeException("Set has been removed from cache: " + delegate);
+    }
+
+    /**
+     * Leaves busy state.
+     */
+    private void leaveBusy() {
+        busyLock.leaveBusy();
     }
 }

@@ -1086,14 +1086,6 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     }
 
     /**
-     * @param id Set ID.
-     * @return Data for given set.
-     */
-    public @Nullable GridConcurrentHashSet<GridCacheSetItemKey> setData(GridUuid id) {
-        return setDataMap.get(id);
-    }
-
-    /**
      * @param name Name of set.
      * @param collocated Collocation flag.
      * @param create If {@code true} set will be created in case it is not in cache.
@@ -1156,6 +1148,69 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     }
 
     /**
+     * Entry update callback.
+     *
+     * @param key Key.
+     * @param rmv {@code True} if entry was removed.
+     */
+    public void onEntryUpdated(K key, boolean rmv) {
+        if (key instanceof GridCacheSetItemKey)
+            onSetItemUpdated((GridCacheSetItemKey)key, rmv);
+    }
+
+    /**
+     * Partition evicted callback.
+     *
+     * @param part Partition number.
+     */
+    public void onPartitionEvicted(int part) {
+        GridCacheAffinityManager aff = cctx.affinity();
+
+        for (GridConcurrentHashSet<GridCacheSetItemKey> set : setDataMap.values()) {
+            Iterator<GridCacheSetItemKey> iter = set.iterator();
+
+            while (iter.hasNext()) {
+                GridCacheSetItemKey key = iter.next();
+
+                if (aff.partition(key) == part)
+                    iter.remove();
+            }
+        }
+    }
+
+    /**
+     * @param id Set ID.
+     * @return Data for given set.
+     */
+    public @Nullable GridConcurrentHashSet<GridCacheSetItemKey> setData(GridUuid id) {
+        return setDataMap.get(id);
+    }
+
+    /**
+     * @param key Set item key.
+     * @param rmv {@code True} if item was removed.
+     */
+    private void onSetItemUpdated(GridCacheSetItemKey key, boolean rmv) {
+        GridConcurrentHashSet<GridCacheSetItemKey> set = setDataMap.get(key.setId());
+
+        if (set == null) {
+            if (rmv)
+                return;
+
+            GridConcurrentHashSet<GridCacheSetItemKey> old = setDataMap.putIfAbsent(key.setId(),
+                    set = new GridConcurrentHashSet<GridCacheSetItemKey>());
+
+            if (old != null)
+                set = old;
+        }
+
+        if (rmv)
+            set.remove(key);
+        else
+            set.add(key);
+    }
+
+    /**
      * @param name Set name.
      * @return {@code True} if set was removed.
      * @throws GridException If failed.
@@ -1181,6 +1236,9 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
                 Collection<GridNode> nodes = CU.affinityNodes(cctx, topVer);
 
+                cctx.closures().callAsyncNoFailover(BROADCAST, new BlockSetCallable(cctx.name(), hdr.id()),
+                        nodes, true).get();
+
                 cctx.closures().callAsyncNoFailover(BROADCAST, new RemoveSetCallable(cctx.name(), hdr.id(), topVer),
                         nodes, true).get();
             }
@@ -1188,8 +1246,11 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 cctx.topology().readUnlock();
             }
         }
-        else
+        else {
+            blockSet(hdr.id());
+
             removeSet(hdr.id(), 0);
+        }
 
         return true;
     }
@@ -1198,42 +1259,143 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @param setId Set ID.
      */
     @SuppressWarnings("unchecked")
-    private void removeSet(GridUuid setId, long topVer) throws GridException {
+    private void blockSet(GridUuid setId) throws GridException {
         GridCacheSetProxy set = setsMap.remove(setId);
 
         if (set != null)
-            set.delegate().removed(true);
+            set.blockOnRemove();
+    }
 
-        GridConcurrentHashSet<GridCacheSetItemKey> setData = setDataMap.remove(setId);
+    /**
+     * @param setId Set ID.
+     */
+    @SuppressWarnings("unchecked")
+    private void removeSet(GridUuid setId, long topVer) throws GridException {
+        GridConcurrentHashSet<GridCacheSetItemKey> set = setDataMap.get(setId);
 
-        if (setData != null) {
-            GridCache cache = cctx.cache();
+        if (set == null)
+            return;
 
-            final int BATCH_SIZE = 100;
+        GridCache cache = cctx.cache();
 
-            Collection<GridCacheSetItemKey> keys = new ArrayList<>();
+        final int BATCH_SIZE = 100;
 
-            GridCacheAffinityManager aff = cctx.affinity();
+        Collection<GridCacheSetItemKey> keys = new ArrayList<>(BATCH_SIZE);
 
-            for (GridCacheSetItemKey key : setData) {
-                if (!aff.primary(cctx.localNode(), key, topVer))
-                    continue;
+        boolean local = cctx.isLocal();
 
-                keys.add(key);
+        GridCacheAffinityManager aff = cctx.affinity();
 
-                if (keys.size() == BATCH_SIZE) {
-                    cache.removeAll(keys);
+        if (!local)
+            aff.affinityReadyFuture(topVer).get();
 
-                    keys.clear();
-                }
-            }
+        for (GridCacheSetItemKey key : set) {
+            if (!local && !aff.primary(cctx.localNode(), key, topVer))
+                continue;
 
-            if (!keys.isEmpty())
+            keys.add(key);
+
+            if (keys.size() == BATCH_SIZE) {
                 cache.removeAll(keys);
+
+                keys.clear();
+            }
+        }
+
+        if (!keys.isEmpty())
+            cache.removeAll(keys);
+
+        setDataMap.remove(setId);
+    }
+
+    /**
+     * Predicate for queue continuous query.
+     */
+    private static class QueueHeaderPredicate implements GridBiPredicate, Externalizable {
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public QueueHeaderPredicate() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(Object key, Object val) {
+            return key instanceof GridCacheQueueHeaderKey;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) {
+            // No-op.
         }
     }
 
     /**
+     * Waits for completion of all started set operations and blocks all subsequent set operations.
+     */
+    private static class BlockSetCallable implements Callable<Void>, Externalizable {
+        /** Injected grid instance. */
+        @GridInstanceResource
+        private Grid grid;
+
+        /** */
+        private String cacheName;
+
+        /** */
+        private GridUuid setId;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public BlockSetCallable() {
+            // No-op.
+        }
+
+        /**
+         * @param cacheName Cache name.
+         * @param setId Set ID.
+         */
+        private BlockSetCallable(String cacheName, GridUuid setId) {
+            this.cacheName = cacheName;
+            this.setId = setId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() throws GridException {
+            GridCacheAdapter cache = ((GridKernal)grid).context().cache().internalCache(cacheName);
+
+            assert cache != null;
+
+            cache.context().dataStructures().blockSet(setId);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, cacheName);
+            U.writeGridUuid(out, setId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            cacheName = U.readString(in);
+            setId = U.readGridUuid(in);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "BlockSetCallable [setId=" + setId + ']';
+        }
+    }
+
+    /**
+     * Removes set items.
      */
     private static class RemoveSetCallable implements Callable<Void>, Externalizable {
         /** Injected grid instance. */
@@ -1281,90 +1443,19 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeString(out, cacheName);
             U.writeGridUuid(out, setId);
+            out.writeLong(topVer);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             cacheName = U.readString(in);
             setId = U.readGridUuid(in);
-        }
-    }
-
-    /**
-     * @param key Key.
-     * @param rmv {@code True} if entry was removed.
-     */
-    public void onEntryUpdated(K key, boolean rmv) {
-        if (key instanceof GridCacheSetItemKey)
-            onSetItemUpdated((GridCacheSetItemKey)key, rmv);
-    }
-
-    /**
-     * @param part Partition number.
-     */
-    public void onPartitionEvicted(int part) {
-        GridCacheAffinityManager aff = cctx.affinity();
-
-        for (GridConcurrentHashSet<GridCacheSetItemKey> set : setDataMap.values()) {
-            Iterator<GridCacheSetItemKey> iter = set.iterator();
-
-            while (iter.hasNext()) {
-                GridCacheSetItemKey key = iter.next();
-
-                if (aff.partition(key) == part)
-                    iter.remove();
-            }
-        }
-    }
-
-    /**
-     * @param key Set item key.
-     * @param rmv {@code True} if item was removed.
-     */
-    private void onSetItemUpdated(GridCacheSetItemKey key, boolean rmv) {
-        GridConcurrentHashSet<GridCacheSetItemKey> set = setDataMap.get(key.setId());
-
-        if (set == null) {
-            if (rmv)
-                return;
-
-            GridConcurrentHashSet<GridCacheSetItemKey> old = setDataMap.putIfAbsent(key.setId(),
-                    set = new GridConcurrentHashSet<>());
-
-            if (old != null)
-                set = old;
-        }
-
-        if (rmv)
-            set.remove(key);
-        else
-            set.add(key);
-    }
-
-    /**
-     * Predicate for queue continuous query.
-     */
-    private static class QueueHeaderPredicate implements GridBiPredicate, Externalizable {
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public QueueHeaderPredicate() {
-            // No-op.
+            topVer = in.readLong();
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(Object key, Object val) {
-            return key instanceof GridCacheQueueHeaderKey;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) {
-            // No-op.
+        @Override public String toString() {
+            return "RemoveSetCallable [setId=" + setId + ']';
         }
     }
 }
