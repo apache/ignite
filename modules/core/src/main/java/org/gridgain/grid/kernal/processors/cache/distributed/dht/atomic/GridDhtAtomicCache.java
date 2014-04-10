@@ -403,6 +403,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public <R> R transformAndCompute(K key, GridClosure<V, GridBiTuple<V, R>> transformer)
+        throws GridException {
+        return (R)updateAllAsync0(null,
+            Collections.singletonMap(key, new GridCacheTransformComputeClosure<>(transformer)), null, null, true,
+            false, null, 0, null).get();
+    }
+
+    /** {@inheritDoc} */
     @Override public GridFuture<?> transformAsync(K key, GridClosure<V, V> transformer,
         @Nullable GridCacheEntryEx<K, V> entry, long ttl) {
         return updateAllAsync0(null, Collections.singletonMap(key, transformer), null, null, false, false, entry, ttl,
@@ -837,7 +845,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         dhtFut = createDhtFuture(ver, req, res, completionCb, false);
 
-                        GridCacheReturn<V> retVal = null;
+                        GridCacheReturn<Object> retVal = null;
 
                         boolean replicate = ctx.isDrEnabled();
 
@@ -1131,7 +1139,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>> completionCb,
         boolean replicate
     ) throws GridCacheEntryRemovedException {
-        GridCacheReturn<V> retVal = null;
+        GridCacheReturn<Object> retVal = null;
         Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted = null;
 
         List<K> keys = req.keys();
@@ -1273,8 +1281,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
 
                 // Create only once.
-                if (retVal == null)
-                    retVal = new GridCacheReturn<>(updRes.oldValue(), updRes.success());
+                if (retVal == null) {
+                    Object ret = updRes.oldValue();
+
+                    if (op == TRANSFORM && writeVal instanceof GridCacheTransformComputeClosure) {
+                        assert req.returnValue();
+
+                        ret = ((GridCacheTransformComputeClosure<V, ?>)writeVal).returnValue();
+                    }
+
+                    retVal = new GridCacheReturn<>(ret, updRes.success());
+                }
             }
             catch (GridException e) {
                 res.addFailedKey(k, e);
@@ -1972,7 +1989,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     private static class UpdateSingleResult<K, V> {
         /** */
-        private final GridCacheReturn<V> retVal;
+        private final GridCacheReturn<Object> retVal;
 
         /** */
         private final Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted;
@@ -1985,7 +2002,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
          * @param deleted Deleted entries.
          * @param dhtFut DHT future.
          */
-        private UpdateSingleResult(GridCacheReturn<V> retVal,
+        private UpdateSingleResult(GridCacheReturn<Object> retVal,
             Collection<GridBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted,
             GridDhtAtomicUpdateFuture<K, V> dhtFut) {
             this.retVal = retVal;
@@ -1996,7 +2013,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /**
          * @return Return value.
          */
-        private GridCacheReturn<V> returnValue() {
+        private GridCacheReturn<Object> returnValue() {
             return retVal;
         }
 

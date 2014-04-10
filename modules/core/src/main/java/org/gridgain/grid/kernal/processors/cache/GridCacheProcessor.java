@@ -611,7 +611,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheQueryManager qryMgr = queryManager(cfg);
             GridCacheContinuousQueryManager contQryMgr = new GridCacheContinuousQueryManager();
             GridCacheIoManager ioMgr = new GridCacheIoManager();
-            GridCacheDataStructuresManager dataStructuresMgr = new GridCacheEnterpriseDataStructuresManager();
+            GridCacheDataStructuresManager dataStructuresMgr = new GridCacheDataStructuresManager();
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = createComponent(GridCacheDrManager.class);
 

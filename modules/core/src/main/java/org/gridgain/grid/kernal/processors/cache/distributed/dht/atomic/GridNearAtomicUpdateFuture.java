@@ -80,7 +80,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     private volatile GridCachePartialUpdateException err;
 
     /** Operation result. */
-    private volatile GridCacheReturn<V> opRes;
+    private volatile GridCacheReturn<Object> opRes;
 
     /** Return value require flag. */
     private final boolean retval;
@@ -318,7 +318,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             if (res.error() != null)
                 onDone(addFailedKeys(res.failedKeys(), res.error()));
             else {
-                GridCacheReturn<V> opRes0 = opRes = res.returnValue();
+                GridCacheReturn<Object> opRes0 = opRes = res.returnValue();
 
                 onDone(opRes0);
             }
