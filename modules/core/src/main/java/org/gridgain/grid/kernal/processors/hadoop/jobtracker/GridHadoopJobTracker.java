@@ -18,7 +18,7 @@ import org.jetbrains.annotations.*;
 /**
  * Hadoop job tracker.
  */
-public class GridHadoopJobTrackerManager extends GridHadoopManager {
+public class GridHadoopJobTracker extends GridHadoopManager {
     /** System cache. */
     private GridCache<Object, Object> sysCache;
 
