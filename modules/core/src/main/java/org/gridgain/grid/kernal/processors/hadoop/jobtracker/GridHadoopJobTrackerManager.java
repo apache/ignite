@@ -15,37 +15,28 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 import org.jetbrains.annotations.*;
 
-import java.util.concurrent.atomic.*;
-
 /**
  * Hadoop job tracker.
  */
-public class GridHadoopJobTracker {
-    /** Hadoop context. */
-    private final GridHadoopContext ctx;
-
-    /** */
-    private AtomicInteger jobIdGenerator = new AtomicInteger();
-
+public class GridHadoopJobTrackerManager extends GridHadoopManager {
     /** System cache. */
     private GridCache<Object, Object> sysCache;
 
-    /**
-     * @param ctx Hadoop context.
-     */
-    public GridHadoopJobTracker(GridHadoopContext ctx) {
-        this.ctx = ctx;
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() {
+        super.onKernalStart();
+
+        sysCache = ctx.kernalContext().cache().cache("hadoop-sys-cache"); // TODO.
     }
 
     /**
      * Submits execution of Hadoop job to grid.
      *
+     * @param jobId Job ID.
      * @param info Job info.
      * @return Job completion future.
      */
-    public GridFuture<?> submit(GridHadoopJobInfo info) {
-        GridHadoopJobId jobId = new GridHadoopJobId(ctx.localNodeId(), jobIdGenerator.getAndIncrement());
-
+    public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo info) {
         GridHadoopJobMetadata meta = new GridHadoopJobMetadata(jobId);
 
         return null;

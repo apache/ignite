@@ -16,6 +16,7 @@ import org.gridgain.grid.dr.hub.receiver.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.log4j.*;
@@ -485,6 +486,9 @@ public class GridConfiguration {
     /** Data center ID. */
     private byte dataCenterId;
 
+    /** Hadoop configuration. */
+    private GridHadoopConfiguration hadoopCfg;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -539,6 +543,7 @@ public class GridConfiguration {
         ggfsCfg = cfg.getGgfsConfiguration();
         ggfsSvc = cfg.getGgfsExecutorService();
         ggfsSvcShutdown = cfg.getGgfsExecutorServiceShutdown();
+        hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
         jettyPath = cfg.getRestJettyPath();
@@ -2826,6 +2831,24 @@ public class GridConfiguration {
      */
     public void setDataCenterId(byte dataCenterId) {
         this.dataCenterId = dataCenterId;
+    }
+
+    /**
+     * Gets hadoop configuration.
+     *
+     * @return Hadoop configuration.
+     */
+    public GridHadoopConfiguration getHadoopConfiguration() {
+        return hadoopCfg;
+    }
+
+    /**
+     * Sets hadoop configuration.
+     *
+     * @param hadoopCfg Hadoop configuration.
+     */
+    public void setHadoopConfiguration(GridHadoopConfiguration hadoopCfg) {
+        this.hadoopCfg = hadoopCfg;
     }
 
     /** {@inheritDoc} */
