@@ -68,9 +68,7 @@ public class GridLibraryConsistencyCheck {
         "org.springframework.aop.support.DefaultPointcutAdvisor",         // spring-aop-XXX.jar
         "org.springframework.beans.factory.ListableBeanFactory",          // spring-beans-XXX.jar
         "org.springframework.context.ApplicationContext",                 // spring-context-XXX.jar
-        "org.springframework.core.io.UrlResource",                        // spring-core-XXX.jar
-        "org.apache.tika.io.TikaInputStream",                             // tika-core-XXX.jar
-        "org.apache.tika.parser.txt.UniversalEncodingDetector"            // tika-parsers-1.3.jar
+        "org.springframework.core.io.UrlResource"                         // spring-core-XXX.jar
     };
 
     /** */
