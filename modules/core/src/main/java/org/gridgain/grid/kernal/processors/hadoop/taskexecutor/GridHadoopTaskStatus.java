@@ -18,8 +18,11 @@ public class GridHadoopTaskStatus {
         RUNNING, COMPLETED, FAILED, CANCELED, CRASHED
     }
 
-    public Throwable failCause() {
+    public State state() {
         return null;
     }
 
+    public Throwable failCause() {
+        return null;
+    }
 }

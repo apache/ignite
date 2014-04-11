@@ -9,14 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
-import java.io.*;
-import java.util.*;
+import org.gridgain.grid.*;
+import org.jetbrains.annotations.*;
 
 /**
  * TODO write doc
  */
-public interface GridHadoopMapReducePlan extends Serializable {
-    public Collection<GridHadoopBlock> mappers(UUID nodeId);
+public interface GridHadoopRackResolver {
 
-    public int[] reducers(UUID nodeId);
+    @Nullable Object rackKey(GridNode node);
 }

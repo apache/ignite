@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.ggfs.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -19,6 +18,6 @@ import java.util.*;
  * TODO write doc
  */
 public interface GridHadoopMapReducePlanner {
-    GridHadoopMapReducePlan preparePlan(Collection<GridGgfsBlockLocation> blocks, Collection<GridNode> top,
+    GridHadoopMapReducePlan preparePlan(Collection<GridHadoopBlock> blocks, Collection<GridNode> top,
         GridHadoopJobInfo jobInfo, @Nullable GridHadoopMapReducePlan oldPlan);
 }
