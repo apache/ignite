@@ -22,7 +22,7 @@ public class GridHadoopContext {
     private GridKernalContext ctx;
 
     /** Job tracker manager. */
-    private GridHadoopJobTrackerManager jobTracker;
+    private GridHadoopJobTracker jobTracker;
 
     /** Managers list. */
     private List<GridHadoopManager> mgrs = new ArrayList<>();
@@ -32,7 +32,7 @@ public class GridHadoopContext {
      */
     public GridHadoopContext(
         GridKernalContext ctx,
-        GridHadoopJobTrackerManager jobTracker
+        GridHadoopJobTracker jobTracker
     ) {
         this.ctx = ctx;
 
@@ -60,7 +60,7 @@ public class GridHadoopContext {
     /**
      * @return Jon tracker manager instance.
      */
-    public GridHadoopJobTrackerManager jobTracker() {
+    public GridHadoopJobTracker jobTracker() {
         return jobTracker;
     }
 

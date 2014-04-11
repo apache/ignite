@@ -40,7 +40,7 @@ public class GridHadoopProcessor extends GridProcessorAdapter {
 
         hctx = new GridHadoopContext(
             ctx,
-            new GridHadoopJobTrackerManager());
+            new GridHadoopJobTracker());
 
         for (GridHadoopManager mgr : hctx.managers())
             mgr.start(hctx);
