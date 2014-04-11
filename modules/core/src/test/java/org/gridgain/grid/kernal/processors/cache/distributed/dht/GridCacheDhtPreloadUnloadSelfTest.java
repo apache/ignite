@@ -280,6 +280,8 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
             waitForUnload(gridCnt, cnt, wait);
         }
         finally {
+            lbean = null;
+
             stopAllGrids();
         }
     }

@@ -71,12 +71,9 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(GRID_CNT);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        startGrids(GRID_CNT);
+
         grids = new AtomicReferenceArray<>(GRID_CNT);
 
         for (int i = 0; i < GRID_CNT; i++)
@@ -86,7 +83,7 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
         grids = null;

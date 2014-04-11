@@ -80,7 +80,9 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         commSpis.clear();
     }
 
