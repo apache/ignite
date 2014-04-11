@@ -24,7 +24,6 @@ public class GridStartStopRestartTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Remote node start suite.");
 
-        suite.addTestSuite(GridProjectionStartStopRestartSelfTest.class);
         suite.addTestSuite(GridNodeStartUtilsSelfTest.class);
 
         return suite;

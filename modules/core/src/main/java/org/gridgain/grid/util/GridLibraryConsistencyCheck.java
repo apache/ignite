@@ -54,22 +54,14 @@ public class GridLibraryConsistencyCheck {
         "org.eclipse.jetty.server.NetworkConnector",                      // jetty-server-XXX.jar
         "org.eclipse.jetty.util.MultiException",                          // jetty-util-XXX.jar
         "org.eclipse.jetty.xml.XmlConfiguration",                         // jetty-xml-XXX.jar
-        "com.jidesoft.chart.model.Chartable",                             // jide-charts-XXX.jar
-        "com.jidesoft.swing.JideScrollPane",                              // jide-common-XXX.jar
-        "com.jidesoft.status.StatusBarItem",                              // jide-components-XXX.jar
-        "com.jidesoft.grid.SortEvent",                                    // jide-grids-XXX.jar
         "org.fife.ui.rsyntaxtextarea.RSyntaxTextArea",                    // rsyntaxtextarea-XXX.jar
         "org.fife.ui.autocomplete.DefaultCompletionProvider",             // autocomplete-XXX.jar
         "com.jcraft.jsch.JSch",                                           // jsch-XXX.jar
         "net.sf.json.JSONSerializer",                                     // json-lib-XXX.jar
         "org.w3c.tidy.Tidy",                                              // jtidy-r938.jar
-        "org.mozilla.universalchardet.UniversalDetector",                 // juniversalchardet-XXX.jar
         "org.apache.log4j.RollingFileAppender",                           // log4j-XXX.jar
         "org.apache.lucene.store.IndexOutput",                            // lucene-core-XXX.jar
         "javax.mail.internet.MimeMessage",                                // mail-XXX.jar
-        "net.miginfocom.layout.LayoutCallback",                           // miglayout-core-XXX.jar
-        "net.miginfocom.swing.MigLayout",                                 // miglayout-swing-XXX.jar
-        "com.mongodb.DBCollection",                                       // mongo-java-driver-XXX.jar
         "io.netty.channel.Channel",                                       // netty-all-XXX.jar
         "com.google.protobuf.ByteString",                                 // protobuf-java-XXX.jar
         "org.slf4j.LoggerFactory",                                        // slf4j-api-XXX.jar

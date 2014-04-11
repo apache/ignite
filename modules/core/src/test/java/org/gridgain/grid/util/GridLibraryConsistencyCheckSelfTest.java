@@ -25,13 +25,17 @@ public class GridLibraryConsistencyCheckSelfTest extends TestCase {
     public void testAllLibrariesLoaded() {
         ArrayList<String> libs = libraries();
 
-        int idx = libs.indexOf(NOT_FOUND_MESSAGE);
+        boolean testPassed = !libs.contains(NOT_FOUND_MESSAGE);
 
-        boolean testPassed = idx == -1;
+        String missedLibs = "";
 
-        String msg = testPassed ? "" : "Library with class " + CLASS_LIST[idx] +
-            " is removed, if it is made on purpose then remove this lib from " +
-            GridLibraryConsistencyCheck.class.getSimpleName() + " class.";
+        for (int i = 0; i < libs.size(); i++)
+            if (NOT_FOUND_MESSAGE.equals(libs.get(i)))
+                missedLibs += '\t' + CLASS_LIST[i] + '\n';
+
+        String msg = testPassed ? "" : "Libraries with following classes is removed (if it is made on purpose " +
+            "then remove this lib from " + GridLibraryConsistencyCheck.class.getSimpleName() + " class):\n" +
+            missedLibs;
 
         assertTrue(msg, testPassed);
     }
