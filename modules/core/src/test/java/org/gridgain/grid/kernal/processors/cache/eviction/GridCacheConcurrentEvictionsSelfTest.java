@@ -82,11 +82,11 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         plc = null;
         nearPlc = null;
-
-        super.afterTestsStopped();
     }
 
     /**

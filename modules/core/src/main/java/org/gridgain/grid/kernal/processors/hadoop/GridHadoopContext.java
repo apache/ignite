@@ -11,6 +11,8 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
+import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
+import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 
 import java.util.*;
 
@@ -21,8 +23,14 @@ public class GridHadoopContext {
     /** Kernal context. */
     private GridKernalContext ctx;
 
-    /** Job tracker manager. */
+    /** Job tracker. */
     private GridHadoopJobTracker jobTracker;
+
+    /** */
+    private GridHadoopTaskExecutor taskExecutor;
+
+    /** */
+    private GridHadoopShuffle shuffle;
 
     /** Managers list. */
     private List<GridHadoopManager> mgrs = new ArrayList<>();
@@ -32,11 +40,17 @@ public class GridHadoopContext {
      */
     public GridHadoopContext(
         GridKernalContext ctx,
-        GridHadoopJobTracker jobTracker
+        GridHadoopJobTracker jobTracker,
+        GridHadoopTaskExecutor taskExecutor,
+        GridHadoopShuffle shuffle
     ) {
         this.ctx = ctx;
 
         this.jobTracker = add(jobTracker);
+        this.taskExecutor = add(taskExecutor);
+        this.shuffle = add(shuffle);
+
+
     }
 
     /**
@@ -58,10 +72,24 @@ public class GridHadoopContext {
     }
 
     /**
-     * @return Jon tracker manager instance.
+     * @return Jon tracker instance.
      */
     public GridHadoopJobTracker jobTracker() {
         return jobTracker;
+    }
+
+    /**
+     * @return Task executor.
+     */
+    public GridHadoopTaskExecutor taskExecutor() {
+        return taskExecutor;
+    }
+
+    /**
+     * @return Shuffle.
+     */
+    public GridHadoopShuffle shuffle() {
+        return shuffle;
     }
 
     /**
@@ -71,6 +99,34 @@ public class GridHadoopContext {
      */
     public UUID localNodeId() {
         return ctx.localNodeId();
+    }
+
+    /**
+     * @return Rack resolver.
+     */
+    public GridHadoopRackResolver rackResolver() {
+        return null;
+    }
+
+    /**
+     * @return Block resolver.
+     */
+    public GridHadoopBlockResolver blockResolver() {
+        return null;
+    }
+
+    /**
+     * @return Map-reduce planner.
+     */
+    public GridHadoopMapReducePlanner planner() {
+        return null;
+    }
+
+    /**
+     * @return Task factory.
+     */
+    public GridHadoopTaskFactory taskFactory() {
+        return null;
     }
 
     /**

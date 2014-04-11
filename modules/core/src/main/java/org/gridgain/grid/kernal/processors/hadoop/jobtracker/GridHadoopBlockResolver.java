@@ -7,18 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
+package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
 import java.util.*;
 
 /**
  * TODO write doc
  */
-public interface GridHadoopTaskInput extends AutoCloseable {
+public interface GridHadoopBlockResolver {
 
-    boolean next();
-
-    Object key();
-
-    Iterator<?> values();
+    public Collection<GridHadoopBlock> getInputBlocks(GridHadoopJobInfo jobInfo);
 }

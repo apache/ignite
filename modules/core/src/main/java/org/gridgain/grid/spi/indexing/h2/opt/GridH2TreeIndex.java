@@ -156,6 +156,9 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     /** {@inheritDoc} */
     @Override public void close(Session ses) {
         assert snapshot.get() == null;
+
+        if (tree instanceof Closeable)
+            U.closeQuiet((Closeable)tree);
     }
 
     /** {@inheritDoc} */
