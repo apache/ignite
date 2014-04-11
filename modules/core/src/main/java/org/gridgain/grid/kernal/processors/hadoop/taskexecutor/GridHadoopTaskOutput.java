@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
+import org.gridgain.grid.*;
+
 /**
  * TODO write doc
  */
@@ -16,5 +18,5 @@ public interface GridHadoopTaskOutput extends AutoCloseable {
 
     void write(Object key, Object val);
 
-    void finish();
+    GridFuture<?> finish();
 }

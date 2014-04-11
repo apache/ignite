@@ -9,18 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
-import java.util.*;
-
 /**
- * TODO write doc
- */
-public interface GridHadoopTaskInput extends AutoCloseable {
-
-    boolean next();
-
-    Object key();
-
-    Object value();
-
-    Iterator<?> values();
+* TODO write doc
+*/
+enum GridHadoopTaskState {
+    RUNNING, COMPLETED, FAILED, CANCELED, CRASHED
 }

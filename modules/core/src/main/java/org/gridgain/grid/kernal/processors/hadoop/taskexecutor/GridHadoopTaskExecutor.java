@@ -9,21 +9,45 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
+
 /**
  * TODO write doc
  */
-public class GridHadoopTaskExecutor {
-    void run(GridHadoopTaskInfo info, GridHadoopTask task) throws Exception {
-        try (GridHadoopTaskOutput out = createOutput(info)) {
-            GridHadoopTaskContext ctx = null;
+public class GridHadoopTaskExecutor extends GridHadoopManager {
+    GridFuture<?> run(final GridHadoopTaskInfo info, final GridHadoopTask task) throws Exception {
+        GridFuture<Void> fut = new GridFutureAdapter<>(ctx.kernalContext());
 
-            task.run(ctx);
+        ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
+            @Override
+            public GridFuture<?> call() throws Exception {
+                try (GridHadoopTaskOutput out = createOutput(info);
+                     GridHadoopTaskInput in = createInput(info)) {
+                    GridHadoopTaskContext ctx = null;
 
-            out.finish();
-        }
+                    task.run(ctx);
+
+                    return out.finish();
+                }
+            }
+        }, false).listenAsync(new CIX1<GridFuture<GridFuture<?>>>() {
+            @Override public void applyx(GridFuture<GridFuture<?>> f) throws GridException {
+
+            }
+        });
+
+        return null;
     }
 
     private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo taskInfo) {
+        return null;
+    }
+
+    private GridHadoopTaskInput createInput(GridHadoopTaskInfo taskInfo) {
         return null;
     }
 }

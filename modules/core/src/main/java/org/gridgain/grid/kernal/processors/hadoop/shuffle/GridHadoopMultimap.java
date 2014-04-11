@@ -7,20 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
-
-import java.util.*;
+package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
 /**
  * TODO write doc
  */
-public interface GridHadoopTaskInput extends AutoCloseable {
-
-    boolean next();
-
-    Object key();
-
-    Object value();
-
-    Iterator<?> values();
+public class GridHadoopMultimap {
 }

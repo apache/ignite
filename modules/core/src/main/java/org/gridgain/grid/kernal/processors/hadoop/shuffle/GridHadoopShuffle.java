@@ -9,13 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 
 /**
  * TODO write doc
  */
-public class GridHadoopShuffle {
+public class GridHadoopShuffle extends GridHadoopManager {
 
     public GridHadoopTaskOutput getMapperOutput(GridHadoopTaskInfo mapperInfo) {
         return null;
