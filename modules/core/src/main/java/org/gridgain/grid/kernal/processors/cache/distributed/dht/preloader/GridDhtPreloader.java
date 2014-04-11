@@ -629,17 +629,11 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
                 if (log.isDebugEnabled())
                     log.debug("Received full partition update [node=" + node.id() + ", msg=" + msg + ']');
 
-                if (top.update(null, msg.partitions()) != null) {
+                if (top.update(null, msg.partitions()) != null)
                     demandPool.resendPartitions();
-
-                    cctx.dataStructures().onPartitionsChange();
-                }
             }
-            else {
+            else
                 exchangeFuture(msg.exchangeId(), null).onReceive(node.id(), msg);
-
-                cctx.dataStructures().onPartitionsChange();
-            }
         }
         finally {
             leaveBusy();
@@ -660,17 +654,11 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
                     log.debug("Received local partition update [nodeId=" + node.id() + ", parts=" +
                         msg.partitions().toFullString() + ']');
 
-                if (top.update(null, msg.partitions()) != null) {
+                if (top.update(null, msg.partitions()) != null)
                     demandPool.resendPartitions();
-
-                    cctx.dataStructures().onPartitionsChange();
-                }
             }
-            else {
+            else
                 exchangeFuture(msg.exchangeId(), null).onReceive(node.id(), msg);
-
-                cctx.dataStructures().onPartitionsChange();
-            }
         }
         finally {
             leaveBusy();

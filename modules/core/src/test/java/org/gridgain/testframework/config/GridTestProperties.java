@@ -105,7 +105,7 @@ public final class GridTestProperties {
         File log4jFile = getTestConfigurationFile(user, cfgFile);
 
         if (log4jFile == null)
-            log4jFile = new File(GridTestUtils.resolveGridGainPath(TESTS_CFG_PATH), "log4j-test.xml");
+            log4jFile = getTestConfigurationFile(null, cfgFile);
 
         DOMConfigurator.configure(log4jFile.getAbsolutePath());
 

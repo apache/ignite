@@ -201,7 +201,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
 
         assertTrue(queue0.isEmpty());
 
-        grid(0).compute().call(new AddAllJob(queueName, RETRIES));
+        grid(0).compute().broadcast(new AddAllJob(queueName, RETRIES)).get();
 
         assertEquals(GRID_CNT * RETRIES, queue0.size());
 

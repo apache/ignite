@@ -383,8 +383,6 @@ public class GridCacheConfiguration {
     /** */
     private GridDrSenderCacheConfiguration drSndCacheCfg;
 
-
-
     /** Empty constructor (all values are initialized to their defaults). */
     public GridCacheConfiguration() {
         /* No-op. */
