@@ -18,7 +18,14 @@ import org.gridgain.grid.util.lang.*;
  * TODO write doc
  */
 public class GridHadoopTaskExecutor extends GridHadoopManager {
-    GridFuture<?> run(final GridHadoopTaskInfo info, final GridHadoopTask task) throws Exception {
+    /**
+     * Runs task.
+     *
+     * @param info Task info.
+     * @param task Task.
+     * @return Completion future.
+     */
+    public GridFuture<?> run(final GridHadoopTaskInfo info, final GridHadoopTask task) {
         GridChainedFuture<?> res = new GridChainedFuture<>(ctx.kernalContext());
 
         ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
