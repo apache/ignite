@@ -15,7 +15,7 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  * Tests for H2 indexing SPI.
  */
-@GridSpiTest(spi = GridH2IndexingSpi.class, group = "Indexing SPI")
+@GridSpiTest(spi = GridH2IndexingSpi.class,  group = "Indexing SPI")
 public class GridH2IndexingSpiOffheapSelfTest extends GridIndexingSpiAbstractSelfTest<GridH2IndexingSpi> {
     /** */
     private static final long offheap = 10000000;
