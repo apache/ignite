@@ -18,6 +18,32 @@ import java.util.*;
  * TODO write doc
  */
 public class GridHadoopBlock implements Externalizable {
+    /** Path. */
+    private String path;
+
+    /** Offset. */
+    private long offset;
+
+    /** Length. */
+    private long len;
+
+    /** Hosts. */
+    private String[] hosts;
+
+    /**
+     * @param path Block's file path.
+     * @param offset Block start offset.
+     * @param len Block length.
+     */
+    public GridHadoopBlock(String path, long offset, long len) {
+        this.path = path;
+        this.offset = offset;
+        this.len = len;
+    }
+
+    public void locations(String[] locations) {
+        hosts = locations;
+    }
 
     public long length() {
         return 0;
@@ -35,13 +61,13 @@ public class GridHadoopBlock implements Externalizable {
         return null;
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
 
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
 
     }
 }
