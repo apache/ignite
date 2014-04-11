@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
@@ -49,6 +50,8 @@ public class GridHadoopContext {
         this.jobTracker = add(jobTracker);
         this.taskExecutor = add(taskExecutor);
         this.shuffle = add(shuffle);
+
+        GridHadoopConfiguration hcfg = ctx.config().getHadoopConfiguration();
 
 
     }
