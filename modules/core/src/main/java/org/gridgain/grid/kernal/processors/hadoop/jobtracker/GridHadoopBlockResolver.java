@@ -16,5 +16,5 @@ import java.util.*;
  */
 public interface GridHadoopBlockResolver {
 
-    public Collection<GridHadoopBlock> getInputBlocks(GridHadoopJobInfo jobInfo);
+    public Collection<GridHadoopBlock> getInputBlocks(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo);
 }

@@ -9,15 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
-import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.mapreduce.lib.input.*;
-import org.apache.hadoop.mapreduce.task.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.util.future.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -32,11 +28,18 @@ public class GridHadoopJobTracker extends GridHadoopManager {
     /** Map-reduce execution planner. */
     private GridHadoopMapReducePlanner mrPlanner;
 
+    /** Block resolver. */
+    private GridHadoopBlockResolver blockRslvr;
+
     /** {@inheritDoc} */
     @Override public void onKernalStart() {
         super.onKernalStart();
 
-        sysCache = ctx.kernalContext().cache().cache("hadoop-sys-cache"); // TODO.
+        sysCache = ctx.kernalContext().cache().cache(ctx.systemCacheName());
+
+        blockRslvr = ctx.blockResolver();
+
+        mrPlanner = ctx.planner();
     }
 
     /**
@@ -47,10 +50,24 @@ public class GridHadoopJobTracker extends GridHadoopManager {
      * @return Job completion future.
      */
     public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo info) {
-        GridHadoopJobMetadata meta = new GridHadoopJobMetadata(jobId);
+        try {
+            Collection<GridHadoopBlock> blocks = blockRslvr.getInputBlocks(jobId, info);
 
+            initBlockNodes(blocks);
 
-        return null;
+            GridHadoopMapReducePlan mrPlan = mrPlanner.preparePlan(blocks, ctx.nodes(), info, null);
+
+            GridHadoopJobMetadata meta = new GridHadoopJobMetadata(jobId);
+
+            meta.mapReducePlan(mrPlan);
+
+            sysCache.put(jobId, meta);
+
+            return null;
+        }
+        catch (GridException e) {
+            return new GridFinishedFutureEx<>(e);
+        }
     }
 
     /**
@@ -70,6 +87,13 @@ public class GridHadoopJobTracker extends GridHadoopManager {
      * @param status Task status.
      */
     public void onTaskFinished(GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
+
+    }
+
+    /**
+     * @param blocks Blocks to init nodes for.
+     */
+    private void initBlockNodes(Collection<GridHadoopBlock> blocks) {
 
     }
 }

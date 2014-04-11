@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
@@ -22,6 +23,9 @@ import java.util.*;
 public class GridHadoopContext {
     /** Kernal context. */
     private GridKernalContext ctx;
+
+    /** Hadoop system cache name. */
+    private String sysCacheName; // TODO
 
     /** Job tracker. */
     private GridHadoopJobTracker jobTracker;
@@ -49,8 +53,6 @@ public class GridHadoopContext {
         this.jobTracker = add(jobTracker);
         this.taskExecutor = add(taskExecutor);
         this.shuffle = add(shuffle);
-
-
     }
 
     /**
@@ -72,6 +74,31 @@ public class GridHadoopContext {
     }
 
     /**
+     * Gets local node ID. Shortcut for {@code kernalContext().localNodeId()}.
+     *
+     * @return Local node ID.
+     */
+    public UUID localNodeId() {
+        return ctx.localNodeId();
+    }
+
+    /**
+     * @return Hadoop-enabled nodes.
+     */
+    public Collection<GridNode> nodes() {
+        return ctx.discovery().cacheNodes(sysCacheName, ctx.discovery().topologyVersion());
+    }
+
+    /**
+     * Gets hadoop system cache name.
+     *
+     * @return System cache name.
+     */
+    public String systemCacheName() {
+        return sysCacheName;
+    }
+
+    /**
      * @return Jon tracker instance.
      */
     public GridHadoopJobTracker jobTracker() {
@@ -90,15 +117,6 @@ public class GridHadoopContext {
      */
     public GridHadoopShuffle shuffle() {
         return shuffle;
-    }
-
-    /**
-     * Gets local node ID. Shortcut for {@code kernalContext().localNodeId()}.
-     *
-     * @return Local node ID.
-     */
-    public UUID localNodeId() {
-        return ctx.localNodeId();
     }
 
     /**
