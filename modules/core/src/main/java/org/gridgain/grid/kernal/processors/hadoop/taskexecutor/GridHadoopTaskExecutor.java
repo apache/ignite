@@ -13,18 +13,16 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.typedef.*;
 
 /**
  * TODO write doc
  */
 public class GridHadoopTaskExecutor extends GridHadoopManager {
     GridFuture<?> run(final GridHadoopTaskInfo info, final GridHadoopTask task) throws Exception {
-        GridFuture<Void> fut = new GridFutureAdapter<>(ctx.kernalContext());
+        GridChainedFuture<?> res = new GridChainedFuture<>(ctx.kernalContext());
 
         ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
-            @Override
-            public GridFuture<?> call() throws Exception {
+            @Override public GridFuture<?> call() throws Exception {
                 try (GridHadoopTaskOutput out = createOutput(info);
                      GridHadoopTaskInput in = createInput(info)) {
                     GridHadoopTaskContext ctx = null;
@@ -34,13 +32,9 @@ public class GridHadoopTaskExecutor extends GridHadoopManager {
                     return out.finish();
                 }
             }
-        }, false).listenAsync(new CIX1<GridFuture<GridFuture<?>>>() {
-            @Override public void applyx(GridFuture<GridFuture<?>> f) throws GridException {
+        }, false).listenAsync(res);
 
-            }
-        });
-
-        return null;
+        return res;
     }
 
     private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo taskInfo) {

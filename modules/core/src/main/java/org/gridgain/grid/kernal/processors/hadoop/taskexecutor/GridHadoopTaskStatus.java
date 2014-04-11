@@ -9,16 +9,18 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
+import org.jetbrains.annotations.*;
+
 /**
  * TODO write doc
  */
 public class GridHadoopTaskStatus {
 
     public GridHadoopTaskState state() {
-        return null;
+        return GridHadoopTaskState.COMPLETED;
     }
 
-    public Throwable failCause() {
+    @Nullable public Throwable failCause() {
         return null;
     }
 }

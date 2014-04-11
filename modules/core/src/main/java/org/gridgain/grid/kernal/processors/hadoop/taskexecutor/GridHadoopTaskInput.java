@@ -20,7 +20,5 @@ public interface GridHadoopTaskInput extends AutoCloseable {
 
     Object key();
 
-    Object value();
-
     Iterator<?> values();
 }

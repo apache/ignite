@@ -13,4 +13,16 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
  * TODO write doc
  */
 public class GridHadoopMultimap {
+
+    public Update begin() {
+        return new Update();
+    }
+
+
+
+    public class Update {
+        public void put(Object key, Object val) {
+
+        }
+    }
 }
