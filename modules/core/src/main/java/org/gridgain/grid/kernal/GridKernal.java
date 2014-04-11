@@ -55,6 +55,7 @@ import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.logger.log4j.*;
+import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.scheduler.*;
@@ -1926,6 +1927,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
             GridOptimizedMarshaller.clearCache();
+            GridMarshallerExclusions.clearCache();
 
             gw.writeLock();
 

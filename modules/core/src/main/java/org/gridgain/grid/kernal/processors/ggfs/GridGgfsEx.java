@@ -18,6 +18,11 @@ import org.jetbrains.annotations.*;
  */
 public interface GridGgfsEx extends GridGgfs {
     /**
+     * Stops GGFS cleaning all used resources.
+     */
+    public void stop();
+
+    /**
      * @return GGFS context.
      */
     public GridGgfsContext context();
