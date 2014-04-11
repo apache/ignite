@@ -218,12 +218,11 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * Gets value from thread-local context.
      *
      * @param key Thread-local context key.
-     * @param <T> Type of the return value.
      * @return Thread-local context value, if any.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable private <T> T getThreadContext(GridTaskThreadContextKey key) {
-        return thCtx == null ? null : (T)thCtx.get(key);
+    @Nullable private <V> V getThreadContext(GridTaskThreadContextKey key) {
+        return thCtx == null ? null : (V)thCtx.get(key);
     }
 
     /**
@@ -469,7 +468,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         synchronized (mux) {
             if (state != State.WAITING)
-                throw new GridException("Task is not in waiting state: " + ses);
+                throw new GridException("Task is not in waiting state [state=" + state + ", ses=" + ses + ']');
 
             // Do not add siblings if result cache is disabled.
             if (resCache)
