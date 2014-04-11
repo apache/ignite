@@ -80,10 +80,10 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         plc = null;
 
-        super.afterTestsStopped();
+        super.afterTest();
     }
 
     /**
