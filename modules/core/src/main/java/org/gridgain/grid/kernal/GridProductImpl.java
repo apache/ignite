@@ -65,10 +65,12 @@ public class GridProductImpl implements GridProduct {
         try {
             props.load(GridProductImpl.class.getClassLoader().getResourceAsStream(propsFile));
 
-            VER = props.getProperty(EDITION + ".ver");
+            String v = EDITION + ".ver";
+
+            VER = props.getProperty(v);
 
             if (F.isEmpty(VER))
-                throw new RuntimeException("Cannot read '" + propsFile + "' property from gridgain.properties file.");
+                throw new RuntimeException("Cannot read '" + v + "' property from gridgain.properties file.");
 
             VER_BYTES = U.intToBytes(VER.hashCode());
         }
