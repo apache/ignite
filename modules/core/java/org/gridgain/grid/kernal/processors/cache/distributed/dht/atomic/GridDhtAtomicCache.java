@@ -2231,7 +2231,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     public static class GridNearAtomicUpdateResponseConverter603 extends GridVersionConverter {
         /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf) {
-            buf.putInt(-1); // Near cache version.
+            commState.putCacheVersion(null); // Near cache version.
             buf.putInt(-1); // Skip indexes.
             buf.putLong(0); // Near ttl.
             buf.putInt(-1); // Near values.
@@ -2241,9 +2241,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         /** {@inheritDoc} */
         @Override public boolean readFrom(ByteBuffer buf) {
-            int verArrSize = buf.getInt();
+            GridCacheVersion ver = commState.getCacheVersion();
 
-            assert verArrSize == -1 : verArrSize;
+            assert ver == null : ver;
 
             int nearSkipIdxs = buf.getInt();
 
