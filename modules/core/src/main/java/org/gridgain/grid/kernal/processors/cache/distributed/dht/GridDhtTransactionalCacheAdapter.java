@@ -641,7 +641,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         }
 
                         tx.addWrite(txEntry.op(), txEntry.key(), txEntry.keyBytes(), txEntry.value(),
-                            txEntry.valueBytes(), txEntry.drVersion());
+                            txEntry.valueBytes(), txEntry.transformClosures(), txEntry.drVersion());
 
                         if (!marked) {
                             if (tx.markFinalizing(USER_FINISH))
@@ -813,6 +813,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 req.keyBytes() != null ? req.keyBytes().get(i) : null,
                                 writeEntry == null ? null : writeEntry.value(),
                                 writeEntry == null ? null : writeEntry.valueBytes(),
+                                writeEntry == null ? null : writeEntry.transformClosures(),
                                 drVer);
 
                             if (req.groupLock())

@@ -13,22 +13,32 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+
+import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 
 /**
  * Cache set implementation.
  */
 public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCacheSet<T> {
     /** */
-    protected static final int MAX_UPDATE_RETRIES = 100;
+    private static final int MAX_UPDATE_RETRIES = 100;
+
+    /** */
+    private static final long RETRY_DELAY = 1;
 
     /** */
     private static final int BATCH_SIZE = 100;
@@ -76,13 +86,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         hdrPart = ctx.affinity().partition(new GridCacheSetHeaderKey(name));
     }
 
-    /**
-     * @return Set ID.
-     */
-    public GridUuid id() {
-        return id;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean collocated() {
         return collocated;
@@ -99,21 +102,32 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     }
 
     /** {@inheritDoc} */
-    void removed(boolean rmvd) {
-        this.rmvd = rmvd;
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public int size() {
         try {
             checkRemoved();
 
-            GridCacheEnterpriseDataStructuresManager ds = (GridCacheEnterpriseDataStructuresManager)ctx.dataStructures();
+            if (ctx.isLocal() || ctx.isReplicated()) {
+                GridConcurrentHashSet<GridCacheSetItemKey> set = ctx.dataStructures().setData(id);
 
-            GridFuture<Integer> fut = ds.setSize(this);
+                return set != null ? set.size() : 0;
+            }
 
-            return fut.get();
+            GridCacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
+                new GridSetQueryPredicate<>(id, collocated), false);
+
+            Collection<GridNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
+
+            qry.projection(ctx.grid().forNodes(nodes));
+
+            Iterable<Integer> col = (Iterable<Integer>) qry.execute(new SumReducer()).get();
+
+            int sum = 0;
+
+            for (Integer val : col)
+                sum += val;
+
+            return sum;
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
@@ -121,12 +135,13 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public boolean isEmpty() {
         checkRemoved();
 
-        GridCacheEnterpriseDataStructuresManager ds = (GridCacheEnterpriseDataStructuresManager)ctx.dataStructures();
+        GridConcurrentHashSet<GridCacheSetItemKey> set = ctx.dataStructures().setData(id);
 
-        return ds.setDataEmpty(id) && size() == 0;
+        return (set == null || set.isEmpty()) && size() == 0;
     }
 
     /** {@inheritDoc} */
@@ -284,7 +299,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
             checkRemoved();
 
             try (GridCloseableIterator<T> iter = iteratorEx()) {
-                List<GridCacheSetItemKey> rmvKeys = new ArrayList<>(BATCH_SIZE);
+                Collection<GridCacheSetItemKey> rmvKeys = new ArrayList<>(BATCH_SIZE);
 
                 for (T val : iter) {
                     rmvKeys.add(itemKey(val));
@@ -316,9 +331,16 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         try {
             checkRemoved();
 
-            GridCacheEnterpriseDataStructuresManager ds = (GridCacheEnterpriseDataStructuresManager)ctx.dataStructures();
+            GridCacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
+                new GridSetQueryPredicate<>(id, collocated), false);
 
-            return ds.setIterator(this);
+            Collection<GridNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
+
+            qry.projection(ctx.grid().forNodes(nodes));
+
+            GridCacheQueryFuture<T> fut = qry.execute();
+
+            return new SetIterator<>(fut);
         }
         catch (GridException e) {
             throw new GridRuntimeException(e);
@@ -330,24 +352,32 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
      * @return Callable result.
      */
     private <R> R retry(Callable<R> call) {
-        int cnt = 0;
+        try {
+            int cnt = 0;
 
-        while (true) {
-            try {
-                return call.call();
-            }
-            catch (GridEmptyProjectionException e) {
-                throw new GridRuntimeException(e);
-            }
-            catch (GridCacheTxRollbackException | GridCachePartialUpdateException | GridTopologyException e) {
-                if (cnt++ == MAX_UPDATE_RETRIES)
+            while (true) {
+                try {
+                    return call.call();
+                }
+                catch (GridEmptyProjectionException e) {
                     throw new GridRuntimeException(e);
-                else
-                    U.warn(log, "Failed to execute set operation, will retry [err=" + e + ']');
+                }
+                catch (GridCacheTxRollbackException | GridCachePartialUpdateException | GridTopologyException e) {
+                    if (cnt++ == MAX_UPDATE_RETRIES)
+                        throw e;
+                    else {
+                        U.warn(log, "Failed to execute set operation, will retry [err=" + e + ']');
+
+                        U.sleep(RETRY_DELAY);
+                    }
+                }
             }
-            catch (Exception e) {
-                throw new GridRuntimeException(e);
-            }
+        }
+        catch (GridRuntimeException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new GridRuntimeException(e);
         }
     }
 
@@ -383,7 +413,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
      * @throws GridException If all cache nodes left grid.
      */
     @SuppressWarnings("unchecked")
-    Collection<GridNode> dataNodes(long topVer) throws GridException {
+    private Collection<GridNode> dataNodes(long topVer) throws GridException {
         if (ctx.isLocal() || ctx.isReplicated())
             return Collections.singleton(ctx.localNode());
 
@@ -403,12 +433,27 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
 
         return nodes;
     }
+
+    /**
+     * @param rmvd Removed flag.
+     */
+    void removed(boolean rmvd) {
+        this.rmvd = rmvd;
+    }
+
     /**
      * Throws {@link GridCacheDataStructureRemovedRuntimeException} if set was removed.
      */
     private void checkRemoved() {
         if (rmvd)
             throw new GridCacheDataStructureRemovedRuntimeException("Set has been removed from cache: " + this);
+    }
+
+    /**
+     * @return Set ID.
+     */
+    GridUuid id() {
+        return id;
     }
 
     /**
@@ -423,13 +468,124 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
      * @return Item key.
      */
     private GridCacheSetItemKey itemKey(Object item) {
-        return collocated ? new CollocatedItemKey(name, id, item) : new GridCacheSetItemKey(name, id, item);
+        return collocated ? new CollocatedItemKey(name, id, item) : new GridCacheSetItemKey(id, item);
+    }
+
+    /**
+     */
+    private class SetIterator<T> extends GridCloseableIteratorAdapter<T> {
+        /** Query future. */
+        private final GridCacheQueryFuture<T> fut;
+
+        /** Init flag. */
+        private boolean init;
+
+        /** Next item. */
+        private T next;
+
+        /** Current item. */
+        private T cur;
+
+        /**
+         * @param fut Query future.
+         */
+        private SetIterator(GridCacheQueryFuture<T> fut) {
+            this.fut = fut;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected T onNext() throws GridException {
+            init();
+
+            if (next == null)
+                throw new NoSuchElementException();
+
+            cur = next;
+
+            Map.Entry e = (Map.Entry)fut.next();
+
+            next = e != null ? (T)e.getKey() : null;
+
+            return cur;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean onHasNext() throws GridException {
+            init();
+
+            return next != null;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onClose() throws GridException {
+            fut.cancel();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onRemove() throws GridException {
+            if (cur == null)
+                throw new NoSuchElementException();
+
+            GridCacheSetImpl.this.remove(cur);
+        }
+
+        /**
+         * @throws GridException If failed.
+         */
+        private void init() throws GridException {
+            if (!init) {
+                Map.Entry e = (Map.Entry)fut.next();
+
+                next = e != null ? (T)e.getKey() : null;
+
+                init = true;
+            }
+        }
+    }
+
+    /**
+     */
+    private static class SumReducer implements GridReducer<Object, Integer>, Externalizable {
+        /** */
+        private int cntr;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public SumReducer() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean collect(@Nullable Object o) {
+            cntr++;
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer reduce() {
+            return cntr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            // No-op.
+        }
     }
 
     /**
      * Item key for collocated set.
      */
     private static class CollocatedItemKey extends GridCacheSetItemKey {
+        /** */
+        private String setName;
+
         /**
          * Required by {@link Externalizable}.
          */
@@ -443,7 +599,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
          * @param item Set item.
          */
         private CollocatedItemKey(String setName, GridUuid setId, Object item) {
-            super(setName, setId, item);
+            super(setId, item);
+
+            this.setName = setName;
         }
 
         /**
@@ -451,7 +609,21 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
          */
         @GridCacheAffinityKeyMapped
         public Object affinityKey() {
-            return setName();
+            return setName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            super.writeExternal(out);
+
+            U.writeString(out, setName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            super.readExternal(in);
+
+            setName = U.readString(in);
         }
     }
 

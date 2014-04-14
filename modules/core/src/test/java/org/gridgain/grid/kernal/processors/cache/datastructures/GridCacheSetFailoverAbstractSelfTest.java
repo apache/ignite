@@ -21,7 +21,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.PRIMARY;
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
@@ -94,7 +94,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
 
         final int ITEMS = 10_000;
 
-        List<Integer> items = new ArrayList<>(ITEMS);
+        Collection<Integer> items = new ArrayList<>(ITEMS);
 
         for (int i = 0; i < ITEMS; i++)
             items.add(i);
@@ -146,11 +146,13 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
                     // No-op.
                 }
 
-                assertTrue(set.contains(rnd.nextInt(ITEMS)));
+                int val = rnd.nextInt(ITEMS);
 
-                assertFalse(set.add(rnd.nextInt(ITEMS)));
+                assertTrue("Not contains: " + val, set.contains(val));
 
-                assertFalse(set.contains(ITEMS + rnd.nextInt(ITEMS)));
+                val = ITEMS + rnd.nextInt(ITEMS);
+
+                assertFalse("Contains: " + val, set.contains(val));
             }
         }
         finally {

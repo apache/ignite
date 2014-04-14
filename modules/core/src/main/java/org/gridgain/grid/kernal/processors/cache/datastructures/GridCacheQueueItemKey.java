@@ -9,30 +9,102 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
+import java.io.*;
 
 /**
  * Queue item key.
  */
-public interface GridCacheQueueItemKey extends GridCacheInternal {
-    /**
-     * Gets queue item id.
-     *
-     * @return Queue item id.
-     */
-    public long sequence();
+class GridCacheQueueItemKey implements Externalizable, GridCacheInternal {
+    /** */
+    private GridUuid queueId;
+
+    /** */
+    private String queueName;
+
+    /** */
+    private long idx;
 
     /**
-     * Gets queue id.
-     *
-     * @return Queue id.
+     * Required by {@link Externalizable}.
      */
-    public String queueId();
+    public GridCacheQueueItemKey() {
+        // No-op.
+    }
 
     /**
-     * Gets item affinity key.
-     *
-     * @return Item affinity key.
+     * @param queueId Queue unique ID.
+     * @param queueName Queue name.
+     * @param idx Item index.
      */
-    public String affinityKey();
+    GridCacheQueueItemKey(GridUuid queueId, String queueName, long idx) {
+        this.queueId = queueId;
+        this.queueName = queueName;
+        this.idx = idx;
+    }
+
+    /**
+     * @return Item index.
+     */
+    public Long index() {
+        return idx;
+    }
+
+    /**
+     * @return Queue UUID.
+     */
+    public GridUuid queueId() {
+        return queueId;
+    }
+
+    /**
+     * @return Queue name.
+     */
+    public String queueName() {
+        return queueName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeGridUuid(out, queueId);
+        U.writeString(out, queueName);
+        out.writeLong(idx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        queueId = U.readGridUuid(in);
+        queueName = U.readString(in);
+        idx = in.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        GridCacheQueueItemKey itemKey = (GridCacheQueueItemKey)o;
+
+        return idx == itemKey.idx && queueId.equals(itemKey.queueId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = queueId.hashCode();
+
+        result = 31 * result + (int)(idx ^ (idx >>> 32));
+
+        return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridCacheQueueItemKey.class, this);
+    }
 }

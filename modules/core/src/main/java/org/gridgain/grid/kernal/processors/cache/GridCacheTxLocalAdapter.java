@@ -1601,6 +1601,18 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     }
 
     /** {@inheritDoc} */
+    @Override public <R> R transformCompute(K key, GridClosure<V, GridBiTuple<V, R>> transformer)
+        throws GridException {
+        GridFuture<GridCacheReturn<V>> fut = putAllAsync0(null,
+            Collections.singletonMap(key, new GridCacheTransformComputeClosure<>(transformer)), null, true, null,
+            -1, CU.<K, V>empty());
+
+        GridCacheReturn<V> ret = fut.get();
+
+        return transformer.apply(ret.value()).get2();
+    }
+
+    /** {@inheritDoc} */
     @Override public void transformAll(@Nullable Map<? extends K, ? extends GridClosure<V, V>> map)
         throws GridException {
         putAllAsync0(null, map, null, false, null, -1, CU.<K, V>empty()).get();
@@ -1783,9 +1795,11 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         try {
                             // Check if lock is being explicitly acquired by the same thread.
                             if (!implicit && cctx.kernalContext().config().isCacheSanityCheckEnabled() &&
-                                entry.lockedByThread(xidVer))
+                                entry.lockedByThread(threadId, xidVer))
                                 throw new GridException("Cannot access key within transaction if lock is " +
-                                    "externally held [key=" + key + ", entry=" + entry + ']');
+                                    "externally held [key=" + key + ", entry=" + entry + ", xidVer=" + xidVer +
+                                    ", threadId=" + threadId +
+                                    ", locNodeId=" + cctx.localNodeId() + ']');
 
                             V old = null;
 

@@ -1036,6 +1036,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (mode == GridCacheMode.LOCAL || mode == GridCacheMode.REPLICATED ||
                 (tx != null && (tx.dht() || tx.colocated()) && tx.local()))
                 cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), false);
+
+            cctx.dataStructures().onEntryUpdated(key, false);
         }
 
         if (log.isDebugEnabled())
@@ -1156,6 +1158,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (mode == GridCacheMode.LOCAL || mode == GridCacheMode.REPLICATED ||
                     (tx != null && (tx.dht() || tx.colocated()) && tx.local()))
                     cctx.continuousQueries().onEntryUpdate(this, key, null, null, false);
+
+                cctx.dataStructures().onEntryUpdated(key, true);
             }
         }
         finally {
@@ -1482,7 +1486,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 update(old, null, 0, 0, ver);
 
-                if (deletedUnlocked() && old != null)
+                if (deletedUnlocked() && old != null && !isInternal())
                     deletedUnlocked(false);
             }
 
@@ -1529,10 +1533,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (!hadVal) {
                     boolean new0 = isNew();
 
-                    assert deletedUnlocked() || new0 : "Invalid entry [entry=" + this + ", locNodeId=" +
+                    assert deletedUnlocked() || new0 || isInternal(): "Invalid entry [entry=" + this + ", locNodeId=" +
                         cctx.localNodeId() + ']';
 
-                    if (!new0)
+                    if (!new0 && !isInternal())
                         deletedUnlocked(false);
                 }
                 else {
@@ -1569,18 +1573,20 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (hadVal) {
                     assert !deletedUnlocked();
 
-                    deletedUnlocked(true);
+                    if (!isInternal())
+                        deletedUnlocked(true);
 
                     enqueueVer = newVer;
                 }
                 else {
                     boolean new0 = isNew();
 
-                    assert deletedUnlocked() || new0 : "Invalid entry [entry=" + this + ", locNodeId=" +
+                    assert deletedUnlocked() || new0 || isInternal() : "Invalid entry [entry=" + this + ", locNodeId=" +
                         cctx.localNodeId() + ']';
 
                     if (new0) {
-                        deletedUnlocked(true);
+                        if (!isInternal())
+                            deletedUnlocked(true);
 
                         enqueueVer = newVer;
                     }
@@ -2512,7 +2518,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (val == null && valBytes == null) {
                     skipQryNtf = true;
 
-                    if (cctx.deferredDelete()) {
+                    if (cctx.deferredDelete() && !isInternal()) {
                         assert !deletedUnlocked();
 
                         deletedUnlocked(true);
@@ -2523,11 +2529,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 drReplicate(drType, val, valBytes, ver);
 
-                if (!skipQryNtf && (cctx.affinity().primary(cctx.localNode(), key, topVer) || cctx.isReplicated()))
-                    cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), true);
+                if (!skipQryNtf) {
+                    if (cctx.affinity().primary(cctx.localNode(), key, topVer) || cctx.isReplicated())
+                        cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), true);
 
-                if (!skipQryNtf)
                     cctx.dataStructures().onEntryUpdated(key, false);
+                }
 
                 return true;
             }
@@ -2634,11 +2641,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lockedByThread(GridCacheVersion exclude) throws GridCacheEntryRemovedException {
-        return lockedByThread(Thread.currentThread().getId(), exclude);
-    }
-
-    /** {@inheritDoc} */
     @Override public synchronized boolean lockedLocally(GridCacheVersion lockVer) throws GridCacheEntryRemovedException {
         checkObsolete();
 
@@ -2654,7 +2656,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         GridCacheMvcc<K> mvcc = mvccExtras();
 
-        return mvcc != null && mvcc.isLocallyOwnedByThread(threadId, exclude);
+        return mvcc != null && mvcc.isLocallyOwnedByThread(threadId, false, exclude);
     }
 
     /** {@inheritDoc} */
@@ -2671,7 +2673,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         GridCacheMvcc<K> mvcc = mvccExtras();
 
-        return mvcc != null && mvcc.isLocallyOwnedByThread(threadId);
+        return mvcc != null && mvcc.isLocallyOwnedByThread(threadId, true);
     }
 
     /** {@inheritDoc} */
@@ -2687,7 +2689,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     @Override public synchronized boolean lockedByThreadUnsafe(long threadId) {
         GridCacheMvcc<K> mvcc = mvccExtras();
 
-        return mvcc != null && mvcc.isLocallyOwnedByThread(threadId);
+        return mvcc != null && mvcc.isLocallyOwnedByThread(threadId, true);
     }
 
     /** {@inheritDoc} */

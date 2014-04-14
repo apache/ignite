@@ -219,7 +219,7 @@ public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        U.writeEnum(out, op);
+        U.writeEnum0(out, op);
 
         U.writeString(out, cacheName);
 
@@ -236,7 +236,7 @@ public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        op = GridCacheOperation.fromOrdinal(in.readByte());
+        op = GridCacheOperation.fromOrdinal(U.readEnumOrdinal0(in));
 
         cacheName = U.readString(in);
 

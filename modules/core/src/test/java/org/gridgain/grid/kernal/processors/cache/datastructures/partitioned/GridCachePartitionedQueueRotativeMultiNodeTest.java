@@ -11,14 +11,14 @@ package org.gridgain.grid.kernal.processors.cache.datastructures.partitioned;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
- * Sequence multi node tests.
+ * Queue multi node tests.
  */
 public class GridCachePartitionedQueueRotativeMultiNodeTest extends GridCacheQueueRotativeMultiNodeAbstractTest {
     /** {@inheritDoc} */
@@ -31,6 +31,8 @@ public class GridCachePartitionedQueueRotativeMultiNodeTest extends GridCacheQue
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setBackups(1);
+        cacheCfg.setDistributionMode(PARTITIONED_ONLY);
+        cacheCfg.setQueryIndexEnabled(false);
 
         cfg.setCacheConfiguration(cacheCfg);
 
