@@ -34,7 +34,7 @@ public interface GridHadoopJob<T> {
      *
      * @return Input blocks.
      */
-    public Collection<GridHadoopBlock> inputBlocks();
+    public Collection<GridHadoopFileBlock> input();
 
     /**
      * Gets partitioner for the job.

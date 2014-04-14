@@ -125,10 +125,12 @@ public class GridHadoopContext {
     }
 
     /**
-     * @return Rack resolver.
+     * Gets local node ID. Shortcut for {@code kernalContext().localNodeId()}.
+     *
+     * @return Local node ID.
      */
-    public GridHadoopRackResolver rackResolver() {
-        return null;
+    public UUID localNodeId() {
+        return ctx.localNodeId();
     }
 
     /**
