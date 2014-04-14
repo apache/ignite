@@ -7,16 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
-
-import org.gridgain.grid.*;
+package org.gridgain.grid.hadoop;
 
 /**
- * TODO write doc
- */
-public interface GridHadoopTaskOutput extends AutoCloseable {
-
-    void write(Object key, Object val);
-
-    GridFuture<?> finish();
+* TODO write doc
+*/
+public enum GridHadoopTaskType {
+    MAP, REDUCE, COMBINE
 }

@@ -7,11 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
+package org.gridgain.grid.hadoop;
+
+import java.io.*;
 
 /**
-* TODO write doc
-*/
-public enum GridHadoopTaskType {
-    MAP, REDUCE, COMBINE
+ * TODO write doc
+ */
+public interface GridHadoopJobInfo<T> extends Serializable {
+    public T configuration();
 }

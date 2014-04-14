@@ -7,11 +7,17 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
+package org.gridgain.grid.hadoop;
+
+import org.gridgain.grid.*;
+import org.jetbrains.annotations.*;
+
+import java.util.*;
 
 /**
  * TODO write doc
  */
-public interface GridHadoopTask {
-    public void run(GridHadoopTaskContext ctx);
+public interface GridHadoopMapReducePlanner {
+    GridHadoopMapReducePlan preparePlan(Collection<GridHadoopBlock> blocks, Collection<GridNode> top,
+        GridHadoopJobInfo jobInfo, @Nullable GridHadoopMapReducePlan oldPlan);
 }

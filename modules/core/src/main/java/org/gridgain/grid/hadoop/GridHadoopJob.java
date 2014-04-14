@@ -7,9 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
-
-import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
+package org.gridgain.grid.hadoop;
 
 import java.util.*;
 
