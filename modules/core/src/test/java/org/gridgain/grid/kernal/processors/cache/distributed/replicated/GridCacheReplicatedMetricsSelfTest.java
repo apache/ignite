@@ -17,7 +17,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  * Replicated cache metrics test.
  */
-public class GridCacheReplicatedMetricsSelfTest extends GridCacheAbstractMetricsSelfTest {
+public class GridCacheReplicatedMetricsSelfTest extends GridCacheTransactionalAbstractMetricsSelfTest {
     /** */
     private static final int GRID_CNT = 2;
 
