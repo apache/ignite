@@ -7,13 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
-
-import org.gridgain.grid.kernal.processors.hadoop.*;
+package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
 /**
- * TODO write doc
+ * Job factory.
  */
-public interface GridHadoopTaskFactory {
-    public GridHadoopTask newTask(GridHadoopTaskInfo taskInfo);
+public interface GridHadoopJobFactory<T> {
+    /**
+     * Creates job.
+     *
+     * @param id Job ID.
+     * @param jobInfo Job information.
+     * @return Job instance.
+     */
+    public GridHadoopJob<T> createJob(GridHadoopJobId id, GridHadoopJobInfo<T> jobInfo);
 }

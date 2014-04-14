@@ -12,9 +12,9 @@ package org.gridgain.grid.kernal.processors.hadoop;
 import org.gridgain.grid.logger.*;
 
 /**
- * Abstract class for all hadoop managers.
+ * Abstract class for all hadoop components.
  */
-public abstract class GridHadoopManager {
+public abstract class GridHadoopComponent {
     /** Hadoop context. */
     protected GridHadoopContext ctx;
 

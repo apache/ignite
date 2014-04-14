@@ -13,5 +13,5 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 * TODO write doc
 */
 public enum GridHadoopTaskType {
-    MAP, REDUCE
+    MAP, REDUCE, COMBINE
 }

@@ -17,7 +17,7 @@ import org.gridgain.grid.util.lang.*;
 /**
  * TODO write doc
  */
-public class GridHadoopTaskExecutor extends GridHadoopManager {
+public class GridHadoopTaskExecutor extends GridHadoopComponent {
     /**
      * Runs task.
      *

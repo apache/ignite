@@ -9,12 +9,17 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
-import java.util.*;
-
 /**
  * TODO write doc
  */
-public interface GridHadoopBlockResolver {
-
-    public Collection<GridHadoopBlock> getInputBlocks(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo);
+public interface GridHadoopPartitioner {
+    /**
+     * Gets partition which is actually a reducer index for the given key and value pair.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @param parts Number of partitions.
+     * @return Partition.
+     */
+    public int partition(Object key, Object val, int parts);
 }
