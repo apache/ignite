@@ -77,7 +77,7 @@ public interface GridComponent {
     public void printMemoryStats();
 
     /**
-     * Validates that new method can join grid topology, this method is called on coordinator
+     * Validates that new node can join grid topology, this method is called on coordinator
      * node before new node joins topology.
      *
      * @param node Joining node.
