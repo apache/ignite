@@ -54,6 +54,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     private static final byte IS_DELETED_MASK = 0x02;
 
     /** */
+    private static final byte IS_UNSWAPPED_MASK = 0x04;
+
+    /** */
     private static final Comparator<GridCacheVersion> ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
 
     /**
@@ -143,6 +146,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      */
     protected GridCacheMapEntry(GridCacheContext<K, V> cctx, K key, int hash, V val,
         GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
+        log = U.logger(cctx.kernalContext(), logRef, this);
+
         this.key = key;
         this.hash = hash;
         this.cctx = cctx;
@@ -158,8 +163,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         ver = cctx.versions().next();
 
         startVer = ver.order();
-
-        log = U.logger(cctx.kernalContext(), logRef, this);
     }
 
     /** {@inheritDoc} */
@@ -453,11 +456,13 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             return null;
 
         synchronized (this) {
-            if (isStartVersion()) {
+            if (isStartVersion() && ((flags & IS_UNSWAPPED_MASK) == 0)) {
                 GridCacheSwapEntry<V> e = cctx.swap().readAndRemove(this);
 
                 if (log.isDebugEnabled())
                     log.debug("Read swap entry [swapEntry=" + e + ", cacheEntry=" + this + ']');
+
+                flags |= IS_UNSWAPPED_MASK;
 
                 // If there is a value.
                 if (e != null) {
