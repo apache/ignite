@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
+import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -30,6 +31,7 @@ import org.jetbrains.annotations.*;
 import sun.misc.*;
 
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -2173,6 +2175,89 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
 
             pendingResponses.remove(nodeId, this);
+        }
+    }
+
+    /**
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class GridDhtAtomicUpdateRequestConverter603 extends GridVersionConverter {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf) {
+            buf.putInt(-1); // Near keys size.
+            buf.putInt(-1); // Near values size.
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf) {
+            int nearKeys = buf.getInt();
+
+            assert nearKeys == -1 : nearKeys;
+
+            int nearVals = buf.getInt();
+
+            assert nearVals == -1 : nearVals;
+
+            return true;
+        }
+    }
+
+    /**
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class GridDhtAtomicUpdateResponseConverter603 extends GridVersionConverter {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf) {
+            buf.putInt(-1); // Near keys evicted.
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf) {
+            int nearEvicted = buf.getInt();
+
+            assert nearEvicted == -1 : nearEvicted;
+
+            return true;
+        }
+    }
+
+    /**
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class GridNearAtomicUpdateResponseConverter603 extends GridVersionConverter {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf) {
+            buf.putInt(-1); // Near cache version.
+            buf.putInt(-1); // Skip indexes.
+            buf.putLong(0); // Near ttl.
+            buf.putInt(-1); // Near values.
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf) {
+            int verArrSize = buf.getInt();
+
+            assert verArrSize == -1 : verArrSize;
+
+            int nearSkipIdxs = buf.getInt();
+
+            assert nearSkipIdxs == -1 : nearSkipIdxs;
+
+            long nearTtl = buf.getLong();
+
+            assert nearTtl == 0 : nearTtl;
+
+            int nearVals = buf.getInt();
+
+            assert nearVals == -1 : nearVals;
+
+            return true;
         }
     }
 }

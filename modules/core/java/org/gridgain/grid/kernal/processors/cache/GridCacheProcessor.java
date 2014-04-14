@@ -32,6 +32,7 @@ import org.gridgain.grid.kernal.processors.cache.local.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
+import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
@@ -547,6 +548,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @Override public void start() throws GridException {
         if (ctx.config().isDaemon())
             return;
+
+        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
+            GridDhtAtomicCache.GridDhtAtomicUpdateRequestConverter603.class, GridProductVersion.fromString("6.0.3"));
+
+        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateResponse.class,
+            GridDhtAtomicCache.GridDhtAtomicUpdateResponseConverter603.class, GridProductVersion.fromString("6.0.3"));
+
+        ctx.versionConverter().registerLocal(GridDhtAtomicCache.GridNearAtomicUpdateResponseConverter603.class,
+            GridDhtAtomicCache.GridDhtAtomicUpdateResponseConverter603.class, GridProductVersion.fromString("6.0.3"));
 
         GridDeploymentMode depMode = ctx.config().getDeploymentMode();
 
