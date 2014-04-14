@@ -1184,7 +1184,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         if (locAttr.atomicityMode() == ATOMIC && locAttr.nearCacheEnabled() &&
                             rmt.version().compareTo(GridNearAtomicCache.availableFrom) < 0)
                             throw new GridException("Can not use ATOMIC cache with near cache enabled with " +
-                                " nodes having GridGain version lower than " + GridNearAtomicCache.availableFrom);
+                                "nodes having GridGain version lower than " + GridNearAtomicCache.availableFrom);
                     }
                 }
 
