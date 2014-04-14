@@ -2235,6 +2235,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             buf.putInt(-1); // Skip indexes.
             buf.putLong(0); // Near ttl.
             buf.putInt(-1); // Near values.
+            buf.putInt(-1); // Near values indexes.
 
             return true;
         }
@@ -2256,6 +2257,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             int nearVals = buf.getInt();
 
             assert nearVals == -1 : nearVals;
+
+            int nearValsIdxs = buf.getInt();
+
+            assert nearValsIdxs == -1 : nearValsIdxs;
 
             return true;
         }
