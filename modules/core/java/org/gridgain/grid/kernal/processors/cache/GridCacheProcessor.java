@@ -32,7 +32,6 @@ import org.gridgain.grid.kernal.processors.cache.local.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
-import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
@@ -1184,7 +1183,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         if (locAttr.atomicityMode() == ATOMIC && locAttr.nearCacheEnabled() &&
                             rmt.version().compareTo(GridNearAtomicCache.availableFrom) < 0)
                             throw new GridException("Can not use ATOMIC cache with near cache enabled with " +
-                                " nodes having GridGain version lower than " + GridNearAtomicCache.availableFrom);
+                                "nodes having GridGain version lower than " + GridNearAtomicCache.availableFrom);
                     }
                 }
 
