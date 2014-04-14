@@ -16,7 +16,7 @@ import java.util.*;
  * TODO write doc
  */
 public interface GridHadoopMapReducePlan extends Serializable {
-    public Collection<GridHadoopBlock> mappers(UUID nodeId);
+    public Collection<GridHadoopFileBlock> mappers(UUID nodeId);
 
     public int[] reducers(UUID nodeId);
 }

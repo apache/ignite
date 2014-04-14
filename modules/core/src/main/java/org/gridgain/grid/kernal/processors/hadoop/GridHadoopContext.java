@@ -105,13 +105,6 @@ public class GridHadoopContext {
     }
 
     /**
-     * @return Rack resolver.
-     */
-    public GridHadoopRackResolver rackResolver() {
-        return null;
-    }
-
-    /**
      * @return Map-reduce planner.
      */
     public GridHadoopMapReducePlanner planner() {

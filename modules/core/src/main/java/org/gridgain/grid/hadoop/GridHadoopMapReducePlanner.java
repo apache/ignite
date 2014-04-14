@@ -18,6 +18,15 @@ import java.util.*;
  * TODO write doc
  */
 public interface GridHadoopMapReducePlanner {
-    GridHadoopMapReducePlan preparePlan(Collection<GridHadoopBlock> blocks, Collection<GridNode> top,
-        GridHadoopJobInfo jobInfo, @Nullable GridHadoopMapReducePlan oldPlan);
+    /**
+     * Prepares map-reduce execution plan for the given collection of file blocks and topology.
+     *
+     * @param blocks File blocks.
+     * @param top Topology.
+     * @param job Job.
+     * @param oldPlan Old plan in case of partial failure.
+     * @return Map reduce plan.
+     */
+    public GridHadoopMapReducePlan preparePlan(Collection<GridHadoopFileBlock> blocks, Collection<GridNode> top,
+        GridHadoopJob job, @Nullable GridHadoopMapReducePlan oldPlan);
 }
