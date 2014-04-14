@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
+package org.gridgain.grid.hadoop;
 
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -23,6 +23,13 @@ public class GridHadoopJobId implements Externalizable {
 
     /** */
     private int jobId;
+
+    /**
+     * For {@link Externalizable}.
+     */
+    public GridHadoopJobId() {
+        // No-op.
+    }
 
     public GridHadoopJobId(UUID nodeId, int jobId) {
         this.nodeId = nodeId;

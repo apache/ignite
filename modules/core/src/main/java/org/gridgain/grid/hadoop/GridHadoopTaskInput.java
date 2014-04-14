@@ -7,13 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
+package org.gridgain.grid.hadoop;
 
-import java.io.*;
+import java.util.*;
 
 /**
  * TODO write doc
  */
-public interface GridHadoopJobInfo<T> extends Serializable {
-    public T configuration();
+public interface GridHadoopTaskInput extends AutoCloseable {
+
+    boolean next();
+
+    Object key();
+
+    Iterator<?> values();
 }

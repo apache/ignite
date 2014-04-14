@@ -7,16 +7,27 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
+package org.gridgain.grid.hadoop;
 
-import java.io.*;
-import java.util.*;
+import org.gridgain.grid.hadoop.*;
 
 /**
  * TODO write doc
  */
-public interface GridHadoopMapReducePlan extends Serializable {
-    public Collection<GridHadoopBlock> mappers(UUID nodeId);
+public class GridHadoopTaskContext {
+    public GridHadoopTaskInfo taskInfo() {
+        return null;
+    }
 
-    public int[] reducers(UUID nodeId);
+    public GridHadoopJobInfo jobInfo() {
+        return null;
+    }
+
+    public GridHadoopTaskOutput output() {
+        return null;
+    }
+
+    public GridHadoopTaskInput input() {
+        return null;
+    }
 }

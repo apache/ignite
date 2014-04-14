@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
+import org.gridgain.grid.hadoop.*;
+
 import java.util.*;
 
 /**

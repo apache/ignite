@@ -7,19 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
+package org.gridgain.grid.hadoop;
 
 /**
- * TODO write doc
+ * Job factory.
  */
-public interface GridHadoopPartitioner {
+public interface GridHadoopJobFactory<T> {
     /**
-     * Gets partition which is actually a reducer index for the given key and value pair.
+     * Creates job.
      *
-     * @param key Key.
-     * @param val Value.
-     * @param parts Number of partitions.
-     * @return Partition.
+     * @param id Job ID.
+     * @param jobInfo Job information.
+     * @return Job instance.
      */
-    public int partition(Object key, Object val, int parts);
+    public GridHadoopJob<T> createJob(GridHadoopJobId id, GridHadoopJobInfo<T> jobInfo);
 }

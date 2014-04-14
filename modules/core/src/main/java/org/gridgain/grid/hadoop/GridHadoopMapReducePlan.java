@@ -7,18 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
+package org.gridgain.grid.hadoop;
+
+import java.io.*;
+import java.util.*;
 
 /**
- * Job factory.
+ * TODO write doc
  */
-public interface GridHadoopJobFactory<T> {
-    /**
-     * Creates job.
-     *
-     * @param id Job ID.
-     * @param jobInfo Job information.
-     * @return Job instance.
-     */
-    public GridHadoopJob<T> createJob(GridHadoopJobId id, GridHadoopJobInfo<T> jobInfo);
+public interface GridHadoopMapReducePlan extends Serializable {
+    public Collection<GridHadoopBlock> mappers(UUID nodeId);
+
+    public int[] reducers(UUID nodeId);
 }

@@ -7,19 +7,32 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
+package org.gridgain.grid.hadoop;
 
-import org.gridgain.grid.*;
+import java.util.*;
 
 /**
  * TODO write doc
  */
-public class GridHadoopJobStatus {
-    public GridFuture<?> finishFuture() {
+public class GridHadoopTaskInfo {
+
+    public UUID nodeId() {
         return null;
     }
 
-    public GridHadoopJobInfo jobInfo() {
+    public GridHadoopTaskType type() {
         return null;
+    }
+
+    public GridHadoopJobId jobId() {
+        return null;
+    }
+
+    public int taskNumber() {
+        return 0;
+    }
+
+    public int attempt() {
+        return 0;
     }
 }

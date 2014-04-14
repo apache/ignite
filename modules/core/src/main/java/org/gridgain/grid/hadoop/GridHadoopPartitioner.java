@@ -7,18 +7,19 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
-
-import java.util.*;
+package org.gridgain.grid.hadoop;
 
 /**
  * TODO write doc
  */
-public interface GridHadoopTaskInput extends AutoCloseable {
-
-    boolean next();
-
-    Object key();
-
-    Iterator<?> values();
+public interface GridHadoopPartitioner {
+    /**
+     * Gets partition which is actually a reducer index for the given key and value pair.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @param parts Number of partitions.
+     * @return Partition.
+     */
+    public int partition(Object key, Object val, int parts);
 }
