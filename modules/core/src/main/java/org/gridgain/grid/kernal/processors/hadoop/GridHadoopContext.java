@@ -34,7 +34,7 @@ public class GridHadoopContext {
     private GridHadoopShuffle shuffle;
 
     /** Managers list. */
-    private List<GridHadoopManager> mgrs = new ArrayList<>();
+    private List<GridHadoopComponent> components = new ArrayList<>();
 
     /**
      * @param ctx Kernal context.
@@ -61,8 +61,8 @@ public class GridHadoopContext {
      *
      * @return List of managers.
      */
-    public List<GridHadoopManager> managers() {
-        return mgrs;
+    public List<GridHadoopComponent> components() {
+        return components;
     }
 
     /**
@@ -112,13 +112,6 @@ public class GridHadoopContext {
     }
 
     /**
-     * @return Block resolver.
-     */
-    public GridHadoopBlockResolver blockResolver() {
-        return null;
-    }
-
-    /**
      * @return Map-reduce planner.
      */
     public GridHadoopMapReducePlanner planner() {
@@ -126,21 +119,21 @@ public class GridHadoopContext {
     }
 
     /**
-     * @return Task factory.
+     * @return Job factory.
      */
-    public GridHadoopTaskFactory taskFactory() {
+    public GridHadoopJobFactory jobFactory() {
         return null;
     }
 
     /**
-     * Adds manager to managers list.
+     * Adds component.
      *
-     * @param mgr Manager to add.
+     * @param c Component to add.
      * @return Added manager.
      */
-    private <T extends GridHadoopManager> T add(T mgr) {
-        mgrs.add(mgr);
+    private <C extends GridHadoopComponent> C add(C c) {
+        components.add(c);
 
-        return mgr;
+        return c;
     }
 }

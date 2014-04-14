@@ -13,6 +13,8 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
+import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
+import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -38,12 +40,13 @@ public class GridHadoopProcessor extends GridProcessorAdapter {
         if (ctx.isDaemon() || ctx.config().getHadoopConfiguration() == null)
             return;
 
-        hctx = new GridHadoopContext(
-            ctx,
-            new GridHadoopJobTracker());
+        hctx = new GridHadoopContext(ctx,
+            new GridHadoopJobTracker(),
+            new GridHadoopTaskExecutor(),
+            new GridHadoopShuffle());
 
-        for (GridHadoopManager mgr : hctx.managers())
-            mgr.start(hctx);
+        for (GridHadoopComponent c : hctx.components())
+            c.start(hctx);
     }
 
     /** {@inheritDoc} */
@@ -53,12 +56,12 @@ public class GridHadoopProcessor extends GridProcessorAdapter {
         if (hctx == null)
             return;
 
-        List<GridHadoopManager> mgrs = hctx.managers();
+        List<GridHadoopComponent> components = hctx.components();
 
-        for (ListIterator<GridHadoopManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious();) {
-            GridHadoopManager mgr = it.previous();
+        for (ListIterator<GridHadoopComponent> it = components.listIterator(components.size()); it.hasPrevious();) {
+            GridHadoopComponent c = it.previous();
 
-            mgr.stop(cancel);
+            c.stop(cancel);
         }
     }
 
@@ -69,9 +72,8 @@ public class GridHadoopProcessor extends GridProcessorAdapter {
         if (hctx == null)
             return;
 
-        for (GridHadoopManager mgr : hctx.managers())
-            mgr.onKernalStart();
-
+        for (GridHadoopComponent c : hctx.components())
+            c.onKernalStart();
     }
 
     /** {@inheritDoc} */
@@ -81,12 +83,12 @@ public class GridHadoopProcessor extends GridProcessorAdapter {
         if (hctx == null)
             return;
 
-        List<GridHadoopManager> mgrs = hctx.managers();
+        List<GridHadoopComponent> components = hctx.components();
 
-        for (ListIterator<GridHadoopManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious();) {
-            GridHadoopManager mgr = it.previous();
+        for (ListIterator<GridHadoopComponent> it = components.listIterator(components.size()); it.hasPrevious();) {
+            GridHadoopComponent c = it.previous();
 
-            mgr.onKernalStop(cancel);
+            c.onKernalStop(cancel);
         }
     }
 

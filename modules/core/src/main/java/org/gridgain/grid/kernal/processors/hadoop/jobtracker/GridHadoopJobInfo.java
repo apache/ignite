@@ -9,13 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
-import org.apache.hadoop.conf.*;
+import java.io.*;
 
 /**
  * TODO write doc
  */
-public class GridHadoopJobInfo {
-    Configuration configuration() {
-        return null;
-    }
+public interface GridHadoopJobInfo<T> extends Serializable {
+    public T configuration();
 }

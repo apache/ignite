@@ -16,7 +16,7 @@ import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 /**
  * TODO write doc
  */
-public class GridHadoopShuffle extends GridHadoopManager {
+public class GridHadoopShuffle extends GridHadoopComponent {
 
     public GridHadoopTaskOutput getMapperOutput(GridHadoopTaskInfo mapperInfo) {
         return null;

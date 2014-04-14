@@ -7,19 +7,19 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.shuffle;
-
-import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
+package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
 /**
  * TODO write doc
  */
-public interface GridHadoopPartitionerResolver {
+public interface GridHadoopPartitioner {
     /**
-     * Gets partitioner for the given job.
+     * Gets partition which is actually a reducer index for the given key and value pair.
      *
-     * @param jobInfo Job.
-     * @return Partitioner.
+     * @param key Key.
+     * @param val Value.
+     * @param parts Number of partitions.
+     * @return Partition.
      */
-    public GridHadoopPartitioner partitioner(GridHadoopJobInfo jobInfo);
+    public int partition(Object key, Object val, int parts);
 }
