@@ -330,12 +330,13 @@ public interface GridSpiContext {
     public boolean authenticateNode(UUID nodeId, Map<String, Object> attrs) throws GridException;
 
     /**
-     * Validate node ensuring that it can join topology.
+     * Validates that new node can join grid topology, this method is called on coordinator
+     * node before new node joins topology.
      *
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    @Nullable public GridHashIdResolversValidationResult validateHashIdResolvers(GridNode node);
+    @Nullable public GridNodeValidationResult validateNode(GridNode node);
 
     /**
      * Writes delta for provided node and message type.

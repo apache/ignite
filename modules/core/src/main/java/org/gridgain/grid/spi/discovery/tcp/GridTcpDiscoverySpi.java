@@ -3258,39 +3258,28 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                         return;
                     }
 
-                    // Check hash ID resolvers.
-                    GridHashIdResolversValidationResult hashIdErr = getSpiContext().validateHashIdResolvers(node);
+                    GridNodeValidationResult err = getSpiContext().validateNode(node);
 
-                    if (hashIdErr != null) {
-                        if (!pingNode(hashIdErr.nodeId())) {
+                    if (err != null) {
+                        if (!pingNode(err.nodeId())) {
                             if (log.isDebugEnabled())
-                                log.debug("Hash resolver conflicting node has already left, need to wait for event. " +
+                                log.debug("Conflicting node has already left, need to wait for event. " +
                                     "Will ignore join request for now since it will be recent [req=" + msg +
-                                    ", hashIdErr=" + hashIdErr + ']');
+                                    ", err=" + err.message() + ']');
 
                             // Ignore join request.
                             return;
                         }
 
-                        String errMsg = "Failed to add node to topology because it has the same hash code for " +
-                            "partitioned affinity as one of existing nodes [cacheName=" + hashIdErr.cacheName() +
-                            ", hashIdResolverClass=" + hashIdErr.resolverClass() +
-                            ", existingNodeId=" + hashIdErr.nodeId() + ']';
-
-                        LT.warn(log, null, errMsg);
+                        LT.warn(log, null, err.message());
 
                         // Always output in debug.
                         if (log.isDebugEnabled())
-                            log.debug(errMsg);
+                            log.debug(err.message());
 
                         try {
-                            String sndMsg = "Failed to add node to topology because it has the same hash code for " +
-                                "partitioned affinity as one of existing nodes [cacheName=" + hashIdErr.cacheName() +
-                                ", hashIdResolverClass=" + hashIdErr.resolverClass() + ", existingNodeId=" +
-                                hashIdErr.nodeId() + ']';
-
                             trySendMessageDirectly(node,
-                                new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                                new GridTcpDiscoveryCheckFailedMessage(locNodeId, err.sendMessage()));
                         }
                         catch (GridSpiException e) {
                             if (log.isDebugEnabled())

@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.managers;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.spi.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -69,5 +70,10 @@ public class GridNoopManagerAdapter implements GridManager {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
+        return null;
     }
 }
