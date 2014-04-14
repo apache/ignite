@@ -452,7 +452,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         if (updVer != null && log.isDebugEnabled())
             log.debug("Assigned fast-map version for update on near node: " + updVer);
 
-        if (keys.size() == 1 && (!fastMap || !cache.hasBackups()) && (single == null || single)) {
+        if (keys.size() == 1 && !fastMap && (single == null || single)) {
             K key = F.first(keys);
 
             Object val;
