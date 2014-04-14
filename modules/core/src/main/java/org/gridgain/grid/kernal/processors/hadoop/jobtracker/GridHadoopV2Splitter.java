@@ -9,10 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
+import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.task.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -28,7 +30,7 @@ public class GridHadoopV2Splitter {
      * @return Collection of mapped blocks.
      * @throws GridException If mapping failed.
      */
-    public static Collection<GridHadoopBlock> splitJob(GridHadoopJobId jobId, GridHadoopJobInfo info)
+    public static Collection<GridHadoopBlock> splitJob(GridHadoopJobId jobId, GridHadoopJobInfo<Configuration> info)
         throws GridException {
         InputFormat<?, ?> format = (InputFormat<?, ?>)U.newInstance(info.configuration().getClass(
             MRJobConfig.INPUT_FORMAT_CLASS_ATTR, TextInputFormat.class));

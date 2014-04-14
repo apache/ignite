@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
+import org.apache.hadoop.conf.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.hadoop.*;
@@ -29,16 +30,11 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     /** Map-reduce execution planner. */
     private GridHadoopMapReducePlanner mrPlanner;
 
-    /** Block resolver. */
-    private GridHadoopBlockResolver blockRslvr;
-
     /** {@inheritDoc} */
     @Override public void onKernalStart() {
         super.onKernalStart();
 
         sysCache = ctx.kernalContext().cache().cache(ctx.systemCacheName());
-
-        blockRslvr = ctx.blockResolver();
 
         mrPlanner = ctx.planner();
     }
@@ -50,11 +46,11 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param info Job info.
      * @return Job completion future.
      */
-    public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo info) {
+    public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo<Configuration> info) {
         try {
-            Collection<GridHadoopBlock> blocks = blockRslvr.getInputBlocks(jobId, info);
+            GridHadoopJob<Configuration> job = ctx.<Configuration>jobFactory().createJob(jobId, info);
 
-            initBlockNodes(blocks);
+            Collection<GridHadoopBlock> blocks = job.inputBlocks();
 
             GridHadoopMapReducePlan mrPlan = mrPlanner.preparePlan(blocks, ctx.nodes(), info, null);
 
