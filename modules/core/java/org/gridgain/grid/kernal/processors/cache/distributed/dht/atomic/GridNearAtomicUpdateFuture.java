@@ -503,7 +503,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             Collection<GridNode> primaryNodes = mapKey(key, topVer, fastMap);
 
             // One key and no backups.
-            assert primaryNodes.size() == 1 : primaryNodes;
+            assert primaryNodes.size() == 1 : "Should be mapped to single node: " + primaryNodes;
 
             GridNode primary = F.first(primaryNodes);
 
