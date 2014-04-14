@@ -125,15 +125,6 @@ public class GridHadoopContext {
     }
 
     /**
-     * Gets local node ID. Shortcut for {@code kernalContext().localNodeId()}.
-     *
-     * @return Local node ID.
-     */
-    public UUID localNodeId() {
-        return ctx.localNodeId();
-    }
-
-    /**
      * @return Map-reduce planner.
      */
     public GridHadoopMapReducePlanner planner() {

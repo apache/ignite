@@ -76,9 +76,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         try {
             GridHadoopJob<Configuration> job = ctx.<Configuration>jobFactory().createJob(jobId, info);
 
-            Collection<GridHadoopBlock> blocks = job.inputBlocks();
+            Collection<GridHadoopFileBlock> blocks = job.input();
 
-            GridHadoopMapReducePlan mrPlan = mrPlanner.preparePlan(blocks, ctx.nodes(), info, null);
+            GridHadoopMapReducePlan mrPlan = mrPlanner.preparePlan(blocks, ctx.nodes(), job, null);
 
             GridHadoopJobMetadata<Configuration> meta = new GridHadoopJobMetadata<>(jobId, info);
 
@@ -116,7 +116,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     /**
      * @param blocks Blocks to init nodes for.
      */
-    private void initBlockNodes(Collection<GridHadoopBlock> blocks) {
+    private void initBlockNodes(Collection<GridHadoopFileBlock> blocks) {
 
     }
 
@@ -139,7 +139,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             GridHadoopJob<Configuration> job = ctx.<Configuration>jobFactory().createJob(jobId, meta.jobInfo());
 
             // Check if we should initiate new task on local node.
-            for (GridHadoopBlock block : meta.mapReducePlan().mappers(ctx.localNodeId())) {
+            for (GridHadoopFileBlock block : meta.mapReducePlan().mappers(ctx.localNodeId())) {
                 if (state.addMapper(block)) {
                     GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo();
 
@@ -171,7 +171,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
          * @param block Block to add.
          * @return {@code True} if mapper was not added to this local node  yet.
          */
-        public boolean addMapper(GridHadoopBlock block) {
+        public boolean addMapper(GridHadoopFileBlock block) {
             // TODO.
             return true;
         }

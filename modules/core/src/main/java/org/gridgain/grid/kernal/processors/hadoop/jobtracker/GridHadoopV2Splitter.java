@@ -30,7 +30,7 @@ public class GridHadoopV2Splitter {
      * @return Collection of mapped blocks.
      * @throws GridException If mapping failed.
      */
-    public static Collection<GridHadoopBlock> splitJob(GridHadoopJobId jobId, GridHadoopJobInfo<Configuration> info)
+    public static Collection<GridHadoopFileBlock> splitJob(GridHadoopJobId jobId, GridHadoopJobInfo<Configuration> info)
         throws GridException {
         InputFormat<?, ?> format = (InputFormat<?, ?>)U.newInstance(info.configuration().getClass(
             MRJobConfig.INPUT_FORMAT_CLASS_ATTR, TextInputFormat.class));
@@ -43,15 +43,15 @@ public class GridHadoopV2Splitter {
 
             List<InputSplit> splits = format.getSplits(jobCtx);
 
-            Collection<GridHadoopBlock> res = new ArrayList<>(splits.size());
+            Collection<GridHadoopFileBlock> res = new ArrayList<>(splits.size());
 
             for (InputSplit s0 : splits) {
                 FileSplit s = (FileSplit)s0;
 
-                GridHadoopBlock block = new GridHadoopBlock(s.getPath().getName(),
+                GridHadoopFileBlock block = new GridHadoopFileBlock(s.getLocations(), s.getPath().toUri(),
                     s.getStart(), s.getLength());
 
-                block.locations(s.getLocations());
+                res.add(block);
             }
 
             return res;
