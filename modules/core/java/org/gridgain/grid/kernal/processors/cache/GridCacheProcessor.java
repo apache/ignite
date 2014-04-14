@@ -32,6 +32,7 @@ import org.gridgain.grid.kernal.processors.cache.local.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
+import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
@@ -948,6 +949,95 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         return maxOrder;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
+        GridNodeValidationResult ret = validateHashIdResolvers(node);
+
+        if (ret != null)
+            return ret;
+
+        return validateAtomicNearCacheSupport(node);
+    }
+
+    /**
+     * @param node Joining node.
+     * @return Validation result or {@code null} in case of success.
+     */
+    @Nullable private GridNodeValidationResult validateHashIdResolvers(GridNode node) {
+        for (GridCacheAdapter cache : ctx.cache().internalCaches()) {
+            GridCacheConfiguration cfg = cache.configuration();
+
+            if (cfg.getAffinity() instanceof GridCacheConsistentHashAffinityFunction) {
+                GridCacheConsistentHashAffinityFunction aff = (GridCacheConsistentHashAffinityFunction)cfg.getAffinity();
+
+                GridCacheAffinityNodeHashResolver hashIdRslvr = aff.getHashIdResolver();
+
+                assert hashIdRslvr != null;
+
+                Object nodeHashObj = hashIdRslvr.resolve(node);
+
+                for (GridNode topNode : ctx.discovery().allNodes()) {
+                    Object topNodeHashObj = hashIdRslvr.resolve(topNode);
+
+                    if (nodeHashObj.hashCode() == topNodeHashObj.hashCode()) {
+                        String errMsg = "Failed to add node to topology because it has the same hash code for " +
+                            "partitioned affinity as one of existing nodes [cacheName=" + cache.name() +
+                            ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() +
+                            ", existingNodeId=" + topNode.id() + ']';
+
+                        String sndMsg = "Failed to add node to topology because it has the same hash code for " +
+                            "partitioned affinity as one of existing nodes [cacheName=" + cache.name() +
+                            ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() + ", existingNodeId=" +
+                            topNode.id() + ']';
+
+                        return new GridNodeValidationResult(topNode.id(), errMsg, sndMsg);
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param node Joining node.
+     * @return Validation result or {@code null} in case of success.
+     */
+    @Nullable private GridNodeValidationResult validateAtomicNearCacheSupport(GridNode node) {
+        if (node.version().compareTo(GridNearAtomicCache.SINCE_VER) >= 0)
+            return null;
+
+        GridCacheAttributes[] joinAttrs = U.cacheAttributes(node);
+
+        if (F.isEmpty(joinAttrs))
+            return null;
+
+        for (GridNode topNode : ctx.discovery().allNodes()) {
+            GridCacheAttributes[] attrs = U.cacheAttributes(topNode);
+
+            if (F.isEmpty(attrs))
+                continue;
+
+            for (GridCacheAttributes joinAttr : joinAttrs) {
+                for (GridCacheAttributes attr : attrs) {
+                    if (F.eq(joinAttr.cacheName(), attr.cacheName())) {
+                        if (attr.atomicityMode() == ATOMIC && attr.nearCacheEnabled()) {
+                            String errMsg = "Failed to add node to topology because topology has nodes with " +
+                                "ATOMIC cache with near cache enabled and joining node does not support " +
+                                "such configuration [cacheName=" + attr.cacheName() +
+                                ", existingNodeId=" + topNode.id() +
+                                ", existingNodeVer=" + topNode.version() + ']';
+
+                            return new GridNodeValidationResult(topNode.id(), errMsg, errMsg);
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

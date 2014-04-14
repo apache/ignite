@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.spi.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -74,4 +75,13 @@ public interface GridComponent {
      * NOTE: this method is for testing and profiling purposes only.
      */
     public void printMemoryStats();
+
+    /**
+     * Validates that new method can join grid topology, this method is called on coordinator
+     * node before new node joins topology.
+     *
+     * @param node Joining node.
+     * @return Validation result or {@code null} in case of success.
+     */
+    @Nullable public GridNodeValidationResult validateNode(GridNode node);
 }
