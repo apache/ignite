@@ -259,13 +259,14 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param valBytes Value bytes.
      * @param drVer Data center replication version.
      * @param clos Transform closures.
+     * @return Transaction entry.
      */
-    void addWrite(GridCacheOperation op, K key, byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes,
+    GridCacheTxEntry<K, V> addWrite(GridCacheOperation op, K key, byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes,
         @Nullable Collection<GridClosure<V, V>> clos, @Nullable GridCacheVersion drVer) {
         checkInternal(key);
 
         if (isSystemInvalidate())
-            return;
+            return null;
 
         GridDhtCacheEntry<K, V> cached = cctx.dht().entryExx(key, topologyVersion());
 
@@ -276,6 +277,8 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         txEntry.transformClosures(clos);
 
         writeMap.put(key, txEntry);
+
+        return txEntry;
     }
 
     /** {@inheritDoc} */

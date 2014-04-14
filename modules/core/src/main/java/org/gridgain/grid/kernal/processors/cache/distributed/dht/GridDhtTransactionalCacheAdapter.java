@@ -640,8 +640,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     "(transaction has been completed): " + req.version());
                         }
 
-                        tx.addWrite(txEntry.op(), txEntry.key(), txEntry.keyBytes(), txEntry.value(),
-                            txEntry.valueBytes(), txEntry.transformClosures(), txEntry.drVersion());
+                        GridCacheTxEntry<K, V> e = tx.addWrite(txEntry.op(), txEntry.key(), txEntry.keyBytes(),
+                            txEntry.value(), txEntry.valueBytes(), txEntry.transformClosures(), txEntry.drVersion());
 
                         if (!marked) {
                             if (tx.markFinalizing(USER_FINISH))
@@ -674,6 +674,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             tx.rollback();
 
                             return null;
+                        }
+
+                        if (e != null) {
+                            entry.unswap(true);
+
+                            e.cached(entry, txEntry.keyBytes());
                         }
 
                         // Entry is legit.
@@ -777,6 +783,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     }
 
                     try {
+                        GridCacheTxEntry<K, V> e = null;
+
                         // Handle implicit locks for pessimistic transactions.
                         if (req.inTx()) {
                             if (tx == null)
@@ -807,7 +815,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         "has been completed) [ver=" + req.version() + ", tx=" + tx + ']');
                             }
 
-                            tx.addWrite(
+                            e = tx.addWrite(
                                 writeEntry == null ? NOOP : writeEntry.op(),
                                 key,
                                 req.keyBytes() != null ? req.keyBytes().get(i) : null,
@@ -857,6 +865,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             }
 
                             return null;
+                        }
+
+                        if (e != null) {
+                            entry.unswap(true);
+
+                            e.cached(entry, writeEntry.keyBytes());
                         }
 
                         // Entry is legit.
@@ -1481,6 +1495,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     catch (GridDistributedLockCancelledException e) {
                         if (log.isDebugEnabled())
                             log.debug("Got lock request for cancelled lock (will fail): " + entry);
+
+                        return new GridDhtFinishedFuture<>(ctx.kernalContext(), e);
+                    }
+                    catch (GridException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to add entry (will fail): " + entry);
 
                         return new GridDhtFinishedFuture<>(ctx.kernalContext(), e);
                     }

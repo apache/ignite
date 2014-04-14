@@ -324,9 +324,10 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @return Lock candidate.
      * @throws GridCacheEntryRemovedException If entry was removed.
      * @throws GridDistributedLockCancelledException If lock is canceled.
+     * @throws GridException If failed to unswap entry.
      */
     @Nullable public GridCacheMvccCandidate<K> addEntry(GridDhtCacheEntry<K, V> entry)
-        throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
+        throws GridCacheEntryRemovedException, GridDistributedLockCancelledException, GridException {
         if (log.isDebugEnabled())
             log.debug("Adding entry: " + entry);
 
@@ -372,6 +373,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
             return null;
         }
+
+        entry.unswap(true);
 
         return c;
     }
