@@ -997,7 +997,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
     /** {@inheritDoc} */
     @Override public long getSentBytesCount() {
-        return sentBytesCnt.intValue();
+        return sentBytesCnt.longValue();
     }
 
     /** {@inheritDoc} */
@@ -1007,7 +1007,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
     /** {@inheritDoc} */
     @Override public long getReceivedBytesCount() {
-        return rcvdBytesCnt.intValue();
+        return rcvdBytesCnt.longValue();
     }
 
     /** {@inheritDoc} */
