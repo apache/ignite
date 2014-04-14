@@ -2265,6 +2265,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         /** {@inheritDoc} */
         @Override public boolean readFrom(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
             switch (commState.idx) {
                 case 0:
                     if (commState.readSize == -1) {
