@@ -12,7 +12,7 @@ package org.gridgain.grid.hadoop;
 /**
  * Job factory.
  */
-public interface GridHadoopJobFactory<T> {
+public interface GridHadoopJobFactory {
     /**
      * Creates job.
      *
@@ -20,5 +20,5 @@ public interface GridHadoopJobFactory<T> {
      * @param jobInfo Job information.
      * @return Job instance.
      */
-    public GridHadoopJob<T> createJob(GridHadoopJobId id, GridHadoopJobInfo<T> jobInfo);
+    public GridHadoopJob createJob(GridHadoopJobId id, GridHadoopJobInfo jobInfo);
 }

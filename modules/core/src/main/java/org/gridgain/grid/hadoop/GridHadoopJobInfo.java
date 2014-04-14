@@ -12,8 +12,7 @@ package org.gridgain.grid.hadoop;
 import java.io.*;
 
 /**
- * TODO write doc
+ * Job description.
  */
-public interface GridHadoopJobInfo<T> extends Serializable {
-    public T configuration();
+public interface GridHadoopJobInfo extends Serializable {
 }
