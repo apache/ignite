@@ -14,9 +14,10 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 
 /**
- * TODO write doc
+ * Hadoop task executor.
  */
 public class GridHadoopTaskExecutor extends GridHadoopComponent {
     /**
@@ -26,8 +27,13 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
      * @param task Task.
      * @return Completion future.
      */
-    public GridFuture<?> run(final GridHadoopTaskInfo info, final GridHadoopTask task) {
-        GridChainedFuture<?> res = new GridChainedFuture<>(ctx.kernalContext());
+    public GridFuture<GridHadoopTaskInfo> run(final GridHadoopTaskInfo info, final GridHadoopTask task) {
+        GridChainedFuture<GridHadoopTaskInfo> res = new GridChainedFuture<>(ctx.kernalContext(),
+            new C1<Object, GridHadoopTaskInfo>() {
+                @Override public GridHadoopTaskInfo apply(Object o) {
+                    return info;
+                }
+            });
 
         ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
             @Override public GridFuture<?> call() throws Exception {
