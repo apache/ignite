@@ -44,6 +44,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
+import static org.gridgain.grid.util.direct.GridTcpCommunicationMessageAdapter.*;
 
 /**
  * Non-transactional partitioned cache.
@@ -2184,21 +2185,60 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     public static class GridDhtAtomicUpdateRequestConverter603 extends GridVersionConverter {
         /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf) {
-            buf.putInt(-1); // Near keys size.
-            buf.putInt(-1); // Near values size.
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 13:
+                    if (!commState.putInt(-1))
+                        return false;
+
+                    commState.idx++;
+
+                case 14:
+                    if (!commState.putInt(-1))
+                        return false;
+
+                    commState.idx++;
+            }
 
             return true;
         }
 
         /** {@inheritDoc} */
         @Override public boolean readFrom(ByteBuffer buf) {
-            int nearKeys = buf.getInt();
+            commState.setBuffer(buf);
 
-            assert nearKeys == -1 : nearKeys;
+            switch (commState.idx) {
+                case 13:
+                    if (commState.readSize == -1) {
+                        if (buf.remaining() < 4)
+                            return false;
 
-            int nearVals = buf.getInt();
+                        commState.readSize = commState.getInt();
+                    }
 
-            assert nearVals == -1 : nearVals;
+                    assert commState.readSize == -1 : commState.readSize;
+
+                    commState.readSize = -1;
+                    commState.readItems = 0;
+
+                    commState.idx++;
+
+                case 14:
+                    if (commState.readSize == -1) {
+                        if (buf.remaining() < 4)
+                            return false;
+
+                        commState.readSize = commState.getInt();
+                    }
+
+                    assert commState.readSize == -1 : commState.readSize;
+
+                    commState.readSize = -1;
+                    commState.readItems = 0;
+
+                    commState.idx++;
+            }
 
             return true;
         }
@@ -2210,16 +2250,38 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     public static class GridDhtAtomicUpdateResponseConverter603 extends GridVersionConverter {
         /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf) {
-            buf.putInt(-1); // Near keys evicted.
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 5:
+                    if (!commState.putInt(-1))
+                        return false;
+
+                    commState.idx++;
+            }
 
             return true;
         }
 
         /** {@inheritDoc} */
         @Override public boolean readFrom(ByteBuffer buf) {
-            int nearEvicted = buf.getInt();
+            switch (commState.idx) {
+                case 5:
+                    if (commState.readSize == -1) {
+                        if (buf.remaining() < 4)
+                            return false;
 
-            assert nearEvicted == -1 : nearEvicted;
+                        commState.readSize = commState.getInt();
+                    }
+
+                    assert commState.readSize == -1 : commState.readSize;
+
+                    commState.readSize = -1;
+                    commState.readItems = 0;
+
+                    commState.idx++;
+
+            }
 
             return true;
         }
@@ -2231,36 +2293,113 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     public static class GridNearAtomicUpdateResponseConverter603 extends GridVersionConverter {
         /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf) {
-            commState.putCacheVersion(null); // Near cache version.
-            buf.putInt(-1); // Skip indexes.
-            buf.putLong(0); // Near ttl.
-            buf.putInt(-1); // Near values.
-            buf.putInt(-1); // Near values indexes.
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 7:
+                    if (!commState.putCacheVersion(null))
+                        return false;
+
+                    commState.idx++;
+
+                case 8:
+                    if (!commState.putInt(-1))
+                        return false;
+
+                    commState.idx++;
+
+                case 9:
+                    if (!commState.putLong(0))
+                        return false;
+
+                    commState.idx++;
+
+                case 10:
+                    if (!commState.putInt(-1))
+                        return false;
+
+                    commState.idx++;
+
+                case 11:
+                    if (!commState.putInt(-1))
+                        return false;
+
+                    commState.idx++;
+            }
 
             return true;
         }
 
         /** {@inheritDoc} */
         @Override public boolean readFrom(ByteBuffer buf) {
-            GridCacheVersion ver = commState.getCacheVersion();
+            commState.setBuffer(buf);
 
-            assert ver == null : ver;
+            switch (commState.idx) {
+                case 7:
+                    GridCacheVersion nearVer0 = commState.getCacheVersion();
 
-            int nearSkipIdxs = buf.getInt();
+                    if (nearVer0 == CACHE_VER_NOT_READ)
+                        return false;
 
-            assert nearSkipIdxs == -1 : nearSkipIdxs;
+                    assert nearVer0 == null;
 
-            long nearTtl = buf.getLong();
+                    commState.idx++;
 
-            assert nearTtl == 0 : nearTtl;
+                case 8:
+                    if (commState.readSize == -1) {
+                        if (buf.remaining() < 4)
+                            return false;
 
-            int nearVals = buf.getInt();
+                        commState.readSize = commState.getInt();
+                    }
 
-            assert nearVals == -1 : nearVals;
+                    assert commState.readSize == -1 : commState.readSize;
 
-            int nearValsIdxs = buf.getInt();
+                    commState.readSize = -1;
+                    commState.readItems = 0;
 
-            assert nearValsIdxs == -1 : nearValsIdxs;
+                    commState.idx++;
+
+                case 9:
+                    if (buf.remaining() < 8)
+                        return false;
+
+                    long nearTtl = commState.getLong();
+
+                    assert nearTtl == 0 : nearTtl;
+
+                    commState.idx++;
+
+                case 10:
+                    if (commState.readSize == -1) {
+                        if (buf.remaining() < 4)
+                            return false;
+
+                        commState.readSize = commState.getInt();
+                    }
+
+                    assert commState.readSize == -1 : commState.readSize;
+
+                    commState.readSize = -1;
+                    commState.readItems = 0;
+
+                    commState.idx++;
+
+                case 11:
+                    if (commState.readSize == -1) {
+                        if (buf.remaining() < 4)
+                            return false;
+
+                        commState.readSize = commState.getInt();
+                    }
+
+                    assert commState.readSize == -1 : commState.readSize;
+
+                    commState.readSize = -1;
+                    commState.readItems = 0;
+
+                    commState.idx++;
+            }
 
             return true;
         }
