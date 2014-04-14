@@ -36,7 +36,7 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
  */
 public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     /** */
-    public static final GridProductVersion availableFrom = GridProductVersion.fromString("6.0.3");
+    public static final GridProductVersion SINCE_VER = GridProductVersion.fromString("6.0.3");
 
     /** */
     private GridDhtCacheAdapter<K, V> dht;

@@ -549,13 +549,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return;
 
         ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
-            GridDhtAtomicCache.GridDhtAtomicUpdateRequestConverter603.class, GridNearAtomicCache.availableFrom);
+            GridDhtAtomicCache.DhtAtomicUpdateRequestConverter603.class, GridNearAtomicCache.SINCE_VER);
 
         ctx.versionConverter().registerLocal(GridDhtAtomicUpdateResponse.class,
-            GridDhtAtomicCache.GridDhtAtomicUpdateResponseConverter603.class, GridNearAtomicCache.availableFrom);
+            GridDhtAtomicCache.DhtAtomicUpdateResponseConverter603.class, GridNearAtomicCache.SINCE_VER);
 
         ctx.versionConverter().registerLocal(GridNearAtomicUpdateResponse.class,
-            GridDhtAtomicCache.GridNearAtomicUpdateResponseConverter603.class, GridNearAtomicCache.availableFrom);
+            GridDhtAtomicCache.NearAtomicUpdateResponseConverter603.class, GridNearAtomicCache.SINCE_VER);
 
         GridDeploymentMode depMode = ctx.config().getDeploymentMode();
 
@@ -1181,9 +1181,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         }
 
                         if (locAttr.atomicityMode() == ATOMIC && locAttr.nearCacheEnabled() &&
-                            rmt.version().compareTo(GridNearAtomicCache.availableFrom) < 0)
-                            throw new GridException("Can not use ATOMIC cache with near cache enabled with " +
-                                "nodes having GridGain version lower than " + GridNearAtomicCache.availableFrom);
+                            rmt.version().compareTo(GridNearAtomicCache.SINCE_VER) < 0)
+                            throw new GridException("Cannot use ATOMIC cache with near cache enabled because " +
+                                "grid contains nodes that do not support such configuration [rmtNodeId=" + rmt.id() +
+                                ", rmtVer=" + rmt.version() +
+                                ", supportedSince=" + GridNearAtomicCache.SINCE_VER +
+                                ", locVer=" + ctx.product().version() + ']');
                     }
                 }
 

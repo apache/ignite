@@ -86,6 +86,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /** Key bytes. */
     @GridToStringInclude
     @GridDirectCollection(byte[].class)
+    @GridDirectVersion(1)
     private List<byte[]> nearKeyBytes;
 
     /** Values to update. */
@@ -96,6 +97,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /** Value bytes. */
     @GridToStringInclude
     @GridDirectCollection(GridCacheValueBytes.class)
+    @GridDirectVersion(1)
     private List<GridCacheValueBytes> nearValBytes;
 
     /**
