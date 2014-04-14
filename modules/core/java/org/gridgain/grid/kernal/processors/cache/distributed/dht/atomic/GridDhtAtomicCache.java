@@ -2188,13 +2188,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             commState.setBuffer(buf);
 
             switch (commState.idx) {
-                case 13:
+                case 0:
                     if (!commState.putInt(-1))
                         return false;
 
                     commState.idx++;
 
-                case 14:
+                case 1:
                     if (!commState.putInt(-1))
                         return false;
 
@@ -2209,7 +2209,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             commState.setBuffer(buf);
 
             switch (commState.idx) {
-                case 13:
+                case 0:
                     if (commState.readSize == -1) {
                         if (buf.remaining() < 4)
                             return false;
@@ -2224,7 +2224,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     commState.idx++;
 
-                case 14:
+                case 1:
                     if (commState.readSize == -1) {
                         if (buf.remaining() < 4)
                             return false;
@@ -2253,7 +2253,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             commState.setBuffer(buf);
 
             switch (commState.idx) {
-                case 5:
+                case 0:
                     if (!commState.putInt(-1))
                         return false;
 
@@ -2266,7 +2266,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /** {@inheritDoc} */
         @Override public boolean readFrom(ByteBuffer buf) {
             switch (commState.idx) {
-                case 5:
+                case 0:
                     if (commState.readSize == -1) {
                         if (buf.remaining() < 4)
                             return false;
@@ -2296,31 +2296,31 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             commState.setBuffer(buf);
 
             switch (commState.idx) {
-                case 7:
+                case 0:
                     if (!commState.putCacheVersion(null))
                         return false;
 
                     commState.idx++;
 
-                case 8:
+                case 1:
                     if (!commState.putInt(-1))
                         return false;
 
                     commState.idx++;
 
-                case 9:
+                case 2:
                     if (!commState.putLong(0))
                         return false;
 
                     commState.idx++;
 
-                case 10:
+                case 3:
                     if (!commState.putInt(-1))
                         return false;
 
                     commState.idx++;
 
-                case 11:
+                case 4:
                     if (!commState.putInt(-1))
                         return false;
 
@@ -2335,7 +2335,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             commState.setBuffer(buf);
 
             switch (commState.idx) {
-                case 7:
+                case 0:
                     GridCacheVersion nearVer0 = commState.getCacheVersion();
 
                     if (nearVer0 == CACHE_VER_NOT_READ)
@@ -2345,7 +2345,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     commState.idx++;
 
-                case 8:
+                case 1:
                     if (commState.readSize == -1) {
                         if (buf.remaining() < 4)
                             return false;
@@ -2360,7 +2360,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     commState.idx++;
 
-                case 9:
+                case 2:
                     if (buf.remaining() < 8)
                         return false;
 
@@ -2370,7 +2370,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     commState.idx++;
 
-                case 10:
+                case 3:
                     if (commState.readSize == -1) {
                         if (buf.remaining() < 4)
                             return false;
@@ -2385,7 +2385,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     commState.idx++;
 
-                case 11:
+                case 4:
                     if (commState.readSize == -1) {
                         if (buf.remaining() < 4)
                             return false;

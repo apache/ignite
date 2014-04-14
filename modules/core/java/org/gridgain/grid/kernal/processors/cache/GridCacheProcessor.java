@@ -550,13 +550,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return;
 
         ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
-            GridDhtAtomicCache.GridDhtAtomicUpdateRequestConverter603.class, GridProductVersion.fromString("6.0.3"));
+            GridDhtAtomicCache.GridDhtAtomicUpdateRequestConverter603.class, GridNearAtomicCache.availableFrom);
 
         ctx.versionConverter().registerLocal(GridDhtAtomicUpdateResponse.class,
-            GridDhtAtomicCache.GridDhtAtomicUpdateResponseConverter603.class, GridProductVersion.fromString("6.0.3"));
+            GridDhtAtomicCache.GridDhtAtomicUpdateResponseConverter603.class, GridNearAtomicCache.availableFrom);
 
-        ctx.versionConverter().registerLocal(GridDhtAtomicCache.GridNearAtomicUpdateResponseConverter603.class,
-            GridDhtAtomicCache.GridDhtAtomicUpdateResponseConverter603.class, GridProductVersion.fromString("6.0.3"));
+        ctx.versionConverter().registerLocal(GridNearAtomicUpdateResponse.class,
+            GridDhtAtomicCache.GridNearAtomicUpdateResponseConverter603.class, GridNearAtomicCache.availableFrom);
 
         GridDeploymentMode depMode = ctx.config().getDeploymentMode();
 
@@ -1180,6 +1180,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             throw new GridException("DR receiver cache should be enabled for all nodes or " +
                                 "disabled for all of them (configuration is not set for nodeId=" + nullAttrNode + ").");
                         }
+
+                        if (locAttr.atomicityMode() == ATOMIC && locAttr.nearCacheEnabled() &&
+                            rmt.version().compareTo(GridNearAtomicCache.availableFrom) < 0)
+                            throw new GridException("Can not use ATOMIC cache with near cache enabled with " +
+                                " nodes having GridGain version lower than " + GridNearAtomicCache.availableFrom);
                     }
                 }
 
