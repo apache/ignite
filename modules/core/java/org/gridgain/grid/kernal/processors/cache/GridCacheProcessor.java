@@ -555,8 +555,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.versionConverter().registerLocal(GridDhtAtomicUpdateResponse.class,
             GridDhtAtomicCache.GridDhtAtomicUpdateResponseConverter603.class, GridProductVersion.fromString("6.0.3"));
 
-        ctx.versionConverter().registerLocal(GridDhtAtomicCache.GridNearAtomicUpdateResponseConverter603.class,
-            GridDhtAtomicCache.GridDhtAtomicUpdateResponseConverter603.class, GridProductVersion.fromString("6.0.3"));
+        ctx.versionConverter().registerLocal(GridNearAtomicUpdateResponse.class,
+            GridDhtAtomicCache.GridNearAtomicUpdateResponseConverter603.class, GridProductVersion.fromString("6.0.3"));
 
         GridDeploymentMode depMode = ctx.config().getDeploymentMode();
 
