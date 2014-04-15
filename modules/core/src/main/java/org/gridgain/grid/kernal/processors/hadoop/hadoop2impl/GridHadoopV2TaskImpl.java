@@ -7,18 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.hadoop;
+package org.gridgain.grid.kernal.processors.hadoop.hadoop2impl;
 
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import org.gridgain.grid.hadoop.*;
 
 /**
- * TODO write doc
+ * Hadoop  task implementation for v2 API.
  */
-public interface GridHadoopMapReducePlan extends Serializable {
-    @Nullable public Collection<GridHadoopFileBlock> mappers(UUID nodeId);
+public class GridHadoopV2TaskImpl implements GridHadoopTask {
+    /** {@inheritDoc} */
+    @Override public void run(GridHadoopTaskContext ctx) {
 
-    @Nullable public int[] reducers(UUID nodeId);
+    }
 }

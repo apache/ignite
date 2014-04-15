@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
@@ -23,6 +24,12 @@ import java.util.*;
 public class GridHadoopContext {
     /** Kernal context. */
     private GridKernalContext ctx;
+
+    /** Hadoop configuration. */
+    private GridHadoopConfiguration cfg;
+
+    /** Hadoop system cache name. */
+    private String sysCacheName; // TODO
 
     /** Job tracker. */
     private GridHadoopJobTracker jobTracker;
@@ -41,19 +48,19 @@ public class GridHadoopContext {
      */
     public GridHadoopContext(
         GridKernalContext ctx,
+        GridHadoopConfiguration cfg,
         GridHadoopJobTracker jobTracker,
         GridHadoopTaskExecutor taskExecutor,
         GridHadoopShuffle shuffle
     ) {
         this.ctx = ctx;
+        this.cfg = cfg;
 
         this.jobTracker = add(jobTracker);
         this.taskExecutor = add(taskExecutor);
         this.shuffle = add(shuffle);
 
-        GridHadoopConfiguration hcfg = ctx.config().getHadoopConfiguration();
-
-
+        sysCacheName = cfg.getSystemCacheName();
     }
 
     /**
@@ -72,6 +79,40 @@ public class GridHadoopContext {
      */
     public GridKernalContext kernalContext() {
         return ctx;
+    }
+
+    /**
+     * Gets Hadoop configuration.
+     *
+     * @return Hadoop configuration.
+     */
+    public GridHadoopConfiguration configuration() {
+        return cfg;
+    }
+
+    /**
+     * Gets local node ID. Shortcut for {@code kernalContext().localNodeId()}.
+     *
+     * @return Local node ID.
+     */
+    public UUID localNodeId() {
+        return ctx.localNodeId();
+    }
+
+    /**
+     * @return Hadoop-enabled nodes.
+     */
+    public Collection<GridNode> nodes() {
+        return ctx.discovery().cacheNodes(sysCacheName, ctx.discovery().topologyVersion());
+    }
+
+    /**
+     * Gets hadoop system cache name.
+     *
+     * @return System cache name.
+     */
+    public String systemCacheName() {
+        return sysCacheName;
     }
 
     /**
@@ -96,26 +137,17 @@ public class GridHadoopContext {
     }
 
     /**
-     * Gets local node ID. Shortcut for {@code kernalContext().localNodeId()}.
-     *
-     * @return Local node ID.
-     */
-    public UUID localNodeId() {
-        return ctx.localNodeId();
-    }
-
-    /**
      * @return Map-reduce planner.
      */
     public GridHadoopMapReducePlanner planner() {
-        return null;
+        return cfg.getMapReducePlanner();
     }
 
     /**
      * @return Job factory.
      */
     public GridHadoopJobFactory jobFactory() {
-        return null;
+        return cfg.getJobFactory();
     }
 
     /**

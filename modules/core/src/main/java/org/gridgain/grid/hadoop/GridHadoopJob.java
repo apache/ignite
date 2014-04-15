@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.gridgain.grid.*;
+
 import java.util.*;
 
 /**
@@ -34,14 +36,14 @@ public interface GridHadoopJob {
      *
      * @return Input blocks.
      */
-    public Collection<GridHadoopFileBlock> input();
+    public Collection<GridHadoopFileBlock> input() throws GridException;
 
     /**
      * Gets partitioner for the job.
      *
      * @return Partitioner.
      */
-    public GridHadoopPartitioner partitioner();
+    public GridHadoopPartitioner partitioner() throws GridException;
 
     /**
      * Creates task to be executed.

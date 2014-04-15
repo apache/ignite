@@ -18,10 +18,14 @@ import org.gridgain.grid.lang.*;
  */
 @SuppressWarnings("unchecked")
 public class GridChainedFuture<X> extends GridFutureAdapter<X> implements GridInClosure<GridFuture<?>> {
+    /** Future completion callback. */
+    private GridClosure<?, X> completionCb;
+
     /**
      *
      */
     public GridChainedFuture() {
+        // No-op.
     }
 
     /**
@@ -29,6 +33,12 @@ public class GridChainedFuture<X> extends GridFutureAdapter<X> implements GridIn
      */
     public GridChainedFuture(GridKernalContext ctx) {
         super(ctx);
+    }
+
+    public GridChainedFuture(GridKernalContext ctx, GridClosure<?, X> completionCb) {
+        super(ctx);
+
+        this.completionCb = completionCb;
     }
 
     /**
@@ -46,8 +56,14 @@ public class GridChainedFuture<X> extends GridFutureAdapter<X> implements GridIn
 
             if (res instanceof GridFuture)
                 ((GridFuture)res).listenAsync(this);
-            else
-                onDone((X)res);
+            else {
+                GridClosure<Object, X> cb = (GridClosure<Object, X>)completionCb;
+
+                if (cb == null)
+                    onDone((X)res);
+                else
+                    onDone(cb.apply(res));
+            }
         }
         catch (Throwable e) {
             onDone(e);

@@ -30,7 +30,7 @@ public class GridHadoopProcessor extends GridProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    protected GridHadoopProcessor(GridKernalContext ctx) {
+    public GridHadoopProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
@@ -38,10 +38,20 @@ public class GridHadoopProcessor extends GridProcessorAdapter {
     @Override public void start() throws GridException {
         super.start();
 
-        if (ctx.isDaemon() || ctx.config().getHadoopConfiguration() == null)
+        GridHadoopConfiguration cfg = ctx.config().getHadoopConfiguration();
+
+        if (ctx.isDaemon() || cfg == null)
             return;
 
+        // Make copy.
+        cfg = new GridHadoopConfiguration(cfg);
+
+        initializeDefaults(cfg);
+
+        validate(cfg);
+
         hctx = new GridHadoopContext(ctx,
+            cfg,
             new GridHadoopJobTracker(),
             new GridHadoopTaskExecutor(),
             new GridHadoopShuffle());
@@ -109,7 +119,7 @@ public class GridHadoopProcessor extends GridProcessorAdapter {
      * @return Execution future.
      */
     public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
-        return null;
+        return hctx.jobTracker().submit(jobId, jobInfo);
     }
 
     /**
@@ -120,5 +130,23 @@ public class GridHadoopProcessor extends GridProcessorAdapter {
      */
     @Nullable public GridHadoopJobStatus status(GridHadoopJobId jobId) {
         return null;
+    }
+
+    /**
+     * Initializes default hadoop configuration.
+     *
+     * @param cfg Hadoop configuration.
+     */
+    private void initializeDefaults(GridHadoopConfiguration cfg) {
+
+    }
+
+    /**
+     * Validates hadoop configuration for correctness.
+     *
+     * @param cfg Hadoop configuration.
+     */
+    private void validate(GridHadoopConfiguration cfg) {
+
     }
 }

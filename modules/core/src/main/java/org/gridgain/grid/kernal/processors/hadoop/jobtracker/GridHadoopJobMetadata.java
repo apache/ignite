@@ -11,25 +11,55 @@ package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
 import org.gridgain.grid.hadoop.*;
 
-import java.util.*;
+import java.io.*;
 
 /**
  * Hadoop job metadata. Internal object used for distributed job state tracking.
  */
-public class GridHadoopJobMetadata {
+public class GridHadoopJobMetadata implements Serializable {
     /** Job ID. */
     private GridHadoopJobId jobId;
 
-    /** Mapping mappers to nodes. */
-    private UUID[] mappers;
+    /** Job info. */
+    private GridHadoopJobInfo jobInfo;
 
-    /** Mapping reducers to nodes. */
-    private UUID reducers;
+    /** Map-reduce plan. */
+    private GridHadoopMapReducePlan mrPlan;
 
     /**
      * @param jobId Job ID.
+     * @param jobInfo Job info.
      */
-    public GridHadoopJobMetadata(GridHadoopJobId jobId) {
+    public GridHadoopJobMetadata(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
         this.jobId = jobId;
+        this.jobInfo = jobInfo;
+    }
+
+    /**
+     * @return Job ID.
+     */
+    public GridHadoopJobId jobId() {
+        return jobId;
+    }
+
+    /**
+     * @param mrPlan Map-reduce plan.
+     */
+    public void mapReducePlan(GridHadoopMapReducePlan mrPlan) {
+        this.mrPlan = mrPlan;
+    }
+
+    /**
+     * @return Map-reduce plan.
+     */
+    public GridHadoopMapReducePlan mapReducePlan() {
+        return mrPlan;
+    }
+
+    /**
+     * @return Job info.
+     */
+    public GridHadoopJobInfo jobInfo() {
+        return jobInfo;
     }
 }

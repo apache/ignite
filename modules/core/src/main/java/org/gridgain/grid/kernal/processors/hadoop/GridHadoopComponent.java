@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
 
 /**
@@ -24,7 +25,7 @@ public abstract class GridHadoopComponent {
     /**
      * @param ctx Hadoop context.
      */
-    public void start(GridHadoopContext ctx) {
+    public void start(GridHadoopContext ctx) throws GridException {
         this.ctx = ctx;
 
         log = ctx.kernalContext().log(getClass());
@@ -40,7 +41,7 @@ public abstract class GridHadoopComponent {
     /**
      * Callback invoked when all grid components are started.
      */
-    public void onKernalStart() {
+    public void onKernalStart() throws GridException {
         // No-op.
     }
 
