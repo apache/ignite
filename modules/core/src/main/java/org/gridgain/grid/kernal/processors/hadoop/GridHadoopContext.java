@@ -25,6 +25,9 @@ public class GridHadoopContext {
     /** Kernal context. */
     private GridKernalContext ctx;
 
+    /** Hadoop configuration. */
+    private GridHadoopConfiguration cfg;
+
     /** Hadoop system cache name. */
     private String sysCacheName; // TODO
 
@@ -45,19 +48,19 @@ public class GridHadoopContext {
      */
     public GridHadoopContext(
         GridKernalContext ctx,
+        GridHadoopConfiguration cfg,
         GridHadoopJobTracker jobTracker,
         GridHadoopTaskExecutor taskExecutor,
         GridHadoopShuffle shuffle
     ) {
         this.ctx = ctx;
+        this.cfg = cfg;
 
         this.jobTracker = add(jobTracker);
         this.taskExecutor = add(taskExecutor);
         this.shuffle = add(shuffle);
 
-        GridHadoopConfiguration hcfg = ctx.config().getHadoopConfiguration();
-
-
+        sysCacheName = cfg.getSystemCacheName();
     }
 
     /**
@@ -76,6 +79,15 @@ public class GridHadoopContext {
      */
     public GridKernalContext kernalContext() {
         return ctx;
+    }
+
+    /**
+     * Gets Hadoop configuration.
+     *
+     * @return Hadoop configuration.
+     */
+    public GridHadoopConfiguration configuration() {
+        return cfg;
     }
 
     /**
