@@ -139,23 +139,31 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             GridHadoopJob job = ctx.jobFactory().createJob(jobId, meta.jobInfo());
 
             // Check if we should initiate new task on local node.
-            for (GridHadoopFileBlock block : meta.mapReducePlan().mappers(ctx.localNodeId())) {
-                if (state.addMapper(block)) {
-                    GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo();
+            Collection<GridHadoopFileBlock> mappers = meta.mapReducePlan().mappers(ctx.localNodeId());
 
-                    GridHadoopTask task = job.createTask(taskInfo);
+            if (mappers != null) {
+                for (GridHadoopFileBlock block : mappers) {
+                    if (state.addMapper(block)) {
+                        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo();
 
-                    ctx.taskExecutor().run(taskInfo, task);
+                        GridHadoopTask task = job.createTask(taskInfo);
+
+                        ctx.taskExecutor().run(taskInfo, task);
+                    }
                 }
             }
 
-            for (int reducer : meta.mapReducePlan().reducers(ctx.localNodeId())) {
-                if (state.addReducer(reducer)) {
-                    GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo();
+            int[] reducers = meta.mapReducePlan().reducers(ctx.localNodeId());
 
-                    GridHadoopTask task = job.createTask(taskInfo);
+            if (reducers != null) {
+                for (int reducer : reducers) {
+                    if (state.addReducer(reducer)) {
+                        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo();
 
-                    ctx.taskExecutor().run(taskInfo, task);
+                        GridHadoopTask task = job.createTask(taskInfo);
+
+                        ctx.taskExecutor().run(taskInfo, task);
+                    }
                 }
             }
         }

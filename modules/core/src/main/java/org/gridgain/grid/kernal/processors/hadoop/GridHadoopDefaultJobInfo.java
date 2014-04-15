@@ -12,12 +12,21 @@ package org.gridgain.grid.kernal.processors.hadoop;
 import org.apache.hadoop.conf.*;
 import org.gridgain.grid.hadoop.*;
 
+import java.io.*;
+
 /**
  * Hadoop job info based on default Hadoop configuration.
  */
-public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo {
+public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizable {
     /** Configuration. */
     private Configuration cfg;
+
+    /**
+     * Default constructor required by {@link Externalizable}.
+     */
+    public GridHadoopDefaultJobInfo() {
+        // No-op.
+    }
 
     /**
      * @param cfg Hadoop configuration.
@@ -31,5 +40,17 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo {
      */
     public Configuration configuration() {
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        cfg.write(out);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        cfg = new Configuration();
+
+        cfg.readFields(in);
     }
 }
