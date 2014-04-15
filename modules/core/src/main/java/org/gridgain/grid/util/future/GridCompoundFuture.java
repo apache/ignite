@@ -27,6 +27,9 @@ import java.util.concurrent.atomic.*;
  * Future composed of multiple inner futures.
  */
 public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Futures. */
     private final ConcurrentLinkedDeque8<GridFuture<T>> futs = new ConcurrentLinkedDeque8<>();
 
@@ -291,6 +294,10 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      * Listener for futures.
      */
     private class Listener implements GridInClosure<GridFuture<T>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+
         /** {@inheritDoc} */
         @Override public void apply(GridFuture<T> fut) {
             pending.remove(fut);
