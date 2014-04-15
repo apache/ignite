@@ -231,7 +231,7 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
         if (verStr == null)
             return VERSION_UNKNOWN;
 
-        if (DEV_VERSION_STR.equals(verStr))
+        if (verStr.endsWith("-DEV"))
             return VERSION_DEV;
 
         Matcher match = VER_PATTERN.matcher(verStr);
