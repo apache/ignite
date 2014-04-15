@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * TODO write doc
  */
-public interface GridHadoopJob<T> {
+public interface GridHadoopJob {
     /**
      * Gets job ID.
      *
@@ -27,7 +27,7 @@ public interface GridHadoopJob<T> {
      *
      * @return Job information.
      */
-    public GridHadoopJobInfo<T> info();
+    public GridHadoopJobInfo info();
 
     /**
      * Gets collection of input blocks.

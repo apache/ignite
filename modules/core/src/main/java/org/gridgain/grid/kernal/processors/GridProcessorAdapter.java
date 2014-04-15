@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
@@ -101,6 +102,11 @@ public abstract class GridProcessorAdapter implements GridProcessor {
     /** {@inheritDoc} */
     @Override public void addAttributes(Map<String, Object> attrs)  throws GridException {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
+        return null;
     }
 
     /** {@inheritDoc} */
