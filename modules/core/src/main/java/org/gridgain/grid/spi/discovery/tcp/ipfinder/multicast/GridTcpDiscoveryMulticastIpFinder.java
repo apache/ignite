@@ -77,6 +77,9 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
     @GridNameResource
     private String gridName;
 
+    /** */
+    private String locHost;
+
     /** Multicast IP address as string. */
     private String mcastGrp = DFLT_MCAST_GROUP;
 
@@ -393,6 +396,13 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
     }
 
     /**
+     * @param locHost Local host.
+     */
+    public void setLocHost(String locHost) {
+        this.locHost = locHost;
+    }
+
+    /**
      * Response to multicast address request.
      */
     private static class AddressResponse {
@@ -499,6 +509,13 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
             if (sock.getLoopbackMode())
                 U.warn(log, "Loopback mode is disabled which prevents nodes on the same machine from discovering " +
                     "each other.");
+
+            if (locHost != null) {
+                InetAddress locAddr = InetAddress.getByName(locHost);
+
+                if (!locAddr.isLoopbackAddress())
+                    sock.setInterface(locAddr);
+            }
 
             sock.joinGroup(mcastGrp);
 

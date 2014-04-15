@@ -41,6 +41,8 @@ public class GridTcpDiscoveryMulticastIpFinderSelfTest
      * @throws Exception If failed.
      */
     public void testExchange() throws Exception {
+        String locHost = null;
+
         GridTcpDiscoveryMulticastIpFinder ipFinder1 = null;
         GridTcpDiscoveryMulticastIpFinder ipFinder2 = null;
         GridTcpDiscoveryMulticastIpFinder ipFinder3 = null;
@@ -61,6 +63,10 @@ public class GridTcpDiscoveryMulticastIpFinderSelfTest
             injectLogger(ipFinder1);
             injectLogger(ipFinder2);
             injectLogger(ipFinder3);
+
+            ipFinder1.setLocHost(locHost);
+            ipFinder2.setLocHost(locHost);
+            ipFinder3.setLocHost(locHost);
 
             ipFinder1.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host1", 1001)));
             ipFinder2.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host2", 1002)));
