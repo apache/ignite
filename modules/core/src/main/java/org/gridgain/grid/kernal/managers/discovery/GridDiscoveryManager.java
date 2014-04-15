@@ -648,7 +648,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
             List<String> rmtLibs = n.attribute(ATTR_LIBRARIES);
 
-            List<GridBiTuple<String, String>> diffs = GridLibraryConsistencyCheck.check(locLibs, rmtLibs);
+            List<GridBiTuple<String, String>> diffs = GridLibraryConsistencyCheck.check(log, locLibs, rmtLibs);
 
             if (!diffs.isEmpty()) {
                 if (log.isQuiet()) {
