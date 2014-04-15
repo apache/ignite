@@ -157,9 +157,7 @@ public class GridLibraryConsistencyCheck {
 
         // Must not happen.
         if (libs1.size() != libs2.size() || libs1.size() != CLASS_LIST.length) {
-            final String msg = "GridGain dependency libraries do not match (is GridGain version the same?).";
-
-            U.warn(log, msg);
+            U.warn(log, "GridGain dependency libraries do not match (is GridGain version the same?).");
 
             return null;
         }
