@@ -15,6 +15,7 @@ import java.io.*;
  * GGFS input stream descriptor - includes stream id and length.
  */
 public class GridGgfsInputStreamDescriptor implements Externalizable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Stream id. */

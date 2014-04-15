@@ -23,6 +23,7 @@ import java.io.*;
  */
 @SuppressWarnings({"NullableProblems"})
 public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Embedded future to wait for. */
@@ -234,12 +235,14 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
 
     /** Typedef. */
     private abstract class AL1 extends AsyncListener1 {
+        /** */
         private static final long serialVersionUID = 0L;
 
     }
 
     /** Typedef. */
     private abstract class AL2 extends AsyncListener2 {
+        /** */
         private static final long serialVersionUID = 0L;
 
     }
@@ -248,6 +251,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
      * Make sure that listener does not throw exceptions.
      */
     private abstract class AsyncListener1 implements GridInClosure<GridFuture<B>> {
+        /** */
         private static final long serialVersionUID = 0L;
 
 
@@ -275,6 +279,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
      * Make sure that listener does not throw exceptions.
      */
     private abstract class AsyncListener2 implements GridInClosure<GridFuture<A>> {
+        /** */
         private static final long serialVersionUID = 0L;
 
 

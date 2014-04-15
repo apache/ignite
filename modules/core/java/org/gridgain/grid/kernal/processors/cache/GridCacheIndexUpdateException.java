@@ -17,6 +17,7 @@ import org.jetbrains.annotations.*;
  * is kept in it's original state (no updates performed).
  */
 public class GridCacheIndexUpdateException extends GridException {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

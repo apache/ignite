@@ -252,6 +252,7 @@ public class GridLuceneIndex implements Closeable {
      * Key-value iterator over fulltext search result.
      */
     private class It<K, V> extends GridCloseableIteratorAdapter<GridIndexingKeyValueRow<K, V>> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */

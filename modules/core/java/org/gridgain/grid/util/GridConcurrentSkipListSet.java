@@ -23,6 +23,7 @@ import static java.lang.Boolean.*;
  * throwing {@link NoSuchElementException}.
  */
 public class GridConcurrentSkipListSet<E> extends GridSerializableSet<E> implements NavigableSet<E>, Cloneable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /**

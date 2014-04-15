@@ -17,6 +17,7 @@ import org.jetbrains.annotations.*;
  * {@link GridComputeTaskFuture#get()} method.
  */
 public class GridComputeTaskTimeoutException extends GridException {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

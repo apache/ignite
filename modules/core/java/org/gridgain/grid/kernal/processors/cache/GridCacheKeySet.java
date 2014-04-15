@@ -23,6 +23,7 @@ import java.util.*;
  * by underlying cache.
  */
 public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Cache context. */

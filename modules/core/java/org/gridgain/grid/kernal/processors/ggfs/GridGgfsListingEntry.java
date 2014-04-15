@@ -19,6 +19,7 @@ import java.util.*;
  * Directory listing entry.
  */
 public class GridGgfsListingEntry implements Externalizable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** File id. */

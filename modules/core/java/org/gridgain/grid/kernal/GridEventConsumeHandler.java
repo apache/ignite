@@ -36,6 +36,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             return true;
         }
     };
+    /** */
     private static final long serialVersionUID = 0L;
 
 
@@ -292,6 +293,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
      * Event wrapper.
      */
     private static class EventWrapper implements GridCacheDeployable, Externalizable {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** Event. */

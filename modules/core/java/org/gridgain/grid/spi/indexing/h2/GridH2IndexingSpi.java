@@ -2236,6 +2236,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
      * Special field set iterator based on database result set.
      */
     private class FieldsIterator extends GridH2ResultSetIterator<List<GridIndexingEntity<?>>> {
+        /** */
         private static final long serialVersionUID = 0L;
 
 
@@ -2281,6 +2282,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
      * Special key/value iterator based on database result set.
      */
     private class KeyValIterator<K, V> extends GridH2ResultSetIterator<GridIndexingKeyValueRow<K, V>> {
+        /** */
         private static final long serialVersionUID = 0L;
 
 
@@ -2319,6 +2321,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
      * Field descriptor.
      */
     private static class SqlFieldMetadata implements GridIndexingFieldMetadata {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** Schema name. */
@@ -2402,6 +2405,7 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
      * Database schema object.
      */
     private static class Schema extends ConcurrentHashMap8<String, TableDescriptor> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */

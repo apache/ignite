@@ -22,6 +22,7 @@ import static java.lang.Math.*;
  * Implementation for {@link GridProjectionMetrics} interface.
  */
 class GridProjectionMetricsImpl implements GridProjectionMetrics {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** */

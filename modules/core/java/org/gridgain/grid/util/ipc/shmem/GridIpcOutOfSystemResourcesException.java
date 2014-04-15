@@ -17,6 +17,7 @@ import org.jetbrains.annotations.*;
  * available in operating system).
  */
 public class GridIpcOutOfSystemResourcesException extends GridException {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

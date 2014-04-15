@@ -16,6 +16,7 @@ import org.jetbrains.annotations.*;
  * This exception indicates the grid access in invalid state.
  */
 public class GridIllegalStateException extends IllegalStateException {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

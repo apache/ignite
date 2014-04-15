@@ -382,6 +382,7 @@ public class GridAffinityCache {
      *
      */
     private static class NodeOrderComparator implements Comparator<GridNode>, Serializable {
+        /** */
         private static final long serialVersionUID = 0L;
 
 

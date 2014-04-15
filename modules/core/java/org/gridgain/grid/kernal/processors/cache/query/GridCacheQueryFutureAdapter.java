@@ -36,6 +36,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
     /** */
     private static final Object NULL = new Object();
+    /** */
     private static final long serialVersionUID = 0L;
 
 

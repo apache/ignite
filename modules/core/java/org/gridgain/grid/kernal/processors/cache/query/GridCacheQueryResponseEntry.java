@@ -19,6 +19,7 @@ import java.util.*;
  * control serialization process. Local entries can be returned to user as is.
  */
 public class GridCacheQueryResponseEntry<K, V> implements Map.Entry<K, V>, Externalizable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** */

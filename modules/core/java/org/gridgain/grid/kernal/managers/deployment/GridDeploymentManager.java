@@ -519,6 +519,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
      *
      */
     private static class LocalDeployment extends GridDeployment {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /**

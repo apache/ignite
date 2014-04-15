@@ -35,6 +35,7 @@ import java.util.concurrent.locks.*;
  */
 public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Long>
     implements Comparable<GridDhtPartitionsExchangeFuture<K, V>>, GridDhtTopologyFuture {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Dummy flag. */

@@ -21,6 +21,7 @@ import java.io.*;
  * correct files if it is restarted.
  */
 class GridS3CheckpointData implements Serializable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Checkpoint data. */

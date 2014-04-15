@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.*;
  * Represents single class deployment.
  */
 public class GridDeployment extends GridMetadataAwareAdapter implements GridDeploymentInfo {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Timestamp. */

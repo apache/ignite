@@ -17,6 +17,7 @@ import java.util.*;
  * Convenient adapter for "rich" iterator interface.
  */
 public abstract class GridIteratorAdapter<T> implements GridIterator<T> {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

@@ -31,6 +31,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
     implements GridCacheFuture<GridCacheCommittedTxInfo<K, V>> {
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    /** */
     private static final long serialVersionUID = 0L;
 
 
@@ -346,6 +347,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
      */
     private static class SingleReducer<K, V> implements
         GridReducer<GridCacheCommittedTxInfo<K, V>, GridCacheCommittedTxInfo<K, V>> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */

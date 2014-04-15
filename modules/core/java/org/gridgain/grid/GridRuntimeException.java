@@ -19,6 +19,7 @@ import static org.gridgain.grid.util.GridUtils.*;
  * runtime exception is needed.
  */
 public class GridRuntimeException extends RuntimeException {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

@@ -23,6 +23,7 @@ import java.util.*;
  * Job execution response.
  */
 public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter implements GridTaskMessage {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** */

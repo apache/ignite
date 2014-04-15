@@ -22,6 +22,7 @@ import java.io.*;
  * hence the {@link GridCacheAffinityKeyMapped} annotation on {@link GridCacheQueueItemKeyImpl#affinityKey} method.
  */
 public class GridCacheQueueItemKeyImpl implements Externalizable, GridCacheQueueItemKey {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Sequence id in queue. */

@@ -67,6 +67,7 @@ import java.util.logging.*;
  * injection.
  */
 public class GridJavaLogger extends GridMetadataAwareAdapter implements GridLogger {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Java Logging implementation proxy. */

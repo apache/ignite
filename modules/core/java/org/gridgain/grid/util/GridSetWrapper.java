@@ -20,6 +20,7 @@ import java.util.*;
 public class GridSetWrapper<E> extends GridSerializableSet<E> {
     /** Dummy value. */
     protected static final Object VAL = Boolean.TRUE;
+    /** */
     private static final long serialVersionUID = 0L;
 
 

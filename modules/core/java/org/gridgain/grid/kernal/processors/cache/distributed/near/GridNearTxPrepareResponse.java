@@ -27,6 +27,7 @@ import java.util.*;
  * Near cache prepare response.
  */
 public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareResponse<K, V> {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Collection of versions that are pending and less than lock version. */

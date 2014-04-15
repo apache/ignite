@@ -20,6 +20,7 @@ import org.gridgain.grid.util.typedef.*;
  * @see CX1
  */
 public abstract class GridClosureX<E, R> implements GridClosure<E, R> {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

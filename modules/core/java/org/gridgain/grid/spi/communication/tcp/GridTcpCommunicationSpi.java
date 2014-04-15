@@ -1935,6 +1935,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
     /** Internal exception class for proper timeout handling. */
     private static class HandshakeTimeoutException extends GridException {
+        /** */
         private static final long serialVersionUID = 0L;
 
 
@@ -2322,6 +2323,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
      *
      */
     private class HandshakeClosure extends GridInClosure2X<InputStream, OutputStream> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */
@@ -2390,6 +2392,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
      */
     @SuppressWarnings("PublicInnerClass")
     public static class NodeIdMessage extends GridTcpCommunicationMessageAdapter {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */

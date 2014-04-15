@@ -306,6 +306,7 @@ abstract class GridStreamerBoundedSizeWindowAdapter<E, T> extends GridStreamerWi
      */
     @SuppressWarnings("ConstantConditions")
     private class WindowHolder extends GridTuple3<Collection<T>, Set<E>, AtomicInteger> {
+        /** */
         private static final long serialVersionUID = 0L;
 
 

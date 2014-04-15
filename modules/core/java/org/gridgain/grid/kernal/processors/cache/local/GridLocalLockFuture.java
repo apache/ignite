@@ -31,6 +31,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     implements GridCacheMvccFuture<K, V, Boolean> {
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    /** */
     private static final long serialVersionUID = 0L;
 
 

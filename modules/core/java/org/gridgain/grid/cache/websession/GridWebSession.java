@@ -34,6 +34,7 @@ class GridWebSession implements HttpSession, Externalizable {
             return Collections.enumeration(Collections.<String>emptyList());
         }
     };
+    /** */
     private static final long serialVersionUID = 0L;
 
 

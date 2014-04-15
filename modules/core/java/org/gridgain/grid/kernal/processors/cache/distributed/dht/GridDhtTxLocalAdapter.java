@@ -33,6 +33,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  * Replicated user transaction.
  */
 public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapter<K, V> {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Near mappings. */

@@ -22,6 +22,7 @@ import java.io.*;
  * @see GridTuple
  */
 public class T2<V1, V2> extends GridBiTuple<V1, V2> {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

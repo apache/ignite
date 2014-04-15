@@ -23,6 +23,7 @@ import java.util.*;
  * method.
  */
 public abstract class GridMessagingListenActor<T> implements GridBiPredicate<UUID, T> {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** */

@@ -31,6 +31,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  * equality.
  */
 public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizable, GridOptimizedMarshallable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** */

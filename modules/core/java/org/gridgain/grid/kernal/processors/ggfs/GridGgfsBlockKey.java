@@ -25,6 +25,7 @@ import java.nio.*;
 @GridInternal
 public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
     implements Externalizable, Comparable<GridGgfsBlockKey> {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** File system file ID. */

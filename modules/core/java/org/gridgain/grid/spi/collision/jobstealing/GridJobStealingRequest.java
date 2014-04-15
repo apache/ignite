@@ -19,6 +19,7 @@ import java.nio.*;
  * Job stealing request.
  */
 public class GridJobStealingRequest extends GridTcpCommunicationMessageAdapter {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Delta. */

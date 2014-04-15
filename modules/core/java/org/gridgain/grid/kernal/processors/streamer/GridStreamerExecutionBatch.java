@@ -23,6 +23,7 @@ import java.util.*;
  * Streamer execution batch which should be processed on one node.
  */
 public class GridStreamerExecutionBatch implements Externalizable, GridOptimizedMarshallable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** */

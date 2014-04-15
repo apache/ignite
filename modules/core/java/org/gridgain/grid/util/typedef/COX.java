@@ -20,5 +20,6 @@ import org.gridgain.grid.util.lang.*;
  * @see GridOutClosureX
  */
 public abstract class COX<T> extends GridOutClosureX<T> {
+    /** */
     private static final long serialVersionUID = 0L;
  /* No-op. */ }

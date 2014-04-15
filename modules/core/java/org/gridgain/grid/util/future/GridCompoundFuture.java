@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.*;
  * Future composed of multiple inner futures.
  */
 public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Futures. */
@@ -293,6 +294,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      * Listener for futures.
      */
     private class Listener implements GridInClosure<GridFuture<T>> {
+        /** */
         private static final long serialVersionUID = 0L;
 
 

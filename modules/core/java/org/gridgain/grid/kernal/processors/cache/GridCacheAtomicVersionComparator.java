@@ -16,6 +16,7 @@ import java.util.*;
  * Atomic cache version comparator.
  */
 public class GridCacheAtomicVersionComparator implements Comparator<GridCacheVersion>, Serializable {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

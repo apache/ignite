@@ -16,6 +16,7 @@ import java.io.*;
  * Request for a log file.
  */
 public class GridClientLogRequest extends GridClientAbstractMessage {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Task name. */

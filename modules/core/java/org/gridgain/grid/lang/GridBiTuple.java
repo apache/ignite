@@ -22,6 +22,7 @@ import java.util.*;
  */
 public class GridBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     Iterable<Object>, Externalizable, Cloneable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** First value. */

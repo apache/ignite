@@ -19,6 +19,7 @@ import org.jetbrains.annotations.*;
  * @see GridConfiguration#getExecutorService()
  */
 public class GridComputeExecutionRejectedException extends GridException {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

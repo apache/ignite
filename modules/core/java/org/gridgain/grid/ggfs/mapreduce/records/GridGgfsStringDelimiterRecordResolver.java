@@ -20,6 +20,7 @@ import java.nio.charset.*;
  * {@link GridGgfsByteDelimiterRecordResolver}, but uses strings as delimiters instead of byte arrays.
  */
 public class GridGgfsStringDelimiterRecordResolver extends GridGgfsByteDelimiterRecordResolver {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

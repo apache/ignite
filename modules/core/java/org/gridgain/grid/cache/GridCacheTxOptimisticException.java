@@ -15,6 +15,7 @@ import org.gridgain.grid.*;
  * Exception thrown whenever grid transactions fail optimistically.
  */
 public class GridCacheTxOptimisticException extends GridException {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

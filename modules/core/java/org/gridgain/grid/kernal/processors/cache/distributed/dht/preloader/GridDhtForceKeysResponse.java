@@ -24,6 +24,7 @@ import java.util.*;
  * Force keys response. Contains absent keys.
  */
 public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Future ID. */

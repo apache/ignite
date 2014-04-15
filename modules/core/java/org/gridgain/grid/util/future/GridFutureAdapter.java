@@ -29,6 +29,7 @@ import java.util.concurrent.locks.*;
 public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements GridFuture<R>, Externalizable {
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    /** */
     private static final long serialVersionUID = 0L;
 
 
@@ -576,6 +577,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      *
      */
     private static class ChainFuture<R, T> extends GridFutureAdapter<T> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */

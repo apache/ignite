@@ -17,6 +17,7 @@ import org.jetbrains.annotations.*;
  * This exception is thrown when license violation is detected.
  */
 public class GridProductLicenseException extends GridException {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Short message. */

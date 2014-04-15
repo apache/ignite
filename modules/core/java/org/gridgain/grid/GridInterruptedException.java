@@ -14,6 +14,7 @@ package org.gridgain.grid;
  */
 @SuppressWarnings({"TypeMayBeWeakened"})
 public class GridInterruptedException extends GridException {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

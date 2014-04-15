@@ -16,6 +16,7 @@ import org.jetbrains.annotations.*;
  * that requires at least one node is called on empty projection.
  */
 public class GridEmptyProjectionException extends GridTopologyException {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

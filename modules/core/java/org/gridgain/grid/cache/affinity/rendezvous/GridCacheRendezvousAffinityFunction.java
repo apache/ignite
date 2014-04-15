@@ -50,6 +50,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
     /** Comparator. */
     private static final Comparator<GridBiTuple<Long, GridNode>> COMPARATOR =
         new HashComparator();
+    /** */
     private static final long serialVersionUID = 0L;
 
 

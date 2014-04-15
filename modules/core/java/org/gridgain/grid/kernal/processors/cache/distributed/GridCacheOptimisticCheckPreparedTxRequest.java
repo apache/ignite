@@ -22,6 +22,7 @@ import java.nio.*;
  * were prepared on remote node.
  */
 public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistributedBaseMessage<K, V> {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Future ID. */

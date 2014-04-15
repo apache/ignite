@@ -18,6 +18,7 @@ import java.io.*;
  * DGC bad lock.
  */
 class GridCacheDgcBadLock implements Externalizable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Near lock version. */

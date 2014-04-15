@@ -21,6 +21,7 @@ import java.util.*;
  * in case if originating node crashes.
  */
 public class GridCacheCommittedTxInfo<K, V> implements Externalizable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Originating transaction ID. */

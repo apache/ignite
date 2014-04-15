@@ -36,6 +36,7 @@ import java.util.*;
  * is always empty. Nodes exchange their metrics using metrics store.
  */
 public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMessage {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Map to store nodes metrics. */

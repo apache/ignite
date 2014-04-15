@@ -37,6 +37,7 @@ import static org.gridgain.grid.cache.GridCacheTxState.*;
  * when near cache is disabled.
  */
 public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Topology snapshot on which this tx was started. */
@@ -909,6 +910,7 @@ public class GridDhtColocatedTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      *
      */
     private static class PessimisticPrepareFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V>> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** Transaction. */

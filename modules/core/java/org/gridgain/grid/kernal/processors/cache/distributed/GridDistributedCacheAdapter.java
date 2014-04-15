@@ -23,6 +23,7 @@ import java.util.*;
  * Distributed cache implementation.
  */
 public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter<K, V> {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

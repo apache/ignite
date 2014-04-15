@@ -17,6 +17,7 @@ import java.io.*;
  * This exception is used to wrap standard {@link IOException} into {@link GridException}.
  */
 public class GridGgfsIoException extends GridException {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

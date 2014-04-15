@@ -35,6 +35,7 @@ public final class GridGgfsPath implements Comparable<GridGgfsPath>, Externaliza
 
     /** The directory separator. */
     private static final String SLASH = "/";
+    /** */
     private static final long serialVersionUID = 0L;
 
 

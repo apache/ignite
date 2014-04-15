@@ -36,6 +36,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
                 return F.t2();
             }
         };
+    /** */
     private static final long serialVersionUID = 0L;
 
 

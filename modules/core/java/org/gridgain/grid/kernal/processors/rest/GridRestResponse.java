@@ -27,6 +27,7 @@ public class GridRestResponse implements Externalizable {
 
     /** Authentication failure. */
     public static final int STATUS_AUTH_FAILED = 2;
+    /** */
     private static final long serialVersionUID = 0L;
 
 

@@ -15,6 +15,7 @@ import java.io.*;
  * Optimized string builder with better API.
  */
 public class GridStringBuilder implements Serializable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** */

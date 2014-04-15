@@ -19,6 +19,7 @@ import java.io.*;
  * This class is used for group-locking transactions that lock the whole partition.
  */
 public class GridPartitionLockKey implements GridCacheInternal, Externalizable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Partition ID. */

@@ -20,6 +20,7 @@ import java.io.*;
  * DR sender cache attributes.
  */
 public class GridCacheDrSendAttributes implements Externalizable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Data center replication mode. */

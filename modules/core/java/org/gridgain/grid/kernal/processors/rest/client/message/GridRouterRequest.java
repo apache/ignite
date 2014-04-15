@@ -15,6 +15,7 @@ import java.util.*;
  * Container for routed message information.
  */
 public class GridRouterRequest extends GridClientAbstractMessage {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Raw message. */

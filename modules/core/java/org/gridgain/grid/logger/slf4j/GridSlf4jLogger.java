@@ -31,6 +31,7 @@ import org.slf4j.*;
  * injection.
  */
 public class GridSlf4jLogger extends GridMetadataAwareAdapter implements GridLogger {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** SLF4J implementation proxy. */

@@ -24,6 +24,7 @@ import java.util.*;
  * Continuous handler for message subscription.
  */
 public class GridMessageListenHandler implements GridContinuousHandler {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** */

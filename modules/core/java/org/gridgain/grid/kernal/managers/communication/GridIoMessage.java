@@ -21,6 +21,7 @@ import java.nio.*;
  * Wrapper for all grid messages.
  */
 public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Policy. */

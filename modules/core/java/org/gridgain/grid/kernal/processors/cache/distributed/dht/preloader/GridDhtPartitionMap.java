@@ -20,6 +20,7 @@ import java.util.*;
  */
 public class GridDhtPartitionMap extends HashMap<Integer, GridDhtPartitionState>
     implements Comparable<GridDhtPartitionMap>, Externalizable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Node ID. */

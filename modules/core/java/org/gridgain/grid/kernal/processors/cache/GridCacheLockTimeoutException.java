@@ -13,6 +13,7 @@ package org.gridgain.grid.kernal.processors.cache;
  * Used to internally indicate that lock acquisition has timed out.
  */
 public class GridCacheLockTimeoutException extends Exception {
+    /** */
     private static final long serialVersionUID = 0L;
 
 
