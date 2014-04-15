@@ -31,16 +31,30 @@ public class GridHadoopJobId implements Externalizable {
         // No-op.
     }
 
+    /**
+     * @param nodeId Node ID.
+     * @param jobId Job ID.
+     */
     public GridHadoopJobId(UUID nodeId, int jobId) {
         this.nodeId = nodeId;
         this.jobId = jobId;
     }
 
+    public UUID globalId() {
+        return nodeId;
+    }
+
+    public int localId() {
+        return jobId;
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeUuid(out, nodeId);
         out.writeInt(jobId);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         nodeId = U.readUuid(in);
         jobId = in.readInt();

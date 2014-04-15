@@ -9,12 +9,21 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
+import org.apache.hadoop.conf.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
+import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.typedef.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Hadoop job tracker.
@@ -23,11 +32,37 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     /** System cache. */
     private GridCache<Object, Object> sysCache;
 
+    /** Map-reduce execution planner. */
+    private GridHadoopMapReducePlanner mrPlanner;
+
+    /** Locally active jobs. */
+    private ConcurrentMap<GridHadoopJobId, JobLocalState> activeJobs = new ConcurrentHashMap8<>();
+
     /** {@inheritDoc} */
-    @Override public void onKernalStart() {
+    @Override public void onKernalStart() throws GridException {
         super.onKernalStart();
 
-        sysCache = ctx.kernalContext().cache().cache("hadoop-sys-cache"); // TODO.
+        sysCache = ctx.kernalContext().cache().cache(ctx.systemCacheName());
+
+        mrPlanner = ctx.planner();
+
+        GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> projection = sysCache
+            .projection(GridHadoopJobId.class, GridHadoopJobMetadata.class);
+
+        GridCacheContinuousQuery<GridHadoopJobId, GridHadoopJobMetadata> qry = projection.queries()
+            .createContinuousQuery();
+
+        qry.callback(new GridBiPredicate<UUID,
+            Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>>>() {
+            @Override public boolean apply(UUID nodeId,
+                Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> evts) {
+                processJobMetadata(nodeId, evts);
+
+                return true;
+            }
+        });
+
+        qry.execute();
     }
 
     /**
@@ -38,9 +73,24 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @return Job completion future.
      */
     public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo info) {
-        GridHadoopJobMetadata meta = new GridHadoopJobMetadata(jobId);
+        try {
+            GridHadoopJob job = ctx.jobFactory().createJob(jobId, info);
 
-        return null;
+            Collection<GridHadoopFileBlock> blocks = job.input();
+
+            GridHadoopMapReducePlan mrPlan = mrPlanner.preparePlan(blocks, ctx.nodes(), job, null);
+
+            GridHadoopJobMetadata meta = new GridHadoopJobMetadata(jobId, info);
+
+            meta.mapReducePlan(mrPlan);
+
+            sysCache.put(jobId, meta);
+
+            return null;
+        }
+        catch (GridException e) {
+            return new GridFinishedFutureEx<>(e);
+        }
     }
 
     /**
@@ -61,5 +111,78 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      */
     public void onTaskFinished(GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
 
+    }
+
+    /**
+     * @param blocks Blocks to init nodes for.
+     */
+    private void initBlockNodes(Collection<GridHadoopFileBlock> blocks) {
+
+    }
+
+    /**
+     * @param origNodeId Originating node ID.
+     * @param updated Updated cache entries.
+     */
+    private void processJobMetadata(UUID origNodeId,
+        Iterable<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> updated) {
+        for (Map.Entry<GridHadoopJobId, GridHadoopJobMetadata> entry : updated) {
+            GridHadoopJobId jobId = entry.getKey();
+
+            JobLocalState state = activeJobs.get(jobId);
+
+            if (state == null)
+                state = F.addIfAbsent(activeJobs, jobId, new JobLocalState());
+
+            GridHadoopJobMetadata meta = entry.getValue();
+
+            GridHadoopJob job = ctx.jobFactory().createJob(jobId, meta.jobInfo());
+
+            // Check if we should initiate new task on local node.
+            Collection<GridHadoopFileBlock> mappers = meta.mapReducePlan().mappers(ctx.localNodeId());
+
+            if (mappers != null) {
+                Collection<GridHadoopTask> tasks = new ArrayList<>();
+
+                for (GridHadoopFileBlock block : mappers) {
+                    if (state.addMapper(block)) {
+                        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo();
+
+                        GridHadoopTask task = job.createTask(taskInfo);
+
+                        tasks.add(task);
+                    }
+                }
+
+                ctx.taskExecutor().run(tasks);
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private static class JobLocalState {
+        /**
+         * Adds mapper for local job state if this mapper has not been added yet.
+         *
+         * @param block Block to add.
+         * @return {@code True} if mapper was not added to this local node  yet.
+         */
+        public boolean addMapper(GridHadoopFileBlock block) {
+            // TODO.
+            return true;
+        }
+
+        /**
+         * Adds reducer for local job state if this reducer has not been added yet.
+         *
+         * @param rdcIdx Reducer index.
+         * @return {@code True} if reducer was not added to this local node yet.
+         */
+        public boolean addReducer(int rdcIdx) {
+            // TODO.
+            return true;
+        }
     }
 }
