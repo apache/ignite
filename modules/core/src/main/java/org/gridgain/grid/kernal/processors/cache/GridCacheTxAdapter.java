@@ -1085,7 +1085,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                 }
                 catch (Throwable e) {
                     throw new GridRuntimeException("Failed to apply transform closures during transaction commit, " +
-                        "transaction will be invalidated (unexpected exception was thrown)", e);
+                        "transaction will be invalidated (unexpected exception was thrown from transform closure)", e);
                 }
 
                 GridCacheOperation op = val == null ? DELETE : UPDATE;
