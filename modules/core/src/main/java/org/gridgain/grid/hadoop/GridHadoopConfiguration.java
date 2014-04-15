@@ -13,5 +13,45 @@ package org.gridgain.grid.hadoop;
  * Hadoop configuration.
  */
 public class GridHadoopConfiguration {
+    /** */
+    private GridHadoopJobFactory jobFactory;
 
+    /** */
+    private GridHadoopMapReducePlanner planner;
+
+    /**
+     * Gets job factory.
+     *
+     * @return Job factory.
+     */
+    public GridHadoopJobFactory getJobFactory() {
+        return jobFactory;
+    }
+
+    /**
+     * Sets job factory.
+     *
+     * @param jobFactory Job factory.
+     */
+    public void setJobFactory(GridHadoopJobFactory jobFactory) {
+        this.jobFactory = jobFactory;
+    }
+
+    /**
+     * Gets map-reduce planner.
+     *
+     * @return Planner.
+     */
+    public GridHadoopMapReducePlanner getPlanner() {
+        return planner;
+    }
+
+    /**
+     * Sets map-reduce planner.
+     *
+     * @param planner Planner.
+     */
+    public void setPlanner(GridHadoopMapReducePlanner planner) {
+        this.planner = planner;
+    }
 }

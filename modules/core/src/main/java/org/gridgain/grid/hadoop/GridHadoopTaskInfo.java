@@ -9,34 +9,38 @@
 
 package org.gridgain.grid.hadoop;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * TODO write doc
  */
-public class GridHadoopTaskInfo {
+public class GridHadoopTaskInfo implements Externalizable {
+    /** */
+    private UUID nodeId;
 
-    public UUID nodeId() {
-        return null;
+    /** */
+    private GridHadoopTaskType type;
+
+    /** */
+    private GridHadoopJobId jobId;
+
+    /** */
+    private int taskNumber;
+
+    /** */
+    private int attempt;
+
+    /** */
+    private GridHadoopFileBlock fileBlock;
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+
     }
 
-    public GridHadoopTaskType type() {
-        return null;
-    }
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
 
-    public GridHadoopJobId jobId() {
-        return null;
-    }
-
-    public int taskNumber() {
-        return 0;
-    }
-
-    public int attempt() {
-        return 0;
-    }
-
-    public GridHadoopFileBlock fileBlock() {
-        return null;
     }
 }
