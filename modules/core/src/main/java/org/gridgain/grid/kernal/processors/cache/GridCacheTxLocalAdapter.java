@@ -609,6 +609,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     if (near())
                                         ((GridNearCacheEntry<K, V>)cached).recordDhtVersion(txEntry.dhtVersion());
 
+                                    if (!F.isEmpty(txEntry.transformClosures()) || !F.isEmpty(txEntry.filters()))
+                                        txEntry.cached().unswap(true);
+
                                     GridTuple3<GridCacheOperation, V, byte[]> res = applyTransformClosures(txEntry,
                                         true);
 
@@ -1707,7 +1710,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param ret Return value.
      * @param enlisted Collection of keys enlisted into this transaction.
      * @param drPutMap DR put map (optional).
-     * @param drRmvMap DR remova mep (optional).
+     * @param drRmvMap DR remove map (optional).
      * @return Future with skipped keys (the ones that didn't pass filter for pessimistic transactions).
      */
     protected GridFuture<Set<K>> enlistWrite(
@@ -1789,7 +1792,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         else {
                             entry = entryEx(key, topologyVersion());
 
-                            entry.unswap(true);
+                            if (!entry.detached())
+                                entry.unswap(true);
                         }
 
                         try {

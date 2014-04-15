@@ -67,8 +67,8 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     public void testTransform() throws Exception {
         testTransform(keyForNode(0));
 
-        //if (gridCount() > 1)
-        //    testTransform(keyForNode(1));
+        if (gridCount() > 1)
+            testTransform(keyForNode(1));
     }
 
     /**

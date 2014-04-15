@@ -27,8 +27,6 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
     public void testTransformTx() throws Exception {
         testTransformTx(keyForNode(0), PESSIMISTIC);
 
-        /*
-        // TODO
         testTransformTx(keyForNode(0), OPTIMISTIC);
 
         if (gridCount() > 1) {
@@ -36,7 +34,6 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
 
             testTransformTx(keyForNode(1), OPTIMISTIC);
         }
-        */
     }
 
     /**
@@ -72,10 +69,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
         for (int i = 0; i < gridCount(); i++) {
             Integer val = (Integer)grid(i).cache(null).get(key);
 
-            if (txConcurrency == PESSIMISTIC)
-                assertEquals("Unexpected value for grid " + i, (Integer)(ITERATIONS_PER_THREAD * THREADS), val);
-            else
-                assertNotNull("Unexpected value for grid " + i, val);
+            assertEquals("Unexpected value for grid " + i, (Integer)(ITERATIONS_PER_THREAD * THREADS), val);
         }
 
         assertFalse(failed);
@@ -149,7 +143,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
             testPutWithFilterTx(keyForNode(1), PESSIMISTIC);
 
             // TODO
-            //testPutWithFilterTx(keyForNode(0), OPTIMISTIC);
+            //testPutWithFilterTx(keyForNode(1), OPTIMISTIC);
         }
     }
 
@@ -164,7 +158,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
         cache.put(key, 0);
 
         final int THREADS = 5;
-        final int ITERATIONS_PER_THREAD = 10_000;
+        final int ITERATIONS_PER_THREAD = iterations();
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {

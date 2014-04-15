@@ -703,14 +703,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                         return new GridDhtFinishedFuture<>(ctx.kernalContext(), e);
                     }
-                    catch (GridException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to add entry (will fail): " + e);
-
-                        fut.onError(e);
-
-                        return new GridDhtFinishedFuture<>(ctx.kernalContext(), e);
-                    }
                 }
             }
 
