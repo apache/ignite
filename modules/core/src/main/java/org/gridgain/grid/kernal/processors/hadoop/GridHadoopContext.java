@@ -140,7 +140,7 @@ public class GridHadoopContext {
      * @return Map-reduce planner.
      */
     public GridHadoopMapReducePlanner planner() {
-        return null;
+        return cfg.getMapReducePlanner();
     }
 
     /**

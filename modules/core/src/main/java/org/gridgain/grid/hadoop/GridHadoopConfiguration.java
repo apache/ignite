@@ -36,6 +36,7 @@ public class GridHadoopConfiguration {
      */
     public GridHadoopConfiguration(GridHadoopConfiguration cfg) {
         // Preserve alphabetic order.
+        jobFactory = cfg.getJobFactory();
         planner = cfg.getMapReducePlanner();
         sysCacheName = cfg.getSystemCacheName();
     }
