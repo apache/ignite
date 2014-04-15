@@ -32,7 +32,8 @@ import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
  * Near cache for transactional cache.
  */
 public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V> {
-    private static final long serialVersionUID = -4286164512770153510L;
+    private static final long serialVersionUID = 0L;
+
     /** DHT cache. */
     private GridDhtCache<K, V> dht;
 

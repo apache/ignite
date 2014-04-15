@@ -22,7 +22,8 @@ import java.io.*;
  * Data loader future.
  */
 class GridDataLoaderFuture extends GridFutureAdapter<Object> {
-    private static final long serialVersionUID = -7716362252467130320L;
+    private static final long serialVersionUID = 0L;
+
     /** Data loader. */
     @GridToStringExclude
     private GridDataLoader dataLdr;

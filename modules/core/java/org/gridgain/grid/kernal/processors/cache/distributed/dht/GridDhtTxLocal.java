@@ -30,7 +30,8 @@ import static org.gridgain.grid.cache.GridCacheTxState.*;
  * Replicated user transaction.
  */
 public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements GridCacheMappedVersion {
-    private static final long serialVersionUID = 2309570615828308227L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     private UUID nearNodeId;
 

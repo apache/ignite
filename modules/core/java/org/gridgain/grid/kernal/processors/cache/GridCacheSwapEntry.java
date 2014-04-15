@@ -19,7 +19,8 @@ import java.io.*;
  * Swap entry.
  */
 public class GridCacheSwapEntry<V> implements Externalizable {
-    private static final long serialVersionUID = -3768517600518581512L;
+    private static final long serialVersionUID = 0L;
+
     /** Key hash. */
     private int keyHash;
 

@@ -24,7 +24,8 @@ import java.util.*;
  * File block location in the grid.
  */
 public class GridGgfsBlockLocationImpl implements GridGgfsBlockLocation, Externalizable {
-    private static final long serialVersionUID = 644886512963192658L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     private long start;
 

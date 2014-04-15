@@ -18,7 +18,8 @@ import java.io.*;
  * Adapter for {@link GridCacheQueryMetrics}.
  */
 public class GridCacheQueryMetricsAdapter implements GridCacheQueryMetrics, Externalizable {
-    private static final long serialVersionUID = -4022386661147503148L;
+    private static final long serialVersionUID = 0L;
+
     /** Minimum time of execution. */
     private volatile long minTime;
 

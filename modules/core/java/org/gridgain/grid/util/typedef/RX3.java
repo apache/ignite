@@ -21,4 +21,5 @@ import org.gridgain.grid.util.lang.*;
  * @see GridReducer3X
  */
 public abstract class RX3<E1, E2, E3, R> extends GridReducer3X<E1, E2, E3, R> {
-    private static final long serialVersionUID = -5495787208403658937L; /* No-op. */ }
+    private static final long serialVersionUID = 0L;
+ /* No-op. */ }

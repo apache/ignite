@@ -22,7 +22,8 @@ import java.util.*;
  *
  */
 public class GridStreamerAttributes implements Externalizable {
-    private static final long serialVersionUID = 7594621382151650354L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     private String name;
 

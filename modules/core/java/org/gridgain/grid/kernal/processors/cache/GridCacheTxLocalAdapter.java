@@ -59,7 +59,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 return "Cache return value to boolean flag converter.";
             }
         };
-    private static final long serialVersionUID = -3125325874661594712L;
+    private static final long serialVersionUID = 0L;
+
 
     /** Per-transaction read map. */
     @GridToStringExclude
@@ -2856,7 +2857,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param <T> Return type.
      */
     protected abstract class PLC1<T> extends PostLockClosure1<T> {
-        private static final long serialVersionUID = 2691476757251825367L;
+        private static final long serialVersionUID = 0L;
+
 
         /**
          * @param arg Argument.
@@ -2880,7 +2882,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param <T> Return type.
      */
     protected abstract class PLC2<T> extends PostLockClosure2<T> {
-        private static final long serialVersionUID = 1778171987951112302L;
+        private static final long serialVersionUID = 0L;
+
         // No-op.
     }
 
@@ -2890,7 +2893,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param <T> Return type.
      */
     protected abstract class PMC<T> extends PostMissClosure<T> {
-        private static final long serialVersionUID = 1570533257915833339L;
+        private static final long serialVersionUID = 0L;
+
         // No-op.
     }
 
@@ -2900,7 +2904,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param <T> Return type.
      */
     protected abstract class PostLockClosure1<T> implements GridBiClosure<Boolean, Exception, GridFuture<T>> {
-        private static final long serialVersionUID = -8790181549736941181L;
+        private static final long serialVersionUID = 0L;
+
         /** Closure argument. */
         private T arg;
 
@@ -3013,7 +3018,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param <T> Return type.
      */
     protected abstract class PostLockClosure2<T> implements GridBiClosure<Boolean, Exception, GridFuture<T>> {
-        private static final long serialVersionUID = 3650936187017597240L;
+        private static final long serialVersionUID = 0L;
+
 
         /** {@inheritDoc} */
         @Override public final GridFuture<T> apply(Boolean locked, @Nullable Exception e) {
@@ -3057,7 +3063,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param <T> Return type.
      */
     protected abstract class PostMissClosure<T> implements GridBiClosure<T, Exception, GridFuture<T>> {
-        private static final long serialVersionUID = -3378842839195161451L;
+        private static final long serialVersionUID = 0L;
+
 
         /** {@inheritDoc} */
         @Override public final GridFuture<T> apply(T t, Exception e) {
@@ -3098,7 +3105,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param <T> Return type.
      */
     protected abstract class FinishClosure<T> implements GridBiClosure<T, Exception, T> {
-        private static final long serialVersionUID = -4373434416585830351L;
+        private static final long serialVersionUID = 0L;
+
 
         /** {@inheritDoc} */
         @Override public final T apply(T t, @Nullable Exception e) {

@@ -20,7 +20,8 @@ import java.nio.*;
  * Job siblings request.
  */
 public class GridJobSiblingsRequest extends GridTcpCommunicationMessageAdapter {
-    private static final long serialVersionUID = -7187507343348308287L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     private GridUuid sesId;
 

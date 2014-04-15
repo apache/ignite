@@ -24,7 +24,8 @@ import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileAffinityRange
  * Auxiliary class that is responsible for managing file affinity keys allocation by ranges.
  */
 public class GridGgfsFileMap implements Externalizable {
-    private static final long serialVersionUID = -6179319679258236278L;
+    private static final long serialVersionUID = 0L;
+
     @GridToStringInclude
     /** Sorted list of ranges in ascending order. */
     private List<GridGgfsFileAffinityRange> ranges;

@@ -22,4 +22,5 @@ import org.gridgain.grid.util.lang.*;
  * @see GridClosure2X
  */
 public abstract class CX2<E1, E2, R> extends GridClosure2X<E1, E2, R> {
-    private static final long serialVersionUID = -9028350158502222426L; /* No-op. */ }
+    private static final long serialVersionUID = 0L;
+ /* No-op. */ }

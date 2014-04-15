@@ -20,7 +20,8 @@ import java.util.concurrent.atomic.*;
  */
 public abstract class GridCloseableIteratorAdapterEx<T> extends GridIteratorAdapter<T>
     implements GridCloseableIterator<T> {
-    private static final long serialVersionUID = 7929883876259607005L;
+    private static final long serialVersionUID = 0L;
+
     /** Closed flag. */
     private final AtomicBoolean closed = new AtomicBoolean();
 

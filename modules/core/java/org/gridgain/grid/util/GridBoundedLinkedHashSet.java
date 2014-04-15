@@ -32,7 +32,8 @@ import java.util.*;
 public class GridBoundedLinkedHashSet<E> extends GridSerializableSet<E> implements Cloneable {
     /** */
     private static final Object FAKE = Boolean.TRUE;
-    private static final long serialVersionUID = -1329043299674822450L;
+    private static final long serialVersionUID = 0L;
+
 
     /** */
     @SuppressWarnings({"TransientFieldNotInitialized", "CollectionDeclaredAsConcreteClass"})

@@ -21,7 +21,8 @@ import java.io.*;
  * @see GridTuple
  */
 public class T3<V1, V2, V3> extends GridTuple3<V1, V2, V3> {
-    private static final long serialVersionUID = 3160975837943611950L;
+    private static final long serialVersionUID = 0L;
+
 
     /**
      * Empty constructor required by {@link Externalizable}.

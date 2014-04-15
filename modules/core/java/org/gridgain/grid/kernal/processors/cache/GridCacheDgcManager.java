@@ -735,7 +735,8 @@ public class GridCacheDgcManager<K, V> extends GridCacheManagerAdapter<K, V> {
      *
      */
     private static class DgcCallable implements GridCallable<Object> {
-        private static final long serialVersionUID = 5736493489306817566L;
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final String cacheName;
 

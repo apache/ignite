@@ -28,7 +28,8 @@ import java.util.concurrent.*;
 public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
     /** Cache message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
-    private static final long serialVersionUID = 7105937896968291577L;
+    private static final long serialVersionUID = 0L;
+
 
     /** Node ID this reply should be sent to. */
     @GridDirectTransient

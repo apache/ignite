@@ -28,7 +28,8 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
  *
  */
 public class GridProjectionAdapter extends GridMetadataAwareAdapter implements GridProjection, Externalizable {
-    private static final long serialVersionUID = -8810201165061740478L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     protected transient GridKernalContext ctx;
 
@@ -557,7 +558,8 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     /**
      */
     private static class CachesFilter implements GridPredicate<GridNode> {
-        private static final long serialVersionUID = -6212146818689305344L;
+        private static final long serialVersionUID = 0L;
+
         /** Cache name. */
         private final String cacheName;
 
@@ -590,7 +592,8 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     /**
      */
     private static class StreamersFilter implements GridPredicate<GridNode> {
-        private static final long serialVersionUID = -8373658578744786346L;
+        private static final long serialVersionUID = 0L;
+
         /** Streamer name. */
         private final String streamerName;
 
@@ -623,7 +626,8 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     /**
      */
     private static class AttributeFilter implements GridPredicate<GridNode> {
-        private static final long serialVersionUID = 2494422738705773441L;
+        private static final long serialVersionUID = 0L;
+
         /** Name. */
         private final String name;
 
@@ -648,7 +652,8 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     /**
      */
     private static class DaemonFilter implements GridPredicate<GridNode> {
-        private static final long serialVersionUID = 4973803507900823023L;
+        private static final long serialVersionUID = 0L;
+
 
         /** {@inheritDoc} */
         @Override public boolean apply(GridNode n) {
@@ -659,7 +664,8 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     /**
      */
     private static class OthersFilter implements GridPredicate<GridNode> {
-        private static final long serialVersionUID = -1632895850657693777L;
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final Collection<UUID> nodeIds;
 

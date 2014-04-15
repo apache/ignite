@@ -24,7 +24,8 @@ import org.jetbrains.annotations.*;
  * checked exceptions in the signature.
  */
 public class GridCacheDataStructureInvalidRuntimeException extends GridRuntimeException {
-    private static final long serialVersionUID = -8195445486571650086L;
+    private static final long serialVersionUID = 0L;
+
 
     /**
      * Creates new exception with given error message.

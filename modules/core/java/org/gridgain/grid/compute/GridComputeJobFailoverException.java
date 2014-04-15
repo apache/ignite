@@ -22,7 +22,8 @@ import java.util.concurrent.*;
  * any of the {@link GridCompute} methods can also throw this exception to force failover.
  */
 public class GridComputeJobFailoverException extends GridRuntimeException {
-    private static final long serialVersionUID = -4062443826742629603L;
+    private static final long serialVersionUID = 0L;
+
 
     /**
      * Creates new exception with given error message.

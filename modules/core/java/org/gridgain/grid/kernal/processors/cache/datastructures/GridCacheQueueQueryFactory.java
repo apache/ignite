@@ -42,7 +42,8 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
                 return F.t1();
             }
         };
-    private static final long serialVersionUID = 8614748893280532091L;
+    private static final long serialVersionUID = 0L;
+
 
     /** Cache context. */
     private GridCacheContext cctx;
@@ -681,7 +682,8 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
     static class OneRecordReducer<T>
         implements GridReducer<Map.Entry<GridCacheQueueItemKey,GridCacheQueueItemImpl<T>>,
         Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> {
-        private static final long serialVersionUID = 2022626481771649196L;
+        private static final long serialVersionUID = 0L;
+
         /** */
         private Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> entry;
 
@@ -702,7 +704,8 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
      */
     private static class SequenceComparator<T>
         implements Comparator<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>>, Serializable {
-        private static final long serialVersionUID = 3707538573676472724L;
+        private static final long serialVersionUID = 0L;
+
 
         @Override public int compare(Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> item1,
             Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> item2) {

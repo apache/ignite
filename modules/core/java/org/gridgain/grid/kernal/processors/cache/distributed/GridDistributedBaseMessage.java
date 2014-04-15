@@ -26,7 +26,8 @@ import java.util.*;
  */
 public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable,
     GridCacheVersionable {
-    private static final long serialVersionUID = -5057285082322123477L;
+    private static final long serialVersionUID = 0L;
+
     /** Lock or transaction version. */
     @GridToStringInclude
     protected GridCacheVersion ver;

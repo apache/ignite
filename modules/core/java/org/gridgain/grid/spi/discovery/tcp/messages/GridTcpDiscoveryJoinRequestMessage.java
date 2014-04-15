@@ -20,7 +20,8 @@ import java.util.*;
  * Sent to random node during SPI start. Then forwarded directly to coordinator.
  */
 public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstractMessage {
-    private static final long serialVersionUID = -6671890432473343820L;
+    private static final long serialVersionUID = 0L;
+
     /** New node that wants to join the topology. */
     private GridTcpDiscoveryNode node;
 

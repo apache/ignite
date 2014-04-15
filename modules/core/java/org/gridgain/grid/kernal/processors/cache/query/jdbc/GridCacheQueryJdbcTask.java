@@ -43,7 +43,8 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
 
     /** How long to store future (10 minutes). */
     private static final int RMV_DELAY = 10 * 60;
-    private static final long serialVersionUID = 5855351645346628555L;
+    private static final long serialVersionUID = 0L;
+
 
     /** {@inheritDoc} */
     @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, byte[] arg) throws GridException {
@@ -115,7 +116,8 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
      * Job for JDBC adapter.
      */
     private static class JdbcDriverJob extends GridComputeJobAdapter implements GridOptimizedMarshallable {
-        private static final long serialVersionUID = 6418543242786952292L;
+        private static final long serialVersionUID = 0L;
+
         /** */
         @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
         private static Object GG_CLASS_ID;

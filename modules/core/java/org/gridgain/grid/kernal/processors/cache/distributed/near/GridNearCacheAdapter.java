@@ -33,7 +33,8 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
  * Common logic for near caches.
  */
 public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAdapter<K, V> {
-    private static final long serialVersionUID = 8941884105556783837L;
+    private static final long serialVersionUID = 0L;
+
 
     /**
      * Empty constructor required for {@link Externalizable}.

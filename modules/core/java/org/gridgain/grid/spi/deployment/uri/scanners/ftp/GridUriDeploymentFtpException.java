@@ -15,7 +15,8 @@ import org.gridgain.grid.*;
  * An exception occurred during URI FTP deployment.
  */
 class GridUriDeploymentFtpException extends GridException {
-    private static final long serialVersionUID = 8000364283521187362L;
+    private static final long serialVersionUID = 0L;
+
 
     /**
      * Creates new grid exception with given error message.

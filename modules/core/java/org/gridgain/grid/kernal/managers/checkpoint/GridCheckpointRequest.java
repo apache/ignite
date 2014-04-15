@@ -20,7 +20,8 @@ import java.nio.*;
  * This class defines checkpoint request.
  */
 public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
-    private static final long serialVersionUID = -5960550247973696246L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     private GridUuid sesId;
 

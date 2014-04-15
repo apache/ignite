@@ -19,7 +19,8 @@ import java.io.*;
  * Queue header.
  */
 public class GridCacheQueueHeader<T> implements GridCacheInternal, Externalizable, Cloneable {
-    private static final long serialVersionUID = -8230927610451207359L;
+    private static final long serialVersionUID = 0L;
+
     /** Queue id. */
     @GridCacheQuerySqlField
     private String qid;

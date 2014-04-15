@@ -28,7 +28,8 @@ import java.util.*;
  * Query request.
  */
 public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
-    private static final long serialVersionUID = 658731646739934983L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     private boolean finished;
 

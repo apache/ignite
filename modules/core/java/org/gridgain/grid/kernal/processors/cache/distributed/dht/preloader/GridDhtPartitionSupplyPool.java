@@ -513,7 +513,8 @@ class GridDhtPartitionSupplyPool<K, V> {
      * Demand message wrapper.
      */
     private static class DemandMessage<K, V> extends GridBiTuple<UUID, GridDhtPartitionDemandMessage<K, V>> {
-        private static final long serialVersionUID = 2999587708553135717L;
+        private static final long serialVersionUID = 0L;
+
 
         /**
          * @param sndId Sender ID.

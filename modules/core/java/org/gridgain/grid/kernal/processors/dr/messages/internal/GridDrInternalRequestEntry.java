@@ -17,7 +17,8 @@ import java.io.*;
  * Internal DR request entry.
  */
 public class GridDrInternalRequestEntry implements Externalizable {
-    private static final long serialVersionUID = 3439175797482647642L;
+    private static final long serialVersionUID = 0L;
+
     /** Data center ID. */
     private byte dataCenterId;
 

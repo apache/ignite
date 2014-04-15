@@ -18,7 +18,8 @@ import java.util.*;
  * Grid SPI exception which may contain more than one failure.
  */
 public class GridSpiMultiException extends GridSpiException {
-    private static final long serialVersionUID = -4966330681616119089L;
+    private static final long serialVersionUID = 0L;
+
     /** Nested exceptions. */
     private List<Throwable> causes = new ArrayList<>();
 

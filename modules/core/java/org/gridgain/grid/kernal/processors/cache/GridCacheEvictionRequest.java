@@ -25,7 +25,8 @@ import java.util.*;
  * Cache eviction request.
  */
 public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
-    private static final long serialVersionUID = 1325345828331228762L;
+    private static final long serialVersionUID = 0L;
+
     /** Future id. */
     private long futId;
 

@@ -20,7 +20,8 @@ import java.nio.*;
  * Task result request.
  */
 public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
-    private static final long serialVersionUID = 2247288879791136284L;
+    private static final long serialVersionUID = 0L;
+
     /** Task ID. */
     private GridUuid taskId;
 

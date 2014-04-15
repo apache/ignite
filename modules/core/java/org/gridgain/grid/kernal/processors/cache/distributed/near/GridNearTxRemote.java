@@ -29,7 +29,8 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  * Transaction created by system implicitly on remote nodes.
  */
 public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> {
-    private static final long serialVersionUID = -8464740682535784155L;
+    private static final long serialVersionUID = 0L;
+
     /** Evicted keys. */
     private Collection<K> evicted = new LinkedList<>();
 

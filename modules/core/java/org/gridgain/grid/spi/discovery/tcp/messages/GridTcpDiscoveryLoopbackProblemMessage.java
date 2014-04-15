@@ -19,7 +19,8 @@ import java.util.*;
  * This means that remote node is configured to use loopback address, but joining node is not, or vise versa.
  */
 public class GridTcpDiscoveryLoopbackProblemMessage extends GridTcpDiscoveryAbstractMessage {
-    private static final long serialVersionUID = 1130477773773996827L;
+    private static final long serialVersionUID = 0L;
+
     /** Remote node addresses. */
     private Collection<String> addrs;
 

@@ -15,7 +15,8 @@ import org.gridgain.grid.*;
  * Exception thrown by SPI implementations.
  */
 public class GridSpiException extends GridException {
-    private static final long serialVersionUID = -864243623382995471L;
+    private static final long serialVersionUID = 0L;
+
 
     /**
      * Creates new SPI exception with given error message.

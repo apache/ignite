@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
  * Deployment or re-deployment failed.
  */
 public class GridDeploymentException extends GridException {
-    private static final long serialVersionUID = -5821331038380079310L;
+    private static final long serialVersionUID = 0L;
 
     /**
      * Creates new exception with given error message.

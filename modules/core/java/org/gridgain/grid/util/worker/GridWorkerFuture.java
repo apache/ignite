@@ -19,7 +19,8 @@ import java.io.*;
  * Future for locally executed closure that defines cancellation logic.
  */
 public class GridWorkerFuture<T> extends GridFutureAdapter<T> {
-    private static final long serialVersionUID = 3730190197204847979L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     private GridWorker w;
 

@@ -17,7 +17,8 @@ import java.util.*;
  * This class provides implementation for commit message fields and cannot be used directly.
  */
 public abstract class GridClientAbstractMessage implements GridClientMessage, Externalizable {
-    private static final long serialVersionUID = -8436351730482578629L;
+    private static final long serialVersionUID = 0L;
+
     /** Request ID (transient). */
     private long reqId;
 

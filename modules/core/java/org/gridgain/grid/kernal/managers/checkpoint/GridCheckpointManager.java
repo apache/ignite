@@ -357,7 +357,8 @@ public class GridCheckpointManager extends GridManagerAdapter<GridCheckpointSpi>
      * Checkpoint set.
      */
     private static class CheckpointSet extends GridConcurrentHashSet<String> {
-        private static final long serialVersionUID = -5428156724494705296L;
+        private static final long serialVersionUID = 0L;
+
         /** Session. */
         @GridToStringInclude
         private final GridTaskSessionInternal ses;

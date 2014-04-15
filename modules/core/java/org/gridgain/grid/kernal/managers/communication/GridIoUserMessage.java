@@ -25,7 +25,8 @@ import java.util.*;
  * User message wrapper.
  */
 public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
-    private static final long serialVersionUID = 6941087504241479846L;
+    private static final long serialVersionUID = 0L;
+
     /** Message body. */
     @GridDirectTransient
     private Object body;

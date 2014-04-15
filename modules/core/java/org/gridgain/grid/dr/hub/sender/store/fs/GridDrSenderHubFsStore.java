@@ -1687,7 +1687,8 @@ public class GridDrSenderHubFsStore implements GridDrSenderHubStore, GridLifecyc
      *
      */
     private static class NoDataException extends GridException {
-        private static final long serialVersionUID = 445159310273865363L;
+        private static final long serialVersionUID = 0L;
+
 
         /**
          *

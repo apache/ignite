@@ -25,7 +25,8 @@ import java.util.*;
  * Lock request message.
  */
 public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage<K, V> {
-    private static final long serialVersionUID = 5511597328945605414L;
+    private static final long serialVersionUID = 0L;
+
     /** Sender node ID. */
     private UUID nodeId;
 

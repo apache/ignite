@@ -45,7 +45,8 @@ import java.io.*;
  * @see GridCacheAffinityFunction
  */
 public class GridCacheAffinityKey<K> implements Externalizable {
-    private static final long serialVersionUID = 475163860418842657L;
+    private static final long serialVersionUID = 0L;
+
     /** Key. */
     @GridToStringInclude
     private K key;

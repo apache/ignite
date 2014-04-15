@@ -18,7 +18,8 @@ import java.util.*;
  * {@code Topology} command request.
  */
 public class GridClientTopologyRequest extends GridClientAbstractMessage {
-    private static final long serialVersionUID = 6574601678506132796L;
+    private static final long serialVersionUID = 0L;
+
     /** Id of requested node. */
     private UUID nodeId;
 

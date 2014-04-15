@@ -23,7 +23,8 @@ import java.util.concurrent.*;
  * Cache transaction proxy.
  */
 public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externalizable {
-    private static final long serialVersionUID = 9197955479004186780L;
+    private static final long serialVersionUID = 0L;
+
     /** Wrapped transaction. */
     @GridToStringInclude
     private GridCacheTx tx;

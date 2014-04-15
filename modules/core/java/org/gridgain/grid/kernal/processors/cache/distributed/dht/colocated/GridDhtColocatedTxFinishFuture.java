@@ -34,7 +34,8 @@ public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFu
     implements GridCacheFuture<GridCacheTx> {
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
-    private static final long serialVersionUID = -6887086643885511241L;
+    private static final long serialVersionUID = 0L;
+
 
     /** Context. */
     private GridCacheContext<K, V> cctx;
@@ -358,7 +359,8 @@ public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFu
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<GridCacheTx> {
-        private static final long serialVersionUID = 4462614202884874901L;
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final GridUuid futId = GridUuid.randomUuid();
 

@@ -65,7 +65,8 @@ import java.util.concurrent.*;
 public class GridExecutorService extends GridMetadataAwareAdapter implements ExecutorService, Externalizable {
     /** */
     private static final ThreadLocal<GridProjection> stash = new ThreadLocal<>();
-    private static final long serialVersionUID = -2808281226714383239L;
+    private static final long serialVersionUID = 0L;
+
 
     /** Projection. */
     private GridProjection prj;
@@ -548,7 +549,8 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
      * Listener to track tasks.
      */
     private class TaskTerminateListener<T> implements GridInClosure<GridFuture<T>> {
-        private static final long serialVersionUID = -4844285744171330455L;
+        private static final long serialVersionUID = 0L;
+
 
         /** {@inheritDoc} */
         @Override public void apply(GridFuture<T> taskFut) {

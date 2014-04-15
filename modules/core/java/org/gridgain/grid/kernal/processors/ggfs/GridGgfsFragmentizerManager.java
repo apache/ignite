@@ -796,7 +796,8 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
      * Hash set that overrides equals to use identity comparison.
      */
     private static class IdentityHashSet extends GridConcurrentHashSet<UUID> {
-        private static final long serialVersionUID = 7808306413291088522L;
+        private static final long serialVersionUID = 0L;
+
 
         /**
          * Constructor.

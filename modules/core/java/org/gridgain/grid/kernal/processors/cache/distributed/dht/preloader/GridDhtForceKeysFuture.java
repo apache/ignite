@@ -40,7 +40,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
     /** Wait for 1 second for topology to change. */
     private static final long REMAP_PAUSE = 1000;
-    private static final long serialVersionUID = 978430048278385780L;
+    private static final long serialVersionUID = 0L;
+
 
     /** Cache context. */
     private GridCacheContext<K, V> cctx;
@@ -354,7 +355,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Object> {
-        private static final long serialVersionUID = 430811304682321713L;
+        private static final long serialVersionUID = 0L;
+
         /** Mini-future ID. */
         private GridUuid miniId = GridUuid.randomUuid();
 

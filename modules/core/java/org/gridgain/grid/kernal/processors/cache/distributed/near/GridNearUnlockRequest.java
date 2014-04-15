@@ -20,7 +20,8 @@ import java.nio.*;
  * Near cache unlock request.
  */
 public class GridNearUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, V> {
-    private static final long serialVersionUID = -3212209686488369265L;
+    private static final long serialVersionUID = 0L;
+
 
     /**
      * Empty constructor required by {@link Externalizable}.

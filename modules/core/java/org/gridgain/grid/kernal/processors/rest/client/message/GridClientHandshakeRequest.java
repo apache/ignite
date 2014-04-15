@@ -34,7 +34,8 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
 
     /** Signal char. */
     public static final byte SIGNAL_CHAR = (byte)0x91;
-    private static final long serialVersionUID = 272820788665307968L;
+    private static final long serialVersionUID = 0L;
+
 
     /** Version info byte array. */
     private byte[] verArr;

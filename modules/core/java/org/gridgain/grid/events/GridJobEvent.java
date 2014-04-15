@@ -59,7 +59,8 @@ import java.util.*;
  * @see GridEventType#EVTS_JOB_EXECUTION
  */
 public class GridJobEvent extends GridEventAdapter {
-    private static final long serialVersionUID = 7165085650371814799L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     private String taskName;
 

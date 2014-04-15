@@ -1521,7 +1521,8 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      */
     private class EvictionFuture extends GridFutureAdapter<GridBiTuple<Collection<EvictionInfo>,
             Collection<EvictionInfo>>> {
-        private static final long serialVersionUID = 9037880867419299209L;
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final long id = idGen.incrementAndGet();
 

@@ -1956,7 +1956,8 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
      *
      */
     private static class CommittedVersion extends GridCacheVersion {
-        private static final long serialVersionUID = -200598507888853984L;
+        private static final long serialVersionUID = 0L;
+
         /** Corresponding near version. Transient. */
         private GridCacheVersion nearVer;
 
@@ -1984,7 +1985,8 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * Atomic integer that compares only using references, not values.
      */
     private static final class AtomicInt extends AtomicInteger {
-        private static final long serialVersionUID = 147713591349284114L;
+        private static final long serialVersionUID = 0L;
+
 
         /**
          * @param initVal Initial value.
@@ -2009,7 +2011,8 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * Commit listener. Checks if commit succeeded and rollbacks if case of error.
      */
     private class CommitListener implements CI1<GridFuture<GridCacheTx>> {
-        private static final long serialVersionUID = -6758497633589638495L;
+        private static final long serialVersionUID = 0L;
+
         /** Transaction. */
         private final GridCacheTxEx<K, V> tx;
 

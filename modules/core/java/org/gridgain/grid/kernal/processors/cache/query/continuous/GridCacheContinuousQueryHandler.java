@@ -27,7 +27,8 @@ import java.util.*;
  * Continuous query handler.
  */
 class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
-    private static final long serialVersionUID = -4156336493701920438L;
+    private static final long serialVersionUID = 0L;
+
     /** Cache name. */
     private String cacheName;
 

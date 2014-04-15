@@ -17,7 +17,8 @@ import java.io.*;
  * Path summary: total files count, total directories count, total length.
  */
 public class GridGgfsPathSummary implements Externalizable {
-    private static final long serialVersionUID = -8972083055627996386L;
+    private static final long serialVersionUID = 0L;
+
     /** Path. */
     private GridGgfsPath path;
 

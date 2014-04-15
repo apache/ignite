@@ -23,7 +23,8 @@ import java.util.*;
  *
  */
 public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapter {
-    private static final long serialVersionUID = -8926352205180858147L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     private long reqId;
 

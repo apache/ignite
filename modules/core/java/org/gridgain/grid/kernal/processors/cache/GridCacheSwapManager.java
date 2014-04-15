@@ -1376,7 +1376,8 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      *
      */
     private class IteratorWrapper extends GridCloseableIteratorAdapter<Map.Entry<byte[], GridCacheSwapEntry<V>>> {
-        private static final long serialVersionUID = -5723162101682757496L;
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> iter;
 

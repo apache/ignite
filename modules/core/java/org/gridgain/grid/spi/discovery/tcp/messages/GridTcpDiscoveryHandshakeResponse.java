@@ -18,7 +18,8 @@ import java.util.*;
  * Handshake response.
  */
 public class GridTcpDiscoveryHandshakeResponse extends GridTcpDiscoveryAbstractMessage {
-    private static final long serialVersionUID = -5412223931147846727L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     private long order;
 

@@ -16,7 +16,8 @@ import org.jetbrains.annotations.*;
  * {@code GGFS} exception thrown by file system components.
  */
 public class GridGgfsException extends GridException {
-    private static final long serialVersionUID = 6254161207414608225L;
+    private static final long serialVersionUID = 0L;
+
 
     /**
      * Creates an instance of GGFS exception with descriptive error message.

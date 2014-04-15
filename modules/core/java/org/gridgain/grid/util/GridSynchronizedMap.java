@@ -19,7 +19,8 @@ import java.util.*;
  * is to provide snapshot-guarantee for serialization and keep concurrent iterators.
  */
 public class GridSynchronizedMap<K, V> extends ConcurrentHashMap8<K, V> implements Externalizable {
-    private static final long serialVersionUID = -4665375694702275566L;
+    private static final long serialVersionUID = 0L;
+
 
     /** {@inheritDoc} */
     @Override public synchronized V putIfAbsent(K key, V val) {

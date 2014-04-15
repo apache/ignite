@@ -19,7 +19,8 @@ import static org.gridgain.grid.util.GridUtils.*;
  * within Grid.
  */
 public class GridException extends Exception {
-    private static final long serialVersionUID = 5785831329429736136L;
+    private static final long serialVersionUID = 0L;
+
 
     /**
      * Creates new exception with given error message.

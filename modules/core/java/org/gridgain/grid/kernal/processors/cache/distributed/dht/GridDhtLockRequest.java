@@ -29,7 +29,8 @@ import java.util.*;
  * DHT lock request.
  */
 public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
-    private static final long serialVersionUID = -6766141313137482511L;
+    private static final long serialVersionUID = 0L;
+
     /** Near keys. */
     @GridToStringInclude
     @GridDirectTransient

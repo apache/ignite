@@ -113,7 +113,8 @@ class GridAffinityUtils {
     @GridInternal
     private static class AffinityJob implements
         Callable<GridTuple4<GridAffinityMessage, GridAffinityMessage, Integer, GridException>>, Externalizable {
-        private static final long serialVersionUID = -7708155446437852860L;
+        private static final long serialVersionUID = 0L;
+
         /** */
         @GridInstanceResource
         private Grid grid;

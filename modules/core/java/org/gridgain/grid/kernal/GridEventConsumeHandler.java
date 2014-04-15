@@ -36,7 +36,8 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             return true;
         }
     };
-    private static final long serialVersionUID = -8279606434964846321L;
+    private static final long serialVersionUID = 0L;
+
 
     /** Local callback. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -291,7 +292,8 @@ class GridEventConsumeHandler implements GridContinuousHandler {
      * Event wrapper.
      */
     private static class EventWrapper implements GridCacheDeployable, Externalizable {
-        private static final long serialVersionUID = -6510396835877419563L;
+        private static final long serialVersionUID = 0L;
+
         /** Event. */
         private GridEvent evt;
 

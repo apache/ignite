@@ -18,6 +18,7 @@ import java.util.*;
  * extra logic or state in addition to {@link AbstractList}.
  */
 public abstract class GridSerializableList<E> extends AbstractList<E> implements Serializable {
-    private static final long serialVersionUID = -7770952343040499046L;
+    private static final long serialVersionUID = 0L;
+
     // No-op.
 }

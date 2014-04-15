@@ -17,7 +17,8 @@ import java.io.*;
  */
 @SuppressWarnings( {"CloneDoesntDeclareCloneNotSupportedException"})
 public class GridMutex implements Externalizable, Cloneable {
-    private static final long serialVersionUID = 7142548837944454490L;
+    private static final long serialVersionUID = 0L;
+
 
     /** {@inheritDoc} */
     @Override public Object clone() {

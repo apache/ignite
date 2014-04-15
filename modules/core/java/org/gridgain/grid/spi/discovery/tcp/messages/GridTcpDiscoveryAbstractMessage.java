@@ -19,7 +19,8 @@ import java.util.*;
  * Base class to implement discovery messages.
  */
 public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable {
-    private static final long serialVersionUID = 4858156814826309307L;
+    private static final long serialVersionUID = 0L;
+
     /** Sender of the message (transient). */
     private UUID senderNodeId;
 

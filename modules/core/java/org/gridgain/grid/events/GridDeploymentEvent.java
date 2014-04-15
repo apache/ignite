@@ -55,7 +55,8 @@ import java.util.*;
  * @see GridEventType#EVTS_DEPLOYMENT
  */
 public class GridDeploymentEvent extends GridEventAdapter {
-    private static final long serialVersionUID = 4780005538341507808L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     private String alias;
 

@@ -19,7 +19,8 @@ import java.io.*;
  * Immutable query metrics key used to group metrics.
  */
 class GridCacheQueryMetricsKey implements Externalizable {
-    private static final long serialVersionUID = 1049798709843599400L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     private GridCacheQueryType type;
 

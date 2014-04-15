@@ -15,7 +15,8 @@ import java.io.*;
  * Node metrics bean.
  */
 public class GridClientNodeMetricsBean implements Externalizable {
-    private static final long serialVersionUID = 7141639663069127633L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     private long lastUpdateTime = -1;
 

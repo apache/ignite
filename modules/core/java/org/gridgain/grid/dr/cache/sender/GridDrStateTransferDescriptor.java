@@ -20,7 +20,8 @@ import java.util.*;
  * Data center replication state transfer descriptor.
  */
 public class GridDrStateTransferDescriptor implements Externalizable {
-    private static final long serialVersionUID = -2177199505516629978L;
+    private static final long serialVersionUID = 0L;
+
     /** Unique state transfer ID. */
     private GridUuid id;
 

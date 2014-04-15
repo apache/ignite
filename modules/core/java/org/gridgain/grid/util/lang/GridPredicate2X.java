@@ -20,7 +20,8 @@ import org.gridgain.grid.util.typedef.*;
  * @see PX2
  */
 public abstract class GridPredicate2X<E1, E2> implements GridBiPredicate<E1, E2> {
-    private static final long serialVersionUID = -4770751139624614547L;
+    private static final long serialVersionUID = 0L;
+
 
     /** {@inheritDoc} */
     @Override public boolean apply(E1 e1, E2 e2) {

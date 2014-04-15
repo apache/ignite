@@ -25,7 +25,8 @@ import java.util.*;
  * Response to prepare request.
  */
 public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseMessage<K, V> {
-    private static final long serialVersionUID = 3725439539572636972L;
+    private static final long serialVersionUID = 0L;
+
     /** Collections of local lock candidates. */
     @GridToStringInclude
     @GridDirectTransient

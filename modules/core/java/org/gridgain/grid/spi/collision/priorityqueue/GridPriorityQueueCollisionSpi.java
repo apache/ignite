@@ -569,7 +569,8 @@ public class GridPriorityQueueCollisionSpi extends GridSpiAdapter implements Gri
      * Comparator for by priority comparison of collision contexts.
      */
     private class PriorityGridCollisionJobContextComparator implements Comparator<GridCollisionJobContextWrapper>,Serializable {
-        private static final long serialVersionUID = 1870472626500502347L;
+        private static final long serialVersionUID = 0L;
+
 
         /** {@inheritDoc} */
         @Override public int compare(GridCollisionJobContextWrapper o1, GridCollisionJobContextWrapper o2) {

@@ -33,7 +33,8 @@ import java.util.concurrent.atomic.*;
 public class GridJobContextImpl extends GridMetadataAwareAdapter implements GridComputeJobContext, Externalizable {
     /** */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
-    private static final long serialVersionUID = -8635363653394303928L;
+    private static final long serialVersionUID = 0L;
+
 
     /** Kernal context ({@code null} for job result context). */
     private GridKernalContext ctx;

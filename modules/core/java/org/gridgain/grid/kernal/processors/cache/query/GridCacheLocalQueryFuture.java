@@ -24,7 +24,8 @@ import java.util.*;
  * Local query future.
  */
 public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdapter<K, V, R> {
-    private static final long serialVersionUID = 3585557076333020312L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     private Runnable run;
 

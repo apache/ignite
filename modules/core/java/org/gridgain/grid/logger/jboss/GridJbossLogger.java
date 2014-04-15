@@ -24,7 +24,8 @@ import org.jetbrains.annotations.*;
  * injection.
  */
 public class GridJbossLogger extends GridMetadataAwareAdapter implements GridLogger {
-    private static final long serialVersionUID = 479453928746843705L;
+    private static final long serialVersionUID = 0L;
+
     /** Log4j implementation proxy. */
     private Logger impl;
 

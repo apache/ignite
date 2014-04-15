@@ -19,7 +19,8 @@ import org.gridgain.grid.util.typedef.*;
  * wraps {@link GridException} into {@link GridClosureException} instance.
  */
 public abstract class GridOutClosureX<T> implements GridOutClosure<T> {
-    private static final long serialVersionUID = -321311412275005478L;
+    private static final long serialVersionUID = 0L;
+
 
     /** {@inheritDoc} */
     @Override public T apply() {

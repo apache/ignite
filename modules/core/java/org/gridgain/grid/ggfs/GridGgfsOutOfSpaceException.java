@@ -17,7 +17,8 @@ import org.jetbrains.annotations.*;
  * its maximum value (that is configured per-node).
  */
 public class GridGgfsOutOfSpaceException extends GridGgfsException {
-    private static final long serialVersionUID = 7496258118877419084L;
+    private static final long serialVersionUID = 0L;
+
 
     /**
      * Creates exception with given error message.

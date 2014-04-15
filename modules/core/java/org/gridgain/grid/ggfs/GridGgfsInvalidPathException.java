@@ -16,7 +16,8 @@ import org.jetbrains.annotations.*;
  * (e.g. not a file while expecting to be a file).
  */
 public class GridGgfsInvalidPathException extends GridGgfsException {
-    private static final long serialVersionUID = -454564272426120498L;
+    private static final long serialVersionUID = 0L;
+
 
     /**
      * Creates exception with given error message.

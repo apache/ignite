@@ -24,6 +24,7 @@ import java.util.*;
  * @param <R> Return value of the task (see {@link GridComputeTask#reduce(List)} method).
  */
 public abstract class GridifyTaskSplitAdapter<R> extends GridComputeTaskSplitAdapter<GridifyArgument, R> {
-    private static final long serialVersionUID = 1982703521717467576L;
+    private static final long serialVersionUID = 0L;
+
     // No-op.
 }

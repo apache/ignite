@@ -23,7 +23,8 @@ import java.util.*;
  * were prepared on remote node.
  */
 public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistributedBaseMessage<K, V> {
-    private static final long serialVersionUID = 3192587405462126856L;
+    private static final long serialVersionUID = 0L;
+
     /** Future ID. */
     private GridUuid futId;
 

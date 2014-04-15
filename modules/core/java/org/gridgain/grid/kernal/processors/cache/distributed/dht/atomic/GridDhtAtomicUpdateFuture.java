@@ -36,7 +36,8 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
     implements GridCacheAtomicFuture<K, Void> {
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
-    private static final long serialVersionUID = 7535666254738897289L;
+    private static final long serialVersionUID = 0L;
+
 
     /** Logger. */
     protected static GridLogger log;

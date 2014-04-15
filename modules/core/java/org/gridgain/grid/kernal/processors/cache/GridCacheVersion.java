@@ -21,7 +21,8 @@ import java.util.*;
  * Grid unique version.
  */
 public class GridCacheVersion implements Comparable<GridCacheVersion>, Externalizable, GridOptimizedMarshallable {
-    private static final long serialVersionUID = -4510995001560535693L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
     private static Object GG_CLASS_ID;

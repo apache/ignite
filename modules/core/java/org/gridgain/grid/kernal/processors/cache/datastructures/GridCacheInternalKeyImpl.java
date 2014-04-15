@@ -19,7 +19,8 @@ import java.io.*;
  * Key is used for caching cache data structures.
  */
 public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externalizable, Cloneable {
-    private static final long serialVersionUID = 5876488893766707583L;
+    private static final long serialVersionUID = 0L;
+
     /** Name of cache data structure. */
     private String name;
 

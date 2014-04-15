@@ -13,7 +13,8 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
  * Exception thrown whenever entry is created for invalid partition.
  */
 public class GridDhtInvalidPartitionException extends RuntimeException {
-    private static final long serialVersionUID = 2191579619932527252L;
+    private static final long serialVersionUID = 0L;
+
     /** Partition. */
     private final int part;
 

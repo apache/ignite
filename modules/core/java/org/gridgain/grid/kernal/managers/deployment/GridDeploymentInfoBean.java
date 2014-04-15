@@ -24,7 +24,8 @@ import java.util.*;
  */
 public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter implements GridDeploymentInfo,
     Externalizable {
-    private static final long serialVersionUID = 3013591391994918099L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     private GridUuid clsLdrId;
 

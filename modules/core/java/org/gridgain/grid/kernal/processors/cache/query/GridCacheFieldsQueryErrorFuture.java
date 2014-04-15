@@ -20,7 +20,8 @@ import java.util.*;
 * Error future for fields query.
 */
 public class GridCacheFieldsQueryErrorFuture extends GridCacheQueryErrorFuture<List<?>> {
-    private static final long serialVersionUID = -7014876275037594878L;
+    private static final long serialVersionUID = 0L;
+
     /** */
     private boolean incMeta;
 

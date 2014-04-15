@@ -27,7 +27,8 @@ import java.io.*;
  * @see GridFunc
  */
 public abstract class GridAbsClosure implements Runnable, Serializable {
-    private static final long serialVersionUID = 2950521557793096934L;
+    private static final long serialVersionUID = 0L;
+
 
     /**
      * Absolute closure body.

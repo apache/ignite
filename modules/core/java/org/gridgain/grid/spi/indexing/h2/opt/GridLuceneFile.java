@@ -23,7 +23,7 @@ public class GridLuceneFile implements Serializable {
     public static final AtomicInteger filesCnt = new AtomicInteger();
 
     /** */
-    private static final long serialVersionUIDXXX = 1L;
+    private static final long serialVersionUID = 1L;
 
     /** */
     private LongArray buffers = new LongArray();

@@ -49,7 +49,8 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
 
     /** How many cancelled future IDs to keep in history. */
     private static final int CANCELLED_FUTS_HISTORY_SIZE = 4096;
-    private static final long serialVersionUID = -4265391903337027039L;
+    private static final long serialVersionUID = 0L;
+
 
     /** Log. */
     private GridLogger log;
@@ -1152,7 +1153,8 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
      * Data loader peer-deploy aware.
      */
     private class StreamerPda implements GridPeerDeployAware {
-        private static final long serialVersionUID = 8543785141257545227L;
+        private static final long serialVersionUID = 0L;
+
         /** Deploy class. */
         private Class<?> cls;
 
@@ -1349,7 +1351,8 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
      * Batch execution future.
      */
     private static class BatchExecutionFuture extends GridCompoundFuture<Object, Object> {
-        private static final long serialVersionUID = 7194196225728488493L;
+        private static final long serialVersionUID = 0L;
+
         /** */
         private BatchWorker w;
 

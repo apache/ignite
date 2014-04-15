@@ -19,7 +19,8 @@ import java.util.*;
  * DGC lock candidate.
  */
 class GridCacheDgcLockCandidate implements Externalizable {
-    private static final long serialVersionUID = 7528097273968110614L;
+    private static final long serialVersionUID = 0L;
+
     /** Node ID. */
     private UUID nodeId;
 

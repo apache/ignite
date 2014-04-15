@@ -35,7 +35,8 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
  */
 public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, V>
     implements GridCacheTxRemoteEx<K, V> {
-    private static final long serialVersionUID = 119067189740292656L;
+    private static final long serialVersionUID = 0L;
+
     /** Read set. */
     @GridToStringInclude
     protected Map<K, GridCacheTxEntry<K, V>> readMap;

@@ -73,7 +73,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             return F.t2();
         }
     };
-    private static final long serialVersionUID = 8714654617808741805L;
+    private static final long serialVersionUID = 0L;
+
 
     /** */
     private boolean keyCheck = true;
@@ -4736,7 +4737,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      */
     @GridInternal
     private static class GlobalClearAllCallable implements Callable<Object>, Externalizable {
-        private static final long serialVersionUID = -3682171427655567556L;
+        private static final long serialVersionUID = 0L;
+
         /** Cache name. */
         private String cacheName;
 
