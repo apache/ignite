@@ -16,12 +16,12 @@ import java.io.*;
 /**
  * Hadoop job metadata. Internal object used for distributed job state tracking.
  */
-public class GridHadoopJobMetadata<T> implements Serializable {
+public class GridHadoopJobMetadata implements Serializable {
     /** Job ID. */
     private GridHadoopJobId jobId;
 
     /** Job info. */
-    private GridHadoopJobInfo<T> jobInfo;
+    private GridHadoopJobInfo jobInfo;
 
     /** Map-reduce plan. */
     private GridHadoopMapReducePlan mrPlan;
@@ -30,7 +30,7 @@ public class GridHadoopJobMetadata<T> implements Serializable {
      * @param jobId Job ID.
      * @param jobInfo Job info.
      */
-    public GridHadoopJobMetadata(GridHadoopJobId jobId, GridHadoopJobInfo<T> jobInfo) {
+    public GridHadoopJobMetadata(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
         this.jobId = jobId;
         this.jobInfo = jobInfo;
     }
@@ -59,7 +59,7 @@ public class GridHadoopJobMetadata<T> implements Serializable {
     /**
      * @return Job info.
      */
-    public GridHadoopJobInfo<T> jobInfo() {
+    public GridHadoopJobInfo jobInfo() {
         return jobInfo;
     }
 }

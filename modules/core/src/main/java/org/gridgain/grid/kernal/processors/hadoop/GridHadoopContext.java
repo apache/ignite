@@ -146,7 +146,7 @@ public class GridHadoopContext {
     /**
      * @return Job factory.
      */
-    public <T> GridHadoopJobFactory<T> jobFactory() {
+    public GridHadoopJobFactory jobFactory() {
         return null;
     }
 

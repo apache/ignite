@@ -46,16 +46,16 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         mrPlanner = ctx.planner();
 
-        GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata<Configuration>> projection = sysCache
+        GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> projection = sysCache
             .projection(GridHadoopJobId.class, GridHadoopJobMetadata.class);
 
-        GridCacheContinuousQuery<GridHadoopJobId, GridHadoopJobMetadata<Configuration>> qry = projection.queries()
+        GridCacheContinuousQuery<GridHadoopJobId, GridHadoopJobMetadata> qry = projection.queries()
             .createContinuousQuery();
 
         qry.callback(new GridBiPredicate<UUID,
-            Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata<Configuration>>>>() {
+            Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>>>() {
             @Override public boolean apply(UUID nodeId,
-                Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata<Configuration>>> evts) {
+                Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> evts) {
                 processJobMetadata(nodeId, evts);
 
                 return true;
@@ -72,15 +72,15 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param info Job info.
      * @return Job completion future.
      */
-    public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo<Configuration> info) {
+    public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo info) {
         try {
-            GridHadoopJob<Configuration> job = ctx.<Configuration>jobFactory().createJob(jobId, info);
+            GridHadoopJob job = ctx.<Configuration>jobFactory().createJob(jobId, info);
 
             Collection<GridHadoopFileBlock> blocks = job.input();
 
             GridHadoopMapReducePlan mrPlan = mrPlanner.preparePlan(blocks, ctx.nodes(), job, null);
 
-            GridHadoopJobMetadata<Configuration> meta = new GridHadoopJobMetadata<>(jobId, info);
+            GridHadoopJobMetadata meta = new GridHadoopJobMetadata(jobId, info);
 
             meta.mapReducePlan(mrPlan);
 
@@ -125,8 +125,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param updated Updated cache entries.
      */
     private void processJobMetadata(UUID origNodeId,
-        Iterable<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata<Configuration>>> updated) {
-        for (Map.Entry<GridHadoopJobId, GridHadoopJobMetadata<Configuration>> entry : updated) {
+        Iterable<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> updated) {
+        for (Map.Entry<GridHadoopJobId, GridHadoopJobMetadata> entry : updated) {
             GridHadoopJobId jobId = entry.getKey();
 
             JobLocalState state = activeJobs.get(jobId);
@@ -134,9 +134,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             if (state == null)
                 state = F.addIfAbsent(activeJobs, jobId, new JobLocalState());
 
-            GridHadoopJobMetadata<Configuration> meta = entry.getValue();
+            GridHadoopJobMetadata meta = entry.getValue();
 
-            GridHadoopJob<Configuration> job = ctx.<Configuration>jobFactory().createJob(jobId, meta.jobInfo());
+            GridHadoopJob job = ctx.jobFactory().createJob(jobId, meta.jobInfo());
 
             // Check if we should initiate new task on local node.
             for (GridHadoopFileBlock block : meta.mapReducePlan().mappers(ctx.localNodeId())) {
