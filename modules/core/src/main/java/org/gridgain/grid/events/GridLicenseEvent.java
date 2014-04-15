@@ -51,6 +51,7 @@ import java.util.*;
  * @see GridEventType#EVT_LIC_VIOLATION
  */
 public class GridLicenseEvent extends GridEventAdapter {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** License ID. */

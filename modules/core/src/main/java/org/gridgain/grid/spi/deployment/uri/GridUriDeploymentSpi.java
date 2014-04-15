@@ -1346,6 +1346,7 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
      */
     private static class LastTimeUnitDescriptorComparator implements Comparator<GridUriDeploymentUnitDescriptor>,
         Serializable {
+        /** */
         private static final long serialVersionUID = 0L;
 
 

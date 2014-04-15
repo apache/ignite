@@ -40,6 +40,7 @@ public class GridReflectionCache implements Externalizable {
 
     /** Cache size. */
     private static final int CACHE_SIZE = Integer.getInteger(GG_REFLECTION_CACHE_SIZE, 128);
+    /** */
     private static final long serialVersionUID = 0L;
 
 

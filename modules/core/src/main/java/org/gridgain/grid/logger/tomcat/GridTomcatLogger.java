@@ -26,6 +26,7 @@ import org.jetbrains.annotations.*;
  * @see GridTomcatStartup
  */
 public class GridTomcatLogger extends GridMetadataAwareAdapter implements GridLogger {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Implementation proxy. */

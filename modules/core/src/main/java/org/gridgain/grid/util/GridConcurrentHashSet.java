@@ -20,6 +20,7 @@ import java.util.concurrent.*;
  * Concurrent set implementation.
  */
 public class GridConcurrentHashSet<E> extends GridSetWrapper<E> {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

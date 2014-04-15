@@ -15,6 +15,7 @@ import org.gridgain.grid.*;
  * Exception thrown whenever grid transactions time out.
  */
 public class GridCacheTxTimeoutException extends GridException {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

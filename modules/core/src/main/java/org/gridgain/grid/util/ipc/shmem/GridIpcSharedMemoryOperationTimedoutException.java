@@ -17,6 +17,7 @@ import org.jetbrains.annotations.*;
  * has timed out.
  */
 public class GridIpcSharedMemoryOperationTimedoutException extends GridException {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

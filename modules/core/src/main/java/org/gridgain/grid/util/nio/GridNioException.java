@@ -16,6 +16,7 @@ import org.jetbrains.annotations.*;
  * Nio specific exception.
  */
 public class GridNioException extends GridException {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

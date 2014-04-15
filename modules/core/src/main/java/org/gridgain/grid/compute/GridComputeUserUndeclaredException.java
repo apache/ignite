@@ -18,6 +18,7 @@ import org.jetbrains.annotations.*;
  * error condition such as assertion, {@link NullPointerException}, {@link OutOfMemoryError}, etc.
  */
 public class GridComputeUserUndeclaredException extends GridException {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

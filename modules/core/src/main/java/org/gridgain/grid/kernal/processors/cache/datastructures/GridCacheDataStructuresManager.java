@@ -1052,6 +1052,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * Predicate for queue continuous query.
      */
     private static class QueueHeaderPredicate implements GridBiPredicate, Externalizable {
+        /** */
         private static final long serialVersionUID = 0L;
 
 

@@ -19,6 +19,7 @@ import java.util.*;
  */
 public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap>
     implements Comparable<GridDhtPartitionFullMap>, Externalizable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Node ID. */

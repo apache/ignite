@@ -30,6 +30,7 @@ public class GridGgfsNewLineRecordResolver extends GridGgfsByteDelimiterRecordRe
 
     /** LF symbol. */
     public static final byte SYM_LF = 0x0A;
+    /** */
     private static final long serialVersionUID = 0L;
 
 

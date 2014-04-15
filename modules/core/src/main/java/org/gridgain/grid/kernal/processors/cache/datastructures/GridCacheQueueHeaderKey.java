@@ -18,6 +18,7 @@ import java.io.*;
  * Queue header key.
  */
 public class GridCacheQueueHeaderKey implements Externalizable, GridCacheInternal {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** */

@@ -18,6 +18,7 @@ import java.util.*;
  * Message telling joining node that it failed coordinator's validation check.
  */
 public class GridTcpDiscoveryCheckFailedMessage extends GridTcpDiscoveryAbstractMessage {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Coordinator version. */

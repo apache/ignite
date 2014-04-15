@@ -66,6 +66,7 @@ import static org.gridgain.grid.kernal.GridKernalState.*;
 public class GridKernalContextImpl extends GridMetadataAwareAdapter implements GridKernalContext, Externalizable {
     /** */
     private static final ThreadLocal<String> stash = new ThreadLocal<>();
+    /** */
     private static final long serialVersionUID = 0L;
 
 

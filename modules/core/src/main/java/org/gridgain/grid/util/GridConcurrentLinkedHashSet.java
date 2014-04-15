@@ -22,6 +22,7 @@ import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
  * Concurrent linked set implementation.
  */
 public class GridConcurrentLinkedHashSet<E> extends GridSetWrapper<E> {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

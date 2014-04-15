@@ -353,6 +353,7 @@ public class GridAffinityAssignmentCache {
      * Affinity ready future. Will remove itself from ready futures map.
      */
     private class AffinityReadyFuture extends GridFutureAdapter<Long> {
+        /** */
         private static final long serialVersionUID = 0L;
 
 

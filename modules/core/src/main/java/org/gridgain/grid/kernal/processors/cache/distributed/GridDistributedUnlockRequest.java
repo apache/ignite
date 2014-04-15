@@ -24,6 +24,7 @@ import java.util.*;
  * Lock request message.
  */
 public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessage<K, V> {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Keys to unlock. */

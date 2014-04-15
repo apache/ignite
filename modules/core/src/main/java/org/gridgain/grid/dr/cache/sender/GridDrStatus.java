@@ -20,6 +20,7 @@ import java.io.*;
 public class GridDrStatus implements Externalizable {
     /** Status: not paused. */
     public static final GridDrStatus NOT_PAUSED = new GridDrStatus(null, null);
+    /** */
     private static final long serialVersionUID = 0L;
 
 

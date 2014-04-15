@@ -18,6 +18,7 @@ import java.util.*;
  * Node order comparator.
  */
 public class GridNodeOrderComparator implements Comparator<GridNode>, Serializable {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

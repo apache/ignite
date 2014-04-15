@@ -24,6 +24,7 @@ import java.util.*;
  * Event storage message.
  */
 public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** */

@@ -23,6 +23,7 @@ import java.nio.*;
  * Check prepared transactions response.
  */
 public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDistributedBaseMessage<K, V> {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Future ID. */

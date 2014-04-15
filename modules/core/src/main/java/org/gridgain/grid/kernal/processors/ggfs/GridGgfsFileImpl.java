@@ -21,6 +21,7 @@ import java.util.*;
  * File or directory information.
  */
 public final class GridGgfsFileImpl implements GridGgfsFile, Externalizable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Path to this file. */

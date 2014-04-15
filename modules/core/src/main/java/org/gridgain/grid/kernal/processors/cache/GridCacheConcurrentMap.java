@@ -735,6 +735,7 @@ public class GridCacheConcurrentMap<K, V> {
      * just to simplify some locking and avoid separate construction.
      */
     private class Segment extends ReentrantLock {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /*
@@ -1513,6 +1514,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @param <V> Value type.
      */
     private static class Iterator0<K, V> implements Iterator<GridCacheEntryEx<K, V>>, Externalizable {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */
@@ -1780,6 +1782,7 @@ public class GridCacheConcurrentMap<K, V> {
      */
     @SuppressWarnings("unchecked")
     private static class Set0<K, V> extends AbstractSet<GridCacheEntryEx<K, V>> implements Externalizable {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** Filter. */
@@ -1961,6 +1964,7 @@ public class GridCacheConcurrentMap<K, V> {
      * Note, class is static for {@link Externalizable}.
      */
     private static class EntryIterator<K, V> implements Iterator<GridCacheEntry<K, V>>, Externalizable {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** Base iterator. */
@@ -2053,6 +2057,7 @@ public class GridCacheConcurrentMap<K, V> {
      * Note that class is static for {@link Externalizable}.
      */
     private static class ValueIterator<K, V> implements Iterator<V>, Externalizable {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** Hash table iterator. */
@@ -2133,6 +2138,7 @@ public class GridCacheConcurrentMap<K, V> {
      * Key iterator.
      */
     private static class KeyIterator<K, V> implements Iterator<K>, Externalizable {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** Hash table iterator. */
@@ -2184,6 +2190,7 @@ public class GridCacheConcurrentMap<K, V> {
      * Key set.
      */
     private static class KeySet<K, V> extends AbstractSet<K> implements Externalizable {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** Base entry set. */
@@ -2251,6 +2258,7 @@ public class GridCacheConcurrentMap<K, V> {
      * Note that the set is static for {@link Externalizable} support.
      */
     private static class Values<K, V> extends AbstractCollection<V> implements Externalizable {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** Base entry set. */
@@ -2309,6 +2317,7 @@ public class GridCacheConcurrentMap<K, V> {
      * Entry set.
      */
     private static class EntrySet<K, V> extends AbstractSet<GridCacheEntry<K, V>> implements Externalizable {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** Base entry set. */

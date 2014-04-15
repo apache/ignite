@@ -44,6 +44,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     implements GridCacheTxEx<K, V>, Externalizable {
     /** Static logger to avoid re-creation. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    /** */
     private static final long serialVersionUID = 0L;
 
 
@@ -1285,6 +1286,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      * Transaction shadow class to be used for deserialization.
      */
     private static class TxShadow extends GridMetadataAwareAdapter implements GridCacheTx {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** Xid. */

@@ -24,6 +24,7 @@ import java.util.*;
  * Partition supply message.
  */
 public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Worker ID. */

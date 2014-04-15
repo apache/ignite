@@ -21,6 +21,7 @@ import java.util.*;
  *
  */
 public class GridLeanSet<E> extends GridSetWrapper<E> implements Cloneable {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

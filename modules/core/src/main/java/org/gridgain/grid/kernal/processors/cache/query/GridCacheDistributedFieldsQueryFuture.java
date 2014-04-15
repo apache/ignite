@@ -24,6 +24,7 @@ import java.util.*;
 public class GridCacheDistributedFieldsQueryFuture
     extends GridCacheDistributedQueryFuture<Object, Object, List<Object>>
     implements GridCacheQueryMetadataAware {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Meta data future. */

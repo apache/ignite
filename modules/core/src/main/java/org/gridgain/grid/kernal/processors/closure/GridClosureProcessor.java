@@ -1107,6 +1107,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * No-reduce task adapter.
      */
     private abstract static class TaskNoReduceAdapter<T> extends GridPeerDeployAwareTaskAdapter<T, Void> {
+        /** */
         private static final long serialVersionUID = 0L;
 
 
@@ -1128,6 +1129,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * {@link GridClosureProcessor#runAsync(GridClosureCallMode, Collection, Collection)}.
      */
     private class T1 extends TaskNoReduceAdapter<Void> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */
@@ -1162,6 +1164,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * {@link GridClosureProcessor#runAsync(GridClosureCallMode, Runnable, Collection)}.
      */
     private class T2 extends TaskNoReduceAdapter<Void> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */
@@ -1193,6 +1196,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * {@link GridClosureProcessor#forkjoinAsync(GridClosureCallMode, Collection, GridReducer, Collection)}
      */
     private class T3<R1, R2> extends GridPeerDeployAwareTaskAdapter<Void, R2> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */
@@ -1247,6 +1251,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      */
     private class T4 extends TaskNoReduceAdapter<Void> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */
@@ -1287,6 +1292,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      */
     private class T5<R> extends GridPeerDeployAwareTaskAdapter<Void, R> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */
@@ -1339,6 +1345,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * {@link GridClosureProcessor#callAsync(GridClosureCallMode, Collection, Collection)}
      */
     private class T6<R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */
@@ -1382,6 +1389,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * {@link GridClosureProcessor#callAsync(GridClosureCallMode, Callable, Collection)}
      */
     private class T7<R> extends GridPeerDeployAwareTaskAdapter<Void, R> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */
@@ -1420,6 +1428,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      */
     private class T8<T, R> extends GridPeerDeployAwareTaskAdapter<Void, R> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */
@@ -1464,6 +1473,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      */
     private class T9<T, R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */
@@ -1512,6 +1522,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      */
     private class T10<T, R1, R2> extends GridPeerDeployAwareTaskAdapter<Void, R2> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */
@@ -1576,6 +1587,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      */
     private class T11<T, R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */

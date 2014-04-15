@@ -26,6 +26,7 @@ import java.util.*;
  */
 public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable,
     GridCacheVersionable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Future ID. */

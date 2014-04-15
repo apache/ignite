@@ -28,6 +28,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
  * This class contains information on a single cache configured on some node.
  */
 public class GridCacheAttributes implements Externalizable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Cache name. */

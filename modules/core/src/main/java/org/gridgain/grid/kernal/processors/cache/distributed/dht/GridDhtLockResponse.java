@@ -26,6 +26,7 @@ import java.util.*;
  * DHT cache lock response.
  */
 public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V> {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Evicted readers. */

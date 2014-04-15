@@ -24,6 +24,7 @@ import java.util.*;
  * Job siblings response.
  */
 public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** */

@@ -34,6 +34,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     implements GridCacheFuture<GridCacheTx> {
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    /** */
     private static final long serialVersionUID = 0L;
 
 
@@ -361,6 +362,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<GridCacheTx> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */

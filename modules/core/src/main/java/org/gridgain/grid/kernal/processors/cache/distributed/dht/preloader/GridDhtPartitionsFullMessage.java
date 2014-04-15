@@ -25,6 +25,7 @@ import java.util.*;
  * Information about partitions of all nodes in topology.
  */
 public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstractMessage<K, V> {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** */

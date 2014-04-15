@@ -18,6 +18,7 @@ import java.util.*;
  * Empty iterator.
  */
 public class GridEmptyIterator<T> extends GridIteratorAdapter<T> {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

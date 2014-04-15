@@ -39,6 +39,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     implements GridCacheMvccFuture<K, V, Boolean> {
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    /** */
     private static final long serialVersionUID = 0L;
 
 
@@ -1202,6 +1203,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */

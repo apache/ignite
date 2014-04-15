@@ -24,6 +24,7 @@ import java.util.*;
  * should be fragmented.
  */
 public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** File id. */

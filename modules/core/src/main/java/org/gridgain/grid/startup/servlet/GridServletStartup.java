@@ -101,6 +101,7 @@ import java.util.*;
  * </pre>
  */
 public class GridServletStartup extends HttpServlet {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Grid loaded flag. */

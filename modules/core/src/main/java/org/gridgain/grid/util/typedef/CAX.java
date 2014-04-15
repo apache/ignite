@@ -19,5 +19,6 @@ import org.gridgain.grid.util.lang.*;
  * @see GridAbsClosureX
  */
 public abstract class CAX extends GridAbsClosureX {
+    /** */
     private static final long serialVersionUID = 0L;
  /* No-op. */ }

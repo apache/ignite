@@ -31,6 +31,7 @@ import static org.gridgain.grid.util.gridify.GridifyUtils.*;
  */
 public class GridifyDefaultRangeTask extends GridComputeTaskAdapter<GridifyRangeArgument, Collection<?>>
     implements GridPeerDeployAware {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Deploy class. */

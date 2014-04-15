@@ -15,6 +15,7 @@ import org.gridgain.grid.*;
  * Represents exception occurred during IPC endpoint binding.
  */
 public class GridGgfsIpcEndpointBindException extends GridException {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

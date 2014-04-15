@@ -73,6 +73,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             return F.t2();
         }
     };
+    /** */
     private static final long serialVersionUID = 0L;
 
 
@@ -4763,6 +4764,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      */
     @GridInternal
     private static class GlobalClearAllCallable implements Callable<Object>, Externalizable {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** Cache name. */

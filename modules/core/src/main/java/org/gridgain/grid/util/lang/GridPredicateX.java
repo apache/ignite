@@ -20,6 +20,7 @@ import org.gridgain.grid.util.typedef.*;
  * @see PX1
  */
 public abstract class GridPredicateX<E1> implements GridPredicate<E1> {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

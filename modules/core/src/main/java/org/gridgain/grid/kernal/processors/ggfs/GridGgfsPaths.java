@@ -21,6 +21,7 @@ import java.util.*;
  * Description of path modes.
  */
 public class GridGgfsPaths implements Externalizable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Secondary file system URI. */

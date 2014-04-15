@@ -18,6 +18,7 @@ import java.io.*;
  * Adds affinity node ID to cache responses.
  */
 public class GridCacheRestResponse extends GridRestResponse {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Affinity node ID. */

@@ -23,6 +23,7 @@ import java.io.*;
 
 public final class GridCacheAtomicStampedValue<T, S> implements GridCacheInternal, GridPeerDeployAware,
     Externalizable, Cloneable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Value. */

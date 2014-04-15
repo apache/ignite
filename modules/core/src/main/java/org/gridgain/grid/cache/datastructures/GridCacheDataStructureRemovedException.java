@@ -19,6 +19,7 @@ import org.jetbrains.annotations.*;
  * checked exceptions in the signature.
  */
 public class GridCacheDataStructureRemovedException extends GridException {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

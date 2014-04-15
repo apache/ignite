@@ -32,6 +32,7 @@ public class GridLoggerProxy extends GridMetadataAwareAdapter implements GridLog
     /** Global flag to enable/disable GridGain debug logging. */
     private static final boolean GG_DEBUG_ENABLED =
         Boolean.valueOf(X.getSystemOrEnv(GridSystemProperties.GG_DEBUG_ENABLED));
+    /** */
     private static final long serialVersionUID = 0L;
 
 

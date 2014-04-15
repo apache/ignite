@@ -15,6 +15,7 @@ import org.jetbrains.annotations.*;
  * Exception thrown when target path supposed to be created already exists.
  */
 public class GridGgfsPathAlreadyExistsException extends GridGgfsInvalidPathException {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

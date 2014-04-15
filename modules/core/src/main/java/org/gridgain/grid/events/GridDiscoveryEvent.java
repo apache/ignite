@@ -57,6 +57,7 @@ import java.util.*;
  * @see GridEventType#EVTS_DISCOVERY
  */
 public class GridDiscoveryEvent extends GridEventAdapter {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** */

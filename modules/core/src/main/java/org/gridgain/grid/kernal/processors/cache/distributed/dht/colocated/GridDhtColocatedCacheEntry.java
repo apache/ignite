@@ -19,6 +19,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * Cache entry for colocated cache.
  */
 public class GridDhtColocatedCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

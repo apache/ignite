@@ -2459,6 +2459,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      */
     private static final class UpdateListingEntry implements GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
         Externalizable {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** File name. */
@@ -2546,6 +2547,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     @GridInternal
     private static final class UpdateListing implements GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
         Externalizable {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** File name to add into parent listing. */
@@ -2640,6 +2642,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     @GridInternal
     private static final class UpdatePath implements GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
         Externalizable {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** New path. */

@@ -25,6 +25,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * Task to validate connection. Checks that cache with provided name exists in grid.
  */
 public class GridCacheQueryJdbcValidationTask extends GridComputeTaskSplitAdapter<String, Boolean> {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

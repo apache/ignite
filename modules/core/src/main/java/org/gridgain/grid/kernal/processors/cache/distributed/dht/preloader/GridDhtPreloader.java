@@ -885,6 +885,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      *
      */
     private abstract class MessageHandler<M> implements GridBiInClosure<UUID, M> {
+        /** */
         private static final long serialVersionUID = 0L;
 
 
@@ -916,6 +917,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      *
      */
     private class ExchangeFutureSet extends GridListSet<GridDhtPartitionsExchangeFuture<K, V>> {
+        /** */
         private static final long serialVersionUID = 0L;
 
 

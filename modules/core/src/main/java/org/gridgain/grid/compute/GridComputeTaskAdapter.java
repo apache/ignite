@@ -60,6 +60,7 @@ import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
  * @param <R> Type of the task result returning from {@link GridComputeTask#reduce(List)} method.
  */
 public abstract class GridComputeTaskAdapter<T, R> implements GridComputeTask<T, R> {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -136,20 +137,17 @@ public class GridLibraryConsistencyCheck {
      * @return Tuple list with lib names which differ, empty if libs are equal or the check is disabled.
      * @throws GridException If libraries do not match.
      */
-    public static List<GridBiTuple<String, String>> check(@Nullable GridLogger log, List<String> libs1,
+    public static List<GridBiTuple<String, String>> check(GridLogger log, List<String> libs1,
         List<String> libs2) throws GridException {
+        assert log != null;
+
         // The check is disabled on the local or remote nodes.
         if (F.isEmpty(libs1) || F.isEmpty(libs2) || !checkEnabled())
             return Collections.emptyList();
 
         // Must not happen.
         if (libs1.size() != libs2.size() || libs1.size() != CLASS_LIST.length) {
-            final String msg = "GridGain dependency libraries do not match (is GridGain version the same?).\n";
-
-            if (log == null)
-                log.warning(msg);
-            else
-                X.printerr(msg);
+            U.warn(log, "GridGain dependency libraries do not match (is GridGain version the same?).");
 
             return null;
         }

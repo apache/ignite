@@ -27,6 +27,7 @@ import java.io.*;
  * @see GridFunc
  */
 public abstract class GridAbsClosure implements Runnable, Serializable {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

@@ -23,6 +23,7 @@ import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
  * the eldest elements will be removed based on insertion or access order.
  */
 public class GridBoundedConcurrentLinkedHashSet<E> extends GridSetWrapper<E> {
+    /** */
     private static final long serialVersionUID = 0L;
 
 

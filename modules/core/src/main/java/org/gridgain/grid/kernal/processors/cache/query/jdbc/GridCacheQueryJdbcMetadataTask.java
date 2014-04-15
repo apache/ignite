@@ -32,6 +32,7 @@ import java.util.*;
 public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<String, byte[]> {
     /** Marshaller. */
     private static final GridMarshaller MARSHALLER = new GridJdkMarshaller();
+    /** */
     private static final long serialVersionUID = 0L;
 
 
@@ -59,6 +60,7 @@ public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<Strin
      * Job for JDBC adapter.
      */
     private static class JdbcDriverMetadataJob extends GridComputeJobAdapter implements GridOptimizedMarshallable {
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** */

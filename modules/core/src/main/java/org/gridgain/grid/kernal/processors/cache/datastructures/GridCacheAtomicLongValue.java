@@ -18,6 +18,7 @@ import java.io.*;
  * Atomic long value.
  */
 public final class GridCacheAtomicLongValue implements GridCacheInternal, Externalizable, Cloneable {
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Value. */
