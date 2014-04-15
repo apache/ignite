@@ -13,6 +13,10 @@ package org.gridgain.grid.util.offheap;
  * Thrown when memory could not be allocated.
  */
 public class GridOffHeapOutOfMemoryException extends RuntimeException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+
     /**
      * Constructs out of memory exception.
      *

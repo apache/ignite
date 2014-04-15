@@ -24,6 +24,9 @@ import java.util.concurrent.*;
  * performs notifications in the same thread.
  */
 public class GridFinishedFutureEx<T> implements GridFuture<T>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Complete value. */
     private T t;
 

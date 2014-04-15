@@ -21,6 +21,9 @@ import java.io.*;
  */
 public final class GridCacheAtomicReferenceValue<T> implements GridCacheInternal, GridPeerDeployAware,
     Externalizable, Cloneable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Value. */
     private T val;
 

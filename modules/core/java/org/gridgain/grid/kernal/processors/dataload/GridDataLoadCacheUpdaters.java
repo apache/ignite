@@ -106,6 +106,10 @@ public class GridDataLoadCacheUpdaters {
      * Simple cache updater implementation. Updates keys one by one thus is not dead lock prone.
      */
     private static class Individual<K, V> implements GridDataLoadCacheUpdater<K, V> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+
         /** {@inheritDoc} */
         @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
             throws GridException {
@@ -131,6 +135,10 @@ public class GridDataLoadCacheUpdaters {
      * Batched updater. Updates cache using batch operations thus is dead lock prone.
      */
     private static class Batched<K, V> implements GridDataLoadCacheUpdater<K, V> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+
         /** {@inheritDoc} */
         @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
             throws GridException {
@@ -169,6 +177,10 @@ public class GridDataLoadCacheUpdaters {
      * Batched updater. Updates cache using batch operations thus is dead lock prone.
      */
     private static class BatchedSorted<K, V> implements GridDataLoadCacheUpdater<K, V> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+
         /** {@inheritDoc} */
         @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
             throws GridException {
@@ -207,6 +219,10 @@ public class GridDataLoadCacheUpdaters {
      * Cache updater which uses group lock.
      */
     private static class GroupLocked<K, V> implements GridDataLoadCacheUpdater<K, V> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+
         /** {@inheritDoc} */
         @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
             throws GridException {

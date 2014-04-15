@@ -28,6 +28,9 @@ import java.util.*;
  * Near cache lock request.
  */
 public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Topology version. */
     private long topVer;
 

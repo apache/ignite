@@ -22,6 +22,9 @@ import java.io.*;
  * Adapter for cache metrics.
  */
 public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Create time. */
     private long createTime = U.currentTimeMillis();
 

@@ -23,6 +23,9 @@ import java.util.*;
  */
 abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAdapterEx<T> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     protected ResultSet rs;
 
     /** */

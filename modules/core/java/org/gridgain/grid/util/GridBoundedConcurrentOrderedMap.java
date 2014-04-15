@@ -32,6 +32,9 @@ import java.util.concurrent.atomic.*;
  * are not supported for this kind of map.
  */
 public class GridBoundedConcurrentOrderedMap<K, V> extends ConcurrentSkipListMap<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Element count. */
     private final AtomicInteger cnt = new AtomicInteger(0);
 

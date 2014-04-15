@@ -1895,6 +1895,9 @@ public final class GridGgfsImpl implements GridGgfsEx {
      */
     @GridInternal
     private static class GgfsGlobalSpaceTask extends GridComputeTaskSplitAdapter<Object, GridBiTuple<Long, Long>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** GGFS name. */
         private String ggfsName;
 

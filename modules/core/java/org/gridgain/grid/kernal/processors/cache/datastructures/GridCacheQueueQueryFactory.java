@@ -42,6 +42,9 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
                 return F.t1();
             }
         };
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /** Cache context. */
     private GridCacheContext cctx;
@@ -681,6 +684,9 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
         implements GridReducer<Map.Entry<GridCacheQueueItemKey,GridCacheQueueItemImpl<T>>,
         Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> entry;
 
         @Override public boolean collect(Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> e) {
@@ -700,6 +706,10 @@ class GridCacheQueueQueryFactory<T> implements Externalizable {
      */
     private static class SequenceComparator<T>
         implements Comparator<Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>>>, Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+
         @Override public int compare(Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> item1,
             Map.Entry<GridCacheQueueItemKey, GridCacheQueueItemImpl<T>> item2) {
             return (int)(item1.getValue().sequence() - item2.getValue().sequence());

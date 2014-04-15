@@ -382,6 +382,10 @@ public class GridAffinityCache {
      *
      */
     private static class NodeOrderComparator implements Comparator<GridNode>, Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+
         /** {@inheritDoc} */
         @Override public int compare(GridNode n1, GridNode n2) {
             return n1.order() < n2.order() ? -1 : n1.order() > n2.order() ? 1 : 0;

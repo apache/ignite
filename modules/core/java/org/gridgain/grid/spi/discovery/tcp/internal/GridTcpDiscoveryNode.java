@@ -36,6 +36,9 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
  */
 public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements GridNode,
     Comparable<GridTcpDiscoveryNode>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Node ID. */
     private UUID id;
 

@@ -24,6 +24,9 @@ import java.util.*;
  */
 public class GridCacheDgcResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     @GridToStringInclude
     @GridDirectTransient
     private Map<K, Collection<GridCacheDgcBadLock>> map = new HashMap<>();
