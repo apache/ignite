@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.hadoop2impl;
+package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.conf.*;
 import org.gridgain.grid.hadoop.*;
@@ -15,14 +15,14 @@ import org.gridgain.grid.hadoop.*;
 /**
  * Hadoop job info based on default Hadoop configuration.
  */
-public class GridHadoopJobInfoImpl implements GridHadoopJobInfo {
+public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo {
     /** Configuration. */
     private Configuration cfg;
 
     /**
      * @param cfg Hadoop configuration.
      */
-    public GridHadoopJobInfoImpl(Configuration cfg) {
+    public GridHadoopDefaultJobInfo(Configuration cfg) {
         this.cfg = cfg;
     }
 

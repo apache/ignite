@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.jetbrains.annotations.*;
+
 import java.io.*;
 import java.util.*;
 
@@ -16,7 +18,7 @@ import java.util.*;
  * TODO write doc
  */
 public interface GridHadoopMapReducePlan extends Serializable {
-    public Collection<GridHadoopFileBlock> mappers(UUID nodeId);
+    @Nullable public Collection<GridHadoopFileBlock> mappers(UUID nodeId);
 
-    public int[] reducers(UUID nodeId);
+    @Nullable public int[] reducers(UUID nodeId);
 }

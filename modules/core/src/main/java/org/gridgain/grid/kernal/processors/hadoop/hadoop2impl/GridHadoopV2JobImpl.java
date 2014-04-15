@@ -13,6 +13,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.partition.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
@@ -25,15 +26,15 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
     private GridHadoopJobId jobId;
 
     /** Job info. */
-    private GridHadoopJobInfoImpl jobInfoImpl;
+    protected GridHadoopDefaultJobInfo jobInfo;
 
     /**
      * @param jobId Job ID.
-     * @param jobInfoImpl Job info.
+     * @param jobInfo Job info.
      */
-    public GridHadoopV2JobImpl(GridHadoopJobId jobId, GridHadoopJobInfoImpl jobInfoImpl) {
+    public GridHadoopV2JobImpl(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfo) {
         this.jobId = jobId;
-        this.jobInfoImpl = jobInfoImpl;
+        this.jobInfo = jobInfo;
     }
 
     /** {@inheritDoc} */
@@ -43,17 +44,17 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public GridHadoopJobInfo info() {
-        return jobInfoImpl;
+        return jobInfo;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<GridHadoopFileBlock> input() throws GridException {
-        return GridHadoopV2Splitter.splitJob(jobId, jobInfoImpl);
+        return GridHadoopV2Splitter.splitJob(jobId, jobInfo);
     }
 
     /** {@inheritDoc} */
     @Override public GridHadoopPartitioner partitioner() throws GridException {
-        Class<? extends Partitioner> partCls = (Class<? extends Partitioner>)jobInfoImpl.configuration().getClass(
+        Class<? extends Partitioner> partCls = (Class<? extends Partitioner>)jobInfo.configuration().getClass(
             MRJobConfig.PARTITIONER_CLASS_ATTR, HashPartitioner.class);
 
         return new GridHadoopV2PartitionerAdapter((Partitioner<Object, Object>)U.newInstance(partCls));

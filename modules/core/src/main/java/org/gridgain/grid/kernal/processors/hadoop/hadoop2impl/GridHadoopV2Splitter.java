@@ -15,6 +15,7 @@ import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.task.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -30,7 +31,7 @@ public class GridHadoopV2Splitter {
      * @return Collection of mapped blocks.
      * @throws GridException If mapping failed.
      */
-    public static Collection<GridHadoopFileBlock> splitJob(GridHadoopJobId jobId, GridHadoopJobInfoImpl info)
+    public static Collection<GridHadoopFileBlock> splitJob(GridHadoopJobId jobId, GridHadoopDefaultJobInfo info)
         throws GridException {
         Configuration cfg = info.configuration();
 
