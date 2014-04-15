@@ -13,6 +13,10 @@ package org.gridgain.grid.kernal.processors.cache;
  * Thrown when an entry could not be redeployed.
  */
 public class GridCacheEntryRedeployException extends Exception {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+
     /**
      * Creates exception with error message.
      *

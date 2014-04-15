@@ -43,6 +43,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
     /** Maximum number of attempts to remap key to the same primary node. */
     private static final int MAX_REMAP_CNT;
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /** Context. */
     private GridCacheContext<K, V> cctx;
@@ -568,6 +571,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Map<K, V>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final GridUuid futId = GridUuid.randomUuid();
 

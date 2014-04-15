@@ -20,6 +20,9 @@ import java.io.*;
  * Adapter for DR receive data node metrics.
  */
 class GridDrReceiverCacheMetricsAdapter implements GridDrReceiverCacheMetrics, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Total amount of received cache entries. */
     private LongAdder entriesReceived = new LongAdder();
 

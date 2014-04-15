@@ -59,6 +59,9 @@ import java.util.*;
  */
 public class GridDiscoveryEvent extends GridEventAdapter {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private UUID evtNodeId;
 
     /** */

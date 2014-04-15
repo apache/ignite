@@ -31,6 +31,9 @@ import static org.gridgain.grid.cache.GridCacheTxState.*;
  */
 public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements GridCacheMappedVersion {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private UUID nearNodeId;
 
     /** Near future ID. */

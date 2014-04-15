@@ -25,6 +25,9 @@ import java.io.*;
 @SuppressWarnings("AbbreviationUsage")
 public class GridCacheQueueItemImpl<T> implements GridCacheQueueItem<T>, GridPeerDeployAware, Externalizable,
     Cloneable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** User object. */
     private T obj;
 

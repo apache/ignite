@@ -1059,6 +1059,9 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
      * Data loader peer-deploy aware.
      */
     private class DataLoaderPda implements GridPeerDeployAware {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Deploy class. */
         private Class<?> cls;
 
@@ -1126,6 +1129,9 @@ public class GridDataLoaderImpl<K, V> implements GridDataLoader<K, V>, Delayed {
      * Entry.
      */
     private static class Entry0<K, V> implements Map.Entry<K, V>, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private K key;
 
