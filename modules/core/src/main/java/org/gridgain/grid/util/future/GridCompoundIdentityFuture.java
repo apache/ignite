@@ -21,6 +21,9 @@ import java.io.*;
  * Future composed of multiple inner futures.
  */
 public class GridCompoundIdentityFuture<T> extends GridCompoundFuture<T, T> {
+    private static final long serialVersionUID = 0L;
+
+
     /** Empty constructor required for {@link Externalizable}. */
     public GridCompoundIdentityFuture() {
         // No-op.

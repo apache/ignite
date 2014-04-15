@@ -21,6 +21,8 @@ import static org.gridgain.grid.events.GridEventType.*;
  * Exchange ID.
  */
 public class GridDhtPartitionExchangeId implements Comparable<GridDhtPartitionExchangeId>, Externalizable {
+    private static final long serialVersionUID = 0L;
+
     /** Node ID. */
     @GridToStringExclude
     private UUID nodeId;

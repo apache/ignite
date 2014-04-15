@@ -18,6 +18,8 @@ import java.io.*;
  * GGFS metrics adapter.
  */
 public class GridGgfsMetricsAdapter implements GridGgfsMetrics, Externalizable {
+    private static final long serialVersionUID = 0L;
+
     /** Used space on local node. */
     private long locSpaceSize;
 

@@ -19,6 +19,8 @@ import java.nio.*;
  * Fragmentizer response.
  */
 public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
+    private static final long serialVersionUID = 0L;
+
     /** File ID. */
     private GridUuid fileId;
 

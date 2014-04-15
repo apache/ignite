@@ -18,6 +18,8 @@ import org.jetbrains.annotations.*;
  * extend this adapter as it provides necessary plumbing implementation details.
  */
 public class GridEventAdapter implements GridEvent {
+    private static final long serialVersionUID = 0L;
+
     /** */
     private final GridUuid id = GridUuid.randomUuid();
 

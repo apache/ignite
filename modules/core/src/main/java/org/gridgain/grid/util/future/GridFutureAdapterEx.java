@@ -35,6 +35,8 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
 
     /** Done state. */
     private static final int DONE = 2;
+    private static final long serialVersionUID = 0L;
+
 
     /** Result. */
     @GridToStringInclude

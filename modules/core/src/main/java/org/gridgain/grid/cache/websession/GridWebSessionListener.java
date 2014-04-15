@@ -114,6 +114,8 @@ class GridWebSessionListener {
      * Multiple attributes update transformer.
      */
     private static class AttributesUpdated implements C1<GridWebSession, GridWebSession>, Externalizable {
+        private static final long serialVersionUID = 0L;
+
         /** Updates list. */
         private Collection<T2<String, Object>> updates;
 

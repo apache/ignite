@@ -24,6 +24,8 @@ import java.util.concurrent.*;
  * Transaction node mapping.
  */
 public class GridDistributedTxMapping<K, V> implements Externalizable {
+    private static final long serialVersionUID = 0L;
+
     /** Mapped node. */
     @GridToStringExclude
     private GridNode node;

@@ -552,6 +552,8 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
      */
     @GridInternal
     private static class ExeCallable implements Callable<Object>, Externalizable {
+        private static final long serialVersionUID = 0L;
+
         /** */
         private String name;
 

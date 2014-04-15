@@ -29,6 +29,8 @@ import java.util.*;
 public class GridAboutDialog extends JDialog {
     /** Border color. */
     private static final Color VALUE_BORDER_COLOR = new Color(0xcdcdcd);
+    private static final long serialVersionUID = 0L;
+
 
     /** Global reference to about dialog to prevent double open. */
     private static GridAboutDialog aboutDlg;

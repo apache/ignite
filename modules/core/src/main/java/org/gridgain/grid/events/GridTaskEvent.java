@@ -53,6 +53,8 @@ import org.gridgain.grid.util.typedef.internal.*;
  * @see GridEventType#EVTS_TASK_EXECUTION
  */
 public class GridTaskEvent extends GridEventAdapter {
+    private static final long serialVersionUID = 0L;
+
     /** */
     private String taskName;
 

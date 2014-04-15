@@ -22,6 +22,8 @@ import java.io.*;
  * must be taken to update {@link GridDiscoveryMetricsHelper} as well.
  */
 public class GridDiscoveryMetricsAdapter implements GridNodeMetrics, Externalizable {
+    private static final long serialVersionUID = 0L;
+
     /** */
     private long lastUpdateTime = -1;
 

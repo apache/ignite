@@ -19,6 +19,8 @@ import java.io.*;
  * Queue item key.
  */
 class GridCacheQueueItemKey implements Externalizable, GridCacheInternal {
+    private static final long serialVersionUID = 0L;
+
     /** */
     private GridUuid queueId;
 

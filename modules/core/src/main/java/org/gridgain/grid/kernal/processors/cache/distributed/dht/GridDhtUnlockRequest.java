@@ -24,6 +24,8 @@ import java.util.*;
  * DHT cache unlock request.
  */
 public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, V> {
+    private static final long serialVersionUID = 0L;
+
     /** Near keys. */
     @GridDirectCollection(byte[].class)
     private List<byte[]> nearKeyBytes;

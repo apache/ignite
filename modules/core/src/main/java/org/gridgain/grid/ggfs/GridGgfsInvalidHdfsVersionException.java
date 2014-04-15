@@ -14,6 +14,9 @@ package org.gridgain.grid.ggfs;
  * in GridGain classpath.
  */
 public class GridGgfsInvalidHdfsVersionException extends GridGgfsException {
+    private static final long serialVersionUID = 0L;
+
+
     /**
      * @param msg Error message.
      */

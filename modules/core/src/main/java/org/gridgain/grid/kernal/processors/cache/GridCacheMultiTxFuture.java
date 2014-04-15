@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.*;
 public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolean> {
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final long serialVersionUID = 0L;
+
 
     /** Transactions to wait for. */
     private final Set<GridCacheTxEx<K, V>> txs = new GridLeanSet<>();

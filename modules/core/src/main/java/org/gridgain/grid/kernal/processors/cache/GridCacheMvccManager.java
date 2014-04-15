@@ -996,6 +996,8 @@ public class GridCacheMvccManager<K, V> extends GridCacheManagerAdapter<K, V> {
      *
      */
     private class FinishLockFuture extends GridFutureAdapter<Object> {
+        private static final long serialVersionUID = 0L;
+
         /** Topology version. Instance field for toString method only. */
         @GridToStringInclude
         private final long topVer;

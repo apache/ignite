@@ -15,6 +15,9 @@ import org.gridgain.grid.*;
  * Exception thrown whenever grid transactions has been automatically rolled back.
  */
 public class GridCacheTxRollbackException extends GridException {
+    private static final long serialVersionUID = 0L;
+
+
     /**
      * Creates new rollback exception with given error message.
      *

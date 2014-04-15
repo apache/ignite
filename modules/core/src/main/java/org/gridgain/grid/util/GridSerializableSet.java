@@ -22,5 +22,7 @@ import java.util.*;
  * sure to override these methods if it's possible to create efficient implementations.
  */
 public abstract class GridSerializableSet<E> extends AbstractSet<E> implements Serializable {
+    private static final long serialVersionUID = 0L;
+
     // No-op.
 }

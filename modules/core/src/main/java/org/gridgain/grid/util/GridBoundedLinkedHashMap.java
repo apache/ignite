@@ -20,6 +20,8 @@ import java.util.*;
  *
  */
 public class GridBoundedLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
+    private static final long serialVersionUID = 0L;
+
     /** Maximum map capacity. */
     private int maxCap;
 

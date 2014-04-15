@@ -862,6 +862,8 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Gr
      * @param <V> Value type.
      */
     private static class StatefulValue<V> extends ReentrantReadWriteLock {
+        private static final long serialVersionUID = 0L;
+
         /** Value. */
         @GridToStringInclude
         private V val;

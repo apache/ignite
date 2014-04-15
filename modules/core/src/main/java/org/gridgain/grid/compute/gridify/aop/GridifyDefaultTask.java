@@ -27,6 +27,8 @@ import java.util.*;
  */
 public class GridifyDefaultTask extends GridComputeTaskAdapter<GridifyArgument, Object>
     implements GridPeerDeployAware {
+    private static final long serialVersionUID = 0L;
+
     /** Deploy class. */
     @SuppressWarnings({"TransientFieldNotInitialized"})
     private final transient Class<?> p2pCls;

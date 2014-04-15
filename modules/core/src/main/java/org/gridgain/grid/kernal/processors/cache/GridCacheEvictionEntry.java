@@ -33,6 +33,8 @@ import static org.gridgain.grid.cache.GridCachePeekMode.*;
 public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Externalizable {
     /** Static logger to avoid re-creation. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final long serialVersionUID = 0L;
+
 
     /** Logger. */
     protected static volatile GridLogger log;

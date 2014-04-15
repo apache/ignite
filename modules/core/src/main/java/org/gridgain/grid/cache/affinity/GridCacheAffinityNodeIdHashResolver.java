@@ -17,6 +17,9 @@ import org.gridgain.grid.util.typedef.internal.*;
  * on each node start, this resolver do not provide ability to map keys to the same nodes after restart.
  */
 public class GridCacheAffinityNodeIdHashResolver implements GridCacheAffinityNodeHashResolver {
+    private static final long serialVersionUID = 0L;
+
+
     /** {@inheritDoc} */
     @Override public Object resolve(GridNode node) {
         return node.id();

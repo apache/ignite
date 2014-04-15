@@ -21,6 +21,8 @@ import java.util.*;
  * to avoid boxing/unboxing when using standard list from Java.
  */
 public class GridLongList implements Externalizable {
+    private static final long serialVersionUID = 0L;
+
     /** */
     private long[] arr;
 

@@ -23,6 +23,8 @@ import java.util.*;
  * Affinity assignment response.
  */
 public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K, V> {
+    private static final long serialVersionUID = 0L;
+
     /** Topology version. */
     private long topVer;
 

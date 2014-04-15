@@ -19,6 +19,8 @@ import java.nio.*;
  * Basic sync message.
  */
 public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
+    private static final long serialVersionUID = 0L;
+
     /** Coordinator node order. */
     private long order;
 

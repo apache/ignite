@@ -1107,6 +1107,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * No-reduce task adapter.
      */
     private abstract static class TaskNoReduceAdapter<T> extends GridPeerDeployAwareTaskAdapter<T, Void> {
+        private static final long serialVersionUID = 0L;
+
+
         /**
          * @param pda Peer deploy aware instance.
          */
@@ -1125,6 +1128,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * {@link GridClosureProcessor#runAsync(GridClosureCallMode, Collection, Collection)}.
      */
     private class T1 extends TaskNoReduceAdapter<Void> {
+        private static final long serialVersionUID = 0L;
+
         /** */
         @GridLoadBalancerResource
         private GridComputeLoadBalancer lb;
@@ -1157,6 +1162,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * {@link GridClosureProcessor#runAsync(GridClosureCallMode, Runnable, Collection)}.
      */
     private class T2 extends TaskNoReduceAdapter<Void> {
+        private static final long serialVersionUID = 0L;
+
         /** */
         @GridLoadBalancerResource
         private GridComputeLoadBalancer lb;
@@ -1186,6 +1193,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * {@link GridClosureProcessor#forkjoinAsync(GridClosureCallMode, Collection, GridReducer, Collection)}
      */
     private class T3<R1, R2> extends GridPeerDeployAwareTaskAdapter<Void, R2> {
+        private static final long serialVersionUID = 0L;
+
         /** */
         @GridLoadBalancerResource
         private GridComputeLoadBalancer lb;
@@ -1238,6 +1247,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      */
     private class T4 extends TaskNoReduceAdapter<Void> {
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final String cacheName;
 
@@ -1276,6 +1287,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      */
     private class T5<R> extends GridPeerDeployAwareTaskAdapter<Void, R> {
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final String cacheName;
 
@@ -1326,6 +1339,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * {@link GridClosureProcessor#callAsync(GridClosureCallMode, Collection, Collection)}
      */
     private class T6<R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>> {
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final GridClosureCallMode mode;
 
@@ -1367,6 +1382,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * {@link GridClosureProcessor#callAsync(GridClosureCallMode, Callable, Collection)}
      */
     private class T7<R> extends GridPeerDeployAwareTaskAdapter<Void, R> {
+        private static final long serialVersionUID = 0L;
+
         /** */
         private GridBiTuple<GridClosureCallMode, Callable<R>> t;
 
@@ -1403,6 +1420,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      */
     private class T8<T, R> extends GridPeerDeployAwareTaskAdapter<Void, R> {
+        private static final long serialVersionUID = 0L;
+
         /** */
         private GridClosure<T, R> job;
 
@@ -1445,6 +1464,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      */
     private class T9<T, R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>> {
+        private static final long serialVersionUID = 0L;
+
         /** */
         private GridClosure<T, R> job;
 
@@ -1491,6 +1512,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      */
     private class T10<T, R1, R2> extends GridPeerDeployAwareTaskAdapter<Void, R2> {
+        private static final long serialVersionUID = 0L;
+
         /** */
         private GridClosure<T, R1> job;
 
@@ -1553,6 +1576,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      */
     private class T11<T, R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>> {
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final GridClosure<T, R> job;
 

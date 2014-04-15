@@ -19,6 +19,8 @@ import java.util.*;
  * Grid command request. Getters and setters must conform to JavaBean standard.
  */
 public class GridRestRequest implements Externalizable {
+    private static final long serialVersionUID = 0L;
+
     /** Destination ID. */
     private UUID destId;
 

@@ -59,6 +59,8 @@ import org.jetbrains.annotations.*;
  * @see GridEventType#EVT_CACHE_OBJECT_EXPIRED
  */
 public class GridCacheEvent extends GridEventAdapter {
+    private static final long serialVersionUID = 0L;
+
     /** Cache name. */
     private String cacheName;
 

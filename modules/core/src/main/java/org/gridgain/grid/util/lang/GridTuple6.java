@@ -28,6 +28,8 @@ import java.util.*;
  */
 public class GridTuple6<V1, V2, V3, V4, V5, V6> implements Iterable<Object>, Externalizable,
     Cloneable {
+    private static final long serialVersionUID = 0L;
+
     /** Value 1. */
     @GridToStringInclude
     private V1 v1;

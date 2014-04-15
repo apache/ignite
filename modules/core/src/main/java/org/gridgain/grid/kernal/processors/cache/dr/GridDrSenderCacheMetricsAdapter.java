@@ -20,6 +20,8 @@ import java.io.*;
  * Adapter for DR send data node metrics.
  */
 public class GridDrSenderCacheMetricsAdapter implements GridDrSenderCacheMetrics, Externalizable {
+    private static final long serialVersionUID = 0L;
+
     /** Number of sent batches. */
     private LongAdder batchesSent = new LongAdder();
 

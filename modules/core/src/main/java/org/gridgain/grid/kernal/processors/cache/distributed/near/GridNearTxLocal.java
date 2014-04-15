@@ -34,6 +34,8 @@ import static org.gridgain.grid.cache.GridCacheTxState.*;
  * Replicated user transaction.
  */
 class GridNearTxLocal<K, V> extends GridCacheTxLocalAdapter<K, V> {
+    private static final long serialVersionUID = 0L;
+
     /** Future. */
     private final AtomicReference<GridNearTxPrepareFuture<K, V>> prepFut =
         new AtomicReference<>();

@@ -28,6 +28,8 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<List<GridNode>>> {
     /** Nodes order comparator. */
     private static final Comparator<GridNode> CMP = new GridNodeOrderComparator();
+    private static final long serialVersionUID = 0L;
+
 
     /** Cache context. */
     private final GridCacheContext<K, V> ctx;

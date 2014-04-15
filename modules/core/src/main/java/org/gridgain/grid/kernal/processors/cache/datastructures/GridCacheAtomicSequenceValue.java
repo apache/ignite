@@ -18,6 +18,8 @@ import java.io.*;
  * Sequence value.
  */
 public final class GridCacheAtomicSequenceValue implements GridCacheInternal, Externalizable, Cloneable {
+    private static final long serialVersionUID = 0L;
+
     /** Counter. */
     private long val;
 

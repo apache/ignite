@@ -29,6 +29,8 @@ public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstract
 
     /** Status RECONNECT. */
     public static final int STATUS_RECON = 2;
+    private static final long serialVersionUID = 0L;
+
 
     /** Creator node. */
     private GridTcpDiscoveryNode creatorNode;

@@ -21,6 +21,8 @@ import java.nio.*;
  * Job cancellation request.
  */
 public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
+    private static final long serialVersionUID = 0L;
+
     /** */
     private GridUuid sesId;
 

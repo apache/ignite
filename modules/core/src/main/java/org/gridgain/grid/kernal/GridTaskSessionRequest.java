@@ -21,6 +21,8 @@ import java.util.*;
  * Task session request.
  */
 public class GridTaskSessionRequest extends GridTcpCommunicationMessageAdapter implements GridTaskMessage {
+    private static final long serialVersionUID = 0L;
+
     /** Task session ID. */
     private GridUuid sesId;
 

@@ -22,6 +22,8 @@ import java.util.*;
  * Internal DR request.
  */
 public class GridDrInternalRequest extends GridTcpCommunicationMessageAdapter {
+    private static final long serialVersionUID = 0L;
+
     /** Request ID. */
     private long id;
 

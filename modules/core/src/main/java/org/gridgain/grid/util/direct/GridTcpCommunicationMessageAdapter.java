@@ -116,6 +116,8 @@ public abstract class GridTcpCommunicationMessageAdapter implements Serializable
 
     /** */
     protected static final Object NULL = new Object();
+    private static final long serialVersionUID = 0L;
+
 
     /** */
     protected final GridTcpCommunicationMessageState commState = new GridTcpCommunicationMessageState();

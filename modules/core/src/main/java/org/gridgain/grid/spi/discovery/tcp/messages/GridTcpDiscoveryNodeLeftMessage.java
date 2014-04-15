@@ -20,6 +20,9 @@ import java.util.*;
  */
 @GridTcpDiscoveryEnsureDelivery
 public class GridTcpDiscoveryNodeLeftMessage extends GridTcpDiscoveryAbstractMessage {
+    private static final long serialVersionUID = 0L;
+
+
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */

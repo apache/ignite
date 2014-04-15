@@ -26,6 +26,8 @@ import java.util.*;
  * Near cache lock response.
  */
 public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V> {
+    private static final long serialVersionUID = 0L;
+
     /** Collection of versions that are pending and less than lock version. */
     @GridToStringInclude
     @GridDirectCollection(GridCacheVersion.class)

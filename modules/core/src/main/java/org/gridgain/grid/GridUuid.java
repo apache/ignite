@@ -25,6 +25,8 @@ import java.util.concurrent.atomic.*;
  */
 public final class GridUuid implements Comparable<GridUuid>, Iterable<GridUuid>, Cloneable, Externalizable,
     GridOptimizedMarshallable {
+    private static final long serialVersionUID = 0L;
+
     /** */
     @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
     private static Object GG_CLASS_ID;

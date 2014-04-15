@@ -20,6 +20,8 @@ import java.util.*;
  * GGFS task arguments implementation.
  */
 public class GridGgfsTaskArgsImpl<T> implements GridGgfsTaskArgs<T>,  Externalizable {
+    private static final long serialVersionUID = 0L;
+
     /** GGFS name. */
     private String ggfsName;
 

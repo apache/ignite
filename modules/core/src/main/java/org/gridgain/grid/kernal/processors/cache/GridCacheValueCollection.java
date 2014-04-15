@@ -24,6 +24,8 @@ import java.util.*;
  * by underlying cache.
  */
 public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V> {
+    private static final long serialVersionUID = 0L;
+
     /** Cache context. */
     private final GridCacheContext<K, V> ctx;
 

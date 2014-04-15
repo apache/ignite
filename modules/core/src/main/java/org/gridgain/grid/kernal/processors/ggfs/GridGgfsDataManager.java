@@ -1558,6 +1558,8 @@ public class GridGgfsDataManager extends GridGgfsManager {
      */
     @GridInternal
     private static final class UpdateClosure implements GridClosure<byte[], byte[]>, Externalizable {
+        private static final long serialVersionUID = 0L;
+
         /** Start position in the block to write new data from. */
         private int start;
 
@@ -1747,6 +1749,8 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * Future that is completed when all participating
      */
     private class WriteCompletionFuture extends GridFutureAdapter<Boolean> {
+        private static final long serialVersionUID = 0L;
+
         /** File id to remove future from map. */
         private GridUuid fileId;
 

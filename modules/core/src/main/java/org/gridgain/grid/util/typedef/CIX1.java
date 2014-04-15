@@ -19,4 +19,6 @@ import org.gridgain.grid.util.lang.*;
  * @see GridFunc
  * @see GridInClosureX
  */
-public abstract class CIX1<T> extends GridInClosureX<T> { /* No-op. */ }
+public abstract class CIX1<T> extends GridInClosureX<T> {
+    private static final long serialVersionUID = 0L;
+ /* No-op. */ }

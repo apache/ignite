@@ -25,6 +25,8 @@ import static org.gridgain.grid.cache.GridCacheTxState.*;
  * Local cache transaction.
  */
 class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
+    private static final long serialVersionUID = 0L;
+
     /** Transaction future. */
     private final AtomicReference<GridLocalTxFuture<K, V>> fut = new AtomicReference<>();
 

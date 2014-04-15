@@ -19,6 +19,9 @@ import java.io.*;
  */
 public abstract class GridLoadBalancerAdapter extends GridMetadataAwareAdapter implements GridComputeLoadBalancer,
     Externalizable {
+    private static final long serialVersionUID = 0L;
+
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         // No-op.

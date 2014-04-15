@@ -18,6 +18,8 @@ import java.io.*;
  * Cache DR info used as argument in PUT cache internal interfaces.
  */
 public class GridCacheDrInfo<V> implements Externalizable {
+    private static final long serialVersionUID = 0L;
+
     /** Value. */
     private V val;
 

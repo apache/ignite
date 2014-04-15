@@ -34,6 +34,8 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     /** Unsafe instance. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
+    private static final long serialVersionUID = 0L;
+
 
     /** */
     private GridCachePreloader<K,V> preldr;

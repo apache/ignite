@@ -24,6 +24,8 @@ import java.util.*;
  * Local cache implementation.
  */
 public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
+    private static final long serialVersionUID = 0L;
+
     /** */
     private GridCachePreloader<K,V> preldr;
 

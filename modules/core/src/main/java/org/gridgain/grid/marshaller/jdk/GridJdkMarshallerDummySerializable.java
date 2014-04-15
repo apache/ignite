@@ -15,5 +15,7 @@ import java.io.*;
  * Serializable object used for {@link Object} replacement.
  */
 class GridJdkMarshallerDummySerializable implements Serializable {
+    private static final long serialVersionUID = 0L;
+
     // No-op.
 }

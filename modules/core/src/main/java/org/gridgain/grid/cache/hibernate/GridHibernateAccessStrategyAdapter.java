@@ -303,6 +303,8 @@ public abstract class GridHibernateAccessStrategyAdapter {
      * Callable invalidates given key.
      */
     private static class ClearKeyCallable implements Callable<Void>, Externalizable {
+        private static final long serialVersionUID = 0L;
+
         /** */
         @GridInstanceResource
         private Grid grid;

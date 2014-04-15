@@ -1868,6 +1868,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      */
     private static class LocalAffinityFunction implements GridCacheAffinityFunction {
+        private static final long serialVersionUID = 0L;
+
+
         @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
             GridNode locNode = null;
 

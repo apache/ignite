@@ -20,6 +20,8 @@ import java.io.*;
  * DHT cache.
  */
 public class GridDhtCache<K, V> extends GridDhtTransactionalCacheAdapter<K, V> {
+    private static final long serialVersionUID = 0L;
+
     /** Near cache. */
     @GridToStringExclude
     private GridNearTransactionalCache<K, V> near;

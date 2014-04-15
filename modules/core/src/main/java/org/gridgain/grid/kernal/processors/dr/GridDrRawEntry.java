@@ -23,6 +23,8 @@ import java.util.*;
  * Data center entry implementation containing plain and raw keys and values.
  */
 public class GridDrRawEntry<K, V> implements GridDrEntry<K, V>, Map.Entry<K, V>, Externalizable {
+    private static final long serialVersionUID = 0L;
+
     /** Key. */
     private K key;
 

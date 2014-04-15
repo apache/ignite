@@ -57,6 +57,8 @@ import static org.gridgain.grid.events.GridEventType.*;
  * @see GridEventType#EVT_GGFS_FILE_DELETED
  */
 public class GridGgfsEvent extends GridEventAdapter {
+    private static final long serialVersionUID = 0L;
+
     /** File path. */
     private final GridGgfsPath path;
 

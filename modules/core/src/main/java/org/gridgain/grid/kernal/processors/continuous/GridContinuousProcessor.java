@@ -1401,6 +1401,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * Discovery data item.
      */
     private static class DiscoveryDataItem implements Externalizable {
+        private static final long serialVersionUID = 0L;
+
         /** Consume ID. */
         private UUID routineId;
 
@@ -1477,6 +1479,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * Future for start routine.
      */
     private static class StartFuture extends GridFutureAdapter<UUID> {
+        private static final long serialVersionUID = 0L;
+
         /** Consume ID. */
         private UUID routineId;
 
@@ -1555,6 +1559,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * Future for stop routine.
      */
     private static class StopFuture extends GridFutureAdapter<Object> {
+        private static final long serialVersionUID = 0L;
+
         /** Timeout object. */
         private volatile GridTimeoutObject timeoutObj;
 

@@ -17,6 +17,8 @@ import java.io.*;
  * Version for time delta snapshot.
  */
 public class GridClockDeltaVersion implements Comparable<GridClockDeltaVersion>, Externalizable {
+    private static final long serialVersionUID = 0L;
+
     /** Snapshot local version. */
     private long ver;
 

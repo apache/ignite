@@ -18,6 +18,8 @@ import java.io.*;
  * Cache DR info used as argument in PUT cache internal interfaces with expiration info added.
  */
 public class GridCacheDrExpirationInfo<V> extends GridCacheDrInfo<V> {
+    private static final long serialVersionUID = 0L;
+
     /** TTL. */
     private long ttl;
 

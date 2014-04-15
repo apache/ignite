@@ -20,4 +20,6 @@ import org.gridgain.grid.util.lang.*;
  * @see GridFunc
  * @see GridPredicate2X
  */
-public abstract class PX2<T1, T2> extends GridPredicate2X<T1, T2> { /* No-op. */ }
+public abstract class PX2<T1, T2> extends GridPredicate2X<T1, T2> {
+    private static final long serialVersionUID = 0L;
+ /* No-op. */ }

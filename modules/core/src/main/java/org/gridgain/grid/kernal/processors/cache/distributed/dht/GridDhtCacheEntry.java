@@ -36,6 +36,8 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             return e.nodeId();
         }
     };
+    private static final long serialVersionUID = 0L;
+
 
     /** Reader clients. */
     @GridToStringInclude

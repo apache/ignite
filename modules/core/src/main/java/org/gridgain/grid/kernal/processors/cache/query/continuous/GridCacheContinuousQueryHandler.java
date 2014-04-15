@@ -27,6 +27,8 @@ import java.util.*;
  * Continuous query handler.
  */
 class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
+    private static final long serialVersionUID = 0L;
+
     /** Cache name. */
     private String cacheName;
 
@@ -297,6 +299,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      * Deployable object.
      */
     private static class DeployableObject implements Externalizable {
+        private static final long serialVersionUID = 0L;
+
         /** Serialized object. */
         private byte[] bytes;
 

@@ -50,6 +50,8 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
     /** Comparator. */
     private static final Comparator<GridBiTuple<Long, GridNode>> COMPARATOR =
         new HashComparator();
+    private static final long serialVersionUID = 0L;
+
 
     /** Thread local message digest. */
     private ThreadLocal<MessageDigest> digest = new ThreadLocal<MessageDigest>() {
@@ -461,6 +463,9 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
      *
      */
     private static class HashComparator implements Comparator<GridBiTuple<Long, GridNode>>, Serializable {
+        private static final long serialVersionUID = 0L;
+
+
         /** {@inheritDoc} */
         @Override public int compare(GridBiTuple<Long, GridNode> o1, GridBiTuple<Long, GridNode> o2) {
             return o1.get1() < o2.get1() ? -1 : o1.get1() > o2.get1() ? 1 :

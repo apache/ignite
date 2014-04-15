@@ -34,6 +34,8 @@ import java.util.*;
  * This set does not allow {@code null} values.
  */
 public class GridListSet<V> extends GridSerializableSet<V> implements Cloneable {
+    private static final long serialVersionUID = 0L;
+
     /** Internal list. */
     @GridToStringInclude
     private LinkedList<V> vals = new LinkedList<>();

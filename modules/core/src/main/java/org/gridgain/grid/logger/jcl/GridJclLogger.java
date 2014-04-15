@@ -67,6 +67,8 @@ import org.jetbrains.annotations.*;
  * injection.
  */
 public class GridJclLogger extends GridMetadataAwareAdapter implements GridLogger {
+    private static final long serialVersionUID = 0L;
+
     /** JCL implementation proxy. */
     private Log impl;
 

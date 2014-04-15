@@ -19,6 +19,8 @@ import java.nio.*;
  * Affinity assignment request.
  */
 public class GridDhtAffinityAssignmentRequest<K, V> extends GridCacheMessage<K, V> {
+    private static final long serialVersionUID = 0L;
+
     /** Topology version being queried. */
     private long topVer;
 

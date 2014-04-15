@@ -36,6 +36,8 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
  */
 public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter implements GridCacheProjectionEx<K, V>,
     Externalizable {
+    private static final long serialVersionUID = 0L;
+
     /** Key-value filter taking null values. */
     @GridToStringExclude
     private KeyValueFilter<K, V> withNullKvFilter;
@@ -1239,6 +1241,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
      * @param <V> Value type.
      */
     private static class FullFilter<K, V> implements GridPredicate<GridCacheEntry<K, V>> {
+        private static final long serialVersionUID = 0L;
+
         /** Key filter. */
         private GridBiPredicate<K, V> kvFilter;
 
@@ -1270,6 +1274,8 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
      * @param <V> Value type.
      */
     private static class KeyValueFilter<K, V> implements GridBiPredicate<K, V> {
+        private static final long serialVersionUID = 0L;
+
         /** Key filter. */
         private GridBiPredicate<K, V> kvFilter;
 

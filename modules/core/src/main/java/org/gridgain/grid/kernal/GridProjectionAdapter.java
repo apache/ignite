@@ -28,6 +28,8 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
  *
  */
 public class GridProjectionAdapter extends GridMetadataAwareAdapter implements GridProjection, Externalizable {
+    private static final long serialVersionUID = 0L;
+
     /** */
     protected transient GridKernalContext ctx;
 
@@ -556,6 +558,8 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     /**
      */
     private static class CachesFilter implements GridPredicate<GridNode> {
+        private static final long serialVersionUID = 0L;
+
         /** Cache name. */
         private final String cacheName;
 
@@ -588,6 +592,8 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     /**
      */
     private static class StreamersFilter implements GridPredicate<GridNode> {
+        private static final long serialVersionUID = 0L;
+
         /** Streamer name. */
         private final String streamerName;
 
@@ -620,6 +626,8 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     /**
      */
     private static class AttributeFilter implements GridPredicate<GridNode> {
+        private static final long serialVersionUID = 0L;
+
         /** Name. */
         private final String name;
 
@@ -644,6 +652,9 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     /**
      */
     private static class DaemonFilter implements GridPredicate<GridNode> {
+        private static final long serialVersionUID = 0L;
+
+
         /** {@inheritDoc} */
         @Override public boolean apply(GridNode n) {
             return n.isDaemon();
@@ -653,6 +664,8 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
     /**
      */
     private static class OthersFilter implements GridPredicate<GridNode> {
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final Collection<UUID> nodeIds;
 
