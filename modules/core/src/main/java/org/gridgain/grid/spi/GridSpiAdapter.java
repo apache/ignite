@@ -733,19 +733,17 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
         }
 
         /** {@inheritDoc} */
-        @Override public GridHashIdResolversValidationResult validateHashIdResolvers(GridNode node) {
+        @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeDelta(UUID nodeId, Class<?> msgCls,
-            ByteBuffer buf) {
+        @Override public boolean writeDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readDelta(UUID nodeId, Class<?> msgCls,
-            ByteBuffer buf) {
+        @Override public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
             return false;
         }
     }
