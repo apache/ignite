@@ -45,4 +45,30 @@ public class GridHadoopJobId implements Externalizable {
         nodeId = U.readUuid(in);
         jobId = in.readInt();
     }
+
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        GridHadoopJobId that = (GridHadoopJobId) o;
+
+        if (jobId != that.jobId)
+            return false;
+
+        if (!nodeId.equals(that.nodeId))
+            return false;
+
+        return true;
+    }
+
+    @Override public int hashCode() {
+        return 31 * nodeId.hashCode() + jobId;
+    }
+
+    @Override public String toString() {
+        return nodeId + "_" + jobId;
+    }
 }

@@ -15,34 +15,34 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 
+import java.util.*;
+
 /**
  * TODO write doc
  */
 public class GridHadoopTaskExecutor extends GridHadoopComponent {
     /**
-     * Runs task.
+     * Runs tasks.
      *
-     * @param info Task info.
-     * @param task Task.
+     * @param tasks Tasks.
      * @return Completion future.
      */
-    public GridFuture<?> run(final GridHadoopTaskInfo info, final GridHadoopTask task) {
-        GridChainedFuture<?> res = new GridChainedFuture<>(ctx.kernalContext());
+    public void run(Collection<GridHadoopTask> tasks) {
+        for (final GridHadoopTask task : tasks)
+            ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
+                @Override public GridFuture<?> call() throws Exception {
+                    GridHadoopTaskInfo info = task.info();
 
-        ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
-            @Override public GridFuture<?> call() throws Exception {
-                try (GridHadoopTaskOutput out = createOutput(info);
-                     GridHadoopTaskInput in = createInput(info)) {
-                    GridHadoopTaskContext ctx = null;
+                    try (GridHadoopTaskOutput out = createOutput(info);
+                         GridHadoopTaskInput in = createInput(info)) {
+                        GridHadoopTaskContext ctx = null;
 
-                    task.run(ctx);
+                        task.run(ctx);
 
-                    return out.finish();
+                        return out.finish();
+                    }
                 }
-            }
-        }, false).listenAsync(res);
-
-        return res;
+            }, false);
     }
 
     private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo taskInfo) {

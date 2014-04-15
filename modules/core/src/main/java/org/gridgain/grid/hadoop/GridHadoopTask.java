@@ -9,9 +9,21 @@
 
 package org.gridgain.grid.hadoop;
 
+import java.io.*;
+
 /**
  * TODO write doc
  */
-public interface GridHadoopTask {
+public interface GridHadoopTask extends Serializable {
+    /**
+     * @return task info.
+     */
+    public GridHadoopTaskInfo info();
+
+    /**
+     *
+     *
+     * @param ctx Context.
+     */
     public void run(GridHadoopTaskContext ctx);
 }

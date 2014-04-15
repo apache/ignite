@@ -35,4 +35,8 @@ public class GridHadoopTaskInfo {
     public int attempt() {
         return 0;
     }
+
+    public GridHadoopFileBlock fileBlock() {
+        return null;
+    }
 }
