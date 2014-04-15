@@ -650,7 +650,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
             List<GridBiTuple<String, String>> diffs = GridLibraryConsistencyCheck.check(log, locLibs, rmtLibs);
 
-            if (!diffs.isEmpty()) {
+            if (!F.isEmpty(diffs)) {
                 if (log.isQuiet()) {
                     U.quiet(true, "Local node's library list differs from remote node's");
 
