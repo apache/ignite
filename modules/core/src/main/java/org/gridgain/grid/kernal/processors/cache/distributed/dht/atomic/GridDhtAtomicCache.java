@@ -138,6 +138,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
     @Override public void start() throws GridException {
+        resetMetrics();
+
         hasBackups = ctx.config().getBackups() > 0;
 
         preldr = new GridDhtPreloader<>(ctx);
@@ -188,6 +190,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetMetrics() {
+        boolean isDrSndCache = cacheCfg.getDrSenderConfiguration() != null;
+        boolean isDrRcvCache = cacheCfg.getDrReceiverConfiguration() != null;
+
+        GridCacheMetricsAdapter m = new GridCacheMetricsAdapter(isDrSndCache, isDrRcvCache);
+
+        if (ctx.dht().near() != null)
+            m.delegate(ctx.dht().near().metrics0());
+
+        metrics = m;
     }
 
     /**
