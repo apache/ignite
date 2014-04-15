@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
+package org.gridgain.grid.kernal.processors.hadoop.hadoop2impl;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
@@ -30,9 +30,9 @@ public class GridHadoopV2Splitter {
      * @return Collection of mapped blocks.
      * @throws GridException If mapping failed.
      */
-    public static Collection<GridHadoopFileBlock> splitJob(GridHadoopJobId jobId, GridHadoopJobInfo info)
+    public static Collection<GridHadoopFileBlock> splitJob(GridHadoopJobId jobId, GridHadoopJobInfoImpl info)
         throws GridException {
-        Configuration cfg = null; //info.configuration(); TODO get from impl.
+        Configuration cfg = info.configuration();
 
         InputFormat<?, ?> format = (InputFormat<?, ?>)U.newInstance(cfg.getClass(
             MRJobConfig.INPUT_FORMAT_CLASS_ATTR, TextInputFormat.class));
