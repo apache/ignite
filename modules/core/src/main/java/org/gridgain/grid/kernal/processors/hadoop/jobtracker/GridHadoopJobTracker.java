@@ -142,29 +142,19 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             Collection<GridHadoopFileBlock> mappers = meta.mapReducePlan().mappers(ctx.localNodeId());
 
             if (mappers != null) {
+                Collection<GridHadoopTask> tasks = new ArrayList<>();
+
                 for (GridHadoopFileBlock block : mappers) {
                     if (state.addMapper(block)) {
                         GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo();
 
                         GridHadoopTask task = job.createTask(taskInfo);
 
-                        ctx.taskExecutor().run(taskInfo, task);
+                        tasks.add(task);
                     }
                 }
-            }
 
-            int[] reducers = meta.mapReducePlan().reducers(ctx.localNodeId());
-
-            if (reducers != null) {
-                for (int reducer : reducers) {
-                    if (state.addReducer(reducer)) {
-                        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo();
-
-                        GridHadoopTask task = job.createTask(taskInfo);
-
-                        ctx.taskExecutor().run(taskInfo, task);
-                    }
-                }
+                ctx.taskExecutor().run(tasks);
             }
         }
     }

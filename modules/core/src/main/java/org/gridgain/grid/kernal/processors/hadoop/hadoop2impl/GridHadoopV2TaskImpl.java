@@ -16,6 +16,11 @@ import org.gridgain.grid.hadoop.*;
  */
 public class GridHadoopV2TaskImpl implements GridHadoopTask {
     /** {@inheritDoc} */
+    @Override public GridHadoopTaskInfo info() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void run(GridHadoopTaskContext ctx) {
 
     }
