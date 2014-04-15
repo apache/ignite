@@ -20,6 +20,7 @@ import java.nio.*;
  *
  */
 public class GridStreamerResponse extends GridTcpCommunicationMessageAdapter {
+    private static final long serialVersionUID = -2961765773683853099L;
     /** */
     private GridUuid futId;
 

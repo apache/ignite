@@ -19,6 +19,7 @@ import java.util.*;
  */
 public abstract class GridCloseableIteratorAdapter<T> extends GridIteratorAdapter<T> implements
     GridCloseableIterator<T> {
+    private static final long serialVersionUID = -283158105210120325L;
     /** Closed flag. */
     private boolean closed;
 

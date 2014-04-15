@@ -16,6 +16,7 @@ import org.gridgain.grid.util.lang.*;
  * Empty closeable iterator.
  */
 public class GridEmptyCloseableIterator<T> extends GridEmptyIterator<T> implements GridCloseableIterator<T> {
+    private static final long serialVersionUID = -4455697298899433767L;
     /** Closed flag. */
     private boolean closed;
 

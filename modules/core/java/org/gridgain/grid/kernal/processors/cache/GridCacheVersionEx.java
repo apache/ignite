@@ -15,6 +15,7 @@ import java.io.*;
  * Extended cache version which also has additional DR version.
  */
 public class GridCacheVersionEx extends GridCacheVersion {
+    private static final long serialVersionUID = 4557587651186680056L;
     /** DR version. */
     private GridCacheVersion drVer;
 

@@ -23,6 +23,7 @@ import java.util.*;
  * Cache eviction response.
  */
 public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
+    private static final long serialVersionUID = -7676047384839742461L;
     /** Future ID. */
     private long futId;
 

@@ -46,6 +46,7 @@ public class GridCacheQueueImpl<T> extends AbstractCollection<T> implements Grid
 
     /** Default value of warning threshold of attempts. */
     public static final int DFLT_ATTEMPT_WARN_THRESHOLD = 5;
+    private static final long serialVersionUID = -6574253094336196315L;
 
     /** Logger. */
     private GridLogger log;

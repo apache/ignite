@@ -21,6 +21,7 @@ import java.io.*;
  * correct files if it is restarted.
  */
 class GridSharedFsCheckpointData implements Serializable {
+    private static final long serialVersionUID = 4387898628242498437L;
     /** Checkpoint data. */
     private final byte[] state;
 

@@ -20,6 +20,7 @@ import java.util.*;
  * different node with same ID.
  */
 public class GridTcpDiscoveryDuplicateIdMessage extends GridTcpDiscoveryAbstractMessage {
+    private static final long serialVersionUID = -7059974828118457821L;
     /** Node with duplicate ID. */
     private GridTcpDiscoveryNode node;
 

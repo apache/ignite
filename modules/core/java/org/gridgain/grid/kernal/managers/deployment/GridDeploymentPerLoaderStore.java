@@ -385,6 +385,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
      *
      */
     private class IsolatedDeployment extends GridDeployment {
+        private static final long serialVersionUID = 7781944814832925980L;
         /** Sender node ID. */
         private final UUID sndNodeId;
 

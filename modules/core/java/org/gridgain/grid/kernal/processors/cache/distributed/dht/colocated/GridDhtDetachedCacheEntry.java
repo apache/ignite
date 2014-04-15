@@ -19,6 +19,8 @@ import org.jetbrains.annotations.*;
  * Detached cache entry.
  */
 public class GridDhtDetachedCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
+    private static final long serialVersionUID = 5961400044695386544L;
+
     /**
      * @param ctx Cache context.
      * @param key Cache key.

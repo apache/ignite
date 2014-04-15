@@ -61,6 +61,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** Unsafe instance. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
+    private static final long serialVersionUID = -9197626374762210559L;
 
     /** Will be {@code true} if affinity has backups. */
     private boolean hasBackups;
@@ -2041,6 +2042,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      *
      */
     private static class FinishedLockFuture extends GridFinishedFutureEx<Boolean> implements GridDhtFuture<Boolean> {
+        private static final long serialVersionUID = 652344926409488955L;
+
         /**
          * Empty constructor required by {@link Externalizable}.
          */
@@ -2065,6 +2068,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * Deferred response buffer.
      */
     private class DeferredResponseBuffer extends ReentrantReadWriteLock implements GridTimeoutObject {
+        private static final long serialVersionUID = -7254034521623737782L;
         /** Filled atomic flag. */
         private AtomicBoolean guard = new AtomicBoolean(false);
 

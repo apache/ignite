@@ -31,6 +31,8 @@ import static org.gridgain.grid.cache.GridCachePeekMode.*;
  * Partitioned cache entry public API.
  */
 public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V> {
+    private static final long serialVersionUID = 7155461667566803490L;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */

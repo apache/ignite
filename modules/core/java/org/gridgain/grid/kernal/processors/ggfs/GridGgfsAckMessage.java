@@ -22,6 +22,7 @@ import java.nio.*;
  * Block write request acknowledgement message.
  */
 public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
+    private static final long serialVersionUID = -6785026890403461644L;
     /** File id. */
     private GridUuid fileId;
 

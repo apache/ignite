@@ -18,4 +18,5 @@ import org.gridgain.grid.util.lang.*;
  * @see GridFunc
  * @see GridAbsClosureX
  */
-public abstract class CAX extends GridAbsClosureX { /* No-op. */ }
+public abstract class CAX extends GridAbsClosureX {
+    private static final long serialVersionUID = -8366818073909072900L; /* No-op. */ }

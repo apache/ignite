@@ -24,6 +24,7 @@ import java.io.*;
  */
 @GridToStringExclude
 class GridCacheLogger extends GridMetadataAwareAdapter implements GridLogger, Externalizable {
+    private static final long serialVersionUID = -7248871120450398811L;
     /** */
     private static ThreadLocal<GridBiTuple<String, GridCacheContext>> stash =
         new ThreadLocal<GridBiTuple<String, GridCacheContext>>() {

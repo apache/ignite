@@ -86,6 +86,7 @@ public abstract class GridSnapshotLock<X> {
      */
     @SuppressWarnings("PackageVisibleInnerClass")
     private static class Sync<X> extends AbstractQueuedSynchronizer {
+        private static final long serialVersionUID = 1702604976891048620L;
         /** */
         private X x;
 

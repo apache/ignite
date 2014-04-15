@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.*;
  * Note that {@link #remove(Object)} method is not supported for this kind of set.
  */
 public class GridBoundedConcurrentOrderedSet<E> extends GridConcurrentSkipListSet<E> {
+    private static final long serialVersionUID = -1702284414696746639L;
     /** Element count. */
     private final AtomicInteger cnt = new AtomicInteger(0);
 

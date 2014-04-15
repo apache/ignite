@@ -26,6 +26,7 @@ import java.util.concurrent.*;
  * Streamer execution future.
  */
 public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> {
+    private static final long serialVersionUID = -7109197606149859564L;
     /** Logger. */
     private GridLogger log;
 

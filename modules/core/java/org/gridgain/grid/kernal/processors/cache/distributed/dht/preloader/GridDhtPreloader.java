@@ -810,6 +810,8 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      *
      */
     private abstract class MessageHandler<M> implements GridBiInClosure<UUID, M> {
+        private static final long serialVersionUID = -4814452988794242371L;
+
         /** {@inheritDoc} */
         @Override public void apply(UUID nodeId, M msg) {
             GridNode node = cctx.node(nodeId);
@@ -838,6 +840,8 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      *
      */
     private class ExchangeFutureSet extends GridListSet<GridDhtPartitionsExchangeFuture<K, V>> {
+        private static final long serialVersionUID = -4534134417370981327L;
+
         /**
          * Creates ordered, not strict list set.
          */

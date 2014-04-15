@@ -20,6 +20,8 @@ import org.gridgain.grid.*;
  * @see GridFunc#wrap(Throwable)
  */
 public class GridClosureException extends GridRuntimeException {
+    private static final long serialVersionUID = 6375296386989572774L;
+
     /**
      * Creates wrapper closure exception for given {@link GridException}.
      *

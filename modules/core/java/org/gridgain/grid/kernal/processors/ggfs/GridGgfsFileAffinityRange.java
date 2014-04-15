@@ -31,6 +31,7 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
 
     /** Fragmentizer finished block copy for this range. */
     public static final int RANGE_STATUS_MOVED = 2;
+    private static final long serialVersionUID = 4998819630297351777L;
 
     /** Range affinity key. */
     private GridUuid affKey;

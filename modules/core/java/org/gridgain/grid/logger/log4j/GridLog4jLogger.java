@@ -59,6 +59,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
  * injection.
  */
 public class GridLog4jLogger extends GridMetadataAwareAdapter implements GridLogger {
+    private static final long serialVersionUID = -5410622228948273097L;
     /** Appenders. */
     private static Collection<FileAppender> fileAppenders = new GridConcurrentHashSet<>();
 

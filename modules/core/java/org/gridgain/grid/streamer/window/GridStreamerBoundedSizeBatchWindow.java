@@ -469,6 +469,8 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
      * Window structure.
      */
     private class QueueHolder extends GridTuple3<ConcurrentLinkedDeque8<Batch>, AtomicInteger, AtomicInteger> {
+        private static final long serialVersionUID = 3909245156814317503L;
+
         /**
          * Empty constructor required by {@link Externalizable}.
          */
@@ -518,6 +520,7 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
      * Batch.
      */
     private class Batch extends ReentrantReadWriteLock implements Iterable<E> {
+        private static final long serialVersionUID = 461988412134798232L;
         /** Batch events. */
         private ConcurrentLinkedDeque8<E> evts;
 

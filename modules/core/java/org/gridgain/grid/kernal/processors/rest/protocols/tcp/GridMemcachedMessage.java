@@ -74,6 +74,7 @@ public class GridMemcachedMessage implements GridClientMessage {
 
     /** Byte array flag. */
     public static final int BYTE_ARR_FLAG = (8 << 8);
+    private static final long serialVersionUID = 8578652041956905116L;
 
     /** Request flag. */
     private byte reqFlag;

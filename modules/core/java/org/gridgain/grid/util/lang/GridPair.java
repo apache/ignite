@@ -17,6 +17,8 @@ import java.io.*;
  * Simple extension over {@link GridBiTuple} for pair of objects of the same type.
  */
 public class GridPair<T> extends GridBiTuple<T, T> {
+    private static final long serialVersionUID = 9202176438901391340L;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */

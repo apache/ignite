@@ -16,6 +16,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * Local node metrics MBean.
  */
 public class GridLocalNodeMetrics implements GridNodeMetricsMBean {
+    private static final long serialVersionUID = 4227704191993653969L;
     /** Grid node. */
     private final GridNode node;
 

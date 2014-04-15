@@ -15,6 +15,8 @@ import org.gridgain.grid.*;
  * Exception thrown when data center replication sender hub store cannot persist more entries.
  */
 public class GridDrSenderHubStoreOverflowException extends GridException {
+    private static final long serialVersionUID = -8672886958073481542L;
+
     /**
      * Constructor.
      */

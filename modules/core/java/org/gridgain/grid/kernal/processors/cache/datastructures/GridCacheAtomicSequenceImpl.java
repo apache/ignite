@@ -40,6 +40,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
                 return F.t2();
             }
         };
+    private static final long serialVersionUID = 70975727411823859L;
 
     /** Logger. */
     private GridLogger log;

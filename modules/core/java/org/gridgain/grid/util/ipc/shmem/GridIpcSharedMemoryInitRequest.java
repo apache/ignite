@@ -15,6 +15,7 @@ import java.io.*;
  *
  */
 public class GridIpcSharedMemoryInitRequest implements Externalizable {
+    private static final long serialVersionUID = 2567637081598103492L;
     /** */
     private int pid;
 

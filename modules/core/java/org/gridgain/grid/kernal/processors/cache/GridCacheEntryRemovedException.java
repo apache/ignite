@@ -13,5 +13,6 @@ package org.gridgain.grid.kernal.processors.cache;
  * Thrown when an operation is performed on removed entry.
  */
 public class GridCacheEntryRemovedException extends Exception {
+    private static final long serialVersionUID = -742354838408119704L;
     /* No-op. */
 }

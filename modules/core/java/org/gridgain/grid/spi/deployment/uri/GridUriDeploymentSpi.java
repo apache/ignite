@@ -1346,6 +1346,8 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
      */
     private static class LastTimeUnitDescriptorComparator implements Comparator<GridUriDeploymentUnitDescriptor>,
         Serializable {
+        private static final long serialVersionUID = -2641639353035650927L;
+
         /** {@inheritDoc} */
         @Override public int compare(GridUriDeploymentUnitDescriptor o1, GridUriDeploymentUnitDescriptor o2) {
             if (o1.getTimestamp() < o2.getTimestamp())

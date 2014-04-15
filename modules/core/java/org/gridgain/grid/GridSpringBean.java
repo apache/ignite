@@ -71,6 +71,7 @@ import java.util.*;
  */
 public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, DisposableBean, InitializingBean,
     ApplicationContextAware, Externalizable {
+    private static final long serialVersionUID = 2471330538384440970L;
     /** */
     private Grid g;
 

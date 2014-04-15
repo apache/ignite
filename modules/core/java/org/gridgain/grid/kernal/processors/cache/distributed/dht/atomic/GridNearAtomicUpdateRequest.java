@@ -32,6 +32,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
+    private static final long serialVersionUID = 3908634372582398091L;
 
     /** Target node ID. */
     @GridDirectTransient

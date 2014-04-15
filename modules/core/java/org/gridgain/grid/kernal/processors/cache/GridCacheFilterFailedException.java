@@ -15,6 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * Thrown when an operation is performed on removed entry.
  */
 public class GridCacheFilterFailedException extends Exception {
+    private static final long serialVersionUID = -3514738475405901826L;
     /** Value for which filter failed. */
     private final Object val;
 

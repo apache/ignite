@@ -18,6 +18,7 @@ import java.util.*;
  * One can get list of keys for which update failed with method {@link #failedKeys()}.
  */
 public class GridCachePartialUpdateException extends GridException {
+    private static final long serialVersionUID = 6134087059086023265L;
     /** Failed keys. */
     private final Collection<Object> failedKeys = new ArrayList<>();
 

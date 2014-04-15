@@ -27,6 +27,7 @@ public class GridCacheMvccCandidate<K> implements Externalizable,
     Comparable<GridCacheMvccCandidate<K>> {
     /** ID generator. */
     private static final AtomicLong IDGEN = new AtomicLong();
+    private static final long serialVersionUID = -73961812728375943L;
 
     /** Locking node ID. */
     @GridToStringInclude

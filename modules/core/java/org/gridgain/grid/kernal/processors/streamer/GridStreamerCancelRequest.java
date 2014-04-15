@@ -19,6 +19,7 @@ import java.nio.*;
  * Streamer cancel request.
  */
 public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapter {
+    private static final long serialVersionUID = -472212504824544841L;
     /** Cancelled future ID. */
     private GridUuid cancelledFutId;
 

@@ -27,6 +27,7 @@ public class GridNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> impleme
     Externalizable {
     /** */
     private static final ThreadLocal<String> stash = new ThreadLocal<>();
+    private static final long serialVersionUID = -6933029140483183692L;
 
     /** */
     private GridMetadataAwareAdapter impl = new GridMetadataAwareAdapter();

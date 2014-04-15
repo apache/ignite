@@ -24,6 +24,7 @@ import java.util.*;
  * Partition demand request.
  */
 public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> {
+    private static final long serialVersionUID = -8082079121725745380L;
     /** Update sequence. */
     private long updateSeq;
 

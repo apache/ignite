@@ -17,6 +17,8 @@ import java.util.*;
  * Generic cache request.
  */
 public class GridClientCacheRequest<K, V> extends GridClientAbstractMessage {
+    private static final long serialVersionUID = -6606433531891052547L;
+
     /**
      * Available cache operations.
      */

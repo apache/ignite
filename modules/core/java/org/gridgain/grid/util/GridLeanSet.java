@@ -21,6 +21,8 @@ import java.util.*;
  *
  */
 public class GridLeanSet<E> extends GridSetWrapper<E> implements Cloneable {
+    private static final long serialVersionUID = 584202563614337366L;
+
     /**
      * Creates a new, empty set with a default initial capacity,
      * load factor, and concurrencyLevel.

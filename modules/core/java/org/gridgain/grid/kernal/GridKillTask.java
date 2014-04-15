@@ -23,6 +23,7 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
  */
 @GridInternal
 class GridKillTask extends GridComputeTaskAdapter<Boolean, Void> {
+    private static final long serialVersionUID = 4662987871537636128L;
     /** Restart flag. */
     private boolean restart;
 
@@ -66,6 +67,8 @@ class GridKillTask extends GridComputeTaskAdapter<Boolean, Void> {
      * Kill job.
      */
     private class GridKillJob extends GridComputeJobAdapter {
+        private static final long serialVersionUID = -4466885275955973174L;
+
         /** {@inheritDoc} */
         @Override public Object execute() throws GridException {
             if (restart)

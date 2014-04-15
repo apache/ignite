@@ -20,6 +20,7 @@ import java.util.*;
  * nodes should discard this and all preceding messages in local buffers.
  */
 public class GridTcpDiscoveryDiscardMessage extends GridTcpDiscoveryAbstractMessage {
+    private static final long serialVersionUID = -9123877018053993686L;
     /** ID of the message to discard (this and all preceding). */
     private GridUuid msgId;
 

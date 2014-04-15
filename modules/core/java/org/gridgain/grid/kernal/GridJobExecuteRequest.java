@@ -24,6 +24,7 @@ import java.util.*;
  * Job execution request.
  */
 public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter implements GridTaskMessage {
+    private static final long serialVersionUID = 3932077039232510201L;
     /** */
     private GridUuid sesId;
 

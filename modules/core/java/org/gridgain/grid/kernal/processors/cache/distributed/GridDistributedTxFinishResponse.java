@@ -21,6 +21,7 @@ import java.nio.*;
  * Transaction finish response.
  */
 public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V> {
+    private static final long serialVersionUID = -5331455654030676539L;
     /** */
     private GridCacheVersion txId;
 

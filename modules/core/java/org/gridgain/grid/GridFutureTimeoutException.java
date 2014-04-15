@@ -17,6 +17,8 @@ import org.jetbrains.annotations.*;
  *
  */
 public class GridFutureTimeoutException extends GridException {
+    private static final long serialVersionUID = 4968377968200478111L;
+
     /**
      * Creates new exception with given error message.
      *

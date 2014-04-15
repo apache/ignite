@@ -19,6 +19,8 @@ import org.jetbrains.annotations.*;
  * checked exceptions in the signature.
  */
 public class GridCacheDataStructureRemovedRuntimeException extends GridRuntimeException {
+    private static final long serialVersionUID = 8549811843954621549L;
+
     /**
      * Creates new exception with given error message.
      *

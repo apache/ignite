@@ -60,6 +60,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      * Default value is {@code gg:affinity:node:replicas}.
      */
     public static final String DFLT_REPLICA_COUNT_ATTR_NAME = "gg:affinity:node:replicas";
+    private static final long serialVersionUID = 4632575541380954209L;
 
     /** Node hash. */
     private transient GridConsistentHash<NodeInfo> nodeHash;

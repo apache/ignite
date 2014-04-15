@@ -27,6 +27,7 @@ import java.util.*;
 public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
+    private static final long serialVersionUID = 8286437077480874525L;
 
     /** Future version. */
     private GridCacheVersion futVer;

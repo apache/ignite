@@ -21,6 +21,7 @@ import java.util.*;
  * This class contains information on a single GGFS configured on some node.
  */
 public class GridGgfsAttributes implements Externalizable {
+    private static final long serialVersionUID = 6108804044153152543L;
     /** GGFS name. */
     private String ggfsName;
 

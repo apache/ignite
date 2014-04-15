@@ -22,6 +22,7 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
  * Convenient adapter for {@link GridNodeShadow}.
  */
 class GridDiscoveryNodeShadowAdapter extends GridMetadataAwareAdapter implements GridNodeShadow {
+    private static final long serialVersionUID = -8591185958570501030L;
     /** Node ID. */
     private UUID id;
 

@@ -37,6 +37,8 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
  * Base class for transactional DHT caches.
  */
 public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCacheAdapter<K, V> {
+    private static final long serialVersionUID = -5481980561644914047L;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */

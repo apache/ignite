@@ -25,6 +25,7 @@ import java.util.*;
  * @see GridifySetToSet
  */
 public class GridifyRangeArgument extends GridifyArgumentAdapter {
+    private static final long serialVersionUID = -7909776299860829556L;
     /** Identify where to find data in method signature. */
     private int paramIdx = -1;
 

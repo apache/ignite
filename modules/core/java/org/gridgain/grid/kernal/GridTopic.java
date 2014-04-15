@@ -173,6 +173,7 @@ public enum GridTopic {
      *
      */
     private static class T1 implements Externalizable, GridOptimizedMarshallable {
+        private static final long serialVersionUID = -8957884700486079906L;
         /** */
         @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
         private static Object GG_CLASS_ID;
@@ -242,6 +243,7 @@ public enum GridTopic {
      *
      */
     private static class T2 implements Externalizable, GridOptimizedMarshallable {
+        private static final long serialVersionUID = -6779834815839636158L;
         /** */
         @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
         private static Object GG_CLASS_ID;
@@ -318,6 +320,7 @@ public enum GridTopic {
      *
      */
     private static class T3 implements Externalizable, GridOptimizedMarshallable {
+        private static final long serialVersionUID = 6548694519929230916L;
         /** */
         @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
         private static Object GG_CLASS_ID;
@@ -387,6 +390,7 @@ public enum GridTopic {
      *
      */
     private static class T4 implements Externalizable, GridOptimizedMarshallable {
+        private static final long serialVersionUID = -5293316509223424140L;
         /** */
         @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
         private static Object GG_CLASS_ID;
@@ -470,6 +474,7 @@ public enum GridTopic {
      *
      */
     private static class T5 implements Externalizable, GridOptimizedMarshallable {
+        private static final long serialVersionUID = -4451646635105585695L;
         /** */
         @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
         private static Object GG_CLASS_ID;
@@ -553,6 +558,7 @@ public enum GridTopic {
      *
      */
     private static class T6 implements Externalizable, GridOptimizedMarshallable {
+        private static final long serialVersionUID = -5429423739175665202L;
         /** */
         @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
         private static Object GG_CLASS_ID;
@@ -629,6 +635,7 @@ public enum GridTopic {
      *
      */
     private static class T7 implements Externalizable, GridOptimizedMarshallable {
+        private static final long serialVersionUID = -6562761107944771487L;
         /** */
         @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
         private static Object GG_CLASS_ID;
@@ -720,6 +727,7 @@ public enum GridTopic {
      *
      */
     private static class T8 implements Externalizable, GridOptimizedMarshallable {
+        private static final long serialVersionUID = 1650947578582527368L;
         /** */
         @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
         private static Object GG_CLASS_ID;

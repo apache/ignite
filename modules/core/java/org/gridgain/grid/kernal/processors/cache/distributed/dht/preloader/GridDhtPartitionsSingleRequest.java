@@ -19,6 +19,8 @@ import java.nio.*;
  * Request for single partition info.
  */
 public class GridDhtPartitionsSingleRequest<K, V> extends GridDhtPartitionsAbstractMessage<K, V> {
+    private static final long serialVersionUID = 3321706067262548561L;
+
     /**
      * Required by {@link Externalizable}.
      */

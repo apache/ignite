@@ -15,6 +15,7 @@ import java.util.*;
  *
  */
 public class GridRouterResponse extends GridClientAbstractMessage {
+    private static final long serialVersionUID = 2989688390146241020L;
     /** Raw message. */
     private final byte[] body;
 

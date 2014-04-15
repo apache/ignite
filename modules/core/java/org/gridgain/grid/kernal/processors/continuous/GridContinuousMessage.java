@@ -23,6 +23,7 @@ import java.util.*;
  * Continuous processor message.
  */
 public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
+    private static final long serialVersionUID = 2921825652356919711L;
     /** Message type. */
     private GridContinuousMessageType type;
 

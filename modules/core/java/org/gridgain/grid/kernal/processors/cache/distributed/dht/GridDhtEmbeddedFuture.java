@@ -23,6 +23,7 @@ import java.util.*;
  * Embedded DHT future.
  */
 public class GridDhtEmbeddedFuture<A, B> extends GridEmbeddedFuture<A, B> implements GridDhtFuture<A> {
+    private static final long serialVersionUID = 1166768951997261226L;
     /** Retries. */
     @GridToStringInclude
     private Collection<Integer> invalidParts;

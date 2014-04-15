@@ -422,6 +422,7 @@ public final class GridifyUtils {
      * Serializable {@link Enumeration} implementation based on {@link Collection}.
      */
     private static class EnumerationAdapter<T> implements Enumeration<T>, Serializable {
+        private static final long serialVersionUID = -1060732900530799722L;
         /** */
         private Collection<T> col;
 
@@ -477,6 +478,7 @@ public final class GridifyUtils {
      * Serializable {@link Iterator} implementation based on {@link Collection}.
      */
     private static class IteratorAdapter<T> implements Iterator<T>, Serializable {
+        private static final long serialVersionUID = 7433369986992634561L;
         /** */
         private Collection<T> col;
 

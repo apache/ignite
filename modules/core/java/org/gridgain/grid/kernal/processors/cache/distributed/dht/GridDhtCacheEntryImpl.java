@@ -27,6 +27,8 @@ import static org.gridgain.grid.cache.GridCachePeekMode.*;
  * Colocated cache entry public API.
  */
 public class GridDhtCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V> {
+    private static final long serialVersionUID = 7671552268346215002L;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */

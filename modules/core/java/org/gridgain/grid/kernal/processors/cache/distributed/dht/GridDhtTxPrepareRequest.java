@@ -26,6 +26,7 @@ import java.util.*;
  * DHT prepare request.
  */
 public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequest<K, V> {
+    private static final long serialVersionUID = -4936518385430864541L;
     /** Max order. */
     private UUID nearNodeId;
 

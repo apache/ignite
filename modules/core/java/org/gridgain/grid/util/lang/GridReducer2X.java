@@ -19,6 +19,8 @@ import org.gridgain.grid.util.typedef.*;
  * @see RX2
  */
 public abstract class GridReducer2X<E1, E2, R> implements GridReducer2<E1, E2, R> {
+    private static final long serialVersionUID = 3763549847673627159L;
+
     /** {@inheritDoc} */
     @Override public R apply() {
         try {

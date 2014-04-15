@@ -53,6 +53,7 @@ import java.util.*;
  * @see GridEventType#EVT_CACHE_PRELOAD_STOPPED
  */
 public class GridCachePreloadingEvent extends GridEventAdapter {
+    private static final long serialVersionUID = 4346571111260684579L;
     /** Cache name. */
     private String cacheName;
 

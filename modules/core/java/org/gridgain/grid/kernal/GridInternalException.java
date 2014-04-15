@@ -16,6 +16,8 @@ import org.jetbrains.annotations.*;
  * When log debug mode is disabled this exception should be logged in short form - without stack trace.
  */
 public class GridInternalException extends GridException {
+    private static final long serialVersionUID = 6184216101053741729L;
+
     /**
      * Creates new internal exception with given error message.
      *

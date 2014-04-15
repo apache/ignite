@@ -17,6 +17,8 @@ import org.gridgain.grid.util.*;
  * use only and meant to provide for more terse code when readability of code is not compromised.
  */
 public class SB extends GridStringBuilder {
+    private static final long serialVersionUID = -2439540256146228427L;
+
     /**
      * @see GridStringBuilder#GridStringBuilder()
      */

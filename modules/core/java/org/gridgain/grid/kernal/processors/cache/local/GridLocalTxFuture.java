@@ -30,6 +30,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
     implements GridCacheMvccFuture<K, V, GridCacheTxEx<K, V>> {
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final long serialVersionUID = -5044982422906936792L;
 
     /** Future ID. */
     private GridUuid futId = GridUuid.randomUuid();

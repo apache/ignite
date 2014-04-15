@@ -23,6 +23,7 @@ import java.util.*;
  * This class is also optimized for evaluation of large number of nodes.
  */
 public class GridNodePredicate implements GridPredicate<GridNode>, Iterable<UUID> {
+    private static final long serialVersionUID = 7529970619875492381L;
     /** */
     @GridToStringInclude
     private final Set<UUID> ids;

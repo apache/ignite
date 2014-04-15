@@ -15,6 +15,7 @@ import java.io.*;
  * Client authentication request.
  */
 public class GridClientAuthenticationRequest extends GridClientAbstractMessage {
+    private static final long serialVersionUID = -4087375623277391905L;
     /** Credentials. */
     private Object cred;
 

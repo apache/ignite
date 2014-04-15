@@ -19,4 +19,5 @@ import org.gridgain.grid.util.lang.*;
  * @see GridFunc
  * @see GridPredicateX
  */
-public abstract class PX1<E1> extends GridPredicateX<E1> { /* No-op. */ }
+public abstract class PX1<E1> extends GridPredicateX<E1> {
+    private static final long serialVersionUID = -201236186765433870L; /* No-op. */ }

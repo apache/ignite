@@ -13,6 +13,8 @@ package org.gridgain.grid.ggfs;
  * {@code GGFS} exception indicating that target resource is not found.
  */
 public class GridGgfsFileNotFoundException extends GridGgfsInvalidPathException {
+    private static final long serialVersionUID = 8221315289138617032L;
+
     /**
      * Creates exception with error message specified.
      *

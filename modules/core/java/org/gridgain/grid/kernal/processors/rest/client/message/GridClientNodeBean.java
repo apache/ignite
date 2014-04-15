@@ -18,6 +18,7 @@ import java.util.*;
  * Node bean.
  */
 public class GridClientNodeBean implements Externalizable {
+    private static final long serialVersionUID = 2365495089127049557L;
     /** Node ID */
     private UUID nodeId;
 

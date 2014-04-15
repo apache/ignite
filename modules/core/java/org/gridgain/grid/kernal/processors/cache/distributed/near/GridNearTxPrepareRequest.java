@@ -25,6 +25,7 @@ import java.util.*;
  * Near transaction prepare request.
  */
 public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequest<K, V> {
+    private static final long serialVersionUID = 2885807391391791737L;
     /** Future ID. */
     private GridUuid futId;
 

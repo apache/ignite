@@ -21,6 +21,7 @@ import java.util.*;
  * Grid cache transaction read or write set.
  */
 public class GridCacheTxMap<K, V> extends AbstractMap<K, GridCacheTxEntry<K, V>> implements Externalizable {
+    private static final long serialVersionUID = 4273631420446847479L;
     /** Base transaction map. */
     private Map<K, GridCacheTxEntry<K, V>> txMap;
 

@@ -38,6 +38,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
                 return F.t2();
             }
         };
+    private static final long serialVersionUID = 1562120676329007779L;
 
     /** Logger. */
     private GridLogger log;

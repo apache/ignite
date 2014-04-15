@@ -18,6 +18,7 @@ import java.io.*;
  * Count down latch value.
  */
 public final class GridCacheCountDownLatchValue implements GridCacheInternal, Externalizable, Cloneable {
+    private static final long serialVersionUID = -8795067232093273267L;
     /** Count. */
     private int cnt;
 

@@ -15,6 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  * Adapter for common interfaces in closures, reducers and predicates.
  */
 public class GridPeerDeployAwareAdapter implements GridPeerDeployAware {
+    private static final long serialVersionUID = -7570195047492379119L;
     /** Peer deploy aware class. */
     protected transient GridPeerDeployAware pda;
 

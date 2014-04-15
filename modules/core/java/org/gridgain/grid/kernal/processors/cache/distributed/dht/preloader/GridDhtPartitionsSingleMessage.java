@@ -24,6 +24,7 @@ import java.nio.*;
  * Information about partitions of a single node.
  */
 public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstractMessage<K, V> {
+    private static final long serialVersionUID = -5563232797097082279L;
     /** Local partitions. */
     @GridToStringInclude
     @GridDirectTransient

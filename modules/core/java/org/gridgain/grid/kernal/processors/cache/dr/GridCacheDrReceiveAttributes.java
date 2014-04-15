@@ -19,6 +19,7 @@ import java.io.*;
  * DR receiver cache attributes.
  */
 public class GridCacheDrReceiveAttributes implements Externalizable {
+    private static final long serialVersionUID = -7865965802616424038L;
     /** Policy for conflict resolver. */
     private GridDrReceiverCacheConflictResolverMode conflictRslvrMode;
 

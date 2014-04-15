@@ -23,6 +23,7 @@ import java.util.*;
  * DGC response.
  */
 public class GridCacheDgcResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+    private static final long serialVersionUID = -5680782994753263770L;
     /** */
     @GridToStringInclude
     @GridDirectTransient

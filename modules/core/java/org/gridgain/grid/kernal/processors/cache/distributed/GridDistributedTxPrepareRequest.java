@@ -27,6 +27,7 @@ import java.util.*;
  * transactions.
  */
 public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMessage<K, V> {
+    private static final long serialVersionUID = 2654444315609105011L;
     /** Thread ID. */
     @GridToStringInclude
     private long threadId;

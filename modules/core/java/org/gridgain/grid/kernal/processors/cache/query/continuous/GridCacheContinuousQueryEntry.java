@@ -31,6 +31,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheValueBytes.*;
  * Entry implementation.
  */
 class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>, GridCacheDeployable, Externalizable {
+    private static final long serialVersionUID = -8325966963836961683L;
     /** Cache context. */
     @SuppressWarnings("TransientFieldNotInitialized")
     private final transient GridCacheContext ctx;

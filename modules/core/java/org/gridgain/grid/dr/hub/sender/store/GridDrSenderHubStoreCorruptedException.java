@@ -15,6 +15,8 @@ import org.gridgain.grid.*;
  * Exception thrown in case data center replication sender hub store was corrupted.
  */
 public class GridDrSenderHubStoreCorruptedException extends GridException {
+    private static final long serialVersionUID = 8524382694341563547L;
+
     /**
      * Constructor.
      *

@@ -40,6 +40,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     implements GridCacheFuture<Boolean> {
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final long serialVersionUID = 5021838851192719972L;
 
     /** Cache registry. */
     @GridToStringExclude
@@ -1062,6 +1063,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
+        private static final long serialVersionUID = 755303576609790866L;
         /** */
         private final GridUuid futId = GridUuid.randomUuid();
 

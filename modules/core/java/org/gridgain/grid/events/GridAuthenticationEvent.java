@@ -51,6 +51,7 @@ import java.util.*;
  * @see GridEventType#EVT_AUTH_SUCCEEDED
  */
 public class GridAuthenticationEvent extends GridEventAdapter {
+    private static final long serialVersionUID = 3806916570629917005L;
     /**  Subject type. */
     private GridSecuritySubjectType subjType;
 

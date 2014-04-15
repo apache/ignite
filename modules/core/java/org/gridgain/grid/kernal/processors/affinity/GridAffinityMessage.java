@@ -21,6 +21,7 @@ import java.util.*;
  * Object wrapper containing serialized byte array of original object and deployment information.
  */
 class GridAffinityMessage implements Externalizable, GridOptimizedMarshallable {
+    private static final long serialVersionUID = -6227376640745646057L;
     /** */
     @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
     private static Object GG_CLASS_ID;

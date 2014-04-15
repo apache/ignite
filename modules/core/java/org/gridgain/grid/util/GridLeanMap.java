@@ -21,6 +21,7 @@ import java.util.*;
  * {@code Null}-keys are not supported.
  */
 public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Cloneable {
+    private static final long serialVersionUID = 7394092402759795990L;
     /** Implementation used internally. */
     private LeanMap<K, V> map;
 
@@ -349,6 +350,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
      * Map for single entry.
      */
     private static class Map1<K, V> extends AbstractMap<K, V> implements LeanMap<K, V>, Serializable {
+        private static final long serialVersionUID = -5432343053662021769L;
         /** */
         protected K k1;
 
@@ -484,6 +486,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
      * Map for two entries.
      */
     private static class Map2<K, V> extends Map1<K, V> {
+        private static final long serialVersionUID = -8936141080282426984L;
         /** */
         protected K k2;
 
@@ -635,6 +638,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
      * Map for three entries.
      */
     private static class Map3<K, V> extends Map2<K, V> {
+        private static final long serialVersionUID = -3877817826081665457L;
         /** */
         protected K k3;
 
@@ -810,6 +814,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
      * Map for four entries.
      */
     private static class Map4<K, V> extends Map3<K, V> {
+        private static final long serialVersionUID = -3592883391543923912L;
         /** */
         protected K k4;
 
@@ -1003,6 +1008,7 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
      * Map for five entries.
      */
     private static class Map5<K, V> extends Map4<K, V> {
+        private static final long serialVersionUID = 2260637671897050857L;
         /** */
         private K k5;
 
@@ -1214,6 +1220,8 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
      *
      */
     private static class LeanHashMap<K, V> extends HashMap<K, V> implements LeanMap<K, V> {
+        private static final long serialVersionUID = -4023932471174511906L;
+
         /**
          * @param initCap Capacity.
          * @param loadFactor Load factor.

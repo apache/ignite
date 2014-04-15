@@ -17,6 +17,7 @@ import java.io.*;
  * Task result.
  */
 public class GridClientTaskResultBean implements Externalizable {
+    private static final long serialVersionUID = 7439223346485667756L;
     /** Synthetic ID containing task ID and result holding node ID. */
     private String id;
 

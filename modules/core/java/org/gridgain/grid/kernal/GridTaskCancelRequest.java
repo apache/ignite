@@ -20,6 +20,7 @@ import java.nio.*;
  * Request for cancelling tasks.
  */
 public class GridTaskCancelRequest extends GridTcpCommunicationMessageAdapter {
+    private static final long serialVersionUID = -3966980758924187592L;
     /** */
     private GridUuid sesId;
 

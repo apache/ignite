@@ -37,6 +37,7 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
  * DHT cache adapter.
  */
 public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdapter<K, V> {
+    private static final long serialVersionUID = -7779129291357436701L;
     /** Topology. */
     private GridDhtPartitionTopology<K, V> top;
 
@@ -642,6 +643,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * Complex partition iterator for both partition and swap iteration.
      */
     private static class PartitionEntryIterator<K, V> extends GridIteratorAdapter<GridCacheEntry<K, V>> {
+        private static final long serialVersionUID = 4638900722340465461L;
         /** Next entry. */
         private GridCacheEntry<K, V> entry;
 
@@ -710,6 +712,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * Multi update future.
      */
     private static class MultiUpdateFuture extends GridFutureAdapter<GridUuid> {
+        private static final long serialVersionUID = 7970808384882404857L;
         /** Topology version. */
         private long topVer;
 

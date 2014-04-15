@@ -29,6 +29,7 @@ import java.util.concurrent.*;
  * </ul>
  */
 public abstract class GridComputeJobAdapter implements GridComputeJob, Callable<Object> {
+    private static final long serialVersionUID = 1993906058370359259L;
     /** Job argument. */
     private Object[] args;
 

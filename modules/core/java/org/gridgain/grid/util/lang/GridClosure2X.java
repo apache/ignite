@@ -20,6 +20,8 @@ import org.gridgain.grid.util.typedef.*;
  * @see CX2
  */
 public abstract class GridClosure2X<E1, E2, R> implements GridBiClosure<E1, E2, R> {
+    private static final long serialVersionUID = 4489859809132804669L;
+
     /** {@inheritDoc} */
     @Override public R apply(E1 e1, E2 e2) {
         try {

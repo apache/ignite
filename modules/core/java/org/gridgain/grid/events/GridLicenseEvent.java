@@ -51,6 +51,7 @@ import java.util.*;
  * @see GridEventType#EVT_LIC_VIOLATION
  */
 public class GridLicenseEvent extends GridEventAdapter {
+    private static final long serialVersionUID = -7715342535160166644L;
     /** License ID. */
     private UUID licId;
 

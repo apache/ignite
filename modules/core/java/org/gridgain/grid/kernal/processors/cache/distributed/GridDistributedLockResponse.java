@@ -26,6 +26,7 @@ import java.util.*;
  * Lock response message.
  */
 public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessage<K, V> {
+    private static final long serialVersionUID = -9202721088208305717L;
     /** Future ID. */
     private GridUuid futId;
 

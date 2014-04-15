@@ -17,6 +17,8 @@ import org.jetbrains.annotations.*;
  * {@link GridComputeTaskFuture#get()} method.
  */
 public class GridComputeTaskTimeoutException extends GridException {
+    private static final long serialVersionUID = -5616406210000466293L;
+
     /**
      * Creates task timeout exception with given task execution ID and
      * error message.

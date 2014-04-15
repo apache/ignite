@@ -17,6 +17,7 @@ import org.gridgain.grid.util.lang.*;
  * Wrapper used to covert {@link GridSpiCloseableIterator} to {@link GridCloseableIterator}.
  */
 public class GridSpiCloseableIteratorWrapper<T> extends GridCloseableIteratorAdapter<T> {
+    private static final long serialVersionUID = -7326970065555330189L;
     /** */
     private final GridSpiCloseableIterator<T> iter;
 

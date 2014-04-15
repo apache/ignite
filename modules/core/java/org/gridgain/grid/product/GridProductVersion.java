@@ -42,6 +42,7 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
 
     /** Development version string. */
     private static final String DEV_VERSION_STR = "x.x.x-0-DEV";
+    private static final long serialVersionUID = 860930397834287176L;
 
     /** Major version number. */
     private byte major;

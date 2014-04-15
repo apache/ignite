@@ -17,6 +17,7 @@ import java.io.*;
  * {@code Task} command request.
  */
 public class GridClientTaskRequest extends GridClientAbstractMessage {
+    private static final long serialVersionUID = 311450054886177936L;
     /** Task name. */
     private String taskName;
 

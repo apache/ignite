@@ -18,4 +18,5 @@ import org.gridgain.grid.util.lang.*;
  * @see GridFunc
  * @see GridInClosure2X
  */
-public abstract class CIX2<E1, E2> extends GridInClosure2X<E1, E2> { /* No-op. */ }
+public abstract class CIX2<E1, E2> extends GridInClosure2X<E1, E2> {
+    private static final long serialVersionUID = -7732689148459234345L; /* No-op. */ }

@@ -28,6 +28,7 @@ import java.util.*;
  * Note that you can use {@link GridGgfsStringDelimiterRecordResolver} if your delimiter is a plain string.
  */
 public class GridGgfsByteDelimiterRecordResolver implements GridGgfsRecordResolver, Externalizable {
+    private static final long serialVersionUID = 706804170821853288L;
     /** Delimiters. */
     private byte[][] delims;
 

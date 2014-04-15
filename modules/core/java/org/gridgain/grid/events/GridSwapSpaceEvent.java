@@ -45,6 +45,7 @@ import java.util.*;
  * @see GridEventType#EVT_SWAP_SPACE_DATA_EVICTED
  */
 public class GridSwapSpaceEvent extends GridEventAdapter {
+    private static final long serialVersionUID = -3406022165943859076L;
     /** Swap space name. */
     private String space;
 

@@ -22,6 +22,7 @@ import java.nio.*;
  * DHT transaction finish response.
  */
 public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishResponse<K, V> {
+    private static final long serialVersionUID = 3288825177711028568L;
     /** Mini future ID. */
     private GridUuid miniId;
 

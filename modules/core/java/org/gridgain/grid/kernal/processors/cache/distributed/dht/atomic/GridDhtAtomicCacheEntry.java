@@ -20,6 +20,8 @@ import org.gridgain.grid.util.typedef.internal.*;
  * DHT atomic cache entry..
  */
 public class GridDhtAtomicCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
+    private static final long serialVersionUID = 2652203989964296163L;
+
     /**
      * @param ctx Cache context.
      * @param topVer Topology version at the time of creation (if negative, then latest topology is assumed).

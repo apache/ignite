@@ -39,6 +39,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     implements GridCacheMvccFuture<K, V, GridCacheTxEx<K, V>> {
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    private static final long serialVersionUID = 9204451646880832986L;
 
     /** Context. */
     private GridCacheContext<K, V> cctx;
@@ -552,6 +553,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<GridCacheTxEx<K, V>> {
+        private static final long serialVersionUID = 1049488160356802900L;
         /** */
         private final GridUuid futId = GridUuid.randomUuid();
 

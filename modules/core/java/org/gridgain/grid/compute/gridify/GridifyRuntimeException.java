@@ -16,6 +16,8 @@ import org.gridgain.grid.*;
  * methods in case if method execution resulted in undeclared exception.
  */
 public class GridifyRuntimeException extends GridRuntimeException {
+    private static final long serialVersionUID = 1053204769864706906L;
+
     /**
      * Creates new gridify runtime exception with specified message.
      *

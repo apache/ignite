@@ -429,6 +429,7 @@ class GridGgfsOutputStreamImpl extends GridGgfsOutputStreamAdapter {
     @GridInternal
     private static final class ReserveSpaceClosure implements GridClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
         Externalizable {
+        private static final long serialVersionUID = 2951494087215461466L;
         /** Space amount (bytes number) to increase file's length. */
         private long space;
 

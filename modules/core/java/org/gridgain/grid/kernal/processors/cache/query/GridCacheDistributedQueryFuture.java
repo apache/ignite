@@ -22,6 +22,7 @@ import java.util.concurrent.*;
  * Distributed query future.
  */
 public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutureAdapter<K, V, R> {
+    private static final long serialVersionUID = 6200849336719643325L;
     /** */
     private long reqId;
 

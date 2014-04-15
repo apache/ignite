@@ -57,6 +57,7 @@ import java.util.*;
  * @param <R> Type of the task result returning from {@link GridComputeTask#reduce(List)} method.
  */
 public abstract class GridComputeTaskSplitAdapter<T, R> extends GridComputeTaskAdapter<T, R> {
+    private static final long serialVersionUID = -3115943427722828406L;
     /** Load balancer. */
     @GridLoadBalancerResource
     private GridComputeLoadBalancer balancer;

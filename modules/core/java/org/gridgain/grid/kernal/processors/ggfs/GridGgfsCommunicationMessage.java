@@ -20,6 +20,8 @@ import java.nio.*;
  * Base class for all GGFS communication messages sent between nodes.
  */
 public abstract class GridGgfsCommunicationMessage extends GridTcpCommunicationMessageAdapter {
+    private static final long serialVersionUID = -2278739351093044173L;
+
     /** {@inheritDoc} */
     @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
     }

@@ -22,6 +22,7 @@ import java.util.*;
  * Iterator over result set.
  */
 abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAdapterEx<T> {
+    private static final long serialVersionUID = 2631327063398590665L;
     /** */
     protected ResultSet rs;
 

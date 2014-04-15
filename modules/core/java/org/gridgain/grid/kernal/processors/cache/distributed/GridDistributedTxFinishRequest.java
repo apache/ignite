@@ -25,6 +25,7 @@ import java.util.*;
  * Transaction completion message.
  */
 public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMessage<K, V> {
+    private static final long serialVersionUID = -771894841889158679L;
     /** Future ID. */
     private GridUuid futId;
 

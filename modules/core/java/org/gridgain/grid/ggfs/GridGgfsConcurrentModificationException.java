@@ -14,6 +14,8 @@ package org.gridgain.grid.ggfs;
  * indicates that an operation performed in DUAL mode cannot proceed due to these changes.
  */
 public class GridGgfsConcurrentModificationException extends GridGgfsException {
+    private static final long serialVersionUID = -1500940386318344307L;
+
     /**
      * Creates new exception.
      */

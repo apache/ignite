@@ -27,6 +27,7 @@ import static java.util.concurrent.TimeUnit.*;
  * @param <R> Type of the task result returning from {@link GridComputeTask#reduce(List)} method.
  */
 public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements GridComputeTaskFuture<R> {
+    private static final long serialVersionUID = -163471190840987965L;
     /** */
     private GridComputeTaskSession ses;
 

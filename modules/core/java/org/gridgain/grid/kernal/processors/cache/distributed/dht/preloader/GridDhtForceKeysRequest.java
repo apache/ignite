@@ -26,6 +26,7 @@ import java.util.*;
  * another node to put given keys into the next batch of transmitting entries.
  */
 public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+    private static final long serialVersionUID = 3618172259634591342L;
     /** Future ID. */
     private GridUuid futId;
 

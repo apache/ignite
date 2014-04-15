@@ -25,6 +25,7 @@ import java.util.*;
  * Streamer query task.
  */
 public class GridStreamerQueryTask<R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>> {
+    private static final long serialVersionUID = -2359214712991184697L;
     /** Query closure. */
     private GridClosure<GridStreamerContext, R> qryClos;
 
@@ -76,6 +77,7 @@ public class GridStreamerQueryTask<R> extends GridPeerDeployAwareTaskAdapter<Voi
      * Query job.
      */
     private static class QueryJob<R> extends GridComputeJobAdapter implements Externalizable {
+        private static final long serialVersionUID = -7299532897137108272L;
         /** Injected grid. */
         @GridInstanceResource
         private Grid g;

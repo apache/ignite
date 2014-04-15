@@ -15,6 +15,8 @@ import org.jetbrains.annotations.*;
  * This exception is used to indicate error with grid topology (e.g., crashed node, etc.).
  */
 public class GridTopologyException extends GridException {
+    private static final long serialVersionUID = -951592742050919972L;
+
     /**
      * Creates new topology exception with given error message.
      *

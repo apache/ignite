@@ -20,4 +20,5 @@ import org.gridgain.grid.util.lang.*;
  * @see GridFunc
  * @see GridReducer3X
  */
-public abstract class RX3<E1, E2, E3, R> extends GridReducer3X<E1, E2, E3, R> { /* No-op. */ }
+public abstract class RX3<E1, E2, E3, R> extends GridReducer3X<E1, E2, E3, R> {
+    private static final long serialVersionUID = -5495787208403658937L; /* No-op. */ }

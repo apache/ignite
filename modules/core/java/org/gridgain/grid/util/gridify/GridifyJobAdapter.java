@@ -32,6 +32,8 @@ import java.lang.reflect.*;
  * @see Gridify
  */
 public class GridifyJobAdapter extends GridComputeJobAdapter {
+    private static final long serialVersionUID = -4615914269898268518L;
+
     /**
      * Initializes job with argument.
      *

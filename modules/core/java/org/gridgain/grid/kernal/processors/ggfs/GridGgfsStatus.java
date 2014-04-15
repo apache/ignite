@@ -15,6 +15,7 @@ import java.io.*;
  * GGFS response for status request.
  */
 public class GridGgfsStatus implements Externalizable {
+    private static final long serialVersionUID = -74625837291716023L;
     /** Total space size. */
     private long spaceTotal;
 

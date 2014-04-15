@@ -24,6 +24,7 @@ public class GridClientResponse extends GridClientAbstractMessage {
 
     /** Authentication failure. */
     public static final int STATUS_AUTH_FAILURE = 2;
+    private static final long serialVersionUID = -6611439570353921169L;
 
     /** Success flag */
     private int successStatus;

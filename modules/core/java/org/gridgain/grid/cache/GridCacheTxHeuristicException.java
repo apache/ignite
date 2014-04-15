@@ -19,6 +19,8 @@ import org.gridgain.grid.*;
  * on remote nodes.
  */
 public class GridCacheTxHeuristicException extends GridException {
+    private static final long serialVersionUID = 6684514994148745263L;
+
     /**
      * Creates new heuristic exception with given error message.
      *

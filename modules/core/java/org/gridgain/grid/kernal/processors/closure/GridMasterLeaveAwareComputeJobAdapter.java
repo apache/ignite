@@ -16,6 +16,8 @@ import org.gridgain.grid.compute.*;
  */
 public abstract class GridMasterLeaveAwareComputeJobAdapter extends GridComputeJobAdapter
     implements GridComputeJobMasterLeaveAware {
+    private static final long serialVersionUID = -2338284701653702117L;
+
     /**
      * No-arg constructor.
      */

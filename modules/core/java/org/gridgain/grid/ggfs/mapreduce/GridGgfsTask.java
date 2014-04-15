@@ -64,6 +64,7 @@ import java.util.*;
  * </pre>
  */
 public abstract class GridGgfsTask<T, R> extends GridComputeTaskAdapter<GridGgfsTaskArgs<T>, R> {
+    private static final long serialVersionUID = 6304204659371683379L;
     /** Injected grid. */
     @GridInstanceResource
     private Grid grid;

@@ -21,6 +21,7 @@ import java.io.*;
  * nearest position so that {@code newStart % length == 0}.
  */
 public class GridGgfsFixedLengthRecordResolver implements GridGgfsRecordResolver, Externalizable {
+    private static final long serialVersionUID = -5704309141064885941L;
     /** Record length. */
     private long recLen;
 

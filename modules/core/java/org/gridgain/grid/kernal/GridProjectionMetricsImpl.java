@@ -22,6 +22,7 @@ import static java.lang.Math.*;
  * Implementation for {@link GridProjectionMetrics} interface.
  */
 class GridProjectionMetricsImpl implements GridProjectionMetrics {
+    private static final long serialVersionUID = 8569258200046181054L;
     /** */
     private int minActJobs = Integer.MAX_VALUE;
 

@@ -24,6 +24,8 @@ import java.util.*;
  * Data center replication cache updater for data loader.
  */
 public class GridDrDataLoadCacheUpdater<K, V> implements GridDataLoadCacheUpdater<K, V> {
+    private static final long serialVersionUID = 6623390007960538761L;
+
     /** {@inheritDoc} */
     @Override public void update(GridCache<K, V> cache0, Collection<Map.Entry<K, V>> col)
         throws GridException {

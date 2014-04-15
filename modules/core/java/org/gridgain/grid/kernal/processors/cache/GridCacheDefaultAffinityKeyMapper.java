@@ -33,6 +33,7 @@ import java.lang.reflect.*;
  * {@link GridCacheConfiguration#getAffinityMapper()} configuration property.
  */
 public class GridCacheDefaultAffinityKeyMapper implements GridCacheAffinityKeyMapper {
+    private static final long serialVersionUID = 6459256769926016638L;
     /** Reflection cache. */
     private GridReflectionCache reflectCache = new GridReflectionCache(
         new P1<Field>() {

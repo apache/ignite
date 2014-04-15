@@ -29,6 +29,7 @@ public final class GridGgfsFileInfo implements Externalizable {
 
     /** ID of the trash directory. */
     public static final GridUuid TRASH_ID = new GridUuid(new UUID(0, 1), 0);
+    private static final long serialVersionUID = 3676818848647313165L;
 
     /** Info ID. */
     private GridUuid id;

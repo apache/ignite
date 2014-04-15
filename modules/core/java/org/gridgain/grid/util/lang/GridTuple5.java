@@ -27,6 +27,7 @@ import java.util.*;
  * @see GridFunc#t(Object, Object, Object, Object, Object)
  */
 public class GridTuple5<V1, V2, V3, V4, V5> implements Iterable<Object>, Externalizable, Cloneable {
+    private static final long serialVersionUID = -1473806820227464958L;
     /** Value 1. */
     @GridToStringInclude
     private V1 v1;

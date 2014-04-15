@@ -20,6 +20,8 @@ import java.util.concurrent.atomic.*;
  * also adds greater than and less than atomic set operations.
  */
 public class GridAtomicInteger extends AtomicInteger {
+    private static final long serialVersionUID = 1550948099198664681L;
+
     /**
      * Creates a new AtomicInteger with initial value {@code 0}.
      */

@@ -60,6 +60,7 @@ public final class GridCollections {
      * Synchronized map.
      */
     private static final class LockedMap<K, V> extends ReentrantLock implements Map<K, V> {
+        private static final long serialVersionUID = -4732089313593551667L;
         /** Delegate map. */
         private final Map<K, V> m;
 
@@ -272,6 +273,8 @@ public final class GridCollections {
      * Synchronized set.
      */
     private static final class LockedSet<E> extends LockedCollection<E> implements Set<E> {
+        private static final long serialVersionUID = -7974762160627693328L;
+
         /**
          * @param s Set to wrap.
          */
@@ -285,6 +288,7 @@ public final class GridCollections {
      * Synchronized list.
      */
     private static final class LockedList<E> extends LockedCollection<E> implements List<E> {
+        private static final long serialVersionUID = -7184834581993133954L;
         /** List. */
         private final List<E> l;
 
@@ -408,6 +412,7 @@ public final class GridCollections {
      * Synchronized collection.
      */
     private static class LockedCollection<E> extends ReentrantLock implements Collection<E> {
+        private static final long serialVersionUID = -8806532166440252474L;
         /** Delegating collection. */
         protected final Collection<E> c;
 
