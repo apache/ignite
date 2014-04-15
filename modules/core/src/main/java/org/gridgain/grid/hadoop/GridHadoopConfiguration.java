@@ -16,6 +16,9 @@ public class GridHadoopConfiguration {
     /** System cache name. TODO get rid of it. */
     private String sysCacheName;
 
+    /** Job factory. */
+    private GridHadoopJobFactory jobFactory;
+
     /** Map reduce planner. */
     private GridHadoopMapReducePlanner planner;
 
@@ -69,5 +72,23 @@ public class GridHadoopConfiguration {
      */
     public void setSystemCacheName(String sysCacheName) {
         this.sysCacheName = sysCacheName;
+    }
+
+    /**
+     * Gets Hadoop job factory.
+     *
+     * @return Hadoop job factory.
+     */
+    public GridHadoopJobFactory getJobFactory() {
+        return jobFactory;
+    }
+
+    /**
+     * Sets Hadoop job factory.
+     *
+     * @param jobFactory Job factory.
+     */
+    public void setJobFactory(GridHadoopJobFactory jobFactory) {
+        this.jobFactory = jobFactory;
     }
 }

@@ -74,7 +74,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      */
     public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo info) {
         try {
-            GridHadoopJob job = ctx.<Configuration>jobFactory().createJob(jobId, info);
+            GridHadoopJob job = ctx.jobFactory().createJob(jobId, info);
 
             Collection<GridHadoopFileBlock> blocks = job.input();
 

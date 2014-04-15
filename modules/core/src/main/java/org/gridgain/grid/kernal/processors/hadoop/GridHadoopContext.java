@@ -147,7 +147,7 @@ public class GridHadoopContext {
      * @return Job factory.
      */
     public GridHadoopJobFactory jobFactory() {
-        return null;
+        return cfg.getJobFactory();
     }
 
     /**

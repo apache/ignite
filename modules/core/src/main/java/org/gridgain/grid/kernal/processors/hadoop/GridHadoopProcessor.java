@@ -119,7 +119,7 @@ public class GridHadoopProcessor extends GridProcessorAdapter {
      * @return Execution future.
      */
     public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
-        return null;
+        return hctx.jobTracker().submit(jobId, jobInfo);
     }
 
     /**

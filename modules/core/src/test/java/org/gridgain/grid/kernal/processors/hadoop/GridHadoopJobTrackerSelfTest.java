@@ -9,7 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
+
+import java.util.*;
 
 /**
  * Job tracker self test.
@@ -27,9 +31,27 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
         stopAllGrids();
     }
 
-    public void testSimpleTaskSubmit() {
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSimpleTaskSubmit() throws Exception {
         GridKernal kernal = (GridKernal)grid(0);
 
         GridHadoopProcessor hadoop = kernal.context().hadoop();
+
+        UUID globalId = UUID.randomUUID();
+
+        GridFuture<?> execFut = hadoop.submit(new GridHadoopJobId(globalId, 1), new HadoopJobTestInfo());
+    }
+
+    private static class HadoopJobTestInfo implements GridHadoopJobInfo {
+
+    }
+
+    private static class HadoopTestJobFactory implements GridHadoopJobFactory {
+        @Override public GridHadoopJob createJob(GridHadoopJobId id, GridHadoopJobInfo jobInfo) {
+            // TODO: implement.
+            return null;
+        }
     }
 }
