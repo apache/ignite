@@ -42,7 +42,7 @@ import java.util.*;
  *         collocated mode. Refer to {@link GridCacheAffinityKey} javadoc for more details.
  *     </li>
  *     <li>
- *         Note that if you created query on to local or replicated cache, all data will
+ *         Note that if you created query on to replicated cache, all data will
  *         be queried only on one node, not depending on what caches participate in
  *         the query (some data from partitioned cache can be lost). And visa versa,
  *         if you created it on partitioned cache, data from replicated caches
@@ -53,15 +53,12 @@ import java.util.*;
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
- * Alternatively you can run {@link org.gridgain.examples.datagrid.CacheNodeStartup} in another JVM which will
+ * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheQueryExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
-    // private static final String CACHE_NAME = "partitioned_tx";
-    // private static final String CACHE_NAME = "replicated";
-    // private static final String CACHE_NAME = "local";
 
     /**
      * Executes example.
@@ -339,7 +336,7 @@ public class CacheQueryExample {
      */
     private static class Person implements Serializable {
         /** Person ID (create unique SQL index for this field). */
-        @GridCacheQuerySqlField(unique = true)
+        @GridCacheQuerySqlField(index = true)
         private UUID id;
 
         /** Organization ID (create non-unique SQL index for this field). */
@@ -421,7 +418,7 @@ public class CacheQueryExample {
      */
     private static class Organization implements Serializable {
         /** Organization ID (create unique SQL-based index for this field). */
-        @GridCacheQuerySqlField(unique = true)
+        @GridCacheQuerySqlField(index = true)
         private UUID id;
 
         /** Organization name (create non-unique SQL-based index for this field. */

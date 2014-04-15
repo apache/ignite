@@ -33,6 +33,8 @@
 
     <modules>
         <module>modules/core</module>
+        <module>modules/extdata/p2p</module>
+        <module>modules/extdata/uri</module>
         <module>modules/clients</module>
         <module>examples</module>
         <module>modules/scalar</module>
@@ -440,12 +442,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.googlecode.juniversalchardet</groupId>
-            <artifactId>juniversalchardet</artifactId>
-            <version>1.0.3</version>
-        </dependency>
-
-        <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
             <version>4.0.9.Final</version>
@@ -478,7 +474,13 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <version>1.3.170</version>
+            <version>1.3.175</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.vividsolutions</groupId>
+            <artifactId>jts</artifactId>
+            <version>1.13</version>
         </dependency>
 
         <dependency>
@@ -561,6 +563,13 @@
             <groupId>com.github.romix</groupId>
             <artifactId>java-concurrent-hash-trie-map</artifactId>
             <version>0.2.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>14.0.1</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

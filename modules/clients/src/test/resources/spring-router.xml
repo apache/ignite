@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+
+    @xml.file.header
+    Version: @xml.file.version
+-->
+
+<!--
+    Default rest router configuration.
+
+    This file is automatically scanned by
+    $GRIDGAIN_HOME/bin/ggrouter.sh and $GRIDGAIN_HOME/bin/ggrouter.bat
+    for org.gridgain.client.router.GridTcpRestRouterConfiguration and
+    org.gridgain.client.router.GridHttpRestRouterConfiguration bean definitions.
+    First found are used to start corresponding router instances.
+
+    You can also use org.gridgain.client.router.GridRouterFactory to
+    programmatically start and stop router instances inside your application.
+    Please refer to javadoc for more details.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
+    <description>Main Spring file for router configuration.</description>
+
+    <!--
+        Initialize property configurer so we can reference environment variables.
+    -->
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_FALLBACK"/>
+        <property name="searchSystemEnvironment" value="true"/>
+    </bean>
+
+    <!-- Set up jetty port from the spring config. -->
+    <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetObject">
+            <!-- System.getProperties() -->
+            <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+                <property name="targetClass" value="java.lang.System"/>
+                <property name="targetMethod" value="getProperties"/>
+            </bean>
+        </property>
+        <property name="targetMethod" value="putAll"/>
+        <property name="arguments">
+            <map>
+                <entry key="GRIDGAIN_JETTY_PORT" value="12200"/>
+            </map>
+        </property>
+    </bean>
+
+    <!-- Configuration of Tcp router. -->
+    <bean id="tcp.router.cfg" class="org.gridgain.client.router.GridTcpRouterConfiguration"
+          scope="singleton">
+
+        <property name="logger" ref="router.log" />
+
+        <!-- Specify local bind port for Tcp router. -->
+        <property name="port" value="12100"/>
+
+        <!-- Allow router use wider port range than default. -->
+        <property name="portRange" value="0"/>
+
+        <!-- Specify list of remote grid nodes to connect. -->
+        <property name="servers">
+            <list>
+                <value>127.0.0.1:10080</value>
+            </list>
+        </property>
+
+        <!-- Specify credentials for grid connection. -->
+        <property name="credentials" value="s3cret"/>
+    </bean>
+
+    <!-- Configuration of Http router. -->
+    <bean id="http.router.cfg" class="org.gridgain.client.router.GridHttpRouterConfiguration"
+          scope="singleton">
+
+        <property name="logger" ref="router.log"/>
+
+        <!-- GRIDGAIN_JETTY_PORT=12200 -->
+        <property name="jettyConfigurationPath" value="${CLIENTS_MODULE_PATH}/src/test/resources/jetty/router-jetty.xml"/>
+
+        <!-- Specify list of remote grid nodes to connect. -->
+        <property name="servers">
+            <list>
+                <value>127.0.0.1:11080</value>
+            </list>
+        </property>
+
+        <!-- Specify credentials for grid connection. -->
+        <property name="credentials" value="s3cret"/>
+
+        <property name="connectionsPerRoute" value="10"/>
+    </bean>
+
+    <!--
+        Logger with the same configuration as in default grid instances.
+    -->
+    <bean id="router.log" class="org.gridgain.grid.logger.log4j.GridLog4jLogger">
+        <constructor-arg type="java.lang.String" value="modules/clients/src/test/resources/log4j.xml"/>
+    </bean>
+</beans>

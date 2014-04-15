@@ -21,6 +21,10 @@ import java.util.*;
  * this example you should start an instance of {@link ClientExampleNodeStartup}
  * class which will start up a GridGain node with proper configuration.
  * <p>
+ * Note that this example requires {@link ClientExampleTask}
+ * class to be present in remote nodes' classpath. If remote nodes are run by {@code ggstart.{sh|bat}} script
+ * then {@code GRIDGAIN_HOME/gridgain-examples.jar} file should be placed to {@code GRIDGAIN_HOME/libs/ext} folder.
+ * <p>
  * After node has been started this example creates a client
  * and performs several executions of the a test task using different API methods.
  * <p>

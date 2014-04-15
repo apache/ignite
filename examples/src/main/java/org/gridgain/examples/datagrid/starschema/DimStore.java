@@ -19,7 +19,7 @@ import org.gridgain.grid.cache.query.*;
  */
 public class DimStore {
     /** Primary key. */
-    @GridCacheQuerySqlField(unique = true)
+    @GridCacheQuerySqlField(index = true)
     private int id;
 
     /** Store name. */
@@ -85,15 +85,9 @@ public class DimStore {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("DimStore ");
-        sb.append("[id=").append(id);
-        sb.append(", name=").append(name);
-        sb.append(", zip=").append(zip);
-        sb.append(", addr=").append(addr);
-        sb.append(']');
-
-        return sb.toString();
+        return "DimStore [id=" + id +
+            ", name=" + name +
+            ", zip=" + zip +
+            ", addr=" + addr + ']';
     }
 }

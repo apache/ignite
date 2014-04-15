@@ -33,7 +33,6 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 public class CachePopularNumbersExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
-    //private static final String CACHE_NAME = "replicated";
 
     /** Count of most popular numbers to retrieve from grid. */
     private static final int POPULAR_NUMBERS_CNT = 10;

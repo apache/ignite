@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<!--
+  - Secondary file system configuration for loopback tests.
+-->
+<configuration>
+    <property>
+        <name>fs.default.name</name>
+        <value>ggfs://secondary/</value>
+    </property>
+
+    <property>
+        <name>fs.ggfs.impl</name>
+        <value>org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem</value>
+    </property>
+
+    <property>
+        <name>fs.AbstractFileSystem.ggfs.impl</name>
+        <value>org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem</value>
+    </property>
+
+    <property>
+        <name>fs.ggfs.block.size</name>
+        <value>1024</value>
+    </property>
+
+    <property>
+        <name>fs.ggfs.secondary.endpoint.type</name>
+        <value>tcp</value>
+    </property>
+
+    <property>
+        <name>fs.ggfs.secondary.endpoint.port</name>
+        <value>11500</value>
+    </property>
+</configuration>
