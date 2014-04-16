@@ -27,6 +27,7 @@ import org.jetbrains.annotations.*;
 import java.lang.ref.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.events.GridEventType.*;
@@ -106,8 +107,17 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         int parts = cctx.config().getAffinity().partitions();
 
         GridOffHeapEvictListener lsnr = !swapEnabled && !offheapEnabled ? null : new GridOffHeapEvictListener() {
+            /** */
+            private final AtomicBoolean evictWarn = new AtomicBoolean();
+
             @Override public void onEvict(int part, int hash, byte[] kb, byte[] vb) {
                 try {
+                    if (evictWarn.compareAndSet(false, true))
+                        U.warn(log, "Off-heap evictions started. You may wish to increase 'offHeapMaxMemory' in " +
+                            "cache configuration [cache=" + cctx.name() +
+                            ", offHeapMaxMemory=" + cctx.config().getOffHeapMaxMemory() + ']',
+                            "Off-heap evictions started: " + cctx.name());
+
                     writeToSwap(part, null, kb, vb);
                 }
                 catch (GridException e) {
