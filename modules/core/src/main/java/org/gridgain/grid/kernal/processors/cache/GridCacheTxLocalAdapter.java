@@ -2017,9 +2017,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         if (!near()) {
                             try {
                                 if (!hasPrevVal)
-                                    // Entry should have been unswapped by now.
                                     v = cached.innerGet(this,
-                                        /*swap*/ false,
+                                        /*swap*/retval,
                                         /*read-through*/retval,
                                         /*failFast*/false,
                                         /*unmarshal*/retval,

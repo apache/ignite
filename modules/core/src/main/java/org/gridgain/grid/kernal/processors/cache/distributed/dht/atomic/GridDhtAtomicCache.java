@@ -1588,6 +1588,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * Releases java-level locks on cache entries.
      *
      * @param locked Locked entries.
+     * @param topVer Topology version.
      */
     private void unlockEntries(Collection<GridDhtCacheEntry<K, V>> locked, long topVer) {
         // Process deleted entries before locks release.

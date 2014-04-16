@@ -278,6 +278,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /**
+     * @param topVer Topology version.
      * @return Tuple with version and value of this entry, or {@code null} if entry is new.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
@@ -328,6 +329,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     /**
      * @param nodeId Reader to add.
      * @param msgId Message ID.
+     * @param topVer Topology version.
      * @return Future for all relevant transactions that were active at the time of adding reader,
      *      or {@code null} if reader was added
      * @throws GridCacheEntryRemovedException If entry was removed.
