@@ -2053,6 +2053,9 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      */
     private static class ConcurrentHashMap0<K, V> extends ConcurrentHashMap8<K, V> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private int hash;
 
         /**
@@ -2081,6 +2084,9 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
      *
      */
     private static class ConcurrentHashSet0<E> extends GridConcurrentHashSet<E> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private int hash;
 

@@ -16,6 +16,9 @@ import java.io.*;
  */
 public class GridStringBuilder implements Serializable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private StringBuilder impl;
 
     /**

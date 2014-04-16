@@ -1372,6 +1372,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     @GridInternal
     private static class MetadataJob implements GridCallable<Collection<CacheSqlMetadata>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Grid */
         @GridInstanceResource
         private Grid grid;
@@ -1473,6 +1476,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Cache metadata.
      */
     private static class CacheSqlMetadata implements GridCacheSqlMetadata {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private String cacheName;
 
@@ -1607,6 +1613,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Cache metadata index.
      */
     private static class CacheSqlIndexMetadata implements GridCacheSqlIndexMetadata {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private String name;
 

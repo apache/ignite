@@ -20,6 +20,10 @@ import org.gridgain.grid.util.typedef.*;
  * @see CIX1
  */
 public abstract class GridInClosureX<T> implements GridInClosure<T> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+
     /** {@inheritDoc} */
     @Override public void apply(T t) {
         try {

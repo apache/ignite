@@ -557,6 +557,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * Fixed result closure.
      */
     private static final class FixedResult extends CX1<GridFuture<?>, Object> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Closure result. */
         private final Object res;
 
@@ -580,6 +583,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      */
     private abstract static class CacheCommand
         extends GridClosure2X<GridCache<Object, Object>, GridKernalContext, GridFuture<?>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         // No-op.
     }
 
@@ -588,6 +594,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      */
     private abstract static class CacheProjectionCommand
         extends GridClosure2X<GridCacheProjection<Object, Object>, GridKernalContext, GridFuture<?>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         // No-op.
     }
 
@@ -596,6 +605,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      */
     @GridInternal
     private static class FlaggedCacheOperationCallable implements Callable<GridRestResponse>, Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final String cacheName;
 
@@ -643,6 +655,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     @GridInternal
     private static class CacheOperationCallable implements Callable<GridRestResponse>, Serializable {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final String cacheName;
 
         /** */
@@ -680,6 +695,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     /** */
     private static class GetCommand extends CacheProjectionCommand {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final Object key;
 
         /**
@@ -697,6 +715,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
     /** */
     private static class GetAllCommand extends CacheProjectionCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final Collection<Object> keys;
 
@@ -716,6 +737,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     /** */
     private static class PutAllCommand extends CacheProjectionCommand {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final Map<Object, Object> map;
 
         /**
@@ -733,6 +757,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
     /** */
     private static class RemoveCommand extends CacheProjectionCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final Object key;
 
@@ -752,6 +779,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     /** */
     private static class RemoveAllCommand extends CacheProjectionCommand {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final Collection<Object> keys;
 
         /**
@@ -770,6 +800,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
     /** */
     private static class CasCommand extends CacheProjectionCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final Object exp;
 
@@ -801,6 +834,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
     /** */
     private static class PutCommand extends CacheProjectionCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final Object key;
 
@@ -839,6 +875,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     /** */
     private static class AddCommand extends CacheProjectionCommand {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final Object key;
 
         /** */
@@ -875,6 +914,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
     /** */
     private static class ReplaceCommand extends CacheProjectionCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final Object key;
 
@@ -913,6 +955,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     /** */
     private static class IncrementCommand extends CacheCommand {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final Object key;
 
         /** */
@@ -937,6 +982,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     /** */
     private static class DecrementCommand extends CacheCommand {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final Object key;
 
         /** */
@@ -959,6 +1007,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
     /** */
     private static class AppendCommand extends CacheProjectionCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final Object key;
 
@@ -984,6 +1035,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     /** */
     private static class PrependCommand extends CacheProjectionCommand {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final Object key;
 
         /** */
@@ -1007,6 +1061,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
     /** */
     private static class MetricsCommand extends CacheCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+
         /** {@inheritDoc} */
         @Override public GridFuture<?> applyx(GridCache<Object, Object> c, GridKernalContext ctx) {
             GridCacheMetrics metrics = c.metrics();

@@ -29,6 +29,9 @@ import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
  */
 public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private long id;
 
     /** */

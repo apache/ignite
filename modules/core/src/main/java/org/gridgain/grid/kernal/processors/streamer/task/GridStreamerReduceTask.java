@@ -26,6 +26,9 @@ import java.util.*;
  */
 @GridComputeTaskNoResultCache
 public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapter<Void, R2> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Query closure. */
     private GridClosure<GridStreamerContext, R1> clos;
 
@@ -80,6 +83,9 @@ public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapt
      * Query job.
      */
     private static class ReduceJob<R> extends GridComputeJobAdapter implements Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Injected grid. */
         @GridInstanceResource
         private Grid g;

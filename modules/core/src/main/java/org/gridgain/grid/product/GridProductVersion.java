@@ -42,6 +42,9 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
 
     /** Development version string. */
     private static final String DEV_VERSION_STR = "x.x.x-0-DEV";
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /** Major version number. */
     private byte major;
@@ -231,7 +234,7 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
         if (verStr == null)
             return VERSION_UNKNOWN;
 
-        if (DEV_VERSION_STR.equals(verStr))
+        if (verStr.endsWith("-DEV"))
             return VERSION_DEV;
 
         Matcher match = VER_PATTERN.matcher(verStr);

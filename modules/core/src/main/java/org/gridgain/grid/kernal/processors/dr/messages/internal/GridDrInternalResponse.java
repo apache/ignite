@@ -21,6 +21,9 @@ import java.nio.*;
  * Internal replication response.
  */
 public class GridDrInternalResponse extends GridTcpCommunicationMessageAdapter {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Request id. */
     private long id;
 

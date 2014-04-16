@@ -16,6 +16,10 @@ import org.gridgain.grid.*;
  * in file affinity map.
  */
 public class GridGgfsInvalidRangeException extends GridException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+
     /**
      * @param msg Error message.
      */
