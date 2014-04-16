@@ -17,4 +17,9 @@ public class GridCacheQueryOffheapMultiThreadedSelfTest extends GridCacheQueryMu
     @Override protected boolean offheapEnabled() {
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override protected boolean evictsEnabled() {
+        return true;
+    }
 }

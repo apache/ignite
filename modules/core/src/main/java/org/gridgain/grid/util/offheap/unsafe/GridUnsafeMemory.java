@@ -281,6 +281,9 @@ public class GridUnsafeMemory {
      * @return Integer value.
      */
     public int readInt(long ptr) {
+        if (ptr == 0)
+            U.dumpStack("INVALID POINTER");
+
         return UNSAFE.getInt(ptr);
     }
 

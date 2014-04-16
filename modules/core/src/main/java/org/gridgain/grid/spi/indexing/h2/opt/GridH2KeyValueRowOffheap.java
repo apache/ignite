@@ -305,6 +305,8 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
 
             mem.writeLongVolatile(p + OFFSET_VALUE_REF, valPtr);
 
+            assert ptr == 0 : "Pointer is not empty.";
+
             ptr = p;
 
             desc.cache(this);

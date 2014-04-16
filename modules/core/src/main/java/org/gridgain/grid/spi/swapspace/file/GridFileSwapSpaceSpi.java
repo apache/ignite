@@ -100,6 +100,49 @@ import static org.gridgain.grid.events.GridEventType.*;
 @GridSpiMultipleInstancesSupport(true)
 @SuppressWarnings({"PackageVisibleInnerClass", "PackageVisibleField"})
 public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpaceSpi, GridFileSwapSpaceSpiMBean {
+
+    private static final ConcurrentLinkedDeque<Op> ops = new ConcurrentLinkedDeque<>();
+
+    private static final ThreadLocal<Object> KEY = new ThreadLocal<>();
+
+    public static void dumpOps(String file) {
+        Object key = KEY.get();
+
+        System.out.println("DUMPING OPS [file=" + file + ", key=" + key + ']');
+
+        try {
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)));
+
+            for (Op op : ops) {
+                if (F.eq(key, op.key))
+                    bw.write(op.toString() + "\n");
+            }
+
+            bw.close();
+
+            System.out.println("DUMPING FINISHED [file=" + file + ", key=" + key + ']');
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static class Op {
+        private final boolean rmv;
+        private final Object key;
+        private final byte[] val;
+
+        public Op(boolean rmv, Object key, byte[] val) {
+            this.rmv = rmv;
+            this.key = key;
+            this.val = val;
+        }
+
+        @Override public String toString() {
+            return "" + (rmv ? "REMOVE" : "STORE ") + " [key=" + key + ", valLen=" + (val != null ? val.length : -1) + ", val=" + Arrays.toString(val) + ']';
+        }
+    }
+
     /** Default base directory. */
     public static final String DFLT_BASE_DIR = "work/swapspace";
 
@@ -348,6 +391,9 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
         byte[] val = space.read(key);
 
+        //U.debug("READ [space=" + spaceName + ", key=" + key + ", val=" + Arrays.toString(val) + ']');
+        //U.debug("READ [space=" + spaceName + ", key=" + key + ", len=" + (val != null ? val.length : -1) + ']');
+
         notifyListener(EVT_SWAP_SPACE_DATA_READ, spaceName);
 
         return val;
@@ -393,6 +439,13 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
         byte[] val = space.remove(key, c != null);
 
+        ops.add(new Op(true, key, val));
+
+        //U.debug("REMOVE [space=" + spaceName + ", key=" + key + ", val=" + Arrays.toString(val) + ']');
+        //U.debug("REMOVE [space=" + spaceName + ", key=" + key + ", len=" + (val != null ? val.length : -1) + ']');
+
+        KEY.set(key);
+
         if (c != null)
             c.apply(val);
 
@@ -431,6 +484,16 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
         Space space = space(spaceName, true);
 
         assert space != null;
+
+        ops.add(new Op(false, key, val));
+
+        if (val[0] == -16)
+            U.dumpStack("FAULTY ARRAY [key=" + Arrays.toString(key.keyBytes()) + ']');
+
+        //U.debug("STORE [space=" + spaceName + ", key=" + key + ", val=" + Arrays.toString(val) + ']');
+        //U.debug("STORE [space=" + spaceName + ", key=" + key + ", len=" + (val != null ? val.length : -1) + ']');
+
+        KEY.set(key);
 
         space.store(key, val);
 

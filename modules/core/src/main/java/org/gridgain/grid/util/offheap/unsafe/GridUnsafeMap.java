@@ -826,6 +826,10 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                             if (evictLsnr != null) {
                                 keyBytes = Entry.keyBytes(cur, mem);
                                 valBytes = Entry.valueBytes(cur, mem);
+
+                                if (valBytes[0] == -16) {
+                                    // TODO: This is our exception.
+                                }
                             }
 
                             long a;
