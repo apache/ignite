@@ -74,6 +74,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** Static logger to avoid re-creation. Made static for test purpose. */
     protected static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /** Logger. */
     protected static volatile GridLogger log;

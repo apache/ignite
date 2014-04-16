@@ -29,6 +29,9 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
     implements GridCacheFuture<Boolean> {
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /** Trackable flag. */
     private boolean trackable = true;
@@ -302,6 +305,9 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
      *
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Mini future ID. */
         private final GridUuid futId = GridUuid.randomUuid();
 

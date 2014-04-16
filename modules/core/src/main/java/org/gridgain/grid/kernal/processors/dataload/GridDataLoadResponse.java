@@ -19,6 +19,9 @@ import java.nio.*;
  */
 public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private long reqId;
 
     /** */

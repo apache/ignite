@@ -20,6 +20,9 @@ import java.util.*;
  */
 @GridTcpDiscoveryEnsureDelivery
 public class GridTcpDiscoveryNodeFailedMessage extends GridTcpDiscoveryAbstractMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** ID of the failed node. */
     private UUID failedNodeId;
 

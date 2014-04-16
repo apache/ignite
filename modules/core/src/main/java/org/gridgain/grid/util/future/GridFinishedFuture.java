@@ -24,6 +24,9 @@ import java.util.concurrent.*;
 public class GridFinishedFuture<T> implements GridFuture<T>, Externalizable {
     /** Synchronous notification flag. */
     private static final boolean SYNC_NOTIFY = U.isFutureNotificationSynchronous("true");
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /** Complete value. */
     private T t;

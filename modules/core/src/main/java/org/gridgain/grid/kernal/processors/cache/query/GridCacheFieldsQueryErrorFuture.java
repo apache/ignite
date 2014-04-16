@@ -21,6 +21,9 @@ import java.util.*;
 */
 public class GridCacheFieldsQueryErrorFuture extends GridCacheQueryErrorFuture<List<?>> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private boolean incMeta;
 
     /**

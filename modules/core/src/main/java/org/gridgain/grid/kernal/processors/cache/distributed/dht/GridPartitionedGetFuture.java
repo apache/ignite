@@ -42,6 +42,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
     /** Maximum number of attempts to remap key to the same primary node. */
     private static final int MAX_REMAP_CNT;
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /** Context. */
     private GridCacheContext<K, V> cctx;
@@ -503,6 +506,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Map<K, V>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final GridUuid futId = GridUuid.randomUuid();
 

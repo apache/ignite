@@ -18,6 +18,10 @@ import java.util.*;
  * Set counterpart for {@link IdentityHashMap}.
  */
 public class GridIdentityHashSet<E> extends GridSetWrapper<E> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+
     /**
      * Creates default identity hash set.
      */

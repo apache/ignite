@@ -406,6 +406,10 @@ public class GridStreamerBoundedTimeWindow<E> extends GridStreamerWindowAdapter<
      */
     @SuppressWarnings("ConstantConditions")
     private class WindowHolder extends GridTuple3<GridConcurrentSkipListSet<Holder<E>>, Set<Object>, AtomicInteger> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+
         /**
          * Empty constructor required by {@link Externalizable}.
          */

@@ -20,10 +20,10 @@ import static org.gridgain.grid.spi.indexing.h2.opt.GridLuceneOutputStream.*;
  */
 public class GridLuceneFile implements Serializable {
     /** */
-    public static final AtomicInteger filesCnt = new AtomicInteger();
+    private static final long serialVersionUID = 0L;
 
     /** */
-    private static final long serialVersionUID = 1L;
+    public static final AtomicInteger filesCnt = new AtomicInteger();
 
     /** */
     private LongArray buffers = new LongArray();
