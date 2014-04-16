@@ -46,6 +46,9 @@ import org.gridgain.grid.util.typedef.internal.*;
  * </pre>
  */
 public class GridGgfsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKeyMapper {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Size of the group. */
     private final int grpSize;
 

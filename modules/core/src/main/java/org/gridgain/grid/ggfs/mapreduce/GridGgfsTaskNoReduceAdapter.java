@@ -18,6 +18,10 @@ import java.util.*;
  * results returned by jobs.
  */
 public abstract class GridGgfsTaskNoReduceAdapter<T, R> extends GridGgfsTask<T, R> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+
     /**
      * Default implementation which will ignore all results sent from execution nodes.
      *

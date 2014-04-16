@@ -20,6 +20,9 @@ import java.util.*;
  */
 public class GridCacheQueryResponseEntry<K, V> implements Map.Entry<K, V>, Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     @GridToStringInclude
     private K key;
 

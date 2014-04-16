@@ -25,6 +25,9 @@ import java.util.*;
  * DHT transaction prepare response.
  */
 public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResponse<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Evicted readers. */
     @GridToStringInclude
     @GridDirectTransient

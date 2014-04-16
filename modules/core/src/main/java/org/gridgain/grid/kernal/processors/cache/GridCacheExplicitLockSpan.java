@@ -24,6 +24,9 @@ import java.util.concurrent.locks.*;
  * Collection of near local locks acquired by a thread on one topology version.
  */
 public class GridCacheExplicitLockSpan<K> extends ReentrantLock {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Topology snapshot. */
     @GridToStringInclude
     private final GridDiscoveryTopologySnapshot topSnapshot;

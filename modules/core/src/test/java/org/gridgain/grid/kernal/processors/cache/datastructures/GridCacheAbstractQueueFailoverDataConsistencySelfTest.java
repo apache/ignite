@@ -106,8 +106,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     /**
      * @throws Exception If failed.
      */
-    // TODO: GG-8072, enabled when fixed.
-    public void _testAddFailoverCollocated() throws Exception {
+    public void testAddFailoverCollocated() throws Exception {
         testAddFailover(true);
     }
 
@@ -161,7 +160,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
 
         GridFuture<?> fut = startNodeKiller(stop, new AtomicInteger(), killIdxs);
 
-        final int ITEMS = (atomicityMode() == ATOMIC && !queue.collocated()) ? 10_000 : 3000;
+        final int ITEMS = (atomicityMode() == ATOMIC) ? 10_000 : 3000;
 
         try {
             for (int i = 0; i < ITEMS; i++) {
