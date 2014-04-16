@@ -879,27 +879,28 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                             if (evictLsnr != null) {
                                 PTR.set(cur);
 
-                                int keyLen = Entry.keyLength(cur, mem);
-                                int valLen = Entry.valueLength(cur, mem);
+                                // TODO: New code.
+//                                int keyLen = Entry.keyLength(cur, mem);
+//                                int valLen = Entry.valueLength(cur, mem);
+//                                keyBytes = mem.readBytes(cur + Entry.HEADER, keyLen);
+//                                valBytes = mem.readBytes(cur + Entry.HEADER + keyLen, valLen);
 
-                                keyBytes = mem.readBytes(cur + Entry.HEADER, keyLen);
-                                valBytes = mem.readBytes(cur + Entry.HEADER + keyLen, valLen);
+                                // TODO: Old code.
+                                keyBytes = Entry.keyBytes(cur, mem);
+                                valBytes = Entry.valueBytes(cur, mem);
 
-//                                keyBytes = Entry.keyBytes(cur, mem);
-//
-//                                //KEY_BYTES.set(keyBytes);
-//
-//                                valBytes = Entry.valueBytes(cur, mem);
-//
-//                                //KEY_BYTES.remove();
-//
+                                // TODO: Old code inlined.
+//                                int keyLen = Entry.keyLength(cur, mem);
+//                                keyBytes = mem.readBytes(cur + Entry.HEADER, keyLen);
+//                                keyLen = Entry.keyLength(cur, mem);
+//                                int valLen = Entry.valueLength(cur, mem);
+//                                valBytes = mem.readBytes(cur + Entry.HEADER + keyLen, valLen);
+
+                                // TODO GG-8123: Dump on error.
                                 if (valBytes[0] != 114) {
-                                    // TODO GG-8123: This is our exception.
                                     int hash0 = mem.readInt(cur);
                                     int keySize0 = mem.readInt(cur + 4);
                                     int valSize0 = mem.readInt(cur + 8);
-                                    int queueAddr0 = mem.readInt(cur + 12);
-                                    int nextAddr0 = mem.readInt(cur + 20);
                                     byte[] keyBytes0 = mem.readBytes(cur + 28, keySize0);
                                     byte[] valBytes0 = mem.readBytes(cur + 28 + keySize0, valSize0);
 
