@@ -53,6 +53,9 @@ import java.util.*;
  */
 public class GridCheckpointEvent extends GridEventAdapter {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private String cpKey;
 
     /**

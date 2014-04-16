@@ -648,9 +648,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
             List<String> rmtLibs = n.attribute(ATTR_LIBRARIES);
 
-            List<GridBiTuple<String, String>> diffs = GridLibraryConsistencyCheck.check(locLibs, rmtLibs);
+            List<GridBiTuple<String, String>> diffs = GridLibraryConsistencyCheck.check(log, locLibs, rmtLibs);
 
-            if (!diffs.isEmpty()) {
+            if (!F.isEmpty(diffs)) {
                 if (log.isQuiet()) {
                     U.quiet(true, "Local node's library list differs from remote node's");
 
@@ -1734,6 +1734,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
     /** Discovery topology future. */
     private static class DiscoTopologyFuture extends GridFutureAdapter<Long> implements GridLocalEventListener {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Topology await version. */
         private long awaitVer;
 

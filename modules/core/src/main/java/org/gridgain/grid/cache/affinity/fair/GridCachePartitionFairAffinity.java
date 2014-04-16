@@ -33,6 +33,9 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
 
     /** Descending comparator. */
     private static final Comparator<PartitionSet> DESC_CMP = new PartitionSetComparator(true);
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /** */
     private int parts;
@@ -427,6 +430,9 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
      *
      */
     private static class PartitionSetComparator implements Comparator<PartitionSet>, Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private boolean descending;
 

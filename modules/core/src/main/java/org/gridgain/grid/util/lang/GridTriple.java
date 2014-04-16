@@ -17,6 +17,10 @@ import java.io.*;
  * Simple extension over {@link GridTuple3} for three objects of the same type.
  */
 public class GridTriple<T> extends GridTuple3<T, T, T> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */

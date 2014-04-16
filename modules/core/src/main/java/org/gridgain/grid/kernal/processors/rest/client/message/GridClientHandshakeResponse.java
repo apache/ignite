@@ -24,6 +24,9 @@ public class GridClientHandshakeResponse extends GridClientAbstractMessage {
 
     /** Response, indicating that protocol ID, specified by the client, is invalid. */
     public static final GridClientHandshakeResponse ERR_UNKNOWN_PROTO_ID = new GridClientHandshakeResponse((byte)2);
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /** */
     private byte resCode;

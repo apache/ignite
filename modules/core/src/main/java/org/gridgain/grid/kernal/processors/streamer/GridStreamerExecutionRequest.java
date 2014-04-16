@@ -23,6 +23,9 @@ import java.util.*;
  *
  */
 public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAdapter {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Force local deployment flag. */
     private boolean forceLocDep;
 

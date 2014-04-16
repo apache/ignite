@@ -35,6 +35,9 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     implements GridCacheMvccFuture<K, V, Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion {
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /** Cache registry. */
     @GridToStringExclude
@@ -990,6 +993,9 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final GridUuid futId = GridUuid.randomUuid();
 

@@ -23,6 +23,9 @@ import java.util.concurrent.*;
 public class GridComputeJobWrapper extends GridMetadataAwareAdapter implements GridComputeJob, Callable<Object>,
     GridPeerDeployAware {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final GridComputeJob job;
 
     /** Peer deploy aware class. */

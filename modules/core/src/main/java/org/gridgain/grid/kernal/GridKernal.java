@@ -143,6 +143,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** Shutdown delay in msec. when license violation detected. */
     private static final int SHUTDOWN_DELAY = 60 * 1000;
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /** */
     private GridConfiguration cfg;
@@ -568,7 +571,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
-        String build = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD));
+        String build = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD * 1000));
 
         // Ack various information.
         ackAsciiLogo(build);

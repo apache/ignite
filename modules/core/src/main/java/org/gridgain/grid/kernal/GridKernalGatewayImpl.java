@@ -25,6 +25,9 @@ import static org.gridgain.grid.kernal.GridKernalState.*;
 @GridToStringExclude
 public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final GridSpinReadWriteLock rwLock = new GridSpinReadWriteLock();
 
     /** */

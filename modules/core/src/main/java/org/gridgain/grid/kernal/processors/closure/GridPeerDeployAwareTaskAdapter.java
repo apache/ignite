@@ -12,6 +12,9 @@ import org.jetbrains.annotations.*;
  */
 public abstract class GridPeerDeployAwareTaskAdapter<T, R> extends GridComputeTaskAdapter<T, R>
     implements GridPeerDeployAware {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Peer deploy aware class. */
     private transient GridPeerDeployAware pda;
 
