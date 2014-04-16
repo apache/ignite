@@ -351,12 +351,12 @@ public class GridOptimizedMarshaller extends GridAbstractMarshaller {
             return (T)objIn.readObject();
         }
         catch (IOException e) {
-            GridFileSwapSpaceSpi.dumpOps("C:\\Personal\\opdump" + dumpCtr.incrementAndGet() + ".log");
+            GridFileSwapSpaceSpi.dumpOps("C:\\Personal\\opdump");
 
             throw new GridException("Failed to deserialize object with given class loader: " + clsLdr, e);
         }
         catch (ClassNotFoundException e) {
-            GridFileSwapSpaceSpi.dumpOps("C:\\Personal\\opdump" + dumpCtr.incrementAndGet() + ".log");
+            GridFileSwapSpaceSpi.dumpOps("C:\\Personal\\opdump");
 
             throw new GridException("Failed to find class with given class loader for unmarshalling " +
                 "(make sure same version of all classes are available on all nodes or enable peer-class-loading): " +
@@ -366,8 +366,6 @@ public class GridOptimizedMarshaller extends GridAbstractMarshaller {
             GridOptimizedObjectStreamRegistry.closeIn(objIn);
         }
     }
-
-    private static final AtomicInteger dumpCtr = new AtomicInteger();
 
     /**
      * Checks whether {@code GridOptimizedMarshaller} is able to work on the current JVM.
