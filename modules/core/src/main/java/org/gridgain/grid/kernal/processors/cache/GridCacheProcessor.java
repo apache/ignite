@@ -32,6 +32,7 @@ import org.gridgain.grid.kernal.processors.cache.local.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
+import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
@@ -548,6 +549,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
+        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateRequest.class,
+            GridDhtAtomicCache.DhtAtomicUpdateRequestConverter603.class, GridNearAtomicCache.SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridDhtAtomicUpdateResponse.class,
+            GridDhtAtomicCache.DhtAtomicUpdateResponseConverter603.class, GridNearAtomicCache.SINCE_VER);
+
+        ctx.versionConverter().registerLocal(GridNearAtomicUpdateResponse.class,
+            GridDhtAtomicCache.NearAtomicUpdateResponseConverter603.class, GridNearAtomicCache.SINCE_VER);
+
         GridDeploymentMode depMode = ctx.config().getDeploymentMode();
 
         if (!F.isEmpty(ctx.config().getCacheConfiguration())) {
@@ -941,6 +951,95 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return maxOrder;
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
+        GridNodeValidationResult ret = validateHashIdResolvers(node);
+
+        if (ret != null)
+            return ret;
+
+        return validateAtomicNearCacheSupport(node);
+    }
+
+    /**
+     * @param node Joining node.
+     * @return Validation result or {@code null} in case of success.
+     */
+    @Nullable private GridNodeValidationResult validateHashIdResolvers(GridNode node) {
+        for (GridCacheAdapter cache : ctx.cache().internalCaches()) {
+            GridCacheConfiguration cfg = cache.configuration();
+
+            if (cfg.getAffinity() instanceof GridCacheConsistentHashAffinityFunction) {
+                GridCacheConsistentHashAffinityFunction aff = (GridCacheConsistentHashAffinityFunction)cfg.getAffinity();
+
+                GridCacheAffinityNodeHashResolver hashIdRslvr = aff.getHashIdResolver();
+
+                assert hashIdRslvr != null;
+
+                Object nodeHashObj = hashIdRslvr.resolve(node);
+
+                for (GridNode topNode : ctx.discovery().allNodes()) {
+                    Object topNodeHashObj = hashIdRslvr.resolve(topNode);
+
+                    if (nodeHashObj.hashCode() == topNodeHashObj.hashCode()) {
+                        String errMsg = "Failed to add node to topology because it has the same hash code for " +
+                            "partitioned affinity as one of existing nodes [cacheName=" + cache.name() +
+                            ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() +
+                            ", existingNodeId=" + topNode.id() + ']';
+
+                        String sndMsg = "Failed to add node to topology because it has the same hash code for " +
+                            "partitioned affinity as one of existing nodes [cacheName=" + cache.name() +
+                            ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() + ", existingNodeId=" +
+                            topNode.id() + ']';
+
+                        return new GridNodeValidationResult(topNode.id(), errMsg, sndMsg);
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param node Joining node.
+     * @return Validation result or {@code null} in case of success.
+     */
+    @Nullable private GridNodeValidationResult validateAtomicNearCacheSupport(GridNode node) {
+        if (node.version().compareTo(GridNearAtomicCache.SINCE_VER) >= 0)
+            return null;
+
+        GridCacheAttributes[] joinAttrs = U.cacheAttributes(node);
+
+        if (F.isEmpty(joinAttrs))
+            return null;
+
+        for (GridNode topNode : ctx.discovery().allNodes()) {
+            GridCacheAttributes[] attrs = U.cacheAttributes(topNode);
+
+            if (F.isEmpty(attrs))
+                continue;
+
+            for (GridCacheAttributes joinAttr : joinAttrs) {
+                for (GridCacheAttributes attr : attrs) {
+                    if (F.eq(joinAttr.cacheName(), attr.cacheName())) {
+                        if (attr.atomicityMode() == ATOMIC && attr.nearCacheEnabled()) {
+                            String errMsg = "Failed to add node to topology because topology has nodes with " +
+                                "ATOMIC cache with near cache enabled and joining node does not support " +
+                                "such configuration [cacheName=" + attr.cacheName() +
+                                ", existingNodeId=" + topNode.id() +
+                                ", existingNodeVer=" + topNode.version() + ']';
+
+                            return new GridNodeValidationResult(topNode.id(), errMsg, errMsg);
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     /**
      * Checks that remote caches has configuration compatible with the local.
      *
@@ -1170,6 +1269,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             throw new GridException("DR receiver cache should be enabled for all nodes or " +
                                 "disabled for all of them (configuration is not set for nodeId=" + nullAttrNode + ").");
                         }
+
+                        if (locAttr.atomicityMode() == ATOMIC && locAttr.nearCacheEnabled() &&
+                            rmt.version().compareTo(GridNearAtomicCache.SINCE_VER) < 0)
+                            throw new GridException("Cannot use ATOMIC cache with near cache enabled because " +
+                                "grid contains nodes that do not support such configuration [rmtNodeId=" + rmt.id() +
+                                ", rmtVer=" + rmt.version() +
+                                ", supportedSince=" + GridNearAtomicCache.SINCE_VER +
+                                ", locVer=" + ctx.product().version() + ']');
                     }
                 }
 
@@ -1761,6 +1868,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      */
     private static class LocalAffinityFunction implements GridCacheAffinityFunction {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+
         @Override public List<List<GridNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
             GridNode locNode = null;
 

@@ -20,6 +20,9 @@ import java.io.*;
  */
 class GridCacheQueryMetricsKey implements Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private GridCacheQueryType type;
 
     /** */

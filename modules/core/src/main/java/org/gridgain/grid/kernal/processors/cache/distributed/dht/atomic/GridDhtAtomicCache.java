@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
+import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -30,6 +31,7 @@ import org.jetbrains.annotations.*;
 import sun.misc.*;
 
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -42,6 +44,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
+import static org.gridgain.grid.util.direct.GridTcpCommunicationMessageAdapter.*;
 
 /**
  * Non-transactional partitioned cache.
@@ -58,6 +61,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** Unsafe instance. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /** Will be {@code true} if affinity has backups. */
     private boolean hasBackups;
@@ -2100,6 +2106,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      *
      */
     private static class FinishedLockFuture extends GridFinishedFutureEx<Boolean> implements GridDhtFuture<Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+
         /**
          * Empty constructor required by {@link Externalizable}.
          */
@@ -2124,6 +2134,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * Deferred response buffer.
      */
     private class DeferredResponseBuffer extends ReentrantReadWriteLock implements GridTimeoutObject {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Filled atomic flag. */
         private AtomicBoolean guard = new AtomicBoolean(false);
 
@@ -2235,6 +2248,233 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
 
             pendingResponses.remove(nodeId, this);
+        }
+    }
+    /**
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class DhtAtomicUpdateRequestConverter603 extends GridVersionConverter {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0:
+                    if (!commState.putInt(-1))
+                        return false;
+
+                    commState.idx++;
+
+                case 1:
+                    if (!commState.putInt(-1))
+                        return false;
+
+                    commState.idx++;
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0:
+                    if (commState.readSize == -1) {
+                        if (buf.remaining() < 4)
+                            return false;
+
+                        commState.readSize = commState.getInt();
+                    }
+
+                    assert commState.readSize == -1 : commState.readSize;
+
+                    commState.readSize = -1;
+                    commState.readItems = 0;
+
+                    commState.idx++;
+
+                case 1:
+                    if (commState.readSize == -1) {
+                        if (buf.remaining() < 4)
+                            return false;
+
+                        commState.readSize = commState.getInt();
+                    }
+
+                    assert commState.readSize == -1 : commState.readSize;
+
+                    commState.readSize = -1;
+                    commState.readItems = 0;
+
+                    commState.idx++;
+            }
+
+            return true;
+        }
+    }
+
+    /**
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class DhtAtomicUpdateResponseConverter603 extends GridVersionConverter {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0:
+                    if (!commState.putInt(-1))
+                        return false;
+
+                    commState.idx++;
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0:
+                    if (commState.readSize == -1) {
+                        if (buf.remaining() < 4)
+                            return false;
+
+                        commState.readSize = commState.getInt();
+                    }
+
+                    assert commState.readSize == -1 : commState.readSize;
+
+                    commState.readSize = -1;
+                    commState.readItems = 0;
+
+                    commState.idx++;
+
+            }
+
+            return true;
+        }
+    }
+
+    /**
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class NearAtomicUpdateResponseConverter603 extends GridVersionConverter {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0:
+                    if (!commState.putInt(-1))
+                        return false;
+
+                    commState.idx++;
+
+                case 1:
+                    if (!commState.putLong(0))
+                        return false;
+
+                    commState.idx++;
+
+                case 2:
+                    if (!commState.putInt(-1))
+                        return false;
+
+                    commState.idx++;
+
+                case 3:
+                    if (!commState.putInt(-1))
+                        return false;
+
+                    commState.idx++;
+
+                case 4:
+                    if (!commState.putCacheVersion(null))
+                        return false;
+
+                    commState.idx++;
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf) {
+            commState.setBuffer(buf);
+
+            switch (commState.idx) {
+                case 0:
+                    if (commState.readSize == -1) {
+                        if (buf.remaining() < 4)
+                            return false;
+
+                        commState.readSize = commState.getInt();
+                    }
+
+                    assert commState.readSize == -1 : commState.readSize;
+
+                    commState.readSize = -1;
+                    commState.readItems = 0;
+
+                    commState.idx++;
+
+                case 1:
+                    if (buf.remaining() < 8)
+                        return false;
+
+                    long nearTtl = commState.getLong();
+
+                    assert nearTtl == 0 : nearTtl;
+
+                    commState.idx++;
+
+                case 2:
+                    if (commState.readSize == -1) {
+                        if (buf.remaining() < 4)
+                            return false;
+
+                        commState.readSize = commState.getInt();
+                    }
+
+                    assert commState.readSize == -1 : commState.readSize;
+
+                    commState.readSize = -1;
+                    commState.readItems = 0;
+
+                    commState.idx++;
+
+                case 3:
+                    if (commState.readSize == -1) {
+                        if (buf.remaining() < 4)
+                            return false;
+
+                        commState.readSize = commState.getInt();
+                    }
+
+                    assert commState.readSize == -1 : commState.readSize;
+
+                    commState.readSize = -1;
+                    commState.readItems = 0;
+
+                    commState.idx++;
+
+                case 4:
+                    GridCacheVersion nearVer0 = commState.getCacheVersion();
+
+                    if (nearVer0 == CACHE_VER_NOT_READ)
+                        return false;
+
+                    assert nearVer0 == null : nearVer0;
+
+                    commState.idx++;
+            }
+
+            return true;
         }
     }
 }

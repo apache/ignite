@@ -21,6 +21,9 @@ import org.gridgain.grid.util.typedef.internal.*;
  * @see Gridify
  */
 public class GridifyArgumentAdapter implements GridifyArgument {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Method class. */
     private Class<?> cls;
 

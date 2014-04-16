@@ -10,6 +10,8 @@
 package org.gridgain.grid.util;
 
 import junit.framework.*;
+import org.gridgain.testframework.junits.*;
+import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 
@@ -18,20 +20,24 @@ import static org.gridgain.grid.util.GridLibraryConsistencyCheck.*;
 /**
  * Library consistency check tests.
  */
-public class GridLibraryConsistencyCheckSelfTest extends TestCase {
+public class GridLibraryConsistencyCheckSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
     public void testAllLibrariesLoaded() {
         ArrayList<String> libs = libraries();
 
-        int idx = libs.indexOf(NOT_FOUND_MESSAGE);
+        boolean testPassed = !libs.contains(NOT_FOUND_MESSAGE);
 
-        boolean testPassed = idx == -1;
+        String missedLibs = "";
 
-        String msg = testPassed ? "" : "Library with class " + CLASS_LIST[idx] +
-            " is removed, if it is made on purpose then remove this lib from " +
-            GridLibraryConsistencyCheck.class.getSimpleName() + " class.";
+        for (int i = 0; i < libs.size(); i++)
+            if (NOT_FOUND_MESSAGE.equals(libs.get(i)))
+                missedLibs += '\t' + CLASS_LIST[i] + '\n';
+
+        String msg = testPassed ? "" : "Libraries with following classes is removed (if it is made on purpose " +
+            "then remove this lib from " + GridLibraryConsistencyCheck.class.getSimpleName() + " class):\n" +
+            missedLibs;
 
         assertTrue(msg, testPassed);
     }
@@ -48,7 +54,7 @@ public class GridLibraryConsistencyCheckSelfTest extends TestCase {
         libs1.add("lib-1.0.jar");
         libs2.add("lib-1.1.jar");
 
-        assertEquals(1, check(libs1, libs2).size());
+        assertEquals(1, check(log, libs1, libs2).size());
     }
 
     /**
@@ -63,7 +69,7 @@ public class GridLibraryConsistencyCheckSelfTest extends TestCase {
         libs1.add("lib-1.0.jar");
         libs2.add(NOT_FOUND_MESSAGE);
 
-        assertEquals(0, check(libs1, libs2).size());
+        assertEquals(0, check(log, libs1, libs2).size());
     }
 
     /** Initializes libraries list with not_found messages. */

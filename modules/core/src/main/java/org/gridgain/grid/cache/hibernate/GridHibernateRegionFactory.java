@@ -64,6 +64,9 @@ public class GridHibernateRegionFactory implements RegionFactory {
 
     /** */
     public static final String GRID_CONFIG_PROPERTY = "org.gridgain.hibernate.grid_config";
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /** Grid providing caches. */
     private Grid grid;

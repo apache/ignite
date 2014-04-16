@@ -32,6 +32,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     implements GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> {
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /** Message ID. */
     private long msgId;

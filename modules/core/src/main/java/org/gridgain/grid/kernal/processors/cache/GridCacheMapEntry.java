@@ -71,6 +71,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** Static logger to avoid re-creation. Made static for test purpose. */
     protected static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /** Logger. */
     protected static volatile GridLogger log;
@@ -1126,8 +1129,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 update(null, null, 0, 0, newVer);
 
-                if (cctx.deferredDelete() && !deletedUnlocked() && !detached() && !isInternal()) {
-                    deletedUnlocked(true);
+                if (cctx.deferredDelete() && !detached() && !isInternal()) {
+                    if (!deletedUnlocked())
+                        deletedUnlocked(true);
 
                     enqueueVer = newVer;
                 }
@@ -1569,8 +1573,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                     if (!isInternal())
                         deletedUnlocked(true);
-
-                    enqueueVer = newVer;
                 }
                 else {
                     boolean new0 = isNew();
@@ -1581,10 +1583,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     if (new0) {
                         if (!isInternal())
                             deletedUnlocked(true);
-
-                        enqueueVer = newVer;
                     }
                 }
+
+                enqueueVer = newVer;
 
                 // Clear value on backup. Entry will be removed from cache when it got evicted from queue.
                 update(null, null, 0, 0, newVer);

@@ -17,6 +17,9 @@ import java.io.*;
  * Handshake message.
  */
 public class GridGgfsHandshakeResponse implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** GGFS name. */
     private String ggfsName;
 

@@ -89,7 +89,8 @@ import java.util.concurrent.*;
  */
 @SuppressWarnings("ALL")
 public class SnapTreeMap<K,V> extends AbstractMap<K,V> implements ConcurrentNavigableMap<K,V>, Cloneable, Serializable {
-    private static final long serialVersionUID = 9052695062720473599L;
+    /** */
+    private static final long serialVersionUID = 0L;
 
 
     /** If false, null values will trigger a NullPointerException.  When false,
@@ -2328,7 +2329,8 @@ public class SnapTreeMap<K,V> extends AbstractMap<K,V> implements ConcurrentNavi
     }
 
     private static class SubMap<K,V> extends AbstractMap<K,V> implements ConcurrentNavigableMap<K,V>, Serializable {
-        private static final long serialVersionUID = -7388140285999372919L;
+        /** */
+        private static final long serialVersionUID = 0L;
 
         private final SnapTreeMap<K,V> m;
         private final K minKey;

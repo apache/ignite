@@ -26,6 +26,9 @@ import java.util.*;
  */
 public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstractMessage<K, V> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     @GridToStringInclude
     @GridDirectTransient
     private GridDhtPartitionFullMap parts;
