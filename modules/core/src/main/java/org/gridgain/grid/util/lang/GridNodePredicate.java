@@ -24,6 +24,9 @@ import java.util.*;
  */
 public class GridNodePredicate implements GridPredicate<GridNode>, Iterable<UUID> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     @GridToStringInclude
     private final Set<UUID> ids;
 

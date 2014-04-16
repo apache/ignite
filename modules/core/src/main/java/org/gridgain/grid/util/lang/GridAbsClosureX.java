@@ -18,6 +18,10 @@ import org.gridgain.grid.util.typedef.*;
  * and properly wraps {@link GridException} into {@link GridClosureException} instance.
  */
 public abstract class GridAbsClosureX extends GridAbsClosure {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+
     /** {@inheritDoc} */
     @Override public void apply() {
         try {

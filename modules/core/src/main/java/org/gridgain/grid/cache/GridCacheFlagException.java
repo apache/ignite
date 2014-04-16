@@ -19,6 +19,9 @@ import java.util.*;
  * Exception thrown when projection flags check fails.
  */
 public class GridCacheFlagException extends GridRuntimeException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Flags that caused this exception. */
     private Collection<GridCacheFlag> flags;
 

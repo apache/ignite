@@ -15,6 +15,10 @@ import org.jetbrains.annotations.*;
  * Future computation cannot be retrieved because it was cancelled.
  */
 public class GridFutureCancelledException extends GridException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+
     /**
      * Creates new exception with given error message.
      *
