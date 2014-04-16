@@ -1792,8 +1792,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         else {
                             entry = entryEx(key, topologyVersion());
 
-                            if (!entry.detached())
-                                entry.unswap(true);
+                            entry.unswap(true);
                         }
 
                         try {

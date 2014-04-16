@@ -81,12 +81,12 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
     public void testPutTx() throws Exception {
         testPutTx(keyForNode(0), PESSIMISTIC);
 
-        testPutTx(keyForNode(0), OPTIMISTIC);
+        //testPutTx(keyForNode(0), OPTIMISTIC);
 
         if (gridCount() > 1) {
             testPutTx(keyForNode(1), PESSIMISTIC);
 
-            testPutTx(keyForNode(1), OPTIMISTIC);
+            //testPutTx(keyForNode(1), OPTIMISTIC);
         }
     }
 

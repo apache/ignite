@@ -457,7 +457,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         synchronized (this) {
             if (isStartVersion() && ((flags & IS_UNSWAPPED_MASK) == 0)) {
-                GridCacheSwapEntry<V> e = cctx.swap().readAndRemove(this);
+                GridCacheSwapEntry<V> e = detached() ? cctx.swap().read(this) : cctx.swap().readAndRemove(this);
 
                 if (log.isDebugEnabled())
                     log.debug("Read swap entry [swapEntry=" + e + ", cacheEntry=" + this + ']');
