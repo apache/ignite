@@ -441,6 +441,9 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
         ops.add(new Op(true, key, val));
 
+        if (val != null && val[0] != 114)
+            U.dumpStack("FAULTY ARRAY ON REMOVE [key=" + Arrays.toString(key.keyBytes()) + ']');
+
         //U.debug("REMOVE [space=" + spaceName + ", key=" + key + ", val=" + Arrays.toString(val) + ']');
         //U.debug("REMOVE [space=" + spaceName + ", key=" + key + ", len=" + (val != null ? val.length : -1) + ']');
 
@@ -487,8 +490,8 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
         ops.add(new Op(false, key, val));
 
-        if (val[0] == -16)
-            U.dumpStack("FAULTY ARRAY [key=" + Arrays.toString(key.keyBytes()) + ']');
+        if (val != null && val[0] != 114)
+            U.dumpStack("FAULTY ARRAY ON STORE [key=" + Arrays.toString(key.keyBytes()) + ']');
 
         //U.debug("STORE [space=" + spaceName + ", key=" + key + ", val=" + Arrays.toString(val) + ']');
         //U.debug("STORE [space=" + spaceName + ", key=" + key + ", len=" + (val != null ? val.length : -1) + ']');

@@ -827,7 +827,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                                 keyBytes = Entry.keyBytes(cur, mem);
                                 valBytes = Entry.valueBytes(cur, mem);
 
-                                if (valBytes[0] == -16) {
+                                if (valBytes[0] != 114) {
                                     // TODO: This is our exception.
                                 }
                             }
