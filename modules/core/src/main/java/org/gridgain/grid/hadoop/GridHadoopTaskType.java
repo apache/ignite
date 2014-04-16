@@ -9,9 +9,24 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.jetbrains.annotations.*;
+
 /**
-* TODO write doc
+* Task type.
 */
 public enum GridHadoopTaskType {
-    MAP, REDUCE, COMBINE
+    MAP, REDUCE, COMBINE;
+
+    /** Enumerated values. */
+    private static final GridHadoopTaskType[] VALS = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value.
+     */
+    @Nullable public static GridHadoopTaskType fromOrdinal(byte ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }
