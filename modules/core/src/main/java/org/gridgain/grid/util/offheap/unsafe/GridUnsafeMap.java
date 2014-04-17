@@ -343,10 +343,8 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     /** {@inheritDoc} */
     @Override public GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator() {
         return new GridCloseableIteratorAdapter<GridBiTuple<byte[], byte[]>>() {
-            /** */
             private GridCloseableIterator<GridBiTuple<byte[], byte[]>> curIt;
 
-            /** */
             private int idx;
 
             {
@@ -643,7 +641,6 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          */
         GridCloseableIterator<GridBiTuple<byte[], byte[]>> iterator() {
             return new GridCloseableIteratorAdapter<GridBiTuple<byte[],byte[]>>() {
-                /** */
                 private final Queue<GridBiTuple<byte[], byte[]>> bin = new LinkedList<>();
 
                 {
