@@ -40,8 +40,9 @@ public class GridTcpDiscoveryMulticastIpFinderSelfTest
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings({"TooBroadScope", "BusyWait"})
     public void testExchange() throws Exception {
-        String locHost = null;
+        String locAddr = null;
 
         GridTcpDiscoveryMulticastIpFinder ipFinder1 = null;
         GridTcpDiscoveryMulticastIpFinder ipFinder2 = null;
@@ -64,9 +65,9 @@ public class GridTcpDiscoveryMulticastIpFinderSelfTest
             injectLogger(ipFinder2);
             injectLogger(ipFinder3);
 
-            ipFinder1.setLocHost(locHost);
-            ipFinder2.setLocHost(locHost);
-            ipFinder3.setLocHost(locHost);
+            ipFinder1.localAddress(locAddr);
+            ipFinder2.localAddress(locAddr);
+            ipFinder3.localAddress(locAddr);
 
             ipFinder1.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host1", 1001)));
             ipFinder2.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host2", 1002)));
@@ -84,6 +85,8 @@ public class GridTcpDiscoveryMulticastIpFinderSelfTest
 
                     Thread.sleep(1000);
                 }
+                else
+                    break;
             }
 
             assertEquals(1, ipFinder1.getRegisteredAddresses().size());
