@@ -278,6 +278,13 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /**
+     * Calls {@link GridDhtLocalPartition#onUnlock()} for this entry's partition.
+     */
+    public void onUnlock() {
+        locPart.onUnlock();
+    }
+
+    /**
      * @param topVer Topology version.
      * @return Tuple with version and value of this entry, or {@code null} if entry is new.
      * @throws GridCacheEntryRemovedException If entry has been removed.
