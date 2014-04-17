@@ -195,14 +195,15 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
     }
 
     /**
-     * Sets local host address multicast IP finder uses. If provided address is non-loopback then multicast
-     * socket is bound to this interface. If local address is not set then IP finder creates multicast sockets
-     * for all found non-loopback addresses.
+     * Sets local host address used by this IP finder. If provided address is non-loopback then multicast
+     * socket is bound to this interface. If local address is not set or is any local address then IP finder
+     * creates multicast sockets for all found non-loopback addresses.
      * <p>
      * If not provided then this property is initialized by the local address set in {@link GridTcpDiscoverySpi}
      * configuration.
      *
      * @param locAddr Local host address.
+     * @see GridTcpDiscoverySpi#setLocalAddress(String)
      */
     @GridSpiConfiguration(optional = true)
     public void setLocalAddress(String locAddr) {
