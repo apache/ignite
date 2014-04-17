@@ -107,7 +107,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         int parts = cctx.config().getAffinity().partitions();
 
         GridOffHeapEvictListener lsnr = !swapEnabled && !offheapEnabled ? null : new GridOffHeapEvictListener() {
-            /** */
             private final AtomicBoolean evictWarn = new AtomicBoolean();
 
             @Override public void onEvict(int part, int hash, byte[] kb, byte[] vb) {
@@ -270,8 +269,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     else
                         empty = true;
                 }
-
-                assert empty;
 
                 lsnrs = swapLsnrs.remove(part, lsnrs) ? null : swapLsnrs.get(part);
             }
