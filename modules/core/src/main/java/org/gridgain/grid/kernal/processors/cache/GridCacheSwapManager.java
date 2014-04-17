@@ -944,7 +944,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                     it = swapIterator(part);
 
-                    if (it == null || !it.hasNext()) {
+                    if (!it.hasNext()) {
                         it.close();
 
                         done = true;
