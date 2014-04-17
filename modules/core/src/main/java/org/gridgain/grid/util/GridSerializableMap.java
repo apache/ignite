@@ -22,5 +22,8 @@ import java.util.*;
  * efficient implementations.
  */
 public abstract class GridSerializableMap<K, V> extends AbstractMap<K, V> implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     // No-op.
 }

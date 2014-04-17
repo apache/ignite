@@ -237,12 +237,12 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
             locAddrs = U.resolveLocalAddresses(U.resolveLocalHost(locAddr)).get1();
         }
         catch (IOException | GridException e) {
-            throw new GridSpiException("Failed to resolve local addresses [locHost=" + locAddr + ']', e);
+            throw new GridSpiException("Failed to resolve local addresses [locAddr=" + locAddr + ']', e);
         }
 
         addrSnds = new ArrayList<>(locAddrs.size());
 
-        Collection<InetAddress> reqAddrs = new ArrayList<>(locAddrs.size());
+        Collection<InetAddress> reqItfs = new ArrayList<>(locAddrs.size()); // Interfaces used to send requests.
 
         for (String locAddr : locAddrs) {
             InetAddress addr;
@@ -261,7 +261,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
                 try {
                     addrSnds.add(new AddressSender(mcastAddr, addr, addrs));
 
-                    reqAddrs.add(addr);
+                    reqItfs.add(addr);
                 }
                 catch (IOException e) {
                     if (log.isDebugEnabled())
@@ -272,8 +272,10 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
             }
         }
 
-        if (addrSnds.isEmpty()) { // Local host is loopback or failed to create sockets explicitly bound to interfaces.
+        if (addrSnds.isEmpty()) {
             try {
+                // Create non-bound socket if local host is loopback or failed to create sockets explicitly
+                // bound to interfaces.
                 addrSnds.add(new AddressSender(mcastAddr, null, addrs));
             }
             catch (IOException e) {
@@ -287,13 +289,13 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
 
         Collection<InetSocketAddress> ret;
 
-        if (reqAddrs.size() > 1) {
+        if (reqItfs.size() > 1) {
             ret = new HashSet<>();
 
             Collection<AddressReceiver> rcvrs = new ArrayList<>();
 
-            for (InetAddress addr : reqAddrs) {
-                AddressReceiver rcvr = new AddressReceiver(mcastAddr, addr);
+            for (InetAddress itf : reqItfs) {
+                AddressReceiver rcvr = new AddressReceiver(mcastAddr, itf);
 
                 rcvr.start();
 
@@ -316,7 +318,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
             }
         }
         else
-            ret = requestAddresses(mcastAddr, F.first(reqAddrs));
+            ret = requestAddresses(mcastAddr, F.first(reqItfs));
 
         if (!ret.isEmpty())
             registerAddresses(ret);
@@ -335,10 +337,10 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
      * {@link #setAddressRequestAttempts}.
      *
      * @param mcastAddr Multicast address where to send request.
-     * @param sockAddr Optional address multicast socket should be bound to.
+     * @param sockItf Optional interface multicast socket should be bound to.
      * @return Collection of received addresses.
      */
-    private Collection<InetSocketAddress> requestAddresses(InetAddress mcastAddr, @Nullable InetAddress sockAddr) {
+    private Collection<InetSocketAddress> requestAddresses(InetAddress mcastAddr, @Nullable InetAddress sockItf) {
         Collection<InetSocketAddress> rmtAddrs = new HashSet<>();
 
         try {
@@ -360,8 +362,8 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
                     // Use 'false' to enable support for more than one node on the same machine.
                     sock.setLoopbackMode(false);
 
-                    if (sockAddr != null)
-                        sock.setInterface(sockAddr);
+                    if (sockItf != null)
+                        sock.setInterface(sockItf);
 
                     sock.setSoTimeout(resWaitTime);
 
@@ -599,20 +601,20 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
         private final Collection<InetSocketAddress> addrs;
 
         /** */
-        private final InetAddress sockAddr;
+        private final InetAddress sockItf;
 
         /**
          * @param mcastGrp Multicast address.
-         * @param sockAddr Optional address multicast socket should be bound to.
+         * @param sockItf Optional interface multicast socket should be bound to.
          * @param addrs Local node addresses.
          * @throws IOException If fails to create multicast socket.
          */
-        private AddressSender(InetAddress mcastGrp, @Nullable InetAddress sockAddr, Collection<InetSocketAddress> addrs)
+        private AddressSender(InetAddress mcastGrp, @Nullable InetAddress sockItf, Collection<InetSocketAddress> addrs)
             throws IOException {
             super(gridName, "tcp-disco-multicast-addr-sender", log);
             this.mcastGrp = mcastGrp;
             this.addrs = addrs;
-            this.sockAddr = sockAddr;
+            this.sockItf = sockItf;
 
             sock = createSocket();
         }
@@ -628,8 +630,8 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
 
             sock.setLoopbackMode(false); // Use 'false' to enable support for more than one node on the same machine.
 
-            if (sockAddr != null)
-                sock.setInterface(sockAddr);
+            if (sockItf != null)
+                sock.setInterface(sockItf);
 
             if (sock.getLoopbackMode())
                 U.warn(log, "Loopback mode is disabled which prevents nodes on the same machine from discovering " +

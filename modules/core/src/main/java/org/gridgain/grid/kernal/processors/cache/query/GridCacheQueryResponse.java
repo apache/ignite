@@ -29,6 +29,9 @@ import java.util.*;
  */
 public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private boolean finished;
 
     /** */

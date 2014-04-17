@@ -61,6 +61,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** Unsafe instance. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /** Will be {@code true} if affinity has backups. */
     private boolean hasBackups;
@@ -1585,6 +1588,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * Releases java-level locks on cache entries.
      *
      * @param locked Locked entries.
+     * @param topVer Topology version.
      */
     private void unlockEntries(Collection<GridDhtCacheEntry<K, V>> locked, long topVer) {
         // Process deleted entries before locks release.
@@ -1607,6 +1611,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         for (GridCacheMapEntry<K, V> entry : locked) {
             if (entry != null)
                 UNSAFE.monitorExit(entry);
+        }
+
+        // Try evict partitions.
+        for (GridDhtCacheEntry<K, V> entry : locked) {
+            if (entry != null)
+                entry.onUnlock();
         }
 
         if (skip != null && skip.size() == locked.size())
@@ -1821,10 +1831,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             try {
                 while (true) {
-                    GridCacheEntryEx<K, V> entry = null;
+                    GridDhtCacheEntry<K, V> entry = null;
 
                     try {
-                        entry = entryEx(key);
+                        entry = entryExx(key);
 
                         V val = req.value(i);
                         byte[] valBytes = req.valueBytes(i);
@@ -1854,6 +1864,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());
+
+                        entry.onUnlock();
 
                         break; // While.
                     }
@@ -2103,6 +2115,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      *
      */
     private static class FinishedLockFuture extends GridFinishedFutureEx<Boolean> implements GridDhtFuture<Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+
         /**
          * Empty constructor required by {@link Externalizable}.
          */
@@ -2127,6 +2143,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * Deferred response buffer.
      */
     private class DeferredResponseBuffer extends ReentrantReadWriteLock implements GridTimeoutObject {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Filled atomic flag. */
         private AtomicBoolean guard = new AtomicBoolean(false);
 
