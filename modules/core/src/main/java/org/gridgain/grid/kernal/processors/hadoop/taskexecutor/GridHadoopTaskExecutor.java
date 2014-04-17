@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 
@@ -21,14 +22,28 @@ import java.util.*;
  * TODO write doc
  */
 public class GridHadoopTaskExecutor extends GridHadoopComponent {
+    /** Job tracker. */
+    private GridHadoopJobTracker jobTracker;
+
+    @Override public void onKernalStart() throws GridException {
+        super.onKernalStart();
+
+        jobTracker = ctx.jobTracker();
+    }
+
     /**
      * Runs tasks.
      *
      * @param tasks Tasks.
-     * @return Completion future.
      */
     public void run(Collection<GridHadoopTask> tasks) {
-        for (final GridHadoopTask task : tasks)
+        if (log.isDebugEnabled())
+            log.debug("Submitting tasks for local execution [locNodeId=" + ctx.localNodeId() +
+                ", tasksCnt=" + tasks.size() + ']');
+
+        for (final GridHadoopTask task : tasks) {
+            assert task != null;
+
             ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
                 @Override public GridFuture<?> call() throws Exception {
                     GridHadoopTaskInfo info = task.info();
@@ -37,19 +52,80 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
                          GridHadoopTaskInput in = createInput(info)) {
                         GridHadoopTaskContext ctx = null;
 
-                        task.run(ctx);
+                        try {
+                            if (log.isDebugEnabled())
+                                log.debug("Running task: " + task);
 
-                        return out.finish();
+                            task.run(ctx);
+
+                            return out.finish();
+                        }
+                        finally {
+                            // TODO status.
+                            jobTracker.onTaskFinished(task.info(), new GridHadoopTaskStatus());
+                        }
                     }
                 }
             }, false);
+        }
     }
 
+    /**
+     * Creates task output.
+     *
+     * @param taskInfo Task info.
+     * @return Task output.
+     */
     private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo taskInfo) {
-        return null;
+        return new GridHadoopTaskOutput() {
+            /** {@inheritDoc} */
+            @Override public void write(Object key, Object val) {
+                // TODO: implement.
+            }
+
+            /** {@inheritDoc} */
+            @Override public GridFuture<?> finish() {
+                return new GridFinishedFutureEx<>();
+            }
+
+            /** {@inheritDoc} */
+            @Override public void close() throws Exception {
+                // TODO: implement.
+            }
+        };
     }
 
+    /**
+     * Creates task input.
+     *
+     * @param taskInfo Task info.
+     * @return Task input.
+     */
     private GridHadoopTaskInput createInput(GridHadoopTaskInfo taskInfo) {
-        return null;
+        return new GridHadoopTaskInput() {
+            /** {@inheritDoc} */
+            @Override public boolean next() {
+                // TODO: implement.
+                return false;
+            }
+
+            /** {@inheritDoc} */
+            @Override public Object key() {
+                // TODO: implement.
+                return null;
+            }
+
+            /** {@inheritDoc} */
+            @Override public Iterator<?> values() {
+                // TODO: implement.
+                return null;
+            }
+
+            /** {@inheritDoc} */
+            @Override public void close() throws Exception {
+                // TODO: implement.
+
+            }
+        };
     }
 }

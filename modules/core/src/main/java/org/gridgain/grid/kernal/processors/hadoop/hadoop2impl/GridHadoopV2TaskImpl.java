@@ -15,9 +15,19 @@ import org.gridgain.grid.hadoop.*;
  * Hadoop  task implementation for v2 API.
  */
 public class GridHadoopV2TaskImpl implements GridHadoopTask {
+    /** task info. */
+    private GridHadoopTaskInfo taskInfo;
+
+    /**
+     * @param taskInfo Task info.
+     */
+    public GridHadoopV2TaskImpl(GridHadoopTaskInfo taskInfo) {
+        this.taskInfo = taskInfo;
+    }
+
     /** {@inheritDoc} */
     @Override public GridHadoopTaskInfo info() {
-        return null;
+        return taskInfo;
     }
 
     /** {@inheritDoc} */
