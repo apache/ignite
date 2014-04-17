@@ -273,6 +273,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * Job tracker's local job state.
      */
     private static class JobLocalState {
+        /** Mappers. */
+        private Collection<GridHadoopFileBlock> currentMappers = new HashSet<>();
+
+        /** Reducers. */
+        private Collection<Integer> currentReducers = new HashSet<>();
+
         /**
          * Adds mapper for local job state if this mapper has not been added yet.
          *
@@ -280,8 +286,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
          * @return {@code True} if mapper was not added to this local node  yet.
          */
         public synchronized boolean addMapper(GridHadoopFileBlock block) {
-            // TODO.
-            return true;
+            return currentMappers.add(block);
         }
 
         /**
@@ -291,8 +296,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
          * @return {@code True} if reducer was not added to this local node yet.
          */
         public synchronized boolean addReducer(int rdcIdx) {
-            // TODO.
-            return true;
+            return currentReducers.add(rdcIdx);
         }
     }
 
