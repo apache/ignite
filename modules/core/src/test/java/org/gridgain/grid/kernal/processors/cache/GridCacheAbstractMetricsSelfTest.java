@@ -38,6 +38,22 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         return KEY_CNT;
     }
 
+    /**
+     * Gets number of inner reads per "put" operation.
+     *
+     * @param isPrimary {@code true} if local node is primary for current key, {@code false} otherwise.
+     * @return Expected number of inner reads.
+     */
+    protected abstract int expectedReadsPerPut(boolean isPrimary);
+
+    /**
+     * Gets number of missed per "put" operation.
+     *
+     * @param isPrimary {@code true} if local node is primary for current key, {@code false} otherwise.
+     * @return Expected number of misses.
+     */
+    protected abstract int expectedMissesPerPut(boolean isPrimary);
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -68,14 +84,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < keyCnt; i++) {
             cache0.put(i, i); // +1 read
 
-            if (cache0.affinity().isPrimary(grid(0).localNode(), i)) {
-                expReads++;
-                expMisses++;
-            }
-            else {
-                expReads += 2;
-                expMisses += 2;
-            }
+            boolean isPrimary = cache0.affinity().isPrimary(grid(0).localNode(), i);
+
+            expReads += expectedReadsPerPut(isPrimary);
+            expMisses += expectedMissesPerPut(isPrimary);
 
             info("Writes: " + cache0.metrics().writes());
 
@@ -107,8 +119,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             misses += m.misses();
         }
 
+        info("Stats [reads=" + reads + ", hits=" + hits + ", misses=" + misses + ']');
+
         assertEquals(keyCnt * gridCount(), writes);
-        assertEquals("Stats [reads=" + reads + ", hits=" + hits + ", misses=" + misses + ']', expReads, reads);
+        assertEquals(expReads, reads);
         assertEquals(keyCnt, hits);
         assertEquals(expMisses, misses);
     }

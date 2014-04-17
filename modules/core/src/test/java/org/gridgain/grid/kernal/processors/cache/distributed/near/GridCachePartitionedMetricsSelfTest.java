@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
@@ -32,6 +33,7 @@ public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalA
         cfg.setPreloadMode(SYNC);
         cfg.setTxSerializableEnabled(true);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setDistributionMode(PARTITIONED_ONLY);
 
         return cfg;
     }
@@ -39,5 +41,15 @@ public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalA
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return GRID_CNT;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int expectedReadsPerPut(boolean isPrimary) {
+        return isPrimary ? 1 : 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int expectedMissesPerPut(boolean isPrimary) {
+        return isPrimary ? 1 : 2;
     }
 }

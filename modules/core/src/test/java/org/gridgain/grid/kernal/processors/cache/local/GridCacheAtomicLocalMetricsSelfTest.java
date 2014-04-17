@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.local;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
@@ -28,6 +29,7 @@ public class GridCacheAtomicLocalMetricsSelfTest extends GridCacheAbstractMetric
 
         cfg.setCacheMode(LOCAL);
         cfg.setAtomicityMode(ATOMIC);
+        cfg.setAtomicWriteOrderMode(PRIMARY);
 
         return cfg;
     }
@@ -35,5 +37,15 @@ public class GridCacheAtomicLocalMetricsSelfTest extends GridCacheAbstractMetric
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return GRID_CNT;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int expectedReadsPerPut(boolean isPrimary) {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int expectedMissesPerPut(boolean isPrimary) {
+        return 1;
     }
 }

@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
@@ -33,6 +34,7 @@ public class GridCacheAtomicPartitionedMetricsSelfTest extends GridCacheAbstract
         cfg.setPreloadMode(SYNC);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setAtomicityMode(ATOMIC);
+        cfg.setAtomicWriteOrderMode(PRIMARY);
 
         return cfg;
     }
@@ -40,5 +42,15 @@ public class GridCacheAtomicPartitionedMetricsSelfTest extends GridCacheAbstract
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return GRID_CNT;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int expectedReadsPerPut(boolean isPrimary) {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int expectedMissesPerPut(boolean isPrimary) {
+        return 1;
     }
 }
