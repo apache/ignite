@@ -879,22 +879,22 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                             if (evictLsnr != null) {
                                 PTR.set(cur);
 
-                                // TODO: New code.
+                                // TODO: New code (doesn't fail).
 //                                int keyLen = Entry.keyLength(cur, mem);
 //                                int valLen = Entry.valueLength(cur, mem);
 //                                keyBytes = mem.readBytes(cur + Entry.HEADER, keyLen);
 //                                valBytes = mem.readBytes(cur + Entry.HEADER + keyLen, valLen);
 
-                                // TODO: Old code.
-                                keyBytes = Entry.keyBytes(cur, mem);
-                                valBytes = Entry.valueBytes(cur, mem);
+                                // TODO: Old code (fails).
+//                                keyBytes = Entry.keyBytes(cur, mem);
+//                                valBytes = Entry.valueBytes(cur, mem);
 
-                                // TODO: Old code inlined.
-//                                int keyLen = Entry.keyLength(cur, mem);
-//                                keyBytes = mem.readBytes(cur + Entry.HEADER, keyLen);
-//                                keyLen = Entry.keyLength(cur, mem);
-//                                int valLen = Entry.valueLength(cur, mem);
-//                                valBytes = mem.readBytes(cur + Entry.HEADER + keyLen, valLen);
+                                // TODO: Old code inlined (doesn't fail).
+                                int keyLen = Entry.keyLength(cur, mem);
+                                keyBytes = mem.readBytes(cur + Entry.HEADER, keyLen);
+                                keyLen = Entry.keyLength(cur, mem);
+                                int valLen = Entry.valueLength(cur, mem);
+                                valBytes = mem.readBytes(cur + Entry.HEADER + keyLen, valLen);
 
                                 // TODO GG-8123: Dump on error.
                                 if (valBytes[0] != 114) {
