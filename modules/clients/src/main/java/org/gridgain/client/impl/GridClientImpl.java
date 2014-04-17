@@ -15,6 +15,7 @@ import org.gridgain.client.impl.connection.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.typedef.F;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -24,6 +25,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.logging.*;
+import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
  * Client implementation.
@@ -395,8 +397,19 @@ public class GridClientImpl implements GridClient {
         if (hasSrvs) {
             // Add REST endpoints for all nodes from previous topology snapshot.
             try {
-                for (GridClientNodeImpl node : top.nodes())
-                    connSrvs.addAll(node.availableAddresses(cfg.getProtocol()));
+                for (GridClientNodeImpl node : top.nodes()) {
+                    Collection<InetSocketAddress> endpoints = node.availableAddresses(cfg.getProtocol());
+
+                    boolean onSameHost = node.attributes().isEmpty() ||
+                        F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));
+
+                    if (onSameHost)
+                        connSrvs.addAll(endpoints);
+                    else
+                        for(InetSocketAddress endpoint : endpoints)
+                            if (!endpoint.getAddress().isLoopbackAddress())
+                                connSrvs.add(endpoint);
+                }
             }
             catch (GridClientDisconnectedException ignored) {
                 // Ignore if latest topology update failed.
