@@ -44,14 +44,15 @@ import org.jetbrains.annotations.*;
  * <p>
  */
 public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFunction, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Default number of partitions. */
     public static final int DFLT_PARTITION_COUNT = 10000;
 
     /** Comparator. */
     private static final Comparator<GridBiTuple<Long, GridNode>> COMPARATOR =
         new HashComparator();
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Thread local message digest. */
     private ThreadLocal<MessageDigest> digest = new ThreadLocal<MessageDigest>() {

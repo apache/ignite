@@ -96,6 +96,9 @@ import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
  * misspelling.
  */
 public class GridKernal extends GridProjectionAdapter implements GridEx, GridKernalMBean {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Enterprise release flag. */
     private static final boolean ent;
 
@@ -143,8 +146,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** Shutdown delay in msec. when license violation detected. */
     private static final int SHUTDOWN_DELAY = 60 * 1000;
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** */
     private GridConfiguration cfg;

@@ -28,6 +28,9 @@ import java.util.regex.*;
  * minor number, maintenance number, revision timestamp.
  */
 public class GridProductVersion implements Comparable<GridProductVersion>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Development version. This version is larger than any other version. */
     public static final GridProductVersion VERSION_DEV =
         new GridProductVersion(Byte.MAX_VALUE, (byte)0, (byte)0, 0, null);
@@ -42,8 +45,6 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
 
     /** Development version string. */
     private static final String DEV_VERSION_STR = "x.x.x-0-DEV";
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Major version number. */
     private byte major;

@@ -30,13 +30,14 @@ import java.util.*;
  * </pre>
  */
 public final class GridGgfsPath implements Comparable<GridGgfsPath>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** The directory separator character. */
     private static final char SLASH_CHAR = '/';
 
     /** The directory separator. */
     private static final String SLASH = "/";
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** URI representing this path. Should never change after object creation or de-serialization. */
     private String path;

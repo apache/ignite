@@ -36,6 +36,9 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
  */
 public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K, V>
     implements GridCacheTxLocalEx<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@link GridCacheReturn}-to-value conversion. */
     private static final GridClosure RET2VAL =
         new CX1<GridFuture<GridCacheReturn<Object>>, Object>() {
@@ -59,8 +62,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 return "Cache return value to boolean flag converter.";
             }
         };
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Per-transaction read map. */
     @GridToStringExclude

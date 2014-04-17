@@ -35,13 +35,14 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
  */
 public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Object, Collection<K>>
     implements GridDhtFuture<Collection<K>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Wait for 1 second for topology to change. */
     private static final long REMAP_PAUSE = 1000;
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Cache context. */
     private GridCacheContext<K, V> cctx;

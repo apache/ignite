@@ -51,6 +51,9 @@ import static org.gridgain.grid.util.direct.GridTcpCommunicationMessageAdapter.*
  */
 @GridToStringExclude
 public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Deferred update response buffer size. */
     private static final int DEFERRED_UPDATE_RESPONSE_BUFFER_SIZE =
         Integer.getInteger(GG_ATOMIC_DEFERRED_ACK_BUFFER_SIZE, 256);
@@ -61,8 +64,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** Unsafe instance. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Will be {@code true} if affinity has backups. */
     private boolean hasBackups;

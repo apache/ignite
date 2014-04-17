@@ -59,6 +59,9 @@ import static org.gridgain.grid.dr.cache.receiver.GridDrReceiverCacheConflictRes
  */
 @GridToStringExclude
 public class GridCacheContext<K, V> implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Deserialization stash. */
     private static final ThreadLocal<GridBiTuple<String, String>> stash = new ThreadLocal<GridBiTuple<String, String>>() {
         @Override protected GridBiTuple<String, String> initialValue() {
@@ -68,8 +71,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Empty cache version array. */
     private static final GridCacheVersion[] EMPTY_VERSION = new GridCacheVersion[0];
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Kernal context. */
     private GridKernalContext ctx;

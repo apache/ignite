@@ -12,13 +12,14 @@ package org.gridgain.grid.kernal.processors.rest.client.message;
  * Fictive ping packet.
  */
 public class GridClientPingPacket extends GridClientAbstractMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Ping message. */
     public static final GridClientMessage PING_MESSAGE = new GridClientPingPacket();
 
     /** Ping packet. */
     public static final byte[] PING_PACKET = new byte[] {(byte)0x90, 0x00, 0x00, 0x00, 0x00};
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override public String toString() {

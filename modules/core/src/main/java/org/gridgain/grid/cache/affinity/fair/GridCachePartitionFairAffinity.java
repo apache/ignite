@@ -28,13 +28,14 @@ import java.util.*;
  */
 @GridCacheCentralizedAffinityFunction
 public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Ascending comparator. */
     private static final Comparator<PartitionSet> ASC_CMP = new PartitionSetComparator(false);
 
     /** Descending comparator. */
     private static final Comparator<PartitionSet> DESC_CMP = new PartitionSetComparator(true);
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** */
     private int parts;

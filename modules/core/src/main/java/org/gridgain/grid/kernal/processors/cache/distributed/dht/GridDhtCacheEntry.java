@@ -27,6 +27,9 @@ import java.util.*;
  */
 @SuppressWarnings({"TooBroadScope", "NonPrivateFieldAccessedInSynchronizedContext"})
 public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Size overhead. */
     private static final int DHT_SIZE_OVERHEAD = 16;
 
@@ -36,8 +39,6 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             return e.nodeId();
         }
     };
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Reader clients. */
     @GridToStringInclude

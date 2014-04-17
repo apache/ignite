@@ -24,6 +24,9 @@ import java.util.*;
  */
 @SuppressWarnings({"deprecation", "NonSerializableObjectBoundToHttpSession"})
 class GridWebSession implements HttpSession, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Empty session context. */
     private static final HttpSessionContext EMPTY_SES_CTX = new HttpSessionContext() {
         @Nullable @Override public HttpSession getSession(String id) {
@@ -34,8 +37,6 @@ class GridWebSession implements HttpSession, Externalizable {
             return Collections.enumeration(Collections.<String>emptyList());
         }
     };
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Session ID. */
     private String id;

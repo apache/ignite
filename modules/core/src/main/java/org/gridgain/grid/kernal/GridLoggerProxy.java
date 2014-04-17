@@ -29,11 +29,12 @@ import static org.gridgain.grid.GridSystemProperties.*;
  */
 public class GridLoggerProxy extends GridMetadataAwareAdapter implements GridLogger, GridLifecycleAware,
     Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Global flag to enable/disable GridGain debug logging. */
     private static final boolean GG_DEBUG_ENABLED =
         Boolean.valueOf(X.getSystemOrEnv(GridSystemProperties.GG_DEBUG_ENABLED));
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** */
     private static ThreadLocal<GridBiTuple<String, Object>> stash = new ThreadLocal<GridBiTuple<String, Object>>() {

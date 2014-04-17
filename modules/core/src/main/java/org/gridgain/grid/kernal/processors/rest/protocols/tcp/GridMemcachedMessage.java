@@ -18,6 +18,9 @@ import java.util.*;
  * Memcached protocol request.
  */
 public class GridMemcachedMessage implements GridClientMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Random UUID used for memcached clients authentication. */
     private static final UUID MEMCACHED_ID = UUID.randomUUID();
 
@@ -74,8 +77,6 @@ public class GridMemcachedMessage implements GridClientMessage {
 
     /** Byte array flag. */
     public static final int BYTE_ARR_FLAG = (8 << 8);
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Request flag. */
     private byte reqFlag;

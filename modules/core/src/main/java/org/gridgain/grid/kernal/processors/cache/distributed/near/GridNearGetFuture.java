@@ -35,6 +35,9 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
  */
 public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Map<K, V>>
     implements GridCacheFuture<Map<K, V>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Default max remap count value. */
     public static final int DFLT_MAX_REMAP_CNT = 3;
 
@@ -43,8 +46,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
     /** Maximum number of attempts to remap key to the same primary node. */
     private static final int MAX_REMAP_CNT;
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Context. */
     private GridCacheContext<K, V> cctx;

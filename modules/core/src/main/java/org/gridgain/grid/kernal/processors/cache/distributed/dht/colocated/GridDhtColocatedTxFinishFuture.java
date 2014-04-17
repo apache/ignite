@@ -32,10 +32,11 @@ import java.util.concurrent.atomic.*;
  */
 public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFuture<GridCacheTx>
     implements GridCacheFuture<GridCacheTx> {
-    /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Logger reference. */
+    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Context. */
     private GridCacheContext<K, V> cctx;

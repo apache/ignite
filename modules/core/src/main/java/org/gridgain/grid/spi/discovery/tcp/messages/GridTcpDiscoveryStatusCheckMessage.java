@@ -24,13 +24,14 @@ import java.util.*;
  * to ensure that the failed node is actually failed.
  */
 public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstractMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Status OK. */
     public static final int STATUS_OK = 1;
 
     /** Status RECONNECT. */
     public static final int STATUS_RECON = 2;
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Creator node. */
     private GridTcpDiscoveryNode creatorNode;

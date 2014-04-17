@@ -27,10 +27,11 @@ import java.util.concurrent.atomic.*;
  */
 public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompoundIdentityFuture<Boolean>
     implements GridCacheFuture<Boolean> {
-    /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Logger reference. */
+    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Trackable flag. */
     private boolean trackable = true;

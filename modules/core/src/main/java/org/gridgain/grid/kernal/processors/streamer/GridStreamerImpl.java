@@ -41,6 +41,9 @@ import static org.gridgain.grid.kernal.GridTopic.*;
  *
  */
 public class GridStreamerImpl implements GridStreamerEx, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Number of message send retries. */
     private static final int SEND_RETRY_COUNT = 3;
 
@@ -49,8 +52,6 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
 
     /** How many cancelled future IDs to keep in history. */
     private static final int CANCELLED_FUTS_HISTORY_SIZE = 4096;
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Log. */
     private GridLogger log;

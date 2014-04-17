@@ -39,10 +39,11 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  */
 public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     implements GridCacheAtomicFuture<K, Object>{
-    /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Logger reference. */
+    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
     protected static GridLogger log;

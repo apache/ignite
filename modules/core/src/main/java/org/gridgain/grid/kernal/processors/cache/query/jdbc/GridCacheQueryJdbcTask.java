@@ -38,13 +38,14 @@ import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
  * Task for JDBC adapter.
  */
 public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[]> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Marshaller. */
     private static final GridMarshaller MARSHALLER = new GridJdkMarshaller();
 
     /** How long to store future (10 minutes). */
     private static final int RMV_DELAY = 10 * 60;
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, byte[] arg) throws GridException {

@@ -29,10 +29,11 @@ import java.util.concurrent.atomic.*;
  */
 public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompoundIdentityFuture<GridCacheCommittedTxInfo<K, V>>
     implements GridCacheFuture<GridCacheCommittedTxInfo<K, V>> {
-    /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Logger reference. */
+    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Trackable flag. */
     private boolean trackable = true;

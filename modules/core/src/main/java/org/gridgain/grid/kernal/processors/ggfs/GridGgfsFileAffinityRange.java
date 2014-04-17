@@ -23,6 +23,9 @@ import java.util.*;
  * Affinity range.
  */
 public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapter implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Initial range status, right after creation. */
     public static final int RANGE_STATUS_INITIAL = 0;
 
@@ -31,8 +34,6 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
 
     /** Fragmentizer finished block copy for this range. */
     public static final int RANGE_STATUS_MOVED = 2;
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Range affinity key. */
     private GridUuid affKey;

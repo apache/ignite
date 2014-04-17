@@ -25,10 +25,11 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheMvccCandidate.M
  */
 public class GridCacheMvccCandidate<K> implements Externalizable,
     Comparable<GridCacheMvccCandidate<K>> {
-    /** ID generator. */
-    private static final AtomicLong IDGEN = new AtomicLong();
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** ID generator. */
+    private static final AtomicLong IDGEN = new AtomicLong();
 
     /** Locking node ID. */
     @GridToStringInclude

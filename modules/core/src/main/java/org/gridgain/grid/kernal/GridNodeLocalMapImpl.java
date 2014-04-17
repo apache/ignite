@@ -26,9 +26,10 @@ import java.util.concurrent.*;
 public class GridNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> implements GridNodeLocalMap<K, V>,
     Externalizable {
     /** */
-    private static final ThreadLocal<String> stash = new ThreadLocal<>();
-    /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final ThreadLocal<String> stash = new ThreadLocal<>();
 
     /** */
     private GridMetadataAwareAdapter impl = new GridMetadataAwareAdapter();

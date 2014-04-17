@@ -16,6 +16,9 @@ import java.io.*;
  * Bean representing client operation result.
  */
 public class GridClientResponse extends GridClientAbstractMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Command succeeded. */
     public static final int STATUS_SUCCESS = 0;
 
@@ -24,8 +27,6 @@ public class GridClientResponse extends GridClientAbstractMessage {
 
     /** Authentication failure. */
     public static final int STATUS_AUTH_FAILURE = 2;
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Success flag */
     private int successStatus;

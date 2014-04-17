@@ -37,10 +37,11 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  */
 public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<GridCacheTxEx<K, V>>
     implements GridCacheMvccFuture<K, V, GridCacheTxEx<K, V>> {
-    /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Logger reference. */
+    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Context. */
     private GridCacheContext<K, V> cctx;
