@@ -11,13 +11,10 @@ package org.gridgain.grid.kernal.managers;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.*;
@@ -449,27 +446,12 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
                         return ctx.auth().authenticateNode(nodeId, attrs);
                     }
 
-                    @Override public GridHashIdResolversValidationResult validateHashIdResolvers(GridNode node) {
-                        for (GridCacheAdapter cache : ctx.cache().internalCaches()) {
-                            GridCacheConfiguration cfg = cache.configuration();
+                    @Override public GridNodeValidationResult validateNode(GridNode node) {
+                        for (GridComponent comp : ctx) {
+                            GridNodeValidationResult err = comp.validateNode(node);
 
-                            if (cfg.getAffinity() instanceof GridCacheConsistentHashAffinityFunction) {
-                                GridCacheConsistentHashAffinityFunction aff = (GridCacheConsistentHashAffinityFunction)cfg.getAffinity();
-
-                                GridCacheAffinityNodeHashResolver hashIdRslvr = aff.getHashIdResolver();
-
-                                assert hashIdRslvr != null;
-
-                                Object nodeHashObj = hashIdRslvr.resolve(node);
-
-                                for (GridNode topNode : nodes()) {
-                                    Object topNodeHashObj = hashIdRslvr.resolve(topNode);
-
-                                    if (nodeHashObj.hashCode() == topNodeHashObj.hashCode())
-                                        return new GridHashIdResolversValidationResult(cache.name(),
-                                            hashIdRslvr.getClass().getName(), topNode.id());
-                                }
-                            }
+                            if (err != null)
+                                return err;
                         }
 
                         return null;
@@ -561,6 +543,11 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
+        return null;
     }
 
     /** {@inheritDoc} */

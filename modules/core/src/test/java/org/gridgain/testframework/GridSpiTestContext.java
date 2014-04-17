@@ -480,7 +480,7 @@ public class GridSpiTestContext implements GridSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridHashIdResolversValidationResult validateHashIdResolvers(GridNode node) {
+    @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
         return null;
     }
 

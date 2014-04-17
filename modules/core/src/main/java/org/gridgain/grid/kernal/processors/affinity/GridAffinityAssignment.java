@@ -18,6 +18,9 @@ import java.util.*;
  * Cached affinity calculations.
  */
 class GridAffinityAssignment implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Topology version. */
     private final long topVer;
 

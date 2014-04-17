@@ -19,6 +19,10 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
 public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+
     /**
      * @param ctx  Cache registry.
      * @param key  Cache key.

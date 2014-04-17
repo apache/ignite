@@ -17,6 +17,9 @@ public class GridClientPingPacket extends GridClientAbstractMessage {
 
     /** Ping packet. */
     public static final byte[] PING_PACKET = new byte[] {(byte)0x90, 0x00, 0x00, 0x00, 0x00};
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -35,6 +35,9 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
  */
 public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, V>
     implements GridCacheTxRemoteEx<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Read set. */
     @GridToStringInclude
     protected Map<K, GridCacheTxEntry<K, V>> readMap;
@@ -535,6 +538,9 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
 
                                     if (updateNearCache())
                                         nearCached = cctx.dht().near().peekExx(txEntry.key());
+
+                                    if (!F.isEmpty(txEntry.transformClosures()) || !F.isEmpty(txEntry.filters()))
+                                        txEntry.cached().unswap(true);
 
                                     GridTuple3<GridCacheOperation, V, byte[]> res = applyTransformClosures(txEntry,
                                         false);

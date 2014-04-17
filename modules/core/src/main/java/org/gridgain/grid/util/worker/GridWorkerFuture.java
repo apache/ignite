@@ -20,6 +20,9 @@ import java.io.*;
  */
 public class GridWorkerFuture<T> extends GridFutureAdapter<T> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private GridWorker w;
 
     /**

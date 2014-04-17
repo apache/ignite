@@ -21,6 +21,9 @@ import java.io.*;
  */
 public class GridCacheReturn<V> implements Externalizable, GridOptimizedMarshallable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
     private static Object GG_CLASS_ID;
 

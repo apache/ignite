@@ -18,5 +18,8 @@ import java.util.*;
  * extra logic or state in addition to {@link AbstractCollection}.
  */
 public abstract class GridSerializableCollection<E> extends AbstractCollection<E> implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     // No-op.
 }
