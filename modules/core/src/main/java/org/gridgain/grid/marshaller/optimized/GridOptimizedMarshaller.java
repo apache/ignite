@@ -15,6 +15,7 @@ import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.spi.swapspace.file.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
@@ -351,11 +352,15 @@ public class GridOptimizedMarshaller extends GridAbstractMarshaller {
             return (T)objIn.readObject();
         }
         catch (IOException e) {
+            U.dumpStack("MARSHALLER FAILURE");
+
             GridFileSwapSpaceSpi.dumpOps("C:\\Personal\\opdump");
 
             throw new GridException("Failed to deserialize object with given class loader: " + clsLdr, e);
         }
         catch (ClassNotFoundException e) {
+            U.dumpStack("MARSHALLER FAILURE");
+
             GridFileSwapSpaceSpi.dumpOps("C:\\Personal\\opdump");
 
             throw new GridException("Failed to find class with given class loader for unmarshalling " +

@@ -1160,7 +1160,27 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                                     Bin.first(binAddr, next, mem);
                             }
 
-                            valBytes = retval ? Entry.valueBytes(cur, mem) : EMPTY_BYTES;
+                            // TODO: New version with inline.
+                            if (retval) {
+                                int valLen = Entry.valueLength(cur, mem);
+                                valBytes = mem.readBytes(cur + Entry.HEADER + keyBytes.length, valLen);
+                            }
+                            else {
+                                valBytes = EMPTY_BYTES;
+                            }
+
+                            // TODO: Old version.
+//                            valBytes = retval ? Entry.valueBytes(cur, mem) : EMPTY_BYTES;
+
+                            if (valBytes != EMPTY_BYTES && valBytes[0] != 114) {
+                                int hash0 = mem.readInt(cur);
+                                int keySize0 = mem.readInt(cur + 4);
+                                int valSize0 = mem.readInt(cur + 8);
+                                byte[] keyBytes0 = mem.readBytes(cur + 28, keySize0);
+                                byte[] valBytes0 = mem.readBytes(cur + 28 + keySize0, valSize0);
+
+                                System.out.println(hash0 + " " + keySize0 + " " + valSize0 + " " + Arrays.toString(keyBytes0) + " " + Arrays.toString(valBytes0));
+                            }
 
                             // Prepare release of memory.
                             qAddr = Entry.queueAddress(cur, mem);

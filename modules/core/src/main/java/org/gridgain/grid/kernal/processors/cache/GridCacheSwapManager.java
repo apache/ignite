@@ -450,6 +450,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             byte[] entryBytes = offheap.remove(spaceName, part, key, keyBytes);
 
             if (entryBytes != null) {
+                if (entryBytes[0] != 114)
+                    U.debug("readAndRemoveFailure: " + Arrays.toString(entryBytes));
+
                 // To unmarshal swap entry itself local class loader will be enough.
                 GridCacheSwapEntry<V> entry = swapEntry((GridCacheSwapEntry<V>)unmarshal(entryBytes,
                     cctx.deploy().localLoader()));
