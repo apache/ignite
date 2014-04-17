@@ -240,6 +240,8 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
             throw new GridSpiException("Failed to resolve local addresses [locAddr=" + locAddr + ']', e);
         }
 
+        assert locAddrs != null;
+
         addrSnds = new ArrayList<>(locAddrs.size());
 
         Collection<InetAddress> reqItfs = new ArrayList<>(locAddrs.size()); // Interfaces used to send requests.
