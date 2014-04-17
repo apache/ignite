@@ -1613,6 +1613,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 UNSAFE.monitorExit(entry);
         }
 
+        // Try evict partitions.
+        for (GridDhtCacheEntry<K, V> entry : locked) {
+            if (entry != null)
+                entry.onUnlock();
+        }
+
         if (skip != null && skip.size() == locked.size())
             // Optimization.
             return;
@@ -1825,10 +1831,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             try {
                 while (true) {
-                    GridCacheEntryEx<K, V> entry = null;
+                    GridDhtCacheEntry<K, V> entry = null;
 
                     try {
-                        entry = entryEx(key);
+                        entry = entryExx(key);
 
                         V val = req.value(i);
                         byte[] valBytes = req.valueBytes(i);
@@ -1858,6 +1864,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());
+
+                        entry.onUnlock();
 
                         break; // While.
                     }
