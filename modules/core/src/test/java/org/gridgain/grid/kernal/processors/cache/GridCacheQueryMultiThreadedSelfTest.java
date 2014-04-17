@@ -473,7 +473,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final Grid g = grid(0);
 
         // Put test values into cache.
-        final GridCache<Integer, TestValue> c = g.cache(null);
+        final GridCache<Long, TestValue> c = g.cache(null);
 
         assertEquals(0, g.cache(null).size());
         assertEquals(0, c.queries().createSqlQuery(String.class, "1 = 1").execute().get().size());
@@ -495,7 +495,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
                 Random rnd = new Random();
 
                 while (!done.get()) {
-                    int key = rnd.nextInt(keyCnt);
+                    long key = (long)rnd.nextInt(keyCnt);
 
                     switch (rnd.nextInt(3)) {
                         case 0:
@@ -511,18 +511,18 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
                             break;
                         case 3:
-                            GridCacheQuery<Map.Entry<Integer, TestValue>> qry = c.queries().createSqlQuery(
-                                Long.class, "TestValue.val between ? and ?");
-
-                            int from = rnd.nextInt(valCnt);
-
-                            GridCacheQueryFuture<Map.Entry<Integer, TestValue>> f = qry.execute(from, from + 250);
-
-                            Collection<Map.Entry<Integer, TestValue>> res = f.get();
-
-                            for (Map.Entry<Integer, TestValue> ignored : res) {
-                                //No-op.
-                            }
+//                            GridCacheQuery<Map.Entry<Integer, TestValue>> qry = c.queries().createSqlQuery(
+//                                Long.class, "TestValue.val between ? and ?");
+//
+//                            int from = rnd.nextInt(valCnt);
+//
+//                            GridCacheQueryFuture<Map.Entry<Integer, TestValue>> f = qry.execute(from, from + 250);
+//
+//                            Collection<Map.Entry<Integer, TestValue>> res = f.get();
+//
+//                            for (Map.Entry<Integer, TestValue> ignored : res) {
+//                                //No-op.
+//                            }
 
                             break;
                         case 4:

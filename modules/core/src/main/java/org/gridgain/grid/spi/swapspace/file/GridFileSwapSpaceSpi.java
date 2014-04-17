@@ -108,35 +108,35 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
     private static final ThreadLocal<GridSwapKey> KEY = new ThreadLocal<>();
 
     public static void dumpOps(String file) {
-        GridSwapKey key = KEY.get();
-
-        System.out.println("DUMPING OPS [file=" + file + ", key=" + key + ']');
-
-        try {
-            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file + "-" + key + ".dump")));
-
-            ArrayList<Long> ptrs = new ArrayList<>();
-
-            for (Op op : ops) {
-                if (F.eq(key, op.swapKey)) {
-                    bw.write(op.toString() + "\n");
-
-                    if (op.offHeapPtr != null) {
-                        if (op.val != null && op.val[0] != 114)
-                            ptrs.add(op.offHeapPtr);
-                    }
-                }
-            }
-
-            GridUnsafeMap.Op.dump(bw, ptrs);
-
-            bw.close();
-
-            System.out.println("DUMPING FINISHED [file=" + file + ", key=" + key + ']');
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+//        GridSwapKey key = KEY.get();
+//
+//        System.out.println("DUMPING OPS [file=" + file + ", key=" + key + ']');
+//
+//        try {
+//            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file + "-" + key + ".dump")));
+//
+//            ArrayList<Long> ptrs = new ArrayList<>();
+//
+//            for (Op op : ops) {
+//                if (F.eq(key, op.swapKey)) {
+//                    bw.write(op.toString() + "\n");
+//
+//                    if (op.offHeapPtr != null) {
+//                        if (op.val != null && op.val[0] != 114)
+//                            ptrs.add(op.offHeapPtr);
+//                    }
+//                }
+//            }
+//
+//            GridUnsafeMap.Op.dump(bw, ptrs);
+//
+//            bw.close();
+//
+//            System.out.println("DUMPING FINISHED [file=" + file + ", key=" + key + ']');
+//        }
+//        catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
     }
 
     public static class Op {
