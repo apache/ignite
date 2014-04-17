@@ -268,16 +268,12 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         while (true) {
             if (lsnrs != null) {
-                boolean empty;
-
                 synchronized (lsnrs) {
                     if (!lsnrs.isEmpty()) {
                         lsnrs.add(lsnr);
 
                         break;
                     }
-                    else
-                        empty = true;
                 }
 
                 lsnrs = swapLsnrs.remove(part, lsnrs) ? null : swapLsnrs.get(part);
