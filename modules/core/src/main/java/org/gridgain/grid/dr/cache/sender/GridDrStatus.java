@@ -23,7 +23,6 @@ public class GridDrStatus implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Pause reason or {@code null} if not paused. */
     private GridDrPauseReason reason;
 

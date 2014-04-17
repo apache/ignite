@@ -46,7 +46,6 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** {@inheritDoc} */
     @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid, byte[] arg) throws GridException {
         assert arg != null;

@@ -254,7 +254,6 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
         /** */
         private static final long serialVersionUID = 0L;
 
-
         @Override public final void apply(GridFuture<B> f) {
             try {
                 applyx(f);
@@ -281,7 +280,6 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     private abstract class AsyncListener2 implements GridInClosure<GridFuture<A>> {
         /** */
         private static final long serialVersionUID = 0L;
-
 
         @Override public final void apply(GridFuture<A> f) {
             try {

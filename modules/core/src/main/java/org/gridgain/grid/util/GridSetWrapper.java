@@ -23,7 +23,6 @@ public class GridSetWrapper<E> extends GridSerializableSet<E> {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Base map. */
     @GridToStringExclude
     protected Map<E, Object> map;

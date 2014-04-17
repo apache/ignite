@@ -47,7 +47,6 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Logger. */
     protected static GridLogger log;
 

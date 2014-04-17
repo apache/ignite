@@ -39,7 +39,6 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Reader clients. */
     @GridToStringInclude
     private volatile List<ReaderId<K, V>> rdrs = Collections.emptyList();

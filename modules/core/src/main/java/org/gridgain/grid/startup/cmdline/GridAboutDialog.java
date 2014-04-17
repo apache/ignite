@@ -32,7 +32,6 @@ public class GridAboutDialog extends JDialog {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Global reference to about dialog to prevent double open. */
     private static GridAboutDialog aboutDlg;
 

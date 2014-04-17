@@ -62,7 +62,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Per-transaction read map. */
     @GridToStringExclude
     protected Map<K, GridCacheTxEntry<K, V>> txMap;
@@ -2909,7 +2908,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /**
          * @param arg Argument.
          */
@@ -3074,7 +3072,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /** {@inheritDoc} */
         @Override public final GridFuture<T> apply(Boolean locked, @Nullable Exception e) {
             boolean rollback = true;
@@ -3120,7 +3117,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /** {@inheritDoc} */
         @Override public final GridFuture<T> apply(T t, Exception e) {
             boolean rollback = true;
@@ -3162,7 +3158,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     protected abstract class FinishClosure<T> implements GridBiClosure<T, Exception, T> {
         /** */
         private static final long serialVersionUID = 0L;
-
 
         /** {@inheritDoc} */
         @Override public final T apply(T t, @Nullable Exception e) {

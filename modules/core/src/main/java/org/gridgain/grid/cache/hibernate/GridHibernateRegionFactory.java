@@ -67,7 +67,6 @@ public class GridHibernateRegionFactory implements RegionFactory {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Grid providing caches. */
     private Grid grid;
 

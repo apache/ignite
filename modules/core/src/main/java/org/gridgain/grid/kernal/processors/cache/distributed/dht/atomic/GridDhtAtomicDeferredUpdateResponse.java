@@ -27,7 +27,6 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** ACK future versions. */
     @GridDirectCollection(GridCacheVersion.class)
     private Collection<GridCacheVersion> futVers;

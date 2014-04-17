@@ -33,7 +33,6 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Future ID. */
     private GridUuid futId = GridUuid.randomUuid();
 

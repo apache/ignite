@@ -43,7 +43,6 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Logger. */
     private GridLogger log;
 

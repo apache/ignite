@@ -64,7 +64,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Will be {@code true} if affinity has backups. */
     private boolean hasBackups;
 
@@ -2117,7 +2116,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private static class FinishedLockFuture extends GridFinishedFutureEx<Boolean> implements GridDhtFuture<Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
-
 
         /**
          * Empty constructor required by {@link Externalizable}.

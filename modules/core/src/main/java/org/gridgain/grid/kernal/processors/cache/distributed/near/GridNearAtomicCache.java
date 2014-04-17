@@ -40,7 +40,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** */
     private GridDhtCacheAdapter<K, V> dht;
 

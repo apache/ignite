@@ -69,7 +69,6 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /*
      * Managers.
      * ========

@@ -42,7 +42,6 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** ID of this message. */
     private long msgId = NULL_MSG_ID;
 

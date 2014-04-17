@@ -41,7 +41,6 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Logger. */
     private GridLogger log;
 

@@ -34,7 +34,6 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** ID of primary node from which this entry was last read. */
     private volatile UUID primaryNodeId;
 

@@ -39,7 +39,6 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Logger. */
     private GridLogger log;
 

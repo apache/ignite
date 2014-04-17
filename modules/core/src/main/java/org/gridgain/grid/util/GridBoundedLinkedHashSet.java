@@ -35,7 +35,6 @@ public class GridBoundedLinkedHashSet<E> extends GridSerializableSet<E> implemen
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** */
     @SuppressWarnings({"TransientFieldNotInitialized", "CollectionDeclaredAsConcreteClass"})
     private transient HashMap<E, Object> map;

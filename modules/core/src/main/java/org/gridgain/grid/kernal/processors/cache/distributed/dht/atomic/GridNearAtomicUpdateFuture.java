@@ -44,7 +44,6 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Logger. */
     protected static GridLogger log;
 

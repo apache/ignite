@@ -43,7 +43,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Cache registry. */
     @GridToStringExclude
     private GridCacheContext<K, V> cctx;

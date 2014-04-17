@@ -32,7 +32,6 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Node ID. */
     private UUID nodeId;
 

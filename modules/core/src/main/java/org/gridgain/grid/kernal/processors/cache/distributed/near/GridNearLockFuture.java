@@ -42,7 +42,6 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Cache registry. */
     @GridToStringExclude
     private GridCacheContext<K, V> cctx;

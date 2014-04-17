@@ -30,7 +30,6 @@ public class GridRestResponse implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Success status. */
     @SuppressWarnings("RedundantFieldInitialization")
     private int successStatus = STATUS_SUCCESS;

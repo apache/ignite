@@ -27,7 +27,6 @@ public class GridClientResponse extends GridClientAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Success flag */
     private int successStatus;
 

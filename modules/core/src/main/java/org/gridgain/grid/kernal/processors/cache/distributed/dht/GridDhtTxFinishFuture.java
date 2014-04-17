@@ -35,7 +35,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Context. */
     private GridCacheContext<K, V> cctx;
 

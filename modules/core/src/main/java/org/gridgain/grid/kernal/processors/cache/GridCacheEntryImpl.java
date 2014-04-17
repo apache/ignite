@@ -36,7 +36,6 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Cache context. */
     protected GridCacheContext<K, V> ctx;
 

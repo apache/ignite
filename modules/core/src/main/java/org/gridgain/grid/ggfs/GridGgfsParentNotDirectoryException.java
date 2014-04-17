@@ -18,7 +18,6 @@ public class GridGgfsParentNotDirectoryException extends GridGgfsInvalidPathExce
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * @param msg Error message.
      */

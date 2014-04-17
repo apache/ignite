@@ -39,7 +39,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Cache context. */
     protected GridCacheContext<K, V> cctx;
 

@@ -30,7 +30,6 @@ public class GridCacheMvccCandidate<K> implements Externalizable,
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Locking node ID. */
     @GridToStringInclude
     private UUID nodeId;

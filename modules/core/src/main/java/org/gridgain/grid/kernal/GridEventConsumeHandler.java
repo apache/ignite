@@ -39,7 +39,6 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Local callback. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private GridBiPredicate<UUID, GridEvent> cb;

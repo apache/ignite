@@ -34,7 +34,6 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Range affinity key. */
     private GridUuid affKey;
 

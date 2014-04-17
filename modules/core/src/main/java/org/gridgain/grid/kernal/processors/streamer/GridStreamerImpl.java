@@ -52,7 +52,6 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Log. */
     private GridLogger log;
 

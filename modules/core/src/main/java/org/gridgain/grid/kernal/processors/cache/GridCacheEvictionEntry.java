@@ -36,7 +36,6 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Logger. */
     protected static volatile GridLogger log;
 

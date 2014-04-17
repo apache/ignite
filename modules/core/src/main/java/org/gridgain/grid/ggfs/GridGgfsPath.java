@@ -38,7 +38,6 @@ public final class GridGgfsPath implements Comparable<GridGgfsPath>, Externaliza
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** URI representing this path. Should never change after object creation or de-serialization. */
     private String path;
 

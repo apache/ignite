@@ -37,7 +37,6 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Version info byte array. */
     private byte[] verArr;
 

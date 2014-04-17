@@ -16,7 +16,6 @@ public class GridOffHeapOutOfMemoryException extends RuntimeException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Constructs out of memory exception.
      *

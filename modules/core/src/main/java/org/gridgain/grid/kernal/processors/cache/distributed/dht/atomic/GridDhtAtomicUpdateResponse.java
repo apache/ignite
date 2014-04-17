@@ -30,7 +30,6 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Future version. */
     private GridCacheVersion futVer;
 

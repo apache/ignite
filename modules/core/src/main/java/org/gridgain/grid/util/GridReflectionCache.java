@@ -43,7 +43,6 @@ public class GridReflectionCache implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Fields cache. */
     private ConcurrentMap<Class, List<Field>> fields = new GridBoundedConcurrentLinkedHashMap<>(
         CACHE_SIZE, CACHE_SIZE);

@@ -32,7 +32,6 @@ public final class GridGgfsFileInfo implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Info ID. */
     private GridUuid id;
 

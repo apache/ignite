@@ -36,7 +36,6 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** */
     private int parts;
 

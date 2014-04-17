@@ -30,7 +30,6 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Transactions to wait for. */
     private final Set<GridCacheTxEx<K, V>> txs = new GridLeanSet<>();
 

@@ -76,7 +76,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** */
     private boolean keyCheck = true;
 

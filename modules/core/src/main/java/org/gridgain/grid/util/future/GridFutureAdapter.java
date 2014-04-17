@@ -32,7 +32,6 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Logger. */
     protected static GridLogger log;
 

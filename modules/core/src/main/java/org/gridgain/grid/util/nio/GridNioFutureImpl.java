@@ -35,7 +35,6 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Result. */
     @GridToStringInclude
     private R res;

@@ -43,7 +43,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Cache context. */
     private GridCacheContext<K, V> cctx;
 

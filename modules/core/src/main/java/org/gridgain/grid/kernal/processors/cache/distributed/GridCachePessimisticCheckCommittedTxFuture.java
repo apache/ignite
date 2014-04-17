@@ -34,7 +34,6 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Trackable flag. */
     private boolean trackable = true;
 

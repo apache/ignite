@@ -38,7 +38,6 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Cache registry. */
     @GridToStringExclude
     private GridCacheContext<K, V> cctx;

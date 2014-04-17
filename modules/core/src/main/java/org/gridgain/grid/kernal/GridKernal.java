@@ -146,7 +146,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** */
     private GridConfiguration cfg;
 

@@ -35,7 +35,6 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Target node ID. */
     @GridDirectTransient
     private UUID nodeId;

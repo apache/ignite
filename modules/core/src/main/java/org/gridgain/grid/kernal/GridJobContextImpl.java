@@ -36,7 +36,6 @@ public class GridJobContextImpl extends GridMetadataAwareAdapter implements Grid
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Kernal context ({@code null} for job result context). */
     private GridKernalContext ctx;
 

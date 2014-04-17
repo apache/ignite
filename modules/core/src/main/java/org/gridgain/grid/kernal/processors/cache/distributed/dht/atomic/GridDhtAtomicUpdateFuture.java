@@ -38,7 +38,6 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Logger. */
     protected static GridLogger log;
 

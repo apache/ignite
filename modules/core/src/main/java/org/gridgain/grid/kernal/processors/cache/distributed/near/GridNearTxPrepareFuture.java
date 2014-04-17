@@ -42,7 +42,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Context. */
     private GridCacheContext<K, V> cctx;
 

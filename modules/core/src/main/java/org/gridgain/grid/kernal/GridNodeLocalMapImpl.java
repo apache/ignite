@@ -30,7 +30,6 @@ public class GridNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> impleme
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** */
     private GridMetadataAwareAdapter impl = new GridMetadataAwareAdapter();
 

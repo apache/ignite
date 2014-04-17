@@ -31,7 +31,6 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Cache context. */
     private final GridCacheContext<K, V> ctx;
 

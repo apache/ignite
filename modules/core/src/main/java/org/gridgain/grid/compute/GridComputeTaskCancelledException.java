@@ -19,7 +19,6 @@ public class GridComputeTaskCancelledException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates new task cancellation exception with given error message.
      *

@@ -45,7 +45,6 @@ public class GridProductVersion implements Comparable<GridProductVersion>, Exter
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Major version number. */
     private byte major;
 

@@ -37,7 +37,6 @@ class GridWebSession implements HttpSession, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Session ID. */
     private String id;
 

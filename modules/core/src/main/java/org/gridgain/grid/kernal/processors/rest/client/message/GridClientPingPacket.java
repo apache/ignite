@@ -20,7 +20,6 @@ public class GridClientPingPacket extends GridClientAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return getClass().getName();

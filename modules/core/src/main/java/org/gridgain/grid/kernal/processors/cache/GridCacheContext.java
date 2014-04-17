@@ -71,7 +71,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Kernal context. */
     private GridKernalContext ctx;
 

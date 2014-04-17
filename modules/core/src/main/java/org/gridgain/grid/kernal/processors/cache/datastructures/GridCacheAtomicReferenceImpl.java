@@ -39,7 +39,6 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Logger. */
     private GridLogger log;
 

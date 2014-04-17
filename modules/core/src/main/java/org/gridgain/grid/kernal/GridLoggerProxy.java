@@ -35,7 +35,6 @@ public class GridLoggerProxy extends GridMetadataAwareAdapter implements GridLog
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** */
     private static ThreadLocal<GridBiTuple<String, Object>> stash = new ThreadLocal<GridBiTuple<String, Object>>() {
         @Override protected GridBiTuple<String, Object> initialValue() {

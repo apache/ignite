@@ -23,7 +23,6 @@ public abstract class GridClosureX<E, R> implements GridClosure<E, R> {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** {@inheritDoc} */
     @Override public R apply(E e) {
         try {

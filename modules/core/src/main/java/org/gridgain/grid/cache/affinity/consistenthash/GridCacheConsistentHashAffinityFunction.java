@@ -63,7 +63,6 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Node hash. */
     private transient GridConsistentHash<NodeInfo> nodeHash;
 

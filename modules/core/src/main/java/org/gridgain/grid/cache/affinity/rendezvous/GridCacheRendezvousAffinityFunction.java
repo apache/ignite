@@ -53,7 +53,6 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Thread local message digest. */
     private ThreadLocal<MessageDigest> digest = new ThreadLocal<MessageDigest>() {
         @Override protected MessageDigest initialValue() {
@@ -466,7 +465,6 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
     private static class HashComparator implements Comparator<GridBiTuple<Long, GridNode>>, Serializable {
         /** */
         private static final long serialVersionUID = 0L;
-
 
         /** {@inheritDoc} */
         @Override public int compare(GridBiTuple<Long, GridNode> o1, GridBiTuple<Long, GridNode> o2) {

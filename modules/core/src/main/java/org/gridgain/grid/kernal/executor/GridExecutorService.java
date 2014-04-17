@@ -68,7 +68,6 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Projection. */
     private GridProjection prj;
 
@@ -552,7 +551,6 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
     private class TaskTerminateListener<T> implements GridInClosure<GridFuture<T>> {
         /** */
         private static final long serialVersionUID = 0L;
-
 
         /** {@inheritDoc} */
         @Override public void apply(GridFuture<T> taskFut) {

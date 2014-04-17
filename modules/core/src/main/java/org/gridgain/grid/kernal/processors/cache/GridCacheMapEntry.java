@@ -77,7 +77,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Logger. */
     protected static volatile GridLogger log;
 

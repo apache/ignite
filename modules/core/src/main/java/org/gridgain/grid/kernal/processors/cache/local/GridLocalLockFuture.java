@@ -34,7 +34,6 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Cache registry. */
     @GridToStringExclude
     private GridCacheContext<K, V> cctx;

@@ -27,7 +27,6 @@ public class GridFinishedFuture<T> implements GridFuture<T>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Complete value. */
     private T t;
 

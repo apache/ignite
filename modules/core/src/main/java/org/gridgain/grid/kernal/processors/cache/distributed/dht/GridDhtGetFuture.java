@@ -35,7 +35,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Message ID. */
     private long msgId;
 

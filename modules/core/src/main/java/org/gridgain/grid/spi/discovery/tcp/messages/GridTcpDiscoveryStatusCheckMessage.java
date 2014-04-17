@@ -32,7 +32,6 @@ public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstract
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Creator node. */
     private GridTcpDiscoveryNode creatorNode;
 

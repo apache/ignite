@@ -32,7 +32,6 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** Trackable flag. */
     private boolean trackable = true;
 

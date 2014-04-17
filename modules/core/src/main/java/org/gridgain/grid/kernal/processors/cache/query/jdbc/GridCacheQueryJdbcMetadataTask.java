@@ -35,7 +35,6 @@ public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<Strin
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** {@inheritDoc} */
     @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
         @Nullable String cacheName) throws GridException {
