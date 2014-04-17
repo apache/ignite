@@ -1079,8 +1079,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
         registerMBean(gridName, this, GridTcpDiscoverySpiMBean.class);
 
-        if (ipFinder instanceof GridTcpDiscoveryMulticastIpFinder)
-            ((GridTcpDiscoveryMulticastIpFinder)ipFinder).localAddress(locAddr);
+        if (ipFinder instanceof GridTcpDiscoveryMulticastIpFinder) {
+            GridTcpDiscoveryMulticastIpFinder mcastIpFinder = ((GridTcpDiscoveryMulticastIpFinder)ipFinder);
+
+            if (mcastIpFinder.getLocalAddress() == null)
+                mcastIpFinder.setLocalAddress(locAddr);
+        }
     }
 
     /** {@inheritDoc} */

@@ -15,6 +15,7 @@ import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -49,6 +50,7 @@ import static org.gridgain.grid.spi.GridPortProtocol.*;
  *      <li>Address response wait time (see {@link #setResponseWaitTime(int)}).</li>
  *      <li>Address request attempts (see {@link #setAddressRequestAttempts(int)}).</li>
  *      <li>Pre-configured addresses (see {@link #setAddresses(Collection)})</li>
+ *      <li>Local address (see {@link #setLocalAddress(String)})</li>
  * </ul>
  */
 public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinder {
@@ -90,7 +92,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
     /** Number of attempts to send multicast address request. */
     private int addrReqAttempts = DFLT_ADDR_REQ_ATTEMPTS;
 
-    /** Local host address (the same as set in GridTcpDiscoverySpi). */
+    /** Local address */
     private String locAddr;
 
     /** */
@@ -190,6 +192,30 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
      */
     public int getAddressRequestAttempts() {
         return addrReqAttempts;
+    }
+
+    /**
+     * Sets local host address multicast IP finder uses. If provided address is non-loopback then multicast
+     * socket is bound to this interface. If local address is not set then IP finder creates multicast sockets
+     * for all found non-loopback addresses.
+     * <p>
+     * If not provided then this property is initialized by the local address set in {@link GridTcpDiscoverySpi}
+     * configuration.
+     *
+     * @param locAddr Local host address.
+     */
+    @GridSpiConfiguration(optional = true)
+    public void setLocalAddress(String locAddr) {
+        this.locAddr = locAddr;
+    }
+
+    /**
+     * Gets local address that multicast IP finder uses.
+     *
+     * @return Local address.
+     */
+    public String getLocalAddress() {
+        return locAddr;
     }
 
     /** {@inheritDoc} */
@@ -485,13 +511,6 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
         }
 
         return true;
-    }
-
-    /**
-     * @param locAddr Local host address.
-     */
-    public void localAddress(String locAddr) {
-        this.locAddr = locAddr;
     }
 
     /**

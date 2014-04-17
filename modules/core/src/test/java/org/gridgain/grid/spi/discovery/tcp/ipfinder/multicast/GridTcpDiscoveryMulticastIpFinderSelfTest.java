@@ -65,9 +65,9 @@ public class GridTcpDiscoveryMulticastIpFinderSelfTest
             injectLogger(ipFinder2);
             injectLogger(ipFinder3);
 
-            ipFinder1.localAddress(locAddr);
-            ipFinder2.localAddress(locAddr);
-            ipFinder3.localAddress(locAddr);
+            ipFinder1.setLocalAddress(locAddr);
+            ipFinder2.setLocalAddress(locAddr);
+            ipFinder3.setLocalAddress(locAddr);
 
             ipFinder1.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host1", 1001)));
             ipFinder2.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host2", 1002)));
