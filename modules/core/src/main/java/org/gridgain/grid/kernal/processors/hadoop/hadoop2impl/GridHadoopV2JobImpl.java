@@ -9,7 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.hadoop2impl;
 
+import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.lib.partition.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
@@ -50,6 +52,11 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
     /** {@inheritDoc} */
     @Override public Collection<GridHadoopFileBlock> input() throws GridException {
         return GridHadoopV2Splitter.splitJob(jobId, jobInfo);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int reducers() {
+        return jobInfo.configuration().getInt(JobContext.NUM_REDUCES, 1);
     }
 
     /** {@inheritDoc} */

@@ -43,4 +43,14 @@ public class GridHadoopDefaultMapReducePlan implements GridHadoopMapReducePlan {
     @Override @Nullable public int[] reducers(UUID nodeId) {
         return reducers.get(nodeId);
     }
+
+    /** {@inheritDoc} */
+    @Override public Collection<UUID> mapperNodeIds() {
+        return mappers.keySet();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<UUID> reducerNodeIds() {
+        return reducers.keySet();
+    }
 }
