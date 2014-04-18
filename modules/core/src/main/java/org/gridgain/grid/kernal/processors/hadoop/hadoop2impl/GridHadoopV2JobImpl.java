@@ -71,4 +71,10 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
     @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopSerialization serialization() throws GridException {
+        // TODO implement.
+        return null;
+    }
 }
