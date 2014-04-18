@@ -10,7 +10,6 @@
 package org.gridgain.grid.util.offheap.unsafe;
 
 import org.gridgain.grid.util.offheap.unsafe.reproducing.*;
-import org.jdk8.backport.*;
 
 import java.util.*;
 
@@ -18,10 +17,6 @@ import java.util.*;
  * Off-heap map based on {@code Unsafe} implementation.
  */
 public class GridUnsafeMap0 {
-
-    /** Partition this map belongs to. */
-    private final int part;
-
     /** Segments. */
     private final Segment seg;
 
@@ -31,21 +26,14 @@ public class GridUnsafeMap0 {
     /** Striped LRU policy. */
     private final GridUnsafeLru lru;
 
-    /** Total entry count. */
-    private final LongAdder totalCnt;
-
     /** LRU poller. */
     private final GridUnsafeLruPoller lruPoller;
 
     @SuppressWarnings("unchecked")
     public GridUnsafeMap0(short lruStripes) throws Exception {
-        part = 0;
-
         mem = new GridUnsafeMemory(10000);
 
         lru = new GridUnsafeLru(lruStripes, mem);
-
-        totalCnt = new LongAdder();
 
         // Find power-of-two sizes best matching arguments
         seg = new Segment<>();
@@ -77,8 +65,80 @@ public class GridUnsafeMap0 {
     }
 
     /** {@inheritDoc} */
-    public boolean put(int hash, byte[] keyBytes, byte[] valBytes) {
-        return seg.put(hash, keyBytes, valBytes);
+    public boolean put(byte[] keyBytes, byte[] valBytes) {
+        boolean isNew = true;
+
+        boolean poll = false;
+
+        int size = 0;
+
+        int relSize = 0;
+        long relAddr = 0;
+
+        try {
+            long first = mem.readLong(binAddr);
+
+            long qAddr = 0;
+
+            if (first != 0) {
+                long prev = 0;
+                long cur = first;
+
+                while (true) {
+                    long next = Entry.nextAddress(cur, mem);
+
+                    // If found match.
+                    if (Entry.keyEquals(cur, keyBytes, mem)) {
+                        if (prev != 0)
+                            Entry.nextAddress(prev, next, mem); // Unlink.
+                        else
+                            first = next;
+
+                        qAddr = Entry.queueAddress(cur, mem);
+
+                        // Prepare release of memory.
+                        relSize = Entry.size(cur, mem);
+                        relAddr = cur;
+
+                        isNew = false;
+
+                        break;
+                    }
+
+                    prev = cur;
+                    cur = next;
+
+                    // If end of linked list.
+                    if (next == 0)
+                        break;
+                }
+            }
+
+            size = Entry.HEADER + keyBytes.length + valBytes.length;
+
+            poll = !mem.reserve(size);
+
+            long addr = mem.allocate(size, false, true);
+
+            mem.writeLong(binAddr, addr);
+
+            if (isNew)
+                qAddr = lru.offer(0, addr, 1);
+
+            lru.touch(qAddr, addr);
+
+            Entry.write(addr, 1, keyBytes, valBytes, qAddr, first, mem);
+
+            return isNew;
+        }
+        finally {
+            // Release memory outside of lock.
+            if (relAddr != 0)
+                mem.release(relAddr, relSize);
+
+            if (poll)
+                lruPoller.lruPoll(size);
+        }
     }
 
     private long binAddr;
@@ -87,12 +147,6 @@ public class GridUnsafeMap0 {
      * Segment.
      */
     private class Segment<K> {
-        /**
-         * Frees space by polling entries from LRU queue.
-         *
-         * @param order Queue stripe order.
-         * @param qAddr Queue address.
-         */
         @SuppressWarnings({"TooBroadScope", "AssertWithSideEffects"})
         private int freeSpace(short order, long qAddr) {
             int relSize = 0;
@@ -136,8 +190,6 @@ public class GridUnsafeMap0 {
 
                             relSize = Entry.size(cur, mem);
                             relAddr = cur;
-
-                            totalCnt.decrement();
                         }
                     }
                 }
@@ -151,92 +203,6 @@ public class GridUnsafeMap0 {
             }
 
             return relSize;
-        }
-
-        /**
-         * @param hash Hash.
-         * @param keyBytes Key bytes.
-         * @param valBytes Value bytes.
-         * @return {@code True} if new entry was created, {@code false} if existing value was updated.
-         */
-        @SuppressWarnings("TooBroadScope")
-        boolean put(int hash, byte[] keyBytes, byte[] valBytes) {
-            boolean isNew = true;
-
-            boolean poll = false;
-
-            int size = 0;
-
-            int relSize = 0;
-            long relAddr = 0;
-
-            try {
-                long first = mem.readLong(binAddr);
-
-                long qAddr = 0;
-
-                if (first != 0) {
-                    long prev = 0;
-                    long cur = first;
-
-                    while (true) {
-                        long next = Entry.nextAddress(cur, mem);
-
-                        // If found match.
-                        if (Entry.keyEquals(cur, keyBytes, mem)) {
-                            if (prev != 0)
-                                Entry.nextAddress(prev, next, mem); // Unlink.
-                            else
-                                first = next;
-
-                            qAddr = Entry.queueAddress(cur, mem);
-
-                            // Prepare release of memory.
-                            relSize = Entry.size(cur, mem);
-                            relAddr = cur;
-
-                            isNew = false;
-
-                            break;
-                        }
-
-                        prev = cur;
-                        cur = next;
-
-                        // If end of linked list.
-                        if (next == 0)
-                            break;
-                    }
-                }
-
-                size = Entry.HEADER + keyBytes.length + valBytes.length;
-
-                poll = !mem.reserve(size);
-
-                long addr = mem.allocate(size, false, true);
-
-                mem.writeLong(binAddr, addr);
-
-                if (isNew) {
-                    totalCnt.increment();
-
-                    qAddr = lru.offer(part, addr, hash);
-                }
-
-                lru.touch(qAddr, addr);
-
-                Entry.write(addr, hash, keyBytes, valBytes, qAddr, first, mem);
-
-                return isNew;
-            }
-            finally {
-                // Release memory outside of lock.
-                if (relAddr != 0)
-                    mem.release(relAddr, relSize);
-
-                if (poll)
-                    lruPoller.lruPoll(size);
-            }
         }
     }
 

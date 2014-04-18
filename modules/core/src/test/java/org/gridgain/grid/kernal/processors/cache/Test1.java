@@ -34,7 +34,7 @@ public class Test1 extends GridCommonAbstractTest {
             Long key = rnd.nextLong();
             byte[] keyBytes = marsh.marshal(key);
 
-            map.put(1, keyBytes, val);
+            map.put(keyBytes, val);
         }
     }
 }
