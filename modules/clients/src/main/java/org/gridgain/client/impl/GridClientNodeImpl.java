@@ -17,6 +17,8 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+
 /**
  * Client node implementation.
  */
@@ -213,6 +215,19 @@ public class GridClientNodeImpl implements GridClientNode {
             return addrs0;
 
         addrs0 = U.toSocketAddresses(addrs, hostNames, port);
+
+        boolean onDifferentHost = !attributes().isEmpty() &&
+            !F.containsAny(U.allLocalMACs(), attribute(ATTR_MACS).toString().split(", "));
+
+        if (onDifferentHost) {
+            Collection<InetSocketAddress> reachableEndpoints = new ArrayList<>(addrs0.size());
+
+            for (InetSocketAddress endpoint : addrs0)
+                if (!endpoint.getAddress().isLoopbackAddress())
+                    reachableEndpoints.add(endpoint);
+
+            addrs0 = U.sealList(reachableEndpoints);
+        }
 
         if (!addrsCache.compareAndSet(null, addrs0))
             return addrsCache.get();
