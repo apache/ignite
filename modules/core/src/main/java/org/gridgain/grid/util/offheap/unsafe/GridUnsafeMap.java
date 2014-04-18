@@ -14,8 +14,8 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.*;
+import org.gridgain.grid.util.offheap.unsafe.reproducing.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -116,6 +116,8 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     /** Total memory. */
     private final GridUnsafeMemory mem;
 
+    private final UnsafeWrapper mem0;
+
     /**
      * Mask value for indexing into segments. The upper bits of a
      * key's hash code are used to choose the segment.
@@ -158,6 +160,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
         part = 0;
 
         mem = new GridUnsafeMemory(totalMem);
+        mem0 = new UnsafeWrapper();
 
         lru = totalMem > 0 ? new GridUnsafeLru(lruStripes, mem) : null;
 
@@ -229,6 +232,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
         this.load = load;
         this.totalCnt = totalCnt;
         this.mem = mem;
+        this.mem0 = new UnsafeWrapper();
         this.lru = lru;
         this.lruPoller = lruPoller;
 
@@ -898,7 +902,10 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
 
                                 // TODO: Old code (fails).
                                 keyBytes = Entry.readKeyBytes(cur, mem);
-                                valBytes = Entry.readValueBytes(cur, mem);
+                                //valBytes = Entry.readValueBytes(cur, mem);
+                                //valBytes = Entry.readValueBytes0(cur);
+                                //valBytes = Caller.faultyMethod(cur);
+                                valBytes = UnsafeWrapper.faultyMethod(cur);
 
                                 // TODO: Old code inlined (doesn't fail).
 //                                int keyLen = Entry.keyLength(cur, mem);
@@ -1325,7 +1332,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     /**
      * Entry structure.
      */
-    private static class Entry {
+    public static class Entry {
         /** Header size. */
         static final int HEADER = 4 /*hash*/ + 4 /*key-size*/  + 4 /*value-size*/ + 8 /*queue-address*/ +
             8 /*next-address*/;
@@ -1476,6 +1483,24 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          */
         static void keyBytes(long ptr, byte[] keyBytes, GridUnsafeMemory mem) {
             mem.writeBytes(ptr + (long)HEADER, keyBytes);
+        }
+
+        static byte[] readValueBytes0(long ptr) {
+//            int keyLen = readKeyLength0(ptr, mem0);
+//            int valLen = valueLength0(ptr, mem0);
+            int keyLen = UnsafeWrapper.readInt(ptr + 4);
+            int valLen = UnsafeWrapper.readInt(ptr + 8);
+
+            //return mem0.readBytes(ptr + HEADER + keyLen, valLen);
+            return UnsafeWrapper.readBytes(ptr + HEADER + keyLen, new byte[valLen]);
+        }
+
+        static int readKeyLength0(long ptr, UnsafeWrapper mem0) {
+            return mem0.readInt(ptr + 4);
+        }
+
+        static int valueLength0(long ptr, UnsafeWrapper mem0) {
+            return mem0.readInt(ptr + 8);
         }
 
         /**

@@ -497,7 +497,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
                 while (!done.get()) {
                     long key = (long)rnd.nextInt(keyCnt);
 
-                    switch (rnd.nextInt(3)) {
+                    switch (rnd.nextInt(1)) {
                         case 0:
                             c.putx(key, new TestValue(rnd.nextInt(valCnt)));
 
