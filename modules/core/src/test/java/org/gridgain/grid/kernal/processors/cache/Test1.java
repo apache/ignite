@@ -19,22 +19,23 @@ import java.util.*;
 
 public class Test1 extends GridCommonAbstractTest {
     public void test() throws Exception {
-        GridUnsafeMap0 map = new GridUnsafeMap0((short)512);
+        GridUnsafeMap0 map = new GridUnsafeMap0();
 
         GridOptimizedMarshaller marsh = new GridOptimizedMarshaller();
 
         Random rnd = new Random();
 
-        byte[] val = new byte[160];
+        byte[] valBytes = new byte[160];
 
         for (int i = 0; i < 160; i++)
-            val[i] = (byte)(114 + i);
+            valBytes[i] = (byte)(114 + i);
 
         for (;;) {
             Long key = rnd.nextLong();
             byte[] keyBytes = marsh.marshal(key);
 
-            map.put(keyBytes, val);
+            //map.put(keyBytes, val);
+            map.put0(keyBytes, valBytes);
         }
     }
 }
