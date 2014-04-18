@@ -298,22 +298,21 @@ public class GridGgfsProcessor extends GridProcessorAdapter {
 
         for (GridGgfsAttributes rmtAttr : rmtAttrs)
             for (GridGgfsAttributes locAttr : locAttrs) {
-
                 // Checking the use of different caches on the different GGFSes.
                 if (!F.eq(rmtAttr.ggfsName(), locAttr.ggfsName())) {
                     if (F.eq(rmtAttr.metaCacheName(), locAttr.metaCacheName()))
-                        throw new GridException("Meta cache names should be different for different GGFSes " +
-                                "configuration [rmtNodeId=" + rmtNode.id() +
-                                ", rmtMetaCacheName=" + rmtAttr.metaCacheName() +
-                                ", locMetaCacheName=" + locAttr.metaCacheName() +
-                                ", ggfsName=" + rmtAttr.ggfsName() + ']');
+                        throw new GridException("Meta cache names should be different for different GGFS instances " +
+                            "configuration [rmtNodeId=" + rmtNode.id() +
+                            ", rmtMetaCacheName=" + rmtAttr.metaCacheName() +
+                            ", locMetaCacheName=" + locAttr.metaCacheName() +
+                            ", ggfsName=" + rmtAttr.ggfsName() + ']');
 
                     if (F.eq(rmtAttr.dataCacheName(), locAttr.dataCacheName()))
-                        throw new GridException("Data cache names should be different for different GGFSes " +
-                                "configuration [rmtNodeId=" + rmtNode.id() +
-                                ", rmtDataCacheName=" + rmtAttr.dataCacheName() +
-                                ", locDataCacheName=" + locAttr.dataCacheName() +
-                                ", ggfsName=" + rmtAttr.ggfsName() + ']');
+                        throw new GridException("Data cache names should be different for different GGFS instances " +
+                            "configuration [rmtNodeId=" + rmtNode.id() +
+                            ", rmtDataCacheName=" + rmtAttr.dataCacheName() +
+                            ", locDataCacheName=" + locAttr.dataCacheName() +
+                            ", ggfsName=" + rmtAttr.ggfsName() + ']');
 
                     continue;
                 }

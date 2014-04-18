@@ -332,9 +332,9 @@ public class GridGgfsProcessorValidationSelfTest extends GridCommonAbstractTest 
         g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
 
         G.start(g1Cfg);
-        checkGridStartFails(g2Cfg, "Meta cache names should be different for different GGFSes", false);
-    }
 
+        checkGridStartFails(g2Cfg, "Meta cache names should be different for different GGFS instances", false);
+    }
 
     /**
      * @throws Exception If failed.
