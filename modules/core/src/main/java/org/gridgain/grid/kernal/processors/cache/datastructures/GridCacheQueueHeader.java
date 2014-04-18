@@ -24,6 +24,9 @@ import java.util.*;
  */
 public class GridCacheQueueHeader implements GridCacheInternal, Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private GridUuid id;
 
     /** */

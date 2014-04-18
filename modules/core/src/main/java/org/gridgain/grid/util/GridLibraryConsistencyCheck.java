@@ -11,7 +11,10 @@ package org.gridgain.grid.util;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.security.*;
@@ -54,31 +57,21 @@ public class GridLibraryConsistencyCheck {
         "org.eclipse.jetty.server.NetworkConnector",                      // jetty-server-XXX.jar
         "org.eclipse.jetty.util.MultiException",                          // jetty-util-XXX.jar
         "org.eclipse.jetty.xml.XmlConfiguration",                         // jetty-xml-XXX.jar
-        "com.jidesoft.chart.model.Chartable",                             // jide-charts-XXX.jar
-        "com.jidesoft.swing.JideScrollPane",                              // jide-common-XXX.jar
-        "com.jidesoft.status.StatusBarItem",                              // jide-components-XXX.jar
-        "com.jidesoft.grid.SortEvent",                                    // jide-grids-XXX.jar
         "org.fife.ui.rsyntaxtextarea.RSyntaxTextArea",                    // rsyntaxtextarea-XXX.jar
         "org.fife.ui.autocomplete.DefaultCompletionProvider",             // autocomplete-XXX.jar
         "com.jcraft.jsch.JSch",                                           // jsch-XXX.jar
         "net.sf.json.JSONSerializer",                                     // json-lib-XXX.jar
         "org.w3c.tidy.Tidy",                                              // jtidy-r938.jar
-        "org.mozilla.universalchardet.UniversalDetector",                 // juniversalchardet-XXX.jar
         "org.apache.log4j.RollingFileAppender",                           // log4j-XXX.jar
         "org.apache.lucene.store.IndexOutput",                            // lucene-core-XXX.jar
         "javax.mail.internet.MimeMessage",                                // mail-XXX.jar
-        "net.miginfocom.layout.LayoutCallback",                           // miglayout-core-XXX.jar
-        "net.miginfocom.swing.MigLayout",                                 // miglayout-swing-XXX.jar
-        "com.mongodb.DBCollection",                                       // mongo-java-driver-XXX.jar
         "io.netty.channel.Channel",                                       // netty-all-XXX.jar
         "com.google.protobuf.ByteString",                                 // protobuf-java-XXX.jar
         "org.slf4j.LoggerFactory",                                        // slf4j-api-XXX.jar
         "org.springframework.aop.support.DefaultPointcutAdvisor",         // spring-aop-XXX.jar
         "org.springframework.beans.factory.ListableBeanFactory",          // spring-beans-XXX.jar
         "org.springframework.context.ApplicationContext",                 // spring-context-XXX.jar
-        "org.springframework.core.io.UrlResource",                        // spring-core-XXX.jar
-        "org.apache.tika.io.TikaInputStream",                             // tika-core-XXX.jar
-        "org.apache.tika.parser.txt.UniversalEncodingDetector"            // tika-parsers-1.3.jar
+        "org.springframework.core.io.UrlResource"                         // spring-core-XXX.jar
     };
 
     /** */
@@ -138,19 +131,26 @@ public class GridLibraryConsistencyCheck {
     }
 
     /**
+     * @param log Grid logger.
      * @param libs1 First list with lib names.
      * @param libs2 Second list with lib names.
      * @return Tuple list with lib names which differ, empty if libs are equal or the check is disabled.
      * @throws GridException If libraries do not match.
      */
-    public static List<GridBiTuple<String, String>> check(List<String> libs1, List<String> libs2) throws GridException {
+    public static List<GridBiTuple<String, String>> check(GridLogger log, List<String> libs1,
+        List<String> libs2) throws GridException {
+        assert log != null;
+
         // The check is disabled on the local or remote nodes.
         if (F.isEmpty(libs1) || F.isEmpty(libs2) || !checkEnabled())
             return Collections.emptyList();
 
         // Must not happen.
-        if (libs1.size() != libs2.size() || libs1.size() != CLASS_LIST.length)
-            throw new GridException("GridGain dependency libraries do not match (is GridGain version the same?)");
+        if (libs1.size() != libs2.size() || libs1.size() != CLASS_LIST.length) {
+            U.warn(log, "GridGain dependency libraries do not match (is GridGain version the same?).");
+
+            return null;
+        }
 
         List<GridBiTuple<String, String>> res = new ArrayList<>();
 

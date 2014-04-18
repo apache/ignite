@@ -29,6 +29,9 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
  * Cache atomic reference implementation.
  */
 public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicReferenceEx<T>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Deserialization stash. */
     private static final ThreadLocal<GridBiTuple<GridCacheContext, String>> stash =
         new ThreadLocal<GridBiTuple<GridCacheContext, String>>() {

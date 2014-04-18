@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
@@ -34,6 +35,12 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
  * Near cache for atomic cache.
  */
 public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final GridProductVersion SINCE_VER = GridProductVersion.fromString("6.0.3");
+
     /** */
     private GridDhtCacheAdapter<K, V> dht;
 

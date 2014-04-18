@@ -997,7 +997,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
     /** {@inheritDoc} */
     @Override public long getSentBytesCount() {
-        return sentBytesCnt.intValue();
+        return sentBytesCnt.longValue();
     }
 
     /** {@inheritDoc} */
@@ -1007,7 +1007,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
     /** {@inheritDoc} */
     @Override public long getReceivedBytesCount() {
-        return rcvdBytesCnt.intValue();
+        return rcvdBytesCnt.longValue();
     }
 
     /** {@inheritDoc} */
@@ -1935,6 +1935,9 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
     /** Internal exception class for proper timeout handling. */
     private static class HandshakeTimeoutException extends GridException {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          * @param msg Message.
          */
@@ -2320,6 +2323,9 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
      */
     private class HandshakeClosure extends GridInClosure2X<InputStream, OutputStream> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final UUID rmtNodeId;
 
         /**
@@ -2385,6 +2391,9 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
      */
     @SuppressWarnings("PublicInnerClass")
     public static class NodeIdMessage extends GridTcpCommunicationMessageAdapter {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private byte[] nodeIdBytes;
 

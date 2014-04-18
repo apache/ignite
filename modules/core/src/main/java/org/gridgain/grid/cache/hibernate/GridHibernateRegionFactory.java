@@ -50,6 +50,9 @@ import static org.hibernate.cache.spi.access.AccessType.*;
  * </pre>
  */
 public class GridHibernateRegionFactory implements RegionFactory {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Hibernate L2 cache grid name property name. */
     public static final String GRID_NAME_PROPERTY = "org.gridgain.hibernate.grid_name";
 

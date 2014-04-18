@@ -605,6 +605,9 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * Item key for collocated queue.
      */
     private static class CollocatedItemKey extends GridCacheQueueItemKey {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          * Required by {@link Externalizable}.
          */
@@ -635,6 +638,9 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     protected static class ClearClosure implements GridClosure<GridCacheQueueHeader,
         GridBiTuple<GridCacheQueueHeader, GridBiTuple<Long, Long>>>,
         Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private GridUuid id;
 
@@ -683,6 +689,9 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      */
     protected static class PollClosure implements
         GridClosure<GridCacheQueueHeader, GridBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private GridUuid id;
 
@@ -753,6 +762,9 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     protected static class AddClosure implements
         GridClosure<GridCacheQueueHeader, GridBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private GridUuid id;
 
         /** */
@@ -813,6 +825,9 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      */
     protected static class RemoveClosure implements
         GridClosure<GridCacheQueueHeader, GridBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private GridUuid id;
 

@@ -20,6 +20,9 @@ import org.gridgain.grid.util.typedef.*;
  * @see CIX2
  */
 public abstract class GridInClosure2X<E1, E2> implements GridBiInClosure<E1, E2> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public void apply(E1 e1, E2 e2) {
         try {

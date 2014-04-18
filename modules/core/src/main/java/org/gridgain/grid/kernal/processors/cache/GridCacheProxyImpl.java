@@ -32,6 +32,9 @@ import java.util.concurrent.*;
  * Cache proxy.
  */
 public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Context. */
     private GridCacheContext<K, V> ctx;
 

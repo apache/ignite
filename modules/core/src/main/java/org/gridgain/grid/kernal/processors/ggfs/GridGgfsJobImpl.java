@@ -23,6 +23,9 @@ import java.io.*;
  * GGFS job implementation.
  */
 public class GridGgfsJobImpl implements GridComputeJob, GridInternalWrapper<GridGgfsJob> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** GGFS job. */
     private GridGgfsJob job;
 

@@ -30,6 +30,9 @@ import static org.gridgain.grid.events.GridEventType.*;
 @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
 public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private static final int NEAR_SIZE_OVERHEAD = 36;
 
     /** ID of primary node from which this entry was last read. */

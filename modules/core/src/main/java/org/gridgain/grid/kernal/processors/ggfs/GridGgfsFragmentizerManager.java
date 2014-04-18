@@ -540,18 +540,20 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
          * @throws InterruptedException If waiting was interrupted.
          */
         private void syncStart() throws InterruptedException {
-            startSync = new GridConcurrentHashSet<>(F.viewReadOnly(ggfsCtx.kernalContext().discovery().allNodes(),
-                F.node2id(),
-                new P1<GridNode>() {
-                    @Override public boolean apply(GridNode n) {
-                        return ggfsCtx.ggfsNode(n);
-                    }
-                }));
+            Collection<UUID> startSync0 = startSync = new GridConcurrentHashSet<>(
+                F.viewReadOnly(
+                    ggfsCtx.kernalContext().discovery().allNodes(),
+                    F.node2id(),
+                    new P1<GridNode>() {
+                        @Override public boolean apply(GridNode n) {
+                            return ggfsCtx.ggfsNode(n);
+                        }
+                    }));
 
             GridNode locNode = ggfsCtx.kernalContext().grid().localNode();
 
-            while (!startSync.isEmpty()) {
-                for (UUID nodeId : startSync) {
+            while (!startSync0.isEmpty()) {
+                for (UUID nodeId : startSync0) {
                     GridGgfsSyncMessage syncReq = new GridGgfsSyncMessage(locNode.order(), false);
 
                     try {
@@ -563,7 +565,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
 
                         // Close window between message sending and discovery event.
                         if (!ggfsCtx.kernalContext().discovery().alive(nodeId))
-                            startSync.remove(nodeId);
+                            startSync0.remove(nodeId);
                     }
                     catch (GridException e) {
                         if (e.hasCause(GridTopologyException.class)) {
@@ -572,17 +574,17 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                                     nodeId);
                         }
                         else
-                            log.error("Failed to send synchronize message to remote node (will not wait for reply): " +
+                            U.error(log, "Failed to send synchronize message to remote node (will not wait for reply): " +
                                 nodeId, e);
 
-                        startSync.remove(nodeId);
+                        startSync0.remove(nodeId);
                     }
                 }
 
                 lock.lock();
 
                 try {
-                    if (!startSync.isEmpty())
+                    if (!startSync0.isEmpty())
                         cond.await(10000, MILLISECONDS);
                 }
                 finally {
@@ -701,12 +703,14 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
 
                 try {
                     if (!msgs.offer(tup, MSG_OFFER_TIMEOUT, TimeUnit.MILLISECONDS)) {
-                        log.error("Failed to process fragmentizer communication message (will discard) " +
+                        U.error(log, "Failed to process fragmentizer communication message (will discard) " +
                             "[nodeId=" + nodeId + ", msg=" + msg + ']');
                     }
                 }
                 catch (InterruptedException ignored) {
-                    log.error("Failed to process fragmentizer communication message (thread was interrupted) "+
+                    Thread.currentThread().interrupt();
+
+                    U.warn(log, "Failed to process fragmentizer communication message (thread was interrupted) "+
                         "[nodeId=" + nodeId + ", msg=" + msg + ']');
                 }
             }
@@ -741,7 +745,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                                         "[req=" + req + ", err=" + e.getMessage() + ']');
                             }
                             else
-                                log.error("Failed to process fragmentizer request [nodeId=" + nodeId +
+                                U.error(log, "Failed to process fragmentizer request [nodeId=" + nodeId +
                                     ", req=" + req + ']', e);
                         }
                         finally {
@@ -787,7 +791,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                             "(originating node left the grid): " + nodeId);
                 }
                 else
-                    log.error("Failed to send sync response to GGFS fragmentizer coordinator: " + nodeId, e);
+                    U.error(log, "Failed to send sync response to GGFS fragmentizer coordinator: " + nodeId, e);
             }
         }
     }
@@ -796,6 +800,9 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
      * Hash set that overrides equals to use identity comparison.
      */
     private static class IdentityHashSet extends GridConcurrentHashSet<UUID> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          * Constructor.
          *

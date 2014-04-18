@@ -1100,6 +1100,9 @@ public class GridDhtPartitionDemandPool<K, V> {
      * Partition to node assignments.
      */
     private class Assignments extends ConcurrentHashMap<GridNode, GridDhtPartitionDemandMessage<K, V>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Exchange future. */
         @GridToStringExclude
         private final GridDhtPartitionsExchangeFuture<K, V> exchFut;
@@ -1340,6 +1343,9 @@ public class GridDhtPartitionDemandPool<K, V> {
      *
      */
     private class SyncFuture extends GridFutureAdapter<Object> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Remaining workers. */
         private Collection<DemandWorker> remaining;
 

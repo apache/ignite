@@ -33,6 +33,9 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
  * Cache sequence implementation.
  */
 public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenceEx, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** De-serialization stash. */
     private static final ThreadLocal<GridBiTuple<GridCacheContext, String>> stash =
         new ThreadLocal<GridBiTuple<GridCacheContext, String>>() {

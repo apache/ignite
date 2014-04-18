@@ -18,4 +18,7 @@ import org.gridgain.grid.util.lang.*;
  * @see GridFunc
  * @see GridAbsClosure
  */
-public abstract class CA extends GridAbsClosure { /* No-op. */ }
+public abstract class CA extends GridAbsClosure {
+    /** */
+    private static final long serialVersionUID = 0L;
+ /* No-op. */ }

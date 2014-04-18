@@ -31,6 +31,9 @@ import java.util.*;
  */
 public class GridBoundedLinkedHashSet<E> extends GridSerializableSet<E> implements Cloneable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private static final Object FAKE = Boolean.TRUE;
 
     /** */

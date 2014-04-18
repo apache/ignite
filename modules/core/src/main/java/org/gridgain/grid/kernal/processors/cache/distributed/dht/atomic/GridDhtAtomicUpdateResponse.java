@@ -25,6 +25,9 @@ import java.util.*;
  * DHT atomic cache backup update response.
  */
 public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
@@ -53,6 +56,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
     /** Evicted reader key bytes. */
     @GridDirectCollection(byte[].class)
+    @GridDirectVersion(1)
     private Collection<byte[]> nearEvictedBytes;
 
     /**
