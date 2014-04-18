@@ -12,7 +12,7 @@ package org.gridgain.grid.util.offheap.unsafe;
 /**
  * Polls LRU.
  */
-interface GridUnsafeLruPoller {
+public interface GridUnsafeLruPoller {
     /**
      * Frees space from LRU queue.
      *

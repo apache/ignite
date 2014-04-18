@@ -87,15 +87,12 @@ public class Test0 extends GridCommonAbstractTest {
 
         final Grid g = grid(0);
 
-        final GridCache<Long, TestValue> c = g.cache(null);
+        final GridCache<Integer, TestValue> c = g.cache(null);
 
         Random rnd = new Random();
 
-        for (;;) {
-            long key = (long)rnd.nextInt(keyCnt);
-
-            c.putx(key, new TestValue(rnd.nextInt(valCnt)));
-        }
+        for (;;)
+            c.putx(rnd.nextInt(keyCnt), new TestValue(rnd.nextInt(valCnt)));
     }
 
     /**

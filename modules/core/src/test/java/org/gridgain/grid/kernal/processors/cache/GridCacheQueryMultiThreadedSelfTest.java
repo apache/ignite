@@ -502,34 +502,6 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
                             c.putx(key, new TestValue(rnd.nextInt(valCnt)));
 
                             break;
-                        case 1:
-                            c.remove(key);
-
-                            break;
-                        case 2:
-                            c.get(key);
-
-                            break;
-                        case 3:
-//                            GridCacheQuery<Map.Entry<Integer, TestValue>> qry = c.queries().createSqlQuery(
-//                                Long.class, "TestValue.val between ? and ?");
-//
-//                            int from = rnd.nextInt(valCnt);
-//
-//                            GridCacheQueryFuture<Map.Entry<Integer, TestValue>> f = qry.execute(from, from + 250);
-//
-//                            Collection<Map.Entry<Integer, TestValue>> res = f.get();
-//
-//                            for (Map.Entry<Integer, TestValue> ignored : res) {
-//                                //No-op.
-//                            }
-
-                            break;
-                        case 4:
-                            if (evictsEnabled())
-                                c.evict(key);
-
-                            break;
                     }
                 }
             }
