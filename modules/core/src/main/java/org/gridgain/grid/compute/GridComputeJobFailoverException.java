@@ -25,7 +25,6 @@ public class GridComputeJobFailoverException extends GridRuntimeException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates new exception with given error message.
      *

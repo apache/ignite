@@ -63,6 +63,9 @@ import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.
  */
 public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter implements GridCache<K, V>,
     GridCacheProjectionEx<K, V>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** clearAll() split threshold. */
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
@@ -73,9 +76,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             return F.t2();
         }
     };
-    /** */
-    private static final long serialVersionUID = 0L;
-
 
     /** */
     private boolean keyCheck = true;

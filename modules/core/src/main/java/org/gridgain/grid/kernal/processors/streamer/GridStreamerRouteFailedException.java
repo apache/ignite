@@ -19,7 +19,6 @@ public class GridStreamerRouteFailedException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * @param msg Error message.
      */

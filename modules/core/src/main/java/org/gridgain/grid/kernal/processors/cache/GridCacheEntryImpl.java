@@ -31,11 +31,11 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
  * Entry wrapper that never obscures obsolete entries from user.
  */
 public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externalizable {
-    /** Collection of one peek mode to avoid collection creation. */
-    public static final List<GridCachePeekMode> MODES_SMART = F.asList(SMART);
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Collection of one peek mode to avoid collection creation. */
+    public static final List<GridCachePeekMode> MODES_SMART = F.asList(SMART);
 
     /** Cache context. */
     protected GridCacheContext<K, V> ctx;

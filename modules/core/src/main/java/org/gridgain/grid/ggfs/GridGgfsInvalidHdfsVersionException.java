@@ -17,7 +17,6 @@ public class GridGgfsInvalidHdfsVersionException extends GridGgfsException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * @param msg Error message.
      */

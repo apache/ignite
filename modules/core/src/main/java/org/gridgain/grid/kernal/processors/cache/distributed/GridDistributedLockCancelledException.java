@@ -16,7 +16,6 @@ public class GridDistributedLockCancelledException extends Exception {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      *
      */

@@ -16,7 +16,6 @@ public class GridCacheEntryRedeployException extends Exception {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates exception with error message.
      *

@@ -19,7 +19,6 @@ public class GridGgfsException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates an instance of GGFS exception with descriptive error message.
      *

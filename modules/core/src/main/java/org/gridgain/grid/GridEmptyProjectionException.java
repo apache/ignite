@@ -19,7 +19,6 @@ public class GridEmptyProjectionException extends GridTopologyException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates new exception with default error message.
      */
