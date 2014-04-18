@@ -154,24 +154,19 @@ public class GridProductImpl implements GridProduct {
             case "dev":
                 return PLATFORM;
 
-            case "datagrid-ent":
-            case "datagrid-os":
+            case "datagrid":
                 return DATA_GRID;
 
-            case "hadoop-ent":
-            case "hadoop-os":
+            case "hadoop":
                 return HADOOP;
 
-            case "streaming-ent":
-            case "streaming-os":
+            case "streaming":
                 return STREAMING;
 
-            case "mongo-ent":
-            case "mongo-os":
+            case "mongo":
                 return MONGO;
 
-            case "platform-ent":
-            case "platform-os":
+            case "platform":
                 return PLATFORM;
         }
 
