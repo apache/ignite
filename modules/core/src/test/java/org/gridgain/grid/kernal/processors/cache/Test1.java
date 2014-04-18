@@ -25,7 +25,7 @@ public class Test1 extends GridCommonAbstractTest {
             }
         };
 
-        GridUnsafeMap map = new GridUnsafeMap(4, 0.75f, 1, 10000, (short)512, evictLsnr);
+        GridUnsafeMap0 map = new GridUnsafeMap0(4, 0.75f, 1, 10000, (short)512, evictLsnr);
 
         GridOptimizedMarshaller marsh = new GridOptimizedMarshaller();
 
@@ -40,9 +40,7 @@ public class Test1 extends GridCommonAbstractTest {
             Long key = rnd.nextLong();
             byte[] keyBytes = marsh.marshal(key);
 
-            int keyHash = key.hashCode();
-
-            map.put(keyHash, keyBytes, val);
+            map.put(1, keyBytes, val);
         }
     }
 }
