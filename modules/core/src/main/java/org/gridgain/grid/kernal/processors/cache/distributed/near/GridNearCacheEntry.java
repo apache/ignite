@@ -188,7 +188,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
             this.primaryNodeId = primaryNodeId;
 
-            if (!F.eq(this.dhtVer, dhtVer)) {
+            if (!hasValueUnlocked() || !F.eq(this.dhtVer, dhtVer)) {
                 value(val, valBytes);
 
                 this.ver = ver;

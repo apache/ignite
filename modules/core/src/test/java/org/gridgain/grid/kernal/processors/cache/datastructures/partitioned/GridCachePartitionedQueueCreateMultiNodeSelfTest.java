@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache.datastructures.partitioned;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -23,10 +22,11 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCachePreloadMode.SYNC;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.PESSIMISTIC;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.REPEATABLE_READ;
+import static org.gridgain.grid.cache.GridCachePreloadMode.*;
+import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
+import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -48,7 +48,13 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
         c.setIncludeEventTypes();
         c.setPeerClassLoadingEnabled(false);
 
-        // Default cache configuration.
+        c.setCacheConfiguration(cacheConfiguration());
+
+        return c;
+    }
+
+    /** {@inheritDoc} */
+    protected GridCacheConfiguration cacheConfiguration() {
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
@@ -56,9 +62,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
         cc.setPreloadMode(SYNC);
         cc.setBackups(0);
 
-        c.setCacheConfiguration(cc);
-
-        return c;
+        return cc;
     }
 
     /** {@inheritDoc} */
@@ -68,10 +72,8 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
 
     /**
      * @throws Exception If failed.
-     *
-     * // TODO: GG-7394 - Enable when fixed.
      */
-    public void _testQueueCreation() throws Exception {
+    public void testQueueCreation() throws Exception {
         final AtomicInteger idx = new AtomicInteger();
 
         GridFuture<?> fut = multithreadedAsync(
@@ -116,6 +118,9 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
      * @throws Exception If failed.
      */
     public void testTx() throws Exception {
+        if (cacheConfiguration().getAtomicityMode() != TRANSACTIONAL)
+            return;
+
         int threadCnt = 10;
 
         final AtomicInteger idx = new AtomicInteger();
