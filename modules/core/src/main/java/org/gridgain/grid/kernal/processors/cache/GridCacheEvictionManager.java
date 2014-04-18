@@ -187,10 +187,6 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         if (cfg.getEvictSynchronizedKeyBufferSize() < 0)
             throw new GridException("Configuration parameter 'evictSynchronizedKeyBufferSize' cannot be negative.");
 
-        if (cctx.isReplicated() && cfg.isEvictSynchronized())
-            throw new GridException("Illegal configuration (synchronized evictions are not supported for replicated " +
-                "cache): " + cctx.name());
-
         evictSync = cfg.isEvictSynchronized() && !cctx.isNear() && !cctx.isSwapOrOffheapEnabled();
 
         nearSync = cfg.isEvictNearSynchronized() && isNearEnabled(cctx) && !cctx.isNear();
