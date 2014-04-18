@@ -71,7 +71,8 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
         execFut.get();
 
-        assertEquals(cnt, execCnt.get());
+        // 1 reducer.
+        assertEquals(cnt + 1, execCnt.get());
     }
 
     /**

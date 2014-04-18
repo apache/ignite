@@ -89,6 +89,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             meta.mapReducePlan(mrPlan);
 
             meta.pendingBlocks(allBlocks(mrPlan));
+            meta.pendingReducers(allReducers(job));
 
             GridFutureAdapter<GridHadoopJobId> completeFut = new GridFutureAdapter<>();
 
@@ -167,6 +168,21 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         for (UUID nodeId : plan.mapperNodeIds())
             res.addAll(plan.mappers(nodeId));
+
+        return res;
+    }
+
+    /**
+     * Gets all reducers for this job.
+     *
+     * @param job Job to get reducers for.
+     * @return Collection of reducers.
+     */
+    private Collection<Integer> allReducers(GridHadoopJob job) {
+        Collection<Integer> res = new HashSet<>();
+
+        for (int i = 0; i < job.reducers(); i++)
+            res.add(i);
 
         return res;
     }
