@@ -15,4 +15,5 @@ import org.gridgain.grid.kernal.processors.cache.datastructures.*;
  * Set failover tests.
  */
 public class GridCachePartitionedSetFailoverSelfTest extends GridCacheSetFailoverAbstractSelfTest {
+    // No-op.
 }

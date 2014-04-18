@@ -84,7 +84,7 @@ public class GridSetQueryPredicate<K, V> implements GridBiPredicate<K, V>, Exter
      */
     private boolean filterKeys() {
         return !collocated && !(ctx.isLocal() || ctx.isReplicated()) &&
-                (ctx.config().getBackups() > 0 || CU.isNearEnabled(ctx));
+            (ctx.config().getBackups() > 0 || CU.isNearEnabled(ctx));
     }
 
     /** {@inheritDoc} */
@@ -97,5 +97,10 @@ public class GridSetQueryPredicate<K, V> implements GridBiPredicate<K, V>, Exter
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         setId = U.readGridUuid(in);
         collocated = in.readBoolean();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridSetQueryPredicate.class, this);
     }
 }

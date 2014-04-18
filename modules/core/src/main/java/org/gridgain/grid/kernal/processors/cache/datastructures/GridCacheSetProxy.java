@@ -408,6 +408,7 @@ public class GridCacheSetProxy<T> implements GridCacheSet<T> {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public GridCloseableIterator<T> iteratorEx() {
         enterBusy();
 

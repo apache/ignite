@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
+import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.*;
@@ -1129,7 +1130,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 return;
 
             GridConcurrentHashSet<GridCacheSetItemKey> old = setDataMap.putIfAbsent(key.setId(),
-                    set = new GridConcurrentHashSet<>());
+                set = new GridConcurrentHashSet<>());
 
             if (old != null)
                 set = old;
@@ -1175,7 +1176,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
         if (set == null) {
             GridCacheSetProxy<T> old = setsMap.putIfAbsent(hdr.id(),
-                    set = new GridCacheSetProxy<>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr)));
+                set = new GridCacheSetProxy<>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr)));
 
             if (old != null)
                 set = old;
@@ -1213,7 +1214,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 cctx.closures().callAsyncNoFailover(BROADCAST, new BlockSetCallable(cctx.name(), hdr.id()), nodes,
                     true).get();
 
-                 cctx.closures().callAsyncNoFailover(BROADCAST, new RemoveSetCallable(cctx.name(), hdr.id(), topVer),
+                cctx.closures().callAsyncNoFailover(BROADCAST, new RemoveSetCallable(cctx.name(), hdr.id(), topVer),
                     nodes, true).get();
             }
             finally {
@@ -1284,7 +1285,6 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         setDataMap.remove(setId);
     }
 
-
     /**
      * Tries to cast the object to expected type.
      *
@@ -1345,6 +1345,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     /**
      * Waits for completion of all started set operations and blocks all subsequent operations.
      */
+    @GridInternal
     private static class BlockSetCallable implements Callable<Void>, Externalizable {
         /** Injected grid instance. */
         @GridInstanceResource
@@ -1404,6 +1405,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     /**
      * Removes set items.
      */
+    @GridInternal
     private static class RemoveSetCallable implements Callable<Void>, Externalizable {
         /** Injected grid instance. */
         @GridInstanceResource

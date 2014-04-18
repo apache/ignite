@@ -471,7 +471,13 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         return collocated ? new CollocatedItemKey(name, id, item) : new GridCacheSetItemKey(id, item);
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridCacheSetImpl.class, this);
+    }
+
     /**
+     *
      */
     private class SetIterator<T> extends GridCloseableIteratorAdapter<T> {
         /** Query future. */
@@ -544,6 +550,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     }
 
     /**
+     *
      */
     private static class SumReducer implements GridReducer<Object, Integer>, Externalizable {
         /** */
@@ -625,10 +632,5 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
 
             setName = U.readString(in);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridCacheSetImpl.class, this);
     }
 }
