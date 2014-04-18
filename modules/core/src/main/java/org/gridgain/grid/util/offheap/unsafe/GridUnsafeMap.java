@@ -15,6 +15,7 @@ import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -908,7 +909,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
 
                                 // TODO GG-8123: Dump on error.
                                 if (valBytes[0] != 114) {
-                                    System.out.println("PROBLEM: " + ctr.get());
+                                    System.out.println("PROBLEM: " + ctr.get() + " " + cur + Arrays.toString(valBytes));
 
                                     keyBytes = Entry.readKeyBytes(cur, mem);
                                     valBytes = Entry.readValueBytes(cur, mem);
@@ -1483,6 +1484,9 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @return Value bytes.
          */
         static byte[] readValueBytes(long ptr, GridUnsafeMemory mem) {
+//            if (ptr == 0)
+//                U.dumpStack("FAULTY POINTER");
+
             int keyLen = readKeyLength(ptr, mem);
             int valLen = valueLength(ptr, mem);
 
