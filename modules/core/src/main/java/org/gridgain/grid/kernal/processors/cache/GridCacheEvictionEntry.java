@@ -31,11 +31,11 @@ import static org.gridgain.grid.cache.GridCachePeekMode.*;
  * Entry wrapper that never obscures obsolete entries from user.
  */
 public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Externalizable {
-    /** Static logger to avoid re-creation. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Static logger to avoid re-creation. */
+    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
     protected static volatile GridLogger log;

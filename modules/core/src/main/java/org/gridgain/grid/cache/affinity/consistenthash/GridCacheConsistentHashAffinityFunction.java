@@ -46,6 +46,9 @@ import java.util.concurrent.atomic.*;
  * </ul>
  */
 public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinityFunction {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Flag to enable/disable consistency check (for internal use only). */
     private static final boolean AFFINITY_CONSISTENCY_CHECK = Boolean.getBoolean("GRIDGAIN_AFFINITY_CONSISTENCY_CHECK");
 
@@ -60,9 +63,6 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      * Default value is {@code gg:affinity:node:replicas}.
      */
     public static final String DFLT_REPLICA_COUNT_ATTR_NAME = "gg:affinity:node:replicas";
-    /** */
-    private static final long serialVersionUID = 0L;
-
 
     /** Node hash. */
     private transient GridConsistentHash<NodeInfo> nodeHash;

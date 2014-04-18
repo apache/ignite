@@ -16,7 +16,6 @@ public class GridCacheLockTimeoutException extends Exception {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * @param ver Lock version.
      */

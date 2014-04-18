@@ -1235,7 +1235,6 @@ public class GridLeanMap<K, V> extends GridSerializableMap<K, V> implements Clon
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /**
          * @param initCap Capacity.
          * @param loadFactor Load factor.

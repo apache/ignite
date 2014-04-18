@@ -20,7 +20,6 @@ public abstract class GridIteratorAdapter<T> implements GridIterator<T> {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** {@inheritDoc} */
     @SuppressWarnings("IteratorNextCanNotThrowNoSuchElementException")
     @Override public final T next() {

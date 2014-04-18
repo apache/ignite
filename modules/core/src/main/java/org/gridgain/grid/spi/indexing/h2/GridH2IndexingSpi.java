@@ -2041,7 +2041,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /**
          * @param rs Result set.
          * @param stmt Statement to close at the end (if provided).
@@ -2086,7 +2085,6 @@ public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi
     private class KeyValIterator<K, V> extends GridH2ResultSetIterator<GridIndexingKeyValueRow<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
-
 
         /**
          * @param rs   Result set.

@@ -20,7 +20,6 @@ public class GridCacheIndexUpdateException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * @param cause Exception cause.
      */

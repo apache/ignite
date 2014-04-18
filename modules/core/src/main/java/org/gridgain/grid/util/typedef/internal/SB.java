@@ -20,7 +20,6 @@ public class SB extends GridStringBuilder {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * @see GridStringBuilder#GridStringBuilder()
      */

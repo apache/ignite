@@ -23,7 +23,6 @@ public abstract class GridPredicateX<E1> implements GridPredicate<E1> {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** {@inheritDoc} */
     @Override public boolean apply(E1 e) {
         try {

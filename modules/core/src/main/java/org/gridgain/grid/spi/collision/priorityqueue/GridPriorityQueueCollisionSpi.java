@@ -572,7 +572,6 @@ public class GridPriorityQueueCollisionSpi extends GridSpiAdapter implements Gri
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /** {@inheritDoc} */
         @Override public int compare(GridCollisionJobContextWrapper o1, GridCollisionJobContextWrapper o2) {
             int p1 = getJobPriority(o1.getContext());

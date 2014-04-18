@@ -20,7 +20,6 @@ public class GridPair<T> extends GridBiTuple<T, T> {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */
