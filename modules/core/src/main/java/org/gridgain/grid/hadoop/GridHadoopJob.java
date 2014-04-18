@@ -14,7 +14,7 @@ import org.gridgain.grid.*;
 import java.util.*;
 
 /**
- * TODO write doc
+ * Hadoop job.
  */
 public interface GridHadoopJob {
     /**
@@ -51,6 +51,14 @@ public interface GridHadoopJob {
      * @return Partitioner.
      */
     public GridHadoopPartitioner partitioner() throws GridException;
+
+    /**
+     * Gets mapper output serialization.
+     *
+     * @return Serialization facility.
+     * @throws GridException if failed.
+     */
+    public GridHadoopSerialization serialization() throws GridException;
 
     /**
      * Creates task to be executed.
