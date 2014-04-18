@@ -23,7 +23,6 @@ public class GridAtomicInteger extends AtomicInteger {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates a new AtomicInteger with initial value {@code 0}.
      */

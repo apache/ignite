@@ -35,7 +35,6 @@ public class GridifyJobAdapter extends GridComputeJobAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Initializes job with argument.
      *

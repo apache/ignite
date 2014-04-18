@@ -37,7 +37,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Empty constructor required for {@link Externalizable}
      */

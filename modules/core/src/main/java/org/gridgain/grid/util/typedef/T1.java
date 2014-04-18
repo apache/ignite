@@ -25,7 +25,6 @@ public class T1<V> extends GridTuple<V> {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */

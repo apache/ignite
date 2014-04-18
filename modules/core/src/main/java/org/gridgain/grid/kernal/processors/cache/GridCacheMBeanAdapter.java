@@ -63,6 +63,16 @@ class GridCacheMBeanAdapter implements GridCacheMBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getOffHeapEntriesCount() {
+        return cctx.cache().offHeapEntriesCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapAllocatedSize() {
+        return cctx.cache().offHeapAllocatedSize();
+    }
+
+    /** {@inheritDoc} */
     @Override public int getSize() {
         return cctx.cache().size();
     }

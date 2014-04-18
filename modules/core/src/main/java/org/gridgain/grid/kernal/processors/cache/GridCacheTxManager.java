@@ -1989,7 +1989,6 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /**
          * @param initVal Initial value.
          */

@@ -1690,7 +1690,6 @@ public class GridDrSenderHubFsStore implements GridDrSenderHubStore, GridLifecyc
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /**
          *
          */

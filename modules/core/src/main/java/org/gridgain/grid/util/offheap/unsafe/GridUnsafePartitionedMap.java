@@ -55,6 +55,9 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
 
     /**
      * @param parts Partitions.
+     * @param concurrency Concurrency.
+     * @param load Load factor.
+     * @param initCap Initial capacity.
      * @param totalMem Total memory.
      * @param lruStripes LRU stripes.
      * @param evictLsnr Eviction callback.
