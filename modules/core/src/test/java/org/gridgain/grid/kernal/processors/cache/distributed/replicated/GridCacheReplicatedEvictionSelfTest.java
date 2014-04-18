@@ -15,6 +15,7 @@ import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.testframework.*;
 
 import java.util.*;
 
@@ -80,12 +81,23 @@ public class GridCacheReplicatedEvictionSelfTest extends GridCacheAbstractSelfTe
         for (GridFuture<GridEvent> fut : futs)
             fut.get(3000);
 
-        Thread.sleep(3000);
+        boolean evicted = GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                for (int g = 0 ; g < gridCount(); g++) {
+                    for (int i = 0; i < KEYS; i++) {
+                        if (cache(g).peek(String.valueOf(i)) != null) {
+                            log.info("Non-null value, will wait [grid=" + g + ", key=" + i + ']');
 
-        for (int g = 0 ; g < gridCount(); g++) {
-            for (int i = 0; i < KEYS; i++)
-                assertNull(cache(g).peek(String.valueOf(i)));
-        }
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+        }, 3000);
+
+        assertTrue(evicted);
     }
 
     /**
