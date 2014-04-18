@@ -15,7 +15,6 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 /**
@@ -56,9 +55,6 @@ public class GridUnsafeMap0<K> {
      */
     private final int segmentShift;
 
-    /** Evict closure. */
-    private GridOffHeapEvictListener evictLsnr;
-
     /** Striped LRU policy. */
     private final GridUnsafeLru lru;
 
@@ -82,9 +78,6 @@ public class GridUnsafeMap0<K> {
         mem = new GridUnsafeMemory(totalMem);
 
         lru = totalMem > 0 ? new GridUnsafeLru(lruStripes, mem) : null;
-
-        if (lru != null)
-            this.evictLsnr = evictLsnr;
 
         totalCnt = new LongAdder();
 
@@ -151,7 +144,7 @@ public class GridUnsafeMap0<K> {
             cap <<= 1;
 
         for (int i = 0; i < size; i++)
-            segs[i] = new Segment<>(i, cap);
+            segs[i] = new Segment<>(cap);
     }
 
     /** {@inheritDoc} */
@@ -182,17 +175,12 @@ public class GridUnsafeMap0<K> {
         return segmentFor(hash).freeSpace(hash, order, qAddr);
     }
 
-    private static final AtomicInteger ctr = new AtomicInteger();
-
     /**
      * Segment.
      */
     private class Segment<K> {
         /** Lock. */
         private final ReadWriteLock lock = new ReentrantReadWriteLock();
-
-        /** Segment index. */
-        private final int idx;
 
         /** Capacity. */
         private volatile long cap;
@@ -210,11 +198,9 @@ public class GridUnsafeMap0<K> {
         private long threshold;
 
         /**
-         * @param idx Segment index.
          * @param cap Capacity.
          */
-        private Segment(int idx, long cap) {
-            this.idx = idx;
+        private Segment(long cap) {
             this.cap = cap;
 
             threshold = (long)(cap * load);
@@ -230,8 +216,6 @@ public class GridUnsafeMap0<K> {
          * @return Bin index.
          */
         long binIndex(int hash, long cap) {
-            assert Long.bitCount(cap) == 1;
-
             return hash & (cap - 1);
         }
 
@@ -342,11 +326,6 @@ public class GridUnsafeMap0<K> {
 
                 // Release allocated memory outside of lock.
                 if (release) {
-                    assert oldTblAddr != tblAddr;
-
-                    assert oldTblAddr != -1;
-                    assert oldMemCap != -1;
-
                     mem.releaseSystem(oldTblAddr, oldMemCap);
                 }
             }
@@ -361,10 +340,6 @@ public class GridUnsafeMap0<K> {
          */
         @SuppressWarnings({"TooBroadScope", "AssertWithSideEffects"})
         private int freeSpace(int hash, short order, long qAddr) {
-            ctr.incrementAndGet();
-
-            assert lru != null;
-
             byte[] keyBytes = null;
             byte[] valBytes = null;
 
@@ -403,21 +378,12 @@ public class GridUnsafeMap0<K> {
                                     Bin.first(binAddr, next, mem);
                             }
 
-                            if (evictLsnr != null) {
-                                byte[] raw = mem.readBytes(cur, Entry.HEADER + 170);
+                            keyBytes = Entry.readKeyBytes(cur, mem);
+                            valBytes = UnsafeWrapper.faultyMethod(cur);
 
-                                keyBytes = Entry.readKeyBytes(cur, mem);
-                                valBytes = UnsafeWrapper.faultyMethod(cur);
-
-                                // TODO GG-8123: Dump on error.
-                                if (valBytes[0] != 114)
-                                    System.out.println("PROBLEM: " + ctr.get() + " " + cur + Arrays.toString(valBytes));
-                            }
-
-                            long a;
-
-                            assert qAddr == (a = Entry.queueAddress(cur, mem)) : "Queue node address mismatch " +
-                                "[qAddr=" + qAddr + ", entryQueueAddr=" + a + ']';
+                            // TODO GG-8123: Dump on error.
+                            if (valBytes[0] != 114)
+                                System.out.println("PROBLEM: " + Arrays.toString(valBytes));
 
                             relSize = Entry.size(cur, mem);
                             relAddr = cur;
@@ -425,8 +391,6 @@ public class GridUnsafeMap0<K> {
                             cnt--;
 
                             totalCnt.decrement();
-
-                            assert relAddr != 0;
                         }
                     }
                 }
@@ -439,13 +403,6 @@ public class GridUnsafeMap0<K> {
 
                 // Remove current mapping outside of lock.
                 mem.release(relAddr, relSize);
-            }
-
-            // Notify eviction.
-            if (keyBytes != null) {
-                assert evictLsnr != null;
-
-                evictLsnr.onEvict(part, hash, keyBytes, valBytes);
             }
 
             return relSize;
@@ -716,8 +673,6 @@ public class GridUnsafeMap0<K> {
          */
         static byte[] readKeyBytes(long ptr, GridUnsafeMemory mem) {
             int keyLen = readKeyLength(ptr, mem);
-
-            //U.debug("KEY LEN ON KEY READ: " + keyLen);
 
             return mem.readBytes(ptr + (long) HEADER, keyLen);
         }
