@@ -27,7 +27,6 @@ public class GridDrDataLoadCacheUpdater<K, V> implements GridDataLoadCacheUpdate
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** {@inheritDoc} */
     @Override public void update(GridCache<K, V> cache0, Collection<Map.Entry<K, V>> col)
         throws GridException {

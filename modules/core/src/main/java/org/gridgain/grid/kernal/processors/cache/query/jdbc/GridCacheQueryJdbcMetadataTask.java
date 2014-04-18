@@ -30,11 +30,11 @@ import java.util.*;
  * Task that gets metadata for JDBC adapter.
  */
 public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<String, byte[]> {
-    /** Marshaller. */
-    private static final GridMarshaller MARSHALLER = new GridJdkMarshaller();
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Marshaller. */
+    private static final GridMarshaller MARSHALLER = new GridJdkMarshaller();
 
     /** {@inheritDoc} */
     @Override public Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,

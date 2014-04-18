@@ -63,7 +63,6 @@ public abstract class GridComputeTaskAdapter<T, R> implements GridComputeTask<T,
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Default implementation which will wait for all jobs to complete before
      * calling {@link #reduce(List)} method.

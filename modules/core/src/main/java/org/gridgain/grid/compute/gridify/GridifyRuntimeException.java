@@ -19,7 +19,6 @@ public class GridifyRuntimeException extends GridRuntimeException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates new gridify runtime exception with specified message.
      *

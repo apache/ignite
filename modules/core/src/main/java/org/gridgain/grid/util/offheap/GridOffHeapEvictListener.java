@@ -16,6 +16,7 @@ public interface GridOffHeapEvictListener {
     /**
      * Eviction callback.
      *
+     * @param part Entry partition
      * @param hash Hash.
      * @param keyBytes Key bytes.
      * @param valBytes Value bytes.

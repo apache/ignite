@@ -23,7 +23,6 @@ public class GridGgfsStringDelimiterRecordResolver extends GridGgfsByteDelimiter
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Converts string delimiters to byte delimiters.
      *

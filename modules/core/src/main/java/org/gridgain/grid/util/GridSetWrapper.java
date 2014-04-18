@@ -18,11 +18,11 @@ import java.util.*;
  * Set implementation that delegates to map.
  */
 public class GridSetWrapper<E> extends GridSerializableSet<E> {
-    /** Dummy value. */
-    protected static final Object VAL = Boolean.TRUE;
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Dummy value. */
+    protected static final Object VAL = Boolean.TRUE;
 
     /** Base map. */
     @GridToStringExclude

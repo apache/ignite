@@ -92,7 +92,6 @@ public class SnapTreeMap<K,V> extends AbstractMap<K,V> implements ConcurrentNavi
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** If false, null values will trigger a NullPointerException.  When false,
      *  this map acts exactly like a ConcurrentSkipListMap, except for the
      *  running time of the methods.  The ability to get a snapshot reduces the

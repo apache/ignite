@@ -18,7 +18,6 @@ public class GridDrSenderHubStoreCorruptedException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Constructor.
      *
