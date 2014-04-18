@@ -19,13 +19,7 @@ import java.util.*;
 
 public class Test1 extends GridCommonAbstractTest {
     public void test() throws Exception {
-        GridOffHeapEvictListener evictLsnr = new GridOffHeapEvictListener() {
-            @Override public void onEvict(int part, int hash, byte[] keyBytes, byte[] valBytes) {
-                // No-op.
-            }
-        };
-
-        GridUnsafeMap0 map = new GridUnsafeMap0(4, 0.75f, 1, 10000, (short)512, evictLsnr);
+        GridUnsafeMap0 map = new GridUnsafeMap0(4, 0.75f, 1, 10000, (short)512);
 
         GridOptimizedMarshaller marsh = new GridOptimizedMarshaller();
 

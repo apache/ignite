@@ -9,10 +9,8 @@
 
 package org.gridgain.grid.util.offheap.unsafe;
 
-import org.gridgain.grid.util.offheap.*;
 import org.gridgain.grid.util.offheap.unsafe.reproducing.*;
 import org.jdk8.backport.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.locks.*;
@@ -69,8 +67,7 @@ public class GridUnsafeMap0<K> {
      * @param totalMem Total memory.
      */
     @SuppressWarnings("unchecked")
-    public GridUnsafeMap0(int concurrency, float load, long initCap, long totalMem, short lruStripes,
-        @Nullable GridOffHeapEvictListener evictLsnr) throws Exception {
+    public GridUnsafeMap0(int concurrency, float load, long initCap, long totalMem, short lruStripes) throws Exception {
         this.load = load;
 
         part = 0;
@@ -340,7 +337,6 @@ public class GridUnsafeMap0<K> {
          */
         @SuppressWarnings({"TooBroadScope", "AssertWithSideEffects"})
         private int freeSpace(int hash, short order, long qAddr) {
-            byte[] keyBytes = null;
             byte[] valBytes = null;
 
             int relSize = 0;
@@ -378,7 +374,6 @@ public class GridUnsafeMap0<K> {
                                     Bin.first(binAddr, next, mem);
                             }
 
-                            keyBytes = Entry.readKeyBytes(cur, mem);
                             valBytes = UnsafeWrapper.faultyMethod(cur);
 
                             // TODO GG-8123: Dump on error.
