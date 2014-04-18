@@ -38,11 +38,15 @@ import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 
 /**
  * Command handler for API requests.
  */
 public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
+    /** */
+    private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(EXE, RESULT, NOOP);
+
     /** Default maximum number of task results. */
     private static final int DFLT_MAX_TASK_RESULTS = 10240;
 
@@ -108,17 +112,8 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
-    @Override public boolean supported(GridRestCommand cmd) {
-        switch (cmd) {
-            case EXE:
-            case RESULT:
-            case NOOP:
-                return true;
-
-            default:
-                return false;
-        }
+    @Override public Collection<GridRestCommand> supportedCommands() {
+        return SUPPORTED_COMMANDS;
     }
 
     /** {@inheritDoc} */

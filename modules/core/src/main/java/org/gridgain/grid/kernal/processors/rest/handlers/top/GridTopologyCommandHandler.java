@@ -26,11 +26,15 @@ import java.net.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 
 /**
  * Command handler for API requests.
  */
 public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
+    /** */
+    private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(TOPOLOGY, NODE);
+
     /**
      * @param ctx Context.
      */
@@ -39,16 +43,8 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
-    @Override public boolean supported(GridRestCommand cmd) {
-        switch (cmd) {
-            case TOPOLOGY:
-            case NODE:
-                return true;
-
-            default:
-                return false;
-        }
+    @Override public Collection<GridRestCommand> supportedCommands() {
+        return SUPPORTED_COMMANDS;
     }
 
     /** {@inheritDoc} */

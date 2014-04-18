@@ -11,15 +11,16 @@ package org.gridgain.grid.kernal.processors.rest;
 
 import org.gridgain.grid.*;
 
+import java.util.*;
+
 /**
  * Command handler.
  */
 public interface GridRestCommandHandler {
     /**
-     * @param cmd Command to check.
-     * @return {@code True} if command is supported.
+     * @return Collection of supported commands.
      */
-    public boolean supported(GridRestCommand cmd);
+    public Collection<GridRestCommand> supportedCommands();
 
     /**
      * @param req Request.

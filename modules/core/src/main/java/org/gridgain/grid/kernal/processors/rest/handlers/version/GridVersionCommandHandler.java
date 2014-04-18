@@ -14,6 +14,9 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
+import java.util.*;
 
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 
@@ -21,6 +24,9 @@ import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
  * Handler for {@link GridRestCommand#VERSION} command.
  */
 public class GridVersionCommandHandler extends GridRestCommandHandlerAdapter {
+    /** */
+    private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(VERSION);
+
     /**
      * @param ctx Context.
      */
@@ -29,8 +35,8 @@ public class GridVersionCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean supported(GridRestCommand cmd) {
-        return cmd == VERSION;
+    @Override public Collection<GridRestCommand> supportedCommands() {
+        return SUPPORTED_COMMANDS;
     }
 
     /** {@inheritDoc} */

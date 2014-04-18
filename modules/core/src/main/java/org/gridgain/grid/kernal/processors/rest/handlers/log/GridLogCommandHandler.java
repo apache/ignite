@@ -28,6 +28,9 @@ import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
  * Handler for {@link GridRestCommand#LOG} command.
  */
 public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
+    /** */
+    private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(LOG);
+
     /** Default log path. */
     private static final String DFLT_PATH = "work/log/gridgain.log";
 
@@ -62,8 +65,8 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean supported(GridRestCommand cmd) {
-        return cmd == LOG;
+    @Override public Collection<GridRestCommand> supportedCommands() {
+        return SUPPORTED_COMMANDS;
     }
 
     /** {@inheritDoc} */

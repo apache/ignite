@@ -40,6 +40,24 @@ import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
  */
 public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     /** */
+    private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(
+            CACHE_GET,
+            CACHE_GET_ALL,
+            CACHE_PUT,
+            CACHE_ADD,
+            CACHE_PUT_ALL,
+            CACHE_REMOVE,
+            CACHE_REMOVE_ALL,
+            CACHE_REPLACE,
+            CACHE_INCREMENT,
+            CACHE_DECREMENT,
+            CACHE_CAS,
+            CACHE_APPEND,
+            CACHE_PREPEND,
+            CACHE_METRICS
+        );
+
+    /** */
     private static final GridCacheFlag[] EMPTY_FLAGS = new GridCacheFlag[0];
 
     /**
@@ -50,28 +68,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("fallthrough")
-    @Override public boolean supported(GridRestCommand cmd) {
-        switch (cmd) {
-            case CACHE_GET:
-            case CACHE_GET_ALL:
-            case CACHE_PUT:
-            case CACHE_ADD:
-            case CACHE_PUT_ALL:
-            case CACHE_REMOVE:
-            case CACHE_REMOVE_ALL:
-            case CACHE_REPLACE:
-            case CACHE_INCREMENT:
-            case CACHE_DECREMENT:
-            case CACHE_CAS:
-            case CACHE_APPEND:
-            case CACHE_PREPEND:
-            case CACHE_METRICS:
-                return true;
-
-            default:
-                return false;
-        }
+    @Override public Collection<GridRestCommand> supportedCommands() {
+        return SUPPORTED_COMMANDS;
     }
 
     /**

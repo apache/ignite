@@ -45,7 +45,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     private final Collection<GridRestProtocol> protos = new ArrayList<>();
 
     /** Command handlers. */
-    private final Collection<GridRestCommandHandler> handlers = new ArrayList<>();
+    private final Map<GridRestCommand, GridRestCommandHandler> handlers = new EnumMap<>(GridRestCommand.class);
 
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -80,15 +80,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             interceptRequest(req);
 
-            GridFuture<GridRestResponse> res = null;
+            GridRestCommandHandler handler = handlers.get(req.getCommand());
 
-            for (GridRestCommandHandler handler : handlers) {
-                if (handler.supported(req.getCommand())) {
-                    res = handler.handleAsync(req);
-
-                    break;
-                }
-            }
+            GridFuture<GridRestResponse> res = handler == null ? null : handler.handleAsync(req);
 
             if (res == null)
                 return new GridFinishedFuture<>(ctx,
@@ -357,15 +351,18 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
     /**
      * @param hnd Command handler.
-     * @return {@code True} if class for handler was found.
      */
-    private boolean addHandler(GridRestCommandHandler hnd) {
-        assert !handlers.contains(hnd);
+    private void addHandler(GridRestCommandHandler hnd) {
+        assert !handlers.containsValue(hnd);
 
         if (log.isDebugEnabled())
             log.debug("Added REST command handler: " + hnd);
 
-        return handlers.add(hnd);
+        for (GridRestCommand cmd : hnd.supportedCommands()) {
+            assert !handlers.containsKey(cmd);
+
+            handlers.put(cmd, hnd);
+        }
     }
 
     /**

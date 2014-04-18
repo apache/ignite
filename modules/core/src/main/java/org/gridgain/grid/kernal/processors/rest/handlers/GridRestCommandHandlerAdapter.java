@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.rest.handlers;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.logger.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -20,6 +21,9 @@ import java.util.*;
  * Abstract command handler.
  */
 public abstract class GridRestCommandHandlerAdapter implements GridRestCommandHandler {
+    /** */
+    private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList();
+
     /** Kernal context. */
     protected final GridKernalContext ctx;
 
@@ -36,8 +40,8 @@ public abstract class GridRestCommandHandlerAdapter implements GridRestCommandHa
     }
 
     /** {@inheritDoc} */
-    @Override public boolean supported(GridRestCommand cmd) {
-        return false;
+    @Override public Collection<GridRestCommand> supportedCommands() {
+        return SUPPORTED_COMMANDS;
     }
 
     /**
