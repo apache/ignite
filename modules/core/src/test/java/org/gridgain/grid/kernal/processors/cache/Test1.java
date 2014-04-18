@@ -19,7 +19,7 @@ import java.util.*;
 
 public class Test1 extends GridCommonAbstractTest {
     public void test() throws Exception {
-        GridUnsafeMap0 map = new GridUnsafeMap0(4, 0.75f, 1, 10000, (short)512);
+        GridUnsafeMap0 map = new GridUnsafeMap0(0.75f, (short)512);
 
         GridOptimizedMarshaller marsh = new GridOptimizedMarshaller();
 

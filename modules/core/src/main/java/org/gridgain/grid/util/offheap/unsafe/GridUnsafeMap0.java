@@ -13,15 +13,11 @@ import org.gridgain.grid.util.offheap.unsafe.reproducing.*;
 import org.jdk8.backport.*;
 
 import java.util.*;
-import java.util.concurrent.locks.*;
 
 /**
  * Off-heap map based on {@code Unsafe} implementation.
  */
 public class GridUnsafeMap0<K> {
-    /** */
-    private static final int MIN_SIZE = 16;
-
     /**
      * The maximum capacity, used if a higher value is implicitly
      * specified by either of the constructors with arguments.  MUST
@@ -37,21 +33,10 @@ public class GridUnsafeMap0<K> {
     private final float load;
 
     /** Segments. */
-    private final Segment<K>[] segs;
+    private final Segment seg;
 
     /** Total memory. */
     private final GridUnsafeMemory mem;
-
-    /**
-     * Mask value for indexing into segments. The upper bits of a
-     * key's hash code are used to choose the segment.
-     */
-    private final int segmentMask;
-
-    /**
-     * Shift value for indexing within segments.
-     */
-    private final int segmentShift;
 
     /** Striped LRU policy. */
     private final GridUnsafeLru lru;
@@ -62,44 +47,23 @@ public class GridUnsafeMap0<K> {
     /** LRU poller. */
     private final GridUnsafeLruPoller lruPoller;
 
-    /**
-     * @param concurrency Concurrency.
-     * @param totalMem Total memory.
-     */
     @SuppressWarnings("unchecked")
-    public GridUnsafeMap0(int concurrency, float load, long initCap, long totalMem, short lruStripes) throws Exception {
+    public GridUnsafeMap0(float load, short lruStripes) throws Exception {
         this.load = load;
 
         part = 0;
 
-        mem = new GridUnsafeMemory(totalMem);
+        mem = new GridUnsafeMemory(10000);
 
-        lru = totalMem > 0 ? new GridUnsafeLru(lruStripes, mem) : null;
+        lru = new GridUnsafeLru(lruStripes, mem);
 
         totalCnt = new LongAdder();
 
         // Find power-of-two sizes best matching arguments
-        int shift = 0;
-        int size = 1;
-
-        while (size < concurrency) {
-            ++shift;
-
-            size <<= 1;
-        }
-
-        segmentShift = 32 - shift;
-        segmentMask = size - 1;
-
-        segs = new Segment[size];
-
-        init(initCap, size);
+        seg = new Segment<>(100);
 
         lruPoller = new GridUnsafeLruPoller() {
             @Override public void lruPoll(int size) {
-                if (lru == null)
-                    return;
-
                 int left = size;
 
                 while (left > 0) {
@@ -122,40 +86,9 @@ public class GridUnsafeMap0<K> {
         };
     }
 
-    /**
-     * @param initCap Initial capacity.
-     * @param size Size.
-     */
-    private void init(long initCap, int size) throws Exception {
-        long c = initCap / size;
-
-        if (c < MIN_SIZE)
-            c = MIN_SIZE;
-
-        if (c * size < initCap)
-            ++c;
-
-        int cap = 1;
-
-        while (cap < c)
-            cap <<= 1;
-
-        for (int i = 0; i < size; i++)
-            segs[i] = new Segment<>(cap);
-    }
-
     /** {@inheritDoc} */
     public boolean put(int hash, byte[] keyBytes, byte[] valBytes) {
-        return segmentFor(hash).put(hash, keyBytes, valBytes);
-    }
-
-    /**
-     * Returns the segment that should be used for key with given hash
-     * @param hash the hash code for the key
-     * @return the segment
-     */
-    private Segment segmentFor(int hash) {
-        return segs[(hash >>> segmentShift) & segmentMask];
+        return seg.put(hash, keyBytes, valBytes);
     }
 
     /**
@@ -164,29 +97,20 @@ public class GridUnsafeMap0<K> {
      * @param qAddr Queue node address.
      */
     int freeSpace(short order, long qAddr) {
-        if (lru == null)
-            return 0;
-
         int hash = lru.hash(order, qAddr);
 
-        return segmentFor(hash).freeSpace(hash, order, qAddr);
+        return seg.freeSpace(hash, order, qAddr);
     }
 
     /**
      * Segment.
      */
     private class Segment<K> {
-        /** Lock. */
-        private final ReadWriteLock lock = new ReentrantReadWriteLock();
-
         /** Capacity. */
         private volatile long cap;
 
         /** Memory capacity. */
         private volatile long memCap;
-
-        /** Count. */
-        private volatile long cnt;
 
         /** Table pointer. */
         private volatile long tblAddr;
@@ -235,100 +159,6 @@ public class GridUnsafeMap0<K> {
         }
 
         /**
-         * Acquires write lock and returns bin address for given hash code.
-         *
-         * @param hash Hash code.
-         * @return Locked bin address.
-         */
-        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-        private long writeLock(int hash) {
-            lock.writeLock().lock();
-
-            // Get bin address inside the lock.
-            return binAddress(hash);
-        }
-
-        /**
-         * Unlocks bin address.
-         */
-        private void writeUnlock() {
-            lock.writeLock().unlock();
-        }
-
-        /**
-         * Rehashes this segment.
-         */
-        @SuppressWarnings("TooBroadScope")
-        private void rehash() {
-            if (cnt >= MAXIMUM_CAPACITY || cnt <= threshold)
-                return;
-
-            boolean release = false;
-
-            long oldTblAddr = -1;
-            long oldMemCap = -1;
-
-            lock.writeLock().lock();
-
-            try {
-                // Read values inside the lock.
-                long oldCap = cap;
-                oldMemCap = memCap;
-                oldTblAddr = tblAddr;
-
-                if (cnt >= MAXIMUM_CAPACITY || cnt <= threshold)
-                    return;
-
-                long newCap = oldCap << 1;
-                long newMemCap = newCap * 8;
-
-                // Allocate new memory.
-                long newTblAddr = mem.allocateSystem(newMemCap, true);
-
-                long oldTblEnd = oldTblAddr + memCap;
-
-                for (long oldBinAddr = oldTblAddr; oldBinAddr < oldTblEnd; oldBinAddr += 8) {
-                    long entryAddr = Bin.first(oldBinAddr, mem);
-
-                    if (entryAddr == 0)
-                        continue;
-
-                    while (true) {
-                        int hash = Entry.hash(entryAddr, mem);
-                        long next = Entry.nextAddress(entryAddr, mem);
-
-                        long newBinAddr = binAddress(hash, newTblAddr, newCap);
-
-                        long newFirst = Bin.first(newBinAddr, mem);
-
-                        Bin.first(newBinAddr, entryAddr, mem);
-
-                        Entry.nextAddress(entryAddr, newFirst, mem);
-
-                        if (next == 0)
-                            break;
-                        else
-                            entryAddr = next;
-                    }
-                }
-
-                tblAddr = newTblAddr;
-                memCap = newMemCap;
-                cap = newCap;
-                threshold = (long)(newCap * load);
-                release = true;
-            }
-            finally {
-                lock.writeLock().unlock();
-
-                // Release allocated memory outside of lock.
-                if (release) {
-                    mem.releaseSystem(oldTblAddr, oldMemCap);
-                }
-            }
-        }
-
-        /**
          * Frees space by polling entries from LRU queue.
          *
          * @param hash Hash code.
@@ -337,12 +167,10 @@ public class GridUnsafeMap0<K> {
          */
         @SuppressWarnings({"TooBroadScope", "AssertWithSideEffects"})
         private int freeSpace(int hash, short order, long qAddr) {
-            byte[] valBytes = null;
-
             int relSize = 0;
             long relAddr = 0;
 
-            long binAddr = writeLock(hash);
+            long binAddr = binAddress(hash);
 
             try {
                 // Read LRU queue node inside of the lock.
@@ -374,7 +202,7 @@ public class GridUnsafeMap0<K> {
                                     Bin.first(binAddr, next, mem);
                             }
 
-                            valBytes = UnsafeWrapper.faultyMethod(cur);
+                            byte[] valBytes = UnsafeWrapper.faultyMethod(cur);
 
                             // TODO GG-8123: Dump on error.
                             if (valBytes[0] != 114)
@@ -382,8 +210,6 @@ public class GridUnsafeMap0<K> {
 
                             relSize = Entry.size(cur, mem);
                             relAddr = cur;
-
-                            cnt--;
 
                             totalCnt.decrement();
                         }
@@ -394,8 +220,6 @@ public class GridUnsafeMap0<K> {
                 lru.poll(qAddr);
             }
             finally {
-                writeUnlock();
-
                 // Remove current mapping outside of lock.
                 mem.release(relAddr, relSize);
             }
@@ -420,7 +244,7 @@ public class GridUnsafeMap0<K> {
             int relSize = 0;
             long relAddr = 0;
 
-            long binAddr = writeLock(hash);
+            long binAddr = binAddress(hash);
 
             try {
                 long first = Bin.first(binAddr, mem);
@@ -436,18 +260,6 @@ public class GridUnsafeMap0<K> {
 
                         // If found match.
                         if (Entry.keyEquals(cur, keyBytes, mem)) {
-                            // If value bytes have the same length, just update the value.
-                            if (Entry.valueLength(cur, mem) == valBytes.length) {
-                                Entry.writeValueBytes(cur, valBytes, mem);
-
-                                isNew = false;
-
-                                if (lru != null)
-                                    lru.touch(Entry.queueAddress(cur, mem), cur);
-
-                                return false;
-                            }
-
                             if (prev != 0)
                                 Entry.nextAddress(prev, next, mem); // Unlink.
                             else
@@ -482,8 +294,6 @@ public class GridUnsafeMap0<K> {
                 Bin.first(binAddr, addr, mem);
 
                 if (isNew) {
-                    cnt++;
-
                     totalCnt.increment();
 
                     qAddr = lru == null ? 0 : lru.offer(part, addr, hash);
@@ -496,17 +306,12 @@ public class GridUnsafeMap0<K> {
                 return isNew;
             }
             finally {
-                writeUnlock();
-
                 // Release memory outside of lock.
                 if (relAddr != 0)
                     mem.release(relAddr, relSize);
 
                 if (poll)
                     lruPoller.lruPoll(size);
-
-                if (isNew && cnt > threshold)
-                    rehash();
             }
         }
     }
@@ -663,17 +468,6 @@ public class GridUnsafeMap0<K> {
 
         /**
          * @param ptr Pointer.
-         * @param mem Memory.
-         * @return Key bytes.
-         */
-        static byte[] readKeyBytes(long ptr, GridUnsafeMemory mem) {
-            int keyLen = readKeyLength(ptr, mem);
-
-            return mem.readBytes(ptr + (long) HEADER, keyLen);
-        }
-
-        /**
-         * @param ptr Pointer.
          * @param keyBytes Key bytes.
          * @param mem Memory.
          */
@@ -686,19 +480,7 @@ public class GridUnsafeMap0<K> {
          * @param valBytes Value bytes.
          * @param mem Memory.
          */
-        static void writeValueBytes(long ptr, byte[] valBytes, GridUnsafeMemory mem) {
-            writeValueBytes(ptr, readKeyLength(ptr, mem), valBytes, mem);
-        }
-
-        /**
-         * @param ptr Pointer.
-         * @param valBytes Value bytes.
-         * @param mem Memory.
-         */
         static void writeValueBytes(long ptr, int keyLen, byte[] valBytes, GridUnsafeMemory mem) {
-            if (keyLen == 0)
-                System.exit(-1);
-
             mem.writeBytes(ptr + HEADER + keyLen, valBytes);
         }
 
@@ -723,9 +505,10 @@ public class GridUnsafeMap0<K> {
             valueLength(ptr, valBytes.length, mem);
             queueAddress(ptr, queueAddr, mem);
             nextAddress(ptr, next, mem);
-            keyBytes(ptr, keyBytes, mem);
 
-            writeValueBytes(ptr, keyBytes.length, valBytes, mem);
+
+            mem.writeBytes(ptr + (long)HEADER, keyBytes);
+            mem.writeBytes(ptr + HEADER + keyBytes.length, valBytes);
         }
 
         /**
