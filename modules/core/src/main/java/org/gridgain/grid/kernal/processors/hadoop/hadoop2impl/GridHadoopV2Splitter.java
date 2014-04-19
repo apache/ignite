@@ -9,13 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.hadoop2impl;
 
-import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
-import org.apache.hadoop.mapreduce.task.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -26,25 +23,18 @@ import java.util.*;
  */
 public class GridHadoopV2Splitter {
     /**
-     * @param jobId Job ID.
-     * @param info Job info.
+     * @param ctx Job context.
      * @return Collection of mapped blocks.
      * @throws GridException If mapping failed.
      */
-    public static Collection<GridHadoopFileBlock> splitJob(GridHadoopJobId jobId, GridHadoopDefaultJobInfo info)
+    public static Collection<GridHadoopFileBlock> splitJob(JobContext ctx)
         throws GridException {
-        Configuration cfg = info.configuration();
-
-        InputFormat<?, ?> format = (InputFormat<?, ?>)U.newInstance(cfg.getClass(
-            MRJobConfig.INPUT_FORMAT_CLASS_ATTR, TextInputFormat.class));
-
-        assert format != null;
-
         try {
-            JobContext jobCtx = new JobContextImpl(cfg,
-                new JobID(jobId.globalId().toString(), jobId.localId()));
+            InputFormat<?, ?> format = U.newInstance(ctx.getInputFormatClass());
 
-            List<InputSplit> splits = format.getSplits(jobCtx);
+            assert format != null;
+
+            List<InputSplit> splits = format.getSplits(ctx);
 
             Collection<GridHadoopFileBlock> res = new ArrayList<>(splits.size());
 
@@ -59,7 +49,7 @@ public class GridHadoopV2Splitter {
 
             return res;
         }
-        catch (IOException e) {
+        catch (IOException | ClassNotFoundException e) {
             throw new GridException(e);
         }
         catch (InterruptedException e) {

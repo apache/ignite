@@ -9,16 +9,47 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.*;
 
 /**
- * TODO write doc
+ * Task context.
  */
 public class GridHadoopTaskContext {
+    /** Kernal context. */
+    private GridKernalContext ctx;
+
+    /**
+     * @param ctx Kernal context.
+     */
+    public GridHadoopTaskContext(GridKernalContext ctx) {
+        this.ctx = ctx;
+    }
+
+    /**
+     * Gets task output.
+     *
+     * @return Task output.
+     */
     public GridHadoopTaskOutput output() {
         return null;
     }
 
+    /**
+     * Gets task input.
+     *
+     * @return Task input.
+     */
     public GridHadoopTaskInput input() {
         return null;
+    }
+
+    /**
+     * Gets local grid instance.
+     *
+     * @return Grid instance.
+     */
+    public Grid grid() {
+        return ctx.grid();
     }
 }

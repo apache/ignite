@@ -50,13 +50,13 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
 
                     try (GridHadoopTaskOutput out = createOutput(info);
                          GridHadoopTaskInput in = createInput(info)) {
-                        GridHadoopTaskContext ctx = null;
+                        GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(ctx.kernalContext());
 
                         try {
                             if (log.isDebugEnabled())
                                 log.debug("Running task: " + task);
 
-                            task.run(ctx);
+                            task.run(taskCtx);
 
                             return out.finish();
                         }

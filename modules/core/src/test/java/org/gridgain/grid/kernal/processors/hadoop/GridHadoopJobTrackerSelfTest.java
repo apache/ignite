@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.*;
 
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -26,12 +27,24 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
     /** Test block count parameter name. */
     private static final String BLOCK_CNT = "test.block.count";
 
-    /** Task execution count. */
-    private static final AtomicInteger execCnt = new AtomicInteger();
+    /** Map task execution count. */
+    private static final Map<UUID, AtomicInteger> mapExecCnt = new HashMap<>();
+
+    /** Reduce task execution count. */
+    private static final Map<UUID, AtomicInteger> reduceExecCnt = new HashMap<>();
+
+    /** Map task await latch. */
+    private static CountDownLatch mapAwaitLatch;
+
+    /** Reduce task await latch. */
+    private static CountDownLatch reduceAwaitLatch;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
+
+        mapAwaitLatch = new CountDownLatch(1);
+        reduceAwaitLatch = new CountDownLatch(1);
 
         startGrids(gridCount());
     }
@@ -39,6 +52,9 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        mapExecCnt.clear();
+        reduceExecCnt.clear();
     }
 
     /** {@inheritDoc} */
@@ -55,37 +71,85 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testSimpleTaskSubmit() throws Exception {
-        GridKernal kernal = (GridKernal)grid(0);
+        try {
+            for (int i = 0; i < gridCount(); i++) {
+                UUID nodeId = grid(i).localNode().id();
 
-        GridHadoopProcessor hadoop = kernal.context().hadoop();
+                mapExecCnt.put(nodeId, new AtomicInteger());
+                reduceExecCnt.put(nodeId, new AtomicInteger());
+            }
 
-        UUID globalId = UUID.randomUUID();
+            GridKernal kernal = (GridKernal)grid(0);
 
-        Configuration cfg = new Configuration();
+            GridHadoopProcessor hadoop = kernal.context().hadoop();
 
-        int cnt = 10;
+            UUID globalId = UUID.randomUUID();
 
-        cfg.setInt(BLOCK_CNT, cnt);
+            Configuration cfg = new Configuration();
 
-        GridHadoopJobId jobId = new GridHadoopJobId(globalId, 1);
+            int cnt = 10;
 
-        GridFuture<?> execFut = hadoop.submit(jobId, new GridHadoopDefaultJobInfo(cfg));
+            cfg.setInt(BLOCK_CNT, cnt);
 
-        execFut.get();
+            GridHadoopJobId jobId = new GridHadoopJobId(globalId, 1);
 
-        // 1 reducer.
-        assertEquals(cnt + 1, execCnt.get());
+            hadoop.submit(jobId, new GridHadoopDefaultJobInfo(cfg));
 
+            checkStatus(jobId, false);
+
+            mapAwaitLatch.countDown();
+
+            checkStatus(jobId, false);
+
+            reduceAwaitLatch.countDown();
+
+            checkStatus(jobId, true);
+
+            int maps = 0;
+            int reduces = 0;
+
+            for (int i = 0; i < gridCount(); i++) {
+                Grid g = grid(i);
+
+                UUID nodeId = g.localNode().id();
+
+                maps += mapExecCnt.get(nodeId).get();
+                reduces += reduceExecCnt.get(nodeId).get();
+            }
+
+            assertEquals(10, maps);
+            assertEquals(1, reduces);
+        }
+        finally {
+            // Safety.
+            mapAwaitLatch.countDown();
+            reduceAwaitLatch.countDown();
+        }
+    }
+
+    /**
+     * Checks job execution status.
+     *
+     * @param jobId Job ID.
+     * @param complete Completion status.
+     * @throws Exception If failed.
+     */
+    private void checkStatus(GridHadoopJobId jobId, boolean complete) throws Exception {
         for (int i = 0; i < gridCount(); i++) {
-            kernal = (GridKernal)grid(0);
+            GridKernal kernal = (GridKernal)grid(i);
 
-            hadoop = kernal.context().hadoop();
+            GridHadoopProcessor hadoop = kernal.context().hadoop();
 
             GridHadoopJobStatus stat = hadoop.status(jobId);
 
             assert stat.jobInfo() != null;
 
-            assert stat.finishFuture().isDone();
+            GridFuture<?> fut = stat.finishFuture();
+
+            if (!complete)
+                assertFalse(fut.isDone());
+            else
+                fut.get();
         }
     }
 
@@ -147,7 +211,28 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public void run(GridHadoopTaskContext ctx) {
-            execCnt.incrementAndGet();
+            try {
+                UUID nodeId = ctx.grid().localNode().id();
+
+                System.out.println("Running task: " + nodeId);
+
+                if (info().type() == GridHadoopTaskType.MAP) {
+                    mapAwaitLatch.await();
+
+                    mapExecCnt.get(nodeId).incrementAndGet();
+                }
+                else if (info().type() == GridHadoopTaskType.REDUCE) {
+                    reduceAwaitLatch.await();
+
+                    reduceExecCnt.get(nodeId).incrementAndGet();
+                }
+                else
+                    assert false;
+            }
+            catch (InterruptedException ignore) {
+                // Restore interrupted status.
+                Thread.currentThread().interrupt();
+            }
         }
     }
 }

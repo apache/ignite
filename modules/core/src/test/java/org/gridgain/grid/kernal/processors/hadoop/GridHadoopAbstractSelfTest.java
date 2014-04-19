@@ -16,6 +16,8 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
 
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.FULL_SYNC;
+
 /**
  * Abstract class for Hadoop tests.
  */
@@ -34,6 +36,7 @@ public class GridHadoopAbstractSelfTest extends GridCommonAbstractTest {
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
 
         cacheCfg.setCacheMode(GridCacheMode.REPLICATED);
+        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setName(hadoopSysCacheName);
 
         cfg.setCacheConfiguration(cacheCfg);
