@@ -97,9 +97,13 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
             checkStatus(jobId, false);
 
+            info("Releasing map latch.");
+
             mapAwaitLatch.countDown();
 
             checkStatus(jobId, false);
+
+            info("Releasing reduce latch.");
 
             reduceAwaitLatch.countDown();
 
@@ -148,8 +152,12 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
             if (!complete)
                 assertFalse(fut.isDone());
-            else
+            else {
+                info("Waiting for status future completion on node [idx=" + i + ", nodeId=" +
+                    kernal.getLocalNodeId() + ']');
+
                 fut.get();
+            }
         }
     }
 
@@ -228,6 +236,8 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
                 }
                 else
                     assert false;
+
+                System.out.println("Completed task on node: " + nodeId);
             }
             catch (InterruptedException ignore) {
                 // Restore interrupted status.

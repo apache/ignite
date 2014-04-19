@@ -121,16 +121,26 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         if (meta == null)
             return null;
 
+        if (log.isDebugEnabled())
+            log.debug("Got job metadata for status check [locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
+
         GridHadoopJobInfo info = meta.jobInfo();
 
-        if (meta.phase() == PHASE_COMPLETE)
+        if (meta.phase() == PHASE_COMPLETE) {
+            if (log.isDebugEnabled())
+                log.debug("Job is complete, returning finished future: " + jobId);
+
             return new GridHadoopJobStatus(new GridFinishedFutureEx<>(jobId), info);
+        }
 
         GridFutureAdapter<GridHadoopJobId> fut = F.addIfAbsent(activeFinishFuts, jobId,
             new GridFutureAdapter<GridHadoopJobId>());
 
         // Get meta from cache one more time to close the window.
         meta = jobMetaPrj.get(jobId);
+
+        if (log.isDebugEnabled())
+            log.debug("Re-checking job metadata [locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
 
         if (meta == null || meta.phase() == PHASE_COMPLETE) {
             // TODO exception.
@@ -249,7 +259,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     Collection<GridHadoopFileBlock> mappers = meta.mapReducePlan().mappers(locNodeId);
 
                     if (mappers != null) {
-                        Collection<GridHadoopTask> tasks = new ArrayList<>();
+                        Collection<GridHadoopTask> tasks = null;
 
                         for (GridHadoopFileBlock block : mappers) {
                             if (state.addMapper(block)) {
@@ -265,11 +275,16 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                                 assert task != null : "Job created null task: " + job;
 
+
+                                if (tasks == null)
+                                    tasks = new ArrayList<>();
+
                                 tasks.add(task);
                             }
                         }
 
-                        ctx.taskExecutor().run(tasks);
+                        if (tasks != null)
+                            ctx.taskExecutor().run(tasks);
                     }
 
                     break;
@@ -293,7 +308,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     int[] reducers = meta.mapReducePlan().reducers(locNodeId);
 
                     if (reducers != null) {
-                        Collection<GridHadoopTask> tasks = new ArrayList<>();
+                        Collection<GridHadoopTask> tasks = null;
 
                         for (int rdc : reducers) {
                             if (state.addReducer(rdc)) {
@@ -308,11 +323,15 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                                 assert task != null : "Job created null task: " + job;
 
+                                if (tasks == null)
+                                    tasks = new ArrayList<>();
+
                                 tasks.add(task);
                             }
                         }
 
-                        ctx.taskExecutor().run(tasks);
+                        if (tasks != null)
+                            ctx.taskExecutor().run(tasks);
                     }
 
                     break;

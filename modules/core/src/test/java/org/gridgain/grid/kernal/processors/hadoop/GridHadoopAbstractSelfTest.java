@@ -12,19 +12,15 @@ package org.gridgain.grid.kernal.processors.hadoop;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
 
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.FULL_SYNC;
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
  * Abstract class for Hadoop tests.
  */
 public class GridHadoopAbstractSelfTest extends GridCommonAbstractTest {
-    /** Shared IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
-
     /** Hadoop system cache name. */
     protected static final String hadoopSysCacheName = "hadoop-system-cache";
 
@@ -36,6 +32,7 @@ public class GridHadoopAbstractSelfTest extends GridCommonAbstractTest {
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
 
         cacheCfg.setCacheMode(GridCacheMode.REPLICATED);
+        cacheCfg.setAtomicWriteOrderMode(PRIMARY);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setName(hadoopSysCacheName);
 

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -138,5 +139,11 @@ public class GridHadoopJobMetadata implements Serializable {
      */
     public GridHadoopJobInfo jobInfo() {
         return jobInfo;
+    }
+
+    /** {@inheritDoc} */
+    public String toString() {
+        return S.toString(GridHadoopJobMetadata.class, this, "pendingMaps", pendingBlocks.size(),
+            "pendingReduces", pendingReducers.size());
     }
 }
