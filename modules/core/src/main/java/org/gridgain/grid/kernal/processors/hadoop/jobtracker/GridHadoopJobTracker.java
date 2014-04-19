@@ -76,7 +76,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param info Job info.
      * @return Job completion future.
      */
-    public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo info) {
+    public GridFuture<GridHadoopJobId> submit(GridHadoopJobId jobId, GridHadoopJobInfo info) {
         try {
             GridHadoopJob job = ctx.jobFactory().createJob(jobId, info);
 
@@ -115,8 +115,31 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param jobId Job ID to get status for.
      * @return Job status for given job ID or {@code null} if job was not found.
      */
-    @Nullable public GridHadoopJobStatus status(GridHadoopJobId jobId) {
-        return null;
+    @Nullable public GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException {
+        GridHadoopJobMetadata meta = jobMetaPrj.get(jobId);
+
+        if (meta == null)
+            return null;
+
+        GridHadoopJobInfo info = meta.jobInfo();
+
+        if (meta.phase() == PHASE_COMPLETE)
+            return new GridHadoopJobStatus(new GridFinishedFutureEx<>(jobId), info);
+
+        GridFutureAdapter<GridHadoopJobId> fut = F.addIfAbsent(activeFinishFuts, jobId,
+            new GridFutureAdapter<GridHadoopJobId>());
+
+        // Get meta from cache one more time to close the window.
+        meta = jobMetaPrj.get(jobId);
+
+        if (meta == null || meta.phase() == PHASE_COMPLETE) {
+            // TODO exception.
+            fut.onDone(jobId);
+
+            activeFinishFuts.remove(jobId , fut);
+        }
+
+        return new GridHadoopJobStatus(fut, info);
     }
 
     /**

@@ -10,17 +10,41 @@
 package org.gridgain.grid.hadoop;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.hadoop.*;
 
 /**
- * TODO write doc
+ * Hadoop jop status.
  */
 public class GridHadoopJobStatus {
-    public GridFuture<?> finishFuture() {
-        return null;
+    /** Finish future. */
+    private GridFuture<?> finishFut;
+
+    /** Job info. */
+    private GridHadoopJobInfo jobInfo;
+
+    /**
+     * @param finishFut Finish future.
+     * @param jobInfo Job info.
+     */
+    public GridHadoopJobStatus(GridFuture<?> finishFut, GridHadoopJobInfo jobInfo) {
+        this.finishFut = finishFut;
+        this.jobInfo = jobInfo;
     }
 
+    /**
+     * Gets job execution finish future.
+     *
+     * @return Finish future.
+     */
+    public GridFuture<?> finishFuture() {
+        return finishFut;
+    }
+
+    /**
+     * Gets job info.
+     *
+     * @return Job info.
+     */
     public GridHadoopJobInfo jobInfo() {
-        return null;
+        return jobInfo;
     }
 }

@@ -67,12 +67,26 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
         cfg.setInt(BLOCK_CNT, cnt);
 
-        GridFuture<?> execFut = hadoop.submit(new GridHadoopJobId(globalId, 1), new GridHadoopDefaultJobInfo(cfg));
+        GridHadoopJobId jobId = new GridHadoopJobId(globalId, 1);
+
+        GridFuture<?> execFut = hadoop.submit(jobId, new GridHadoopDefaultJobInfo(cfg));
 
         execFut.get();
 
         // 1 reducer.
         assertEquals(cnt + 1, execCnt.get());
+
+        for (int i = 0; i < gridCount(); i++) {
+            kernal = (GridKernal)grid(0);
+
+            hadoop = kernal.context().hadoop();
+
+            GridHadoopJobStatus stat = hadoop.status(jobId);
+
+            assert stat.jobInfo() != null;
+
+            assert stat.finishFuture().isDone();
+        }
     }
 
     /**
