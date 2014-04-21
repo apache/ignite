@@ -22,7 +22,6 @@ public class GridDhtDetachedCacheEntry<K, V> extends GridDistributedCacheEntry<K
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * @param ctx Cache context.
      * @param key Cache key.

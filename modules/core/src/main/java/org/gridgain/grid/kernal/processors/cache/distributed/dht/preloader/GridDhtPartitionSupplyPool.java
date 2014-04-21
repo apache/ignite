@@ -516,7 +516,6 @@ class GridDhtPartitionSupplyPool<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /**
          * @param sndId Sender ID.
          * @param msg Message.

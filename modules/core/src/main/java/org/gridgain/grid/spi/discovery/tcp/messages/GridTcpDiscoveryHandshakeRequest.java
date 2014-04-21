@@ -21,7 +21,6 @@ public class GridTcpDiscoveryHandshakeRequest extends GridTcpDiscoveryAbstractMe
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */

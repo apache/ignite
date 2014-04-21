@@ -93,7 +93,11 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
 
     /**
      * @param concurrency Concurrency.
+     * @param load Load factor.
+     * @param initCap Initial capacity.
      * @param totalMem Total memory.
+     * @param lruStripes Number of LRU stripes.
+     * @param evictLsnr Eviction listener.
      */
     @SuppressWarnings("unchecked")
     public GridUnsafeMap(int concurrency, float load, long initCap, long totalMem, short lruStripes,
@@ -159,6 +163,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     }
 
     /**
+     * @param part Partition number.
      * @param concurrency Concurrency.
      * @param load Load factor.
      * @param initCap Initial capacity.
@@ -166,6 +171,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
      * @param mem Memory.
      * @param lru LRU.
      * @param evictLsnr Eviction closure.
+     * @param lruPoller LRU poller.
      */
     @SuppressWarnings("unchecked")
     GridUnsafeMap(int part, int concurrency, float load, long initCap, LongAdder totalCnt, GridUnsafeMemory mem,
@@ -434,7 +440,9 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     /**
      * Frees space by polling entries from LRU queue.
      *
+     * @param order Queue stripe order.
      * @param qAddr Queue node address.
+     * @return Released size.
      */
     int freeSpace(short order, long qAddr) {
         if (lru == null)
@@ -780,6 +788,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @param hash Hash code.
          * @param order Queue stripe order.
          * @param qAddr Queue address.
+         * @return Released size.
          */
         @SuppressWarnings({"TooBroadScope", "AssertWithSideEffects"})
         private int freeSpace(int hash, short order, long qAddr) {
@@ -839,8 +848,6 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                             cnt--;
 
                             totalCnt.decrement();
-
-                            assert relAddr != 0;
                         }
                     }
                 }
@@ -1029,6 +1036,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
         /**
          * @param hash Hash.
          * @param keyBytes Key bytes.
+         * @return Removed value bytes.
          */
         @SuppressWarnings("TooBroadScope")
         byte[] remove(int hash, byte[] keyBytes) {
@@ -1038,6 +1046,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
         /**
          * @param hash Hash.
          * @param keyBytes Key bytes.
+         * @return {@code True} if value was removed.
          */
         boolean removex(int hash, byte[] keyBytes) {
             return remove(hash, keyBytes, false) == EMPTY_BYTES;
@@ -1046,6 +1055,8 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
         /**
          * @param hash Hash.
          * @param keyBytes Key bytes.
+         * @param retval {@code True} if need removed value.
+         * @return Removed value bytes.
          */
         @SuppressWarnings("TooBroadScope")
         byte[] remove(int hash, byte[] keyBytes, boolean retval) {
@@ -1122,6 +1133,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
         /**
          * @param hash Hash.
          * @param keyBytes Key bytes.
+         * @return {@code True} if contains key.
          */
         boolean contains(int hash, byte[] keyBytes) {
             long binAddr = readLock(hash);
@@ -1147,6 +1159,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
         /**
          * @param hash Hash.
          * @param keyBytes Key bytes.
+         * @return Value bytes.
          */
         @Nullable byte[] get(int hash, byte[] keyBytes) {
             long binAddr = readLock(hash);
@@ -1381,6 +1394,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
 
         /**
          * @param ptr Pointer.
+         * @param keyLen Key length.
          * @param valBytes Value bytes.
          * @param mem Memory.
          */

@@ -1110,7 +1110,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /**
          * @param pda Peer deploy aware instance.
          */

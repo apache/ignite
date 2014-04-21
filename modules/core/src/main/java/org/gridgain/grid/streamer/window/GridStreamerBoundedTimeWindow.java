@@ -409,7 +409,6 @@ public class GridStreamerBoundedTimeWindow<E> extends GridStreamerWindowAdapter<
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /**
          * Empty constructor required by {@link Externalizable}.
          */

@@ -1938,7 +1938,6 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /**
          * @param msg Message.
          */

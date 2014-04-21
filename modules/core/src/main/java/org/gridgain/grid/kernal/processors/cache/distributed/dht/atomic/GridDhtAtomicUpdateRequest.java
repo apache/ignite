@@ -27,11 +27,11 @@ import java.util.*;
  * Lite dht cache backup update request.
  */
 public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
-    /** Message index. */
-    public static final int CACHE_MSG_IDX = nextIndexId();
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Message index. */
+    public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** Node ID. */
     private UUID nodeId;

@@ -28,7 +28,6 @@ public class GridCacheQueryJdbcValidationTask extends GridComputeTaskSplitAdapte
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** {@inheritDoc} */
     @Override protected Collection<? extends GridComputeJob> split(int gridSize,
         @Nullable final String cacheName) throws GridException {

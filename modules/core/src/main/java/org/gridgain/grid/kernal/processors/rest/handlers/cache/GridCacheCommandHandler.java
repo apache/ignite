@@ -1064,7 +1064,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /** {@inheritDoc} */
         @Override public GridFuture<?> applyx(GridCache<Object, Object> c, GridKernalContext ctx) {
             GridCacheMetrics metrics = c.metrics();

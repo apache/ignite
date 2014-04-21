@@ -72,7 +72,6 @@ class GridKillTask extends GridComputeTaskAdapter<Boolean, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /** {@inheritDoc} */
         @Override public Object execute() throws GridException {
             if (restart)
