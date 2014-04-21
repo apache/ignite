@@ -18,7 +18,6 @@ public class GridCacheTxRollbackException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates new rollback exception with given error message.
      *

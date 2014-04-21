@@ -20,7 +20,6 @@ public class GridComputeTaskTimeoutException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates task timeout exception with given task execution ID and
      * error message.

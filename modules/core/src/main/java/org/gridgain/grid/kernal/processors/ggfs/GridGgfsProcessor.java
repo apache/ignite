@@ -298,10 +298,26 @@ public class GridGgfsProcessor extends GridProcessorAdapter {
 
         for (GridGgfsAttributes rmtAttr : rmtAttrs)
             for (GridGgfsAttributes locAttr : locAttrs) {
-                // Compare attributes only for GGFSes with same name.
-                if (!F.eq(rmtAttr.ggfsName(), locAttr.ggfsName()))
-                    continue;
+                // Checking the use of different caches on the different GGFSes.
+                if (!F.eq(rmtAttr.ggfsName(), locAttr.ggfsName())) {
+                    if (F.eq(rmtAttr.metaCacheName(), locAttr.metaCacheName()))
+                        throw new GridException("Meta cache names should be different for different GGFS instances " +
+                            "configuration [rmtNodeId=" + rmtNode.id() +
+                            ", rmtMetaCacheName=" + rmtAttr.metaCacheName() +
+                            ", locMetaCacheName=" + locAttr.metaCacheName() +
+                            ", ggfsName=" + rmtAttr.ggfsName() + ']');
 
+                    if (F.eq(rmtAttr.dataCacheName(), locAttr.dataCacheName()))
+                        throw new GridException("Data cache names should be different for different GGFS instances " +
+                            "configuration [rmtNodeId=" + rmtNode.id() +
+                            ", rmtDataCacheName=" + rmtAttr.dataCacheName() +
+                            ", locDataCacheName=" + locAttr.dataCacheName() +
+                            ", ggfsName=" + rmtAttr.ggfsName() + ']');
+
+                    continue;
+                }
+
+                // Compare other attributes only for GGFSes with same name.
                 if (!F.eq(rmtAttr.blockSize(), locAttr.blockSize()))
                     throw new GridException("Data block size should be same on all nodes in grid " +
                         "for GGFS configuration [rmtNodeId=" + rmtNode.id() +

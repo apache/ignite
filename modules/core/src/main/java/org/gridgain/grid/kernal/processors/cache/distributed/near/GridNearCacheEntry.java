@@ -30,10 +30,10 @@ import static org.gridgain.grid.events.GridEventType.*;
 @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
 public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     /** */
-    private static final int NEAR_SIZE_OVERHEAD = 36;
-    /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final int NEAR_SIZE_OVERHEAD = 36;
 
     /** ID of primary node from which this entry was last read. */
     private volatile UUID primaryNodeId;
@@ -188,7 +188,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
             this.primaryNodeId = primaryNodeId;
 
-            if (!hasValueUnlocked() || !F.eq(this.dhtVer, dhtVer)) {
+            if (!F.eq(this.dhtVer, dhtVer)) {
                 value(val, valBytes);
 
                 this.ver = ver;
@@ -599,6 +599,11 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         checkOwnerChanged(prev, owner, val);
 
         return owner != prev ? prev : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onInvalidate() {
+        dhtVer = null;
     }
 
     /** {@inheritDoc} */

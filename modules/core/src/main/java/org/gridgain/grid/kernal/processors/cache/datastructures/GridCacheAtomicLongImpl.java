@@ -29,6 +29,9 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
  * Cache atomic long implementation.
  */
 public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Deserialization stash. */
     private static final ThreadLocal<GridBiTuple<GridCacheContext, String>> stash =
         new ThreadLocal<GridBiTuple<GridCacheContext, String>>() {
@@ -36,9 +39,6 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
                 return F.t2();
             }
         };
-    /** */
-    private static final long serialVersionUID = 0L;
-
 
     /** Logger. */
     private GridLogger log;

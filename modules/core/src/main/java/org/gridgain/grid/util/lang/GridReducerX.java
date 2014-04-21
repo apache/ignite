@@ -23,7 +23,6 @@ public abstract class GridReducerX<E1, R> implements GridReducer<E1, R> {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** {@inheritDoc} */
     @Override public R reduce() {
         try {
