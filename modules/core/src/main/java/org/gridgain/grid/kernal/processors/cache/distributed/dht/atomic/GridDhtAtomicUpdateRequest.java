@@ -939,7 +939,6 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.readItems = 0;
 
                 commState.idx++;
-
         }
 
         return true;

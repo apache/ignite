@@ -1907,9 +1907,18 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             releaseSwap();
 
             clearIndex(val);
+
+            onInvalidate();
         }
 
         return obsoleteVersionExtras() != null;
+    }
+
+    /**
+     * Called when entry invalidated.
+     */
+    protected void onInvalidate() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
