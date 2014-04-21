@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  * Set failover tests.
@@ -69,16 +68,6 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
         ccfg.setStore(null);
 
         return ccfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
     }
 
     /** {@inheritDoc} */

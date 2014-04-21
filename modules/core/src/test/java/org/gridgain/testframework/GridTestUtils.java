@@ -925,33 +925,65 @@ public final class GridTestUtils {
      * Get object field value via reflection.
      *
      * @param obj Object or class to get field value from.
-     * @param fieldNames Field names to get value for: obj->field1->field2->...->fieldN.
+     * @param cls Class.
+     * @param fieldName Field names to get value for.
      * @param <T> Expected field class.
      * @return Field value.
      * @throws GridRuntimeException In case of error.
      */
-    public static <T> T getFieldValue(Object obj, String... fieldNames) throws GridRuntimeException {
-        return getFieldValue(obj, obj instanceof Class ? (Class)obj : obj.getClass(), fieldNames);
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    public static <T> T getFieldValue(Object obj, Class cls, String fieldName) throws GridRuntimeException {
+        assert obj != null;
+        assert fieldName != null;
+
+        try {
+            // Resolve inner field.
+            Field field = cls.getDeclaredField(fieldName);
+
+            synchronized (field) {
+                // Backup accessible field state.
+                boolean accessible = field.isAccessible();
+
+                try {
+                    if (!accessible)
+                        field.setAccessible(true);
+
+                    obj = field.get(obj);
+                }
+                finally {
+                    // Recover accessible field state.
+                    if (!accessible)
+                        field.setAccessible(false);
+                }
+            }
+
+            return (T)obj;
+        }
+        catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new GridRuntimeException("Failed to get object field [obj=" + obj +
+                ", fieldName=" + fieldName + ']', e);
+        }
     }
 
     /**
      * Get object field value via reflection.
      *
      * @param obj Object or class to get field value from.
-     * @param cls Class.
      * @param fieldNames Field names to get value for: obj->field1->field2->...->fieldN.
      * @param <T> Expected field class.
      * @return Field value.
      * @throws GridRuntimeException In case of error.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    public static <T> T getFieldValue(Object obj, Class cls, String... fieldNames) throws GridRuntimeException {
+    public static <T> T getFieldValue(Object obj, String... fieldNames) throws GridRuntimeException {
         assert obj != null;
         assert fieldNames != null;
         assert fieldNames.length >= 1;
 
         try {
             for (String fieldName : fieldNames) {
+                Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
+
                 try {
                     // Resolve inner field.
                     Field field = cls.getDeclaredField(fieldName);

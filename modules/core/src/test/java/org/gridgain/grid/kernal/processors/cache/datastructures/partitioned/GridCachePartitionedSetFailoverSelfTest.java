@@ -9,11 +9,17 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures.partitioned;
 
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
+
+import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  * Set failover tests.
  */
 public class GridCachePartitionedSetFailoverSelfTest extends GridCacheSetFailoverAbstractSelfTest {
-    // No-op.
+    /** {@inheritDoc} */
+    @Override protected GridCacheMode cacheMode() {
+        return PARTITIONED;
+    }
 }

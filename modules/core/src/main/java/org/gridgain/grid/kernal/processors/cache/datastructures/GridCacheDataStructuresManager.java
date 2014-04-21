@@ -1214,7 +1214,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 cctx.closures().callAsyncNoFailover(BROADCAST, new BlockSetCallable(cctx.name(), hdr.id()), nodes,
                     true).get();
 
-                cctx.closures().callAsyncNoFailover(BROADCAST, new RemoveSetCallable(cctx.name(), hdr.id(), topVer),
+                cctx.closures().callAsyncNoFailover(BROADCAST, new RemoveSetDataCallable(cctx.name(), hdr.id(), topVer),
                     nodes, true).get();
             }
             finally {
@@ -1224,7 +1224,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         else {
             blockSet(hdr.id());
 
-            removeSet(hdr.id(), 0);
+            removeSetData(hdr.id(), 0);
         }
 
         return true;
@@ -1247,7 +1247,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void removeSet(GridUuid setId, long topVer) throws GridException {
+    private void removeSetData(GridUuid setId, long topVer) throws GridException {
         GridConcurrentHashSet<GridCacheSetItemKey> set = setDataMap.get(setId);
 
         if (set == null)
@@ -1406,7 +1406,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * Removes set items.
      */
     @GridInternal
-    private static class RemoveSetCallable implements Callable<Void>, Externalizable {
+    private static class RemoveSetDataCallable implements Callable<Void>, Externalizable {
         /** Injected grid instance. */
         @GridInstanceResource
         private Grid grid;
@@ -1423,7 +1423,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         /**
          * Required by {@link Externalizable}.
          */
-        public RemoveSetCallable() {
+        public RemoveSetDataCallable() {
             // No-op.
         }
 
@@ -1432,7 +1432,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
          * @param setId Set ID.
          * @param topVer Topology version.
          */
-        private RemoveSetCallable(String cacheName, GridUuid setId, long topVer) {
+        private RemoveSetDataCallable(String cacheName, GridUuid setId, long topVer) {
             this.cacheName = cacheName;
             this.setId = setId;
             this.topVer = topVer;
@@ -1444,7 +1444,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
             assert cache != null;
 
-            cache.context().dataStructures().removeSet(setId, topVer);
+            cache.context().dataStructures().removeSetData(setId, topVer);
 
             return null;
         }
