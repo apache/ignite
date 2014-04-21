@@ -309,7 +309,6 @@ abstract class GridStreamerBoundedSizeWindowAdapter<E, T> extends GridStreamerWi
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /**
          * Empty constructor required by {@link Externalizable}.
          */

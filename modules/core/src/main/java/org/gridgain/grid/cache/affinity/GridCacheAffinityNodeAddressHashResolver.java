@@ -19,7 +19,6 @@ public class GridCacheAffinityNodeAddressHashResolver implements GridCacheAffini
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** {@inheritDoc} */
     @Override public Object resolve(GridNode node) {
         return node.consistentId();

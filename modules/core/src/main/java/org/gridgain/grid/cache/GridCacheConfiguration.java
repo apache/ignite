@@ -596,10 +596,6 @@ public class GridCacheConfiguration {
      * corresponding key belongs. If this property is set to {@code false} then
      * eviction is done independently on cache nodes.
      * <p>
-     * For replicated cache this parameter is not supported. If this parameter
-     * is set to {@code true} for replicated cache, an exception will be thrown during
-     * node startup.
-     * <p>
      * Default value is defined by {@link #DFLT_EVICT_SYNCHRONIZED}.
      * <p>
      * Note that it's not recommended to set this value to {@code true} if cache

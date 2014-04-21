@@ -1055,7 +1055,6 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /**
          * Required by {@link Externalizable}.
          */

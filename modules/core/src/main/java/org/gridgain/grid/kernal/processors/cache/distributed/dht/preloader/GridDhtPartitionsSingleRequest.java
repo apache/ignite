@@ -22,7 +22,6 @@ public class GridDhtPartitionsSingleRequest<K, V> extends GridDhtPartitionsAbstr
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Required by {@link Externalizable}.
      */
