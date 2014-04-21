@@ -27,6 +27,9 @@ import java.util.*;
  */
 @SuppressWarnings({"TooBroadScope", "NonPrivateFieldAccessedInSynchronizedContext"})
 public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Size overhead. */
     private static final int DHT_SIZE_OVERHEAD = 16;
 
@@ -36,9 +39,6 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             return e.nodeId();
         }
     };
-    /** */
-    private static final long serialVersionUID = 0L;
-
 
     /** Reader clients. */
     @GridToStringInclude
@@ -278,6 +278,14 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /**
+     * Calls {@link GridDhtLocalPartition#onUnlock()} for this entry's partition.
+     */
+    public void onUnlock() {
+        locPart.onUnlock();
+    }
+
+    /**
+     * @param topVer Topology version.
      * @return Tuple with version and value of this entry, or {@code null} if entry is new.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
@@ -328,6 +336,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     /**
      * @param nodeId Reader to add.
      * @param msgId Message ID.
+     * @param topVer Topology version.
      * @return Future for all relevant transactions that were active at the time of adding reader,
      *      or {@code null} if reader was added
      * @throws GridCacheEntryRemovedException If entry was removed.

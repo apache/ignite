@@ -18,7 +18,6 @@ public class GridCacheTxTimeoutException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates new timeout exception with given error message.
      *

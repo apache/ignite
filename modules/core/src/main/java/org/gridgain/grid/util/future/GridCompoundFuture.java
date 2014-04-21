@@ -297,7 +297,6 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /** {@inheritDoc} */
         @Override public void apply(GridFuture<T> fut) {
             pending.remove(fut);

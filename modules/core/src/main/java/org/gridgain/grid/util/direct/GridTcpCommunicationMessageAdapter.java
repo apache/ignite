@@ -29,6 +29,9 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 public abstract class GridTcpCommunicationMessageAdapter implements Serializable, Cloneable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     public static final byte[] BYTE_ARR_NOT_READ = new byte[0];
 
     /** */
@@ -116,9 +119,6 @@ public abstract class GridTcpCommunicationMessageAdapter implements Serializable
 
     /** */
     protected static final Object NULL = new Object();
-    /** */
-    private static final long serialVersionUID = 0L;
-
 
     /** */
     protected final GridTcpCommunicationMessageState commState = new GridTcpCommunicationMessageState();

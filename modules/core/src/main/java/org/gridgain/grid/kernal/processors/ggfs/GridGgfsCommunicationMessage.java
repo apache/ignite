@@ -23,7 +23,6 @@ public abstract class GridGgfsCommunicationMessage extends GridTcpCommunicationM
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** {@inheritDoc} */
     @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
     }

@@ -19,7 +19,6 @@ public abstract class GridMasterLeaveAwareComputeJobAdapter extends GridComputeJ
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * No-arg constructor.
      */

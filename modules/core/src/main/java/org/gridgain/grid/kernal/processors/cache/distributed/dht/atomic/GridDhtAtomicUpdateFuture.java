@@ -33,11 +33,11 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  */
 public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
     implements GridCacheAtomicFuture<K, Void> {
-    /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Logger reference. */
+    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
     protected static GridLogger log;

@@ -79,7 +79,15 @@ public class GridCacheGateway<K, V> {
      */
     @Nullable public GridCacheProjectionImpl<K, V> enter(@Nullable GridCacheProjectionImpl<K, V> prj) {
         try {
-            ctx.preloader().startFuture().get();
+            GridCacheAdapter<K, V> cache = ctx.cache();
+
+            GridCachePreloader<K, V> preldr = cache != null ? cache.preloader() : null;
+
+            if (preldr == null)
+                throw new IllegalStateException("Grid is in invalid state to perform this operation. " +
+                    "It either not started yet or has already being or have stopped [gridName=" + ctx.gridName() + ']');
+
+            preldr.startFuture().get();
         }
         catch (GridException e) {
             throw new GridRuntimeException("Failed to wait for cache preloader start [cacheName=" +

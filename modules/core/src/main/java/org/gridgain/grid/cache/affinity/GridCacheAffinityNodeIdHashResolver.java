@@ -20,7 +20,6 @@ public class GridCacheAffinityNodeIdHashResolver implements GridCacheAffinityNod
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** {@inheritDoc} */
     @Override public Object resolve(GridNode node) {
         return node.id();

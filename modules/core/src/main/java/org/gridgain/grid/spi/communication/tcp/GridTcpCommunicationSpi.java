@@ -225,106 +225,106 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     /** Server listener. */
     private final GridNioServerListener<GridTcpCommunicationMessageAdapter> srvLsnr =
         new GridNioServerListenerAdapter<GridTcpCommunicationMessageAdapter>() {
-        @Override public void onConnected(GridNioSession ses) {
-            if (ses.accepted()) {
-                if (log.isDebugEnabled())
-                    log.debug("Sending local node ID to newly accepted session: " + ses);
+            @Override public void onConnected(GridNioSession ses) {
+                if (ses.accepted()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Sending local node ID to newly accepted session: " + ses);
 
-                ses.send(nodeIdMsg);
-            }
-            else
-                assert asyncSnd;
-        }
-
-        @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
-            if (!ses.accepted()) {
-                UUID id = ses.meta(NODE_ID_META);
-
-                if (id != null) {
-                    GridCommunicationClient rmv = clients.remove(id);
-
-                    if (rmv != null)
-                        rmv.forceClose();
-                }
-            }
-        }
-
-        @Override public void onMessage(GridNioSession ses, GridTcpCommunicationMessageAdapter msg) {
-            UUID sndId = ses.meta(NODE_ID_META);
-
-            if (sndId == null) {
-                assert ses.accepted();
-
-                assert msg instanceof NodeIdMessage;
-
-                sndId = U.bytesToUuid(((NodeIdMessage)msg).nodeIdBytes, 0);
-
-                if (log.isDebugEnabled())
-                    log.debug("Remote node ID received: " + sndId);
-
-                UUID old = ses.addMeta(NODE_ID_META, sndId);
-
-                assert old == null;
-
-                GridProductVersion locVer = getSpiContext().localNode().version();
-
-                GridNode rmtNode = getSpiContext().node(sndId);
-
-                if (rmtNode == null) {
-                    ses.close();
-
-                    return;
-                }
-
-                GridProductVersion rmtVer = rmtNode.version();
-
-                if (!locVer.equals(rmtVer))
-                    ses.addMeta(GridNioServer.DIFF_VER_NODE_ID_META_KEY, sndId);
-
-                if (asyncSnd && ses.remoteAddress() != null && !dualSockConn) {
-                    Object sync = locks.tryLock(sndId);
-
-                    if (sync != null) {
-                        try {
-                            if (clients.get(sndId) == null) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Will reuse session for node: " + sndId);
-
-                                clients.put(sndId, new GridTcpNioCommunicationClient(ses));
-                            }
-                        }
-                        finally {
-                            locks.unlock(sndId, sync);
-                        }
-                    }
-                }
-            }
-            else {
-                rcvdMsgsCnt.increment();
-
-                GridRunnable c;
-
-                if (msgQueueLimit > 0) {
-                    GridNioMessageTracker tracker = ses.meta(TRACKER_META);
-
-                    if (tracker == null) {
-                        GridNioMessageTracker old = ses.addMeta(TRACKER_META, tracker =
-                            new GridNioMessageTracker(ses, msgQueueLimit));
-
-                        assert old == null;
-                    }
-
-                    tracker.onMessageReceived();
-
-                    c = tracker;
+                    ses.send(nodeIdMsg);
                 }
                 else
-                    c = NOOP;
-
-                notifyListener(sndId, msg, c);
+                    assert asyncSnd;
             }
-        }
-    };
+
+            @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
+                if (!ses.accepted()) {
+                    UUID id = ses.meta(NODE_ID_META);
+
+                    if (id != null) {
+                        GridCommunicationClient rmv = clients.remove(id);
+
+                        if (rmv != null)
+                            rmv.forceClose();
+                    }
+                }
+            }
+
+            @Override public void onMessage(GridNioSession ses, GridTcpCommunicationMessageAdapter msg) {
+                UUID sndId = ses.meta(NODE_ID_META);
+
+                if (sndId == null) {
+                    assert ses.accepted();
+
+                    assert msg instanceof NodeIdMessage;
+
+                    sndId = U.bytesToUuid(((NodeIdMessage)msg).nodeIdBytes, 0);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Remote node ID received: " + sndId);
+
+                    UUID old = ses.addMeta(NODE_ID_META, sndId);
+
+                    assert old == null;
+
+                    GridProductVersion locVer = getSpiContext().localNode().version();
+
+                    GridNode rmtNode = getSpiContext().node(sndId);
+
+                    if (rmtNode == null) {
+                        ses.close();
+
+                        return;
+                    }
+
+                    GridProductVersion rmtVer = rmtNode.version();
+
+                    if (!locVer.equals(rmtVer))
+                        ses.addMeta(GridNioServer.DIFF_VER_NODE_ID_META_KEY, sndId);
+
+                    if (asyncSnd && ses.remoteAddress() != null && !dualSockConn) {
+                        Object sync = locks.tryLock(sndId);
+
+                        if (sync != null) {
+                            try {
+                                if (clients.get(sndId) == null) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Will reuse session for node: " + sndId);
+
+                                    clients.put(sndId, new GridTcpNioCommunicationClient(ses));
+                                }
+                            }
+                            finally {
+                                locks.unlock(sndId, sync);
+                            }
+                        }
+                    }
+                }
+                else {
+                    rcvdMsgsCnt.increment();
+
+                    GridRunnable c;
+
+                    if (msgQueueLimit > 0) {
+                        GridNioMessageTracker tracker = ses.meta(TRACKER_META);
+
+                        if (tracker == null) {
+                            GridNioMessageTracker old = ses.addMeta(TRACKER_META, tracker =
+                                new GridNioMessageTracker(ses, msgQueueLimit));
+
+                            assert old == null;
+                        }
+
+                        tracker.onMessageReceived();
+
+                        c = tracker;
+                    }
+                    else
+                        c = NOOP;
+
+                    notifyListener(sndId, msg, c);
+                }
+            }
+        };
 
     /** Logger. */
     @GridLoggerResource
@@ -1217,24 +1217,24 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
             try {
                 GridNioServer<GridTcpCommunicationMessageAdapter> srvr =
                     GridNioServer.<GridTcpCommunicationMessageAdapter>builder()
-                    .address(locHost)
-                    .port(port)
-                    .listener(srvLsnr)
-                    .logger(log)
-                    .selectorCount(selectorsCnt)
-                    .gridName(gridName)
-                    .tcpNoDelay(tcpNoDelay)
-                    .directBuffer(directBuf)
-                    .byteOrder(ByteOrder.nativeOrder())
-                    .socketSendBufferSize(sockSndBuf)
-                    .socketReceiveBufferSize(sockRcvBuf)
-                    .sendQueueLimit(msgQueueLimit)
-                    .directMode(true)
-                    .metricsListener(metricsLsnr)
-                    .messageWriter(msgWriter)
-                    .filters(new GridNioCodecFilter(new GridDirectParser(msgReader), log, true),
-                        new GridConnectionBytesVerifyFilter(log))
-                    .build();
+                        .address(locHost)
+                        .port(port)
+                        .listener(srvLsnr)
+                        .logger(log)
+                        .selectorCount(selectorsCnt)
+                        .gridName(gridName)
+                        .tcpNoDelay(tcpNoDelay)
+                        .directBuffer(directBuf)
+                        .byteOrder(ByteOrder.nativeOrder())
+                        .socketSendBufferSize(sockSndBuf)
+                        .socketReceiveBufferSize(sockRcvBuf)
+                        .sendQueueLimit(msgQueueLimit)
+                        .directMode(true)
+                        .metricsListener(metricsLsnr)
+                        .messageWriter(msgWriter)
+                        .filters(new GridNioCodecFilter(new GridDirectParser(msgReader), log, true),
+                            new GridConnectionBytesVerifyFilter(log))
+                        .build();
 
                 boundTcpPort = port;
 
@@ -1937,7 +1937,6 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     private static class HandshakeTimeoutException extends GridException {
         /** */
         private static final long serialVersionUID = 0L;
-
 
         /**
          * @param msg Message.

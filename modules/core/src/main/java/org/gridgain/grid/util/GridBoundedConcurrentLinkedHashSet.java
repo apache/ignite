@@ -26,7 +26,6 @@ public class GridBoundedConcurrentLinkedHashSet<E> extends GridSetWrapper<E> {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates a new, empty set with specified order and default initial capacity (16),
      * load factor (0.75) and concurrencyLevel (16).

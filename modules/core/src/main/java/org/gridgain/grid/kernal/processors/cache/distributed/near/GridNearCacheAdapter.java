@@ -36,7 +36,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */

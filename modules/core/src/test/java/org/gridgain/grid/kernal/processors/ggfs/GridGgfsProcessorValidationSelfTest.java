@@ -313,6 +313,32 @@ public class GridGgfsProcessorValidationSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    public void testRemoteIfMetaCacheNameEquals() throws Exception {
+        GridConfiguration g2Cfg = getConfiguration("g2");
+
+        GridGgfsConfiguration g2GgfsCfg1 = new GridGgfsConfiguration(g1GgfsCfg1);
+        GridGgfsConfiguration g2GgfsCfg2 = new GridGgfsConfiguration(g1GgfsCfg2);
+
+        g2GgfsCfg1.setName("g2GgfsCfg1");
+        g2GgfsCfg2.setName("g2GgfsCfg2");
+
+        g2GgfsCfg1.setDataCacheName("g2DataCache1");
+        g2GgfsCfg2.setDataCacheName("g2DataCache2");
+
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+        g2Cfg.setCacheConfiguration(concat(dataCaches(1024, "g2DataCache1", "g2DataCache2"), metaCaches(),
+                GridCacheConfiguration.class));
+
+        g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
+
+        G.start(g1Cfg);
+
+        checkGridStartFails(g2Cfg, "Meta cache names should be different for different GGFS instances", false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testRemoteIfDataCacheNameDiffers() throws Exception {
         GridConfiguration g2Cfg = getConfiguration("g2");
 
@@ -331,6 +357,32 @@ public class GridGgfsProcessorValidationSelfTest extends GridCommonAbstractTest 
         G.start(g1Cfg);
 
         checkGridStartFails(g2Cfg, "Data cache name should be the same on all nodes in grid for GGFS", false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoteIfDataCacheNameEquals() throws Exception {
+        GridConfiguration g2Cfg = getConfiguration("g2");
+
+        GridGgfsConfiguration g2GgfsCfg1 = new GridGgfsConfiguration(g1GgfsCfg1);
+        GridGgfsConfiguration g2GgfsCfg2 = new GridGgfsConfiguration(g1GgfsCfg2);
+
+        g2GgfsCfg1.setName("g2GgfsCfg1");
+        g2GgfsCfg2.setName("g2GgfsCfg2");
+
+        g2GgfsCfg1.setMetaCacheName("g2MetaCache1");
+        g2GgfsCfg2.setMetaCacheName("g2MetaCache2");
+
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+        g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches("g2MetaCache1", "g2MetaCache2"),
+                GridCacheConfiguration.class));
+
+        g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
+
+        G.start(g1Cfg);
+
+        checkGridStartFails(g2Cfg, "Data cache names should be different for different GGFSes", false);
     }
 
     /**

@@ -23,7 +23,6 @@ public class GridDhtFinishedFuture<T> extends GridFinishedFuture<T> implements G
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */

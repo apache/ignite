@@ -22,7 +22,6 @@ public class GridRuntimeException extends RuntimeException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Constructs runtime grid exception with given message and cause.
      *

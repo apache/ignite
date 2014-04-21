@@ -19,7 +19,6 @@ public class GridInternalException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates new internal exception with given error message.
      *

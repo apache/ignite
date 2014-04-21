@@ -39,11 +39,11 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  */
 public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     implements GridCacheAtomicFuture<K, Object>{
-    /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Logger reference. */
+    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
     protected static GridLogger log;
@@ -455,7 +455,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         if (updVer != null && log.isDebugEnabled())
             log.debug("Assigned fast-map version for update on near node: " + updVer);
 
-        if (keys.size() == 1 && (!fastMap || !cache.hasBackups()) && (single == null || single)) {
+        if (keys.size() == 1 && !fastMap && (single == null || single)) {
             K key = F.first(keys);
 
             Object val;
@@ -506,7 +506,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             Collection<GridNode> primaryNodes = mapKey(key, topVer, fastMap);
 
             // One key and no backups.
-            assert primaryNodes.size() == 1 : primaryNodes;
+            assert primaryNodes.size() == 1 : "Should be mapped to single node: " + primaryNodes;
 
             GridNode primary = F.first(primaryNodes);
 

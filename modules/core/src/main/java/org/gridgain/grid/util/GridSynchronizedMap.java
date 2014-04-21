@@ -22,7 +22,6 @@ public class GridSynchronizedMap<K, V> extends ConcurrentHashMap8<K, V> implemen
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** {@inheritDoc} */
     @Override public synchronized V putIfAbsent(K key, V val) {
         return super.putIfAbsent(key, val);

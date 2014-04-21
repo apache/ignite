@@ -13,7 +13,7 @@
  * you first need to compile the API, located in GRIDGAIN_HOME/modules/clients/cpp (see README
  * file for compilation instructions).
  * <p>
- * To execute this example you should start one or more instances of <c>GridClientExampleNodeStartup</c>
+ * To execute this example you should start one or more instances of <c>ClientExampleNodeStartup</c>
  * Java class which will start up a GridGain node with proper configuration (you can compile
  * and run this class from your favourite IDE).
  * <p>
