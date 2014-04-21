@@ -23,6 +23,9 @@ import java.util.*;
  * Deployment request.
  */
 public class GridDeploymentRequest extends GridTcpCommunicationMessageAdapter {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Response topic. Response should be sent back to this topic. */
     @GridDirectTransient
     private Object resTopic;

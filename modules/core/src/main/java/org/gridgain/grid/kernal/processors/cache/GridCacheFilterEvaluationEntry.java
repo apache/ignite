@@ -26,6 +26,9 @@ import static org.gridgain.grid.cache.GridCachePeekMode.*;
  */
 @SuppressWarnings("unchecked")
 public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Allow transactional peeks flag. */
     private boolean allowTx;
 

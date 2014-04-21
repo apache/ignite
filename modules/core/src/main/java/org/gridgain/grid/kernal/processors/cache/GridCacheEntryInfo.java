@@ -21,6 +21,9 @@ import java.io.*;
  * Entry information that gets passed over wire.
  */
 public class GridCacheEntryInfo<K, V> implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Cache key. */
     @GridToStringInclude
     @GridDirectTransient

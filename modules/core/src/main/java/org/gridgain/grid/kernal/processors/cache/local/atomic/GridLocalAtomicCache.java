@@ -32,6 +32,9 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  * Non-transactional local cache.
  */
 public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Unsafe instance. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 

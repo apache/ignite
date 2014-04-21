@@ -30,6 +30,9 @@ import java.util.*;
  * Task that gets metadata for JDBC adapter.
  */
 public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<String, byte[]> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Marshaller. */
     private static final GridMarshaller MARSHALLER = new GridJdkMarshaller();
 
@@ -57,6 +60,9 @@ public class GridCacheQueryJdbcMetadataTask extends GridComputeTaskAdapter<Strin
      * Job for JDBC adapter.
      */
     private static class JdbcDriverMetadataJob extends GridComputeJobAdapter implements GridOptimizedMarshallable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
         private static Object GG_CLASS_ID;

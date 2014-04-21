@@ -10,6 +10,8 @@
 package org.gridgain.grid.util;
 
 import junit.framework.*;
+import org.gridgain.testframework.junits.*;
+import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 
@@ -18,7 +20,7 @@ import static org.gridgain.grid.util.GridLibraryConsistencyCheck.*;
 /**
  * Library consistency check tests.
  */
-public class GridLibraryConsistencyCheckSelfTest extends TestCase {
+public class GridLibraryConsistencyCheckSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
@@ -52,7 +54,7 @@ public class GridLibraryConsistencyCheckSelfTest extends TestCase {
         libs1.add("lib-1.0.jar");
         libs2.add("lib-1.1.jar");
 
-        assertEquals(1, check(libs1, libs2).size());
+        assertEquals(1, check(log, libs1, libs2).size());
     }
 
     /**
@@ -67,7 +69,7 @@ public class GridLibraryConsistencyCheckSelfTest extends TestCase {
         libs1.add("lib-1.0.jar");
         libs2.add(NOT_FOUND_MESSAGE);
 
-        assertEquals(0, check(libs1, libs2).size());
+        assertEquals(0, check(log, libs1, libs2).size());
     }
 
     /** Initializes libraries list with not_found messages. */

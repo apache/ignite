@@ -24,6 +24,9 @@ import static org.gridgain.grid.GridSystemProperties.*;
  * Reflection field and method cache for classes.
  */
 public class GridReflectionCache implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Compares fields by name. */
     private static final Comparator<Field> FIELD_NAME_COMPARATOR = new Comparator<Field>() {
         @Override public int compare(Field f1, Field f2) {

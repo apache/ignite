@@ -28,6 +28,9 @@ import java.util.concurrent.atomic.*;
  * Parent of all cache messages.
  */
 public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessageAdapter {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Maximum number of cache lookup indexes. */
     public static final int MAX_CACHE_MSG_LOOKUP_INDEX = 256;
 

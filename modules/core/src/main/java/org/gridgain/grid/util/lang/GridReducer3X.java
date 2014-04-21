@@ -19,6 +19,9 @@ import org.gridgain.grid.util.typedef.*;
  * @see RX3
  */
 public abstract class GridReducer3X<E1, E2, E3, R> implements GridReducer3<E1, E2, E3, R> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public R apply() {
         try {

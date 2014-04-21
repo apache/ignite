@@ -18,6 +18,9 @@ import org.gridgain.grid.util.lang.*;
  */
 public class GridSpiCloseableIteratorWrapper<T> extends GridCloseableIteratorAdapter<T> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final GridSpiCloseableIterator<T> iter;
 
     /**

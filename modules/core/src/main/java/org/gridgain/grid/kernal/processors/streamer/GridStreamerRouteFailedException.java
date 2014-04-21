@@ -16,6 +16,9 @@ import org.gridgain.grid.*;
  * and corresponding callback is executed on originating node.
  */
 public class GridStreamerRouteFailedException extends GridException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * @param msg Error message.
      */
