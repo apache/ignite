@@ -65,9 +65,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** Unsafe instance. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
-    /** Will be {@code true} if affinity has backups. */
-    private boolean hasBackups;
-
     /** Update reply closure. */
     private CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>> updateReplyClos;
 
@@ -146,8 +143,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public void start() throws GridException {
         resetMetrics();
 
-        hasBackups = ctx.config().getBackups() > 0;
-
         preldr = new GridDhtPreloader<>(ctx);
 
         preldr.start();
@@ -221,13 +216,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public GridNearCacheAdapter<K, V> near() {
         return near;
-    }
-
-    /**
-     * @return Whether backups are configured for this cache.
-     */
-    public boolean hasBackups() {
-        return hasBackups;
     }
 
     /** {@inheritDoc} */
@@ -1745,7 +1733,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean force
     ) {
         if (!force) {
-            if (!hasBackups || updateReq.fastMap())
+            if (updateReq.fastMap())
                 return null;
 
             long topVer = updateReq.topologyVersion();
