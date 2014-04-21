@@ -185,10 +185,10 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                 "(is rest enabled for this node?): " + node);
         }
 
-        final boolean sameHost = node.attributes().isEmpty() ||
+        boolean sameHost = node.attributes().isEmpty() ||
             F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));
 
-        final List<InetSocketAddress> srvs = new ArrayList<>(endpoints);
+        List<InetSocketAddress> srvs = new ArrayList<>(endpoints);
 
         if (sameHost)
             Collections.sort(srvs, GridClientUtils.inetSocketAddressesComparator(true));
