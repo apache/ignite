@@ -21,6 +21,9 @@ import java.io.*;
  */
 public class GridCacheSetItemKey implements GridCacheInternal, Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private GridUuid setId;
 
     /** */

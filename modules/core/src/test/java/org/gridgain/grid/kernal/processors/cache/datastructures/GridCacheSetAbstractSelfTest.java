@@ -788,6 +788,31 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testSerialization() throws Exception {
+        final GridCacheSet<Integer> set = cache().dataStructures().set(SET_NAME, false, true);
+
+        assertNotNull(set);
+
+        for (int i = 0; i < 10; i++)
+            set.add(i);
+
+        Collection<Integer> c = grid(0).compute().broadcast(new Callable<Integer>() {
+            @Override public Integer call() throws Exception {
+                assertEquals(SET_NAME, set.name());
+
+                return set.size();
+            }
+        }).get();
+
+        assertEquals(gridCount(), c.size());
+
+        for (Integer size : c)
+            assertEquals((Integer)10, size);
+    }
+
+    /**
      * @param set Set.
      * @param size Expected size.
      */

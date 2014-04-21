@@ -410,6 +410,11 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
+            if (cctx.isDrEnabled())
+                cctx.dr().partitionEvicted(id);
+
+            cctx.dataStructures().onPartitionEvicted(id);
+
             rent.onDone();
 
             ((GridDhtPreloader<K, V>)cctx.preloader()).onPartitionEvicted(this, updateSeq);

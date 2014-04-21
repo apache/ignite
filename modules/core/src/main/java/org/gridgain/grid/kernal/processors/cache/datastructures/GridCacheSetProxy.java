@@ -12,29 +12,50 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
 /**
  * Cache set proxy.
  */
-public class GridCacheSetProxy<T> implements GridCacheSet<T> {
+public class GridCacheSetProxy<T> implements GridCacheSet<T>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Deserialization stash. */
+    private static final ThreadLocal<GridBiTuple<GridCacheContext, String>> stash =
+        new ThreadLocal<GridBiTuple<GridCacheContext, String>>() {
+            @Override protected GridBiTuple<GridCacheContext, String> initialValue() {
+                return F.t2();
+            }
+        };
+
     /** Delegate set. */
     private GridCacheSetImpl<T> delegate;
 
     /** Cache context. */
-    private final GridCacheContext cctx;
+    private GridCacheContext cctx;
 
     /** Cache gateway. */
-    private final GridCacheGateway gate;
+    private GridCacheGateway gate;
 
     /** Busy lock. */
-    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
+    private GridSpinBusyLock busyLock;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridCacheSetProxy() {
+        // No-op.
+    }
 
     /**
      * @param cctx Cache context.
@@ -45,6 +66,8 @@ public class GridCacheSetProxy<T> implements GridCacheSet<T> {
         this.delegate = delegate;
 
         gate = cctx.gate();
+
+        busyLock = new GridSpinBusyLock();
     }
 
     /**
@@ -471,5 +494,44 @@ public class GridCacheSetProxy<T> implements GridCacheSet<T> {
      */
     private void leaveBusy() {
         busyLock.leaveBusy();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(cctx);
+        U.writeString(out, name());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        GridBiTuple<GridCacheContext, String> t = stash.get();
+
+        t.set1((GridCacheContext)in.readObject());
+        t.set2(U.readString(in));
+    }
+
+    /**
+     * Reconstructs object on demarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of demarshalling error.
+     */
+    protected Object readResolve() throws ObjectStreamException {
+        try {
+            GridBiTuple<GridCacheContext, String> t = stash.get();
+
+            return t.get1().dataStructures().set(t.get2(), false, false);
+        }
+        catch (GridException e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
+        finally {
+            stash.remove();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return delegate.toString();
     }
 }

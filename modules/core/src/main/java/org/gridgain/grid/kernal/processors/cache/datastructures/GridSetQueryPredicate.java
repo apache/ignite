@@ -22,6 +22,9 @@ import java.io.*;
  */
 public class GridSetQueryPredicate<K, V> implements GridBiPredicate<K, V>, Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private GridUuid setId;
 
     /** */
