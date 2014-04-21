@@ -187,10 +187,6 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         if (cfg.getEvictSynchronizedKeyBufferSize() < 0)
             throw new GridException("Configuration parameter 'evictSynchronizedKeyBufferSize' cannot be negative.");
 
-        if (cctx.isReplicated() && cfg.isEvictSynchronized())
-            throw new GridException("Illegal configuration (synchronized evictions are not supported for replicated " +
-                "cache): " + cctx.name());
-
         evictSync = cfg.isEvictSynchronized() && !cctx.isNear() && !cctx.isSwapOrOffheapEnabled();
 
         nearSync = cfg.isEvictNearSynchronized() && isNearEnabled(cctx) && !cctx.isNear();
@@ -615,9 +611,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @return Topology version after lock.
      */
     private long lockTopology() {
-        if (cctx.isReplicated())
-            return cctx.discovery().topologyVersion();
-        else if (!cctx.isNear()) {
+        if (!cctx.isNear()) {
             cctx.dht().topology().readLock();
 
             return cctx.dht().topology().topologyVersion();
@@ -1271,39 +1265,26 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         throws GridCacheEntryRemovedException {
         assert entry != null;
 
+        assert cctx.config().getCacheMode() != LOCAL;
+
         Collection<GridNode> backups;
+
+        if (evictSync)
+            backups = F.view(cctx.dht().topology().nodes(entry.partition(), topVer), F0.notEqualTo(cctx.localNode()));
+        else
+            backups = Collections.emptySet();
 
         Collection<GridNode> readers;
 
-        if (cctx.config().getCacheMode() == REPLICATED) {
-            if (evictSync) {
-                backups = new HashSet<>(
-                    F.view(cctx.affinity().nodes(entry.partition(), topVer), F.remoteNodes(cctx.localNodeId())));
-            }
-            else
-                backups = Collections.emptySet();
-
+        if (nearSync) {
+            readers = F.transform(((GridDhtCacheEntry<K, V>)entry).readers(), new C1<UUID, GridNode>() {
+                @Nullable @Override public GridNode apply(UUID nodeId) {
+                    return cctx.node(nodeId);
+                }
+            });
+        }
+        else
             readers = Collections.emptySet();
-        }
-        else {
-            assert cctx.config().getCacheMode() == PARTITIONED;
-
-            if (evictSync)
-                backups = F.view(cctx.dht().topology().nodes(entry.partition(), topVer),
-                    F0.notEqualTo(cctx.localNode()));
-            else
-                backups = Collections.emptySet();
-
-            if (nearSync) {
-                readers = F.transform(((GridDhtCacheEntry<K, V>)entry).readers(), new C1<UUID, GridNode>() {
-                    @Nullable @Override public GridNode apply(UUID nodeId) {
-                        return cctx.node(nodeId);
-                    }
-                });
-            }
-            else
-                readers = Collections.emptySet();
-        }
 
         return new GridPair<>(backups, readers);
     }
