@@ -278,7 +278,6 @@ public final class GridCollections {
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /**
          * @param s Set to wrap.
          */

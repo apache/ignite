@@ -24,6 +24,9 @@ import java.util.concurrent.locks.*;
  * Default future implementation.
  */
 public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements GridNioFuture<R> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Initial state. */
     private static final int INIT = 0;
 
@@ -32,9 +35,6 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
 
     /** Done state. */
     private static final int DONE = 2;
-    /** */
-    private static final long serialVersionUID = 0L;
-
 
     /** Result. */
     @GridToStringInclude

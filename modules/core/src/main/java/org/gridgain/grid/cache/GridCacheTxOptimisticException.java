@@ -18,7 +18,6 @@ public class GridCacheTxOptimisticException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates new optimistic exception with given error message.
      *

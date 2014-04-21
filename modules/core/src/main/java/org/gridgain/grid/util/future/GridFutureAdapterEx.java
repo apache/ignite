@@ -27,6 +27,9 @@ import java.util.concurrent.locks.*;
  * Future adapter without kernal context.
  */
 public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implements GridFuture<R>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Initial state. */
     private static final int INIT = 0;
 
@@ -35,9 +38,6 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
 
     /** Done state. */
     private static final int DONE = 2;
-    /** */
-    private static final long serialVersionUID = 0L;
-
 
     /** Result. */
     @GridToStringInclude

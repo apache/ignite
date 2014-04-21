@@ -163,6 +163,7 @@ public interface GridOffHeapPartitionedMap {
      * Sets callback for when entries are evicted due to memory constraints.
      * The parameter into closure is key bytes.
      *
+     * @param lsnr Evict listener.
      * @return {@code True} if evict listener was added, {@code false} if
      *      another listener already exists or {@code LRU} is disabled.
      */

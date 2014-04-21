@@ -18,7 +18,6 @@ public class GridGgfsDirectoryNotEmptyException extends GridGgfsException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * @param msg Exception message.
      */

@@ -22,7 +22,6 @@ public class GridCacheDataStructureRemovedException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates new exception with given error message.
      *

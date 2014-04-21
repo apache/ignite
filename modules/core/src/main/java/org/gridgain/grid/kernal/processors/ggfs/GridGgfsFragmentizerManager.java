@@ -803,7 +803,6 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /**
          * Constructor.
          *

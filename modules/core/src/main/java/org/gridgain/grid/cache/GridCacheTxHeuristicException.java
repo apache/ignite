@@ -22,7 +22,6 @@ public class GridCacheTxHeuristicException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates new heuristic exception with given error message.
      *
