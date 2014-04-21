@@ -151,9 +151,6 @@ public class GridProductImpl implements GridProduct {
      */
     private static GridProductEdition editionFromString(String edition) {
         switch (edition) {
-            case "dev":
-                return PLATFORM;
-
             case "datagrid":
                 return DATA_GRID;
 
@@ -166,6 +163,7 @@ public class GridProductImpl implements GridProduct {
             case "mongo":
                 return MONGO;
 
+            case "dev":
             case "platform":
                 return PLATFORM;
         }

@@ -1131,7 +1131,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
 
         if (connBufSize > 8192)
             U.warn(log, "Specified communication IO buffer size is larger than recommended (ignore if done " +
-                    "intentionally) [specified=" + connBufSize + ", recommended=8192]",
+                "intentionally) [specified=" + connBufSize + ", recommended=8192]",
                 "Specified communication IO buffer size is larger than recommended (ignore if done intentionally).");
 
         if (!tcpNoDelay)
