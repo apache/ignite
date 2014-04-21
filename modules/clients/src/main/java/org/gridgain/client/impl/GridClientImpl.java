@@ -13,8 +13,10 @@ import org.gridgain.client.*;
 import org.gridgain.client.balancer.*;
 import org.gridgain.client.impl.connection.*;
 import org.gridgain.client.ssl.*;
+import org.gridgain.client.util.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.typedef.F;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -24,6 +26,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.logging.*;
+
+import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
  * Client implementation.
@@ -395,8 +399,22 @@ public class GridClientImpl implements GridClient {
         if (hasSrvs) {
             // Add REST endpoints for all nodes from previous topology snapshot.
             try {
-                for (GridClientNodeImpl node : top.nodes())
-                    connSrvs.addAll(node.availableAddresses(cfg.getProtocol()));
+                for (GridClientNodeImpl node : top.nodes()) {
+                    List<InetSocketAddress> endpoints = new ArrayList<>(node.availableAddresses(cfg.getProtocol()));
+
+                    final boolean emptyAttr = node.attributes().isEmpty();
+                    final boolean sameHost = emptyAttr ||
+                        F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));
+
+                    if (sameHost)
+                        Collections.sort(endpoints, GridClientUtils.inetSocketAddressesComparator(!emptyAttr));
+                    else
+                        for(int i = endpoints.size() - 1; i >= 0; i--)
+                            if (endpoints.get(i).getAddress().isLoopbackAddress())
+                                endpoints.remove(i);
+
+                    connSrvs.addAll(endpoints);
+                }
             }
             catch (GridClientDisconnectedException ignored) {
                 // Ignore if latest topology update failed.
