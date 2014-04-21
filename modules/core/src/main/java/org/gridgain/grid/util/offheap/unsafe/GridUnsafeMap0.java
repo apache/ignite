@@ -52,8 +52,4 @@ public class GridUnsafeMap0 {
             mem.release(ptr0, 28 + keySize + valSize);
         }
     }
-
-    class Tuple {
-
-    }
 }
