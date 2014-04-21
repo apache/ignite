@@ -326,7 +326,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
         assertTrue(queue.isEmpty());
 
-        grid(0).compute().call(new PutTakeJob(queueName, RETRIES)).get();
+        grid(0).compute().broadcast(new PutTakeJob(queueName, RETRIES)).get();
 
         assertEquals(0, queue.size());
 
@@ -806,10 +806,6 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             for (int i = 0; i < retries; i++) {
                 queue.put(i);
-
-                assertNotNull(queue.peek());
-
-                assertNotNull(queue.element());
 
                 assertNotNull(queue.take());
             }

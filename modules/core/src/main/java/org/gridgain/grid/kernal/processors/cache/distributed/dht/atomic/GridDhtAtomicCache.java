@@ -144,8 +144,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
     @Override public void start() throws GridException {
-        hasBackups = ctx.config().getBackups() > 0;
-
         preldr = new GridDhtPreloader<>(ctx);
 
         preldr.start();
@@ -206,13 +204,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public GridNearCacheAdapter<K, V> near() {
         return near;
-    }
-
-    /**
-     * @return Whether backups are configured for this cache.
-     */
-    public boolean hasBackups() {
-        return hasBackups;
     }
 
     /** {@inheritDoc} */
@@ -1730,7 +1721,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean force
     ) {
         if (!force) {
-            if (!hasBackups || updateReq.fastMap())
+            if (updateReq.fastMap())
                 return null;
 
             long topVer = updateReq.topologyVersion();
