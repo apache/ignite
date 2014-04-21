@@ -59,6 +59,9 @@ public class GridStreamerRandomEventRouter extends GridStreamerEventRouterAdapte
     @Override public GridNode route(GridStreamerContext ctx, String stageName, Object evt) {
         Collection<GridNode> nodes = F.view(ctx.projection().nodes(), predicates);
 
+        if (F.isEmpty(nodes))
+            return null;
+
         int idx = ThreadLocalRandom8.current().nextInt(nodes.size());
 
         int i = 0;
