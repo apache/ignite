@@ -402,12 +402,11 @@ public class GridClientImpl implements GridClient {
                 for (GridClientNodeImpl node : top.nodes()) {
                     List<InetSocketAddress> endpoints = new ArrayList<>(node.availableAddresses(cfg.getProtocol()));
 
-                    final boolean emptyAttr = node.attributes().isEmpty();
-                    final boolean sameHost = emptyAttr ||
+                    boolean sameHost = node.attributes().isEmpty() ||
                         F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));
 
                     if (sameHost)
-                        Collections.sort(endpoints, GridClientUtils.inetSocketAddressesComparator(!emptyAttr));
+                        Collections.sort(endpoints, GridClientUtils.inetSocketAddressesComparator(true));
                     else
                         for(int i = endpoints.size() - 1; i >= 0; i--)
                             if (endpoints.get(i).getAddress().isLoopbackAddress())
