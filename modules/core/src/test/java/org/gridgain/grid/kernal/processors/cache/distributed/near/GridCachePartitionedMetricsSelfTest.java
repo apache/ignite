@@ -33,7 +33,6 @@ public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalA
         cfg.setPreloadMode(SYNC);
         cfg.setTxSerializableEnabled(true);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setDistributionMode(PARTITIONED_ONLY);
 
         return cfg;
     }
