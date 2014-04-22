@@ -565,10 +565,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
 
     /** {@inheritDoc} */
     @Override public Collection<GridNode> nodes(int p, long topVer) {
-        // Don't remove redundant cast, or won't compile.
         Collection<GridNode> affNodes = cctx.affinity().nodes(p, topVer);
-
-        Collection<UUID> affIds = new HashSet<>(F.viewReadOnly(affNodes, F.node2id()));
 
         lock.readLock().lock();
 
@@ -576,29 +573,54 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
             assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer=" + topVer +
                 ", node2part=" + node2part + ']';
 
-            Collection<GridNode> nodes = new ArrayList<>(affNodes.size());
-
-            for (GridNode n : affNodes)
-                nodes.add(n);
+            Collection<GridNode> nodes = null;
 
             Collection<UUID> nodeIds = part2node.get(p);
 
             if (!F.isEmpty(nodeIds)) {
+                Collection<UUID> affIds = cctx.isReplicated() ? new HashSet<>(F.viewReadOnly(affNodes, F.node2id())) :
+                    null;
+
                 for (UUID nodeId : nodeIds) {
-                    if (!affIds.contains(nodeId) && hasState(p, nodeId, OWNING, MOVING, RENTING)) {
+                    if (!contains(affNodes, affIds, nodeId) && hasState(p, nodeId, OWNING, MOVING, RENTING)) {
                         GridNode n = cctx.discovery().node(nodeId);
 
-                        if (n != null && (topVer < 0 || n.order() <= topVer))
+                        if (n != null && (topVer < 0 || n.order() <= topVer)) {
+                            if (nodes == null) {
+                                nodes = new ArrayList<>(affNodes.size() + 2);
+
+                                nodes.addAll(affNodes);
+                            }
+
                             nodes.add(n);
+                        }
                     }
                 }
             }
 
-            return nodes;
+            return nodes != null ? nodes : affNodes;
         }
         finally {
             lock.readLock().unlock();
         }
+    }
+
+    /**
+     * @param nodes Nodes.
+     * @param ids Optional node IDs.
+     * @param nodeId Node ID.
+     * @return {@code True} if collection contains node with given ID.
+     */
+    private static boolean contains(Collection<GridNode> nodes, @Nullable Collection<UUID> ids, UUID nodeId) {
+        if (ids != null)
+            return ids.contains(nodeId);
+
+        for (GridNode node : nodes) {
+            if (node.id().equals(nodeId))
+                return true;
+        }
+
+        return false;
     }
 
     /**
