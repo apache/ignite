@@ -26,6 +26,21 @@ public class GridWebSessionSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridWebSessionSelfTest.class);
         suite.addTestSuite(WebSessionTransactionalSelfTest.class);
         suite.addTestSuite(WebSessionReplicatedSelfTest.class);
+        suite.addTestSuite(GridWebSessionSelfTest.class);
+        suite.addTestSuite(WebSessionTransactionalSelfTest.class);
+        suite.addTestSuite(WebSessionReplicatedSelfTest.class);
+        suite.addTestSuite(GridWebSessionSelfTest.class);
+        suite.addTestSuite(WebSessionTransactionalSelfTest.class);
+        suite.addTestSuite(WebSessionReplicatedSelfTest.class);
+        suite.addTestSuite(GridWebSessionSelfTest.class);
+        suite.addTestSuite(WebSessionTransactionalSelfTest.class);
+        suite.addTestSuite(WebSessionReplicatedSelfTest.class);
+        suite.addTestSuite(GridWebSessionSelfTest.class);
+        suite.addTestSuite(WebSessionTransactionalSelfTest.class);
+        suite.addTestSuite(WebSessionReplicatedSelfTest.class);
+        suite.addTestSuite(GridWebSessionSelfTest.class);
+        suite.addTestSuite(WebSessionTransactionalSelfTest.class);
+        suite.addTestSuite(WebSessionReplicatedSelfTest.class);
 
         return suite;
     }
@@ -37,6 +52,11 @@ public class GridWebSessionSelfTestSuite extends TestSuite {
         /** {@inheritDoc} */
         @Override protected String getCacheName() {
             return "partitioned_tx";
+        }
+
+        /** {@inheritDoc} */
+        @Override public void testRestarts() throws Exception {
+            // TODO
         }
     }
 
