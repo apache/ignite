@@ -347,11 +347,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (!cc.isQueryIndexEnabled())
-            U.warn(log, "Query indexing is disabled (queries will not work) for cache: '" + cc.getName() + "'. " +
-                "To enable change GridCacheConfiguration.isQueryIndexEnabled() property.",
-                "Query indexing is disabled (queries will not work) for cache: " + cc.getName());
-
         GridCacheEvictionPolicy evictPlc =  cc.getEvictionPolicy();
 
         if (evictPlc != null && evictPlc instanceof GridCacheGgfsPerBlockLruEvictionPolicy) {
@@ -390,10 +385,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cc.getName());
         }
 
-        // Validate DR send configuration.
         boolean ggfsCache = CU.isGgfsCache(c, cc.getName());
+
+        if (!ggfsCache && !cc.isQueryIndexEnabled())
+            U.warn(log, "Query indexing is disabled (queries will not work) for cache: '" + cc.getName() + "'. " +
+                "To enable change GridCacheConfiguration.isQueryIndexEnabled() property.",
+                "Query indexing is disabled (queries will not work) for cache: " + cc.getName());
+
         boolean mongoCache = false; // CU.isMongoCache(c, cc.getName());
 
+        // Validate DR send configuration.
         GridDrSenderCacheConfiguration drSndCfg = cc.getDrSenderConfiguration();
 
         if (drSndCfg != null) {
