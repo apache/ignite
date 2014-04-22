@@ -31,6 +31,7 @@ public class GridHadoopTaskContext {
      *
      * @return Task output.
      */
+
     public GridHadoopTaskOutput output() {
         return null;
     }
@@ -51,5 +52,9 @@ public class GridHadoopTaskContext {
      */
     public Grid grid() {
         return ctx.grid();
+    }
+
+    public GridHadoopJob job() {
+        return null;
     }
 }

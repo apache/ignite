@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.hadoop2impl;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 
 /**
@@ -31,7 +32,6 @@ public class GridHadoopV2TaskImpl implements GridHadoopTask {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(GridHadoopTaskContext ctx) {
-
+    @Override public void run(GridHadoopTaskContext ctx) throws GridInterruptedException, GridException {
     }
 }

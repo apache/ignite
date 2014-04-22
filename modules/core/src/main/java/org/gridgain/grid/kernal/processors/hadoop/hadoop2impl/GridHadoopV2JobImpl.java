@@ -76,7 +76,19 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
-        return null;
+        switch (taskInfo.type()) {
+            case MAP:
+                return new GridHadoopV2MapTask(taskInfo);
+
+            case REDUCE:
+                return new GridHadoopV2ReduceTask(taskInfo);
+
+            case COMBINE:
+                return new GridHadoopV2CombineTask(taskInfo);
+
+            default:
+                return null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -103,5 +115,29 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
     @Override public GridHadoopSerialization serialization() throws GridException {
         // TODO implement.
         return null;
+    }
+
+    private TaskType taskType(GridHadoopTaskType gridTaskType) {
+        switch (gridTaskType) {
+            case MAP:
+                return TaskType.MAP;
+
+            case REDUCE:
+                return TaskType.REDUCE;
+
+            default:
+                return null;
+        }
+    }
+
+    /**
+     *
+     * @param taskInfo
+     * @return
+     */
+    public TaskAttemptID attemptId(GridHadoopTaskInfo taskInfo) {
+        TaskID tid = new TaskID(ctx.getJobID(), taskType(taskInfo.type()), taskInfo.taskNumber());
+
+        return new TaskAttemptID(tid, taskInfo.attempt());
     }
 }

@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.gridgain.grid.*;
+
 import java.io.*;
 
 /**
@@ -25,5 +27,5 @@ public interface GridHadoopTask extends Serializable {
      *
      * @param ctx Context.
      */
-    public void run(GridHadoopTaskContext ctx);
+    public void run(GridHadoopTaskContext ctx) throws GridInterruptedException, GridException;
 }

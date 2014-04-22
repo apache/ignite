@@ -294,7 +294,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                                 assert task != null : "Job created null task: " + job;
 
-
                                 if (tasks == null)
                                     tasks = new ArrayList<>();
 
@@ -344,8 +343,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                                     GridHadoopTaskType.REDUCE, jobId, rdc, attempt, null);
 
                                 GridHadoopTask task = job.createTask(taskInfo);
-
-                                assert task != null : "Job created null task: " + job;
 
                                 if (tasks == null)
                                     tasks = new ArrayList<>();
@@ -467,6 +464,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         0, taskInfo.attempt(), null);
 
                     GridHadoopTask task = job.createTask(info);
+
+                    assert task != null : "Job created null task: " + job;
 
                     ctx.taskExecutor().run(Collections.singletonList(task));
                 }
