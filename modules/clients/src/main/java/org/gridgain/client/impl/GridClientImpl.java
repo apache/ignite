@@ -400,19 +400,25 @@ public class GridClientImpl implements GridClient {
             // Add REST endpoints for all nodes from previous topology snapshot.
             try {
                 for (GridClientNodeImpl node : top.nodes()) {
-                    List<InetSocketAddress> endpoints = new ArrayList<>(node.availableAddresses(cfg.getProtocol()));
+                    Collection<InetSocketAddress> endpoints = node.availableAddresses(cfg.getProtocol());
+
+                    List<InetSocketAddress> srvs = new ArrayList<>(endpoints.size());
 
                     boolean sameHost = node.attributes().isEmpty() ||
                         F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));
 
-                    if (sameHost)
-                        Collections.sort(endpoints, GridClientUtils.inetSocketAddressesComparator(true));
-                    else
-                        for(int i = endpoints.size() - 1; i >= 0; i--)
-                            if (endpoints.get(i).getAddress().isLoopbackAddress())
-                                endpoints.remove(i);
+                    if (sameHost) {
+                        srvs.addAll(endpoints);
 
-                    connSrvs.addAll(endpoints);
+                        Collections.sort(srvs, GridClientUtils.inetSocketAddressesComparator(true));
+                    }
+                    else {
+                        for (InetSocketAddress endpoint : endpoints)
+                            if (!endpoint.getAddress().isLoopbackAddress())
+                                srvs.add(endpoint);
+                    }
+
+                    connSrvs.addAll(srvs);
                 }
             }
             catch (GridClientDisconnectedException ignored) {
