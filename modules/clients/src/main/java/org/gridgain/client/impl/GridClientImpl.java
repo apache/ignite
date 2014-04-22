@@ -402,23 +402,21 @@ public class GridClientImpl implements GridClient {
                 for (GridClientNodeImpl node : top.nodes()) {
                     Collection<InetSocketAddress> endpoints = node.availableAddresses(cfg.getProtocol());
 
-                    List<InetSocketAddress> srvs = new ArrayList<>(endpoints.size());
-
                     boolean sameHost = node.attributes().isEmpty() ||
                         F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));
 
                     if (sameHost) {
-                        srvs.addAll(endpoints);
+                        List<InetSocketAddress> srvs = new ArrayList<>(endpoints);
 
                         Collections.sort(srvs, GridClientUtils.inetSocketAddressesComparator(true));
+
+                        connSrvs.addAll(srvs);
                     }
                     else {
                         for (InetSocketAddress endpoint : endpoints)
                             if (!endpoint.getAddress().isLoopbackAddress())
-                                srvs.add(endpoint);
+                                connSrvs.add(endpoint);
                     }
-
-                    connSrvs.addAll(srvs);
                 }
             }
             catch (GridClientDisconnectedException ignored) {
