@@ -578,11 +578,10 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
             Collection<UUID> nodeIds = part2node.get(p);
 
             if (!F.isEmpty(nodeIds)) {
-                Collection<UUID> affIds = cctx.isReplicated() ? new HashSet<>(F.viewReadOnly(affNodes, F.node2id())) :
-                    null;
+                Collection<UUID> affIds = new HashSet<>(F.viewReadOnly(affNodes, F.node2id()));
 
                 for (UUID nodeId : nodeIds) {
-                    if (!contains(affNodes, affIds, nodeId) && hasState(p, nodeId, OWNING, MOVING, RENTING)) {
+                    if (!affIds.contains(nodeId) && hasState(p, nodeId, OWNING, MOVING, RENTING)) {
                         GridNode n = cctx.discovery().node(nodeId);
 
                         if (n != null && (topVer < 0 || n.order() <= topVer)) {
@@ -603,24 +602,6 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
         finally {
             lock.readLock().unlock();
         }
-    }
-
-    /**
-     * @param nodes Nodes.
-     * @param ids Optional node IDs.
-     * @param nodeId Node ID.
-     * @return {@code True} if collection contains node with given ID.
-     */
-    private static boolean contains(Collection<GridNode> nodes, @Nullable Collection<UUID> ids, UUID nodeId) {
-        if (ids != null)
-            return ids.contains(nodeId);
-
-        for (GridNode node : nodes) {
-            if (node.id().equals(nodeId))
-                return true;
-        }
-
-        return false;
     }
 
     /**
