@@ -80,6 +80,88 @@
                             <goal>testCompile</goal>
                         </goals>
                     </execution>
+                    <execution>
+                        <id>scaladoc</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>doc</goal>
+                        </goals>
+                        <configuration>
+                            <doctitle>GridGain Scalar</doctitle>
+                            <windowtitle>GridGain Scalar</windowtitle>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.7</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.gridgain</groupId>
+                        <artifactId>gridgain-tools</artifactId>
+                        <version>${gridgain.version}</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>scaladoc-postprocessing</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <target>
+                                <copy todir="target/site/apidocs">
+                                    <fileset dir="../../assembly/docfiles">
+                                        <include name="img/**"/>
+                                        <include name="*.js"/>
+                                    </fileset>
+                                </copy>
+
+                                <property name="footer">
+                                    <![CDATA[
+                                        <table style="padding: 0px 10px 10px 10px; width: 100%" border="0">
+                                        <tr>
+                                            <td>
+                                                <nobr>GridGain&#153; - Scalar DSL, ver. <strong>${gridgain.version}</strong></nobr>
+                                                <br>
+                                                <a target=_blank href="http://www.gridgain.org/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                            </td>
+                                        </tr>
+                                        </table>
+                                    ]]>
+                                </property>
+
+                                <sequential>
+                                    <taskdef name="doctask"
+                                        classname="org.gridgain.grid.tools.ant.beautifier.GridJavadocAntTask"/>
+
+                                    <doctask css="dotted" dir="target/site/scaladocs" verify="false">
+                                        <include name="**/*.html"/>
+                                    </doctask>
+
+                                    <replace dir="target/site/scaladocs" token="&lt;!--FOOTER--&gt;" value="${footer}">
+                                        <include name="**/*.html"/>
+                                    </replace>
+
+                                    <replace dir="target/site/scaladocs">
+                                        <replacetoken>src="package.html"</replacetoken>
+                                        <replacevalue>src=org/gridgain/scalar/scalar$.html</replacevalue>
+                                        <include name="**/index.html"/>
+                                    </replace>
+
+                                    <replace dir="target/site/scaladocs">
+                                        <replacetoken>location.replace("package.html")</replacetoken>
+                                        <replacevalue>location.replace("org/gridgain/scalar/scalar$.html")</replacevalue>
+                                        <include name="**/index.js"/>
+                                    </replace>
+                                </sequential>
+                            </target>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+
+ Copyright (C) GridGain Systems. All Rights Reserved.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+-->
+
+<component xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2
+           http://maven.apache.org/xsd/component-1.1.2.xsd">
+    <files>
+        <file>
+            <source>target/gridgain.jar</source>
+            <outputDirectory>/</outputDirectory>
+            <destName>gridgain-${gridgain.edition}-${gridgain.version}.jar</destName>
+        </file>
+
+        <file>
+            <source>examples/target/gridgain-examples-${gridgain.version}.jar</source>
+            <outputDirectory>/</outputDirectory>
+            <destName>gridgain-examples-${gridgain.edition}-${gridgain.version}.jar</destName>
+        </file>
+
+        <file>
+            <source>apache-2.0.txt</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+
+        <file>
+            <source>config/gridgain-log4j.xml</source>
+            <outputDirectory>/config</outputDirectory>
+        </file>
+    </files>
+
+    <fileSets>
+        <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <includes>
+                <include>**/*.bat</include>
+                <include>**/*.exe</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <fileMode>0755</fileMode>
+            <includes>
+                <include>**/*.sh</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>config/${gridgain.edition}</directory>
+            <outputDirectory>/config</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/clients</directory>
+            <outputDirectory>clients</outputDirectory>
+            <includes>
+                <include>cpp/**</include>
+                <include>dotnet/**</include>
+                <include>java/config/**</include>
+                <include>java/readme.pdf</include>
+                <include>java/readme.txt</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>docs</directory>
+            <outputDirectory>/docs</outputDirectory>
+            <includes>
+                <include>gridgain_readme.pdf</include>
+                <include>release_notes.pdf</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/core/target/site/apidocs</directory>
+            <outputDirectory>/docs/javadoc</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/scalar/target/site/scaladocs</directory>
+            <outputDirectory>/docs/scaladoc</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/clients/target/site/apidocs</directory>
+            <outputDirectory>/clients/java/javadoc</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/clients/target/dotnetdoc</directory>
+            <outputDirectory>/clients/dotnet/doc</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/clients/target/cppdoc</directory>
+            <outputDirectory>/clients/cpp/doc</outputDirectory>
+        </fileSet>
+    </fileSets>
+
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>/libs</outputDirectory>
+        </dependencySet>
+    </dependencySets>
+</component>

@@ -22,8 +22,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
+        <gridgain.version>6.0.3</gridgain.version>
+        <gridgain.edition>platform</gridgain.edition>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gridgain.version>1.0-SNAPSHOT</gridgain.version>
+        <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
+        <doxygen.exec>doxygen</doxygen.exec>
     </properties>
 
     <groupId>org.gridgain</groupId>
@@ -41,6 +44,7 @@
         <module>modules/visor-console</module>
         <module>modules/jdbc-driver</module>
         <module>modules/jdk8-backport</module>
+        <module>modules/tools</module>
     </modules>
 
     <dependencies>
@@ -588,18 +592,33 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.4</version>
+                <inherited>false</inherited>
                 <executions>
                     <execution>
                         <id>jar</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>assembly/jar.xml</descriptor>
+                            </descriptors>
+                            <finalName>gridgain</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>release</id>
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>descriptor.xml</descriptor>
+                                <descriptor>assembly/release-${gridgain.edition}.xml</descriptor>
                             </descriptors>
-                            <appendAssemblyId>false</appendAssemblyId>
                             <finalName>gridgain</finalName>
                             <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                         </configuration>
@@ -609,11 +628,39 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.7</version>
+                <inherited>false</inherited>
+                <executions>
+                    <execution>
+                        <id>release-postprocessing</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <target>
+                                <mkdir dir="target/gridgain-${gridgain.edition}-${gridgain.version}/libs/ext"/>
+
+                                <replaceregexp byline="true">
+                                    <regexp pattern="ANT_AUGMENTED_GGJAR=.*"/>
+                                    <substitution expression="ANT_AUGMENTED_GGJAR=gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
+                                    <fileset dir="target/gridgain-${gridgain.edition}-${gridgain.version}">
+                                        <include name="**/*.sh"/>
+                                        <include name="**/*.bat"/>
+                                    </fileset>
+                                </replaceregexp>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>2.9.1</version>
-                <configuration>
-                    <finalName>gridgain</finalName>
-                </configuration>
+                <inherited>false</inherited>
                 <executions>
                     <execution>
                         <id>aggregate</id>
@@ -622,6 +669,7 @@
                         </goals>
                         <phase>package</phase>
                         <configuration>
+                            <finalName>gridgain</finalName>
                             <excludePackageNames>org.gridgain.examples</excludePackageNames>
                         </configuration>
                     </execution>
@@ -632,9 +680,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
                 <version>2.2.1</version>
-                <configuration>
-                    <finalName>gridgain</finalName>
-                </configuration>
+                <inherited>false</inherited>
                 <executions>
                     <execution>
                         <id>aggregate</id>
@@ -643,6 +689,7 @@
                         </goals>
                         <phase>package</phase>
                         <configuration>
+                            <finalName>gridgain</finalName>
                             <excludeResources>true</excludeResources>
                             <excludes>
                                 <exclude>**/org/gridgain/examples/**</exclude>
@@ -655,6 +702,7 @@
 
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
+                <inherited>false</inherited>
                 <executions>
                     <execution>
                         <phase>install</phase>
