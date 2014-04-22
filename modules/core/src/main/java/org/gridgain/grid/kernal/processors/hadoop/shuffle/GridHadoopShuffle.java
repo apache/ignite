@@ -12,19 +12,34 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 
+import java.util.concurrent.*;
+
 /**
  * TODO write doc
  */
 public class GridHadoopShuffle extends GridHadoopComponent {
+    /** */
+    private ConcurrentMap<?, ?> mapOutputs = new ConcurrentHashMap<>();
 
+    /**
+     * @param mapperInfo Mapper info.
+     * @return Output for mapper.
+     */
     public GridHadoopTaskOutput getMapperOutput(GridHadoopTaskInfo mapperInfo) {
         return null;
     }
 
+    /**
+     * @param reducerInfo Reducer info.
+     * @return
+     */
     public GridHadoopTaskInput getReducerInput(GridHadoopTaskInfo reducerInfo) {
         return null;
     }
 
+    /**
+     * @param jobId Job id.
+     */
     public void jobFinished(GridHadoopJobId jobId) {
 
     }

@@ -61,7 +61,17 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
+    @Override public GridHadoopSerialization serialization() throws GridException {
+        return null; // TODO
+    }
+
+    /** {@inheritDoc} */
     @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasCombiner() {
+        return false; // TODO
     }
 }
