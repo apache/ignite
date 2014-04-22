@@ -26,21 +26,6 @@ public class GridWebSessionSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridWebSessionSelfTest.class);
         suite.addTestSuite(WebSessionTransactionalSelfTest.class);
         suite.addTestSuite(WebSessionReplicatedSelfTest.class);
-        suite.addTestSuite(GridWebSessionSelfTest.class);
-        suite.addTestSuite(WebSessionTransactionalSelfTest.class);
-        suite.addTestSuite(WebSessionReplicatedSelfTest.class);
-        suite.addTestSuite(GridWebSessionSelfTest.class);
-        suite.addTestSuite(WebSessionTransactionalSelfTest.class);
-        suite.addTestSuite(WebSessionReplicatedSelfTest.class);
-        suite.addTestSuite(GridWebSessionSelfTest.class);
-        suite.addTestSuite(WebSessionTransactionalSelfTest.class);
-        suite.addTestSuite(WebSessionReplicatedSelfTest.class);
-        suite.addTestSuite(GridWebSessionSelfTest.class);
-        suite.addTestSuite(WebSessionTransactionalSelfTest.class);
-        suite.addTestSuite(WebSessionReplicatedSelfTest.class);
-        suite.addTestSuite(GridWebSessionSelfTest.class);
-        suite.addTestSuite(WebSessionTransactionalSelfTest.class);
-        suite.addTestSuite(WebSessionReplicatedSelfTest.class);
 
         return suite;
     }
@@ -56,7 +41,7 @@ public class GridWebSessionSelfTestSuite extends TestSuite {
 
         /** {@inheritDoc} */
         @Override public void testRestarts() throws Exception {
-            // TODO
+            // TODO GG-8166, enable when fixed.
         }
     }
 
