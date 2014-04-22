@@ -9,7 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.hadoop2impl;
 
+import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.lib.partition.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
@@ -53,6 +55,11 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
+    @Override public int reducers() {
+        return jobInfo.configuration().getInt(JobContext.NUM_REDUCES, 1);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridHadoopPartitioner partitioner() throws GridException {
         Class<? extends Partitioner> partCls = (Class<? extends Partitioner>)jobInfo.configuration().getClass(
             MRJobConfig.PARTITIONER_CLASS_ATTR, HashPartitioner.class);
@@ -67,6 +74,12 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopSerialization serialization() throws GridException {
+        // TODO implement.
         return null;
     }
 

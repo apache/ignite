@@ -71,7 +71,8 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
         execFut.get();
 
-        assertEquals(cnt, execCnt.get());
+        // 1 reducer.
+        assertEquals(cnt + 1, execCnt.get());
     }
 
     /**
@@ -115,7 +116,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
-            return super.createTask(taskInfo);
+            return new HadoopTestTask(taskInfo);
         }
     }
 
@@ -123,6 +124,13 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
      * Test task.
      */
     private static class HadoopTestTask extends GridHadoopV2TaskImpl {
+        /**
+         * @param taskInfo Task info.
+         */
+        private HadoopTestTask(GridHadoopTaskInfo taskInfo) {
+            super(taskInfo);
+        }
+
         /** {@inheritDoc} */
         @Override public void run(GridHadoopTaskContext ctx) {
             execCnt.incrementAndGet();

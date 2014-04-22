@@ -121,4 +121,27 @@ public class GridHadoopFileBlock implements Externalizable {
     public void hosts(String[] hosts) {
         this.hosts = hosts;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (!(o instanceof GridHadoopFileBlock))
+            return false;
+
+        GridHadoopFileBlock that = (GridHadoopFileBlock)o;
+
+        return len == that.len && start == that.start && file.equals(that.file);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = file.hashCode();
+
+        result = 31 * result + (int)(start ^ (start >>> 32));
+        result = 31 * result + (int)(len ^ (len >>> 32));
+
+        return result;
+    }
 }

@@ -116,6 +116,25 @@ public class GridHadoopContext {
     }
 
     /**
+     * @return {@code True} if
+     */
+    public boolean jobUpdateLeader() {
+        long minOrder = Long.MAX_VALUE;
+        GridNode minOrderNode = null;
+
+        for (GridNode node : nodes()) {
+            if (node.order() < minOrder) {
+                minOrder = node.order();
+                minOrderNode = node;
+            }
+        }
+
+        assert minOrderNode != null;
+
+        return localNodeId().equals(minOrderNode.id());
+    }
+
+    /**
      * @return Jon tracker instance.
      */
     public GridHadoopJobTracker jobTracker() {
