@@ -12,7 +12,7 @@
 -->
 
 <!--
-    Grid configuration using TCP discovery and local VM IP finder.
+    Example grid configuration using TCP discovery and local VM IP finder.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
