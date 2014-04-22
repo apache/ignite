@@ -409,7 +409,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridCommonAbstractTest 
 
         G.start(g1Cfg);
 
-        checkGridStartFails(g2Cfg, "Data cache names should be different for different GGFSes", false);
+        checkGridStartFails(g2Cfg, "Data cache names should be different for different GGFS instances", false);
     }
 
     /**
