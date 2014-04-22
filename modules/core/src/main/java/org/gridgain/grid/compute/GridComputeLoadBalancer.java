@@ -84,10 +84,10 @@ import java.util.*;
  *         for (GridComputeJobResult res : results) {
  *             // Append string representation of result
  *             // returned by every job.
- *             buf.append(res.getData().string());
+ *             buf.append(res.getData().toString());
  *         }
  *
- *         return buf.string();
+ *         return buf.toString();
  *     }
  * }
  * </pre>
