@@ -27,12 +27,14 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
     public void testTransformTx() throws Exception {
         testTransformTx(keyForNode(0), PESSIMISTIC);
 
-        testTransformTx(keyForNode(0), OPTIMISTIC);
+        // TODO: GG-8158.
+        // testTransformTx(keyForNode(0), OPTIMISTIC);
 
         if (gridCount() > 1) {
             testTransformTx(keyForNode(1), PESSIMISTIC);
 
-            testTransformTx(keyForNode(1), OPTIMISTIC);
+            // TODO: GG-8158.
+            // testTransformTx(keyForNode(1), OPTIMISTIC);
         }
     }
 
