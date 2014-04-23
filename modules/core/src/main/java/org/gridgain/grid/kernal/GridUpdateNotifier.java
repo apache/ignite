@@ -40,7 +40,7 @@ class GridUpdateNotifier {
      * *********************************************************
      */
     /** Access URL to be used to access latest version data. */
-    private static final String URL_SUFFIX = /*@java.update.status.url*/"/update_status.php?test=vfvfvskfkeievskjv";
+    private static final String URL_SUFFIX = GridProperties.get("gridgain.update.status.url");
 
     /** Throttling for logging out. */
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.

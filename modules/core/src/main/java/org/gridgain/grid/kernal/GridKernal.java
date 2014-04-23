@@ -123,7 +123,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /** Ant-augmented compatible versions. */
-    private static final String COMPATIBLE_VERS = /*@java.compatible.vers*/"";
+    private static final String COMPATIBLE_VERS = GridProperties.get("gridgain.compatible.vers");
 
     /** GridGain site that is shown in log messages. */
     static final String SITE = "www.gridgain." + (ent ? "com" : "org");

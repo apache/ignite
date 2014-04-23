@@ -11,12 +11,8 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.product.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
 
 import static org.gridgain.grid.product.GridProductEdition.*;
 
@@ -24,26 +20,26 @@ import static org.gridgain.grid.product.GridProductEdition.*;
  * {@link GridProduct} implementation.
  */
 public class GridProductImpl implements GridProduct {
+    /** Copyright blurb. */
+    public static final String COPYRIGHT = "2014 Copyright (C) GridGain Systems";
+
+    /** Edition name. */
+    public static final String EDITION;
+
     /** GridGain version. */
     public static final String VER;
 
+    /** Build number. */
+    public static final long BUILD;
+
+    /** Revision hash. */
+    public static final String REV_HASH;
+
+    /** Release date. */
+    public static final String RELEASE_DATE;
+
     /** GridGain version as numeric array (generated from {@link #VER}). */
     public static final byte[] VER_BYTES;
-
-    /** Ant-augmented edition name. */
-    public static final String EDITION = /*@java.edition*/"platform";
-
-    /** Ant-augmented copyright blurb. */
-    public static final String COPYRIGHT = /*@java.copyright*/"Copyright (C) 2014 GridGain Systems";
-
-    /** Ant-augmented build number. */
-    public static final long BUILD = /*@java.build*/0;
-
-    /** Ant-augmented revision hash. */
-    public static final String REV_HASH = /*@java.revision*/"DEV";
-
-    /** Ant-augmented release date. */
-    public static final String RELEASE_DATE = /*@java.rel.date*/"01011970";
 
     /** */
     private final GridKernalContext ctx;
@@ -58,25 +54,13 @@ public class GridProductImpl implements GridProduct {
     private final GridUpdateNotifier verChecker;
 
     static {
-        final String propsFile = "gridgain.properties";
+        EDITION = GridProperties.get("gridgain.edition");
+        VER = GridProperties.get("gridgain.version");
+        BUILD = Long.valueOf(GridProperties.get("gridgain.build"));
+        REV_HASH = GridProperties.get("gridgain.revision");
+        RELEASE_DATE = GridProperties.get("gridgain.rel.date");
 
-        Properties props = new Properties();
-
-        try {
-            props.load(GridProductImpl.class.getClassLoader().getResourceAsStream(propsFile));
-
-            String prop = EDITION + ".ver";
-
-            VER = props.getProperty(prop);
-
-            if (F.isEmpty(VER))
-                throw new RuntimeException("Cannot read '" + prop + "' property from " + propsFile + " file.");
-
-            VER_BYTES = U.intToBytes(VER.hashCode());
-        }
-        catch (IOException e) {
-            throw new RuntimeException("Cannot find '" + propsFile + "' file.", e);
-        }
+        VER_BYTES = U.intToBytes(VER.hashCode());
     }
 
     /**
@@ -163,7 +147,6 @@ public class GridProductImpl implements GridProduct {
             case "mongo":
                 return MONGO;
 
-            case "dev":
             case "platform":
                 return PLATFORM;
         }
