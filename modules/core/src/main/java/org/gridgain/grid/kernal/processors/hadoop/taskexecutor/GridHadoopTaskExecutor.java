@@ -71,6 +71,20 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
     }
 
     /**
+     * Cancels all currently running tasks for given job ID and cancels scheduled execution of tasks
+     * for this job ID.
+     * <p>
+     * It is guaranteed that this method will not be called concurrently with
+     * {@link #run(Collection)} method. No more job submissions will be performed via
+     * {@link #run(Collection)} method for given job ID after this method is called.
+     *
+     * @param jobId Job ID to cancel.
+     */
+    public void cancelTasks(GridHadoopJobId jobId) {
+        // TODO.
+    }
+
+    /**
      * Creates task output.
      *
      * @param taskInfo Task info.
