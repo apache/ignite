@@ -80,6 +80,12 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean hasCombiner() {
+        // TODO: implement.
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridHadoopSerialization serialization() throws GridException {
         // TODO implement.
         return null;

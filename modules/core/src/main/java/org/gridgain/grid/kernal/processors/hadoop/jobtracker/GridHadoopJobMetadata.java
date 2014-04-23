@@ -15,6 +15,8 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.hadoop.jobtracker.GridHadoopJobPhase.*;
+
 /**
  * TODO make externalizable.
  *
@@ -36,8 +38,11 @@ public class GridHadoopJobMetadata implements Serializable {
     /** Pending reducers. */
     private Collection<Integer> pendingReducers;
 
+    /** Attempt map. */
+    private Map<Object, Integer> attemptMap = new HashMap<>();
+
     /** Job phase. */
-    private GridHadoopJobPhase phase = GridHadoopJobPhase.PHASE_MAP;
+    private GridHadoopJobPhase phase = PHASE_MAP;
 
     /**
      * @param jobId Job ID.
@@ -139,6 +144,19 @@ public class GridHadoopJobMetadata implements Serializable {
      */
     public GridHadoopJobInfo jobInfo() {
         return jobInfo;
+    }
+
+    /**
+     * @param obj Task source.
+     * @return Attempt number.
+     */
+    public int attempt(Object obj) {
+        Integer res = attemptMap.get(obj);
+
+        if (res == null)
+            return 0;
+
+        return res;
     }
 
     /** {@inheritDoc} */
