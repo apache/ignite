@@ -25,6 +25,7 @@ import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -223,7 +224,12 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         if (F.isEmpty(f1))
             return entryFilter;
 
-        return F0.and(f1, entryFilter);
+        GridPredicate<GridCacheEntry<K, V>>[] entryFilter0 =
+            (GridPredicate<GridCacheEntry<K, V>>[])Array.newInstance(entryFilter.getClass(), 1);
+
+        entryFilter0[0] = entryFilter;
+
+        return F0.and(entryFilter0, f1);
     }
 
     /**
