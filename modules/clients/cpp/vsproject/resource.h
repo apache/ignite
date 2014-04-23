@@ -2,5 +2,5 @@
 #define IDC_STATIC (-1)
 #endif
 
-#define GG_VERSION_STR_WIN "6.0.4"
-#define GG_VERSION_BIN_WIN 6,0,4,0
+#define GG_VERSION_STR_WIN "6.1.0"
+#define GG_VERSION_BIN_WIN 6,1,0,0
