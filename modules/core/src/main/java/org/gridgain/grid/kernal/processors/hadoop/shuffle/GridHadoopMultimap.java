@@ -117,15 +117,17 @@ public class GridHadoopMultimap implements AutoCloseable {
             long tblAddr = 8 * (keyHash & (tblCap - 1));
 
             for (;;) {
-                long metaPtr = mem.readLongVolatile(tblAddr);
+                long metaPtr = mem.readLongVolatile(tblPtr + tblAddr);
 
                 if (metaPtr == 0) {
                     long valPtr = write(valOut, val, 0);
                     long keyPtr = write(keyOut, key, valPtr);
 
-                    metaPtr = writeMeta(keyPtr, 0, 0, keyHash, (int) (keyOut.buffer().pointer() - keyPtr));
+                    metaPtr = writeMeta(keyPtr, 0, 0, keyHash, (int)(keyOut.buffer().pointer() - keyPtr - 8));
 
-                    if (mem.casLong())
+                    if (mem.casLong()) {
+
+                    }
                 }
                 else {
 

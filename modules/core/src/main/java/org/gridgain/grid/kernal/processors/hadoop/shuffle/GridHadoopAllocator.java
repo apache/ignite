@@ -13,7 +13,7 @@ import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 
 /**
- * Not thread safe memory allocator.
+ * Memory allocator.
  */
 public class GridHadoopAllocator implements AutoCloseable {
     /** */
