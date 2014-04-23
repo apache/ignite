@@ -192,7 +192,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param <V1> Value type.
      * @return Cache projection for given key and value types.
      */
-    public <K1, V1> GridCacheProjection<K1, V1> projection(Class<? extends K1> keyType, Class<? extends V1> valType);
+    public <K1, V1> GridCacheProjection<K1, V1> projection(Class<? super K1> keyType, Class<? super V1> valType);
 
     /**
      * Gets cache projection based on given key-value predicate. Whenever makes sense,
