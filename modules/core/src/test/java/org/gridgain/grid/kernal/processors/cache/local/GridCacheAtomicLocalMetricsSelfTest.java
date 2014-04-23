@@ -7,31 +7,29 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache.distributed.near;
+package org.gridgain.grid.kernal.processors.cache.local;
 
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
- * Partitioned cache metrics test.
+ * Local atomic cache metrics test.
  */
-public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalAbstractMetricsSelfTest {
+public class GridCacheAtomicLocalMetricsSelfTest extends GridCacheAbstractMetricsSelfTest {
     /** */
-    private static final int GRID_CNT = 2;
+    private static final int GRID_CNT = 1;
 
     /** {@inheritDoc} */
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setCacheMode(PARTITIONED);
-        cfg.setBackups(gridCount() - 1);
-        cfg.setPreloadMode(SYNC);
-        cfg.setTxSerializableEnabled(true);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setCacheMode(LOCAL);
+        cfg.setAtomicityMode(ATOMIC);
+        cfg.setAtomicWriteOrderMode(PRIMARY);
 
         return cfg;
     }
@@ -43,11 +41,11 @@ public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalA
 
     /** {@inheritDoc} */
     @Override protected int expectedReadsPerPut(boolean isPrimary) {
-        return isPrimary ? 1 : 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
     @Override protected int expectedMissesPerPut(boolean isPrimary) {
-        return isPrimary ? 1 : 2;
+        return 1;
     }
 }
