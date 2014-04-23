@@ -13,7 +13,6 @@ import com.google.common.collect.*;
 import org.apache.commons.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -106,6 +105,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridCommonAbstractTest 
     public void testLocalIfNoDataCacheIsConfigured() throws Exception {
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
+        cc.setQueryIndexEnabled(false);
         cc.setName("someName");
 
         g1Cfg.setCacheConfiguration(cc);
@@ -119,6 +119,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridCommonAbstractTest 
     public void testLocalIfNoMetadataCacheIsConfigured() throws Exception {
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
+        cc.setQueryIndexEnabled(false);
         cc.setName(dataCache1Name);
 
         g1Cfg.setCacheConfiguration(cc);
@@ -150,6 +151,32 @@ public class GridGgfsProcessorValidationSelfTest extends GridCommonAbstractTest 
         g1GgfsCfg2.setName(ggfsCfgName);
 
         checkGridStartFails(g1Cfg, "Duplicate GGFS name found (check configuration and assign unique name", true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalIfQueryIndexingEnabledForDataCache() throws Exception {
+        GridCacheConfiguration[] dataCaches = dataCaches(1024);
+
+        dataCaches[0].setQueryIndexEnabled(true);
+
+        g1Cfg.setCacheConfiguration(concat(dataCaches, metaCaches(), GridCacheConfiguration.class));
+
+        checkGridStartFails(g1Cfg, "GGFS data cache cannot start with enabled query indexing", true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalIfQueryIndexingEnabledForMetaCache() throws Exception {
+        GridCacheConfiguration[] metaCaches = metaCaches();
+
+        metaCaches[0].setQueryIndexEnabled(true);
+
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches, GridCacheConfiguration.class));
+
+        checkGridStartFails(g1Cfg, "GGFS metadata cache cannot start with enabled query indexing", true);
     }
 
     /**
@@ -482,6 +509,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridCommonAbstractTest 
             dataCache.setName(cacheNames[i]);
             dataCache.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(grpSize));
             dataCache.setAtomicityMode(TRANSACTIONAL);
+            dataCache.setQueryIndexEnabled(false);
 
             res[i] = dataCache;
         }
@@ -506,6 +534,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridCommonAbstractTest 
 
             metaCache.setName(cacheNames[i]);
             metaCache.setAtomicityMode(TRANSACTIONAL);
+            metaCache.setQueryIndexEnabled(false);
 
             res[i] = metaCache;
         }
