@@ -253,7 +253,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                     if (mappers != null) {
                         if (state == null)
-                            state = F.addIfAbsent(activeJobs, jobId, new JobLocalState(meta.jobInfo()));
+                            state = initState(meta);
 
                         Collection<GridHadoopTask> tasks = null;
 
@@ -307,7 +307,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                     if (reducers != null) {
                         if (state == null)
-                            state = F.addIfAbsent(activeJobs, jobId, new JobLocalState(meta.jobInfo()));
+                            state = initState(meta);
 
                         Collection<GridHadoopTask> tasks = null;
 
@@ -365,18 +365,37 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         }
     }
 
+    /**
+     * Initializes local state for given job metadata.
+     *
+     * @param meta Job metadata.
+     * @return Local state.
+     */
+    private JobLocalState initState(GridHadoopJobMetadata meta) {
+        GridHadoopJobId jobId = meta.jobId();
+
+        GridHadoopJob job = ctx.jobFactory().createJob(jobId, meta.jobInfo());
+
+        JobLocalState state = new JobLocalState(job);
+
+        return F.addIfAbsent(activeJobs, jobId, state);
+    }
+
+    /**
+     *
+     */
     private class JobLocalState {
         /** Job info. */
-        private GridHadoopJobInfo jobInfo;
+        private GridHadoopJob job;
 
         /** Attempts. */
         private Map<Integer, AttemptGroup> attempts = new HashMap<>();
 
         /**
-         * @param jobInfo Job info.
+         * @param job Job.
          */
-        private JobLocalState(GridHadoopJobInfo jobInfo) {
-            this.jobInfo = jobInfo;
+        private JobLocalState(GridHadoopJob job) {
+            this.job = job;
         }
 
         /**
@@ -413,8 +432,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
          */
         private void onMapFinished(GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
             GridHadoopJobId jobId = taskInfo.jobId();
-
-            GridHadoopJob job = ctx.jobFactory().createJob(jobId, jobInfo);
 
             AttemptGroup group = attempts.get(taskInfo.attempt());
 
@@ -456,8 +473,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             assert group != null;
 
             GridHadoopJobId jobId = taskInfo.jobId();
-
-            GridHadoopJob job = ctx.jobFactory().createJob(jobId, jobInfo);
 
             assert job.hasCombiner();
 

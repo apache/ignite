@@ -81,8 +81,22 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public boolean hasCombiner() {
-        // TODO: implement.
-        return false;
+        return combinerClass() != null;
+    }
+
+    /**
+     * Gets combiner class.
+     *
+     * @return Combiner class or {@code null} if combiner is not specified.
+     */
+    private Class<? extends Reducer<?,?,?,?>> combinerClass() {
+        try {
+            return ctx.getCombinerClass();
+        }
+        catch (ClassNotFoundException e) {
+            // TODO check combiner class at initialization and throw meaningful exception.
+            throw new GridRuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
