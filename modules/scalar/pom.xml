@@ -121,6 +121,13 @@
                                     </fileset>
                                 </copy>
 
+                                <taskdef name="doctask"
+                                    classname="org.gridgain.grid.tools.ant.beautifier.GridJavadocAntTask"/>
+
+                                <doctask css="dotted" dir="target/site/scaladocs" verify="false">
+                                    <include name="**/*.html"/>
+                                </doctask>
+
                                 <property name="footer">
                                     <![CDATA[
                                         <table style="padding: 0px 10px 10px 10px; width: 100%" border="0">
@@ -135,30 +142,21 @@
                                     ]]>
                                 </property>
 
-                                <sequential>
-                                    <taskdef name="doctask"
-                                        classname="org.gridgain.grid.tools.ant.beautifier.GridJavadocAntTask"/>
+                                <replace dir="target/site/scaladocs" token="&lt;!--FOOTER--&gt;" value="${footer}">
+                                    <include name="**/*.html"/>
+                                </replace>
 
-                                    <doctask css="dotted" dir="target/site/scaladocs" verify="false">
-                                        <include name="**/*.html"/>
-                                    </doctask>
+                                <replace dir="target/site/scaladocs">
+                                    <replacetoken>src="package.html"</replacetoken>
+                                    <replacevalue>src=org/gridgain/scalar/scalar$.html</replacevalue>
+                                    <include name="**/index.html"/>
+                                </replace>
 
-                                    <replace dir="target/site/scaladocs" token="&lt;!--FOOTER--&gt;" value="${footer}">
-                                        <include name="**/*.html"/>
-                                    </replace>
-
-                                    <replace dir="target/site/scaladocs">
-                                        <replacetoken>src="package.html"</replacetoken>
-                                        <replacevalue>src=org/gridgain/scalar/scalar$.html</replacevalue>
-                                        <include name="**/index.html"/>
-                                    </replace>
-
-                                    <replace dir="target/site/scaladocs">
-                                        <replacetoken>location.replace("package.html")</replacetoken>
-                                        <replacevalue>location.replace("org/gridgain/scalar/scalar$.html")</replacevalue>
-                                        <include name="**/index.js"/>
-                                    </replace>
-                                </sequential>
+                                <replace dir="target/site/scaladocs">
+                                    <replacetoken>location.replace("package.html")</replacetoken>
+                                    <replacevalue>location.replace("org/gridgain/scalar/scalar$.html")</replacevalue>
+                                    <include name="**/index.js"/>
+                                </replace>
                             </target>
                         </configuration>
                     </execution>

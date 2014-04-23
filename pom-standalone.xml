@@ -22,11 +22,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <gridgain.version>6.0.3</gridgain.version>
+        <gridgain.version>6.1.0</gridgain.version>
         <gridgain.edition>platform</gridgain.edition>
+        <gridgain.compatible.vers></gridgain.compatible.vers>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
         <doxygen.exec>doxygen</doxygen.exec>
+        <git.exec>git</git.exec>
     </properties>
 
     <groupId>org.gridgain</groupId>
@@ -619,7 +621,8 @@
                             <descriptors>
                                 <descriptor>assembly/release-${gridgain.edition}.xml</descriptor>
                             </descriptors>
-                            <finalName>gridgain</finalName>
+                            <finalName>release-package</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
                             <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                         </configuration>
                     </execution>
@@ -640,16 +643,41 @@
                         <phase>package</phase>
                         <configuration>
                             <target>
-                                <mkdir dir="target/gridgain-${gridgain.edition}-${gridgain.version}/libs/ext"/>
+                                <mkdir dir="target/release-package/libs/ext"/>
 
                                 <replaceregexp byline="true">
                                     <regexp pattern="ANT_AUGMENTED_GGJAR=.*"/>
                                     <substitution expression="ANT_AUGMENTED_GGJAR=gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
-                                    <fileset dir="target/gridgain-${gridgain.edition}-${gridgain.version}">
+                                    <fileset dir="target/release-package">
                                         <include name="**/*.sh"/>
                                         <include name="**/*.bat"/>
                                     </fileset>
                                 </replaceregexp>
+
+                                <zip destfile="target/gridgain-${gridgain.edition}-${gridgain.version}-win.zip"
+                                     encoding="UTF-8">
+                                    <zipfileset dir="target/release-package"
+                                                prefix="gridgain-${gridgain.edition}-${gridgain.version}-win">
+                                        <exclude name="**/*.sh"/>
+                                        <exclude name="**/*.so"/>
+                                        <exclude name="**/*.dylib"/>
+                                        <exclude name="**/*.sl"/>
+                                    </zipfileset>
+                                </zip>
+
+                                <zip destfile="target/gridgain-${gridgain.edition}-${gridgain.version}-nix.zip"
+                                     encoding="UTF-8">
+                                    <zipfileset dir="target/release-package"
+                                                prefix="gridgain-${gridgain.edition}-${gridgain.version}-nix"
+                                                includes="**/*.sh"
+                                                filemode="755"/>
+                                    <zipfileset dir="target/release-package"
+                                                prefix="gridgain-${gridgain.edition}-${gridgain.version}-nix">
+                                        <exclude name="**/*.sh"/>
+                                        <exclude name="**/*.bat"/>
+                                        <exclude name="**/*.exe"/>
+                                    </zipfileset>
+                                </zip>
                             </target>
                         </configuration>
                     </execution>

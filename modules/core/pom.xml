@@ -337,6 +337,64 @@
                 </dependencies>
                 <executions>
                     <execution>
+                        <id>properties-augmentation</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <target>
+                                <exec executable="${git.exec}" outputproperty="gridgain.build" failonerror="yes">
+                                    <arg line="log -1 --format=%ct"/>
+                                </exec>
+
+                                <exec executable="${git.exec}" outputproperty="gridgain.revision" failonerror="yes">
+                                    <arg line="log -1 --format=%H"/>
+                                </exec>
+
+                                <tstamp>
+                                    <format property="gridgain.rel.date" pattern="ddMMyyyy" locale="en"/>
+                                </tstamp>
+
+                                <replaceregexp file="target/classes/gridgain.properties" byline="true">
+                                    <regexp pattern="gridgain.edition=.*"/>
+                                    <substitution expression="gridgain.edition=${gridgain.edition}"/>
+                                </replaceregexp>
+
+                                <replaceregexp file="target/classes/gridgain.properties" byline="true">
+                                    <regexp pattern="gridgain.version=.*"/>
+                                    <substitution expression="gridgain.version=${gridgain.version}"/>
+                                </replaceregexp>
+
+                                <replaceregexp file="target/classes/gridgain.properties" byline="true">
+                                    <regexp pattern="gridgain.build=.*"/>
+                                    <substitution expression="gridgain.build=${gridgain.build}"/>
+                                </replaceregexp>
+
+                                <replaceregexp file="target/classes/gridgain.properties" byline="true">
+                                    <regexp pattern="gridgain.revision=.*"/>
+                                    <substitution expression="gridgain.revision=${gridgain.revision}"/>
+                                </replaceregexp>
+
+                                <replaceregexp file="target/classes/gridgain.properties" byline="true">
+                                    <regexp pattern="gridgain.rel.date=.*"/>
+                                    <substitution expression="gridgain.rel.date=${gridgain.rel.date}"/>
+                                </replaceregexp>
+
+                                <replaceregexp file="target/classes/gridgain.properties" byline="true">
+                                    <regexp pattern="gridgain.compatible.vers=.*"/>
+                                    <substitution expression="gridgain.compatible.vers=${gridgain.compatible.vers}"/>
+                                </replaceregexp>
+
+                                <replaceregexp file="target/classes/gridgain.properties" byline="true">
+                                    <regexp pattern="gridgain.update.status.url=.*"/>
+                                    <substitution expression="gridgain.update.status.url=?v=${gridgain.version}"/>
+                                </replaceregexp>
+                            </target>
+                        </configuration>
+                    </execution>
+
+                    <execution>
                         <id>javadoc-postprocessing</id>
                         <goals>
                             <goal>run</goal>
@@ -351,17 +409,15 @@
                                     </fileset>
                                 </copy>
 
-                                <sequential>
-                                    <taskdef name="doctask"
-                                        classname="org.gridgain.grid.tools.ant.beautifier.GridJavadocAntTask"/>
+                                <taskdef name="doctask"
+                                    classname="org.gridgain.grid.tools.ant.beautifier.GridJavadocAntTask"/>
 
-                                    <doctask css="dotted" dir="target/site/apidocs">
-                                        <include name="**/*.html"/>
-                                        <exclude name="overview-frame.html"/>
-                                        <exclude name="allclasses-frame.html"/>
-                                        <exclude name="**/class-use/*"/>
-                                    </doctask>
-                                </sequential>
+                                <doctask css="dotted" dir="target/site/apidocs">
+                                    <include name="**/*.html"/>
+                                    <exclude name="overview-frame.html"/>
+                                    <exclude name="allclasses-frame.html"/>
+                                    <exclude name="**/class-use/*"/>
+                                </doctask>
                             </target>
                         </configuration>
                     </execution>

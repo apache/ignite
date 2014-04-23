@@ -164,17 +164,16 @@
                                         <include name="*.js"/>
                                     </fileset>
                                 </copy>
-                                <sequential>
-                                    <taskdef name="javadoctask"
-                                        classname="org.gridgain.grid.tools.ant.beautifier.GridJavadocAntTask"/>
 
-                                    <javadoctask css="dotted" dir="target/site/apidocs">
-                                        <include name="**/*.html"/>
-                                        <exclude name="overview-frame.html"/>
-                                        <exclude name="allclasses-frame.html"/>
-                                        <exclude name="**/class-use/*"/>
-                                    </javadoctask>
-                                </sequential>
+                                <taskdef name="javadoctask"
+                                    classname="org.gridgain.grid.tools.ant.beautifier.GridJavadocAntTask"/>
+
+                                <javadoctask css="dotted" dir="target/site/apidocs">
+                                    <include name="**/*.html"/>
+                                    <exclude name="overview-frame.html"/>
+                                    <exclude name="allclasses-frame.html"/>
+                                    <exclude name="**/class-use/*"/>
+                                </javadoctask>
                             </target>
                         </configuration>
                     </execution>

@@ -99,7 +99,7 @@ class GridUpdateNotifier {
         this.ver = ver;
         this.edition = edition;
 
-        url = "http://" + site + URL_SUFFIX;
+        url = "http://" + site + "/update_status.php" + URL_SUFFIX;
 
         this.gridName = gridName;
         this.reportOnlyNew = reportOnlyNew;
