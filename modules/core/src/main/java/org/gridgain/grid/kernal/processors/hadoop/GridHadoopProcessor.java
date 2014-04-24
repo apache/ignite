@@ -128,8 +128,8 @@ public class GridHadoopProcessor extends GridProcessorAdapter {
      * @param jobId Job ID to get status for.
      * @return Job execution status.
      */
-    @Nullable public GridHadoopJobStatus status(GridHadoopJobId jobId) {
-        return null;
+    @Nullable public GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException {
+        return hctx.jobTracker().status(jobId);
     }
 
     /**

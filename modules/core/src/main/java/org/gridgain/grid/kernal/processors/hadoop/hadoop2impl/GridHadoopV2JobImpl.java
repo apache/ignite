@@ -9,10 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.hadoop2impl;
 
-import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.mapreduce.Partitioner;
-import org.apache.hadoop.mapreduce.lib.partition.*;
+import org.apache.hadoop.mapreduce.task.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
@@ -30,6 +28,9 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
     /** Job info. */
     protected GridHadoopDefaultJobInfo jobInfo;
 
+    /** Hadoop native job context. */
+    protected JobContext ctx;
+
     /**
      * @param jobId Job ID.
      * @param jobInfo Job info.
@@ -37,6 +38,8 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
     public GridHadoopV2JobImpl(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfo) {
         this.jobId = jobId;
         this.jobInfo = jobInfo;
+
+        ctx = new JobContextImpl(jobInfo.configuration(), new JobID(jobId.globalId().toString(), jobId.localId()));
     }
 
     /** {@inheritDoc} */
@@ -51,25 +54,49 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public Collection<GridHadoopFileBlock> input() throws GridException {
-        return GridHadoopV2Splitter.splitJob(jobId, jobInfo);
+        return GridHadoopV2Splitter.splitJob(ctx);
     }
 
     /** {@inheritDoc} */
     @Override public int reducers() {
-        return jobInfo.configuration().getInt(JobContext.NUM_REDUCES, 1);
+        return ctx.getNumReduceTasks();
     }
 
     /** {@inheritDoc} */
     @Override public GridHadoopPartitioner partitioner() throws GridException {
-        Class<? extends Partitioner> partCls = (Class<? extends Partitioner>)jobInfo.configuration().getClass(
-            MRJobConfig.PARTITIONER_CLASS_ATTR, HashPartitioner.class);
+        try {
+            Class<? extends Partitioner> partCls = ctx.getPartitionerClass();
 
-        return new GridHadoopV2PartitionerAdapter((Partitioner<Object, Object>)U.newInstance(partCls));
+            return new GridHadoopV2PartitionerAdapter((Partitioner<Object, Object>)U.newInstance(partCls));
+        }
+        catch (ClassNotFoundException e) {
+            throw new GridException(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasCombiner() {
+        return combinerClass() != null;
+    }
+
+    /**
+     * Gets combiner class.
+     *
+     * @return Combiner class or {@code null} if combiner is not specified.
+     */
+    private Class<? extends Reducer<?,?,?,?>> combinerClass() {
+        try {
+            return ctx.getCombinerClass();
+        }
+        catch (ClassNotFoundException e) {
+            // TODO check combiner class at initialization and throw meaningful exception.
+            throw new GridRuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */

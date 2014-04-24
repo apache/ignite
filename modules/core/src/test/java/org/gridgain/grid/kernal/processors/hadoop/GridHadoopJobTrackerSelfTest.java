@@ -10,13 +10,16 @@
 package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.conf.*;
+import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -26,8 +29,23 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
     /** Test block count parameter name. */
     private static final String BLOCK_CNT = "test.block.count";
 
-    /** Task execution count. */
-    private static final AtomicInteger execCnt = new AtomicInteger();
+    /** Map task execution count. */
+    private static final Map<UUID, AtomicInteger> mapExecCnt = new HashMap<>();
+
+    /** Reduce task execution count. */
+    private static final Map<UUID, AtomicInteger> reduceExecCnt = new HashMap<>();
+
+    /** Reduce task execution count. */
+    private static final Map<UUID, AtomicInteger> combineExecCnt = new HashMap<>();
+
+    /** Map task await latch. */
+    private static CountDownLatch mapAwaitLatch;
+
+    /** Reduce task await latch. */
+    private static CountDownLatch reduceAwaitLatch;
+
+    /** Combine task await latch. */
+    private static CountDownLatch combineAwaitLatch;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -39,6 +57,28 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        mapAwaitLatch = new CountDownLatch(1);
+        reduceAwaitLatch = new CountDownLatch(1);
+        combineAwaitLatch = new CountDownLatch(1);
+
+        for (int i = 0; i < gridCount(); i++) {
+            UUID nodeId = grid(i).localNode().id();
+
+            mapExecCnt.put(nodeId, new AtomicInteger());
+            combineExecCnt.put(nodeId, new AtomicInteger());
+            reduceExecCnt.put(nodeId, new AtomicInteger());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        mapExecCnt.clear();
+        combineExecCnt.clear();
+        reduceExecCnt.clear();
     }
 
     /** {@inheritDoc} */
@@ -55,24 +95,173 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testSimpleTaskSubmit() throws Exception {
-        GridKernal kernal = (GridKernal)grid(0);
+        try {
+            GridKernal kernal = (GridKernal)grid(0);
 
-        GridHadoopProcessor hadoop = kernal.context().hadoop();
+            GridHadoopProcessor hadoop = kernal.context().hadoop();
 
-        UUID globalId = UUID.randomUUID();
+            UUID globalId = UUID.randomUUID();
 
-        Configuration cfg = new Configuration();
+            Configuration cfg = new Configuration();
 
-        int cnt = 10;
+            int cnt = 10;
 
-        cfg.setInt(BLOCK_CNT, cnt);
+            cfg.setInt(BLOCK_CNT, cnt);
 
-        GridFuture<?> execFut = hadoop.submit(new GridHadoopJobId(globalId, 1), new GridHadoopDefaultJobInfo(cfg));
+            GridHadoopJobId jobId = new GridHadoopJobId(globalId, 1);
 
-        execFut.get();
+            hadoop.submit(jobId, new GridHadoopDefaultJobInfo(cfg));
 
-        // 1 reducer.
-        assertEquals(cnt + 1, execCnt.get());
+            checkStatus(jobId, false);
+
+            info("Releasing map latch.");
+
+            mapAwaitLatch.countDown();
+
+            checkStatus(jobId, false);
+
+            info("Releasing reduce latch.");
+
+            reduceAwaitLatch.countDown();
+
+            checkStatus(jobId, true);
+
+            int maps = 0;
+            int reduces = 0;
+            int combines = 0;
+
+            for (int i = 0; i < gridCount(); i++) {
+                Grid g = grid(i);
+
+                UUID nodeId = g.localNode().id();
+
+                maps += mapExecCnt.get(nodeId).get();
+                combines += combineExecCnt.get(nodeId).get();
+                reduces += reduceExecCnt.get(nodeId).get();
+            }
+
+            assertEquals(10, maps);
+            assertEquals(0, combines);
+            assertEquals(1, reduces);
+        }
+        finally {
+            // Safety.
+            mapAwaitLatch.countDown();
+            combineAwaitLatch.countDown();
+            reduceAwaitLatch.countDown();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTaskWithCombiner() throws Exception {
+        try {
+            GridKernal kernal = (GridKernal)grid(0);
+
+            GridHadoopProcessor hadoop = kernal.context().hadoop();
+
+            UUID globalId = UUID.randomUUID();
+
+            Configuration cfg = new Configuration();
+
+            int cnt = 10;
+
+            cfg.setInt(BLOCK_CNT, cnt);
+
+            cfg.setClass(MRJobConfig.COMBINE_CLASS_ATTR, TestCombiner.class, Reducer.class);
+
+            GridHadoopJobId jobId = new GridHadoopJobId(globalId, 1);
+
+            hadoop.submit(jobId, new GridHadoopDefaultJobInfo(cfg));
+
+            checkStatus(jobId, false);
+
+            info("Releasing map latch.");
+
+            mapAwaitLatch.countDown();
+
+            checkStatus(jobId, false);
+
+            // All maps are completed. We have a combiner, so no reducers should be executed
+            // before combiner latch is released.
+
+            U.sleep(50);
+
+            for (int i = 0; i < gridCount(); i++) {
+                Grid g = grid(i);
+
+                UUID nodeId = g.localNode().id();
+
+                assertEquals(0, reduceExecCnt.get(nodeId).get());
+            }
+
+            info("Releasing combiner latch.");
+
+            combineAwaitLatch.countDown();
+
+            checkStatus(jobId, false);
+
+            info("Releasing reduce latch.");
+
+            reduceAwaitLatch.countDown();
+
+            checkStatus(jobId, true);
+
+            int maps = 0;
+            int reduces = 0;
+            int combines = 0;
+
+            for (int i = 0; i < gridCount(); i++) {
+                Grid g = grid(i);
+
+                UUID nodeId = g.localNode().id();
+
+                maps += mapExecCnt.get(nodeId).get();
+                combines += combineExecCnt.get(nodeId).get();
+                reduces += reduceExecCnt.get(nodeId).get();
+            }
+
+            assertEquals(10, maps);
+            assertEquals(3, combines);
+            assertEquals(1, reduces);
+        }
+        finally {
+            // Safety.
+            mapAwaitLatch.countDown();
+            combineAwaitLatch.countDown();
+            reduceAwaitLatch.countDown();
+        }
+    }
+
+    /**
+     * Checks job execution status.
+     *
+     * @param jobId Job ID.
+     * @param complete Completion status.
+     * @throws Exception If failed.
+     */
+    private void checkStatus(GridHadoopJobId jobId, boolean complete) throws Exception {
+        for (int i = 0; i < gridCount(); i++) {
+            GridKernal kernal = (GridKernal)grid(i);
+
+            GridHadoopProcessor hadoop = kernal.context().hadoop();
+
+            GridHadoopJobStatus stat = hadoop.status(jobId);
+
+            assert stat.jobInfo() != null;
+
+            GridFuture<?> fut = stat.finishFuture();
+
+            if (!complete)
+                assertFalse(fut.isDone());
+            else {
+                info("Waiting for status future completion on node [idx=" + i + ", nodeId=" +
+                    kernal.getLocalNodeId() + ']');
+
+                fut.get();
+            }
+        }
     }
 
     /**
@@ -133,7 +322,50 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public void run(GridHadoopTaskContext ctx) {
-            execCnt.incrementAndGet();
+            try {
+                UUID nodeId = ctx.grid().localNode().id();
+
+                System.out.println("Running task: " + nodeId);
+
+                switch (info().type()) {
+                    case MAP: {
+                        mapAwaitLatch.await();
+
+                        mapExecCnt.get(nodeId).incrementAndGet();
+
+                        break;
+                    }
+
+                    case REDUCE: {
+                        reduceAwaitLatch.await();
+
+                        reduceExecCnt.get(nodeId).incrementAndGet();
+
+                        break;
+                    }
+
+                    case COMBINE: {
+                        combineAwaitLatch.await();
+
+                        combineExecCnt.get(nodeId).incrementAndGet();
+
+                        break;
+                    }
+                }
+
+                System.out.println("Completed task on node: " + nodeId);
+            }
+            catch (InterruptedException ignore) {
+                // Restore interrupted status.
+                Thread.currentThread().interrupt();
+            }
         }
+    }
+
+    /**
+     * Test reducer. No invocations expected.
+     */
+    private static class TestCombiner extends Reducer<Void, Void, Void, Void> {
+
     }
 }

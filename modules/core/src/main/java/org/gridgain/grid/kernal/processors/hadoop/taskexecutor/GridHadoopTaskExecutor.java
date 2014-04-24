@@ -50,13 +50,13 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
 
                     try (GridHadoopTaskOutput out = createOutput(info);
                          GridHadoopTaskInput in = createInput(info)) {
-                        GridHadoopTaskContext ctx = null;
+                        GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(ctx.kernalContext());
 
                         try {
                             if (log.isDebugEnabled())
                                 log.debug("Running task: " + task);
 
-                            task.run(ctx);
+                            task.run(taskCtx);
 
                             return out.finish();
                         }
@@ -68,6 +68,20 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
                 }
             }, false);
         }
+    }
+
+    /**
+     * Cancels all currently running tasks for given job ID and cancels scheduled execution of tasks
+     * for this job ID.
+     * <p>
+     * It is guaranteed that this method will not be called concurrently with
+     * {@link #run(Collection)} method. No more job submissions will be performed via
+     * {@link #run(Collection)} method for given job ID after this method is called.
+     *
+     * @param jobId Job ID to cancel.
+     */
+    public void cancelTasks(GridHadoopJobId jobId) {
+        // TODO.
     }
 
     /**

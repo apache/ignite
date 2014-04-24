@@ -46,6 +46,13 @@ public interface GridHadoopJob {
     public int reducers();
 
     /**
+     * Checks whether job has combiner.
+     *
+     * @return {@code True} if job has combiner.
+     */
+    public boolean hasCombiner();
+
+    /**
      * Gets partitioner for the job.
      *
      * @return Partitioner.
