@@ -20,8 +20,6 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
-import java.io.*;
-
 /**
  * Checks that node can be started without operations with undefined GRIDGAIN_HOME.
  * <p>
