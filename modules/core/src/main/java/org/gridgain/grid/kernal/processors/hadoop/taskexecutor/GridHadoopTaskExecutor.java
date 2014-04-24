@@ -38,9 +38,10 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
     /**
      * Runs tasks.
      *
+     * @param job Job.
      * @param tasks Tasks.
      */
-    public void run(Collection<GridHadoopTask> tasks) {
+    public void run(final GridHadoopJob job, Collection<GridHadoopTask> tasks) {
         if (log.isDebugEnabled())
             log.debug("Submitting tasks for local execution [locNodeId=" + ctx.localNodeId() +
                 ", tasksCnt=" + tasks.size() + ']');
@@ -73,7 +74,7 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
 
                     try (GridHadoopTaskOutput out = createOutput(info);
                          GridHadoopTaskInput in = createInput(info)) {
-                        GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(ctx.kernalContext());
+                        GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(ctx.kernalContext(), job, in, out);
 
                         if (log.isDebugEnabled())
                             log.debug("Running task: " + task);
@@ -92,8 +93,8 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
      * for this job ID.
      * <p>
      * It is guaranteed that this method will not be called concurrently with
-     * {@link #run(Collection)} method. No more job submissions will be performed via
-     * {@link #run(Collection)} method for given job ID after this method is called.
+     * {@link #run(GridHadoopJob, Collection)} method. No more job submissions will be performed via
+     * {@link #run(GridHadoopJob, Collection)} method for given job ID after this method is called.
      *
      * @param jobId Job ID to cancel.
      */
