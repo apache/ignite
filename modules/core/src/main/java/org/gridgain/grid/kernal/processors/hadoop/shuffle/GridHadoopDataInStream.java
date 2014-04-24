@@ -19,10 +19,19 @@ import java.nio.charset.*;
  */
 public class GridHadoopDataInStream extends InputStream implements DataInput {
     /** */
-    private GridHadoopBuffer buf;
+    private final GridHadoopBuffer buf = new GridHadoopBuffer(0, 0);
 
     /** */
-    private GridUnsafeMemory mem;
+    private final GridUnsafeMemory mem;
+
+    /**
+     * @param mem Memory.
+     */
+    public GridHadoopDataInStream(GridUnsafeMemory mem) {
+        assert mem != null;
+
+        this.mem = mem;
+    }
 
     /**
      * @return Buffer.

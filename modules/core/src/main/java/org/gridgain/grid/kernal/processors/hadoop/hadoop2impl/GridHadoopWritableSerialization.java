@@ -35,7 +35,7 @@ public class GridHadoopWritableSerialization implements GridHadoopSerialization 
 
     /** {@inheritDoc} */
     @Override public void write(DataOutput out, Object obj) throws GridException {
-        assert cls.isAssignableFrom(obj.getClass());
+        assert cls.isAssignableFrom(obj.getClass()) : cls + " " + obj.getClass();
 
         try {
             ((Writable)obj).write(out);
@@ -52,7 +52,7 @@ public class GridHadoopWritableSerialization implements GridHadoopSerialization 
         if (obj == null)
             w = U.newInstance(cls);
         else {
-            assert cls.isAssignableFrom(obj.getClass());
+            assert cls.isAssignableFrom(obj.getClass()) : cls + " " + obj.getClass();
 
             w = (Writable)obj;
         }

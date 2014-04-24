@@ -65,7 +65,7 @@ public class GridHadoopMultimap implements AutoCloseable {
 
                 do {
                     long valPtr0 = valPtr;
-                    int valSize = valueSize(valPtr);
+                    int valSize = valueSize(valPtr) + 12;
 
                     valPtr = nextValue(valPtr);
 
@@ -198,7 +198,7 @@ public class GridHadoopMultimap implements AutoCloseable {
      * @return Value pointer.
      */
     private long value(long meta) {
-        return mem.readLong(meta + 16);
+        return mem.readLongVolatile(meta + 16);
     }
 
     /**
@@ -217,6 +217,14 @@ public class GridHadoopMultimap implements AutoCloseable {
      */
     private long collision(long meta) {
         return mem.readLong(meta + 24);
+    }
+
+    /**
+     * @param meta Meta pointer.
+     * @param collision Collision pointer.
+     */
+    private void collision(long meta, long collision) {
+        mem.writeLong(meta + 24, collision);
     }
 
     /**
@@ -266,7 +274,7 @@ public class GridHadoopMultimap implements AutoCloseable {
         private final GridHadoopSerialization ser;
 
         /** */
-        private final GridHadoopDataInStream in = new GridHadoopDataInStream();
+        private final GridHadoopDataInStream in = new GridHadoopDataInStream(mem);
 
         /**
          * @param ser Serialization.
@@ -406,8 +414,10 @@ public class GridHadoopMultimap implements AutoCloseable {
 
                     nextValue(valPtr, 0);
 
-                    newMetaPtr = createMeta(keyHash, keySize, keyPtr, valPtr, 0, 0);
+                    newMetaPtr = createMeta(keyHash, keySize, keyPtr, valPtr, metaPtr0, 0);
                 }
+                else
+                    collision(newMetaPtr, metaPtr0);
 
                 if (tbl0.compareAndSet(addr, metaPtr0, newMetaPtr)) // Try to replace root meta pointer with new one.
                     return newMetaPtr;
