@@ -52,4 +52,8 @@ public class GridHadoopTaskContext {
     public Grid grid() {
         return ctx.grid();
     }
+
+    public GridHadoopJob job() {
+        return null;
+    }
 }

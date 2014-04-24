@@ -337,9 +337,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                                 GridHadoopTask task = job.createTask(taskInfo);
 
-                                assert task != null : "Job created null task: " + job;
-
-
                                 if (tasks == null)
                                     tasks = new ArrayList<>();
 

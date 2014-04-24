@@ -22,14 +22,14 @@ import java.util.*;
  * Hadoop job implementation for v2 API.
  */
 public class GridHadoopV2JobImpl implements GridHadoopJob {
-    /** Hadoop job ID. */
+    /** Job ID. */
     private GridHadoopJobId jobId;
 
     /** Job info. */
     protected GridHadoopDefaultJobInfo jobInfo;
 
-    /** Hadoop native job context. */
-    protected JobContext ctx;
+    /** Hadoop job context. */
+    private JobContext ctx;
 
     /**
      * @param jobId Job ID.
@@ -76,7 +76,19 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
-        return null;
+        switch (taskInfo.type()) {
+            case MAP:
+                return new GridHadoopV2MapTask(taskInfo);
+
+            case REDUCE:
+                return new GridHadoopV2ReduceTask(taskInfo);
+
+            case COMBINE:
+                return new GridHadoopV2CombineTask(taskInfo);
+
+            default:
+                return null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -103,5 +115,39 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
     @Override public GridHadoopSerialization serialization() throws GridException {
         // TODO implement.
         return null;
+    }
+
+    /**
+     * @param type Task type.
+     * @return Hadoop task type.
+     */
+    private TaskType taskType(GridHadoopTaskType type) {
+        switch (type) {
+            case MAP:
+                return TaskType.MAP;
+
+            case REDUCE:
+                return TaskType.REDUCE;
+
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Creates Hadoop attempt ID.
+     *
+     * @param taskInfo Task info.
+     * @return Attempt ID.
+     */
+    public TaskAttemptID attemptId(GridHadoopTaskInfo taskInfo) {
+        TaskID tid = new TaskID(ctx.getJobID(), taskType(taskInfo.type()), taskInfo.taskNumber());
+
+        return new TaskAttemptID(tid, taskInfo.attempt());
+    }
+
+    /** Hadoop native job context. */
+    public JobContext hadoopJobContext() {
+        return ctx;
     }
 }
