@@ -253,6 +253,9 @@ public class GridConfiguration {
     /** Gridgain installation folder. */
     private String ggHome;
 
+    /** Gridgain work folder. */
+    private String ggWork;
+
     /** MBean server. */
     private MBeanServer mbeanSrv;
 
@@ -535,6 +538,7 @@ public class GridConfiguration {
         execSvc = cfg.getExecutorService();
         execSvcShutdown = cfg.getExecutorServiceShutdown();
         ggHome = cfg.getGridGainHome();
+        ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
         ggfsCfg = cfg.getGgfsConfiguration();
         ggfsSvc = cfg.getGgfsExecutorService();
@@ -1315,6 +1319,28 @@ public class GridConfiguration {
      */
     public void setGridGainHome(String ggHome) {
         this.ggHome = ggHome;
+    }
+
+    /**
+     * Should return GridGain work folder. If not provided, the method will use work folder under
+     * {@code GRIDGAIN_HOME} specified by {@link GridConfiguration#setGridGainHome(String)}.
+     * If {@code GRIDGAIN_HOME} is not provided, then grid will use system temp folder.
+     *
+     * @return GridGain work folder or {@code null} to make the system attempt to infer it automatically.
+     * @see GridConfiguration#getGridGainHome()
+     */
+    @Nullable public String getWorkDirectory() {
+        return ggWork;
+    }
+
+    /**
+     * Sets GridGain work folder.
+     *
+     * @param ggWork {@code GridGain} work folder.
+     * @see GridConfiguration#getWorkDirectory()
+     */
+    public void setWorkDirectory(String ggWork) {
+        this.ggWork = ggWork;
     }
 
     /**

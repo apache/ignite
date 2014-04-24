@@ -2310,7 +2310,7 @@ object visor extends VisorTag {
 
         val path = pathOpt.getOrElse(DFLT_LOG_PATH)
 
-        logFile = U.resolveWorkDirectory(path, null, false, false)
+        logFile = U.resolveWorkDirectory(path, false)
 
         var freq = 0L
 

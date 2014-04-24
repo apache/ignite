@@ -127,7 +127,7 @@ public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAd
                     tmp = new File(path);
                 else {
                     try {
-                        tmp = U.resolveWorkDirectory(path, DFLT_TMP_DIR, false, false);
+                        tmp = U.resolveWorkDirectory(path, false);
                     }
                     catch (GridException e) {
                         throw new GridSpiException("Failed to resolve directory [path=" + path +

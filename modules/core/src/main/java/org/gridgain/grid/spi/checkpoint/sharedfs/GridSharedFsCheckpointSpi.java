@@ -103,15 +103,8 @@ public class GridSharedFsCheckpointSpi extends GridSpiAdapter implements GridChe
     /**
      * Default checkpoint directory (value is {@code work/checkpoint/sharedfs}).
      * Note that this path used relatively {@code GRIDGAIN_HOME} directory when {@code GRIDGAIN_HOME} exists.
-     * For unknown {@code GRIDGAIN_HOME} used another directory {@link #DFLT_TMP_DIR}
      */
     public static final String DFLT_DIR_PATH = "work/cp/sharedfs";
-
-    /**
-     * Default directory name for SPI when {@code GRIDGAIN_HOME} not defined.
-     * This directory name relative to file path in {@code java.io.tmpdir} system property value.
-     */
-    private static final String DFLT_TMP_DIR = ".gg.sharedfs.cp";
 
     /** */
     private static final String CODES = "0123456789QWERTYUIOPASDFGHJKLZXCVBNM";
@@ -266,7 +259,7 @@ public class GridSharedFsCheckpointSpi extends GridSpiAdapter implements GridChe
                 folder = new File(curDirPath);
             else {
                 try {
-                    folder = U.resolveWorkDirectory(curDirPath, DFLT_TMP_DIR, false, false);
+                    folder = U.resolveWorkDirectory(curDirPath, false);
                 }
                 catch (GridException e) {
                     if (log.isDebugEnabled())

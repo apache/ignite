@@ -153,7 +153,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
 
         tokDirPath = tokDirPath + '/' + locNodeId.toString() + '-' + GridIpcSharedMemoryUtils.pid();
 
-        tokDir = U.resolveWorkDirectory(tokDirPath, null, true, false);
+        tokDir = U.resolveWorkDirectory(tokDirPath, false);
 
         if (port <= 0 || port >= 0xffff)
             throw new GridGgfsIpcEndpointBindException("Port value is illegal: " + port);

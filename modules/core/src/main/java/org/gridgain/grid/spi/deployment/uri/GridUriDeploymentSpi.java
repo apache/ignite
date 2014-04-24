@@ -1046,7 +1046,7 @@ public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeployme
         URI uri;
 
         try {
-            uri = U.resolveWorkDirectory(DFLT_DEPLOY_DIR, null, true, false).toURI();
+            uri = U.resolveWorkDirectory(DFLT_DEPLOY_DIR, false).toURI();
         }
         catch (GridException e) {
             throw new GridSpiException("Failed to initialize default file scanner", e);
