@@ -53,6 +53,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         GridCache<Object, Object> sysCache = ctx.kernalContext().cache().cache(ctx.systemCacheName());
 
+        assert sysCache != null;
+
         mrPlanner = ctx.planner();
 
         ctx.kernalContext().resource().injectGeneric(mrPlanner);

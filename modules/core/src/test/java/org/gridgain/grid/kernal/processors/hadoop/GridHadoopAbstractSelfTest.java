@@ -66,6 +66,8 @@ public class GridHadoopAbstractSelfTest extends GridCommonAbstractTest {
 
             cfg.setGgfsConfiguration(ggfsConfiguration());
         }
+        else
+            cfg.setCacheConfiguration(cacheCfg);
 
         return cfg;
     }
