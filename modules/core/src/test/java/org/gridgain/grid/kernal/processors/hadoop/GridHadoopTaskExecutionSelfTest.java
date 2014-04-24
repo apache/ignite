@@ -19,16 +19,17 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.hadoop.examples.*;
+import org.gridgain.testframework.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
  * Tests map-reduce task execution basics.
  */
-public class GridHadoopMapCombineTaskSelfTest extends GridHadoopAbstractSelfTest {
+public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest {
     /** Line count. */
     private static final AtomicInteger totalLineCnt = new AtomicInteger();
 
@@ -91,7 +92,7 @@ public class GridHadoopMapCombineTaskSelfTest extends GridHadoopAbstractSelfTest
 
         FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/"));
 
-        job.setJarByClass(GridGainWordCount2.class);
+        job.setJarByClass(getClass());
 
         GridHadoopProcessor hadoop = ((GridKernal)grid(0)).context().hadoop();
 
@@ -99,6 +100,50 @@ public class GridHadoopMapCombineTaskSelfTest extends GridHadoopAbstractSelfTest
             new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
         fut.get();
+
+        assertEquals(lineCnt, totalLineCnt.get());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMapperException() throws Exception {
+        int lineCnt = 1000;
+        String fileName = "/testFile";
+
+        prepareFile(fileName, lineCnt);
+
+        Configuration cfg = new Configuration();
+
+        cfg.setStrings("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
+
+        Job job = Job.getInstance(cfg);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+
+        job.setMapperClass(FailMapper.class);
+
+        job.setNumReduceTasks(0);
+
+        job.setInputFormatClass(TextInputFormat.class);
+
+        FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/"));
+
+        job.setJarByClass(getClass());
+
+        GridHadoopProcessor hadoop = ((GridKernal)grid(0)).context().hadoop();
+
+        final GridFuture<?> fut = hadoop.submit(new GridHadoopJobId(UUID.randomUUID(), 1),
+            new GridHadoopDefaultJobInfo(job.getConfiguration()));
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                fut.get();
+
+                return null;
+            }
+        }, GridException.class, null);
+
 
         assertEquals(lineCnt, totalLineCnt.get());
     }
@@ -118,6 +163,17 @@ public class GridHadoopMapCombineTaskSelfTest extends GridHadoopAbstractSelfTest
                 w.println("Hello, Hadoop map-reduce!");
 
             w.flush();
+        }
+    }
+
+    /**
+     * Test failing mapper.
+     */
+    private static class FailMapper extends Mapper<Object, Text, Text, IntWritable> {
+        /** {@inheritDoc} */
+        @Override protected void map(Object key, Text value, Context context)
+            throws IOException, InterruptedException {
+            throw new IOException("Expected");
         }
     }
 

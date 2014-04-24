@@ -59,7 +59,7 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
                     try {
                         f.get();
                     }
-                    catch (Exception e) {
+                    catch (Throwable e) {
                         state = FAILED;
                         err = e;
                     }

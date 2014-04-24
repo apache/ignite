@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.COMBINE;
 import static org.gridgain.grid.kernal.processors.hadoop.jobtracker.GridHadoopJobPhase.*;
+import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
 /**
  * Hadoop job tracker.
@@ -68,7 +69,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>>>() {
             @Override public boolean apply(UUID nodeId,
                 Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> evts) {
-                processJobMetadata(nodeId, evts);
+                processJobMetadata(evts);
 
                 return true;
             }
@@ -151,8 +152,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             log.debug("Re-checking job metadata [locNodeId=" + ctx.localNodeId() + ", meta=" + meta + ']');
 
         if (meta == null || meta.phase() == PHASE_COMPLETE) {
-            // TODO exception.
-            fut.onDone(jobId);
+            fut.onDone(jobId, meta.failCause());
 
             activeFinishFuts.remove(jobId , fut);
         }
@@ -188,10 +188,15 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param status Task status.
      */
     public void onTaskFinished(GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
+        assert status.state() != RUNNING;
+
         if (log.isDebugEnabled())
             log.debug("Received task finished callback [taskInfo=" + taskInfo + ", status=" + status + ']');
 
         JobLocalState state = activeJobs.get(taskInfo.jobId());
+
+        assert (status.state() != FAILED && status.state() != CRASHED) || status.failCause() != null :
+            "Invalid task status [taskInfo=" + taskInfo + ", status=" + status + ']';
 
         assert state != null;
 
@@ -295,11 +300,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     }
 
     /**
-     * @param origNodeId Originating node ID.
      * @param updated Updated cache entries.
      */
-    private void processJobMetadata(UUID origNodeId,
-        Iterable<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> updated) {
+    private void processJobMetadata(Iterable<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> updated) {
         UUID locNodeId = ctx.localNodeId();
 
         for (Map.Entry<GridHadoopJobId, GridHadoopJobMetadata> entry : updated) {
@@ -405,6 +408,18 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     break;
                 }
 
+                case PHASE_CANCELLING: {
+                    // Prevent multiple task executor notification.
+                    if (state != null && state.onCancel()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Cancelling local task execution for job: " + meta);
+
+                        ctx.taskExecutor().cancelTasks(jobId);
+                    }
+
+                    break;
+                }
+
                 case PHASE_COMPLETE: {
                     if (state != null) {
                         state = activeJobs.remove(jobId);
@@ -418,7 +433,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         if (log.isDebugEnabled())
                             log.debug("Completing job future [locNodeId=" + locNodeId + ", meta=" + meta + ']');
 
-                        finishFut.onDone(jobId); // TODO exception.
+                        finishFut.onDone(jobId, meta.failCause());
                     }
 
                     break;
@@ -455,6 +470,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         /** Attempts. */
         private Map<Integer, AttemptGroup> attempts = new HashMap<>();
+
+        /** Cancelled flag. */
+        private boolean cancelled;
 
         /**
          * @param job Job.
@@ -504,6 +522,13 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             boolean combine = group.onMapFinished();
 
+            if (status.state() == FAILED || status.state() == CRASHED) {
+                // Fail the whole job.
+                jobMetaPrj.transformAsync(jobId, new RemoveMappersClosure(taskInfo.fileBlock(), status.failCause()));
+
+                return;
+            }
+
             if (job.hasCombiner()) {
                 // Create combiner.
                 if (combine) {
@@ -525,7 +550,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
          * @param status Task status.
          */
         private void onReduceFinished(GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
-            jobMetaPrj.transformAsync(taskInfo.jobId(), new RemoveReducerClosure(taskInfo.taskNumber()));
+            GridHadoopJobId jobId = taskInfo.jobId();
+            if (status.state() == FAILED || status.state() == CRASHED)
+                // Fail the whole job.
+                jobMetaPrj.transformAsync(jobId, new RemoveReducerClosure(taskInfo.taskNumber(), status.failCause()));
+            else
+                jobMetaPrj.transformAsync(jobId, new RemoveReducerClosure(taskInfo.taskNumber()));
         }
 
         /**
@@ -541,7 +571,24 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             assert job.hasCombiner();
 
-            jobMetaPrj.transformAsync(jobId, new RemoveMappersClosure(group.mappers()));
+            if (status.state() == FAILED || status.state() == CRASHED)
+                // Fail the whole job.
+                jobMetaPrj.transformAsync(jobId, new RemoveMappersClosure(group.mappers(), status.failCause()));
+            else
+                jobMetaPrj.transformAsync(jobId, new RemoveMappersClosure(group.mappers()));
+        }
+
+        /**
+         * @return {@code True} if job was cancelled by this (first) call.
+         */
+        public boolean onCancel() {
+            if (!cancelled) {
+                cancelled = true;
+
+                return true;
+            }
+
+            return false;
         }
     }
 
@@ -626,6 +673,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         /** Mapper block to remove. */
         private Collection<GridHadoopFileBlock> blocks;
 
+        /** Error. */
+        private Throwable err;
+
         /**
          * @param block Mapper block to remove.
          */
@@ -634,10 +684,26 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         }
 
         /**
+         * @param block Mapper block to remove.
+         */
+        private RemoveMappersClosure(GridHadoopFileBlock block, Throwable err) {
+            blocks = Collections.singletonList(block);
+            this.err = err;
+        }
+
+        /**
          * @param blocks Mapper blocks to remove.
          */
         private RemoveMappersClosure(Collection<GridHadoopFileBlock> blocks) {
             this.blocks = blocks;
+        }
+
+        /**
+         * @param blocks Mapper blocks to remove.
+         */
+        private RemoveMappersClosure(Collection<GridHadoopFileBlock> blocks, Throwable err) {
+            this.blocks = blocks;
+            this.err = err;
         }
 
         /** {@inheritDoc} */
@@ -650,8 +716,17 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             cp.pendingBlocks(blocksCp);
 
-            if (blocksCp.isEmpty())
-                cp.phase(PHASE_REDUCE);
+            cp.failCause(err);
+
+            if (err != null)
+                cp.phase(PHASE_CANCELLING);
+
+            if (blocksCp.isEmpty()) {
+                if (cp.phase() == PHASE_CANCELLING)
+                    cp.phase(PHASE_COMPLETE);
+                else
+                    cp.phase(PHASE_REDUCE);
+            }
 
             return cp;
         }
@@ -664,11 +739,22 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         /** Mapper block to remove. */
         private int rdc;
 
+        /** Error. */
+        private Throwable err;
+
         /**
          * @param rdc Reducer to remove.
          */
         private RemoveReducerClosure(int rdc) {
             this.rdc = rdc;
+        }
+
+        /**
+         * @param rdc Reducer to remove.
+         */
+        private RemoveReducerClosure(int rdc, Throwable err) {
+            this.rdc = rdc;
+            this.err = err;
         }
 
         /** {@inheritDoc} */
@@ -680,6 +766,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             rdcCp.remove(rdc);
 
             cp.pendingReducers(rdcCp);
+
+            if (err != null)
+                cp.phase(PHASE_CANCELLING);
+
+            if (cp.phase() == PHASE_CANCELLING && rdcCp.isEmpty())
+                cp.phase(PHASE_COMPLETE);
 
             return cp;
         }

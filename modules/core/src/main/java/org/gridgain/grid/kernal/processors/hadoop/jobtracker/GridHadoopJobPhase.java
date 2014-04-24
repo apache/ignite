@@ -13,5 +13,15 @@ package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
  * Job run phase.
  */
 public enum GridHadoopJobPhase {
-    PHASE_MAP, PHASE_REDUCE, PHASE_COMPLETE
+    /** Job is running map and combine tasks. */
+    PHASE_MAP,
+
+    /** Job has finished all map tasks and running reduce tasks. */
+    PHASE_REDUCE,
+
+    /** Job is stopping due to exception during any of the phases. */
+    PHASE_CANCELLING,
+
+    /** Job has finished execution. */
+    PHASE_COMPLETE
 }

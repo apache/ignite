@@ -94,6 +94,7 @@ public class GridHadoopAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setBlockSize(ggfsBlockSize);
         cfg.setDataCacheName(ggfsDataCacheName);
         cfg.setMetaCacheName(ggfsMetaCacheName);
+        cfg.setFragmentizerEnabled(false);
 
         return cfg;
     }
