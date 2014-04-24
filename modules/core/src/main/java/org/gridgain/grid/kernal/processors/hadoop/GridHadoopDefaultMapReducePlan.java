@@ -48,6 +48,20 @@ public class GridHadoopDefaultMapReducePlan implements GridHadoopMapReducePlan {
     }
 
     /** {@inheritDoc} */
+    @Override public UUID nodeForReducer(int reducer) {
+        assert reducer >= 0 && reducer < reducersCnt : reducer;
+
+        for (Map.Entry<UUID, int[]> entry : reducers.entrySet()) {
+            for (int r : entry.getValue()) {
+                if (r == reducer)
+                    return entry.getKey();
+            }
+        }
+
+        throw new IllegalStateException("Not found reducer index: " + reducer);
+    }
+
+    /** {@inheritDoc} */
     @Override @Nullable public Collection<GridHadoopFileBlock> mappers(UUID nodeId) {
         return mappers.get(nodeId);
     }

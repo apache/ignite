@@ -54,4 +54,12 @@ public interface GridHadoopMapReducePlan extends Serializable {
      * @return Number of reducers.
      */
     public int reducers();
+
+    /**
+     * Gets node ID for reducer.
+     *
+     * @param reducer Reducer.
+     * @return Node ID.
+     */
+    public UUID nodeForReducer(int reducer);
 }

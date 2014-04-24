@@ -433,6 +433,10 @@ public class GridHadoopMultimap implements AutoCloseable {
             ser.write(out, o);
         }
 
+        /**
+         * @param off Offset.
+         * @return Allocated pointer.
+         */
         private long copy(int off) {
             int size = out.offset();
 
@@ -443,6 +447,7 @@ public class GridHadoopMultimap implements AutoCloseable {
             return ptr;
         }
 
+        /** {@inheritDoc} */
         @Override public void close()  {
             // TODO
         }

@@ -66,6 +66,11 @@ public class GridHadoopShuffleJob implements AutoCloseable {
         }
     }
 
+    /**
+     * @param taskInfo Task info.
+     * @return Output.
+     * @throws GridException If failed.
+     */
     public synchronized GridHadoopTaskOutput output(GridHadoopTaskInfo taskInfo) throws GridException {
         switch (taskInfo.type()) {
             case MAP:
@@ -86,6 +91,11 @@ public class GridHadoopShuffleJob implements AutoCloseable {
         }
     }
 
+    /**
+     * @param taskInfo Task info.
+     * @return Input.
+     * @throws GridException If failed.
+     */
     public GridHadoopTaskInput input(GridHadoopTaskInfo taskInfo) throws GridException {
         switch (taskInfo.type()) {
             case COMBINE:
