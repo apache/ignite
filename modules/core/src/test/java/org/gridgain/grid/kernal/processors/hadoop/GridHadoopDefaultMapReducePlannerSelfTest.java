@@ -25,7 +25,7 @@ import java.net.*;
 import java.util.*;
 
 /**
- * TODO: Add class description.
+ * Tests default map-reduce planner implementation.
  */
 public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstractSelfTest {
     /** {@inheritDoc} */
@@ -111,8 +111,12 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         int totalBlocks = 0;
 
-        for (GridNode n : nodes)
-            totalBlocks += plan.mappers(n.id()).size();
+        for (GridNode n : nodes) {
+            Collection<GridHadoopFileBlock> mappers = plan.mappers(n.id());
+
+            if (mappers != null)
+                totalBlocks += mappers.size();
+        }
 
         assertEquals(aff.size(), totalBlocks);
 
@@ -122,16 +126,23 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
             Collection<GridHadoopFileBlock> mappers = plan.mappers(primary);
 
+            assertNotNull("Mappers is null for affinity [primary=" + primary + ", loc=" + loc + ']', mappers);
+
             assertTrue("Failed to find affinity block location in plan [loc=" + loc + ", mappers=" + mappers + ']',
                 hasLocation(loc, fileName, mappers));
         }
     }
 
+    /**
+     * @param ggfs GGFS instance.
+     * @param fileName File name.
+     * @param fileSize File size.
+     * @throws Exception
+     */
     private void prepareFile(GridGgfs ggfs, String fileName, long fileSize) throws Exception {
         try (OutputStream os = ggfs.create(new GridGgfsPath(fileName), true)) {
-
+            os.write(new byte[(int)fileSize]);
         }
-
     }
 
     /**

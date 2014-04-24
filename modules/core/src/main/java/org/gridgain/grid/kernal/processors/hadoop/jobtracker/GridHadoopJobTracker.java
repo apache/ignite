@@ -55,6 +55,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         mrPlanner = ctx.planner();
 
+        ctx.kernalContext().resource().injectGeneric(mrPlanner);
+
         jobMetaPrj = sysCache.projection(GridHadoopJobId.class, GridHadoopJobMetadata.class);
 
         GridCacheContinuousQuery<GridHadoopJobId, GridHadoopJobMetadata> qry = jobMetaPrj.queries()

@@ -191,7 +191,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
         Map<UUID, int[]> rdcMap = new HashMap<>(top.size());
 
         int avgCnt = (int)((float)job.reducers() / top.size() + 0.5f);
-        int firstCnt = top.size() - avgCnt * (top.size() - 1);
+        int firstCnt = job.reducers() - avgCnt * (top.size() - 1);
 
         int i = 0;
 
