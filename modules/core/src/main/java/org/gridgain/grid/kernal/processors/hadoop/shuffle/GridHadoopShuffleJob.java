@@ -94,7 +94,6 @@ public class GridHadoopShuffleJob implements AutoCloseable {
             case REDUCE:
                 // TODO
 
-
             default:
                 throw new IllegalStateException("Illegal type: " + taskInfo.type());
         }

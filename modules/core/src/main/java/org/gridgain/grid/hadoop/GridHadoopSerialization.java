@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -22,8 +23,9 @@ public interface GridHadoopSerialization {
      *
      * @param out Output.
      * @param obj Object to serialize.
+     * @throws GridException If failed.
      */
-    public void write(DataOutput out, Object obj) throws IOException;
+    public void write(DataOutput out, Object obj) throws GridException;
 
     /**
      * Reads object from the given input optionally reusing given instance.
@@ -31,6 +33,7 @@ public interface GridHadoopSerialization {
      * @param in Input.
      * @param obj Object.
      * @return New object or reused instance.
+     * @throws GridException If failed.
      */
-    public Object read(DataInput in, @Nullable Object obj) throws IOException;
+    public Object read(DataInput in, @Nullable Object obj) throws GridException;
 }

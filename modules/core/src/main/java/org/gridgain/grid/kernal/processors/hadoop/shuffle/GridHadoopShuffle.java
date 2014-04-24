@@ -26,6 +26,11 @@ public class GridHadoopShuffle extends GridHadoopComponent {
     /** */
     private GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() throws GridException {
+//        ctx.kernalContext().io().addMessageListener();
+    }
+
     /**
      * @param jobId Task info.
      * @return Shuffle job.

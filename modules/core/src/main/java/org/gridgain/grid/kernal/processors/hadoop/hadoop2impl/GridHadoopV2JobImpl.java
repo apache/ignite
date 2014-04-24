@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.hadoop2impl;
 
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.task.*;
 import org.gridgain.grid.*;
@@ -32,6 +33,12 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
     /** Hadoop native job context. */
     protected JobContext ctx;
 
+    /** Key class. */
+    private Class<?> keyCls;
+
+    /** Value class. */
+    private Class<?> valCls;
+
     /**
      * @param jobId Job ID.
      * @param jobInfo Job info.
@@ -41,6 +48,9 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
         this.jobInfo = jobInfo;
 
         ctx = new JobContextImpl(jobInfo.configuration(), new JobID(jobId.globalId().toString(), jobId.localId()));
+
+        keyCls = ctx.getMapOutputKeyClass();
+        valCls = ctx.getMapOutputValueClass();
     }
 
     /** {@inheritDoc} */
@@ -114,12 +124,12 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public GridHadoopSerialization keySerialization() throws GridException {
-        return null;
+        return new GridHadoopWritableSerialization((Class<? extends Writable>)keyCls);
     }
 
     /** {@inheritDoc} */
     @Override public GridHadoopSerialization valueSerialization() throws GridException {
-        return null;
+        return new GridHadoopWritableSerialization((Class<? extends Writable>)valCls);
     }
 
     /** {@inheritDoc} */
