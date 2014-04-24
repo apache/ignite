@@ -15,8 +15,12 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
+
+import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
+import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
 /**
  * TODO write doc
@@ -44,6 +48,25 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
         for (final GridHadoopTask task : tasks) {
             assert task != null;
 
+            GridChainedFuture<?> fut = new GridChainedFuture<>(ctx.kernalContext());
+
+            fut.listenAsync(new CIX1<GridFuture<?>>() {
+                @Override public void applyx(GridFuture<?> f) throws GridException {
+                    GridHadoopTaskState state = COMPLETED;
+                    Throwable err = null;
+
+                    try {
+                        f.get();
+                    }
+                    catch (Exception e) {
+                        state = FAILED;
+                        err = e;
+                    }
+
+                    jobTracker.onTaskFinished(task.info(), new GridHadoopTaskStatus(state, err));
+                }
+            });
+
             ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
                 @Override public GridFuture<?> call() throws Exception {
                     GridHadoopTaskInfo info = task.info();
@@ -52,21 +75,15 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
                          GridHadoopTaskInput in = createInput(info)) {
                         GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(ctx.kernalContext());
 
-                        try {
-                            if (log.isDebugEnabled())
-                                log.debug("Running task: " + task);
+                        if (log.isDebugEnabled())
+                            log.debug("Running task: " + task);
 
-                            task.run(taskCtx);
+                        task.run(taskCtx);
 
-                            return out.finish();
-                        }
-                        finally {
-                            // TODO status.
-                            jobTracker.onTaskFinished(task.info(), new GridHadoopTaskStatus());
-                        }
+                        return out.finish();
                     }
                 }
-            }, false);
+            }, false).listenAsync(fut);
         }
     }
 
@@ -91,22 +108,10 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
      * @return Task output.
      */
     private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo taskInfo) {
-        return new GridHadoopTaskOutput() {
-            /** {@inheritDoc} */
-            @Override public void write(Object key, Object val) {
-                // TODO: implement.
-            }
+        if (taskInfo.type() == REDUCE)
+            return null;
 
-            /** {@inheritDoc} */
-            @Override public GridFuture<?> finish() {
-                return new GridFinishedFutureEx<>();
-            }
-
-            /** {@inheritDoc} */
-            @Override public void close() throws Exception {
-                // TODO: implement.
-            }
-        };
+        return ctx.shuffle().getMapperOutput(taskInfo);
     }
 
     /**
@@ -116,30 +121,9 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
      * @return Task input.
      */
     private GridHadoopTaskInput createInput(GridHadoopTaskInfo taskInfo) {
-        return new GridHadoopTaskInput() {
-            /** {@inheritDoc} */
-            @Override public boolean next() {
-                // TODO: implement.
-                return false;
-            }
+        if (taskInfo.type() == MAP)
+            return null;
 
-            /** {@inheritDoc} */
-            @Override public Object key() {
-                // TODO: implement.
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Iterator<?> values() {
-                // TODO: implement.
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public void close() throws Exception {
-                // TODO: implement.
-
-            }
-        };
+        return ctx.shuffle().getReducerInput(taskInfo);
     }
 }
