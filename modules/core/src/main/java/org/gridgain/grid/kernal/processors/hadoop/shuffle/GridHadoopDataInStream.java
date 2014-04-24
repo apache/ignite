@@ -25,6 +25,13 @@ public class GridHadoopDataInStream extends InputStream implements DataInput {
     private GridUnsafeMemory mem;
 
     /**
+     * @return Buffer.
+     */
+    public GridHadoopBuffer buffer() {
+        return buf;
+    }
+
+    /**
      * @param size Size.
      * @return Old pointer.
      */

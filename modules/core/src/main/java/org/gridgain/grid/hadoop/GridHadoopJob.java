@@ -53,12 +53,20 @@ public interface GridHadoopJob {
     public GridHadoopPartitioner partitioner() throws GridException;
 
     /**
-     * Creates new instance of mapper output serialization object.
+     * Creates new instance of key serialization object.
      *
      * @return Serialization facility.
      * @throws GridException if failed.
      */
-    public GridHadoopSerialization serialization() throws GridException;
+    public GridHadoopSerialization keySerialization() throws GridException;
+
+    /**
+     * Creates new instance of value serialization object.
+     *
+     * @return Serialization facility.
+     * @throws GridException if failed.
+     */
+    public GridHadoopSerialization valueSerialization() throws GridException;
 
     /**
      * Creates task to be executed.
