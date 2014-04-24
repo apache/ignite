@@ -26,6 +26,8 @@
         <gridgain.edition>platform</gridgain.edition>
         <gridgain.compatible.vers></gridgain.compatible.vers>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.7</maven.compiler.source>
+        <maven.compiler.target>1.7</maven.compiler.target>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
         <doxygen.exec>doxygen</doxygen.exec>
         <git.exec>git</git.exec>
