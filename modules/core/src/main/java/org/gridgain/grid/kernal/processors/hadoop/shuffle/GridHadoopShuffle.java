@@ -15,32 +15,67 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
 import java.util.concurrent.*;
 
 /**
- * TODO write doc
+ * Shuffle.
  */
 public class GridHadoopShuffle extends GridHadoopComponent {
     /** */
-    private ConcurrentMap<?, ?> mapOutputs = new ConcurrentHashMap<>();
+    private ConcurrentMap<GridHadoopJobId, GridHadoopShuffleJob> jobs = new ConcurrentHashMap<>();
 
     /**
-     * @param mapperInfo Mapper info.
-     * @return Output for mapper.
+     * @param taskInfo Task info.
+     * @return Shuffle job.
      */
-    public GridHadoopTaskOutput getMapperOutput(GridHadoopTaskInfo mapperInfo) {
-        return null;
+    private GridHadoopShuffleJob job(GridHadoopTaskInfo taskInfo) {
+        GridHadoopJobId jobId = taskInfo.jobId();
+
+        GridHadoopShuffleJob res = jobs.get(jobId);
+
+        if (res == null) {
+            res = new GridHadoopShuffleJob(ctx.jobFactory().createJob(jobId, ctx.jobTracker().info(jobId)));
+
+            GridHadoopShuffleJob old = jobs.putIfAbsent(jobId, res);
+
+            if (old != null) {
+                res.close();
+
+                res = old;
+            }
+        }
+
+        return res;
     }
 
     /**
-     * @param reducerInfo Reducer info.
-     * @return
+     * @param taskInfo Task info.
+     * @return Output.
      */
-    public GridHadoopTaskInput getReducerInput(GridHadoopTaskInfo reducerInfo) {
-        return null;
+    public GridHadoopTaskOutput output(GridHadoopTaskInfo taskInfo) {
+        return job(taskInfo).output(taskInfo);
+    }
+
+    /**
+     * @param taskInfo Task info.
+     * @return Input.
+     */
+    public GridHadoopTaskInput input(GridHadoopTaskInfo taskInfo) {
+        return job(taskInfo.jobId()).input(taskInfo);
     }
 
     /**
      * @param jobId Job id.
      */
     public void jobFinished(GridHadoopJobId jobId) {
+        GridHadoopShuffleJob job = jobs.remove(jobId);
 
+        if (job != null)
+            job.close();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) {
+        for (GridHadoopShuffleJob job : jobs.values())
+            job.close();
+
+        jobs.clear();
     }
 }

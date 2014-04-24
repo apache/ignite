@@ -82,11 +82,4 @@ public interface GridHadoopJob {
      * @return Task.
      */
     public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo);
-
-    /**
-     * Checks if combiner is set for this job.
-     *
-     * @return {@code true} If combiner is set for this job.
-     */
-    public boolean hasCombiner();
 }
