@@ -176,6 +176,22 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     }
 
     /**
+     * Gets job plan by job ID.
+     *
+     * @param jobId Job ID.
+     * @return Job plan.
+     * @throws GridException If failed.
+     */
+    public GridHadoopMapReducePlan plan(GridHadoopJobId jobId) throws GridException {
+        GridHadoopJobMetadata meta = jobMetaPrj.get(jobId);
+
+        if (meta != null)
+            return meta.mapReducePlan();
+
+        return null;
+    }
+
+    /**
      * Callback from task executor invoked when a task has been finished.
      *
      * @param taskInfo Task info.

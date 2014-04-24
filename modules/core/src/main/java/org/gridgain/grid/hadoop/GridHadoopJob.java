@@ -10,6 +10,7 @@
 package org.gridgain.grid.hadoop;
 
 import org.gridgain.grid.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -82,4 +83,12 @@ public interface GridHadoopJob {
      * @return Task.
      */
     public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo);
+
+    /**
+     * Gets optional configuration property for the job.
+     *
+     * @param name Property name.
+     * @return Value or {@code null} if none.
+     */
+    @Nullable public String property(String name);
 }

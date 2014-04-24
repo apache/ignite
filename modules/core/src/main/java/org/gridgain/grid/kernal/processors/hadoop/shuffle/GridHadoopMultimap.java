@@ -55,7 +55,7 @@ public class GridHadoopMultimap implements AutoCloseable {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
+    @Override public void close() {
         for (int i = 0; i < tbl.length(); i++)  {
             long meta = tbl.get(i);
 

@@ -9,8 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.util.offheap.unsafe.*;
 
 import java.util.concurrent.*;
 
@@ -21,17 +23,18 @@ public class GridHadoopShuffle extends GridHadoopComponent {
     /** */
     private ConcurrentMap<GridHadoopJobId, GridHadoopShuffleJob> jobs = new ConcurrentHashMap<>();
 
+    /** */
+    private GridUnsafeMemory mem = new GridUnsafeMemory(0);
+
     /**
-     * @param taskInfo Task info.
+     * @param jobId Task info.
      * @return Shuffle job.
      */
-    private GridHadoopShuffleJob job(GridHadoopTaskInfo taskInfo) {
-        GridHadoopJobId jobId = taskInfo.jobId();
-
+    private GridHadoopShuffleJob job(GridHadoopJobId jobId) throws GridException {
         GridHadoopShuffleJob res = jobs.get(jobId);
 
         if (res == null) {
-            res = new GridHadoopShuffleJob(ctx.jobFactory().createJob(jobId, ctx.jobTracker().info(jobId)));
+            res = new GridHadoopShuffleJob(ctx.jobFactory().createJob(jobId, ctx.jobTracker().jobInfo(jobId)), mem);
 
             GridHadoopShuffleJob old = jobs.putIfAbsent(jobId, res);
 
@@ -49,15 +52,15 @@ public class GridHadoopShuffle extends GridHadoopComponent {
      * @param taskInfo Task info.
      * @return Output.
      */
-    public GridHadoopTaskOutput output(GridHadoopTaskInfo taskInfo) {
-        return job(taskInfo).output(taskInfo);
+    public GridHadoopTaskOutput output(GridHadoopTaskInfo taskInfo) throws GridException {
+        return job(taskInfo.jobId()).output(taskInfo);
     }
 
     /**
      * @param taskInfo Task info.
      * @return Input.
      */
-    public GridHadoopTaskInput input(GridHadoopTaskInfo taskInfo) {
+    public GridHadoopTaskInput input(GridHadoopTaskInfo taskInfo) throws GridException {
         return job(taskInfo.jobId()).input(taskInfo);
     }
 
