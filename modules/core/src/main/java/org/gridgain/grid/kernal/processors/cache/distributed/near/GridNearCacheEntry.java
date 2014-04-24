@@ -39,6 +39,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     private volatile UUID primaryNodeId;
 
     /** DHT version which caused the last update. */
+    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private GridCacheVersion dhtVer;
 
     /** Partition. */
@@ -324,6 +325,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @param ttl Time to live.
      * @param expireTime Expiration time.
      * @param evt Event flag.
+     * @param topVer Topology version.
      * @return {@code True} if initial value was set.
      * @throws GridException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
@@ -599,6 +601,11 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         checkOwnerChanged(prev, owner, val);
 
         return owner != prev ? prev : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onInvalidate() {
+        dhtVer = null;
     }
 
     /** {@inheritDoc} */

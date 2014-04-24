@@ -12,7 +12,7 @@
 -->
 
 <!--
-    Grid configuration using TCP discovery and shared file-system IP finder.
+    Example grid configuration using TCP discovery and Amazon S3 IP finder.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -20,17 +20,26 @@
     <description>Main Spring file for grid configuration.</description>
 
     <!--
+        AWS credentials. Provide your access key ID and secret access key.
+    -->
+    <bean id="aws.creds" class="com.amazonaws.auth.BasicAWSCredentials">
+        <constructor-arg value="YOUR_ACCESS_KEY_ID" />
+        <constructor-arg value="YOUR_SECRET_ACCESS_KEY" />
+    </bean>
+
+    <!--
         Grid configuration.
     -->
     <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
         <!--
-            Configuration for TCP discovery SPI (shared folder IP finder).
+            Configuration for TCP discovery SPI (Amazon S3 IP finder).
         -->
         <property name="discoverySpi">
             <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
                 <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs.GridTcpDiscoverySharedFsIpFinder">
-                        <property name="path" value="PATH_TO_SHARED_FOLDER"/>
+                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.s3.GridTcpDiscoveryS3IpFinder">
+                        <property name="awsCredentials" ref="aws.creds"/>
+                        <property name="bucketName" value="YOUR_BUCKET_NAME_IP_FINDER"/>
                     </bean>
                 </property>
             </bean>

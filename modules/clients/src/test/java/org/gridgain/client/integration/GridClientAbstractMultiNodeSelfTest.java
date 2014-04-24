@@ -133,7 +133,11 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
         c.setDiscoverySpi(disco);
 
-        c.setCommunicationSpi(new TestCommunicationSpi());
+        TestCommunicationSpi spi = new TestCommunicationSpi();
+
+        spi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
+
+        c.setCommunicationSpi(spi);
 
         c.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration(PARTITIONED_CACHE_NAME),
             cacheConfiguration(REPLICATED_CACHE_NAME), cacheConfiguration(REPLICATED_ASYNC_CACHE_NAME));
