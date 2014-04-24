@@ -15,6 +15,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -22,23 +23,17 @@ import java.util.*;
  * Hadoop job implementation for v2 API.
  */
 public class GridHadoopV2JobImpl implements GridHadoopJob {
-    /**
-     * Job ID.
-     */
+    /** Hadoop job ID. */
     private GridHadoopJobId jobId;
 
-    /**
-     * Job info.
-     */
+    /** Job info. */
     protected GridHadoopDefaultJobInfo jobInfo;
 
-    /**
-     * Hadoop job context.
-     */
-    private JobContext ctx;
+    /** Hadoop native job context. */
+    protected JobContext ctx;
 
     /**
-     * @param jobId   Job ID.
+     * @param jobId Job ID.
      * @param jobInfo Job info.
      */
     public GridHadoopV2JobImpl(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfo) {
@@ -48,58 +43,40 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
         ctx = new JobContextImpl(jobInfo.configuration(), new JobID(jobId.globalId().toString(), jobId.localId()));
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public GridHadoopJobId id() {
+    /** {@inheritDoc} */
+    @Override public GridHadoopJobId id() {
         return jobId;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public GridHadoopJobInfo info() {
+    /** {@inheritDoc} */
+    @Override public GridHadoopJobInfo info() {
         return jobInfo;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Collection<GridHadoopFileBlock> input() throws GridException {
+    /** {@inheritDoc} */
+    @Override public Collection<GridHadoopFileBlock> input() throws GridException {
         return GridHadoopV2Splitter.splitJob(ctx);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int reducers() {
+    /** {@inheritDoc} */
+    @Override public int reducers() {
         return ctx.getNumReduceTasks();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public GridHadoopPartitioner partitioner() throws GridException {
+    /** {@inheritDoc} */
+    @Override public GridHadoopPartitioner partitioner() throws GridException {
         try {
             Class<? extends Partitioner> partCls = ctx.getPartitionerClass();
 
-            return new GridHadoopV2PartitionerAdapter((Partitioner<Object, Object>) U.newInstance(partCls));
+            return new GridHadoopV2PartitionerAdapter((Partitioner<Object, Object>)U.newInstance(partCls));
         }
         catch (ClassNotFoundException e) {
             throw new GridException(e);
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
+    /** {@inheritDoc} */
+    @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
         switch (taskInfo.type()) {
             case MAP:
                 return new GridHadoopV2MapTask(taskInfo);
@@ -115,11 +92,8 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean hasCombiner() {
+    /** {@inheritDoc} */
+    @Override public boolean hasCombiner() {
         return combinerClass() != null;
     }
 
@@ -138,13 +112,19 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public GridHadoopSerialization serialization() throws GridException {
-        // TODO implement.
+    /** {@inheritDoc} */
+    @Override public GridHadoopSerialization keySerialization() throws GridException {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopSerialization valueSerialization() throws GridException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String property(String name) {
+        return jobInfo.configuration().get(name);
     }
 
     /**
@@ -176,9 +156,7 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
         return new TaskAttemptID(tid, taskInfo.attempt());
     }
 
-    /**
-     * Hadoop native job context.
-     */
+    /** Hadoop native job context. */
     public JobContext hadoopJobContext() {
         return ctx;
     }

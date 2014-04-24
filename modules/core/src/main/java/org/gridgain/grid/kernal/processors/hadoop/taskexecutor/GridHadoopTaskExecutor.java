@@ -69,7 +69,8 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
             });
 
             ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
-                @Override public GridFuture<?> call() throws Exception {
+                @Override
+                public GridFuture<?> call() throws Exception {
                     GridHadoopTaskInfo info = task.info();
 
                     try (GridHadoopTaskOutput out = createOutput(info);
@@ -108,11 +109,11 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
      * @param taskInfo Task info.
      * @return Task output.
      */
-    private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo taskInfo) {
+    private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo taskInfo) throws GridException {
         if (taskInfo.type() == REDUCE)
             return null;
 
-        return ctx.shuffle().getMapperOutput(taskInfo);
+        return ctx.shuffle().output(taskInfo);
     }
 
     /**
@@ -121,10 +122,10 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
      * @param taskInfo Task info.
      * @return Task input.
      */
-    private GridHadoopTaskInput createInput(GridHadoopTaskInfo taskInfo) {
+    private GridHadoopTaskInput createInput(GridHadoopTaskInfo taskInfo) throws GridException {
         if (taskInfo.type() == MAP)
             return null;
 
-        return ctx.shuffle().getReducerInput(taskInfo);
+        return ctx.shuffle().input(taskInfo);
     }
 }
