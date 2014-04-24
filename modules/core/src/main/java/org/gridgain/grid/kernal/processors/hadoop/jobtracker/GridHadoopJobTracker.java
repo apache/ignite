@@ -157,6 +157,27 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     }
 
     /**
+     * Gets job info for running Hadoop map-reduce task by job ID.
+     *
+     * @param jobId Job ID to get job info for.
+     * @return Job info or {@code null} if no information found for this job ID.
+     * @throws GridException If cache lookup for this job ID failed.
+     */
+    @Nullable public GridHadoopJobInfo jobInfo(GridHadoopJobId jobId) throws GridException {
+        JobLocalState state = activeJobs.get(jobId);
+
+        if (state != null)
+            return state.job.info();
+
+        GridHadoopJobMetadata meta = jobMetaPrj.get(jobId);
+
+        if (meta != null)
+            return meta.jobInfo();
+
+        return null;
+    }
+
+    /**
      * Callback from task executor invoked when a task has been finished.
      *
      * @param taskInfo Task info.
