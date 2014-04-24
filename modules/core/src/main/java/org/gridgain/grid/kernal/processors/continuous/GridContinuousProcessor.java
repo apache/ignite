@@ -696,6 +696,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
         catch (GridException e) {
             err = e;
+
+            U.error(log, "Failed to register handler [nodeId=" + nodeId + ", routineId=" + routineId + ']', e);
         }
 
         boolean registered = false;
@@ -711,6 +713,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
             catch (GridException e) {
                 err = e;
+
+                U.error(log, "Failed to register handler [nodeId=" + nodeId + ", routineId=" + routineId + ']', e);
             }
         }
 
