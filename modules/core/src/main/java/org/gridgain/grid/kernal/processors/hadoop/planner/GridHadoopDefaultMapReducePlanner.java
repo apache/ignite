@@ -15,6 +15,7 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
@@ -31,6 +32,10 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
     /** Injected grid. */
     @GridInstanceResource
     private Grid grid;
+
+    /** Logger. */
+    @GridLoggerResource
+    private GridLogger log;
 
     /** {@inheritDoc} */
     @Override public GridHadoopMapReducePlan preparePlan(Collection<GridHadoopFileBlock> blocks,
@@ -57,6 +62,9 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
 
         for (GridHadoopFileBlock block : blocks) {
             UUID nodeId = nodeId(job, block, top, nodes);
+
+            if (log.isDebugEnabled())
+                log.debug("Mapped block to node [block=" + block + ", nodeId=" + nodeId + ']');
 
             Collection<GridHadoopFileBlock> nodeBlocks = mappersMap.get(nodeId);
 
@@ -109,10 +117,16 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
      */
     private UUID nodeId(GridHadoopJob job, GridHadoopFileBlock block, Collection<GridNode> top,
         Map<String, Collection<GridNode>> hostNodeMap) throws GridException {
+        if (log.isDebugEnabled())
+            log.debug("Mapping block to node: " + block);
+
         // TODO-gg-8170 change to getFileBlockLocations.
         GridGgfs ggfs = ggfsForBlock(job, block);
 
         if (ggfs != null) {
+            if (log.isDebugEnabled())
+                log.debug("Mapping file block according to ggfs affinity: " + block);
+
             Collection<GridGgfsBlockLocation> aff = ggfs.affinity(new GridGgfsPath(block.file()), block.start(),
                 block.length());
 
@@ -136,6 +150,9 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
                 if (node != null)
                     return node.id();
             }
+
+            if (log.isDebugEnabled())
+                log.debug("Could not find node by hostname, returning random node: " + block);
 
             // No nodes were selected based on host, return random node.
             int idx = ThreadLocalRandom8.current().nextInt(top.size());
@@ -169,6 +186,9 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
             Path path = new Path(block.file());
 
             FileSystem fs = path.getFileSystem(((GridHadoopDefaultJobInfo)job.info()).configuration());
+
+            if (log.isDebugEnabled())
+                log.debug("Got file system for path [fs=" + fs + ", path=" + path + ']');
 
             if (fs instanceof GridGgfsHadoopFileSystem)
                 return grid.ggfs("ggfs"); // TODO-gg-8170 change to getFileBlockLocations.

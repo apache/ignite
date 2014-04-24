@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.testframework.junits.common.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
@@ -46,6 +47,12 @@ public class GridHadoopAbstractSelfTest extends GridCommonAbstractTest {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setHadoopConfiguration(hadoopConfiguration(gridName));
+
+        GridTcpCommunicationSpi commSpi = new GridTcpCommunicationSpi();
+
+        commSpi.setSharedMemoryPort(-1);
+
+        cfg.setCommunicationSpi(commSpi);
 
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
 
