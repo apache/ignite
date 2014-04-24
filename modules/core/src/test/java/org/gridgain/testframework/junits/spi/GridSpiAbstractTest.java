@@ -144,9 +144,6 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
 
         T spi = (T)spiTest.spi().newInstance();
 
-        assert spi.getClass().getAnnotation(GridSpiInfo.class) != null : "SPI implementation must have " +
-            "@GridSpi annotation [spi=" + spi.getClass() + ']';
-
         // Set spi into test data.
         getTestData().setSpi(spi);
 
@@ -278,12 +275,6 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
         Map<String, Serializable> attrs = new HashMap<>();
 
         attrs.put(U.spiAttribute(spi, GridNodeAttributes.ATTR_SPI_CLASS), spi.getClass().getName());
-
-        GridSpiInfo ann = U.getAnnotation(spi.getClass(), GridSpiInfo.class);
-
-        assert ann != null;
-
-        attrs.put(U.spiAttribute(spi, GridNodeAttributes.ATTR_SPI_VER), ann.version());
 
         return attrs;
     }

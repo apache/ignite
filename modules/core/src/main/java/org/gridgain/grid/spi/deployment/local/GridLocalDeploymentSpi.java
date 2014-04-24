@@ -44,11 +44,6 @@ import java.util.concurrent.*;
  * configuration parameters.
  * @see GridDeploymentSpi
  */
-@GridSpiInfo(
-    author = /*@java.spi.author*/"GridGain Systems",
-    url = /*@java.spi.url*/"www.gridgain.com",
-    email = /*@java.spi.email*/"support@gridgain.com",
-    version = /*@java.spi.version*/"x.x")
 @GridSpiMultipleInstancesSupport(true)
 @GridSpiConsistencyChecked(optional = false)
 @GridIgnoreIfPeerClassLoadingDisabled

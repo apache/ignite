@@ -146,7 +146,6 @@ public class GridRestProcessorStartSelfTest extends GridCommonAbstractTest {
     /**
      * Test SPI.
      */
-    @GridSpiInfo(author="test", version="test", url="gridgain.com", email="test@gridgain.com")
     private class TestDiscoverySpi extends GridTcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override public void spiStart(@Nullable String gridName) throws GridSpiException {

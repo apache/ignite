@@ -47,9 +47,6 @@ public final class GridNodeAttributes {
     public static final String ATTR_PEER_CLASSLOADING = ATTR_PREFIX + ".peer.classloading.enabled";
 
     /** Internal attribute name postfix constant. */
-    public static final String ATTR_SPI_VER = ATTR_PREFIX + ".spi.ver";
-
-    /** Internal attribute name postfix constant. */
     public static final String ATTR_SPI_CLASS = ATTR_PREFIX + ".spi.class";
 
     /** Internal attribute name constant. */
