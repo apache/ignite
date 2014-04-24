@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
+import org.apache.hadoop.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
@@ -21,6 +22,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -190,10 +192,51 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     }
 
     /**
+     * @param info Job info.
      * @param blocks Blocks to init nodes for.
      */
-    private void initBlockNodes(Collection<GridHadoopFileBlock> blocks) {
+    private void assignBlockHosts(GridHadoopDefaultJobInfo info, Iterable<GridHadoopFileBlock> blocks)
+        throws GridException {
+        Path path = null;
+        FileSystem fs = null;
+        FileStatus stat = null;
 
+        for (GridHadoopFileBlock block : blocks) {
+            try {
+                Path p = new Path(block.file());
+
+                // Get file sustem and status only on path change.
+                if (!F.eq(path, p)) {
+                    path = p;
+
+                    fs = path.getFileSystem(info.configuration());
+
+                    stat = fs.getFileStatus(path);
+                }
+
+                BlockLocation[] locs = fs.getFileBlockLocations(stat, block.start(), block.length());
+
+                assert locs != null;
+                assert locs.length != 0;
+
+                long maxLen = Long.MIN_VALUE;
+                BlockLocation max = null;
+
+                for (BlockLocation l : locs) {
+                    if (maxLen < l.getLength()) {
+                        maxLen = l.getLength();
+                        max = l;
+                    }
+                }
+
+                assert max != null;
+
+                block.hosts(max.getHosts());
+            }
+            catch (IOException e) {
+                throw new GridException(e);
+            }
+        }
     }
 
     /**

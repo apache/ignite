@@ -104,6 +104,15 @@ public class GridHadoopProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Gets Hadoop context.
+     *
+     * @return Hadoop context.
+     */
+    public GridHadoopContext context() {
+        return hctx;
+    }
+
+    /**
      * @param cnt Number of IDs to generate.
      * @return Collection of generated IDs.
      */

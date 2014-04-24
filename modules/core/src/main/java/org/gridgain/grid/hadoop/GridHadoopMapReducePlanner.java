@@ -28,5 +28,5 @@ public interface GridHadoopMapReducePlanner {
      * @return Map reduce plan.
      */
     public GridHadoopMapReducePlan preparePlan(Collection<GridHadoopFileBlock> blocks, Collection<GridNode> top,
-        GridHadoopJob job, @Nullable GridHadoopMapReducePlan oldPlan);
+        GridHadoopJob job, @Nullable GridHadoopMapReducePlan oldPlan) throws GridException;
 }
