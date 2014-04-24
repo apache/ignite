@@ -312,7 +312,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
     /**
      * Test task.
      */
-    private static class HadoopTestTask extends GridHadoopTaskAdaptor {
+    private static class HadoopTestTask extends GridHadoopTask {
         /**
          * @param taskInfo Task info.
          */

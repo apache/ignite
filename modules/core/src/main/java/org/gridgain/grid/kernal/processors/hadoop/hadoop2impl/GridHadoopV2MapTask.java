@@ -22,7 +22,7 @@ import java.io.IOException;
 /**
  * Hadoop map task implementation for v2 API.
  */
-public class GridHadoopV2MapTask extends GridHadoopTaskAdaptor {
+public class GridHadoopV2MapTask extends GridHadoopTask {
     /**
      * @param taskInfo Task info.
      */
@@ -34,7 +34,7 @@ public class GridHadoopV2MapTask extends GridHadoopTaskAdaptor {
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
         GridHadoopV2JobImpl jobImpl = (GridHadoopV2JobImpl)taskCtx.job();
 
-        JobContext jobCtx = jobImpl.ctx();
+        JobContext jobCtx = jobImpl.hadoopJobContext();
 
         Mapper mapper;
         InputFormat inFormat;
@@ -66,6 +66,8 @@ public class GridHadoopV2MapTask extends GridHadoopTaskAdaptor {
             throw new GridException(e);
         }
         catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
             throw new GridInterruptedException(e);
         }
     }

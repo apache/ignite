@@ -82,12 +82,10 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
 
     /** {@inheritDoc} */
     @Override public void write(Object key, Object val) throws IOException, InterruptedException {
-        if (writer != null) {
+        if (writer != null)
             writer.write(key, val);
-            return;
-        }
-
-        output.write(key, val);
+        else
+            output.write(key, val);
     }
 
     /** {@inheritDoc} */
@@ -307,6 +305,7 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
 
     /** {@inheritDoc} */
     @Override public void progress() {
+        // No-op.
     }
 
     /**
@@ -326,8 +325,7 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
     /** {@inheritDoc} */
     @Override public Iterable getValues() throws IOException, InterruptedException {
         return new Iterable() {
-            @Override
-            public Iterator iterator() {
+            @Override public Iterator iterator() {
                 return input.values();
             }
         };

@@ -20,7 +20,7 @@ import java.io.IOException;
 /**
  * Hadoop reduce task implementation for v2 API.
  */
-public class GridHadoopV2ReduceTask extends GridHadoopTaskAdaptor {
+public class GridHadoopV2ReduceTask extends GridHadoopTask {
     /**
      * @param taskInfo Task info.
      */
@@ -32,7 +32,7 @@ public class GridHadoopV2ReduceTask extends GridHadoopTaskAdaptor {
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
         GridHadoopV2JobImpl jobImpl = (GridHadoopV2JobImpl)taskCtx.job();
 
-        JobContext jobCtx = jobImpl.ctx();
+        JobContext jobCtx = jobImpl.hadoopJobContext();
 
         Reducer reducer;
         OutputFormat outputFormat;
@@ -49,6 +49,7 @@ public class GridHadoopV2ReduceTask extends GridHadoopTaskAdaptor {
 
         try {
             RecordWriter writer = outputFormat.getRecordWriter(hadoopCtx);
+
             hadoopCtx.writer(writer);
 
             reducer.run(new WrappedReducer().getReducerContext(hadoopCtx));
@@ -64,6 +65,8 @@ public class GridHadoopV2ReduceTask extends GridHadoopTaskAdaptor {
             throw new GridException(e);
         }
         catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
             throw new GridInterruptedException(e);
         }
     }

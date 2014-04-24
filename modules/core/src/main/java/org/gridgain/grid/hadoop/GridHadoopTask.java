@@ -14,18 +14,59 @@ import org.gridgain.grid.*;
 import java.io.*;
 
 /**
- * TODO write doc
+ * Hadoop task.
  */
-public interface GridHadoopTask extends Serializable {
-    /**
-     * @return task info.
-     */
-    public GridHadoopTaskInfo info();
+public abstract class GridHadoopTask implements Externalizable {
+    /** */
+    private GridHadoopTaskInfo taskInfo;
 
     /**
+     * Creates task.
      *
+     * @param taskInfo Task info.
+     */
+    public GridHadoopTask(GridHadoopTaskInfo taskInfo) {
+        assert taskInfo != null;
+
+        this.taskInfo = taskInfo;
+    }
+
+    /**
+     * For {@link Externalizable}.
+     */
+    public GridHadoopTask() {
+        // No-op.
+    }
+
+    /**
+     * Gets task info.
+     *
+     * @return Task info.
+     */
+    public GridHadoopTaskInfo info() {
+        return taskInfo;
+    }
+
+    /**
+     * Runs task.
      *
      * @param ctx Context.
+     * @throws GridInterruptedException If interrupted.
+     * @throws GridException If failed.
      */
-    public void run(GridHadoopTaskContext ctx) throws GridInterruptedException, GridException;
+    public abstract void run(GridHadoopTaskContext ctx) throws GridInterruptedException, GridException;
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        taskInfo.writeExternal(out);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        assert taskInfo == null;
+
+        taskInfo = new GridHadoopTaskInfo();
+
+        taskInfo.readExternal(in);
+    }
 }

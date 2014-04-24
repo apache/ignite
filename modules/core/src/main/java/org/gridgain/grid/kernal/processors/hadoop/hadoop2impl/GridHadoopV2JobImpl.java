@@ -22,12 +22,13 @@ import java.util.*;
  * Hadoop job implementation for v2 API.
  */
 public class GridHadoopV2JobImpl implements GridHadoopJob {
-    /** Hadoop job ID. */
+    /** Job ID. */
     private GridHadoopJobId jobId;
 
     /** Job info. */
     protected GridHadoopDefaultJobInfo jobInfo;
 
+    /** Hadoop job context. */
     private JobContext ctx;
 
     /**
@@ -53,18 +54,18 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public Collection<GridHadoopFileBlock> input() throws GridException {
-        return GridHadoopV2Splitter.splitJob(ctx());
+        return GridHadoopV2Splitter.splitJob(ctx);
     }
 
     /** {@inheritDoc} */
     @Override public int reducers() {
-        return ctx().getNumReduceTasks();
+        return ctx.getNumReduceTasks();
     }
 
     /** {@inheritDoc} */
     @Override public GridHadoopPartitioner partitioner() throws GridException {
         try {
-            Class<? extends Partitioner> partCls = ctx().getPartitionerClass();
+            Class<? extends Partitioner> partCls = ctx.getPartitionerClass();
 
             return new GridHadoopV2PartitionerAdapter((Partitioner<Object, Object>)U.newInstance(partCls));
         }
@@ -102,7 +103,7 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
      */
     private Class<? extends Reducer<?,?,?,?>> combinerClass() {
         try {
-            return ctx().getCombinerClass();
+            return ctx.getCombinerClass();
         }
         catch (ClassNotFoundException e) {
             // TODO check combiner class at initialization and throw meaningful exception.
@@ -116,8 +117,12 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
         return null;
     }
 
-    private TaskType taskType(GridHadoopTaskType gridTaskType) {
-        switch (gridTaskType) {
+    /**
+     * @param type Task type.
+     * @return Hadoop task type.
+     */
+    private TaskType taskType(GridHadoopTaskType type) {
+        switch (type) {
             case MAP:
                 return TaskType.MAP;
 
@@ -130,18 +135,19 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
     }
 
     /**
+     * Creates Hadoop attempt ID.
      *
-     * @param taskInfo
-     * @return
+     * @param taskInfo Task info.
+     * @return Attempt ID.
      */
     public TaskAttemptID attemptId(GridHadoopTaskInfo taskInfo) {
-        TaskID tid = new TaskID(ctx().getJobID(), taskType(taskInfo.type()), taskInfo.taskNumber());
+        TaskID tid = new TaskID(ctx.getJobID(), taskType(taskInfo.type()), taskInfo.taskNumber());
 
         return new TaskAttemptID(tid, taskInfo.attempt());
     }
 
     /** Hadoop native job context. */
-    public JobContext ctx() {
+    public JobContext hadoopJobContext() {
         return ctx;
     }
 }
