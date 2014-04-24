@@ -15,7 +15,6 @@ import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -283,7 +282,12 @@ public class GridHadoopMultimap implements AutoCloseable {
         public Object readKey(long meta) {
             assert meta > 0 : meta;
 
-            return read(key(meta), keySize(meta));
+            try {
+                return read(key(meta), keySize(meta));
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
         }
 
         /**
@@ -293,7 +297,12 @@ public class GridHadoopMultimap implements AutoCloseable {
         public Object readValue(long valPtr) {
             assert valPtr > 0 : valPtr;
 
-            return read(valPtr + 12, valueSize(valPtr));
+            try {
+                return read(valPtr + 12, valueSize(valPtr));
+            }
+            catch (GridException e) {
+                throw new GridRuntimeException(e);
+            }
         }
 
         /**
@@ -301,15 +310,10 @@ public class GridHadoopMultimap implements AutoCloseable {
          * @param size Object size.
          * @return Object.
          */
-        private Object read(long ptr, long size) {
+        private Object read(long ptr, long size) throws GridException {
             in.buffer().buffer(ptr, size);
 
-            try {
-                tmp = ser.read(in, tmp);
-            }
-            catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
+            tmp = ser.read(in, tmp);
 
             return tmp;
         }
@@ -344,7 +348,7 @@ public class GridHadoopMultimap implements AutoCloseable {
          * @param val Value.
          * @return New meta page pointer if new key was inserted or {@code 0} otherwise.
          */
-        public long add(Object key, Object val) {
+        public long add(Object key, Object val) throws GridException {
             int keyHash = U.hash(key.hashCode());
 
             AtomicLongArray tbl0 = tbl;
@@ -413,15 +417,10 @@ public class GridHadoopMultimap implements AutoCloseable {
         /**
          * @param o Object.
          */
-        private void write(Object o, GridHadoopSerialization ser) {
+        private void write(Object o, GridHadoopSerialization ser) throws GridException {
             out.reset();
 
-            try {
-                ser.write(out, o);
-            }
-            catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
+            ser.write(out, o);
         }
 
         private long copy(int off) {

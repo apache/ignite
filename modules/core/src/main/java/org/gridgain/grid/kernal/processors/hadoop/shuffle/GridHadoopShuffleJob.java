@@ -113,7 +113,8 @@ public class GridHadoopShuffleJob implements AutoCloseable {
             this.adder = adder;
         }
 
-        @Override public void write(Object key, Object val) {
+        /** {@inheritDoc} */
+        @Override public void write(Object key, Object val) throws GridException {
             adder.add(key, val);
         }
 
