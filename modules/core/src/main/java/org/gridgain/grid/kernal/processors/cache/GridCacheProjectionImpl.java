@@ -25,7 +25,6 @@ import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -216,7 +215,6 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
      * @param nonNulls Flag indicating whether nulls should be included.
      * @return {@code Anded} filter.
      */
-    @SuppressWarnings({"unchecked"})
     private GridPredicate<GridCacheEntry<K, V>> and(@Nullable final GridPredicate<GridCacheEntry<K, V>>[] f1,
         boolean nonNulls) {
         GridPredicate<GridCacheEntry<K, V>> entryFilter = entryFilter(nonNulls);
@@ -224,12 +222,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         if (F.isEmpty(f1))
             return entryFilter;
 
-        GridPredicate<GridCacheEntry<K, V>>[] entryFilter0 =
-            (GridPredicate<GridCacheEntry<K, V>>[])Array.newInstance(entryFilter.getClass(), 1);
-
-        entryFilter0[0] = entryFilter;
-
-        return F0.and(entryFilter0, f1);
+        return F0.and(entryFilter, f1);
     }
 
     /**
