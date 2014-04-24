@@ -933,16 +933,17 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             }
 
             private void advance() throws GridException {
-                if (it != null && it.hasNext())
+                if (it.hasNext())
                     return;
 
-                if (it != null)
-                    it.close();
+                it.close();
 
                 if (offheap) {
                     offheap = false;
 
                     it = swapIterator(part);
+
+                    assert it != null;
 
                     if (!it.hasNext()) {
                         it.close();
@@ -1010,12 +1011,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             {
                 it = rawOffHeapIterator();
 
-                if (it == null || !it.hasNext()) {
-                    it.close();
-
-                    offheapFlag = false;
-                }
-
                 advance();
             }
 
@@ -1030,7 +1025,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                     it = rawSwapIterator();
 
-                    if (it == null || !it.hasNext()) {
+                    if (!it.hasNext()) {
                         it.close();
 
                         done = true;
