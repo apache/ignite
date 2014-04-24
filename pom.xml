@@ -24,6 +24,7 @@
     <properties>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
         <doxygen.exec>doxygen</doxygen.exec>
+        <git.exec>git</git.exec>
     </properties>
 
     <artifactId>gridgain</artifactId>
