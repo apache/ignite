@@ -22,7 +22,7 @@ import java.io.IOException;
 /**
  * Hadoop map task implementation for v2 API.
  */
-public class GridHadoopV2MapTask extends GridHadoopV2TaskImpl {
+public class GridHadoopV2MapTask extends GridHadoopTaskAdaptor {
     /**
      * @param taskInfo Task info.
      */
@@ -34,7 +34,7 @@ public class GridHadoopV2MapTask extends GridHadoopV2TaskImpl {
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
         GridHadoopV2JobImpl jobImpl = (GridHadoopV2JobImpl)taskCtx.job();
 
-        JobContext jobCtx = jobImpl.ctx;
+        JobContext jobCtx = jobImpl.ctx();
 
         Mapper mapper;
         InputFormat inFormat;
@@ -42,7 +42,8 @@ public class GridHadoopV2MapTask extends GridHadoopV2TaskImpl {
         try {
             mapper = U.newInstance(jobCtx.getMapperClass());
             inFormat = U.newInstance(jobCtx.getInputFormatClass());
-        } catch (ClassNotFoundException e) {
+        }
+        catch (ClassNotFoundException e) {
             throw new GridException(e);
         }
 
@@ -50,10 +51,11 @@ public class GridHadoopV2MapTask extends GridHadoopV2TaskImpl {
 
         GridHadoopFileBlock block = info().fileBlock();
 
-        FileSplit split = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), null);
+        FileSplit split = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), block.hosts());
 
         try {
             RecordReader reader = inFormat.createRecordReader(split, hadoopCtx);
+
             reader.initialize(split, hadoopCtx);
 
             hadoopCtx.reader(reader);

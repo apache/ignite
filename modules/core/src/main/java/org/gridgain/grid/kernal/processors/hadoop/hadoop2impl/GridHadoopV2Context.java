@@ -22,31 +22,31 @@ import java.net.*;
 import java.util.*;
 
 /**
- * Hadoop context implementation for v2 API. It provides IO operations for hadoop tasks
+ * Hadoop context implementation for v2 API. It provides IO operations for hadoop tasks.
  */
 public class GridHadoopV2Context implements MapContext, ReduceContext {
-    /** Input reader to overriding of GridHadoopTaskContext input */
+    /** Input reader to overriding of GridHadoopTaskContext input. */
     private RecordReader reader;
 
-    /** Output writer to overriding of GridHadoopTaskContext output */
+    /** Output writer to overriding of GridHadoopTaskContext output. */
     private RecordWriter writer;
 
-    /** Hadoop configuration of the job */
+    /** Hadoop configuration of the job. */
     private final Configuration cfg;
 
-    /** Output is provided by executor environment */
+    /** Output is provided by executor environment. */
     private final GridHadoopTaskOutput output;
 
-    /** Input is provided by executor environment */
+    /** Input is provided by executor environment. */
     private final GridHadoopTaskInput input;
 
-    /** Unique identifier for a task attempt */
+    /** Unique identifier for a task attempt. */
     private final TaskAttemptID taskAttemptID;
 
     /**
-     * @param cfg Hadoop configuration of the job
-     * @param ctx Context for IO operations
-     * @param taskAttemptID Task execution id
+     * @param cfg Hadoop configuration of the job.
+     * @param ctx Context for IO operations.
+     * @param taskAttemptID Task execution id.
      */
     public GridHadoopV2Context(Configuration cfg, GridHadoopTaskContext ctx, TaskAttemptID taskAttemptID) {
         this.cfg = cfg;
@@ -310,7 +310,7 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
     }
 
     /**
-     * Overrides default input data reader
+     * Overrides default input data reader.
      *
      * @param reader New reader.
      */
@@ -334,9 +334,9 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
     }
 
     /**
-     * Overrides default output data writer
+     * Overrides default output data writer.
      *
-     * @param writer New writer
+     * @param writer New writer.
      */
     public void writer(RecordWriter writer) {
         this.writer = writer;

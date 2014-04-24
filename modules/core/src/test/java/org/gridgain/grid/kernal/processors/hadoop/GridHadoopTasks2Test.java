@@ -25,11 +25,11 @@ import java.nio.file.*;
 import java.util.*;
 
 /**
- * Tests of Map, Combine and Reduce task executions
+ * Tests of Map, Combine and Reduce task executions.
  */
 public class GridHadoopTasks2Test extends GridCommonAbstractTest {
     /**
-     * Tests map task execution
+     * Tests map task execution.
      * @throws GridException
      * @throws ClassNotFoundException
      * @throws IOException
@@ -80,9 +80,9 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
     }
 
     /**
-     * Reads whole text file into String
-     * @param fileName name of file to read
-     * @return String value
+     * Reads whole text file into String.
+     * @param fileName name of file to read.
+     * @return String value.
      * @throws IOException
      */
     private String readFile(String fileName) throws IOException {
@@ -98,13 +98,13 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
     }
 
     /**
-     * Generates input data for reduce-like operation into mock context input and runs the operation
-     * @param gridJob to create reduce task from
-     * @param jobId Job ID
-     * @param taskType Type of task - combine or reduce
-     * @param taskNum Number of task in job
-     * @param words Pairs of words and its counts
-     * @return Context with mock output
+     * Generates input data for reduce-like operation into mock context input and runs the operation.
+     * @param gridJob to create reduce task from.
+     * @param jobId Job ID.
+     * @param taskType Type of task - combine or reduce.
+     * @param taskNum Number of task in job.
+     * @param words Pairs of words and its counts.
+     * @return Context with mock output.
      * @throws GridException
      */
     private GridHadoopTestTaskContext runTaskWithInput(GridHadoopV2JobImpl gridJob, GridHadoopJobId jobId, GridHadoopTaskType taskType,
@@ -128,7 +128,7 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests reduce task execution
+     * Tests reduce task execution.
      * @throws IOException
      * @throws GridException
      */
@@ -167,7 +167,7 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests combine task execution
+     * Tests combine task execution.
      * @throws IOException
      * @throws GridException
      */
@@ -191,11 +191,11 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
     }
 
     /**
-     * Runs chain of map-combine task on file block
-     * @param fileBlock block of input file to be processed
-     * @param jobId Job ID
-     * @param gridJob Hadoop job inmplementation
-     * @return Context of combine task with mock output
+     * Runs chain of map-combine task on file block.
+     * @param fileBlock block of input file to be processed.
+     * @param jobId Job ID.
+     * @param gridJob Hadoop job inmplementation.
+     * @return Context of combine task with mock output.
      * @throws GridException
      */
     private GridHadoopTestTaskContext runMapCombineTask(GridHadoopFileBlock fileBlock, GridHadoopJobId jobId,
@@ -218,8 +218,8 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
     }
 
     /**
-     * Test all job in complex
-     * Runs 2 chain of map-combine and send result into one reduce task
+     * Test all job in complex.
+     * Runs 2 chain of map-combine and send result into one reduce task.
      * @throws IOException
      * @throws GridException
      */
@@ -276,8 +276,8 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
     }
 
     /**
-     * Generates text file with words. In one line there are from 5 to 9 words
-     * @param file file that there is generation for
+     * Generates text file with words. In one line there are from 5 to 9 words.
+     * @param file file that there is generation for.
      * @param wordCounts pair word and count, i.e "hello", 2, "world", 3, etc.
      * @throws FileNotFoundException
      */

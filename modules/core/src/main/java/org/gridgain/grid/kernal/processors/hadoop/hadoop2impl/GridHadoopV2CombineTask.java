@@ -18,7 +18,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 /**
  * Hadoop combine task implementation for v2 API.
  */
-public class GridHadoopV2CombineTask extends GridHadoopV2TaskImpl {
+public class GridHadoopV2CombineTask extends GridHadoopTaskAdaptor {
     /**
      * @param taskInfo Task info.
      */
@@ -30,7 +30,7 @@ public class GridHadoopV2CombineTask extends GridHadoopV2TaskImpl {
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
         GridHadoopV2JobImpl jobImpl = (GridHadoopV2JobImpl)taskCtx.job();
 
-        JobContext jobCtx = jobImpl.ctx;
+        JobContext jobCtx = jobImpl.ctx();
 
         try {
             Reducer combiner = U.newInstance(jobCtx.getCombinerClass());

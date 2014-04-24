@@ -15,10 +15,10 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 
 /**
- * Combiner and Reducer phase of WordCount job
+ * Combiner and Reducer phase of WordCount job.
  */
 public class GridGainWordCount2Reducer extends Reducer<Text, IntWritable, Text, IntWritable> {
-    /** Writable container for writing sum of word counts */
+    /** Writable container for writing sum of word counts. */
     private IntWritable totalWordCnt = new IntWritable();
 
     /** {@inheritDoc} */

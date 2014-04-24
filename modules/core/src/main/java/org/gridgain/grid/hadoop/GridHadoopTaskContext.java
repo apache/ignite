@@ -31,7 +31,6 @@ public class GridHadoopTaskContext {
      *
      * @return Task output.
      */
-
     public GridHadoopTaskOutput output() {
         return null;
     }

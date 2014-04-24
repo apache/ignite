@@ -16,13 +16,13 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 
 /**
- * Mapper phase of WordCount job
+ * Mapper phase of WordCount job.
  */
 public class GridGainWordCount2Mapper extends Mapper<Object, Text, Text, IntWritable> {
-    /** Writable container for writing word */
+    /** Writable container for writing word. */
     private Text word = new Text();
 
-    /** Writable integer constant of '1' is writing as count of found words */
+    /** Writable integer constant of '1' is writing as count of found words. */
     private static final IntWritable one = new IntWritable(1);
 
     /** {@inheritDoc} */

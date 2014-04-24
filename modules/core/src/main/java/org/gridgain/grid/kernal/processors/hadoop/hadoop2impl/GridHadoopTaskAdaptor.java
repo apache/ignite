@@ -9,29 +9,24 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.hadoop2impl;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 
 /**
  * Hadoop  task implementation for v2 API.
  */
-public class GridHadoopV2TaskImpl implements GridHadoopTask {
+abstract public class GridHadoopTaskAdaptor implements GridHadoopTask {
     /** task info. */
     private GridHadoopTaskInfo taskInfo;
 
     /**
      * @param taskInfo Task info.
      */
-    public GridHadoopV2TaskImpl(GridHadoopTaskInfo taskInfo) {
+    public GridHadoopTaskAdaptor(GridHadoopTaskInfo taskInfo) {
         this.taskInfo = taskInfo;
     }
 
     /** {@inheritDoc} */
     @Override public GridHadoopTaskInfo info() {
         return taskInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void run(GridHadoopTaskContext ctx) throws GridInterruptedException, GridException {
     }
 }

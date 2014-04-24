@@ -19,11 +19,11 @@ import org.apache.hadoop.mapreduce.lib.output.*;
 import java.io.*;
 
 /**
- * Example job for testing hadoop task execution
+ * Example job for testing hadoop task execution.
  */
 public class GridGainWordCount2 {
     /**
-     * Entry point to start job
+     * Entry point to start job.
      * @param args
      * @throws Exception
      */
@@ -39,10 +39,10 @@ public class GridGainWordCount2 {
     }
 
     /**
-     * Gets fully configured Job instance
-     * @param input input file name
-     * @param output output directory name
-     * @return Job instance
+     * Gets fully configured Job instance.
+     * @param input input file name.
+     * @param output output directory name.
+     * @return Job instance.
      * @throws IOException
      */
     public static Job getJob(String input, String output) throws IOException {
