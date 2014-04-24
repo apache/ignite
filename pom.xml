@@ -22,6 +22,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
+        <gridgain.edition>platform</gridgain.edition>
+        <gridgain.compatible.vers></gridgain.compatible.vers>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
         <doxygen.exec>doxygen</doxygen.exec>
         <git.exec>git</git.exec>
