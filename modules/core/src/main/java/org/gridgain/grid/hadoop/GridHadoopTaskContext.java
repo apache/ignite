@@ -17,13 +17,28 @@ import org.gridgain.grid.kernal.*;
  */
 public class GridHadoopTaskContext {
     /** Kernal context. */
-    private GridKernalContext ctx;
+    private final GridKernalContext ctx;
+
+    /** */
+    private final GridHadoopJob job;
+
+    /** */
+    private final GridHadoopTaskInput input;
+
+    /** */
+    private final GridHadoopTaskOutput output;
 
     /**
      * @param ctx Kernal context.
+     * @param job Job.
+     * @param input Input.
+     * @param output Output.
      */
-    public GridHadoopTaskContext(GridKernalContext ctx) {
+    public GridHadoopTaskContext(GridKernalContext ctx, GridHadoopJob job, GridHadoopTaskInput input, GridHadoopTaskOutput output) {
         this.ctx = ctx;
+        this.job = job;
+        this.input = input;
+        this.output = output;
     }
 
     /**
@@ -32,7 +47,7 @@ public class GridHadoopTaskContext {
      * @return Task output.
      */
     public GridHadoopTaskOutput output() {
-        return null;
+        return output;
     }
 
     /**
@@ -41,7 +56,7 @@ public class GridHadoopTaskContext {
      * @return Task input.
      */
     public GridHadoopTaskInput input() {
-        return null;
+        return input;
     }
 
     /**
@@ -53,7 +68,10 @@ public class GridHadoopTaskContext {
         return ctx.grid();
     }
 
+    /**
+     * @return Job.
+     */
     public GridHadoopJob job() {
-        return null;
+        return job;
     }
 }
