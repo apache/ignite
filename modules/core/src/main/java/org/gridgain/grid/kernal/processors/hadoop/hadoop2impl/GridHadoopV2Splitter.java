@@ -27,8 +27,7 @@ public class GridHadoopV2Splitter {
      * @return Collection of mapped blocks.
      * @throws GridException If mapping failed.
      */
-    public static Collection<GridHadoopFileBlock> splitJob(JobContext ctx)
-        throws GridException {
+    public static Collection<GridHadoopFileBlock> splitJob(JobContext ctx) throws GridException {
         try {
             InputFormat<?, ?> format = U.newInstance(ctx.getInputFormatClass());
 
@@ -55,7 +54,7 @@ public class GridHadoopV2Splitter {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new GridException(e);
+            throw new GridInterruptedException(e);
         }
     }
 }

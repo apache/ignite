@@ -308,9 +308,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                                 GridHadoopTask task = job.createTask(taskInfo);
 
-                                assert task != null : "Job created null task: " + job;
-
-
                                 if (tasks == null)
                                     tasks = new ArrayList<>();
 
@@ -319,7 +316,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         }
 
                         if (tasks != null)
-                            ctx.taskExecutor().run(tasks);
+                            ctx.taskExecutor().run(job, tasks);
                     }
 
                     break;
@@ -371,7 +368,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         }
 
                         if (tasks != null)
-                            ctx.taskExecutor().run(tasks);
+                            ctx.taskExecutor().run(job, tasks);
                     }
 
                     break;
@@ -484,7 +481,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                     GridHadoopTask task = job.createTask(info);
 
-                    ctx.taskExecutor().run(Collections.singletonList(task));
+                    ctx.taskExecutor().run(job, Collections.singletonList(task));
                 }
             }
             else {

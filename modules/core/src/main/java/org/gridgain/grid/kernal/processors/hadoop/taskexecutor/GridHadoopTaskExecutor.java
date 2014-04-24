@@ -15,8 +15,12 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
+
+import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
+import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
 /**
  * TODO write doc
@@ -34,9 +38,10 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
     /**
      * Runs tasks.
      *
+     * @param job Job.
      * @param tasks Tasks.
      */
-    public void run(Collection<GridHadoopTask> tasks) {
+    public void run(final GridHadoopJob job, Collection<GridHadoopTask> tasks) {
         if (log.isDebugEnabled())
             log.debug("Submitting tasks for local execution [locNodeId=" + ctx.localNodeId() +
                 ", tasksCnt=" + tasks.size() + ']');
@@ -44,29 +49,42 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
         for (final GridHadoopTask task : tasks) {
             assert task != null;
 
+            GridChainedFuture<?> fut = new GridChainedFuture<>(ctx.kernalContext());
+
+            fut.listenAsync(new CIX1<GridFuture<?>>() {
+                @Override public void applyx(GridFuture<?> f) throws GridException {
+                    GridHadoopTaskState state = COMPLETED;
+                    Throwable err = null;
+
+                    try {
+                        f.get();
+                    }
+                    catch (Exception e) {
+                        state = FAILED;
+                        err = e;
+                    }
+
+                    jobTracker.onTaskFinished(task.info(), new GridHadoopTaskStatus(state, err));
+                }
+            });
+
             ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
                 @Override public GridFuture<?> call() throws Exception {
                     GridHadoopTaskInfo info = task.info();
 
                     try (GridHadoopTaskOutput out = createOutput(info);
                          GridHadoopTaskInput in = createInput(info)) {
-                        GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(ctx.kernalContext());
+                        GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(ctx.kernalContext(), job, in, out);
 
-                        try {
-                            if (log.isDebugEnabled())
-                                log.debug("Running task: " + task);
+                        if (log.isDebugEnabled())
+                            log.debug("Running task: " + task);
 
-                            task.run(taskCtx);
+                        task.run(taskCtx);
 
-                            return out.finish();
-                        }
-                        finally {
-                            // TODO status.
-                            jobTracker.onTaskFinished(task.info(), new GridHadoopTaskStatus());
-                        }
+                        return out.finish();
                     }
                 }
-            }, false);
+            }, false).listenAsync(fut);
         }
     }
 
@@ -75,8 +93,8 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
      * for this job ID.
      * <p>
      * It is guaranteed that this method will not be called concurrently with
-     * {@link #run(Collection)} method. No more job submissions will be performed via
-     * {@link #run(Collection)} method for given job ID after this method is called.
+     * {@link #run(GridHadoopJob, Collection)} method. No more job submissions will be performed via
+     * {@link #run(GridHadoopJob, Collection)} method for given job ID after this method is called.
      *
      * @param jobId Job ID to cancel.
      */
@@ -91,22 +109,10 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
      * @return Task output.
      */
     private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo taskInfo) {
-        return new GridHadoopTaskOutput() {
-            /** {@inheritDoc} */
-            @Override public void write(Object key, Object val) {
-                // TODO: implement.
-            }
+        if (taskInfo.type() == REDUCE)
+            return null;
 
-            /** {@inheritDoc} */
-            @Override public GridFuture<?> finish() {
-                return new GridFinishedFutureEx<>();
-            }
-
-            /** {@inheritDoc} */
-            @Override public void close() throws Exception {
-                // TODO: implement.
-            }
-        };
+        return ctx.shuffle().getMapperOutput(taskInfo);
     }
 
     /**
@@ -116,30 +122,9 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
      * @return Task input.
      */
     private GridHadoopTaskInput createInput(GridHadoopTaskInfo taskInfo) {
-        return new GridHadoopTaskInput() {
-            /** {@inheritDoc} */
-            @Override public boolean next() {
-                // TODO: implement.
-                return false;
-            }
+        if (taskInfo.type() == MAP)
+            return null;
 
-            /** {@inheritDoc} */
-            @Override public Object key() {
-                // TODO: implement.
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public Iterator<?> values() {
-                // TODO: implement.
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public void close() throws Exception {
-                // TODO: implement.
-
-            }
-        };
+        return ctx.shuffle().getReducerInput(taskInfo);
     }
 }
