@@ -26,15 +26,27 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * TODO: Add class description.
+ * Tests map-reduce task execution basics.
  */
 public class GridHadoopMapCombineTaskSelfTest extends GridHadoopAbstractSelfTest {
     /** Line count. */
     private static final AtomicInteger totalLineCnt = new AtomicInteger();
 
+    /** Test param. */
+    private static final String MAP_WRITE = "test.map.write";
+
+    /** {@inheritDoc} */
+    @Override public GridGgfsConfiguration ggfsConfiguration() {
+        GridGgfsConfiguration cfg = super.ggfsConfiguration();
+
+        cfg.setFragmentizerEnabled(false);
+
+        return cfg;
+    }
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 4;
+        return 2;
     }
 
     /** {@inheritDoc} */
@@ -55,8 +67,8 @@ public class GridHadoopMapCombineTaskSelfTest extends GridHadoopAbstractSelfTest
     /**
      * @throws Exception If failed.
      */
-    public void testMapCombineRun() throws Exception {
-        int lineCnt = 1000;
+    public void testMapRun() throws Exception {
+        int lineCnt = 10000;
         String fileName = "/testFile";
 
         prepareFile(fileName, lineCnt);
@@ -72,7 +84,6 @@ public class GridHadoopMapCombineTaskSelfTest extends GridHadoopAbstractSelfTest
         job.setOutputValueClass(IntWritable.class);
 
         job.setMapperClass(TestMapper.class);
-        job.setCombinerClass(TestCombiner.class);
 
         job.setNumReduceTasks(0);
 
@@ -122,9 +133,10 @@ public class GridHadoopMapCombineTaskSelfTest extends GridHadoopAbstractSelfTest
 
         /** {@inheritDoc} */
         @Override protected void map(Object key, Text value, Context ctx) throws IOException, InterruptedException {
-            System.out.println("Word!!!");
-
-            ctx.write(LINE_COUNT, ONE);
+            if (ctx.getConfiguration().getBoolean(MAP_WRITE, false))
+                ctx.write(LINE_COUNT, ONE);
+            else
+                totalLineCnt.incrementAndGet();
         }
     }
 
