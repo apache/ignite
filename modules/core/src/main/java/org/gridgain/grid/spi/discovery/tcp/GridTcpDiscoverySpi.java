@@ -1078,6 +1078,13 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             U.warn(log, "Heartbeat frequency is too high (at least 2000 ms recommended): " + hbFreq);
 
         registerMBean(gridName, this, GridTcpDiscoverySpiMBean.class);
+
+        if (ipFinder instanceof GridTcpDiscoveryMulticastIpFinder) {
+            GridTcpDiscoveryMulticastIpFinder mcastIpFinder = ((GridTcpDiscoveryMulticastIpFinder)ipFinder);
+
+            if (mcastIpFinder.getLocalAddress() == null)
+                mcastIpFinder.setLocalAddress(locAddr);
+        }
     }
 
     /** {@inheritDoc} */
