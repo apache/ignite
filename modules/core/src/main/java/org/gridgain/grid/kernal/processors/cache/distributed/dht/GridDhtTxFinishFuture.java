@@ -25,6 +25,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.cache.GridCacheTxState.*;
+
 /**
  *
  */
@@ -148,6 +150,29 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     /**
      * @param e Error.
      */
+    void onHeuristicException(GridCacheTxHeuristicException e) {
+        assert tx.isInvalidate();
+
+        if (err.compareAndSet(null, e)) {
+            finish();
+
+            try {
+                get();
+            }
+            catch (GridCacheTxHeuristicException ignore) {
+                // Future should complete with GridCacheTxHeuristicException.
+            }
+            catch (GridException err) {
+                U.error(log, "Failed to invalidate transaction: " + tx, err);
+            }
+
+            onComplete();
+        }
+    }
+
+    /**
+     * @param e Error.
+     */
     public void onError(Throwable e) {
         if (err.compareAndSet(null, e)) {
             boolean marked = tx.setRollbackOnly();
@@ -189,12 +214,14 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     /** {@inheritDoc} */
     @Override public boolean onDone(GridCacheTx tx, Throwable err) {
         if (initialized() || err != null) {
-            if (this.tx.onePhaseCommit())
+            if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING))
                 this.tx.tmCommit();
 
-            if (super.onDone(tx, err)) {
+            Throwable e = this.err.get();
+
+            if (super.onDone(tx, e != null ? e : err)) {
                 // Always send finish reply.
-                this.tx.sendFinishReply(commit, err);
+                this.tx.sendFinishReply(commit, error());
 
                 // Don't forget to clean up.
                 cctx.mvcc().removeFuture(this);

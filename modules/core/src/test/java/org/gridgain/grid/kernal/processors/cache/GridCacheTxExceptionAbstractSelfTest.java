@@ -11,34 +11,42 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.spi.indexing.h2.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Tests that exception from innerSet is propagated to user.
+ * Tests that transaction is invalidated in case of {@link GridCacheTxHeuristicException}.
  */
 public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
-    /** Test index SPI. */
+    /** Index SPI throwing exception. */
     private static TestIndexingSpi idxSpi = new TestIndexingSpi();
 
-    /** Key count. */
-    public static final int KEY_CNT = 5;
+    /** */
+    private static final int PRIMARY = 0;
+
+    /** */
+    private static final int BACKUP = 1;
+
+    /** */
+    private static final int NOT_PRIMARY_AND_BACKUP = 2;
+
+    /** */
+    private static Integer lastKey;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected GridCacheWriteSynchronizationMode writeSynchronization() {
-        return FULL_SYNC;
     }
 
     /** {@inheritDoc} */
@@ -54,162 +62,495 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
 
     /** {@inheritDoc} */
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration cacheCfg = super.cacheConfiguration(gridName);
+        GridCacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        cacheCfg.setQueryIndexEnabled(true);
+        ccfg.setTxSerializableEnabled(true);
+        ccfg.setQueryIndexEnabled(true);
+        ccfg.setStore(null);
 
-        return cacheCfg;
+        return ccfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        lastKey = 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        idxSpi.forceFail(false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutNear() throws Exception {
-        checkPut(keyForNode(cache(0), grid(0).localNode(), 0));
+        checkPut(true, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
+
+        checkPut(false, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutPrimary() throws Exception {
-        checkPut(keyForNode(cache(0), grid(0).localNode(), 1));
+        checkPut(true, keyForNode(grid(0).localNode(), PRIMARY));
+
+        checkPut(false, keyForNode(grid(0).localNode(), PRIMARY));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutBackup() throws Exception {
-        checkPut(keyForNode(cache(0), grid(0).localNode(), 2));
+        checkPut(true, keyForNode(grid(0).localNode(), BACKUP));
+
+        checkPut(false, keyForNode(grid(0).localNode(), BACKUP));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPutxNear() throws Exception {
-        checkPutx(keyForNode(cache(0), grid(0).localNode(), 0));
-    }
+    public void testPutAll() throws Exception {
+        checkPutAll(true, keyForNode(grid(0).localNode(), PRIMARY),
+            keyForNode(grid(0).localNode(), PRIMARY),
+            keyForNode(grid(0).localNode(), PRIMARY));
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutxPrimary() throws Exception {
-        checkPutx(keyForNode(cache(0), grid(0).localNode(), 1));
-    }
+        checkPutAll(false, keyForNode(grid(0).localNode(), PRIMARY),
+            keyForNode(grid(0).localNode(), PRIMARY),
+            keyForNode(grid(0).localNode(), PRIMARY));
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutxBackup() throws Exception {
-        checkPutx(keyForNode(cache(0), grid(0).localNode(), 2));
-    }
+        if (gridCount() > 1) {
+            checkPutAll(true, keyForNode(grid(1).localNode(), PRIMARY),
+                keyForNode(grid(1).localNode(), PRIMARY),
+                keyForNode(grid(1).localNode(), PRIMARY));
 
-    /**
-     * @param key Key.
-     * @throws Exception If failed.
-     */
-    private void checkPut(final String key) throws Exception {
-        idxSpi.forceFail(true);
-
-        info("Going to put key: " + key);
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return cache(0).put(key, 1);
-            }
-        }, GridCacheTxHeuristicException.class, null);
-    }
-
-    /**
-     * @param key Key.
-     * @throws Exception If failed.
-     */
-    private void checkPutx(final String key) throws Exception {
-        idxSpi.forceFail(true);
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return cache(0).putx(key, 1);
-            }
-        }, GridCacheTxHeuristicException.class, null);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void _testRemove() throws Exception {
-        idxSpi.forceFail(true);
-
-        for (int i = 0; i < KEY_CNT; i++) {
-            final int key = i;
-
-            GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return cache(0).remove(String.valueOf(key));
-                }
-            }, GridCacheTxHeuristicException.class, null);
+            checkPutAll(false, keyForNode(grid(1).localNode(), PRIMARY),
+                keyForNode(grid(1).localNode(), PRIMARY),
+                keyForNode(grid(1).localNode(), PRIMARY));
         }
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testRemovex() throws Exception {
-        idxSpi.forceFail(true);
+    public void testRemoveNear() throws Exception {
+        checkRemove(false, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
 
-        for (int i = 0; i < KEY_CNT; i++) {
-            final int key = i;
+        checkRemove(true, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
+    }
 
-            GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return cache(0).removex(String.valueOf(key));
-                }
-            }, GridCacheTxHeuristicException.class, null);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemovePrimary() throws Exception {
+        checkRemove(false, keyForNode(grid(0).localNode(), PRIMARY));
+
+        checkRemove(true, keyForNode(grid(0).localNode(), PRIMARY));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoveBackup() throws Exception {
+        checkRemove(false, keyForNode(grid(0).localNode(), BACKUP));
+
+        checkRemove(true, keyForNode(grid(0).localNode(), BACKUP));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTransformNear() throws Exception {
+        checkTransform(false, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
+
+        checkTransform(true, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTransformPrimary() throws Exception {
+        checkTransform(false, keyForNode(grid(0).localNode(), PRIMARY));
+
+        checkTransform(true, keyForNode(grid(0).localNode(), PRIMARY));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTransformBackup() throws Exception {
+        checkTransform(false, keyForNode(grid(0).localNode(), BACKUP));
+
+        checkTransform(true, keyForNode(grid(0).localNode(), BACKUP));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutNearTx() throws Exception {
+        for (GridCacheTxConcurrency concurrency : GridCacheTxConcurrency.values()) {
+            for (GridCacheTxIsolation isolation : GridCacheTxIsolation.values()) {
+                checkPutTx(true, concurrency, isolation, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
+
+                checkPutTx(false, concurrency, isolation, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
+            }
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutPrimaryTx() throws Exception {
+        for (GridCacheTxConcurrency concurrency : GridCacheTxConcurrency.values()) {
+            for (GridCacheTxIsolation isolation : GridCacheTxIsolation.values()) {
+                checkPutTx(true, concurrency, isolation, keyForNode(grid(0).localNode(), PRIMARY));
+
+                checkPutTx(false, concurrency, isolation, keyForNode(grid(0).localNode(), PRIMARY));
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutBackupTx() throws Exception {
+        for (GridCacheTxConcurrency concurrency : GridCacheTxConcurrency.values()) {
+            for (GridCacheTxIsolation isolation : GridCacheTxIsolation.values()) {
+                checkPutTx(true, concurrency, isolation, keyForNode(grid(0).localNode(), BACKUP));
+
+                checkPutTx(false, concurrency, isolation, keyForNode(grid(0).localNode(), BACKUP));
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutMultipleKeysTx() throws Exception {
+        for (GridCacheTxConcurrency concurrency : GridCacheTxConcurrency.values()) {
+            for (GridCacheTxIsolation isolation : GridCacheTxIsolation.values()) {
+                checkPutTx(true, concurrency, isolation,
+                    keyForNode(grid(0).localNode(), PRIMARY),
+                    keyForNode(grid(0).localNode(), PRIMARY),
+                    keyForNode(grid(0).localNode(), PRIMARY));
+
+                checkPutTx(false, concurrency, isolation,
+                    keyForNode(grid(0).localNode(), PRIMARY),
+                    keyForNode(grid(0).localNode(), PRIMARY),
+                    keyForNode(grid(0).localNode(), PRIMARY));
+
+                if (gridCount() > 1) {
+                    checkPutTx(true, concurrency, isolation,
+                        keyForNode(grid(1).localNode(), PRIMARY),
+                        keyForNode(grid(1).localNode(), PRIMARY),
+                        keyForNode(grid(1).localNode(), PRIMARY));
+
+                    checkPutTx(false, concurrency, isolation,
+                        keyForNode(grid(1).localNode(), PRIMARY),
+                        keyForNode(grid(1).localNode(), PRIMARY),
+                        keyForNode(grid(1).localNode(), PRIMARY));
+                }
+            }
+        }
+    }
+
+    /**
+     * @param putBefore If {@code true} then puts some value before executing failing operation.
+     * @param keys Keys.
+     * @param concurrency Transaction concurrency.
+     * @param isolation Transaction isolation.
+     * @throws Exception If failed.
+     */
+    private void checkPutTx(boolean putBefore, GridCacheTxConcurrency concurrency,
+        GridCacheTxIsolation isolation, final Integer... keys) throws Exception {
+        assertTrue(keys.length > 0);
+
+        info("Test transaction [concurrency=" + concurrency + ", isolation=" + isolation + ']');
+
+        GridCache<Integer, Integer> cache = grid(0).cache(null);
+
+        if (putBefore) {
+            idxSpi.forceFail(false);
+
+            info("Start transaction.");
+
+            try (GridCacheTx tx = cache.txStart(concurrency, isolation)) {
+                for (Integer key : keys) {
+                    info("Put " + key);
+
+                    cache.put(key, 1);
+                }
+
+                info("Commit.");
+
+                tx.commit();
+            }
+        }
+
+        idxSpi.forceFail(true);
+
+        try {
+            info("Start transaction.");
+
+            try (GridCacheTx tx = cache.txStart(concurrency, isolation)) {
+                for (Integer key : keys) {
+                    info("Put " + key);
+
+                    cache.put(key, 2);
+                }
+
+                info("Commit.");
+
+                tx.commit();
+            }
+
+            fail("Transaction should fail.");
+        }
+        catch (GridCacheTxHeuristicException e) {
+            log.info("Expected exception: " + e);
+        }
+
+        for (Integer key : keys)
+            checkEmpty(key);
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void checkEmpty(final Integer key) throws Exception {
         idxSpi.forceFail(false);
 
-        super.afterTest();
+        info("Check key: " + key);
+
+        for (int i = 0; i < gridCount(); i++) {
+            GridKernal grid = (GridKernal) grid(i);
+
+            GridCacheAdapter cache = grid.internalCache(null);
+
+            GridCacheMapEntry entry = cache.map().getEntry(key);
+
+            log.info("Entry: " + entry);
+
+            if (entry != null) {
+                assertFalse("Unexpected entry for grid " + i, entry.lockedByAny());
+                assertFalse("Unexpected entry for grid " + i, entry.hasValue());
+            }
+
+            if (cache.isNear()) {
+                entry = ((GridNearCacheAdapter)cache).dht().map().getEntry(key);
+
+                log.info("Dht entry: " + entry);
+
+                if (entry != null) {
+                    assertFalse("Unexpected entry for grid " + i, entry.lockedByAny());
+                    assertFalse("Unexpected entry for grid " + i, entry.hasValue());
+                }
+            }
+        }
+
+        for (int i = 0; i < gridCount(); i++)
+            assertEquals("Unexpected value for grid " + i, null, grid(i).cache(null).get(key));
+    }
+
+    /**
+     * @param putBefore If {@code true} then puts some value before executing failing operation.
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void checkPut(boolean putBefore, final Integer key) throws Exception {
+        if (putBefore) {
+            idxSpi.forceFail(false);
+
+            info("Put key: " + key);
+
+            grid(0).cache(null).put(key, 1);
+        }
+
+        // Execute get from all nodes to create readers for near cache.
+        for (int i = 0; i < gridCount(); i++)
+            grid(i).cache(null).get(key);
+
+        idxSpi.forceFail(true);
+
+        info("Going to put: " + key);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                grid(0).cache(null).put(key, 2);
+
+                return null;
+            }
+        }, GridCacheTxHeuristicException.class, null);
+
+        checkEmpty(key);
+    }
+
+    /**
+     * @param putBefore If {@code true} then puts some value before executing failing operation.
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void checkTransform(boolean putBefore, final Integer key) throws Exception {
+        if (putBefore) {
+            idxSpi.forceFail(false);
+
+            info("Put key: " + key);
+
+            grid(0).cache(null).put(key, 1);
+        }
+
+        // Execute get from all nodes to create readers for near cache.
+        for (int i = 0; i < gridCount(); i++)
+            grid(i).cache(null).get(key);
+
+        idxSpi.forceFail(true);
+
+        info("Going to transform: " + key);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                grid(0).cache(null).transform(key, new GridClosure<Object, Object>() {
+                    @Override public Object apply(Object o) {
+                        return 2;
+                    }
+                });
+
+                return null;
+            }
+        }, GridCacheTxHeuristicException.class, null);
+
+        checkEmpty(key);
+    }
+
+    /**
+     * @param putBefore If {@code true} then puts some value before executing failing operation.
+     * @param keys Keys.
+     * @throws Exception If failed.
+     */
+    private void checkPutAll(boolean putBefore, Integer ... keys) throws Exception {
+        assert keys.length > 1;
+
+        if (putBefore) {
+            idxSpi.forceFail(false);
+
+            Map<Integer, Integer> m = new HashMap<>();
+
+            for (Integer key : keys)
+                m.put(key, 1);
+
+            info("Put data: " + m);
+
+            grid(0).cache(null).putAll(m);
+        }
+
+        idxSpi.forceFail(true);
+
+        final Map<Integer, Integer> m = new HashMap<>();
+
+        for (Integer key : keys)
+            m.put(key, 2);
+
+        info("Going to putAll: " + m);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                grid(0).cache(null).putAll(m);
+
+                return null;
+            }
+        }, GridCacheTxHeuristicException.class, null);
+
+        for (Integer key : m.keySet())
+            checkEmpty(key);
+    }
+
+    /**
+     * @param putBefore If {@code true} then puts some value before executing failing operation.
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void checkRemove(boolean putBefore, final Integer key) throws Exception {
+        if (putBefore) {
+            idxSpi.forceFail(false);
+
+            info("Put key: " + key);
+
+            grid(0).cache(null).put(key, 1);
+        }
+
+        // Execute get from all nodes to create readers for near cache.
+        for (int i = 0; i < gridCount(); i++)
+            grid(i).cache(null).get(key);
+
+        idxSpi.forceFail(true);
+
+        info("Going to remove: " + key);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                grid(0).cache(null).remove(key);
+
+                return null;
+            }
+        }, GridCacheTxHeuristicException.class, null);
+
+        checkEmpty(key);
     }
 
     /**
      * Generates key of a given type for given node.
      *
-     * @param cache Cache.
      * @param node Node.
      * @param type Key type.
      * @return Key.
      */
-    private String keyForNode(GridCache<String,Integer> cache, GridNode node, int type) {
-        for (int i = 0; i < 1000; i++) {
-            String key = String.valueOf(i);
+    private Integer keyForNode(GridNode node, int type) {
+        GridCache<Integer, Integer> cache = grid(0).cache(null);
 
+        if (cache.configuration().getCacheMode() == LOCAL)
+            return ++lastKey;
+
+        if (cache.configuration().getCacheMode() == REPLICATED && type == NOT_PRIMARY_AND_BACKUP)
+            return ++lastKey;
+
+        for (int key = lastKey + 1; key < (lastKey + 10_000); key++) {
             switch (type) {
-                // Near.
-                case 0: {
-                    if (!cache.affinity().isPrimaryOrBackup(node, key))
+                case NOT_PRIMARY_AND_BACKUP: {
+                    if (!cache.affinity().isPrimaryOrBackup(node, key)) {
+                        lastKey = key;
+
                         return key;
+                    }
 
                     break;
                 }
 
-                // Primary.
-                case 1: {
-                    if (cache.affinity().isPrimary(node, key))
+                case PRIMARY: {
+                    if (cache.affinity().isPrimary(node, key)) {
+                        lastKey = key;
+
                         return key;
+                    }
 
                     break;
                 }
 
-                // Backup.
-                case 2: {
-                    if (cache.affinity().isBackup(node, key))
+                case BACKUP: {
+                    if (cache.affinity().isBackup(node, key)) {
+                        lastKey = key;
+
                         return key;
+                    }
 
                     break;
                 }
+
+                default:
+                    fail();
             }
         }
 
@@ -234,15 +575,21 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
         @Override public <K, V> void store(@Nullable String spaceName, GridIndexingTypeDescriptor type,
             GridIndexingEntity<K> key, GridIndexingEntity<V> val, byte[] ver, long expirationTime)
             throws GridSpiException {
-            if (fail)
+            if (fail) {
+                fail = false;
+
                 throw new GridSpiException("Test exception.");
+            }
         }
 
         /** {@inheritDoc} */
         @Override public <K> boolean remove(@Nullable String spaceName, GridIndexingEntity<K> k)
             throws GridSpiException {
-            if (fail)
+            if (fail) {
+                fail = false;
+
                 throw new GridSpiException("Test exception.");
+            }
 
             return true;
         }

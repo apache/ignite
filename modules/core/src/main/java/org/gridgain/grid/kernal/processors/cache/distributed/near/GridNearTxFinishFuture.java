@@ -27,6 +27,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
+
 /**
  *
  */
@@ -192,6 +194,24 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     /** {@inheritDoc} */
     @Override public boolean onDone(GridCacheTx tx, Throwable err) {
         if ((initialized() || err != null) && super.onDone(tx, err)) {
+            if (error() instanceof GridCacheTxHeuristicException) {
+                long topVer = this.tx.topologyVersion();
+
+                for (GridCacheTxEntry<K, V> e : this.tx.writeMap().values()) {
+                    try {
+                        if (e.op() != NOOP && !cctx.affinity().localNode(e.key(), topVer)) {
+                            GridCacheEntryEx<K, V> cacheEntry = cctx.cache().peekEx(e.key());
+
+                            if (cacheEntry != null)
+                                cacheEntry.invalidate(null, this.tx.xidVersion());
+                        }
+                    }
+                    catch (Throwable t) {
+                        U.error(log, "Failed to invalidate entry.", t);
+                    }
+                }
+            }
+
             // Don't forget to clean up.
             cctx.mvcc().removeFuture(this);
 

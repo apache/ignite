@@ -27,6 +27,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.cache.GridCacheTxState.*;
+
 /**
  * Colocated tx finish future.
  */
@@ -144,6 +146,29 @@ public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFu
     /**
      * @param e Error.
      */
+    void onHeuristicException(GridCacheTxHeuristicException e) {
+        assert tx.isInvalidate();
+
+        if (!tx.implicit())
+            onError(e);
+
+        tx.commitError(e);
+
+        if (err.compareAndSet(null, e)) {
+            try {
+                tx.close();
+            }
+            catch (GridException ex) {
+                U.error(log, "Failed to invalidate transaction: " + tx, ex);
+            }
+
+            onComplete();
+        }
+    }
+
+    /**
+     * @param e Error.
+     */
     void onError(Throwable e) {
         tx.commitError(e);
 
@@ -186,10 +211,12 @@ public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFu
     /** {@inheritDoc} */
     @Override public boolean onDone(GridCacheTx tx, Throwable err) {
         if (initialized() || err != null) {
-            if (this.tx.onePhaseCommit())
+            if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING))
                 this.tx.tmCommit();
 
-            if (super.onDone(tx, err)) {
+            Throwable e = this.err.get();
+
+            if (super.onDone(tx, e != null ? e : err)) {
                 // Don't forget to clean up.
                 cctx.mvcc().removeFuture(this);
 

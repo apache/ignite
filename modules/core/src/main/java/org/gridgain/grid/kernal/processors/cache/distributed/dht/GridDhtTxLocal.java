@@ -459,6 +459,12 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                     else
                         fut.onError(new GridException("Failed to commit transaction: " + CU.txString(this)));
                 }
+                catch (GridCacheTxHeuristicException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to commit transaction [tx=" + this + ", e=" + e + ']');
+
+                    fut.onHeuristicException(e);
+                }
                 catch (GridCacheTxOptimisticException e) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to optimistically prepare transaction [tx=" + this + ", e=" + e + ']');
@@ -483,6 +489,12 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                                 fut.onError(new GridException("Failed to commit transaction: " +
                                     CU.txString(GridDhtTxLocal.this)));
                         }
+                        catch (GridCacheTxHeuristicException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to commit transaction [tx=" + this + ", e=" + e + ']');
+
+                            fut.onHeuristicException(e);
+                        }
                         catch (GridCacheTxOptimisticException e) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e + ']');
@@ -506,6 +518,12 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 else
                     fut.onError(new GridException("Failed to commit transaction: " + CU.txString(this)));
             }
+            catch (GridCacheTxHeuristicException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to commit transaction [tx=" + this + ", e=" + e + ']');
+
+                fut.onHeuristicException(e);
+            }
             catch (GridCacheTxOptimisticException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e + ']');
@@ -513,7 +531,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 fut.onError(e);
             }
             catch (GridException e) {
-                U.error(log, "Failed to prepare transaction: " + this, e);
+                U.error(log, "Failed to commit transaction: " + this, e);
 
                 fut.onError(e);
             }
