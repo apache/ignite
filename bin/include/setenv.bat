@@ -26,7 +26,9 @@
 :: Check GRIDGAIN_HOME.
 ::
 if defined GRIDGAIN_HOME goto run
-    echo %0, ERROR: GRIDGAIN_HOME environment variable is not found.
+    echo %0, ERROR: GridGain installation folder is not found.
+    echo Please create GRIDGAIN_HOME variable pointing to location of
+    echo GridGain installation folder.
 goto :eof
 
 :run
