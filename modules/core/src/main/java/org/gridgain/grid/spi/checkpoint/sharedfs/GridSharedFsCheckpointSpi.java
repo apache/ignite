@@ -274,7 +274,7 @@ public class GridSharedFsCheckpointSpi extends GridSpiAdapter implements GridChe
                         continue;
                     else
                         throw new GridSpiException("Failed to resolve directory [path=" + curDirPath +
-                            ", exception=" + e.getMessage() + ']');
+                            ", exception=" + e.getMessage() + ']', e);
                 }
 
                 if (log.isDebugEnabled())
