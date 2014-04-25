@@ -130,6 +130,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
             Collection<GridGgfsBlockLocation> aff = ggfs.affinity(new GridGgfsPath(block.file()), block.start(),
                 block.length());
 
+            // TODO-gg-8170 do we need to handle collection or we can assert aff.size() == 1?
             long maxLen = Long.MIN_VALUE;
             UUID max = null;
 

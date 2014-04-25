@@ -81,7 +81,7 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
 
                         task.run(taskCtx);
 
-                        return out.finish();
+                        return out == null ? new GridFinishedFutureEx<>() : out.finish();
                     }
                 }
             }, false).listenAsync(fut);
