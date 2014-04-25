@@ -28,12 +28,62 @@ import static org.gridgain.grid.util.GridUtils.*;
 /**
  * Checks creation of work folder.
  */
-public class GridStopStartWorkDirectorySelfTest extends TestCase {
+public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
     /** */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
-    public static final int GRID_COUNT = 2;
+    private static final int GRID_COUNT = 2;
+
+    /** System temp directory. */
+    private static final String TMP_DIR = System.getProperty("java.io.tmpdir");
+
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        // Protection against previously cached values.
+        nullifyHomeDirectory();
+        nullifyWorkDirectory();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void tearDown() throws Exception {
+        // Next grid in the same VM shouldn't use cached values produced by these tests.
+        nullifyHomeDirectory();
+        nullifyWorkDirectory();
+    }
+
+    /**
+     * @param log Grid logger.
+     * @return Grid configuration.
+     */
+    private GridConfiguration getConfiguration(GridLogger log) {
+        // We can't use U.getGridGainHome() here because
+        // it will initialize cached value which is forbidden to override.
+        String ggHome = X.getSystemOrEnv(GridSystemProperties.GG_HOME);
+
+        assert ggHome != null;
+
+        U.setGridGainHome(null);
+
+        String ggHome0 = U.getGridGainHome();
+
+        assert ggHome0 == null;
+
+        GridTcpDiscoverySpi disc = new GridTcpDiscoverySpi();
+
+        disc.setIpFinder(IP_FINDER);
+
+        GridConfiguration cfg = new GridConfiguration();
+
+        // We have to explicitly configure path to license because of undefined GRIDGAIN_HOME.
+        cfg.setLicenseUrl("file:///" + ggHome + "/" + GridGain.DFLT_LIC_FILE_NAME);
+
+        cfg.setGridLogger(log);
+        cfg.setDiscoverySpi(disc);
+        cfg.setRestEnabled(false);
+
+        return cfg;
+    }
 
     /**
      * @throws Exception If failed.
@@ -43,10 +93,6 @@ public class GridStopStartWorkDirectorySelfTest extends TestCase {
 
         log.info(">>> Test started: " + getName());
         log.info("Grid start-stop test count: " + GRID_COUNT);
-
-        String tmpDir = System.getProperty("java.io.tmpdir");
-
-        nullifyWorkDirectory();
 
         File testWorkDir = null;
 
@@ -60,16 +106,14 @@ public class GridStopStartWorkDirectorySelfTest extends TestCase {
                     assertTrue("Work directory wasn't created", testWorkDir.exists());
 
                     assertTrue("Work directory must be located in OS temp directory",
-                        testWorkDir.getAbsolutePath().startsWith(tmpDir));
+                        testWorkDir.getAbsolutePath().startsWith(TMP_DIR));
 
                     X.println("Stopping grid " + g.localNode().id());
                 }
             }
         }
         finally {
-            nullifyWorkDirectory();
-
-            if (testWorkDir != null && testWorkDir.getAbsolutePath().startsWith(tmpDir))
+            if (testWorkDir != null && testWorkDir.getAbsolutePath().startsWith(TMP_DIR))
                 U.delete(testWorkDir);
         }
     }
@@ -83,10 +127,7 @@ public class GridStopStartWorkDirectorySelfTest extends TestCase {
         log.info(">>> Test started: " + getName());
         log.info("Grid start-stop test count: " + GRID_COUNT);
 
-        String tmpDir = System.getProperty("java.io.tmpdir");
-        String tmpWorkDir = new File(tmpDir, getName() + "_" + UUID.randomUUID()).getAbsolutePath();
-
-        nullifyWorkDirectory();
+        String tmpWorkDir = new File(TMP_DIR, getName() + "_" + UUID.randomUUID()).getAbsolutePath();
 
         try {
             for (int i = 0; i < GRID_COUNT; i++) {
@@ -108,40 +149,7 @@ public class GridStopStartWorkDirectorySelfTest extends TestCase {
                 }
             }
         } finally {
-            nullifyWorkDirectory();
-
             U.delete(new File(tmpWorkDir));
         }
-    }
-
-    private GridConfiguration getConfiguration(GridLogger log) {
-        // We can't use U.getGridGainHome() here because
-        // it will initialize cached value which is forbidden to override.
-        String ggHome = X.getSystemOrEnv(GridSystemProperties.GG_HOME);
-
-        assert ggHome != null;
-
-        U.setGridGainHome(null);
-
-        String ggHome0 = U.getGridGainHome();
-
-        assert ggHome0 == null;
-
-        GridTcpDiscoverySpi disc = new GridTcpDiscoverySpi();
-
-        disc.setIpFinder(IP_FINDER);
-
-        GridConfiguration cfg = new GridConfiguration();
-
-        cfg.setRestEnabled(false);
-
-        // We have to explicitly configure path to license because of undefined GRIDGAIN_HOME.
-        cfg.setLicenseUrl("file:///" + ggHome + "/" + GridGain.DFLT_LIC_FILE_NAME);
-
-        // Default console logger is used
-        cfg.setGridLogger(log);
-        cfg.setDiscoverySpi(disc);
-
-        return cfg;
     }
 }

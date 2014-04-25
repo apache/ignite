@@ -6,7 +6,7 @@
  *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
-package org.gridgain.grid.kernal;
+package org.gridgain.grid.util;
 
 import junit.framework.*;
 import org.apache.log4j.*;
@@ -33,12 +33,14 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
-    public static final int COUNT = 2;
+    private static final int GRID_COUNT = 2;
 
     /**
      * @throws Exception If failed.
      */
     public void testStartStopWithUndefinedGridGainHome() throws Exception {
+        GridUtils.nullifyHomeDirectory();
+
         // We can't use U.getGridGainHome() here because
         // it will initialize cached value which is forbidden to override.
         String ggHome = X.getSystemOrEnv(GridSystemProperties.GG_HOME);
@@ -54,16 +56,14 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
         GridLogger log = new GridLog4jLogger(Logger.getRootLogger());
 
         log.info(">>> Test started: " + getName());
-        log.info("Grid start-stop test count: " + COUNT);
+        log.info("Grid start-stop test count: " + GRID_COUNT);
 
-        for (int i = 0; i < COUNT; i++) {
+        for (int i = 0; i < GRID_COUNT; i++) {
             GridTcpDiscoverySpi disc = new GridTcpDiscoverySpi();
 
             disc.setIpFinder(IP_FINDER);
 
             GridConfiguration cfg = new GridConfiguration();
-
-            cfg.setRestEnabled(false);
 
             // We have to explicitly configure path to license config because of undefined GRIDGAIN_HOME.
             cfg.setLicenseUrl("file:///" + ggHome + "/" + GridGain.DFLT_LIC_FILE_NAME);
@@ -71,6 +71,7 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
             // Default console logger is used
             cfg.setGridLogger(log);
             cfg.setDiscoverySpi(disc);
+            cfg.setRestEnabled(false);
 
             try (Grid g = G.start(cfg)) {
                 assert g != null;

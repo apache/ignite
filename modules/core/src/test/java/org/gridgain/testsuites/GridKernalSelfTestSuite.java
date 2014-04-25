@@ -50,7 +50,7 @@ public class GridKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridDiscoveryEventSelfTest.class);
         suite.addTestSuite(GridPortProcessorSelfTest.class);
         suite.addTestSuite(GridHomePathSelfTest.class);
-        suite.addTestSuite(GridStopStartWorkDirectorySelfTest.class);
+        suite.addTestSuite(GridStartupWithSpecifiedWorkDirectorySelfTest.class);
         suite.addTestSuite(GridStartupWithUndefinedGridGainHomeSelfTest.class);
         suite.addTestSuite(GridVersionSelfTest.class);
         suite.addTestSuite(GridListenActorSelfTest.class);

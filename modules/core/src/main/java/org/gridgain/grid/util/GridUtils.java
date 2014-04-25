@@ -8240,6 +8240,13 @@ public abstract class GridUtils {
     }
 
     /**
+     * Nullifies GridGain home directory. For test purposes only.
+     */
+    static void nullifyHomeDirectory() {
+        ggHome = null;
+    }
+
+    /**
      * Nullifies work directory. For test purposes only.
      */
     static void nullifyWorkDirectory() {
