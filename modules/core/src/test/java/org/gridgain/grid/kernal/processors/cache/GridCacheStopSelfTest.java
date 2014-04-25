@@ -175,6 +175,16 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
                     assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage().startsWith(EXPECTED_MSG));
                 }
             }
+
+            try {
+                cache.put(1, 1);
+            }
+            catch (IllegalStateException e) {
+                if (!e.getMessage().startsWith(EXPECTED_MSG))
+                    e.printStackTrace();
+
+                assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage().startsWith(EXPECTED_MSG));
+            }
         }
     }
 }

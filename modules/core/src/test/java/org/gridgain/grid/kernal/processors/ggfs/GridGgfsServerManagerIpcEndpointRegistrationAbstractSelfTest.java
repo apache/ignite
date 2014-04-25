@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.port.*;
@@ -126,12 +125,14 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
         cc.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(128));
         cc.setBackups(0);
         cc.setAtomicityMode(TRANSACTIONAL);
+        cc.setQueryIndexEnabled(false);
 
         GridCacheConfiguration metaCfg = defaultCacheConfiguration();
 
         metaCfg.setName("replicated");
         metaCfg.setCacheMode(GridCacheMode.REPLICATED);
         metaCfg.setAtomicityMode(TRANSACTIONAL);
+        metaCfg.setQueryIndexEnabled(false);
 
         cfg.setCacheConfiguration(metaCfg, cc);
 
