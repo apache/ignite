@@ -64,8 +64,11 @@
                 <include>config/**</include>
                 <include>libs/**</include>
                 <include>src/**</include>
-                <include>pom.xml</include>
             </includes>
+            <excludes>
+                <exclude>pom-standalone.xml</exclude>
+                <exclude>src/test/**</exclude>
+            </excludes>
         </fileSet>
     </fileSets>
 </assembly>

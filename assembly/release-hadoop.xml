@@ -48,9 +48,10 @@
                 <include>config/**</include>
                 <include>libs/**</include>
                 <include>src/**</include>
-                <include>pom.xml</include>
             </includes>
             <excludes>
+                <exclude>pom-standalone.xml</exclude>
+                <exclude>src/test/**</exclude>
                 <exclude>src/main/java/org/gridgain/examples/datagrid/**</exclude>
                 <exclude>src/**/ClientCacheExample*</exclude>
                 <exclude>src/**/scala/**/ScalarCache*</exclude>

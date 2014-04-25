@@ -632,10 +632,14 @@
                             <target>
                                 <mkdir dir="target/release-package/libs/ext"/>
 
+                                <replace file="target/release-package/examples/pom.xml"
+                                         token="%ANT_AUGMENTED_GGJAR%"
+                                         value="gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
+
                                 <replaceregexp byline="true">
                                     <regexp pattern="ANT_AUGMENTED_GGJAR=.*"/>
                                     <substitution expression="ANT_AUGMENTED_GGJAR=gridgain-${gridgain.edition}-${gridgain.version}.jar"/>
-                                    <fileset dir="target/release-package">
+                                    <fileset dir="target/release-package/bin">
                                         <include name="**/*.sh"/>
                                         <include name="**/*.bat"/>
                                     </fileset>
@@ -694,7 +698,7 @@
                     </execution>
                     <execution>
                         <id>release</id>
-                        <phase>package</phase>
+                        <phase>prepare-package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
@@ -714,7 +718,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>2.9.1</version>
-                <inherited>false</inherited>
                 <executions>
                     <execution>
                         <id>aggregate</id>
@@ -734,7 +737,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
                 <version>2.2.1</version>
-                <inherited>false</inherited>
                 <executions>
                     <execution>
                         <id>aggregate</id>
@@ -756,7 +758,6 @@
 
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <inherited>false</inherited>
                 <executions>
                     <execution>
                         <phase>install</phase>

@@ -49,6 +49,12 @@
             <source>config/gridgain-log4j.xml</source>
             <outputDirectory>/config</outputDirectory>
         </file>
+
+        <file>
+            <source>examples/pom-standalone.xml</source>
+            <outputDirectory>/examples</outputDirectory>
+            <destName>pom.xml</destName>
+        </file>
     </files>
 
     <fileSets>
