@@ -13,9 +13,9 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
-import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -61,9 +61,14 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
                             log.debug("Running task: " + task);
 
                         task.run(taskCtx);
-
-                        return null;
                     }
+                    catch (Exception e) {
+                        U.error(log, "Failed to execute task: " + task.info(), e);
+
+                        throw e;
+                    }
+
+                    return null;
                 }
             }, false).listenAsync(new CIX1<GridFuture<?>>() {
                 @Override public void applyx(GridFuture<?> f) throws GridException {

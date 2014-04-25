@@ -384,10 +384,12 @@ public class GridHadoopShuffleJob implements AutoCloseable {
             case REDUCE:
                 int reducer = taskInfo.taskNumber();
 
-                if (ctx.localNodeId().equals(outNodes[reducer]))
-                    return outMaps.get(reducer).input();
+                GridHadoopMultimap m;
 
-                GridHadoopMultimap m = inMaps.get(reducer);
+                if (ctx.localNodeId().equals(outNodes[reducer]))
+                    m = outMaps.get(reducer);
+                else
+                    m = inMaps.get(reducer);
 
                 if (m != null)
                     return m.input();

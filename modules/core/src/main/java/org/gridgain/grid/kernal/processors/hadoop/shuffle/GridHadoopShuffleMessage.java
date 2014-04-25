@@ -143,7 +143,7 @@ public class GridHadoopShuffleMessage implements Externalizable {
     private void add(byte marker, long ptr, int size) {
         buf[off++] = marker;
 
-        UNSAFE.putInt(BYTE_ARR_OFF + off, size);
+        UNSAFE.putInt(buf, BYTE_ARR_OFF + off, size);
 
         off += 4;
 
@@ -169,6 +169,8 @@ public class GridHadoopShuffleMessage implements Externalizable {
                 v.onKey(buf, i, size);
             else
                 throw new IllegalStateException();
+
+            i += size;
         }
     }
 
