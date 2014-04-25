@@ -121,8 +121,9 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setMapperClass(TestMapper.class);
         job.setCombinerClass(TestCombiner.class);
+        job.setReducerClass(TestReducer.class);
 
-        job.setNumReduceTasks(0);
+        job.setNumReduceTasks(2);
 
         job.setInputFormatClass(TextInputFormat.class);
 
@@ -233,6 +234,9 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
      * Combiner calculates number of lines.
      */
     private static class TestCombiner extends Reducer<Text, IntWritable, Text, IntWritable> {
+        /** */
+        IntWritable sum = new IntWritable();
+
         /** {@inheritDoc} */
         @Override protected void reduce(Text key, Iterable<IntWritable> values, Context ctx) throws IOException,
             InterruptedException {
@@ -240,6 +244,31 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
             for (IntWritable value : values)
                 lineCnt += value.get();
+
+            sum.set(lineCnt);
+
+            ctx.write(key, sum);
+        }
+    }
+
+    /**
+     * Combiner calculates number of lines.
+     */
+    private static class TestReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+        /** */
+        IntWritable sum = new IntWritable();
+
+        /** {@inheritDoc} */
+        @Override protected void reduce(Text key, Iterable<IntWritable> values, Context ctx) throws IOException,
+            InterruptedException {
+            int lineCnt = 0;
+
+            for (IntWritable value : values)
+                lineCnt += value.get();
+
+            sum.set(lineCnt);
+
+            ctx.write(key, sum);
 
             totalLineCnt.addAndGet(lineCnt);
         }
