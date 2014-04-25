@@ -25,30 +25,18 @@ import java.nio.file.*;
 import java.util.*;
 
 /**
- * Tests of Map, Combine and Reduce task executions.
+ * Tests of Map, Combine and Reduce task executions of any version of hadoop API.
  */
-public class GridHadoopTasks2Test extends GridCommonAbstractTest {
+abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
     /**
      * Creates some grid hadoop job. Override this method to create tests for any job implementation.
      *
      * @param inFile input file name for the job.
-     * @param outFile outpur file name for the job.
+     * @param outFile output file name for the job.
      * @return Hadoop job.
      * @throws IOException if fails.
      */
-    protected GridHadoopJob getHadoopJob(String inFile, String outFile) throws IOException {
-        Job hadoopJob = GridGainWordCount2.getJob(inFile, outFile);
-
-        GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(hadoopJob.getConfiguration());
-
-        GridHadoopJobId jobId = new GridHadoopJobId(new UUID(0, 0), 0);
-
-        GridHadoopV2JobImpl gridHadoopJob = new GridHadoopV2JobImpl(jobId, jobInfo);
-
-        hadoopJob.setJobID(gridHadoopJob.hadoopJobContext().getJobID());
-
-        return gridHadoopJob;
-    }
+    public abstract GridHadoopJob getHadoopJob(String inFile, String outFile) throws IOException;
 
     /**
      * Tests map task execution.
