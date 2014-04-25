@@ -389,9 +389,9 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
      */
     private boolean checkDeployedListeners(int expCnt) {
         for (Grid g : G.allGrids()) {
-            Integer cnt = g.<String, Integer>nodeLocalMap().get("msgCnt");
+            AtomicInteger cnt = g.<String, AtomicInteger>nodeLocalMap().get("msgCnt");
 
-            if (cnt == null || cnt != expCnt)
+            if (cnt == null || cnt.get() != expCnt)
                 return false;
         }
 
