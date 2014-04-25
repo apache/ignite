@@ -65,10 +65,9 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        super.afterTest();
+        System.setProperty(GG_MAX_COMPLETED_TX_COUNT, maxCompletedTxCount != null ? maxCompletedTxCount : "");
 
-        if (maxCompletedTxCount != null)
-            System.setProperty(GG_MAX_COMPLETED_TX_COUNT, maxCompletedTxCount);
+        super.afterTest();
     }
 
     /**

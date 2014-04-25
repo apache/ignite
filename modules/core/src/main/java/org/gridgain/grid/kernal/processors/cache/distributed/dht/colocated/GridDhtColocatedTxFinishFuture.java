@@ -146,36 +146,13 @@ public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFu
     /**
      * @param e Error.
      */
-    void onHeuristicException(GridCacheTxHeuristicException e) {
-        assert tx.isSystemInvalidate();
-
-        if (!tx.implicit())
-            onError(e);
-
-        tx.commitError(e);
-
-        if (err.compareAndSet(null, e)) {
-            try {
-                tx.close();
-            }
-            catch (GridException ex) {
-                U.error(log, "Failed to invalidate transaction: " + tx, ex);
-            }
-
-            onComplete();
-        }
-    }
-
-    /**
-     * @param e Error.
-     */
     void onError(Throwable e) {
         tx.commitError(e);
 
         if (err.compareAndSet(null, e)) {
             boolean marked = tx.setRollbackOnly();
 
-            if (e instanceof GridCacheTxRollbackException)
+            if (e instanceof GridCacheTxRollbackException) {
                 if (marked) {
                     try {
                         tx.rollback();
@@ -184,6 +161,15 @@ public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFu
                         U.error(log, "Failed to automatically rollback transaction: " + tx, ex);
                     }
                 }
+            }
+            else if (tx.implicit() && tx.isSystemInvalidate()) { // Finish implicit transaction on heuristic error.
+                try {
+                    tx.close();
+                }
+                catch (GridException ex) {
+                    U.error(log, "Failed to invalidate transaction: " + tx, ex);
+                }
+            }
 
             onComplete();
         }

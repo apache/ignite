@@ -150,34 +150,11 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     /**
      * @param e Error.
      */
-    void onHeuristicException(GridCacheTxHeuristicException e) {
-        assert tx.isSystemInvalidate();
-
-        if (err.compareAndSet(null, e)) {
-            finish();
-
-            try {
-                get();
-            }
-            catch (GridCacheTxHeuristicException ignore) {
-                // Future should complete with GridCacheTxHeuristicException.
-            }
-            catch (GridException err) {
-                U.error(log, "Failed to invalidate transaction: " + tx, err);
-            }
-
-            onComplete();
-        }
-    }
-
-    /**
-     * @param e Error.
-     */
     public void onError(Throwable e) {
         if (err.compareAndSet(null, e)) {
             boolean marked = tx.setRollbackOnly();
 
-            if (e instanceof GridCacheTxRollbackException)
+            if (e instanceof GridCacheTxRollbackException) {
                 if (marked) {
                     try {
                         tx.rollback();
@@ -186,6 +163,20 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                         U.error(log, "Failed to automatically rollback transaction: " + tx, ex);
                     }
                 }
+            }
+            else if (tx.isSystemInvalidate()) { // Invalidate remote transactions on heuristic error.
+                finish();
+
+                try {
+                    get();
+                }
+                catch (GridCacheTxHeuristicException ignore) {
+                    // Future should complete with GridCacheTxHeuristicException.
+                }
+                catch (GridException err) {
+                    U.error(log, "Failed to invalidate transaction: " + tx, err);
+                }
+            }
 
             onComplete();
         }

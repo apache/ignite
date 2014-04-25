@@ -158,7 +158,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         if (err.compareAndSet(null, e)) {
             boolean marked = tx.setRollbackOnly();
 
-            if (e instanceof GridCacheTxRollbackException)
+            if (e instanceof GridCacheTxRollbackException) {
                 if (marked) {
                     try {
                         tx.rollback();
@@ -167,6 +167,16 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         U.error(log, "Failed to automatically rollback transaction: " + tx, ex);
                     }
                 }
+            }
+            else if (tx.implicit() && tx.isSystemInvalidate()) { // Finish implicit transaction on heuristic error.
+                try {
+                    tx.close();
+                }
+                catch (GridException ex) {
+                    U.error(log, "Failed to invalidate transaction: " + tx, ex);
+                }
+            }
+
 
             onComplete();
         }
