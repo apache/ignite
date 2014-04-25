@@ -215,7 +215,6 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
      * @param nonNulls Flag indicating whether nulls should be included.
      * @return {@code Anded} filter.
      */
-    @SuppressWarnings({"unchecked"})
     private GridPredicate<GridCacheEntry<K, V>> and(@Nullable final GridPredicate<GridCacheEntry<K, V>>[] f1,
         boolean nonNulls) {
         GridPredicate<GridCacheEntry<K, V>> entryFilter = entryFilter(nonNulls);
@@ -223,7 +222,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         if (F.isEmpty(f1))
             return entryFilter;
 
-        return F0.and(f1, entryFilter);
+        return F0.and(entryFilter, f1);
     }
 
     /**
