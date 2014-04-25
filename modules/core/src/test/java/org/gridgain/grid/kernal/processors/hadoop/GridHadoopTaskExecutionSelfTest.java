@@ -46,11 +46,6 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 2;
-    }
-
-    /** {@inheritDoc} */
     @Override protected boolean ggfsEnabled() {
         return true;
     }
@@ -107,6 +102,47 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    public void testMapCombineRun() throws Exception {
+        int lineCnt = 10000;
+        String fileName = "/testFile";
+
+        prepareFile(fileName, lineCnt);
+
+        totalLineCnt.set(0);
+
+        Configuration cfg = new Configuration();
+
+        cfg.setStrings("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
+        cfg.setBoolean(MAP_WRITE, true);
+
+        Job job = Job.getInstance(cfg);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+
+        job.setMapperClass(TestMapper.class);
+        job.setCombinerClass(TestCombiner.class);
+
+        job.setNumReduceTasks(0);
+
+        job.setInputFormatClass(TextInputFormat.class);
+
+        FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/"));
+
+        job.setJarByClass(getClass());
+
+        GridHadoopProcessor hadoop = ((GridKernal)grid(0)).context().hadoop();
+
+        GridFuture<?> fut = hadoop.submit(new GridHadoopJobId(UUID.randomUUID(), 2),
+            new GridHadoopDefaultJobInfo(job.getConfiguration()));
+
+        fut.get();
+
+        assertEquals(lineCnt, totalLineCnt.get());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testMapperException() throws Exception {
         int lineCnt = 1000;
         String fileName = "/testFile";
@@ -133,7 +169,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         GridHadoopProcessor hadoop = ((GridKernal)grid(0)).context().hadoop();
 
-        final GridFuture<?> fut = hadoop.submit(new GridHadoopJobId(UUID.randomUUID(), 1),
+        final GridFuture<?> fut = hadoop.submit(new GridHadoopJobId(UUID.randomUUID(), 3),
             new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -143,9 +179,6 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
                 return null;
             }
         }, GridException.class, null);
-
-
-        assertEquals(lineCnt, totalLineCnt.get());
     }
 
     /**

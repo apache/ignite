@@ -417,6 +417,31 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         ctx.taskExecutor().cancelTasks(jobId);
                     }
 
+                    // Check if there are unscheduled mappers or reducers.
+                    Collection<GridHadoopFileBlock> cancelMappers = new ArrayList<>();
+                    Collection<Integer> cancelReducers = new ArrayList<>();
+
+                    Collection<GridHadoopFileBlock> mappers = meta.mapReducePlan().mappers(ctx.localNodeId());
+
+                    if (mappers != null) {
+                        for (GridHadoopFileBlock b : mappers) {
+                            if (state == null || !state.scheduledMapper(meta.attempt(b), b))
+                                cancelMappers.add(b);
+                        }
+                    }
+
+                    int[] rdc = meta.mapReducePlan().reducers(ctx.localNodeId());
+
+                    if (rdc != null) {
+                        for (int r : rdc) {
+                            if (state == null || !state.scheduledReducer(meta.attempt(r), r))
+                                cancelReducers.add(r);
+                        }
+                    }
+
+                    if (!cancelMappers.isEmpty() || !cancelReducers.isEmpty())
+                        jobMetaPrj.transformAsync(jobId, new CancelJobClosure(cancelMappers, cancelReducers));
+
                     break;
                 }
 
@@ -496,6 +521,19 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         }
 
         /**
+         * Checks whether this block was scheduled for given attempt.
+         *
+         * @param attempt Attempt number.
+         * @param mapBlock Map block to check.
+         * @return {@code True} if mapper was scheduled.
+         */
+        public boolean scheduledMapper(int attempt, GridHadoopFileBlock mapBlock) {
+            AttemptGroup grp = attempts.get(attempt);
+
+            return grp != null && grp.scheduledMapper(mapBlock);
+        }
+
+        /**
          * @param attempt Attempt number.
          * @param rdc Reducer number to add.
          * @return {@code True} if reducer was added.
@@ -507,6 +545,19 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 attempts.put(attempt, grp = new AttemptGroup());
 
             return grp.addReducer(rdc);
+        }
+
+        /**
+         * Checks whether this block was scheduled for given attempt.
+         *
+         * @param attempt Attempt number.
+         * @param rdc Reducer number to check.
+         * @return {@code True} if reducer was scheduled.
+         */
+        public boolean scheduledReducer(int attempt, int rdc) {
+            AttemptGroup grp = attempts.get(attempt);
+
+            return grp != null && grp.scheduledReducer(rdc);
         }
 
         /**
@@ -640,6 +691,22 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         public boolean onMapFinished() {
             return completedMappersCnt.incrementAndGet() == currentMappers.size();
         }
+
+        /**
+         * @param mapBlock Map block to check.
+         * @return {@code True} if mapper was scheduled.
+         */
+        public boolean scheduledMapper(GridHadoopFileBlock mapBlock) {
+            return currentMappers.contains(mapBlock);
+        }
+
+        /**
+         * @param rdc Reducer number to check.
+         * @return {@code True} if reducer was schedulded.
+         */
+        public boolean scheduledReducer(int rdc) {
+            return currentReducers.contains(rdc);
+        }
     }
 
     /**
@@ -771,6 +838,46 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 cp.phase(PHASE_CANCELLING);
 
             if (cp.phase() == PHASE_CANCELLING && rdcCp.isEmpty())
+                cp.phase(PHASE_COMPLETE);
+
+            return cp;
+        }
+    }
+
+    /**
+     * Remove reducer transform closure.
+     */
+    private static class CancelJobClosure implements GridClosure<GridHadoopJobMetadata, GridHadoopJobMetadata> {
+        /** Mapper block to remove. */
+        private Collection<GridHadoopFileBlock> blocks;
+
+        /** Reducers to remove. */
+        private Collection<Integer> rdc;
+
+        private CancelJobClosure(Collection<GridHadoopFileBlock> blocks, Collection<Integer> rdc) {
+            this.blocks = blocks;
+            this.rdc = rdc;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridHadoopJobMetadata apply(GridHadoopJobMetadata meta) {
+            assert meta.phase() == PHASE_CANCELLING : "Invalid phase for cancel: " + meta;
+
+            GridHadoopJobMetadata cp = new GridHadoopJobMetadata(meta);
+
+            Collection<Integer> rdcCp = new HashSet<>(cp.pendingReducers());
+
+            rdcCp.removeAll(rdc);
+
+            cp.pendingReducers(rdcCp);
+
+            Collection<GridHadoopFileBlock> blocksCp = new HashSet<>(cp.pendingBlocks());
+
+            blocksCp.removeAll(blocks);
+
+            cp.pendingBlocks(blocksCp);
+
+            if (blocksCp.isEmpty() && rdcCp.isEmpty())
                 cp.phase(PHASE_COMPLETE);
 
             return cp;
