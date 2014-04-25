@@ -811,9 +811,9 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        prj.removeAll(new P1<GridCacheEntry<UUID, String>>() {
+        prj.removeAll(new P1<GridCacheEntry<String, String>>() {
             @Override
-            public boolean apply(GridCacheEntry<UUID, String> e) {
+            public boolean apply(GridCacheEntry<String, String> e) {
                 info(" --> " + e.peek().getClass());
 
                 latch.countDown();
