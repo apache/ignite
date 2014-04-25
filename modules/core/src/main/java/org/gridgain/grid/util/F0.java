@@ -196,29 +196,39 @@ public class F0 {
      *      evaluates to {@code true}.
      */
     @SuppressWarnings("unchecked")
-    public static <T> GridPredicate<T> and(@Nullable final GridPredicate<? super T>... ps) {
-        if (F.isEmpty(ps))
+    public static <T> GridPredicate<T> and(
+        @Nullable final GridPredicate<? super T> p,
+        @Nullable final GridPredicate<? super T>... ps
+    ) {
+        if (p == null && F.isEmptyOrNulls(ps))
             return F.alwaysTrue();
 
-        if (F.isAlwaysFalse(ps))
+        if (F.isAlwaysFalse(p) && F.isAlwaysFalse(ps))
             return F.alwaysFalse();
 
-        if (F.isAlwaysTrue(ps))
+        if (F.isAlwaysTrue(p) && F.isAlwaysTrue(ps))
             return F.alwaysTrue();
 
-        if (isAllNodePredicates(ps)) {
+        if (isAllNodePredicates(p) && isAllNodePredicates(ps)) {
             assert ps != null;
 
             Set<UUID> ids = new GridLeanSet<>();
 
-            for (GridPredicate<? super T> p : ps) {
-                Collection<UUID> list = ((GridNodePredicate)p).nodeIds();
+            for (GridPredicate<? super T> p0 : ps) {
+                Collection<UUID> list = ((GridNodePredicate)p0).nodeIds();
 
                 if (ids.isEmpty())
                     ids.addAll(list);
                 else
                     ids.retainAll(list);
             }
+
+            Collection<UUID> list = ((GridNodePredicate)p).nodeIds();
+
+            if (ids.isEmpty())
+                ids.addAll(list);
+            else
+                ids.retainAll(list);
 
             // T must be <T extends GridNode>.
             return (GridPredicate<T>)new GridNodePredicate(ids);
@@ -227,6 +237,9 @@ public class F0 {
             return new P1<T>() {
                 @Override public boolean apply(T t) {
                     assert ps != null;
+
+                    if (p != null && !p.apply(t))
+                        return false;
 
                     for (GridPredicate<? super T> p : ps)
                         if (p != null && !p.apply(t))

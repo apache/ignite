@@ -7863,13 +7863,15 @@ public abstract class GridUtils {
                 for (String beanName : beanFactory.getBeanDefinitionNames()) {
                     BeanDefinition def = beanFactory.getBeanDefinition(beanName);
 
-                    try {
-                        Class.forName(def.getBeanClassName());
-                    }
-                    catch (ClassNotFoundException ignored) {
-                        ((BeanDefinitionRegistry)beanFactory).removeBeanDefinition(beanName);
+                    if (def.getBeanClassName() != null) {
+                        try {
+                            Class.forName(def.getBeanClassName());
+                        }
+                        catch (ClassNotFoundException ignored) {
+                            ((BeanDefinitionRegistry)beanFactory).removeBeanDefinition(beanName);
 
-                        continue;
+                            continue;
+                        }
                     }
 
                     MutablePropertyValues vals = def.getPropertyValues();

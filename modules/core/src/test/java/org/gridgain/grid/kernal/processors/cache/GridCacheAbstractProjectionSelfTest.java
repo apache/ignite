@@ -15,7 +15,9 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
@@ -794,5 +796,33 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         });
 
         tx.commit();
+    }
+
+    /**
+     * @throws GridException In case of error.
+     */
+    public void testTypedProjection() throws Exception {
+        GridCache<Object, Object> cache = grid(0).cache(null);
+
+        cache.putx("1", "test string");
+        cache.putx("2", 0);
+
+        final GridCacheProjection<String, String> prj = cache.projection(String.class, String.class);
+
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        prj.removeAll(new P1<GridCacheEntry<String, String>>() {
+            @Override
+            public boolean apply(GridCacheEntry<String, String> e) {
+                info(" --> " + e.peek().getClass());
+
+                latch.countDown();
+
+                return true;
+            }
+        });
+
+        assertTrue(latch.await(1, SECONDS));
     }
 }
