@@ -776,7 +776,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
 
             // If heuristic error.
             if (!isRollbackOnly()) {
-                invalidate = true;
+                systemInvalidate(true);
 
                 U.warn(log, "Set transaction invalidation flag to true due to error [tx=" + CU.txString(this) +
                     ", err=" + err + ']');

@@ -290,6 +290,12 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
             }
         }
 
+        // Execute get from all nodes to create readers for near cache.
+        for (int i = 0; i < gridCount(); i++) {
+            for (Integer key : keys)
+                grid(i).cache(null).get(key);
+        }
+
         idxSpi.forceFail(true);
 
         try {
@@ -445,6 +451,12 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
             info("Put data: " + m);
 
             grid(0).cache(null).putAll(m);
+        }
+
+        // Execute get from all nodes to create readers for near cache.
+        for (int i = 0; i < gridCount(); i++) {
+            for (Integer key : keys)
+                grid(i).cache(null).get(key);
         }
 
         idxSpi.forceFail(true);

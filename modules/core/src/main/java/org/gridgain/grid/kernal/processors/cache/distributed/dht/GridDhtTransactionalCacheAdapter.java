@@ -443,7 +443,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 ", tx=" + tx + ']');
 
         try {
-            if (req.commit() || req.isInvalidate()) {
+            if (req.commit() || req.isSystemInvalidate()) {
                 if (tx.commitVersion(req.commitVersion())) {
                     tx.invalidate(req.isInvalidate());
                     tx.systemInvalidate(req.isSystemInvalidate());
