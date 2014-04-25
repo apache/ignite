@@ -50,6 +50,10 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
         // Next grid in the same VM shouldn't use cached values produced by these tests.
         nullifyHomeDirectory();
         nullifyWorkDirectory();
+
+        String ggHome = U.getGridGainHome();
+
+        U.setWorkDirectory(ggHome, null);
     }
 
     /**

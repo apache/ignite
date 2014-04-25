@@ -20,6 +20,8 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
+import static org.gridgain.grid.util.GridUtils.*;
+
 /**
  * Checks that node can be started without operations with undefined GRIDGAIN_HOME.
  * <p>
@@ -34,6 +36,14 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
 
     /** */
     private static final int GRID_COUNT = 2;
+
+    /** {@inheritDoc} */
+    @Override protected void tearDown() throws Exception {
+        // Next grid in the same VM shouldn't use cached values produced by these tests.
+        nullifyHomeDirectory();
+
+        U.getGridGainHome();
+    }
 
     /**
      * @throws Exception If failed.
