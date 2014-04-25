@@ -13,10 +13,11 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.io.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.net.*;
@@ -28,7 +29,7 @@ import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
  * Handler for {@link GridRestCommand#LOG} command.
  */
 public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
-    /** */
+    /** Supported commands. */
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(LOG);
 
     /** Default log path. */
@@ -71,10 +72,14 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
 
     /** {@inheritDoc} */
     @Override public GridFuture<GridRestResponse> handleAsync(GridRestRequest req) {
-        String path = req.parameter("path");
+        assert req instanceof GridRestLogRequest : "Invalid command for topology handler: " + req;
 
-        int from = integerValue(req.parameter("from"), -1);
-        int to = integerValue(req.parameter("to"), -1);
+        GridRestLogRequest req0 = (GridRestLogRequest) req;
+
+        String path = req0.path();
+
+        int from = req0.from();
+        int to = req0.to();
 
         if (path == null)
             path = DFLT_PATH;
@@ -258,29 +263,6 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
         finally {
             U.close(reader, log);
         }
-    }
-
-    /**
-     * Tries to safely get int value from the given object with possible conversions.
-     *
-     * @param obj Object to convert.
-     * @param dfltVal Default value if conversion is not possible.
-     * @return Converted value.
-     */
-    private int integerValue(Object obj, int dfltVal) {
-        int res = dfltVal;
-
-        if (obj instanceof Number)
-            res = ((Number)obj).intValue();
-        else if (obj instanceof String) {
-            try {
-                res = Integer.parseInt((String)obj);
-            }
-            catch (RuntimeException ignored) {
-            }
-        }
-
-        return res;
     }
 
     /**

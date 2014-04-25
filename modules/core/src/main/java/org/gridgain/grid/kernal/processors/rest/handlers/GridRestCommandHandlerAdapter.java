@@ -13,7 +13,6 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -21,7 +20,7 @@ import java.util.*;
  * Abstract command handler.
  */
 public abstract class GridRestCommandHandlerAdapter implements GridRestCommandHandler {
-    /** */
+    /** Supported commands. */
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList();
 
     /** Kernal context. */
@@ -42,50 +41,6 @@ public abstract class GridRestCommandHandlerAdapter implements GridRestCommandHa
     /** {@inheritDoc} */
     @Override public Collection<GridRestCommand> supportedCommands() {
         return SUPPORTED_COMMANDS;
-    }
-
-    /**
-     * @param key Key.
-     * @param req Request.
-     * @return Value.
-     */
-    @SuppressWarnings({"unchecked"})
-    @Nullable protected static <T> T value(String key, GridRestRequest req) {
-        assert key != null;
-        assert req != null;
-
-        Object val = req.parameter(key);
-
-        return (T)val;
-    }
-
-    /**
-     * Gets values referenced by sequential keys, e.g. {@code key1...keyN}.
-     *
-     * @param keyPrefix Key prefix, e.g. {@code key} for {@code key1...keyN}.
-     * @param req Request.
-     * @return Values.
-     */
-    @SuppressWarnings({"RedundantTypeArguments"})
-    @Nullable protected <T> List<T> values(String keyPrefix, GridRestRequest req) {
-        assert keyPrefix != null;
-        assert req != null;
-
-        List<T> vals = new LinkedList<>();
-        Set<String> keys = req.getParameters().keySet();
-
-        int i = 1;
-
-        while (true) {
-            String key = keyPrefix + i++;
-
-            if (keys.contains(key))
-                vals.add((T)value(key, req));
-            else
-                break;
-        }
-
-        return vals;
     }
 
     /**

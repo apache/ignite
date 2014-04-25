@@ -145,9 +145,9 @@ public class GridTaskCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         GridKernal g = (GridKernal)grid(0);
 
-        Collection<GridRestCommandHandler> handlers = U.field(g.context().rest(), "handlers");
+        Map<GridRestCommand, GridRestCommandHandler> handlers = U.field(g.context().rest(), "handlers");
 
-        GridTaskCommandHandler taskHnd = (GridTaskCommandHandler)F.find(handlers, null,
+        GridTaskCommandHandler taskHnd = (GridTaskCommandHandler)F.find(handlers.values(), null,
             new P1<GridRestCommandHandler>() {
                 @Override public boolean apply(GridRestCommandHandler e) {
                     return e instanceof GridTaskCommandHandler;

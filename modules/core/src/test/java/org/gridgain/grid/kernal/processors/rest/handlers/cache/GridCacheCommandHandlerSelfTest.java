@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
+import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
@@ -66,13 +67,11 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         GridRestCommandHandler hnd = new TestableGridCacheCommandHandler(((GridKernal)grid()).context(), "getAsync",
             true);
 
-        GridRestRequest req = new GridRestRequest(GridRestCommand.CACHE_GET);
+        GridRestCacheRequest req = new GridRestCacheRequest();
 
-        Map<String, Object> params = new HashMap<>();
+        req.command(GridRestCommand.CACHE_GET);
 
-        params.put("key", "k1");
-
-        req.setParameters(params);
+        req.key("k1");
 
         try {
             hnd.handleAsync(req).get();
@@ -93,13 +92,11 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         GridRestCommandHandler hnd = new TestableGridCacheCommandHandler(((GridKernal)grid()).context(), "getAsync",
             false);
 
-        GridRestRequest req = new GridRestRequest(GridRestCommand.CACHE_GET);
+        GridRestCacheRequest req = new GridRestCacheRequest();
 
-        Map<String, Object> params = new HashMap<>();
+        req.command(GridRestCommand.CACHE_GET);
 
-        params.put("key", "k1");
-
-        req.setParameters(params);
+        req.key("k1");
 
         try {
             hnd.handleAsync(req).get();
@@ -171,16 +168,12 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         String key = UUID.randomUUID().toString();
 
-        // Validate behavior for empty cache (no current value).
-        Map<String, Object> params = new HashMap<>();
+        GridRestCacheRequest req = new GridRestCacheRequest();
 
-        params.put("key", key);
-        params.put("val", newVal);
+        req.command(append ? GridRestCommand.CACHE_APPEND : GridRestCommand.CACHE_PREPEND);
 
-        GridRestRequest req = new GridRestRequest(append ? GridRestCommand.CACHE_APPEND :
-            GridRestCommand.CACHE_PREPEND);
-
-        req.setParameters(params);
+        req.key(key);
+        req.value(newVal);
 
         assertFalse("Expects failure due to no value in cache.", (Boolean)hnd.handleAsync(req).get().getResponse());
 

@@ -12,7 +12,9 @@ package org.gridgain.grid.kernal.processors.rest.protocols.http.jetty;
 import net.sf.json.*;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.*;
+import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
@@ -25,6 +27,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.processors.rest.GridRestResponse.STATUS_FAILED;
+import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 
 /**
  * Jetty REST handler. The following URL format is supported:
@@ -219,46 +222,16 @@ public class GridJettyRestHandler extends AbstractHandler {
             return;
         }
 
-        GridRestRequest cmdReq = new GridRestRequest(cmd, act, parameters(req));
-
-        String clientId = cmdReq.parameter("clientId");
-
-        try {
-            if (clientId != null)
-                cmdReq.setClientId(UUID.fromString(clientId));
-        }
-        catch (Exception ignored) {
-            // Ignore invalid client id. Rest handler will process this logic.
-        }
-
-        String destId = cmdReq.parameter("destId");
-
-        try {
-            if (destId != null)
-                cmdReq.setDestId(UUID.fromString(destId));
-        }
-        catch (IllegalArgumentException ignored) {
-            // Don't fail - try to execute locally.
-        }
-
-        cmdReq.setCredentials(cmdReq.parameter("cred"));
-
-        try {
-            String sesTokStr = cmdReq.parameter("sessionToken");
-
-            if (sesTokStr != null)
-                cmdReq.setSessionToken(U.hexString2ByteArray(sesTokStr));
-        }
-        catch (IllegalArgumentException ignored) {
-            // Ignore invalid session token.
-        }
-
-        if (log.isDebugEnabled())
-            log.debug("Initialized command request: " + cmdReq);
-
         GridRestResponse cmdRes;
 
+        Map<String, Object> params = parameters(req);
+
         try {
+            GridRestRequest cmdReq = createRequest(cmd, params);
+
+            if (log.isDebugEnabled())
+                log.debug("Initialized command request: " + cmdReq);
+
             cmdRes = hnd.handle(cmdReq);
 
             if (cmdRes == null)
@@ -298,11 +271,266 @@ public class GridJettyRestHandler extends AbstractHandler {
             res.getWriter().write(json.toString());
 
             if (log.isDebugEnabled())
-                log.debug("Processed HTTP request [action=" + act + ", jsonRes=" + cmdRes + ", req=" + cmdReq + ']');
+                log.debug("Processed HTTP request [action=" + act + ", jsonRes=" + cmdRes + ", req=" + req + ']');
         }
         catch (IOException e) {
             U.error(log, "Failed to send HTTP response: " + json.toString(2), e);
         }
+    }
+
+    /**
+     * Creates REST request.
+     *
+     * @param cmd Command.
+     * @param params Parameters.
+     * @return REST request.
+     * @throws GridException If creation failed.
+     */
+    @Nullable private GridRestRequest createRequest(GridRestCommand cmd, Map<String, Object> params)
+        throws GridException
+    {
+        GridRestRequest restReq;
+
+        switch (cmd) {
+            case CACHE_GET:
+            case CACHE_GET_ALL:
+            case CACHE_PUT:
+            case CACHE_PUT_ALL:
+            case CACHE_REMOVE:
+            case CACHE_REMOVE_ALL:
+            case CACHE_ADD:
+            case CACHE_CAS:
+            case CACHE_METRICS:
+            case CACHE_REPLACE:
+            case CACHE_DECREMENT:
+            case CACHE_INCREMENT:
+            case CACHE_APPEND:
+            case CACHE_PREPEND: {
+                GridRestCacheRequest restReq0 = new GridRestCacheRequest();
+
+                restReq0.cacheName((String) params.get("cacheName"));
+                restReq0.key(params.get("key"));
+                restReq0.value(params.get("val"));
+                restReq0.value2(params.get("val2"));
+
+                Object val1 = params.get("val1");
+
+                if (val1 != null)
+                    restReq0.value(val1);
+
+                restReq0.cacheFlags(intValue("cacheFlags", params, 0));
+                restReq0.ttl(longValue("exp", params, null));
+                restReq0.initial(longValue("init", params, null));
+                restReq0.delta(longValue("delta", params, null));
+
+                if (cmd == CACHE_GET_ALL || cmd == CACHE_PUT_ALL || cmd == CACHE_REMOVE_ALL) {
+                    List<Object> keys = values("k", params);
+                    List<Object> vals = values("v", params);
+
+                    if (keys.size() < vals.size())
+                        throw new GridException("Number of keys must be greater or equals to number of values.");
+
+                    Map<Object, Object> map = new HashMap<>(keys.size());
+
+                    Iterator<Object> keyIt = keys.iterator();
+                    Iterator<Object> valIt = vals.iterator();
+
+                    while (keyIt.hasNext())
+                        map.put(keyIt.next(), valIt.hasNext() ? valIt.next() : null);
+
+                    restReq0.values(map);
+                }
+
+                restReq = restReq0;
+
+                break;
+            }
+
+            case TOPOLOGY:
+            case NODE: {
+                GridRestTopRequest restReq0 = new GridRestTopRequest();
+
+                restReq0.includeMetrics(Boolean.parseBoolean((String) params.get("mtr")));
+                restReq0.includeAttributes(Boolean.parseBoolean((String) params.get("attr")));
+
+                restReq0.nodeIp((String) params.get("ip"));
+
+                restReq0.nodeId(uuidValue("id", params));
+
+                restReq = restReq0;
+
+                break;
+            }
+
+            case EXE:
+            case RESULT:
+            case NOOP: {
+                GridRestTaskRequest restReq0 = new GridRestTaskRequest();
+
+                restReq0.taskId((String) params.get("id"));
+                restReq0.taskName((String) params.get("name"));
+
+                restReq0.params(values("p", params));
+
+                restReq0.async(Boolean.parseBoolean((String) params.get("async")));
+
+                restReq0.timeout(longValue("timeout", params, 0L));
+
+                restReq = restReq0;
+
+                break;
+            }
+
+            case LOG: {
+                GridRestLogRequest restReq0 = new GridRestLogRequest();
+
+                restReq0.path((String) params.get("path"));
+
+                restReq0.from(intValue("from", params, -1));
+                restReq0.to(intValue("to", params, -1));
+
+                restReq = restReq0;
+
+                break;
+            }
+
+            case VERSION: {
+                restReq = new GridRestRequest();
+
+                break;
+            }
+
+            default:
+                throw new GridException("Invalid command: " + cmd);
+        }
+
+        restReq.command(cmd);
+
+        restReq.credentials(params.get("cred"));
+
+        String clientId = (String) params.get("clientId");
+
+        try {
+            if (clientId != null)
+                restReq.clientId(UUID.fromString(clientId));
+        }
+        catch (Exception ignored) {
+            // Ignore invalid client id. Rest handler will process this logic.
+        }
+
+        String destId = (String) params.get("destId");
+
+        try {
+            if (destId != null)
+                restReq.destinationId(UUID.fromString(destId));
+        }
+        catch (IllegalArgumentException ignored) {
+            // Don't fail - try to execute locally.
+        }
+
+        String sesTokStr = (String) params.get("sessionToken");
+
+        try {
+            if (sesTokStr != null)
+                restReq.sessionToken(U.hexString2ByteArray(sesTokStr));
+        }
+        catch (IllegalArgumentException ignored) {
+            // Ignore invalid session token.
+        }
+
+        return restReq;
+    }
+
+    /**
+     * Retrieves long value from parameters map.
+     *
+     * @param key Key.
+     * @param params Parameters map.
+     * @param dfltVal Default value.
+     * @return Long value from parameters map or {@code dfltVal} if null
+     *     or not exists.
+     * @throws GridException If parsing failed.
+     */
+    @Nullable private static Long longValue(String key, Map<String, Object> params, Long dfltVal) throws GridException {
+        assert key != null;
+
+        String val = (String) params.get(key);
+
+        try {
+            return val == null ? dfltVal : Long.valueOf(val);
+        }
+        catch (NumberFormatException ignore) {
+            throw new GridException("Failed to parse parameter of Long type [" + key + "=" + val + "]");
+        }
+    }
+
+    /**
+     * Retrieves int value from parameters map.
+     *
+     * @param key Key.
+     * @param params Parameters map.
+     * @param dfltVal Default value.
+     * @return Integer value from parameters map or {@code dfltVal} if null
+     *     or not exists.
+     * @throws GridException If parsing failed.
+     */
+    @Nullable private static Integer intValue(String key, Map<String, Object> params, Integer dfltVal) throws GridException {
+        assert key != null;
+
+        String val = (String) params.get(key);
+
+        try {
+            return val == null ? dfltVal : Integer.valueOf(val);
+        }
+        catch (NumberFormatException ignore) {
+            throw new GridException("Failed to parse parameter of Integer type [" + key + "=" + val + "]");
+        }
+    }
+
+    /**
+     * Retrieves UUID value from parameters map.
+     *
+     * @param key Key.
+     * @param params Parameters map.
+     * @return UUID value from parameters map or {@code null} if null
+     *     or not exists.
+     * @throws GridException If parsing failed.
+     */
+    @Nullable private static UUID uuidValue(String key, Map<String, Object> params) throws GridException {
+        assert key != null;
+
+        String val = (String) params.get(key);
+
+        try {
+            return val == null ? null : UUID.fromString(val);
+        }
+        catch (NumberFormatException ignore) {
+            throw new GridException("Failed to parse parameter of UUID type [" + key + "=" + val + "]");
+        }
+    }
+
+    /**
+     * Gets values referenced by sequential keys, e.g. {@code key1...keyN}.
+     *
+     * @param keyPrefix Key prefix, e.g. {@code key} for {@code key1...keyN}.
+     * @param params Parameters map.
+     * @return Values.
+     */
+    @Nullable protected List<Object> values(String keyPrefix, Map<String, Object> params) {
+        assert keyPrefix != null;
+
+        List<Object> vals = new LinkedList<>();
+
+        for (int i = 1; ; i++) {
+            String key = keyPrefix + i;
+
+            if (params.containsKey(key))
+                vals.add(params.get(key));
+            else
+                break;
+        }
+
+        return vals;
     }
 
     /**

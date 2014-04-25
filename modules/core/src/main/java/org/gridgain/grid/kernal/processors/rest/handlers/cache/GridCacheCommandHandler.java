@@ -17,13 +17,13 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
+import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.resources.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -32,30 +32,44 @@ import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
-import static org.gridgain.grid.product.GridProductEdition.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
+import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Command handler for API requests.
  */
 public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
-    /** */
+    /** Supported commands. */
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(
-            CACHE_GET,
-            CACHE_GET_ALL,
-            CACHE_PUT,
-            CACHE_ADD,
-            CACHE_PUT_ALL,
-            CACHE_REMOVE,
-            CACHE_REMOVE_ALL,
-            CACHE_REPLACE,
-            CACHE_INCREMENT,
-            CACHE_DECREMENT,
-            CACHE_CAS,
-            CACHE_APPEND,
-            CACHE_PREPEND,
-            CACHE_METRICS
-        );
+        CACHE_GET,
+        CACHE_GET_ALL,
+        CACHE_PUT,
+        CACHE_ADD,
+        CACHE_PUT_ALL,
+        CACHE_REMOVE,
+        CACHE_REMOVE_ALL,
+        CACHE_REPLACE,
+        CACHE_INCREMENT,
+        CACHE_DECREMENT,
+        CACHE_CAS,
+        CACHE_APPEND,
+        CACHE_PREPEND,
+        CACHE_METRICS
+    );
+
+    /** Requests with required parameter {@code key}. */
+    private static final EnumSet<GridRestCommand> KEY_REQUIRED_REQUESTS = EnumSet.of(
+        CACHE_GET,
+        CACHE_PUT,
+        CACHE_ADD,
+        CACHE_REMOVE,
+        CACHE_REPLACE,
+        CACHE_INCREMENT,
+        CACHE_DECREMENT,
+        CACHE_CAS,
+        CACHE_APPEND,
+        CACHE_PREPEND
+    );
 
     /** */
     private static final GridCacheFlag[] EMPTY_FLAGS = new GridCacheFlag[0];
@@ -75,13 +89,14 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     /**
      * Retrieves cache flags from corresponding bits.
      *
-     * @param cacheFlagsStr String representation of cache flags bit set.
+     * @param cacheFlagsBits Integer representation of cache flags bit set.
      * @return Array of cache flags.
      */
-    public static GridCacheFlag[] parseCacheFlags(String cacheFlagsStr) {
-        EnumSet<GridCacheFlag> flagSet = EnumSet.noneOf(GridCacheFlag.class);
+    public static GridCacheFlag[] parseCacheFlags(int cacheFlagsBits) {
+        if (cacheFlagsBits == 0)
+            return EMPTY_FLAGS;
 
-        int cacheFlagsBits = Integer.parseInt(cacheFlagsStr);
+        EnumSet<GridCacheFlag> flagSet = EnumSet.noneOf(GridCacheFlag.class);
 
         if ((cacheFlagsBits & 1) != 0)
             flagSet.add(GridCacheFlag.SKIP_STORE);
@@ -107,123 +122,148 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         if (log.isDebugEnabled())
             log.debug("Handling cache REST request: " + req);
 
-        final String cacheName = value("cacheName", req);
+        assert req instanceof GridRestCacheRequest : "Invalid command for topology handler: " + req;
 
-        String cacheFlagsOn = value("cacheFlags", req);
-        final GridCacheFlag[] flags = F.isEmpty(cacheFlagsOn) ? EMPTY_FLAGS : parseCacheFlags(cacheFlagsOn);
+        GridRestCacheRequest req0 = (GridRestCacheRequest) req;
 
-        final Object key = value("key", req);
-        final Collection<Object> keys = values("k", req);
+        final String cacheName = req0.cacheName();
+
+        final Object key = req0.key();
+
+        final GridCacheFlag[] flags = parseCacheFlags(req0.cacheFlags());
 
         try {
-            GridRestCommand cmd = req.getCommand();
+            GridRestCommand cmd = req0.command();
 
-            if (key == null && (cmd == CACHE_GET || cmd == CACHE_PUT || cmd == CACHE_ADD || cmd == CACHE_REMOVE ||
-                cmd == CACHE_REPLACE || cmd == CACHE_INCREMENT || cmd == CACHE_DECREMENT || cmd == CACHE_CAS ||
-                cmd == CACHE_APPEND || cmd == CACHE_PREPEND))
+            if (key == null && KEY_REQUIRED_REQUESTS.contains(cmd))
                 throw new GridException(missingParameter("key"));
 
-            if (F.isEmpty(keys) && (cmd == CACHE_GET_ALL || cmd == CACHE_PUT_ALL))
-                throw new GridException(missingParameter("k1"));
-
-            Object exp = value("exp", req);
-            final Long ttl = exp instanceof String ? Long.valueOf((String)exp) : (Long)exp;
+            final Long ttl = req0.ttl();
 
             GridFuture<GridRestResponse> fut;
 
             switch (cmd) {
-                case CACHE_GET:
-                    fut = executeCommand(req.getDestId(), cacheName, flags, key, new GetCommand(key)); break;
+                case CACHE_GET: {
+                    fut = executeCommand(req.destinationId(), cacheName, flags, key, new GetCommand(key));
 
-                case CACHE_GET_ALL:
-                    fut = executeCommand(req.getDestId(), cacheName, flags, key, new GetAllCommand(keys)); break;
+                    break;
+                }
+
+                case CACHE_GET_ALL: {
+                    final Set<Object> keys = req0.values().keySet();
+
+                    if (F.isEmpty(keys))
+                        throw new GridException(missingParameter("keys"));
+
+                    fut = executeCommand(req.destinationId(), cacheName, flags, key, new GetAllCommand(keys));
+
+                    break;
+                }
 
                 case CACHE_PUT: {
-                    final Object val = value("val", req);
+                    final Object val = req0.value();
 
                     if (val == null)
                         throw new GridException(missingParameter("val"));
 
-                    fut = executeCommand(req.getDestId(), cacheName, flags, key, new PutCommand(key, ttl, val));
-                } break;
+                    fut = executeCommand(req.destinationId(), cacheName, flags, key, new PutCommand(key, ttl, val));
+
+                    break;
+                }
 
                 case CACHE_ADD: {
-                    final Object val = value("val", req);
+                    final Object val = req0.value();
 
                     if (val == null)
                         throw new GridException(missingParameter("val"));
 
-                    fut = executeCommand(req.getDestId(), cacheName, flags, key, new AddCommand(key, ttl, val));
-                } break;
+                    fut = executeCommand(req.destinationId(), cacheName, flags, key, new AddCommand(key, ttl, val));
+
+                    break;
+                }
 
                 case CACHE_PUT_ALL: {
-                    Collection<Object> vals = values("v", req);
+                    final Map<Object, Object> map = req0.values();
 
-                    if (vals == null)
-                        throw new GridException(missingParameter("v"));
+                    if (F.isEmpty(map))
+                        throw new GridException(missingParameter("values"));
 
-                    if (keys.size() != vals.size())
-                        throw new GridException("Number of keys and values must be equal.");
-
-                    final Map<Object, Object> map = new GridLeanMap<>(keys.size());
-
-                    Iterator keysIt = keys.iterator();
-                    Iterator valsIt = vals.iterator();
-
-                    while (keysIt.hasNext() && valsIt.hasNext()) {
-                        Object nextKey = keysIt.next();
-                        Object nextVal = valsIt.next();
-
-                        if (nextKey == null)
+                    for (Map.Entry<Object, Object> e : map.entrySet()) {
+                        if (e.getKey() == null)
                             throw new GridException("Failing putAll operation (null keys are not allowed).");
 
-                        if (nextVal == null)
+                        if (e.getValue() == null)
                             throw new GridException("Failing putAll operation (null values are not allowed).");
-
-                        map.put(nextKey, nextVal);
                     }
 
-                    assert !keysIt.hasNext() && !valsIt.hasNext();
+                    fut = executeCommand(req.destinationId(), cacheName, flags, key, new PutAllCommand(map));
 
-                    fut = executeCommand(req.getDestId(), cacheName, flags, key, new PutAllCommand(map));
-                } break;
+                    break;
+                }
 
-                case CACHE_REMOVE:
-                    fut = executeCommand(req.getDestId(), cacheName, flags, key, new RemoveCommand(key)); break;
+                case CACHE_REMOVE: {
+                    fut = executeCommand(req.destinationId(), cacheName, flags, key, new RemoveCommand(key));
 
-                case CACHE_REMOVE_ALL:
-                    fut = executeCommand(req.getDestId(), cacheName, flags, key, new RemoveAllCommand(keys)); break;
+                    break;
+                }
+
+                case CACHE_REMOVE_ALL: {
+                    final Map<Object, Object> map = req0.values();
+
+                    fut = executeCommand(req.destinationId(), cacheName, flags, key, new RemoveAllCommand(map == null ? null : map.keySet()));
+
+                    break;
+                }
 
                 case CACHE_REPLACE: {
-                    final Object val = value("val", req);
+                    final Object val = req0.value();
 
                     if (val == null)
                         throw new GridException(missingParameter("val"));
 
-                    fut = executeCommand(req.getDestId(), cacheName, flags, key, new ReplaceCommand(key, ttl, val));
-                } break;
+                    fut = executeCommand(req.destinationId(), cacheName, flags, key, new ReplaceCommand(key, ttl, val));
 
-                case CACHE_INCREMENT:
-                    fut = executeCommand(req.getDestId(), cacheName, key, new IncrementCommand(key, req)); break;
-
-                case CACHE_DECREMENT:
-                    fut = executeCommand(req.getDestId(), cacheName, key, new DecrementCommand(key, req)); break;
-
-                case CACHE_CAS:
-                    final Object val1 = value("val1", req);
-                    final Object val2 = value("val2", req);
-
-                    fut = executeCommand(req.getDestId(), cacheName, flags, key, new CasCommand(val2, val1, key));
                     break;
+                }
 
-                case CACHE_APPEND:
-                    fut = executeCommand(req.getDestId(), cacheName, flags, key, new AppendCommand(key, req)); break;
+                case CACHE_INCREMENT: {
+                    fut = executeCommand(req.destinationId(), cacheName, key, new IncrementCommand(key, req0));
 
-                case CACHE_PREPEND:
-                    fut = executeCommand(req.getDestId(), cacheName, flags, key, new PrependCommand(key, req)); break;
+                    break;
+                }
 
-                case CACHE_METRICS:
-                    fut = executeCommand(req.getDestId(), cacheName, key, new MetricsCommand()); break;
+                case CACHE_DECREMENT: {
+                    fut = executeCommand(req.destinationId(), cacheName, key, new DecrementCommand(key, req0));
+
+                    break;
+                }
+
+                case CACHE_CAS: {
+                    final Object val1 = req0.value();
+                    final Object val2 = req0.value2();
+
+                    fut = executeCommand(req.destinationId(), cacheName, flags, key, new CasCommand(val2, val1, key));
+
+                    break;
+                }
+
+                case CACHE_APPEND: {
+                    fut = executeCommand(req.destinationId(), cacheName, flags, key, new AppendCommand(key, req0));
+
+                    break;
+                }
+
+                case CACHE_PREPEND: {
+                    fut = executeCommand(req.destinationId(), cacheName, flags, key, new PrependCommand(key, req0));
+
+                    break;
+                }
+
+                case CACHE_METRICS: {
+                    fut = executeCommand(req.destinationId(), cacheName, key, new MetricsCommand());
+
+                    break;
+                }
 
                 default:
                     throw new IllegalArgumentException("Invalid command for cache handler: " + req);
@@ -322,44 +362,16 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @throws GridException In case of error.
      */
     private static GridFuture<?> incrementOrDecrement(GridCache<Object, Object> cache, String key,
-        GridRestRequest req, final boolean decr) throws GridException {
+        GridRestCacheRequest req, final boolean decr) throws GridException {
         assert cache != null;
         assert key != null;
         assert req != null;
 
-        Object initObj = value("init", req);
-        Object deltaObj = value("delta", req);
+        Long init = req.initial();
+        Long delta = req.delta();
 
-        Long init = null;
-
-        if (initObj != null) {
-            if (initObj instanceof String) {
-                try {
-                    init = Long.valueOf((String)initObj);
-                }
-                catch (NumberFormatException ignored) {
-                    throw new GridException(invalidNumericParameter("init"));
-                }
-            }
-            else if (initObj instanceof Long)
-                init = (Long)initObj;
-        }
-
-        if (deltaObj == null)
+        if (delta == null)
             throw new GridException(missingParameter("delta"));
-
-        Long delta = null;
-
-        if (deltaObj instanceof String) {
-            try {
-                delta = Long.valueOf((String)deltaObj);
-            }
-            catch (NumberFormatException ignored) {
-                throw new GridException(invalidNumericParameter("delta"));
-            }
-        }
-        else if (deltaObj instanceof Long)
-            delta = (Long)deltaObj;
 
         final GridCacheAtomicLong l = cache.dataStructures().atomicLong(key, init != null ? init : 0, true);
 
@@ -386,12 +398,12 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     private static GridFuture<?> appendOrPrepend(
         final GridKernalContext ctx,
         final GridCacheProjection<Object, Object> cache,
-        final Object key, GridRestRequest req, final boolean prepend) throws GridException {
+        final Object key, GridRestCacheRequest req, final boolean prepend) throws GridException {
         assert cache != null;
         assert key != null;
         assert req != null;
 
-        final Object val = value("val", req);
+        final Object val = req.value();
 
         if (val == null)
             throw new GridException(missingParameter("val"));
@@ -959,13 +971,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         private final Object key;
 
         /** */
-        private final GridRestRequest req;
+        private final GridRestCacheRequest req;
 
         /**
          * @param key Key.
          * @param req Operation request.
          */
-        IncrementCommand(Object key, GridRestRequest req) {
+        IncrementCommand(Object key, GridRestCacheRequest req) {
             this.key = key;
             this.req = req;
         }
@@ -986,13 +998,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         private final Object key;
 
         /** */
-        private final GridRestRequest req;
+        private final GridRestCacheRequest req;
 
         /**
          * @param key Key.
          * @param req Operation request.
          */
-        DecrementCommand(Object key, GridRestRequest req) {
+        DecrementCommand(Object key, GridRestCacheRequest req) {
             this.key = key;
             this.req = req;
         }
@@ -1012,13 +1024,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         private final Object key;
 
         /** */
-        private final GridRestRequest req;
+        private final GridRestCacheRequest req;
 
         /**
          * @param key Key.
          * @param req Operation request.
          */
-        AppendCommand(Object key, GridRestRequest req) {
+        AppendCommand(Object key, GridRestCacheRequest req) {
             this.key = key;
             this.req = req;
         }
@@ -1039,13 +1051,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         private final Object key;
 
         /** */
-        private final GridRestRequest req;
+        private final GridRestCacheRequest req;
 
         /**
          * @param key Key.
          * @param req Operation request.
          */
-        PrependCommand(Object key, GridRestRequest req) {
+        PrependCommand(Object key, GridRestCacheRequest req) {
             this.key = key;
             this.req = req;
         }
