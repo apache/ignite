@@ -340,7 +340,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                     if (mappers != null) {
                         if (state == null)
-                            state = initState(meta);
+                            state = initState(job, meta);
 
                         Collection<GridHadoopTask> tasks = null;
 
@@ -391,7 +391,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                     if (reducers != null) {
                         if (state == null)
-                            state = initState(meta);
+                            state = initState(job, meta);
 
                         Collection<GridHadoopTask> tasks = null;
 
@@ -492,14 +492,32 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param meta Job metadata.
      * @return Local state.
      */
-    private JobLocalState initState(GridHadoopJobMetadata meta) {
+    private JobLocalState initState(GridHadoopJob job, GridHadoopJobMetadata meta) {
         GridHadoopJobId jobId = meta.jobId();
-
-        GridHadoopJob job = ctx.jobFactory().createJob(jobId, meta.jobInfo());
 
         JobLocalState state = new JobLocalState(job);
 
         return F.addIfAbsent(activeJobs, jobId, state);
+    }
+
+    /**
+     * Gets job instance by job ID.
+     *
+     * @param jobId Job ID.
+     * @return Job.
+     */
+    @Nullable public GridHadoopJob job(GridHadoopJobId jobId) throws GridException {
+        JobLocalState state = activeJobs.get(jobId);
+
+        if (state != null)
+            return state.job;
+
+        GridHadoopJobMetadata meta = jobMetaPrj.get(jobId);
+
+        if (meta == null)
+            return null;
+
+        return ctx.jobFactory().createJob(jobId, meta.jobInfo());
     }
 
     /**

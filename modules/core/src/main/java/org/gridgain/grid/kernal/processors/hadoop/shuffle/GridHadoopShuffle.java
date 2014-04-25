@@ -39,7 +39,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
         GridHadoopShuffleJob res = jobs.get(jobId);
 
         if (res == null) {
-            res = new GridHadoopShuffleJob(ctx.jobFactory().createJob(jobId, ctx.jobTracker().jobInfo(jobId)), mem,
+            res = new GridHadoopShuffleJob(ctx.jobTracker().job(jobId), mem,
                 ctx.jobTracker().plan(jobId).reducers());
 
             GridHadoopShuffleJob old = jobs.putIfAbsent(jobId, res);

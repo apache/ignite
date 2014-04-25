@@ -130,7 +130,7 @@ public class GridHadoopShuffleJob implements AutoCloseable {
 
         /** {@inheritDoc} */
         @Override public GridFuture<?> finish() {
-            return new GridFinishedFuture<>();
+            return new GridFinishedFutureEx<>();
         }
 
         /** {@inheritDoc} */
