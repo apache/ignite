@@ -99,37 +99,52 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         GridHadoopMapReducePlanner planner = kernal.context().hadoop().context().planner();
 
-        Configuration cfg = jobConfiguration();
+        for (int reducers = 1; reducers < 12; reducers++) {
 
-        GridHadoopDefaultJobInfo info = new GridHadoopDefaultJobInfo(cfg);
+            Configuration cfg = jobConfiguration(reducers);
 
-        GridHadoopJob job = new GridHadoopV2JobImpl(new GridHadoopJobId(UUID.randomUUID(), 1), info);
+            GridHadoopDefaultJobInfo info = new GridHadoopDefaultJobInfo(cfg);
 
-        Collection<GridNode> nodes = grid.nodes();
+            GridHadoopJob job = new GridHadoopV2JobImpl(new GridHadoopJobId(UUID.randomUUID(), 1), info);
 
-        GridHadoopMapReducePlan plan = planner.preparePlan(blocks, nodes, job, null);
+            Collection<GridNode> nodes = grid.nodes();
 
-        int totalBlocks = 0;
+            GridHadoopMapReducePlan plan = planner.preparePlan(blocks, nodes, job, null);
 
-        for (GridNode n : nodes) {
-            Collection<GridHadoopFileBlock> mappers = plan.mappers(n.id());
+            int totalBlocks = 0;
 
-            if (mappers != null)
-                totalBlocks += mappers.size();
-        }
+            for (GridNode n : nodes) {
+                Collection<GridHadoopFileBlock> mappers = plan.mappers(n.id());
 
-        assertEquals(aff.size(), totalBlocks);
+                if (mappers != null)
+                    totalBlocks += mappers.size();
+            }
 
-        // Verify plan.
-        for (GridGgfsBlockLocation loc : aff) {
-            UUID primary = F.first(loc.nodeIds());
+            assertEquals(aff.size(), totalBlocks);
 
-            Collection<GridHadoopFileBlock> mappers = plan.mappers(primary);
+            // Verify plan.
+            for (GridGgfsBlockLocation loc : aff) {
+                UUID primary = F.first(loc.nodeIds());
 
-            assertNotNull("Mappers is null for affinity [primary=" + primary + ", loc=" + loc + ']', mappers);
+                Collection<GridHadoopFileBlock> mappers = plan.mappers(primary);
 
-            assertTrue("Failed to find affinity block location in plan [loc=" + loc + ", mappers=" + mappers + ']',
-                hasLocation(loc, fileName, mappers));
+                assertNotNull("Mappers is null for affinity [primary=" + primary + ", loc=" + loc + ']', mappers);
+
+                assertTrue("Failed to find affinity block location in plan [loc=" + loc + ", mappers=" + mappers + ']',
+                    hasLocation(loc, fileName, mappers));
+            }
+
+            Collection<Integer> allRdc = new HashSet<>();
+
+            for (GridNode n : nodes) {
+                int[] rdc = plan.reducers(n.id());
+
+                for (int r : rdc)
+                    assertTrue("Duplicate reducer found [r=" + r + ", total=" + reducers + ']', allRdc.add(r));
+            }
+
+            for (int r = 0; r < job.reducers(); r++)
+                assertTrue("Missing reducer [r=" + r + ", total=" + reducers + ']', allRdc.contains(r));
         }
     }
 
@@ -161,14 +176,15 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     }
 
     /**
+     * @param reducers Number of reducers to set.
      * @return Map-reduce job configuration.
      */
-    private Configuration jobConfiguration() {
+    private Configuration jobConfiguration(int reducers) {
         Configuration cfg = new Configuration();
 
         cfg.setStrings("fs.ggfs.impl", GridGgfsHadoopFileSystem.class.getName());
 
-        cfg.setInt(JobContext.NUM_REDUCES, 12);
+        cfg.setInt(JobContext.NUM_REDUCES, reducers);
 
         return cfg;
     }
