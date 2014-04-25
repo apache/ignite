@@ -214,7 +214,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
         int avgCnt = job.reducers() / top.size();
         int lastCnt = job.reducers() - avgCnt * (top.size() - 1);
 
-        assert lastCnt > 0 : lastCnt;
+        assert lastCnt >= 0 : lastCnt;
 
         int i = 0;
 

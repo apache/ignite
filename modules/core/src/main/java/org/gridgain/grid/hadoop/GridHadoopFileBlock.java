@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -23,12 +24,15 @@ public class GridHadoopFileBlock implements Externalizable {
     protected String[] hosts;
 
     /** */
+    @GridToStringInclude
     protected URI file;
 
     /** */
+    @GridToStringInclude
     protected long start;
 
     /** */
+    @GridToStringInclude
     protected long len;
 
     /**

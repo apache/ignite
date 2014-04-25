@@ -18,11 +18,9 @@ import java.util.*;
 import static org.gridgain.grid.kernal.processors.hadoop.jobtracker.GridHadoopJobPhase.*;
 
 /**
- * TODO make externalizable.
- *
  * Hadoop job metadata. Internal object used for distributed job state tracking.
  */
-public class GridHadoopJobMetadata implements Serializable {
+public class GridHadoopJobMetadata implements Externalizable {
     /** Job ID. */
     private GridHadoopJobId jobId;
 
@@ -41,11 +39,24 @@ public class GridHadoopJobMetadata implements Serializable {
     /** Attempt map. */
     private Map<Object, Integer> attemptMap = new HashMap<>();
 
+    /** Task number map. */
+    private Map<Object, Integer> taskNumMap = new HashMap<>();
+
+    /** Next task number. */
+    private int nextTaskNum;
+
     /** Job phase. */
     private GridHadoopJobPhase phase = PHASE_MAP;
 
     /** Fail cause. */
     private Throwable failCause;
+
+    /**
+     * Empty constructor required by {@link Externalizable}.
+     */
+    public GridHadoopJobMetadata() {
+        // No-op.
+    }
 
     /**
      * @param jobId Job ID.
@@ -63,6 +74,7 @@ public class GridHadoopJobMetadata implements Serializable {
      */
     public GridHadoopJobMetadata(GridHadoopJobMetadata src) {
         // Make sure to preserve alphabetic order.
+        attemptMap = src.attemptMap;
         failCause = src.failCause;
         jobId = src.jobId;
         jobInfo = src.jobInfo;
@@ -70,6 +82,7 @@ public class GridHadoopJobMetadata implements Serializable {
         pendingBlocks = src.pendingBlocks;
         pendingReducers = src.pendingReducers;
         phase = src.phase;
+        taskNumMap = src.taskNumMap;
     }
 
     /**
@@ -134,6 +147,20 @@ public class GridHadoopJobMetadata implements Serializable {
      */
     public void mapReducePlan(GridHadoopMapReducePlan mrPlan) {
         this.mrPlan = mrPlan;
+
+        // Initialize task numbers.
+        for (UUID nodeId : mrPlan.mapperNodeIds()) {
+            for (GridHadoopFileBlock block : mrPlan.mappers(nodeId))
+                assignTaskNumber(block);
+
+            // Combiner task.
+            assignTaskNumber(nodeId);
+        }
+
+        for (UUID nodeId : mrPlan.reducerNodeIds()) {
+            for (int rdc : mrPlan.reducers(nodeId))
+                assignTaskNumber(rdc);
+        }
     }
 
     /**
@@ -175,6 +202,60 @@ public class GridHadoopJobMetadata implements Serializable {
             return 0;
 
         return res;
+    }
+
+    /**
+     * @param src Task source.
+     * @return Task number.
+     */
+    public int taskNumber(Object src) {
+        Integer res = taskNumMap.get(src);
+
+        if (res == null)
+            throw new IllegalArgumentException("Failed to find task number for source [src=" + src +
+                ", map=" + taskNumMap + ']');
+
+        return res;
+    }
+
+    /**
+     * Assigns next available task number to a task source if was not assigned yet.
+     *
+     * @param src Task source to assign number for.
+     */
+    private void assignTaskNumber(Object src) {
+        Integer num = taskNumMap.get(src);
+
+        if (num == null)
+            taskNumMap.put(src, nextTaskNum++);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(jobId);
+        out.writeObject(jobInfo);
+        out.writeObject(mrPlan);
+        out.writeObject(pendingBlocks);
+        out.writeObject(pendingReducers);
+        out.writeObject(attemptMap);
+        out.writeObject(taskNumMap);
+        out.writeInt(nextTaskNum);
+        out.writeObject(phase);
+        out.writeObject(failCause);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        jobId = (GridHadoopJobId)in.readObject();
+        jobInfo = (GridHadoopJobInfo)in.readObject();
+        mrPlan = (GridHadoopMapReducePlan)in.readObject();
+        pendingBlocks = (Collection<GridHadoopFileBlock>)in.readObject();
+        pendingReducers = (Collection<Integer>)in.readObject();
+        attemptMap = (Map<Object, Integer>)in.readObject();
+        taskNumMap = (Map<Object, Integer>)in.readObject();
+        nextTaskNum = in.readInt();
+        phase = (GridHadoopJobPhase)in.readObject();
+        failCause = (Throwable)in.readObject();
     }
 
     /** {@inheritDoc} */
