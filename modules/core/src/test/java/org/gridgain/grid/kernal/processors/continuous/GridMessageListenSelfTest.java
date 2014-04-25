@@ -298,8 +298,10 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNonNullTopicWithDeployment() throws Exception {
-        Class<?> topicCls = getExternalClassLoader().loadClass(TOPIC_CLS_NAME);
-        Class<?> lsnrCls = getExternalClassLoader().loadClass(LSNR_CLS_NAME);
+        ClassLoader ldr = getExternalClassLoader();
+
+        Class<?> topicCls = ldr.loadClass(TOPIC_CLS_NAME);
+        Class<?> lsnrCls = ldr.loadClass(LSNR_CLS_NAME);
 
         Object topic = topicCls.newInstance();
 

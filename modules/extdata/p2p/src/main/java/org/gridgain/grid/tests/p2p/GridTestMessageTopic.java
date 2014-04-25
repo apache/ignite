@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.tests.p2p;
 
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.io.*;
 
 /**
@@ -18,7 +20,6 @@ public class GridTestMessageTopic implements Serializable {
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         return this != o && getClass() == o.getClass();
-
     }
 
     /** {@inheritDoc} */
