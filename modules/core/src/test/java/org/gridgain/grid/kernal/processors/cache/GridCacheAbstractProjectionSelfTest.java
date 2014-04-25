@@ -809,6 +809,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         final GridCacheProjection<String, String> prj = cache.projection(String.class, String.class);
 
+
         final CountDownLatch latch = new CountDownLatch(1);
 
         prj.removeAll(new P1<GridCacheEntry<String, String>>() {
