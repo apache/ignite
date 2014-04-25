@@ -150,10 +150,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 }
 
                 case CACHE_GET_ALL: {
-                    final Set<Object> keys = req0.values().keySet();
+                    Set<Object> keys = req0.values().keySet();
 
                     if (F.isEmpty(keys))
                         throw new GridException(missingParameter("keys"));
+
+                    // HashSet wrapping for correct serialization
+                    keys = new HashSet<>(keys);
 
                     fut = executeCommand(req.destinationId(), cacheName, flags, key, new GetAllCommand(keys));
 
@@ -183,7 +186,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 }
 
                 case CACHE_PUT_ALL: {
-                    final Map<Object, Object> map = req0.values();
+                    Map<Object, Object> map = req0.values();
 
                     if (F.isEmpty(map))
                         throw new GridException(missingParameter("values"));
@@ -195,6 +198,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                         if (e.getValue() == null)
                             throw new GridException("Failing putAll operation (null values are not allowed).");
                     }
+
+                    // HashMap wrapping for correct serialization
+                    map = new HashMap<>(map);
 
                     fut = executeCommand(req.destinationId(), cacheName, flags, key, new PutAllCommand(map));
 
@@ -208,9 +214,12 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 }
 
                 case CACHE_REMOVE_ALL: {
-                    final Map<Object, Object> map = req0.values();
+                    Map<Object, Object> map = req0.values();
 
-                    fut = executeCommand(req.destinationId(), cacheName, flags, key, new RemoveAllCommand(map == null ? null : map.keySet()));
+                    // HashSet wrapping for correct serialization
+                    Set<Object> keys = map == null ? null : new HashSet<>(map.keySet());
+
+                    fut = executeCommand(req.destinationId(), cacheName, flags, key, new RemoveAllCommand(keys));
 
                     break;
                 }
