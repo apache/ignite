@@ -147,7 +147,7 @@ public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFu
      * @param e Error.
      */
     void onHeuristicException(GridCacheTxHeuristicException e) {
-        assert tx.isInvalidate();
+        assert tx.isSystemInvalidate();
 
         if (!tx.implicit())
             onError(e);

@@ -598,7 +598,8 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                     }
 
                                     if (op == CREATE || op == UPDATE) {
-                                        if (isInvalidate())
+                                        // Invalidate only for near nodes (backups cannot be invalidated).
+                                        if (isSystemInvalidate() || (isInvalidate() && cctx.isNear()))
                                             cached.innerRemove(this, eventNodeId(), nodeId, false, false, true, true,
                                                 topVer, txEntry.filters(), replicate ? DR_BACKUP : DR_NONE,
                                                 near() ? null : explicitVer);
