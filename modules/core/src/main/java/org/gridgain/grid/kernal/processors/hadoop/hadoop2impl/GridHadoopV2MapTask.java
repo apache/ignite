@@ -51,7 +51,8 @@ public class GridHadoopV2MapTask extends GridHadoopTask {
 
         GridHadoopFileBlock block = info().fileBlock();
 
-        FileSplit split = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), block.hosts());
+        //TODO: rework to use custom input split instead FileSplit
+        InputSplit split = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), block.hosts());
 
         try {
             RecordReader reader = inFormat.createRecordReader(split, hadoopCtx);

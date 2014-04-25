@@ -29,12 +29,35 @@ import java.util.*;
  */
 public class GridHadoopTasks2Test extends GridCommonAbstractTest {
     /**
+     * Creates some grid hadoop job. Override this method to create tests for any job implementation.
+     *
+     * @param inFile input file name for the job.
+     * @param outFile outpur file name for the job.
+     * @return Hadoop job.
+     * @throws IOException if fails.
+     */
+    protected GridHadoopJob getHadoopJob(String inFile, String outFile) throws IOException {
+        Job hadoopJob = GridGainWordCount2.getJob(inFile, outFile);
+
+        GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(hadoopJob.getConfiguration());
+
+        GridHadoopJobId jobId = new GridHadoopJobId(new UUID(0, 0), 0);
+
+        GridHadoopV2JobImpl gridHadoopJob = new GridHadoopV2JobImpl(jobId, jobInfo);
+
+        hadoopJob.setJobID(gridHadoopJob.hadoopJobContext().getJobID());
+
+        return gridHadoopJob;
+    }
+
+    /**
      * Tests map task execution.
      *
      * @throws Exception if fails.
      */
     public void testMapTask() throws Exception {
         File testInputFile = File.createTempFile(GridGainWordCount2.class.getSimpleName(), "-input");
+
         testInputFile.deleteOnExit();
 
         URI testInputFileURI = URI.create(testInputFile.getAbsolutePath());
@@ -44,33 +67,29 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
         testInputFileWriter.println("hello0 world0");
         testInputFileWriter.println("world1 hello1");
         testInputFileWriter.flush();
+
         GridHadoopFileBlock fileBlock1 = new GridHadoopFileBlock(null, testInputFileURI, 0, testInputFile.length() - 1);
 
         testInputFileWriter.println("hello2 world2");
         testInputFileWriter.println("world3 hello3");
         testInputFileWriter.close();
+
         GridHadoopFileBlock fileBlock2 =
                 new GridHadoopFileBlock(null, testInputFileURI, fileBlock1.length(), testInputFile.length() - fileBlock1.length());
 
-        Job hadoopJob = GridGainWordCount2.getJob(testInputFileURI.toString(), "/");
-        hadoopJob.setJobID(new JobID());
-
-        GridHadoopJobId jobId = new GridHadoopJobId(new UUID(0, 0), 0);
-        GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(hadoopJob.getConfiguration());
-
-        GridHadoopV2JobImpl gridJob = new GridHadoopV2JobImpl(jobId, jobInfo);
+        GridHadoopJob gridJob = getHadoopJob(testInputFileURI.toString(), "/");
 
         GridHadoopTestTaskContext ctx = new GridHadoopTestTaskContext(gridJob);
 
         ctx.mockOutput().clear();
-        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, jobId, 0, 0, fileBlock1);
+        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock1);
         GridHadoopTask task = gridJob.createTask(taskInfo);
         task.run(ctx);
 
         assertEquals("hello0,1; world0,1; world1,1; hello1,1", Joiner.on("; ").join(ctx.mockOutput()));
 
         ctx.mockOutput().clear();
-        taskInfo = new GridHadoopTaskInfo (null, GridHadoopTaskType.MAP, jobId, 0, 0, fileBlock2);
+        taskInfo = new GridHadoopTaskInfo (null, GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock2);
         task = gridJob.createTask(taskInfo);
         task.run(ctx);
 
@@ -100,14 +119,13 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
      * Generates input data for reduce-like operation into mock context input and runs the operation.
      *
      * @param gridJob to create reduce task from.
-     * @param jobId Job ID.
      * @param taskType Type of task - combine or reduce.
      * @param taskNum Number of task in job.
      * @param words Pairs of words and its counts.
      * @return Context with mock output.
      * @throws GridException if fails.
      */
-    private GridHadoopTestTaskContext runTaskWithInput(GridHadoopV2JobImpl gridJob, GridHadoopJobId jobId, GridHadoopTaskType taskType,
+    private GridHadoopTestTaskContext runTaskWithInput(GridHadoopJob gridJob, GridHadoopTaskType taskType,
                                                        int taskNum, String... words) throws GridException {
         GridHadoopTestTaskContext ctx = new GridHadoopTestTaskContext(gridJob);
 
@@ -121,7 +139,7 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
             ctx.mockInput().put(new Text(words[i]), valList);
         }
 
-        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, taskType, jobId, taskNum, 0, null);
+        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, taskType, gridJob.id(), taskNum, 0, null);
         GridHadoopTask task = gridJob.createTask(taskInfo);
         task.run(ctx);
         return ctx;
@@ -138,16 +156,10 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
         try {
             URI testOutputDirURI = URI.create(outputDir.toString());
 
-            Job hadoopJob = GridGainWordCount2.getJob("/", testOutputDirURI.toString());
-            hadoopJob.setJobID(new JobID());
+            GridHadoopJob gridJob = getHadoopJob("/", testOutputDirURI.toString());
 
-            GridHadoopJobId jobId = new GridHadoopJobId(new UUID(0, 0), 0);
-            GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(hadoopJob.getConfiguration());
-
-            GridHadoopV2JobImpl gridJob = new GridHadoopV2JobImpl(jobId, jobInfo);
-
-            runTaskWithInput(gridJob, jobId, GridHadoopTaskType.REDUCE, 0, "word1", "5", "word2", "10");
-            runTaskWithInput(gridJob, jobId, GridHadoopTaskType.REDUCE, 1, "word3", "7", "word4", "15");
+            runTaskWithInput(gridJob, GridHadoopTaskType.REDUCE, 0, "word1", "5", "word2", "10");
+            runTaskWithInput(gridJob, GridHadoopTaskType.REDUCE, 1, "word3", "7", "word4", "15");
 
             assertEquals(
                 "word1\t5\n" +
@@ -172,20 +184,14 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
      * @throws Exception if fails.
      */
     public void testCombinerTask() throws Exception {
-        Job hadoopJob = GridGainWordCount2.getJob("/", "/");
-        hadoopJob.setJobID(new JobID());
-
-        GridHadoopJobId jobId = new GridHadoopJobId(new UUID(0, 0), 0);
-        GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(hadoopJob.getConfiguration());
-
-        GridHadoopV2JobImpl gridJob = new GridHadoopV2JobImpl(jobId, jobInfo);
+        GridHadoopJob gridJob = getHadoopJob("/", "/");
 
         GridHadoopTestTaskContext ctx =
-                runTaskWithInput(gridJob, jobId, GridHadoopTaskType.COMBINE, 0, "word1", "5", "word2", "10");
+                runTaskWithInput(gridJob, GridHadoopTaskType.COMBINE, 0, "word1", "5", "word2", "10");
 
         assertEquals("word1,5; word2,10", Joiner.on("; ").join(ctx.mockOutput()));
 
-        ctx = runTaskWithInput(gridJob, jobId, GridHadoopTaskType.COMBINE, 1, "word3", "7", "word4", "15");
+        ctx = runTaskWithInput(gridJob, GridHadoopTaskType.COMBINE, 1, "word3", "7", "word4", "15");
 
         assertEquals("word3,7; word4,15", Joiner.on("; ").join(ctx.mockOutput()));
     }
@@ -194,16 +200,14 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
      * Runs chain of map-combine task on file block.
      *
      * @param fileBlock block of input file to be processed.
-     * @param jobId Job ID.
-     * @param gridJob Hadoop job inmplementation.
+     * @param gridJob Hadoop job implementation.
      * @return Context of combine task with mock output.
      * @throws GridException if fails.
      */
-    private GridHadoopTestTaskContext runMapCombineTask(GridHadoopFileBlock fileBlock, GridHadoopJobId jobId,
-                                                        GridHadoopV2JobImpl gridJob) throws GridException {
+    private GridHadoopTestTaskContext runMapCombineTask(GridHadoopFileBlock fileBlock, GridHadoopJob gridJob) throws GridException {
         GridHadoopTestTaskContext mapCtx = new GridHadoopTestTaskContext(gridJob);
 
-        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, jobId, 0, 0, fileBlock);
+        GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock);
         GridHadoopTask task = gridJob.createTask(taskInfo);
         task.run(mapCtx);
 
@@ -211,7 +215,7 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
         GridHadoopTestTaskContext combineCtx = new GridHadoopTestTaskContext(gridJob);
         combineCtx.makeTreeOfWritables(mapCtx.mockOutput());
 
-        taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.COMBINE, jobId, 0, 0, null);
+        taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.COMBINE, gridJob.id(), 0, 0, null);
         task = gridJob.createTask(taskInfo);
         task.run(combineCtx);
 
@@ -242,24 +246,18 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
             GridHadoopFileBlock fileBlock1 = new GridHadoopFileBlock(null, testInputFileURI, 0, l);
             GridHadoopFileBlock fileBlock2 = new GridHadoopFileBlock(null, testInputFileURI, l, testInputFile.length() - l);
 
-            Job hadoopJob = GridGainWordCount2.getJob(testInputFileURI.toString(), testOutputDirURI.toString());
-            hadoopJob.setJobID(new JobID());
+            GridHadoopJob gridJob = getHadoopJob(testInputFileURI.toString(), testOutputDirURI.toString());
 
-            GridHadoopJobId jobId = new GridHadoopJobId(new UUID(0, 0), 0);
-            GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(hadoopJob.getConfiguration());
+            GridHadoopTestTaskContext combine1Ctx = runMapCombineTask(fileBlock1, gridJob);
 
-            GridHadoopV2JobImpl gridJob = new GridHadoopV2JobImpl(jobId, jobInfo);
-
-            GridHadoopTestTaskContext combine1Ctx = runMapCombineTask(fileBlock1, jobId, gridJob);
-
-            GridHadoopTestTaskContext combine2Ctx = runMapCombineTask(fileBlock2, jobId, gridJob);
+            GridHadoopTestTaskContext combine2Ctx = runMapCombineTask(fileBlock2, gridJob);
 
             //Prepare input for combine
             GridHadoopTestTaskContext reduceCtx = new GridHadoopTestTaskContext(gridJob);
             reduceCtx.makeTreeOfWritables(combine1Ctx.mockOutput());
             reduceCtx.makeTreeOfWritables(combine2Ctx.mockOutput());
 
-            GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.REDUCE, jobId, 0, 0, null);
+            GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.REDUCE, gridJob.id(), 0, 0, null);
             GridHadoopTask task = gridJob.createTask(taskInfo);
             task.run(reduceCtx);
 
