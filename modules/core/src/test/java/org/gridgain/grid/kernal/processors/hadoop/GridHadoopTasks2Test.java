@@ -30,12 +30,10 @@ import java.util.*;
 public class GridHadoopTasks2Test extends GridCommonAbstractTest {
     /**
      * Tests map task execution.
-     * @throws GridException
-     * @throws ClassNotFoundException
-     * @throws IOException
-     * @throws InterruptedException
+     *
+     * @throws Exception if fails.
      */
-    public void testMapTask() throws GridException, ClassNotFoundException, IOException, InterruptedException {
+    public void testMapTask() throws Exception {
         File testInputFile = File.createTempFile(GridGainWordCount2.class.getSimpleName(), "-input");
         testInputFile.deleteOnExit();
 
@@ -81,9 +79,10 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
 
     /**
      * Reads whole text file into String.
+     *
      * @param fileName name of file to read.
      * @return String value.
-     * @throws IOException
+     * @throws IOException if could not read the file.
      */
     private String readFile(String fileName) throws IOException {
         StringBuilder sb = new StringBuilder();
@@ -99,13 +98,14 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
 
     /**
      * Generates input data for reduce-like operation into mock context input and runs the operation.
+     *
      * @param gridJob to create reduce task from.
      * @param jobId Job ID.
      * @param taskType Type of task - combine or reduce.
      * @param taskNum Number of task in job.
      * @param words Pairs of words and its counts.
      * @return Context with mock output.
-     * @throws GridException
+     * @throws GridException if fails.
      */
     private GridHadoopTestTaskContext runTaskWithInput(GridHadoopV2JobImpl gridJob, GridHadoopJobId jobId, GridHadoopTaskType taskType,
                                                        int taskNum, String... words) throws GridException {
@@ -129,10 +129,10 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
 
     /**
      * Tests reduce task execution.
-     * @throws IOException
-     * @throws GridException
+     *
+     * @throws Exception if fails.
      */
-    public void testReduceTask() throws IOException, GridException {
+    public void testReduceTask() throws Exception {
         Path outputDir = Files.createTempDirectory(GridGainWordCount2.class.getSimpleName() + "-output");
 
         try {
@@ -168,10 +168,10 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
 
     /**
      * Tests combine task execution.
-     * @throws IOException
-     * @throws GridException
+     *
+     * @throws Exception if fails.
      */
-    public void testCombinerTask() throws IOException, GridException {
+    public void testCombinerTask() throws Exception {
         Job hadoopJob = GridGainWordCount2.getJob("/", "/");
         hadoopJob.setJobID(new JobID());
 
@@ -192,11 +192,12 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
 
     /**
      * Runs chain of map-combine task on file block.
+     *
      * @param fileBlock block of input file to be processed.
      * @param jobId Job ID.
      * @param gridJob Hadoop job inmplementation.
      * @return Context of combine task with mock output.
-     * @throws GridException
+     * @throws GridException if fails.
      */
     private GridHadoopTestTaskContext runMapCombineTask(GridHadoopFileBlock fileBlock, GridHadoopJobId jobId,
                                                         GridHadoopV2JobImpl gridJob) throws GridException {
@@ -218,12 +219,12 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
     }
 
     /**
-     * Test all job in complex.
-     * Runs 2 chain of map-combine and send result into one reduce task.
-     * @throws IOException
-     * @throws GridException
+     * Tests all job in complex.
+     * Runs 2 chains of map-combine tasks and sends result into one reduce task.
+     *
+     * @throws Exception if fails.
      */
-    public void testAllTasks() throws IOException, GridException {
+    public void testAllTasks() throws Exception {
         Path outputDir = Files.createTempDirectory(GridGainWordCount2.class.getSimpleName() + "-output");
 
         try {
@@ -277,9 +278,10 @@ public class GridHadoopTasks2Test extends GridCommonAbstractTest {
 
     /**
      * Generates text file with words. In one line there are from 5 to 9 words.
+     *
      * @param file file that there is generation for.
      * @param wordCounts pair word and count, i.e "hello", 2, "world", 3, etc.
-     * @throws FileNotFoundException
+     * @throws FileNotFoundException if could not create the file.
      */
     private void generateTestFile(File file, Object... wordCounts) throws FileNotFoundException {
         List<String> wordsArr = new ArrayList<>();

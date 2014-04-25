@@ -19,11 +19,10 @@ import java.util.*;
  * Context for test purpose.
  */
 class GridHadoopTestTaskContext extends GridHadoopTaskContext {
-
     /**
-     * Simple key-vale pair
-     * @param <K> Key class
-     * @param <V> Value class
+     * Simple key-vale pair.
+     * @param <K> Key class.
+     * @param <V> Value class.
      */
     public static class Pair<K,V> {
         /** Key */
@@ -33,8 +32,8 @@ class GridHadoopTestTaskContext extends GridHadoopTaskContext {
         private V val;
 
         /**
-         * @param key key
-         * @param val value
+         * @param key key.
+         * @param val value.
          */
         Pair(K key, V val) {
             this.key = key;
@@ -42,18 +41,18 @@ class GridHadoopTestTaskContext extends GridHadoopTaskContext {
         }
 
         /**
-         * Getter of key
-         * @return key
+         * Getter of key.
+         * @return key.
          */
         K key() {
             return key;
         }
 
         /**
-         * Getter of val
-         * @return value
+         * Getter of value.
+         * @return value.
          */
-        V val() {
+        V value() {
             return val;
         }
 
@@ -61,19 +60,15 @@ class GridHadoopTestTaskContext extends GridHadoopTaskContext {
         @Override public String toString() {
             return key + "," + val;
         }
-
     }
 
-    /** mock output container- result data of task execution if it is not overridden */
+    /** Mock output container- result data of task execution if it is not overridden. */
     private List<Pair<String, Integer>> mockOutput = new ArrayList<>();
 
-    /** mock input container- input data if it is not overridden */
+    /** Mock input container- input data if it is not overridden. */
     private Map<Object,List> mockInput = new TreeMap<>();
 
-    /** */
-    private GridHadoopJob gridJob;
-
-    /** */
+    /** Context output implementation to write data into mockOutput. */
     private GridHadoopTaskOutput output = new GridHadoopTaskOutput() {
         /** {@inheritDoc} */
         @Override public void write(Object key, Object val) {
@@ -95,12 +90,12 @@ class GridHadoopTestTaskContext extends GridHadoopTaskContext {
         }
     };
 
-    /** */
+    /** Context input implementation to read data from mockInput. */
     private GridHadoopTaskInput input = new GridHadoopTaskInput() {
-        /** */
+        /** Iterator of keys and associated lists of values. */
         Iterator<Map.Entry<Object, List>> iterator;
 
-        /** */
+        /** Current key and associated value list. */
         Map.Entry<Object, List> currentEntry;
 
         /** {@inheritDoc} */
@@ -135,27 +130,30 @@ class GridHadoopTestTaskContext extends GridHadoopTaskContext {
     };
 
     /**
-     * Getter of mock output container - result of task if it is not overridden
-     * @return mock output
+     * Getter of mock output container - result of task if it is not overridden.
+     *
+     * @return mock output.
      */
     public List<Pair<String, Integer>> mockOutput() {
         return mockOutput;
     }
 
     /**
-     * Getter of mock input container- input data if it is not overridden
-     * @return mock output
+     * Getter of mock input container- input data if it is not overridden.
+     *
+     * @return mock output.
      */
     public Map<Object, List> mockInput() {
         return mockInput;
     }
 
     /**
-     * Generate one-key-multiple-values tree from array of key-value pairs, and wrap its into Writable objects
-     * The result is placed into mock input
-     * @param flatData list of key-value pair
+     * Generate one-key-multiple-values tree from array of key-value pairs, and wrap its into Writable objects.
+     * The result is placed into mock input.
+     *
+     * @param flatData list of key-value pair.
      */
-    public void makeTreeOfWritables(List<Pair<String, Integer>> flatData) {
+    public void makeTreeOfWritables(Iterable<Pair<String, Integer>> flatData) {
         Text key = new Text();
 
         for (GridHadoopTestTaskContext.Pair<String, Integer> pair : flatData) {
@@ -170,21 +168,15 @@ class GridHadoopTestTaskContext extends GridHadoopTaskContext {
             else {
                 valList = (ArrayList<IntWritable>) mockInput.get(key);
             }
-            valList.add(new IntWritable(pair.val()));
+            valList.add(new IntWritable(pair.value()));
         }
     }
 
     /**
-     * @param gridJob Grid Hadoop job
+     * @param gridJob Grid Hadoop job.
      */
     public GridHadoopTestTaskContext(GridHadoopJob gridJob) {
-        super(null, null, null, null);
-        this.gridJob = gridJob;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridHadoopJob job() {
-        return gridJob;
+        super(null, gridJob, null, null);
     }
 
     /** {@inheritDoc} */

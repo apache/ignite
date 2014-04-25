@@ -24,8 +24,8 @@ import java.io.*;
 public class GridGainWordCount2 {
     /**
      * Entry point to start job.
-     * @param args
-     * @throws Exception
+     * @param args command line parameters.
+     * @throws Exception if fails.
      */
     public static void main(String[] args) throws Exception {
         if (args.length != 2) {
@@ -43,7 +43,7 @@ public class GridGainWordCount2 {
      * @param input input file name.
      * @param output output directory name.
      * @return Job instance.
-     * @throws IOException
+     * @throws IOException if fails.
      */
     public static Job getJob(String input, String output) throws IOException {
         Job job = Job.getInstance(new Configuration());
