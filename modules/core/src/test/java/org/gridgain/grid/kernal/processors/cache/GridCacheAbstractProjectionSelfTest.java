@@ -807,7 +807,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         cache.putx("1", "test string");
         cache.putx("2", 0);
 
-        final GridCacheProjection<UUID, String> prj = cache.projection(String.class, String.class);
+        final GridCacheProjection<UUID, String> prj = cache.projection(UUID.class, String.class);
 
         final CountDownLatch latch = new CountDownLatch(1);
 
