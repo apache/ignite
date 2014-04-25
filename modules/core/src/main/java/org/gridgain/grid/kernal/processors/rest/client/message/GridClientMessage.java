@@ -58,14 +58,14 @@ public interface GridClientMessage extends Serializable {
     public void destinationId(UUID id);
 
     /**
-     * Sets client session token.
+     * Gets client session token.
      *
      * @return Session token.
      */
     public byte[] sessionToken();
 
     /**
-     * Gets client session token.
+     * Sets client session token.
      *
      * @param sesTok Session token.
      */

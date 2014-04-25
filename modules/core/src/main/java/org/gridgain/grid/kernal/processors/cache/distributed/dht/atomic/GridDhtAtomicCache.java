@@ -65,9 +65,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** Unsafe instance. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
-    /** Will be {@code true} if affinity has backups. */
-    private boolean hasBackups;
-
     /** Update reply closure. */
     private CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>> updateReplyClos;
 
@@ -144,6 +141,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
     @Override public void start() throws GridException {
+        resetMetrics();
+
         preldr = new GridDhtPreloader<>(ctx);
 
         preldr.start();
@@ -192,6 +191,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetMetrics() {
+        boolean isDrSndCache = cacheCfg.getDrSenderConfiguration() != null;
+        boolean isDrRcvCache = cacheCfg.getDrReceiverConfiguration() != null;
+
+        GridCacheMetricsAdapter m = new GridCacheMetricsAdapter(isDrSndCache, isDrRcvCache);
+
+        if (ctx.dht().near() != null)
+            m.delegate(ctx.dht().near().metrics0());
+
+        metrics = m;
     }
 
     /**
