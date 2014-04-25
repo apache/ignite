@@ -11,11 +11,14 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -30,7 +33,32 @@ public class GridHadoopShuffle extends GridHadoopComponent {
 
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws GridException {
-//        ctx.kernalContext().io().addMessageListener();
+        ctx.kernalContext().io().addMessageListener(GridTopic.TOPIC_HADOOP, new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg) {
+                if (msg instanceof GridHadoopShuffleMessage) {
+                    GridHadoopShuffleMessage m = ((GridHadoopShuffleMessage) msg);
+
+                    try {
+                        job(m.jobId()).onShuffleMessage(nodeId, m);
+                    }
+                    catch (GridException e) {
+                        U.error(log, "Message handling failed.", e);
+                    }
+                }
+                else if (msg instanceof GridHadoopShuffleAck) {
+                    GridHadoopShuffleAck m = (GridHadoopShuffleAck)msg;
+
+                    try {
+                        job(m.jobId()).onAckMessage(m);
+                    }
+                    catch (GridException e) {
+                        U.error(log, "Message handling failed.", e);
+                    }
+                }
+                else
+                    throw new IllegalStateException("Message unknown: " + msg);
+            }
+        });
     }
 
     /**
@@ -41,7 +69,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
         GridHadoopShuffleJob res = jobs.get(jobId);
 
         if (res == null) {
-            res = new GridHadoopShuffleJob(ctx.jobTracker().job(jobId), mem, ctx.jobTracker().plan(jobId));
+            res = new GridHadoopShuffleJob(ctx, log, ctx.jobTracker().job(jobId), mem, ctx.jobTracker().plan(jobId));
 
             GridHadoopShuffleJob old = jobs.putIfAbsent(jobId, res);
 

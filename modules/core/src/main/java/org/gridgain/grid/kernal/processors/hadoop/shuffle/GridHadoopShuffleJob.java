@@ -11,16 +11,23 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.thread.*;
+import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.worker.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopJobProperty.*;
+import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
 
 /**
  * Shuffle job.
@@ -39,22 +46,26 @@ public class GridHadoopShuffleJob implements AutoCloseable {
     private GridHadoopMultimap combinerMap;
 
     /** */
-    private GridHadoopMultimap[] outMaps;
-
-    /** */
     private UUID[] outNodes;
 
     /** */
     private GridHadoopShuffleMessage[] msgs;
 
     /** */
-    private final ConcurrentMap<Integer, GridHadoopMultimap> inMaps = new ConcurrentHashMap<>();
+    private final AtomicReferenceArray<GridHadoopMultimap> inMaps;
+
+    /** */
+    private final AtomicReferenceArray<GridHadoopMultimap> outMaps;
 
     /** */
     private final GridHadoopContext ctx;
 
     /** */
     private GridWorker sender;
+
+    /** */
+    private ConcurrentMap<Long, GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapter<Object>>> sentMsgs =
+        new ConcurrentHashMap<>();
 
     /**
      * @param job Job.
@@ -70,17 +81,19 @@ public class GridHadoopShuffleJob implements AutoCloseable {
 
         partitioner = job.partitioner();
 
-        outMaps = new GridHadoopMultimap[plan.reducers()];
+        int reducers = plan.reducers();
 
-        int outMapSize = get(job, PARTITION_HASHMAP_SIZE, 1024);
+        outMaps = new AtomicReferenceArray<>(reducers);
+        inMaps = new AtomicReferenceArray<>(reducers);
+        msgs = new GridHadoopShuffleMessage[reducers];
+        outNodes = new UUID[reducers];
 
-        for (int i = 0; i < outMaps.length; i++) {
+        for (int i = 0; i < reducers; i++) {
             UUID nodeId = plan.nodeForReducer(i);
 
             assert nodeId != null;
 
             outNodes[i] = nodeId;
-            outMaps[i] = new GridHadoopMultimap(job, mem, outMapSize);
         }
 
         if (job.hasCombiner())
@@ -91,7 +104,12 @@ public class GridHadoopShuffleJob implements AutoCloseable {
                 while (!isCancelled()) {
                     Thread.sleep(10);
 
-                    collectUpdatesAndSend();
+                    try {
+                        collectUpdatesAndSend();
+                    }
+                    catch (GridException e) {
+                        throw new IllegalStateException(e);
+                    }
                 }
             }
         };
@@ -99,34 +117,224 @@ public class GridHadoopShuffleJob implements AutoCloseable {
         new GridThread(sender).start();
     }
 
-    private void collectUpdatesAndSend() {
-        for (int i = 0; i < outMaps.length; i++) {
-            UUID nodeId = outNodes[i];
+    /**
+     * @param maps Maps.
+     * @param idx Index.
+     * @return Map.
+     */
+    private GridHadoopMultimap getOrCreateMap(AtomicReferenceArray<GridHadoopMultimap> maps, int idx) {
+        GridHadoopMultimap map = maps.get(idx);
 
-            outMaps[i].visit(false, new GridHadoopMultimap.Visitor() {
-                @Override public void onKey(long keyPtr, int keyLen) {
+        if (map == null) { // Create new map.
+            map = new GridHadoopMultimap(job, mem, get(job, PARTITION_HASHMAP_SIZE, 1024));
 
+            if (!maps.compareAndSet(idx, null, map)) {
+                map.close();
+
+                return maps.get(idx);
+            }
+        }
+
+        return map;
+    }
+
+    /**
+     * @param ack Acknowledge.
+     */
+    public void onAckMessage(GridHadoopShuffleAck ack) {
+        GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapter<Object>> t = sentMsgs.remove(ack.id());
+
+        if (t != null)
+            t.get2().onDone();
+    }
+
+    /**
+     * @param msg Message.
+     * @throws GridException Exception.
+     */
+    public void onShuffleMessage(UUID nodeId, GridHadoopShuffleMessage msg) throws GridException {
+        assert msg.buffer() != null;
+        assert msg.offset() > 0;
+
+        GridHadoopMultimap map = getOrCreateMap(inMaps, msg.reducer());
+
+        // Add data from message to the map.
+        try (GridHadoopMultimap.Adder adder = map.startAdding()) {
+            final GridUnsafeDataInput dataInput = new GridUnsafeDataInput();
+            final UnsafeValue val = new UnsafeValue(msg.buffer());
+
+            msg.visit(new GridHadoopShuffleMessage.Visitor() {
+                /** */
+                GridHadoopMultimap.Key key;
+
+                @Override public void onKey(byte[] buf, int off, int len) throws GridException {
+                    dataInput.bytes(buf, off, len);
+
+                    key = adder.addKey(dataInput, key);
                 }
 
-                @Override public void onValue(long valPtr, int valSize) {
+                @Override public void onValue(byte[] buf, int off, int len) {
+                    val.off = off;
+                    val.size = len;
 
+                    key.add(val);
                 }
             });
-
-
         }
+
+        // TODO respond earlier
+        doSend(nodeId, new GridHadoopShuffleAck(msg.id(), msg.jobId()));
+    }
+
+    private void doSend(UUID nodeId, Object msg) throws GridException {
+        GridNode node = ctx.kernalContext().discovery().node(nodeId);
+
+        ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0);
+    }
+
+    /**
+     * Unsafe value.
+     */
+    private class UnsafeValue implements GridHadoopMultimap.Value {
+        /** */
+        final byte[] buf;
+
+        /** */
+        int off;
+
+        /** */
+        int size;
+
+        /**
+         * @param buf Buffer.
+         */
+        private UnsafeValue(byte[] buf) {
+            this.buf = buf;
+        }
+
+        /** */
+        @Override public int size() {
+            return size;
+        }
+
+        /** */
+        @Override public void copyTo(long ptr) {
+            UNSAFE.copyMemory(buf, BYTE_ARR_OFF + off, null, ptr, size);
+        }
+    }
+
+    /**
+     * Sends map updates to remote reducers.
+     */
+    private void collectUpdatesAndSend() throws GridException {
+        for (int i = 0; i < outMaps.length(); i++) {
+            GridHadoopMultimap map = outMaps.get(i);
+
+            if (map == null || ctx.localNodeId().equals(outNodes[i]))
+                continue; // Skip empty map and local node.
+
+            if (msgs[i] == null)
+                msgs[i] = new GridHadoopShuffleMessage(4 * 1024);
+
+            final int idx = i;
+
+            map.visit(false, new GridHadoopMultimap.Visitor() {
+                /** */
+                long keyPtr;
+
+                /** */
+                int keySize;
+
+                /** */
+                boolean keyAdded;
+
+                /** {@inheritDoc} */
+                @Override public void onKey(long keyPtr, int keySize) {
+                    this.keyPtr = keyPtr;
+                    this.keySize = keySize;
+
+                    keyAdded = false;
+                }
+
+                private boolean tryAdd(long valPtr, int valSize) {
+                    GridHadoopShuffleMessage msg = msgs[idx];
+
+                    if (!keyAdded) { // Add key and value.
+                        int size = keySize + valSize;
+
+                        if (!msg.available(size, false))
+                            return false;
+
+                        msg.addKey(keyPtr, keySize);
+                        msg.addValue(valPtr, valSize);
+
+                        keyAdded = true;
+
+                        return true;
+                    }
+
+                    if (!msg.available(valSize, true))
+                        return false;
+
+                    msg.addValue(valPtr, valSize);
+
+                    return true;
+                }
+
+                /** {@inheritDoc} */
+                @Override public void onValue(long valPtr, int valSize) throws GridException {
+                    if (tryAdd(valPtr, valSize))
+                        return;
+
+                    send(idx, keySize + valSize);
+
+                    keyAdded = false;
+
+                    if (!tryAdd(valPtr, valSize))
+                        throw new IllegalStateException();
+                }
+            });
+        }
+    }
+
+    /**
+     * @param idx Index of message.
+     * @param newBufMinSize Min new buffer size.
+     */
+    private void send(int idx, int newBufMinSize) throws GridException {
+        GridHadoopShuffleMessage msg = msgs[idx];
+
+        sentMsgs.putIfAbsent(msg.id(), F.t(msg, new GridFutureAdapter<>(ctx.kernalContext())));
+
+        doSend(outNodes[idx], msg);
+
+        msgs[idx] = new GridHadoopShuffleMessage(Math.max(4 * 1024, newBufMinSize));
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws GridException {
-        for (GridHadoopMultimap out : outMaps) {
-            if (out != null)
-                out.close();
+        sender.cancel();
+
+        try {
+            sender.join();
+        }
+        catch (InterruptedException e) {
+            throw new GridInterruptedException(e);
         }
 
-        for (GridHadoopMultimap in : inMaps.values()) {
-            if (in != null)
-                in.close();
+        close(inMaps);
+        close(outMaps);
+    }
+
+    /**
+     * @param maps Maps.
+     */
+    private void close(AtomicReferenceArray<GridHadoopMultimap> maps) {
+        for (int i = 0; i < maps.length(); i++) {
+            GridHadoopMultimap map = maps.get(i);
+
+            if (map != null)
+                map.close();
         }
     }
 
@@ -134,7 +342,14 @@ public class GridHadoopShuffleJob implements AutoCloseable {
      * @return Future.
      */
     public GridFuture<?> flush() {
-        return null; // TODO
+        GridCompoundFuture fut = new GridCompoundFuture<>(ctx.kernalContext());
+
+        for (GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapter<Object>> t : sentMsgs.values())
+            fut.add(t.get2());
+
+        fut.markInitialized();
+
+        return fut;
     }
 
     /**
@@ -167,12 +382,17 @@ public class GridHadoopShuffleJob implements AutoCloseable {
                 return combinerMap.input();
 
             case REDUCE:
-                GridHadoopMultimap m = inMaps.get(taskInfo.taskNumber());
+                int reducer = taskInfo.taskNumber();
+
+                if (ctx.localNodeId().equals(outNodes[reducer]))
+                    return outMaps.get(reducer).input();
+
+                GridHadoopMultimap m = inMaps.get(reducer);
 
                 if (m != null)
                     return m.input();
 
-                return new GridHadoopTaskInput() {
+                return new GridHadoopTaskInput() { // Empty input.
                     @Override public boolean next() {
                         return false;
                     }
@@ -225,17 +445,7 @@ public class GridHadoopShuffleJob implements AutoCloseable {
      */
     private class PartitionedOutput implements GridHadoopTaskOutput {
         /** */
-        private GridHadoopMultimap.Adder[] adders;
-
-        /**
-         *
-         */
-        private PartitionedOutput() throws GridException {
-            adders = new GridHadoopMultimap.Adder[outMaps.length];
-
-            for (int i = 0; i < adders.length; i++)
-                adders[i] = outMaps[i].startAdding();
-        }
+        private GridHadoopMultimap.Adder[] adders = new GridHadoopMultimap.Adder[outMaps.length()];
 
         /** {@inheritDoc} */
         @Override public void write(Object key, Object val) throws GridException {
@@ -244,13 +454,20 @@ public class GridHadoopShuffleJob implements AutoCloseable {
             if (part < 0 || part >= adders.length)
                 throw new IllegalStateException("Invalid partition: " + part);
 
-            adders[part].add(key, val);
+            GridHadoopMultimap.Adder adder = adders[part];
+
+            if (adder == null)
+                adders[part] = adder = getOrCreateMap(outMaps, part).startAdding();
+
+            adder.add(key, val);
         }
 
         /** {@inheritDoc} */
         @Override public void close() {
-            for (GridHadoopMultimap.Adder adder : adders)
-                adder.close();
+            for (GridHadoopMultimap.Adder adder : adders) {
+                if (adder != null)
+                    adder.close();
+            }
         }
     }
 }

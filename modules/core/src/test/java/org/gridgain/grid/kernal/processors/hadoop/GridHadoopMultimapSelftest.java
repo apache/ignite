@@ -10,21 +10,21 @@
 package org.gridgain.grid.kernal.processors.hadoop;
 
 import com.google.common.collect.*;
-import org.apache.hadoop.conf.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
-import org.gridgain.grid.util.offheap.*;
+import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
+
+import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
 
 /**
  *
@@ -56,6 +56,7 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
         GridHadoopMultimap.Adder a = m.startAdding();
 
         Multimap<Integer, Integer> mm = ArrayListMultimap.create();
+        Multimap<Integer, Integer> vis = ArrayListMultimap.create();
 
         for (int i = 0, vals = 4 * mapSize + rnd.nextInt(25); i < vals; i++) {
             int key = rnd.nextInt(mapSize);
@@ -66,7 +67,7 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
 
             X.println("k: " + key + " v: " + val);
 
-            check(m, mm);
+            check(m, mm, vis);
         }
 
 //        a.add(new IntWritable(10), new IntWritable(2));
@@ -82,8 +83,9 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
         assertEquals(0, mem.allocatedSize());
     }
 
-    private void check(GridHadoopMultimap m, Multimap<Integer, Integer> mm) throws GridException {
-        GridHadoopTaskInput in = m.input();
+    private void check(GridHadoopMultimap m, Multimap<Integer, Integer> mm,
+        final Multimap<Integer, Integer> vis) throws GridException {
+        final GridHadoopTaskInput in = m.input();
 
         Map<Integer, Collection<Integer>> mmm = mm.asMap();
 
@@ -111,5 +113,48 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
         assertEquals(mmm.size(), keys);
 
         X.println("keys: " + keys);
+
+        // Check visitor.
+
+        final byte[] buf = new byte[4];
+
+        final GridUnsafeDataInput dataInput = new GridUnsafeDataInput();
+
+        m.visit(false, new GridHadoopMultimap.Visitor() {
+            /** */
+            IntWritable key = new IntWritable();
+
+            /** */
+            IntWritable val = new IntWritable();
+
+            @Override public void onKey(long keyPtr, int keySize) {
+                read(keyPtr, keySize, key);
+            }
+
+            @Override public void onValue(long valPtr, int valSize) {
+                read(valPtr, valSize, val);
+
+                vis.put(key.get(), val.get());
+            }
+
+            private void read(long ptr, int size, IntWritable w) {
+                assert size == 4 : size;
+
+                UNSAFE.copyMemory(null, ptr, buf, BYTE_ARR_OFF, size);
+
+                dataInput.bytes(buf, size);
+
+                try {
+                    w.readFields(dataInput);
+                }
+                catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+
+//        X.println("vis: " + vis);
+
+        assertEquals(mm, vis);
     }
 }

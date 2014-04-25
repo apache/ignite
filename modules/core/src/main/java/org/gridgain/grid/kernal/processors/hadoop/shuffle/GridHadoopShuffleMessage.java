@@ -9,38 +9,205 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
-import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.*;
+import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
-import java.nio.*;
+import java.io.*;
+import java.util.concurrent.atomic.*;
+
+import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
 
 /**
  * Shuffle message.
  */
-public class GridHadoopShuffleMessage extends GridTcpCommunicationMessageAdapter {
+public class GridHadoopShuffleMessage implements Externalizable {
+    /** */
+    private static final AtomicLong ids = new AtomicLong();
 
+    /** */
+    private static final byte MARKER_KEY = (byte)17;
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf) {
-        return false;
+    /** */
+    private static final byte MARKER_VALUE = (byte)31;
+
+    /** */
+    private long msgId;
+
+    /** */
+    private GridHadoopJobId jobId;
+
+    /** */
+    private short reducer;
+
+    /** */
+    private byte[] buf;
+
+    /** */
+    private int off;
+
+    /**
+     *
+     */
+    public GridHadoopShuffleMessage() {
+        // No-op.
+    }
+
+    /**
+     * @param size Size.
+     */
+    public GridHadoopShuffleMessage(int size) {
+        buf = new byte[size];
+
+        msgId = ids.incrementAndGet();
+    }
+
+    /**
+     * @return Message ID.
+     */
+    public long id() {
+        return msgId;
+    }
+
+    /**
+     * @return Job ID.
+     */
+    public GridHadoopJobId jobId() {
+        return jobId;
+    }
+
+    /**
+     * @return Reducer.
+     */
+    public int reducer() {
+        return reducer;
+    }
+
+    /**
+     * @return Buffer.
+     */
+    public byte[] buffer() {
+        return buf;
+    }
+
+    /**
+     * @return Offset.
+     */
+    public int offset() {
+        return off;
+    }
+
+    /**
+     * @param size Size.
+     * @param valOnly Only value wll be added.
+     * @return {@code true} If this message can fit additional data of this size
+     */
+    public boolean available(int size, boolean valOnly) {
+        size += valOnly ? 5 : 10;
+
+        if (off + size > buf.length) {
+            if (off == 0) { // Resize if requested size is too big.
+                buf = new byte[size];
+
+                return true;
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param keyPtr Key pointer.
+     * @param keySize Key size.
+     */
+    public void addKey(long keyPtr, int keySize) {
+        add(MARKER_KEY, keyPtr, keySize);
+    }
+
+    /**
+     * @param valPtr Value pointer.
+     * @param valSize Value size.
+     */
+    public void addValue(long valPtr, int valSize) {
+        add(MARKER_VALUE, valPtr, valSize);
+    }
+
+    /**
+     * @param marker Marker.
+     * @param ptr Pointer.
+     * @param size Size.
+     */
+    private void add(byte marker, long ptr, int size) {
+        buf[off++] = marker;
+
+        UNSAFE.putInt(BYTE_ARR_OFF + off, size);
+
+        off += 4;
+
+        UNSAFE.copyMemory(null, ptr, buf, BYTE_ARR_OFF + off, size);
+
+        off += size;
+    }
+
+    /**
+     * @param v Visitor.
+     */
+    public void visit(Visitor v) throws GridException {
+        for (int i = 0; i < off;) {
+            byte marker = buf[i++];
+
+            int size = UNSAFE.getInt(BYTE_ARR_OFF + i);
+
+            i += 4;
+
+            if (marker == MARKER_VALUE)
+                v.onValue(buf, i, size);
+            else if (marker == MARKER_KEY)
+                v.onKey(buf, i, size);
+            else
+                throw new IllegalStateException();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
-        return false;
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        jobId.writeExternal(out);
+        out.writeLong(msgId);
+        out.writeShort(reducer);
+        out.writeInt(off);
+        U.writeByteArray(out, buf);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
-        return 81;
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        jobId = new GridHadoopJobId();
+
+        jobId.readExternal(in);
+        msgId = in.readLong();
+        reducer = in.readShort();
+        off = in.readInt();
+        buf = U.readByteArray(in);
     }
 
-    /** {@inheritDoc} */
-    @Override public GridTcpCommunicationMessageAdapter clone() {
-        return null;
-    }
+    /**
+     * Visitor.
+     */
+    public static interface Visitor {
+        /**
+         * @param buf Buffer.
+         * @param off Offset.
+         * @param len Length.
+         */
+        public void onKey(byte[] buf, int off, int len) throws GridException;
 
-    /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
-
+        /**
+         * @param buf Buffer.
+         * @param off Offset.
+         * @param len Length.
+         */
+        public void onValue(byte[] buf, int off, int len) throws GridException;
     }
 }

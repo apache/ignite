@@ -14,7 +14,9 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -90,15 +92,13 @@ public class GridHadoopMultimap implements AutoCloseable {
      * @param ignoreLastVisited Flag indicating that visiting must be started from the beginning.
      * @param v Visitor.
      */
-    public void visit(boolean ignoreLastVisited, Visitor v) {
+    public void visit(boolean ignoreLastVisited, Visitor v) throws GridException {
         AtomicLongArray tbl0 = tbl;
 
         for (int i = 0; i < tbl0.length(); i++) {
             long meta = tbl0.get(i);
 
             while (meta != 0) {
-                v.onKey(key(meta), keySize(meta));
-
                 long valPtr = value(meta);
 
                 assert valPtr > 0 : valPtr;
@@ -106,6 +106,8 @@ public class GridHadoopMultimap implements AutoCloseable {
                 long lastVisited = ignoreLastVisited ? 0 : lastVisitedValue(meta);
 
                 if (valPtr != lastVisited) {
+                    v.onKey(key(meta), keySize(meta));
+
                     lastVisitedValue(meta, valPtr); // Set it to the first value in chain.
 
                     do {
@@ -377,6 +379,54 @@ public class GridHadoopMultimap implements AutoCloseable {
     }
 
     /**
+     * Key.
+     */
+    public class Key {
+        /** */
+        private long meta;
+
+        /** */
+        private Object tmpKey;
+
+        /**
+         * @param val Value.
+         */
+        public void add(Value val) {
+            int size = val.size();
+
+            long valPtr = mem.allocate(size + 12);
+
+            val.copyTo(valPtr + 12);
+
+            valueSize(valPtr, size);
+
+            long nextVal;
+
+            do {
+                nextVal = value(meta);
+
+                nextValue(valPtr, nextVal);
+            }
+            while(!casValue(meta, nextVal, valPtr));
+        }
+    }
+
+    /**
+     * Value.
+     */
+    public interface Value {
+        /**
+         * @return Size in bytes.
+         */
+        public int size();
+
+        /**
+         * @param ptr Pointer.
+         */
+        public void copyTo(long ptr);
+    }
+
+    /**
      * Adder.
      */
     public class Adder implements AutoCloseable {
@@ -395,7 +445,25 @@ public class GridHadoopMultimap implements AutoCloseable {
         public Adder() throws GridException {
             valSer = job.valueSerialization();
             keySer = job.keySerialization();
+
             keyReader = new Reader(keySer);
+        }
+
+        /**
+         * @param in Data input.
+         * @param reuse Reusable key.
+         * @return Key.
+         * @throws GridException If failed.
+         */
+        public Key addKey(DataInput in, @Nullable Key reuse) throws GridException {
+            if (reuse == null)
+                reuse = new Key();
+
+            reuse.tmpKey = keySer.read(in, reuse.tmpKey);
+
+            reuse.meta = doAdd(reuse.tmpKey, null);
+
+            return reuse;
         }
 
         /**
@@ -403,9 +471,20 @@ public class GridHadoopMultimap implements AutoCloseable {
          *
          * @param key Key.
          * @param val Value.
-         * @return New meta page pointer if new key was inserted or {@code 0} otherwise.
          */
-        public long add(Object key, Object val) throws GridException {
+        public void add(Object key, Object val) throws GridException {
+            A.notNull(val, "val");
+
+            doAdd(key, val);
+        }
+
+        /**
+         * @param key Key.
+         * @param val Value.
+         * @return Meta page pointer.
+         * @throws GridException If failed.
+         */
+        private long doAdd(Object key, @Nullable Object val) throws GridException {
             int keyHash = U.hash(key.hashCode());
 
             AtomicLongArray tbl0 = tbl;
@@ -414,19 +493,23 @@ public class GridHadoopMultimap implements AutoCloseable {
 
             long newMetaPtr = 0;
 
-            write(val, valSer);
+            long valPtr = 0;
 
-            int valSize = out.offset();
+            if (val != null) {
+                write(val, valSer);
 
-            long valPtr = copy(12);
+                int valSize = out.offset();
 
-            valueSize(valPtr, valSize);
+                valPtr = copy(12);
+
+                valueSize(valPtr, valSize);
+            }
 
             for (;;) {
-                long metaPtr0 = tbl0.get(addr); // Read root meta pointer at this address.
+                long metaPtrRoot = tbl0.get(addr); // Read root meta pointer at this address.
 
-                if (metaPtr0 != 0) {
-                    long metaPtr = metaPtr0;
+                if (metaPtrRoot != 0) {
+                    long metaPtr = metaPtrRoot;
 
                     do { // Scan all the collisions.
                         if (keyHash(metaPtr) == keyHash && key.equals(keyReader.readKey(metaPtr))) { // Found key.
@@ -435,18 +518,20 @@ public class GridHadoopMultimap implements AutoCloseable {
                                 mem.release(newMetaPtr, 40);
                             }
 
-                            long nextValPtr;
+                            if (valPtr != 0) { // Add value if it exists.
+                                long nextValPtr;
 
-                            // Values are linked to each other to a stack like structure.
-                            // Replace the last value in meta with ours and link it as next.
-                            do {
-                                nextValPtr = value(metaPtr);
+                                // Values are linked to each other to a stack like structure.
+                                // Replace the last value in meta with ours and link it as next.
+                                do {
+                                    nextValPtr = value(metaPtr);
 
-                                nextValue(valPtr, nextValPtr);
+                                    nextValue(valPtr, nextValPtr);
+                                }
+                                while (!casValue(metaPtr, nextValPtr, valPtr));
                             }
-                            while (!casValue(metaPtr, nextValPtr, valPtr));
 
-                            return 0; // New key was not added.
+                            return metaPtr;
                         }
 
                         metaPtr = collision(metaPtr);
@@ -461,14 +546,15 @@ public class GridHadoopMultimap implements AutoCloseable {
 
                     long keyPtr = copy(0);
 
-                    nextValue(valPtr, 0);
+                    if (valPtr != 0)
+                        nextValue(valPtr, 0);
 
-                    newMetaPtr = createMeta(keyHash, keySize, keyPtr, valPtr, metaPtr0, 0);
+                    newMetaPtr = createMeta(keyHash, keySize, keyPtr, valPtr, metaPtrRoot, 0);
                 }
                 else
-                    collision(newMetaPtr, metaPtr0);
+                    collision(newMetaPtr, metaPtrRoot);
 
-                if (tbl0.compareAndSet(addr, metaPtr0, newMetaPtr)) // Try to replace root meta pointer with new one.
+                if (tbl0.compareAndSet(addr, metaPtrRoot, newMetaPtr)) // Try to replace root meta pointer with new one.
                     return newMetaPtr;
             }
         }
@@ -508,14 +594,14 @@ public class GridHadoopMultimap implements AutoCloseable {
     public static interface Visitor {
         /**
          * @param keyPtr Key pointer.
-         * @param keyLen Key length.
+         * @param keySize Key size.
          */
-        public void onKey(long keyPtr, int keyLen);
+        public void onKey(long keyPtr, int keySize) throws GridException;
 
         /**
          * @param valPtr Value pointer.
-         * @param valSize Value length.
+         * @param valSize Value size.
          */
-        public void onValue(long valPtr, int valSize);
+        public void onValue(long valPtr, int valSize) throws GridException;
     }
 }
