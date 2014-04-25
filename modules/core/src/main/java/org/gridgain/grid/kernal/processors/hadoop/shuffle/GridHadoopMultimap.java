@@ -87,10 +87,10 @@ public class GridHadoopMultimap implements AutoCloseable {
     /**
      * Incrementally visits all the keys and values in the map.
      *
-     * @param v Visitor.
      * @param ignoreLastVisited Flag indicating that visiting must be started from the beginning.
+     * @param v Visitor.
      */
-    public void visit(Visitor v, boolean ignoreLastVisited) {
+    public void visit(boolean ignoreLastVisited, Visitor v) {
         AtomicLongArray tbl0 = tbl;
 
         for (int i = 0; i < tbl0.length(); i++) {

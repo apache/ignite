@@ -11,7 +11,11 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.logger.*;
+import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
+import org.gridgain.grid.util.worker.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -41,15 +45,26 @@ public class GridHadoopShuffleJob implements AutoCloseable {
     private UUID[] outNodes;
 
     /** */
+    private GridHadoopShuffleMessage[] msgs;
+
+    /** */
     private final ConcurrentMap<Integer, GridHadoopMultimap> inMaps = new ConcurrentHashMap<>();
+
+    /** */
+    private final GridHadoopContext ctx;
+
+    /** */
+    private GridWorker sender;
 
     /**
      * @param job Job.
      * @param mem Memory.
      * @param plan Plan.
      */
-    public GridHadoopShuffleJob(GridHadoopJob job, GridUnsafeMemory mem, GridHadoopMapReducePlan plan)
+    public GridHadoopShuffleJob(GridHadoopContext ctx, GridLogger log, GridHadoopJob job, GridUnsafeMemory mem,
+        GridHadoopMapReducePlan plan)
         throws GridException {
+        this.ctx = ctx;
         this.job = job;
         this.mem = mem;
 
@@ -70,6 +85,36 @@ public class GridHadoopShuffleJob implements AutoCloseable {
 
         if (job.hasCombiner())
             combinerMap = new GridHadoopMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 1024));
+
+        sender = new GridWorker(ctx.kernalContext().gridName(), "hadoop-shuffle-" + job.id(), log) {
+            @Override protected void body() throws InterruptedException, GridInterruptedException {
+                while (!isCancelled()) {
+                    Thread.sleep(10);
+
+                    collectUpdatesAndSend();
+                }
+            }
+        };
+
+        new GridThread(sender).start();
+    }
+
+    private void collectUpdatesAndSend() {
+        for (int i = 0; i < outMaps.length; i++) {
+            UUID nodeId = outNodes[i];
+
+            outMaps[i].visit(false, new GridHadoopMultimap.Visitor() {
+                @Override public void onKey(long keyPtr, int keyLen) {
+
+                }
+
+                @Override public void onValue(long valPtr, int valSize) {
+
+                }
+            });
+
+
+        }
     }
 
     /** {@inheritDoc} */
