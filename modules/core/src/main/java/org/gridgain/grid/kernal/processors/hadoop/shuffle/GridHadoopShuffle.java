@@ -12,7 +12,9 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.concurrent.*;
 
@@ -39,8 +41,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
         GridHadoopShuffleJob res = jobs.get(jobId);
 
         if (res == null) {
-            res = new GridHadoopShuffleJob(ctx.jobTracker().job(jobId), mem,
-                ctx.jobTracker().plan(jobId).reducers());
+            res = new GridHadoopShuffleJob(ctx.jobTracker().job(jobId), mem, ctx.jobTracker().plan(jobId));
 
             GridHadoopShuffleJob old = jobs.putIfAbsent(jobId, res);
 
@@ -76,15 +77,42 @@ public class GridHadoopShuffle extends GridHadoopComponent {
     public void jobFinished(GridHadoopJobId jobId) {
         GridHadoopShuffleJob job = jobs.remove(jobId);
 
-        if (job != null)
-            job.close();
+        if (job != null) {
+            try {
+                job.close();
+            }
+            catch (GridException e) {
+                U.error(log, "Failed to close job: " + jobId, e);
+            }
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
-        for (GridHadoopShuffleJob job : jobs.values())
-            job.close();
+        for (GridHadoopShuffleJob job : jobs.values()) {
+            try {
+                job.close();
+            }
+            catch (GridException e) {
+                U.error(log, "Failed to close job.", e);
+            }
+        }
 
         jobs.clear();
+    }
+
+    /**
+     * Flushes all the outputs for the given job to remote nodes.
+     *
+     * @param jobId Job ID.
+     * @return Future.
+     */
+    public GridFuture<?> flush(GridHadoopJobId jobId) {
+        GridHadoopShuffleJob job = jobs.get(jobId);
+
+        if (job == null)
+            return new GridFinishedFutureEx<>();
+
+        return job.flush();
     }
 }

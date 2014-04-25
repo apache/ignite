@@ -16,13 +16,17 @@ import org.gridgain.grid.*;
  */
 public interface GridHadoopTaskOutput extends AutoCloseable {
     /**
+     * Writes key and value to the output.
+     *
      * @param key Key.
      * @param val Value.
      */
     public void write(Object key, Object val) throws GridException;
 
     /**
-     * @return Finish future.
+     * Closes output.
+     *
+     * @throws GridException If failed.
      */
-    public GridFuture<?> finish();
+    @Override public void close() throws GridException;
 }

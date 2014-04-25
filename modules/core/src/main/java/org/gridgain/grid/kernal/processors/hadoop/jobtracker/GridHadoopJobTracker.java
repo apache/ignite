@@ -161,27 +161,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     }
 
     /**
-     * Gets job info for running Hadoop map-reduce task by job ID.
-     *
-     * @param jobId Job ID to get job info for.
-     * @return Job info or {@code null} if no information found for this job ID.
-     * @throws GridException If cache lookup for this job ID failed.
-     */
-    @Nullable public GridHadoopJobInfo jobInfo(GridHadoopJobId jobId) throws GridException {
-        JobLocalState state = activeJobs.get(jobId);
-
-        if (state != null)
-            return state.job.info();
-
-        GridHadoopJobMetadata meta = jobMetaPrj.get(jobId);
-
-        if (meta != null)
-            return meta.jobInfo();
-
-        return null;
-    }
-
-    /**
      * Gets job plan by job ID.
      *
      * @param jobId Job ID.
@@ -466,6 +445,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         state = activeJobs.remove(jobId);
 
                         assert state != null;
+
+                        ctx.shuffle().jobFinished(jobId);
                     }
 
                     GridFutureAdapter<GridHadoopJobId> finishFut = activeFinishFuts.remove(jobId);
@@ -598,14 +579,14 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
          * @param taskInfo Task info.
          * @param status Task status.
          */
-        private void onMapFinished(GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
-            GridHadoopJobId jobId = taskInfo.jobId();
+        private void onMapFinished(final GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
+            final GridHadoopJobId jobId = taskInfo.jobId();
 
             AttemptGroup group = attempts.get(taskInfo.attempt());
 
             assert group != null;
 
-            boolean combine = group.onMapFinished();
+            boolean lastMapperFinished = group.onMapFinished();
 
             if (status.state() == FAILED || status.state() == CRASHED) {
                 // Fail the whole job.
@@ -616,7 +597,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             if (job.hasCombiner()) {
                 // Create combiner.
-                if (combine) {
+                if (lastMapperFinished) {
                     GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), COMBINE, jobId,
                         0, taskInfo.attempt(), null);
 
@@ -626,7 +607,27 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 }
             }
             else {
-                jobMetaPrj.transformAsync(jobId, new RemoveMappersClosure(taskInfo.fileBlock()));
+                CIX1<GridFuture<?>> cacheUpdater = new CIX1<GridFuture<?>>() {
+                    @Override public void applyx(GridFuture<?> f) throws GridException {
+                        Throwable err = null;
+
+                        if (f != null) {
+                            try {
+                                f.get();
+                            }
+                            catch (GridException e) {
+                                err = e;
+                            }
+                        }
+
+                        jobMetaPrj.transformAsync(jobId, new RemoveMappersClosure(taskInfo.fileBlock(), err));
+                    }
+                };
+
+                if (lastMapperFinished)
+                    ctx.shuffle().flush(jobId).listenAsync(cacheUpdater);
+                else
+                    cacheUpdater.apply(null);
             }
         }
 
@@ -648,19 +649,35 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
          * @param status Task status.
          */
         private void onCombineFinished(GridHadoopTaskInfo taskInfo, GridHadoopTaskStatus status) {
-            AttemptGroup group = attempts.get(taskInfo.attempt());
+            final AttemptGroup group = attempts.get(taskInfo.attempt());
 
             assert group != null;
 
-            GridHadoopJobId jobId = taskInfo.jobId();
+            final GridHadoopJobId jobId = taskInfo.jobId();
 
             assert job.hasCombiner();
 
             if (status.state() == FAILED || status.state() == CRASHED)
                 // Fail the whole job.
                 jobMetaPrj.transformAsync(jobId, new RemoveMappersClosure(group.mappers(), status.failCause()));
-            else
-                jobMetaPrj.transformAsync(jobId, new RemoveMappersClosure(group.mappers()));
+            else {
+                ctx.shuffle().flush(jobId).listenAsync(new CIX1<GridFuture<?>>() {
+                    @Override public void applyx(GridFuture<?> f) throws GridException {
+                        Throwable err = null;
+
+                        if (f != null) {
+                            try {
+                                f.get();
+                            }
+                            catch (GridException e) {
+                                err = e;
+                            }
+                        }
+
+                        jobMetaPrj.transformAsync(jobId, new RemoveMappersClosure(group.mappers(), err));
+                    }
+                });
+            }
         }
 
         /**

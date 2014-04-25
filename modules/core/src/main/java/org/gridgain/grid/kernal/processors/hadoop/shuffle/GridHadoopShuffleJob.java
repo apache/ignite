@@ -11,8 +11,10 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
+
+import java.util.*;
+import java.util.concurrent.*;
 
 import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopJobProperty.*;
 
@@ -27,43 +29,67 @@ public class GridHadoopShuffleJob implements AutoCloseable {
     private final GridUnsafeMemory mem;
 
     /** */
-    private GridHadoopPartitioner partitioner;
+    private final GridHadoopPartitioner partitioner;
 
     /** */
     private GridHadoopMultimap combinerMap;
 
     /** */
-    private GridHadoopMultimap[] outs;
+    private GridHadoopMultimap[] outMaps;
 
     /** */
-    private GridHadoopMultimap[] ins;
+    private UUID[] outNodes;
+
+    /** */
+    private final ConcurrentMap<Integer, GridHadoopMultimap> inMaps = new ConcurrentHashMap<>();
 
     /**
      * @param job Job.
      * @param mem Memory.
-     * @param reducers Reducers.
+     * @param plan Plan.
      */
-    public GridHadoopShuffleJob(GridHadoopJob job, GridUnsafeMemory mem, int reducers) throws GridException {
+    public GridHadoopShuffleJob(GridHadoopJob job, GridUnsafeMemory mem, GridHadoopMapReducePlan plan)
+        throws GridException {
         this.job = job;
         this.mem = mem;
 
         partitioner = job.partitioner();
 
-        outs = new GridHadoopMultimap[reducers];
-        ins = new GridHadoopMultimap[reducers];
+        outMaps = new GridHadoopMultimap[plan.reducers()];
+
+        int outMapSize = get(job, PARTITION_HASHMAP_SIZE, 1024);
+
+        for (int i = 0; i < outMaps.length; i++) {
+            UUID nodeId = plan.nodeForReducer(i);
+
+            assert nodeId != null;
+
+            outNodes[i] = nodeId;
+            outMaps[i] = new GridHadoopMultimap(job, mem, outMapSize);
+        }
+
+        if (job.hasCombiner())
+            combinerMap = new GridHadoopMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 1024));
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
-        for (int i = 0; i < outs.length; i++) {
-            if (outs[i] != null)
-                outs[i].close();
+    @Override public void close() throws GridException {
+        for (GridHadoopMultimap out : outMaps) {
+            if (out != null)
+                out.close();
         }
 
-        for (int i = 0; i < ins.length; i++) {
-            if (ins[i] != null)
-                ins[i].close();
+        for (GridHadoopMultimap in : inMaps.values()) {
+            if (in != null)
+                in.close();
         }
+    }
+
+    /**
+     * @return Future.
+     */
+    public GridFuture<?> flush() {
+        return null; // TODO
     }
 
     /**
@@ -71,20 +97,14 @@ public class GridHadoopShuffleJob implements AutoCloseable {
      * @return Output.
      * @throws GridException If failed.
      */
-    public synchronized GridHadoopTaskOutput output(GridHadoopTaskInfo taskInfo) throws GridException {
+    public GridHadoopTaskOutput output(GridHadoopTaskInfo taskInfo) throws GridException {
         switch (taskInfo.type()) {
             case MAP:
-                if (job.hasCombiner()) {
-                    if (combinerMap == null)
-                        combinerMap = new GridHadoopMultimap(job, mem, get(job, COMBINER_HASHMAP_SIZE, 1024));
-
-                    return new MapOut(combinerMap.startAdding());
-                }
-
-                return null; // TODO
+                if (job.hasCombiner())
+                    return new MapOutput(combinerMap.startAdding());
 
             case COMBINE:
-                // TODO
+                return new PartitionedOutput();
 
             default:
                 throw new IllegalStateException("Illegal type: " + taskInfo.type());
@@ -102,7 +122,28 @@ public class GridHadoopShuffleJob implements AutoCloseable {
                 return combinerMap.input();
 
             case REDUCE:
-                // TODO
+                GridHadoopMultimap m = inMaps.get(taskInfo.taskNumber());
+
+                if (m != null)
+                    return m.input();
+
+                return new GridHadoopTaskInput() {
+                    @Override public boolean next() {
+                        return false;
+                    }
+
+                    @Override public Object key() {
+                        throw new IllegalStateException();
+                    }
+
+                    @Override public Iterator<?> values() {
+                        throw new IllegalStateException();
+                    }
+
+                    @Override public void close() throws Exception {
+                        // No-op.
+                    }
+                };
 
             default:
                 throw new IllegalStateException("Illegal type: " + taskInfo.type());
@@ -112,14 +153,14 @@ public class GridHadoopShuffleJob implements AutoCloseable {
     /**
      * Map output.
      */
-    private class MapOut implements GridHadoopTaskOutput {
+    private class MapOutput implements GridHadoopTaskOutput {
         /** */
         private final GridHadoopMultimap.Adder adder;
 
         /**
          * @param adder Map adder.
          */
-        private MapOut(GridHadoopMultimap.Adder adder) {
+        private MapOutput(GridHadoopMultimap.Adder adder) {
             this.adder = adder;
         }
 
@@ -129,13 +170,42 @@ public class GridHadoopShuffleJob implements AutoCloseable {
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> finish() {
-            return new GridFinishedFutureEx<>();
+        @Override public void close() throws GridException {
+            adder.close();
+        }
+    }
+
+    /**
+     * Partitioned output.
+     */
+    private class PartitionedOutput implements GridHadoopTaskOutput {
+        /** */
+        private GridHadoopMultimap.Adder[] adders;
+
+        /**
+         *
+         */
+        private PartitionedOutput() throws GridException {
+            adders = new GridHadoopMultimap.Adder[outMaps.length];
+
+            for (int i = 0; i < adders.length; i++)
+                adders[i] = outMaps[i].startAdding();
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws Exception {
-            adder.close();
+        @Override public void write(Object key, Object val) throws GridException {
+            int part = partitioner.partition(key, val, adders.length);
+
+            if (part < 0 || part >= adders.length)
+                throw new IllegalStateException("Invalid partition: " + part);
+
+            adders[part].add(key, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            for (GridHadoopMultimap.Adder adder : adders)
+                adder.close();
         }
     }
 }

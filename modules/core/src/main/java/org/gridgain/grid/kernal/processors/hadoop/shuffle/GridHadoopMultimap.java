@@ -55,8 +55,10 @@ public class GridHadoopMultimap implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        for (int i = 0; i < tbl.length(); i++)  {
-            long meta = tbl.get(i);
+        AtomicLongArray tbl0 = tbl;
+
+        for (int i = 0; i < tbl0.length(); i++)  {
+            long meta = tbl0.get(i);
 
             while (meta != 0) {
                 mem.release(key(meta), keySize(meta));
@@ -80,6 +82,45 @@ public class GridHadoopMultimap implements AutoCloseable {
                 mem.release(meta0, 40);
             }
         }
+    }
+
+    /**
+     * Incrementally visits all the keys and values in the map.
+     *
+     * @param v Visitor.
+     * @param ignoreLastVisited Flag indicating that visiting must be started from the beginning.
+     */
+    public void visit(Visitor v, boolean ignoreLastVisited) {
+        AtomicLongArray tbl0 = tbl;
+
+        for (int i = 0; i < tbl0.length(); i++) {
+            long meta = tbl0.get(i);
+
+            while (meta != 0) {
+                v.onKey(key(meta), keySize(meta));
+
+                long valPtr = value(meta);
+
+                assert valPtr > 0 : valPtr;
+
+                long lastVisited = ignoreLastVisited ? 0 : lastVisitedValue(meta);
+
+                if (valPtr != lastVisited) {
+                    lastVisitedValue(meta, valPtr); // Set it to the first value in chain.
+
+                    do {
+                        v.onValue(valPtr + 12, valueSize(valPtr));
+
+                        valPtr = nextValue(valPtr);
+                    }
+                    while (valPtr != lastVisited);
+                }
+
+                meta = collision(meta);
+            }
+        }
+
+
     }
 
     /**
@@ -153,10 +194,10 @@ public class GridHadoopMultimap implements AutoCloseable {
      * @param keyPtr Key pointer.
      * @param valPtr Value page pointer.
      * @param collisionPtr Pointer to meta with hash collision.
-     * @param lastSentVal Last sent value pointer.
+     * @param lastVisitedVal Last visited value pointer.
      * @return Created meta page pointer.
      */
-    private long createMeta(int keyHash, int keySize, long keyPtr, long valPtr, long collisionPtr, long lastSentVal) {
+    private long createMeta(int keyHash, int keySize, long keyPtr, long valPtr, long collisionPtr, long lastVisitedVal) {
         long meta = mem.allocate(40);
 
         mem.writeInt(meta, keyHash);
@@ -164,7 +205,7 @@ public class GridHadoopMultimap implements AutoCloseable {
         mem.writeLong(meta + 8, keyPtr);
         mem.writeLong(meta + 16, valPtr);
         mem.writeLong(meta + 24, collisionPtr);
-        mem.writeLong(meta + 32, lastSentVal);
+        mem.writeLong(meta + 32, lastVisitedVal);
 
         return meta;
     }
@@ -229,10 +270,18 @@ public class GridHadoopMultimap implements AutoCloseable {
 
     /**
      * @param meta Meta pointer.
-     * @return Last sent value pointer.
+     * @return Last visited value pointer.
      */
-    private long lastSentValue(long meta) {
+    private long lastVisitedValue(long meta) {
         return mem.readLong(meta + 32);
+    }
+
+    /**
+     * @param meta Meta pointer.
+     * @param valPtr Last visited value pointer.
+     */
+    private void lastVisitedValue(long meta, long valPtr) {
+        mem.writeLong(meta + 32, valPtr);
     }
 
     /**
@@ -451,5 +500,22 @@ public class GridHadoopMultimap implements AutoCloseable {
         @Override public void close()  {
             // TODO
         }
+    }
+
+    /**
+     * Key and values visitor.
+     */
+    public static interface Visitor {
+        /**
+         * @param keyPtr Key pointer.
+         * @param keyLen Key length.
+         */
+        public void onKey(long keyPtr, int keyLen);
+
+        /**
+         * @param valPtr Value pointer.
+         * @param valSize Value length.
+         */
+        public void onValue(long valPtr, int valSize);
     }
 }

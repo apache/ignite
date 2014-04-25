@@ -49,9 +49,23 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
         for (final GridHadoopTask task : tasks) {
             assert task != null;
 
-            GridChainedFuture<?> fut = new GridChainedFuture<>(ctx.kernalContext());
+            ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
+                @Override public GridFuture<?> call() throws Exception {
+                    GridHadoopTaskInfo info = task.info();
 
-            fut.listenAsync(new CIX1<GridFuture<?>>() {
+                    try (GridHadoopTaskOutput out = createOutput(info);
+                         GridHadoopTaskInput in = createInput(info)) {
+                        GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(ctx.kernalContext(), job, in, out);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Running task: " + task);
+
+                        task.run(taskCtx);
+
+                        return null;
+                    }
+                }
+            }, false).listenAsync(new CIX1<GridFuture<?>>() {
                 @Override public void applyx(GridFuture<?> f) throws GridException {
                     GridHadoopTaskState state = COMPLETED;
                     Throwable err = null;
@@ -67,25 +81,6 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
                     jobTracker.onTaskFinished(task.info(), new GridHadoopTaskStatus(state, err));
                 }
             });
-
-            ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
-                @Override
-                public GridFuture<?> call() throws Exception {
-                    GridHadoopTaskInfo info = task.info();
-
-                    try (GridHadoopTaskOutput out = createOutput(info);
-                         GridHadoopTaskInput in = createInput(info)) {
-                        GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(ctx.kernalContext(), job, in, out);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Running task: " + task);
-
-                        task.run(taskCtx);
-
-                        return out == null ? new GridFinishedFutureEx<>() : out.finish();
-                    }
-                }
-            }, false).listenAsync(fut);
         }
     }
 

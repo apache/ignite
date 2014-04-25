@@ -17,6 +17,8 @@ import java.nio.*;
  * Shuffle message.
  */
 public class GridHadoopShuffleMessage extends GridTcpCommunicationMessageAdapter {
+
+
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
         return false;
