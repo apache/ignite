@@ -25,6 +25,9 @@ import java.util.*;
  */
 public class GridGgfsBlockLocationImpl implements GridGgfsBlockLocation, Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private long start;
 
     /** */

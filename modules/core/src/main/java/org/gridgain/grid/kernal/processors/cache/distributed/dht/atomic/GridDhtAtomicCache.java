@@ -51,6 +51,9 @@ import static org.gridgain.grid.util.direct.GridTcpCommunicationMessageAdapter.*
  */
 @GridToStringExclude
 public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Deferred update response buffer size. */
     private static final int DEFERRED_UPDATE_RESPONSE_BUFFER_SIZE =
         Integer.getInteger(GG_ATOMIC_DEFERRED_ACK_BUFFER_SIZE, 256);
@@ -141,8 +144,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
     @Override public void start() throws GridException {
-        hasBackups = ctx.config().getBackups() > 0;
-
         preldr = new GridDhtPreloader<>(ctx);
 
         preldr.start();
@@ -203,13 +204,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public GridNearCacheAdapter<K, V> near() {
         return near;
-    }
-
-    /**
-     * @return Whether backups are configured for this cache.
-     */
-    public boolean hasBackups() {
-        return hasBackups;
     }
 
     /** {@inheritDoc} */
@@ -1585,6 +1579,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * Releases java-level locks on cache entries.
      *
      * @param locked Locked entries.
+     * @param topVer Topology version.
      */
     private void unlockEntries(Collection<GridDhtCacheEntry<K, V>> locked, long topVer) {
         // Process deleted entries before locks release.
@@ -1607,6 +1602,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         for (GridCacheMapEntry<K, V> entry : locked) {
             if (entry != null)
                 UNSAFE.monitorExit(entry);
+        }
+
+        // Try evict partitions.
+        for (GridDhtCacheEntry<K, V> entry : locked) {
+            if (entry != null)
+                entry.onUnlock();
         }
 
         if (skip != null && skip.size() == locked.size())
@@ -1720,7 +1721,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean force
     ) {
         if (!force) {
-            if (!hasBackups || updateReq.fastMap())
+            if (updateReq.fastMap())
                 return null;
 
             long topVer = updateReq.topologyVersion();
@@ -1821,10 +1822,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             try {
                 while (true) {
-                    GridCacheEntryEx<K, V> entry = null;
+                    GridDhtCacheEntry<K, V> entry = null;
 
                     try {
-                        entry = entryEx(key);
+                        entry = entryExx(key);
 
                         V val = req.value(i);
                         byte[] valBytes = req.valueBytes(i);
@@ -1854,6 +1855,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());
+
+                        entry.onUnlock();
 
                         break; // While.
                     }
@@ -2103,6 +2106,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      *
      */
     private static class FinishedLockFuture extends GridFinishedFutureEx<Boolean> implements GridDhtFuture<Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          * Empty constructor required by {@link Externalizable}.
          */
@@ -2127,6 +2133,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * Deferred response buffer.
      */
     private class DeferredResponseBuffer extends ReentrantReadWriteLock implements GridTimeoutObject {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Filled atomic flag. */
         private AtomicBoolean guard = new AtomicBoolean(false);
 

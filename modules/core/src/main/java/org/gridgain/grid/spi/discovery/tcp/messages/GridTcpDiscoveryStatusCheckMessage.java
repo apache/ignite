@@ -24,6 +24,9 @@ import java.util.*;
  * to ensure that the failed node is actually failed.
  */
 public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstractMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Status OK. */
     public static final int STATUS_OK = 1;
 

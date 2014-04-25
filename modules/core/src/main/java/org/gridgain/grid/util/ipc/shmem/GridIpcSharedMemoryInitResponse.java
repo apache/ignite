@@ -19,6 +19,9 @@ import java.io.*;
  */
 public class GridIpcSharedMemoryInitResponse implements Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private String inTokFileName;
 
     /** */

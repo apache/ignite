@@ -41,6 +41,9 @@ import static org.gridgain.grid.kernal.GridTopic.*;
  *
  */
 public class GridStreamerImpl implements GridStreamerEx, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Number of message send retries. */
     private static final int SEND_RETRY_COUNT = 3;
 
@@ -1151,6 +1154,9 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
      * Data loader peer-deploy aware.
      */
     private class StreamerPda implements GridPeerDeployAware {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Deploy class. */
         private Class<?> cls;
 
@@ -1347,6 +1353,9 @@ public class GridStreamerImpl implements GridStreamerEx, Externalizable {
      * Batch execution future.
      */
     private static class BatchExecutionFuture extends GridCompoundFuture<Object, Object> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private BatchWorker w;
 

@@ -36,6 +36,9 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
  */
 public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     public static final GridProductVersion SINCE_VER = GridProductVersion.fromString("6.0.3");
 
     /** */
@@ -334,9 +337,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean putx(K key,
-            V val,
-            @Nullable GridCacheEntryEx<K, V> cached,
-            long ttl,
+        V val,
+        @Nullable GridCacheEntryEx<K, V> cached,
+        long ttl,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) throws GridException {
         return dht.putx(key, val, cached, ttl, filter);
     }
@@ -351,9 +354,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridFuture<V> putAsync(K key,
-            V val,
-            @Nullable GridCacheEntryEx<K, V> entry,
-            long ttl,
+        V val,
+        @Nullable GridCacheEntryEx<K, V> entry,
+        long ttl,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         return dht.putAsync(key, val, entry, ttl, filter);
     }
@@ -361,9 +364,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridFuture<Boolean> putxAsync(K key,
-            V val,
-            @Nullable GridCacheEntryEx<K, V> entry,
-            long ttl,
+        V val,
+        @Nullable GridCacheEntryEx<K, V> entry,
+        long ttl,
         @Nullable GridPredicate<GridCacheEntry<K, V>>... filter) {
         return dht.putxAsync(key, val, entry, ttl, filter);
     }

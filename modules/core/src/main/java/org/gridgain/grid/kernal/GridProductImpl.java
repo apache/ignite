@@ -163,6 +163,7 @@ public class GridProductImpl implements GridProduct {
             case "mongo":
                 return MONGO;
 
+            case "dev":
             case "platform":
                 return PLATFORM;
         }

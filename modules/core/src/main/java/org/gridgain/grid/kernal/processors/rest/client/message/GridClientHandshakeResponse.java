@@ -16,6 +16,9 @@ import java.io.*;
  * code.
  */
 public class GridClientHandshakeResponse extends GridClientAbstractMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Response, indicating successful handshake. */
     public static final GridClientHandshakeResponse OK = new GridClientHandshakeResponse((byte)0);
 

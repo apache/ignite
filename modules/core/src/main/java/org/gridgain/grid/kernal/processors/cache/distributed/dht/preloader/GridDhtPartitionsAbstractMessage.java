@@ -21,6 +21,9 @@ import java.nio.*;
  * Request for single partition info.
  */
 abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Exchange ID. */
     private GridDhtPartitionExchangeId exchId;
 

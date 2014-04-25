@@ -24,6 +24,9 @@ import java.nio.*;
  * Reply for synchronous phase 2.
  */
 public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishResponse<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Heuristic error. */
     @GridDirectTransient
     private Throwable err;

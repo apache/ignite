@@ -26,6 +26,9 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
  * Future that fetches affinity assignment from remote cache nodes.
  */
 public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<List<GridNode>>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Nodes order comparator. */
     private static final Comparator<GridNode> CMP = new GridNodeOrderComparator();
 

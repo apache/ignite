@@ -18,6 +18,9 @@ import java.io.*;
  * Data center replication status.
  */
 public class GridDrStatus implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Status: not paused. */
     public static final GridDrStatus NOT_PAUSED = new GridDrStatus(null, null);
 

@@ -43,6 +43,7 @@ class GridUnsafeLru {
 
     /**
      * @param cnt Number of stripes.
+     * @param mem Unsafe memory.
      */
     GridUnsafeLru(short cnt, GridUnsafeMemory mem) {
         assert cnt > 0;
@@ -139,8 +140,11 @@ class GridUnsafeLru {
     /**
      * Adds entry address to LRU queue.
      *
+     * @param part Entry Entry partition.
      * @param addr Entry address.
+     * @param hash Entry hash code.
      * @return Queue node address.
+     * @throws GridOffHeapOutOfMemoryException If failed.
      */
     long offer(int part, long addr, int hash) throws GridOffHeapOutOfMemoryException {
         return lrus[addIdx.getAndIncrement() % cnt].offer(part, addr, hash);
@@ -167,6 +171,7 @@ class GridUnsafeLru {
 
     /**
      * Removes polling node from the queue.
+     * @param qAddr Queue node address.
      */
     void poll(long qAddr) {
         lrus[LruStripe.order(qAddr, mem)].poll(qAddr);
@@ -234,6 +239,7 @@ class GridUnsafeLru {
 
         /**
          * @param order Stripe order.
+         * @param mem Unsafe memory.
          */
         private LruStripe(short order, GridUnsafeMemory mem) {
             assert order >= 0;
@@ -293,10 +299,11 @@ class GridUnsafeLru {
         /**
          * Adds entry address to LRU queue.
          *
-         *
+         * @param part Entry partition.
          * @param addr Entry address.
          * @param hash Entry hash code.
          * @return Queue node address.
+         * @throws GridOffHeapOutOfMemoryException If failed.
          */
         long offer(int part, long addr, int hash) throws GridOffHeapOutOfMemoryException {
             lock.lock();

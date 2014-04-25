@@ -29,6 +29,9 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
  * Cache count down latch implementation.
  */
 public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatchEx, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Deserialization stash. */
     private static final ThreadLocal<GridBiTuple<GridCacheContext, String>> stash =
         new ThreadLocal<GridBiTuple<GridCacheContext, String>>() {
