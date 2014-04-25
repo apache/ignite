@@ -5210,26 +5210,19 @@ public abstract class GridUtils {
      *      elements in this array cannot be found. In such case - peer deployment
      *      is not possible.
      */
+    @SuppressWarnings({"ZeroLengthArrayAllocation"})
     public static GridPeerDeployAware peerDeployAware0(@Nullable Object... c) {
         if (!F.isEmpty(c)) {
             assert c != null;
 
             boolean notAllNulls = false;
 
-            Class nonJdkCls = null;
-
             for (Object obj : c) {
                 if (obj != null) {
-                    final Class<?> cls = obj instanceof GridPeerDeployAware ?
-                        ((GridPeerDeployAware)obj).deployClass() : obj.getClass();
-
-                    if (nonJdkCls == null && !isJdk(cls))
-                        nonJdkCls = cls;
-
                     notAllNulls = true;
 
-                    final ClassLoader ldr = obj instanceof GridPeerDeployAware ?
-                        ((GridPeerDeployAware)obj).classLoader() : U.detectClassLoader(obj.getClass());
+                    ClassLoader ldr = obj instanceof GridPeerDeployAware ?
+                        ((GridPeerDeployAware)obj).classLoader() : obj.getClass().getClassLoader();
 
                     boolean found = true;
 
@@ -5246,28 +5239,10 @@ public abstract class GridUtils {
 
                             break;
                         }
-                        else if (nonJdkCls == null) {
-                            Class<?> cls0 = obj2 instanceof GridPeerDeployAware ?
-                                ((GridPeerDeployAware)obj2).deployClass() : obj2.getClass();
-
-                            if (!isJdk(cls0))
-                                nonJdkCls = cls0;
-                        }
                     }
 
-                    if (found) {
-                        final Class nonJdkCls0 = nonJdkCls;
-
-                        return new GridPeerDeployAware() {
-                            @Override public Class<?> deployClass() {
-                                return nonJdkCls0 != null ? nonJdkCls0 : cls;
-                            }
-
-                            @Override public ClassLoader classLoader() {
-                                return ldr;
-                            }
-                        };
-                    }
+                    if (found)
+                        return peerDeployAware0(obj);
                 }
             }
 
@@ -5277,7 +5252,7 @@ public abstract class GridUtils {
                     "given collection. Peer deployment cannot be performed for such collection.");
         }
 
-        return peerDeployAware(new Object());
+        return peerDeployAware(new Object[0]);
     }
 
     /**
