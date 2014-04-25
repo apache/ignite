@@ -26,6 +26,7 @@ import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.messages.internal.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
+import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.task.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.lang.*;
@@ -302,6 +303,9 @@ public class GridTcpCommunicationMessageFactory {
 
             case 80:
                 return new GridDhtAffinityAssignmentResponse();
+
+            case 81:
+                return new GridHadoopShuffleMessage();
 
             default:
                 return createCustom(type);
