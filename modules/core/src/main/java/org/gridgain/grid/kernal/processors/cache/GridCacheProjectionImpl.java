@@ -372,7 +372,10 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
 
     /** {@inheritDoc} */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    @Override public <K1, V1> GridCacheProjection<K1, V1> projection(Class<?> keyType, Class<?> valType) {
+    @Override public <K1, V1> GridCacheProjection<K1, V1> projection(
+        Class<? super K1> keyType,
+        Class<? super V1> valType
+    ) {
         A.notNull(keyType, "keyType", valType, "valType");
 
         if (cctx.deploymentEnabled()) {
