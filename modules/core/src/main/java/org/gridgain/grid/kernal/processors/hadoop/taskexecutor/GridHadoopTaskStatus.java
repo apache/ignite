@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -40,5 +41,10 @@ public class GridHadoopTaskStatus {
      */
     @Nullable public Throwable failCause() {
         return failCause;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridHadoopTaskStatus.class, this);
     }
 }

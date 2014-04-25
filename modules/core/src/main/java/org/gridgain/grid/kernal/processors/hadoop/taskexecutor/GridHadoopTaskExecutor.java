@@ -59,7 +59,7 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
                     try {
                         f.get();
                     }
-                    catch (Exception e) {
+                    catch (Throwable e) {
                         state = FAILED;
                         err = e;
                     }
@@ -82,7 +82,7 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
 
                         task.run(taskCtx);
 
-                        return out.finish();
+                        return out == null ? new GridFinishedFutureEx<>() : out.finish();
                     }
                 }
             }, false).listenAsync(fut);

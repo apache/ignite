@@ -44,6 +44,9 @@ public class GridHadoopJobMetadata implements Serializable {
     /** Job phase. */
     private GridHadoopJobPhase phase = PHASE_MAP;
 
+    /** Fail cause. */
+    private Throwable failCause;
+
     /**
      * @param jobId Job ID.
      * @param jobInfo Job info.
@@ -60,6 +63,7 @@ public class GridHadoopJobMetadata implements Serializable {
      */
     public GridHadoopJobMetadata(GridHadoopJobMetadata src) {
         // Make sure to preserve alphabetic order.
+        failCause = src.failCause;
         jobId = src.jobId;
         jobInfo = src.jobInfo;
         mrPlan = src.mrPlan;
@@ -144,6 +148,20 @@ public class GridHadoopJobMetadata implements Serializable {
      */
     public GridHadoopJobInfo jobInfo() {
         return jobInfo;
+    }
+
+    /**
+     * @param failCause Fail cause.
+     */
+    public void failCause(Throwable failCause) {
+        this.failCause = failCause;
+    }
+
+    /**
+     * @return Fail cause.
+     */
+    public Throwable failCause() {
+        return failCause;
     }
 
     /**

@@ -14,6 +14,7 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
+import org.gridgain.grid.kernal.processors.hadoop.planner.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 import org.jetbrains.annotations.*;
@@ -104,6 +105,15 @@ public class GridHadoopProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Gets Hadoop context.
+     *
+     * @return Hadoop context.
+     */
+    public GridHadoopContext context() {
+        return hctx;
+    }
+
+    /**
      * @param cnt Number of IDs to generate.
      * @return Collection of generated IDs.
      */
@@ -138,7 +148,11 @@ public class GridHadoopProcessor extends GridProcessorAdapter {
      * @param cfg Hadoop configuration.
      */
     private void initializeDefaults(GridHadoopConfiguration cfg) {
+        if (cfg.getMapReducePlanner() == null)
+            cfg.setMapReducePlanner(new GridHadoopDefaultMapReducePlanner());
 
+        if (cfg.getJobFactory() == null)
+            cfg.setJobFactory(new GridHadoopDefaultJobFactory());
     }
 
     /**

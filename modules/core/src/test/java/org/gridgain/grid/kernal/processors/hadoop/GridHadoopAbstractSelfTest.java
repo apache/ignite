@@ -11,10 +11,14 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.testframework.junits.common.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.TRANSACTIONAL;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -24,19 +28,46 @@ public class GridHadoopAbstractSelfTest extends GridCommonAbstractTest {
     /** Hadoop system cache name. */
     protected static final String hadoopSysCacheName = "hadoop-system-cache";
 
+    /** GGFS name. */
+    protected static final String ggfsName = "ggfs";
+
+    /** GGFS name. */
+    protected static final String ggfsMetaCacheName = "meta";
+
+    /** GGFS name. */
+    protected static final String ggfsDataCacheName = "data";
+
+    /** GGFS block size. */
+    protected static final int ggfsBlockSize = 1024;
+
+    /** GGFS block group size. */
+    protected static final int ggfsBlockGroupSize = 8;
+
     @Override protected GridConfiguration getConfiguration(String gridName) throws Exception {
         GridConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setHadoopConfiguration(hadoopConfiguration(gridName));
 
+        GridTcpCommunicationSpi commSpi = new GridTcpCommunicationSpi();
+
+        commSpi.setSharedMemoryPort(-1);
+
+        cfg.setCommunicationSpi(commSpi);
+
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
 
-        cacheCfg.setCacheMode(GridCacheMode.REPLICATED);
+        cacheCfg.setCacheMode(REPLICATED);
         cacheCfg.setAtomicWriteOrderMode(PRIMARY);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setName(hadoopSysCacheName);
 
-        cfg.setCacheConfiguration(cacheCfg);
+        if (ggfsEnabled()) {
+            cfg.setCacheConfiguration(cacheCfg, metaCacheConfiguration(), dataCacheConfiguration());
+
+            cfg.setGgfsConfiguration(ggfsConfiguration());
+        }
+        else
+            cfg.setCacheConfiguration(cacheCfg);
 
         return cfg;
     }
@@ -51,6 +82,50 @@ public class GridHadoopAbstractSelfTest extends GridCommonAbstractTest {
         hadoopCfg.setSystemCacheName(hadoopSysCacheName);
 
         return hadoopCfg;
+    }
+
+    /**
+     * @return GGFS configuration.
+     */
+    public GridGgfsConfiguration ggfsConfiguration() {
+        GridGgfsConfiguration cfg = new GridGgfsConfiguration();
+
+        cfg.setName(ggfsName);
+        cfg.setBlockSize(ggfsBlockSize);
+        cfg.setDataCacheName(ggfsDataCacheName);
+        cfg.setMetaCacheName(ggfsMetaCacheName);
+        cfg.setFragmentizerEnabled(false);
+
+        return cfg;
+    }
+
+    /**
+     * @return GGFS meta cache configuration.
+     */
+    public GridCacheConfiguration metaCacheConfiguration() {
+        GridCacheConfiguration cfg = new GridCacheConfiguration();
+
+        cfg.setName(ggfsMetaCacheName);
+        cfg.setCacheMode(REPLICATED);
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        return cfg;
+    }
+
+    /**
+     * @return GGFS data cache configuration.
+     */
+    private GridCacheConfiguration dataCacheConfiguration() {
+        GridCacheConfiguration cfg = new GridCacheConfiguration();
+
+        cfg.setName(ggfsDataCacheName);
+        cfg.setCacheMode(PARTITIONED);
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(ggfsBlockGroupSize));
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        return cfg;
     }
 
     /**

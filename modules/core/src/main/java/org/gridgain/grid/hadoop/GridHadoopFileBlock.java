@@ -9,8 +9,11 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.io.*;
 import java.net.*;
+import java.util.*;
 
 /**
  * Hadoop file block.
@@ -143,5 +146,10 @@ public class GridHadoopFileBlock implements Externalizable {
         result = 31 * result + (int)(len ^ (len >>> 32));
 
         return result;
+    }
+
+    /** {@inheritDoc} */
+    public String toString() {
+        return S.toString(GridHadoopFileBlock.class, this, "hosts", Arrays.toString(hosts));
     }
 }

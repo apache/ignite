@@ -12,6 +12,6 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 /**
 * TODO write doc
 */
-enum GridHadoopTaskState {
+public enum GridHadoopTaskState {
     RUNNING, COMPLETED, FAILED, CANCELED, CRASHED
 }
