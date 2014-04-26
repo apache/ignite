@@ -18,7 +18,6 @@ public class GridTestMessageTopic implements Serializable {
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         return this != o && getClass() == o.getClass();
-
     }
 
     /** {@inheritDoc} */

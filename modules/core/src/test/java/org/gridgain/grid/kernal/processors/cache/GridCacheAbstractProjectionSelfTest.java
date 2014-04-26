@@ -807,13 +807,14 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         cache.putx("1", "test string");
         cache.putx("2", 0);
 
-        final GridCacheProjection<UUID, String> prj = cache.projection(String.class, String.class);
+        final GridCacheProjection<String, String> prj = cache.projection(String.class, String.class);
+
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        prj.removeAll(new P1<GridCacheEntry<UUID, String>>() {
+        prj.removeAll(new P1<GridCacheEntry<String, String>>() {
             @Override
-            public boolean apply(GridCacheEntry<UUID, String> e) {
+            public boolean apply(GridCacheEntry<String, String> e) {
                 info(" --> " + e.peek().getClass());
 
                 latch.countDown();

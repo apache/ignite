@@ -298,8 +298,10 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNonNullTopicWithDeployment() throws Exception {
-        Class<?> topicCls = getExternalClassLoader().loadClass(TOPIC_CLS_NAME);
-        Class<?> lsnrCls = getExternalClassLoader().loadClass(LSNR_CLS_NAME);
+        ClassLoader ldr = getExternalClassLoader();
+
+        Class<?> topicCls = ldr.loadClass(TOPIC_CLS_NAME);
+        Class<?> lsnrCls = ldr.loadClass(LSNR_CLS_NAME);
 
         Object topic = topicCls.newInstance();
 
@@ -387,9 +389,9 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
      */
     private boolean checkDeployedListeners(int expCnt) {
         for (Grid g : G.allGrids()) {
-            Integer cnt = g.<String, Integer>nodeLocalMap().get("msgCnt");
+            AtomicInteger cnt = g.<String, AtomicInteger>nodeLocalMap().get("msgCnt");
 
-            if (cnt == null || cnt != expCnt)
+            if (cnt == null || cnt.get() != expCnt)
                 return false;
         }
 
