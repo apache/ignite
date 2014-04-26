@@ -384,7 +384,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                                         ", rdc=" + rdc + ']');
 
                                 GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(locNodeId,
-                                    GridHadoopTaskType.REDUCE, jobId, meta.taskNumber(rdc), attempt, null);
+                                    GridHadoopTaskType.REDUCE, jobId, rdc, attempt, null);
 
                                 GridHadoopTask task = job.createTask(taskInfo);
 

@@ -161,8 +161,6 @@ public class GridHadoopShuffleMessage implements Externalizable {
      * @param v Visitor.
      */
     public void visit(Visitor v) throws GridException {
-        U.debug("____ Visiting...");
-
         for (int i = 0; i < off;) {
             byte marker = buf[i++];
 

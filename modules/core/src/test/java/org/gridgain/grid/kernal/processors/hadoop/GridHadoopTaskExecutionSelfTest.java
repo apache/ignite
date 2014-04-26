@@ -226,6 +226,11 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         public static final Text LINE_COUNT = new Text("lineCount");
 
         /** {@inheritDoc} */
+        @Override protected void setup(Context context) throws IOException, InterruptedException {
+            X.println("___ Mapper: " + context.getTaskAttemptID());
+        }
+
+        /** {@inheritDoc} */
         @Override protected void map(Object key, Text value, Context ctx) throws IOException, InterruptedException {
             if (ctx.getConfiguration().getBoolean(MAP_WRITE, false))
                 ctx.write(LINE_COUNT, ONE);
@@ -240,6 +245,11 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
     private static class TestCombiner extends Reducer<Text, IntWritable, Text, IntWritable> {
         /** */
         IntWritable sum = new IntWritable();
+
+        /** {@inheritDoc} */
+        @Override protected void setup(Context context) throws IOException, InterruptedException {
+            X.println("___ Combiner: ");
+        }
 
         /** {@inheritDoc} */
         @Override protected void reduce(Text key, Iterable<IntWritable> values, Context ctx) throws IOException,
@@ -263,6 +273,11 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
     private static class TestReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
         /** */
         IntWritable sum = new IntWritable();
+
+        /** {@inheritDoc} */
+        @Override protected void setup(Context context) throws IOException, InterruptedException {
+            X.println("___ Reducer: " + context.getTaskAttemptID());
+        }
 
         /** {@inheritDoc} */
         @Override protected void reduce(Text key, Iterable<IntWritable> values, Context ctx) throws IOException,

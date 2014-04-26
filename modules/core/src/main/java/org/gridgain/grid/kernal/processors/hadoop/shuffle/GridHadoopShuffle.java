@@ -37,8 +37,6 @@ public class GridHadoopShuffle extends GridHadoopComponent {
         ctx.kernalContext().io().addUserMessageListener(GridTopic.TOPIC_HADOOP,
             new GridBiPredicate<UUID, Object>() {
                 @Override public boolean apply(UUID nodeId, Object msg) {
-                    U.debug("___ Rcvd msg from: " + nodeId + " " + msg);
-
                     if (msg instanceof GridHadoopShuffleMessage) {
                         GridHadoopShuffleMessage m = ((GridHadoopShuffleMessage) msg);
 
@@ -62,7 +60,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
                     else
                         throw new IllegalStateException("Message unknown: " + msg);
 
-                    return false;
+                    return true;
                 }
             });
     }
