@@ -373,6 +373,19 @@ public class GridHadoopShuffleJob implements AutoCloseable {
 
         fut.markInitialized();
 
+        fut.listenAsync(new CI1<GridFuture>() {
+            @Override public void apply(GridFuture f) {
+                try {
+                    f.get();
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                U.debug("___Flush completed.");
+            }
+        });
+
         return fut;
     }
 
