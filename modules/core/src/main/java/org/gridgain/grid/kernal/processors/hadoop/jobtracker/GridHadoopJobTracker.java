@@ -27,7 +27,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.hadoop.GridHadoopTaskType.COMBINE;
+import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 import static org.gridgain.grid.kernal.processors.hadoop.jobtracker.GridHadoopJobPhase.*;
 import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
@@ -213,6 +213,17 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                 break;
             }
+
+            case COMMIT:
+            case ABORT: {
+                GridCacheEntry<GridHadoopJobId, GridHadoopJobMetadata> entry = jobMetaPrj.entry(taskInfo.jobId());
+
+                entry.timeToLive(10_000); // TODO configuration.
+
+                entry.transformAsync(new UpdatePhaseClosure(PHASE_COMPLETE));
+
+                break;
+            }
         }
     }
 
@@ -354,15 +365,16 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                 case PHASE_REDUCE: {
                     if (meta.pendingReducers().isEmpty() && ctx.jobUpdateLeader()) {
+                        GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), GridHadoopTaskType.COMMIT,
+                            jobId, 0, 0, null);
+
+                        GridHadoopTask cleanupTask = job.createTask(info);
+
                         if (log.isDebugEnabled())
-                            log.debug("Moving job to COMPLETE state [locNodeId=" + locNodeId +
-                                ", meta=" + meta + ']');
+                            log.debug("Submitting COMMIT task for execution [locNodeId=" + locNodeId +
+                                ", jobId=" + jobId + ']');
 
-                        GridCacheEntry<GridHadoopJobId, GridHadoopJobMetadata> jobEntry = jobMetaPrj.entry(jobId);
-
-                        jobEntry.timeToLive(10_000); // TODO configuration?
-
-                        jobEntry.transformAsync(new UpdatePhaseClosure(PHASE_COMPLETE));
+                        ctx.taskExecutor().run(job, Collections.singletonList(cleanupTask));
 
                         return;
                     }
@@ -413,30 +425,46 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         ctx.taskExecutor().cancelTasks(jobId);
                     }
 
-                    // Check if there are unscheduled mappers or reducers.
-                    Collection<GridHadoopFileBlock> cancelMappers = new ArrayList<>();
-                    Collection<Integer> cancelReducers = new ArrayList<>();
+                    if (meta.pendingBlocks().isEmpty() && meta.pendingReducers().isEmpty()) {
+                        GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), GridHadoopTaskType.ABORT,
+                            jobId, 0, 0, null);
 
-                    Collection<GridHadoopFileBlock> mappers = plan.mappers(ctx.localNodeId());
+                        GridHadoopTask cleanupTask = job.createTask(info);
 
-                    if (mappers != null) {
-                        for (GridHadoopFileBlock b : mappers) {
-                            if (state == null || !state.scheduledMapper(meta.attempt(b), b))
-                                cancelMappers.add(b);
-                        }
+                        if (log.isDebugEnabled())
+                            log.debug("Submitting ABORT task for execution [locNodeId=" + locNodeId +
+                                ", jobId=" + jobId + ']');
+
+                        ctx.taskExecutor().run(job, Collections.singletonList(cleanupTask));
+
+                        return;
                     }
+                    else {
+                        // Check if there are unscheduled mappers or reducers.
+                        Collection<GridHadoopFileBlock> cancelMappers = new ArrayList<>();
+                        Collection<Integer> cancelReducers = new ArrayList<>();
 
-                    int[] rdc = plan.reducers(ctx.localNodeId());
+                        Collection<GridHadoopFileBlock> mappers = plan.mappers(ctx.localNodeId());
 
-                    if (rdc != null) {
-                        for (int r : rdc) {
-                            if (state == null || !state.scheduledReducer(meta.attempt(r), r))
-                                cancelReducers.add(r);
+                        if (mappers != null) {
+                            for (GridHadoopFileBlock b : mappers) {
+                                if (state == null || !state.scheduledMapper(meta.attempt(b), b))
+                                    cancelMappers.add(b);
+                            }
                         }
-                    }
 
-                    if (!cancelMappers.isEmpty() || !cancelReducers.isEmpty())
-                        jobMetaPrj.transformAsync(jobId, new CancelJobClosure(cancelMappers, cancelReducers));
+                        int[] rdc = plan.reducers(ctx.localNodeId());
+
+                        if (rdc != null) {
+                            for (int r : rdc) {
+                                if (state == null || !state.scheduledReducer(meta.attempt(r), r))
+                                    cancelReducers.add(r);
+                            }
+                        }
+
+                        if (!cancelMappers.isEmpty() || !cancelReducers.isEmpty())
+                            jobMetaPrj.transformAsync(jobId, new CancelJobClosure(cancelMappers, cancelReducers));
+                    }
 
                     break;
                 }
@@ -845,9 +873,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 cp.phase(PHASE_CANCELLING);
 
             if (blocksCp.isEmpty()) {
-                if (cp.phase() == PHASE_CANCELLING)
-                    cp.phase(PHASE_COMPLETE);
-                else
+                if (cp.phase() != PHASE_CANCELLING)
                     cp.phase(PHASE_REDUCE);
             }
 
@@ -892,9 +918,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             if (err != null)
                 cp.phase(PHASE_CANCELLING);
-
-            if (cp.phase() == PHASE_CANCELLING && rdcCp.isEmpty())
-                cp.phase(PHASE_COMPLETE);
 
             return cp;
         }

@@ -97,6 +97,12 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
             case COMBINE:
                 return new GridHadoopV2CombineTask(taskInfo);
 
+            case COMMIT:
+                return new GridHadoopV2CleanupTask(taskInfo, false);
+
+            case ABORT:
+                return new GridHadoopV2CleanupTask(taskInfo, true);
+
             default:
                 return null;
         }
@@ -148,6 +154,10 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
 
             case REDUCE:
                 return TaskType.REDUCE;
+
+            case COMMIT:
+            case ABORT:
+                return TaskType.JOB_CLEANUP;
 
             default:
                 return null;

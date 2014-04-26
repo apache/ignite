@@ -110,7 +110,7 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
      * @return Task output.
      */
     private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo taskInfo) throws GridException {
-        if (taskInfo.type() == REDUCE)
+        if (taskInfo.type() == REDUCE || taskInfo.type() == COMMIT || taskInfo.type() == ABORT)
             return null;
 
         return ctx.shuffle().output(taskInfo);
@@ -123,7 +123,7 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
      * @return Task input.
      */
     private GridHadoopTaskInput createInput(GridHadoopTaskInfo taskInfo) throws GridException {
-        if (taskInfo.type() == MAP)
+        if (taskInfo.type() == MAP || taskInfo.type() == COMMIT || taskInfo.type() == ABORT)
             return null;
 
         return ctx.shuffle().input(taskInfo);

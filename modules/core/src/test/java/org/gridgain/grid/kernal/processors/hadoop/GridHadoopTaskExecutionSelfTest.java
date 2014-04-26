@@ -106,7 +106,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
      * @throws Exception If failed.
      */
     public void testMapCombineRun() throws Exception {
-        int lineCnt = 10000;
+        int lineCnt = 10001;
         String fileName = "/testFile";
 
         prepareFile(fileName, lineCnt);
@@ -137,12 +137,17 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         GridHadoopProcessor hadoop = ((GridKernal)grid(0)).context().hadoop();
 
-        GridFuture<?> fut = hadoop.submit(new GridHadoopJobId(UUID.randomUUID(), 2),
+        GridHadoopJobId jobId = new GridHadoopJobId(UUID.randomUUID(), 2);
+
+        GridFuture<?> fut = hadoop.submit(jobId,
             new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
         fut.get();
 
         assertEquals(lineCnt, totalLineCnt.get());
+
+        for (int g = 0; g < gridCount(); g++)
+            ((GridKernal)grid(g)).context().hadoop().status(jobId).finishFuture().get();
     }
 
     /**
