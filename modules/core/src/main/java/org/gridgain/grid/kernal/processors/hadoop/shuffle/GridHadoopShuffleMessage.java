@@ -39,7 +39,7 @@ public class GridHadoopShuffleMessage implements Externalizable {
     private GridHadoopJobId jobId;
 
     /** */
-    private short reducer;
+    private int reducer;
 
     /** */
     private byte[] buf;
@@ -57,8 +57,13 @@ public class GridHadoopShuffleMessage implements Externalizable {
     /**
      * @param size Size.
      */
-    public GridHadoopShuffleMessage(int size) {
+    public GridHadoopShuffleMessage(GridHadoopJobId jobId, int reducer, int size) {
+        assert jobId != null;
+
         buf = new byte[size];
+
+        this.jobId = jobId;
+        this.reducer = reducer;
 
         msgId = ids.incrementAndGet();
     }
@@ -156,10 +161,12 @@ public class GridHadoopShuffleMessage implements Externalizable {
      * @param v Visitor.
      */
     public void visit(Visitor v) throws GridException {
+        U.debug("____ Visiting...");
+
         for (int i = 0; i < off;) {
             byte marker = buf[i++];
 
-            int size = UNSAFE.getInt(BYTE_ARR_OFF + i);
+            int size = UNSAFE.getInt(buf, BYTE_ARR_OFF + i);
 
             i += 4;
 
@@ -178,7 +185,7 @@ public class GridHadoopShuffleMessage implements Externalizable {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         jobId.writeExternal(out);
         out.writeLong(msgId);
-        out.writeShort(reducer);
+        out.writeInt(reducer);
         out.writeInt(off);
         U.writeByteArray(out, buf);
     }
@@ -189,9 +196,14 @@ public class GridHadoopShuffleMessage implements Externalizable {
 
         jobId.readExternal(in);
         msgId = in.readLong();
-        reducer = in.readShort();
+        reducer = in.readInt();
         off = in.readInt();
         buf = U.readByteArray(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridHadoopShuffleMessage.class, this);
     }
 
     /**

@@ -20,6 +20,8 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 
 import java.io.*;
@@ -249,6 +251,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
             sum.set(lineCnt);
 
+            X.println("___ combo: " + lineCnt);
+
             ctx.write(key, sum);
         }
     }
@@ -265,12 +269,17 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
             InterruptedException {
             int lineCnt = 0;
 
-            for (IntWritable value : values)
+            for (IntWritable value : values) {
                 lineCnt += value.get();
+
+                X.println("___ rdcr: " + value.get());
+            }
 
             sum.set(lineCnt);
 
             ctx.write(key, sum);
+
+            X.println("___ RDCR SUM: " + lineCnt);
 
             totalLineCnt.addAndGet(lineCnt);
         }

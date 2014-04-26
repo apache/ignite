@@ -14,6 +14,7 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -33,32 +34,37 @@ public class GridHadoopShuffle extends GridHadoopComponent {
 
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws GridException {
-        ctx.kernalContext().io().addMessageListener(GridTopic.TOPIC_HADOOP, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
-                if (msg instanceof GridHadoopShuffleMessage) {
-                    GridHadoopShuffleMessage m = ((GridHadoopShuffleMessage) msg);
+        ctx.kernalContext().io().addUserMessageListener(GridTopic.TOPIC_HADOOP,
+            new GridBiPredicate<UUID, Object>() {
+                @Override public boolean apply(UUID nodeId, Object msg) {
+                    U.debug("___ Rcvd msg from: " + nodeId + " " + msg);
 
-                    try {
-                        job(m.jobId()).onShuffleMessage(nodeId, m);
-                    }
-                    catch (GridException e) {
-                        U.error(log, "Message handling failed.", e);
-                    }
-                }
-                else if (msg instanceof GridHadoopShuffleAck) {
-                    GridHadoopShuffleAck m = (GridHadoopShuffleAck)msg;
+                    if (msg instanceof GridHadoopShuffleMessage) {
+                        GridHadoopShuffleMessage m = ((GridHadoopShuffleMessage) msg);
 
-                    try {
-                        job(m.jobId()).onAckMessage(m);
+                        try {
+                            job(m.jobId()).onShuffleMessage(nodeId, m);
+                        }
+                        catch (GridException e) {
+                            U.error(log, "Message handling failed.", e);
+                        }
                     }
-                    catch (GridException e) {
-                        U.error(log, "Message handling failed.", e);
+                    else if (msg instanceof GridHadoopShuffleAck) {
+                        GridHadoopShuffleAck m = (GridHadoopShuffleAck)msg;
+
+                        try {
+                            job(m.jobId()).onAckMessage(m);
+                        }
+                        catch (GridException e) {
+                            U.error(log, "Message handling failed.", e);
+                        }
                     }
+                    else
+                        throw new IllegalStateException("Message unknown: " + msg);
+
+                    return false;
                 }
-                else
-                    throw new IllegalStateException("Message unknown: " + msg);
-            }
-        });
+            });
     }
 
     /**
@@ -141,6 +147,11 @@ public class GridHadoopShuffle extends GridHadoopComponent {
         if (job == null)
             return new GridFinishedFutureEx<>();
 
-        return job.flush();
+        try {
+            return job.flush();
+        }
+        catch (GridException e) {
+            return new GridFinishedFutureEx<>(e);
+        }
     }
 }

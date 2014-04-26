@@ -101,8 +101,6 @@ public class GridHadoopMultimap implements AutoCloseable {
             while (meta != 0) {
                 long valPtr = value(meta);
 
-                assert valPtr > 0 : valPtr;
-
                 long lastVisited = ignoreLastVisited ? 0 : lastVisitedValue(meta);
 
                 if (valPtr != lastVisited) {
@@ -121,8 +119,6 @@ public class GridHadoopMultimap implements AutoCloseable {
                 meta = collision(meta);
             }
         }
-
-
     }
 
     /**

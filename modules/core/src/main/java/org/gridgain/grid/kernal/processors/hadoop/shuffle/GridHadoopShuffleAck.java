@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
@@ -64,5 +65,10 @@ public class GridHadoopShuffleAck implements Externalizable {
 
         jobId.readExternal(in);
         msgId = in.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridHadoopShuffleAck.class, this);
     }
 }
