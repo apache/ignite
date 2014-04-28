@@ -96,7 +96,7 @@ public class GridProductImpl implements GridProduct {
 
         COMPOUND_VERSION = EDITION + "-" + (ENT ? "ent" : "os") + "-" + VER;
 
-        VER_BYTES = U.intToBytes(COMPOUND_VERSION.hashCode());
+        VER_BYTES = U.intToBytes(VER.hashCode());
     }
 
     /**
