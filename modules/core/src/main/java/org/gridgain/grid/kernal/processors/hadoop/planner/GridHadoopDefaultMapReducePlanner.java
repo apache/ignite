@@ -211,13 +211,15 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
     private Map<UUID, int[]> reducersMap(Collection<GridNode> top, GridHadoopJob job) {
         Map<UUID, int[]> rdcMap = new HashMap<>(top.size());
 
-        int avgCnt = (int)((float)job.reducers() / top.size() + 0.5f);
-        int firstCnt = job.reducers() - avgCnt * (top.size() - 1);
+        int avgCnt = job.reducers() / top.size();
+        int lastCnt = job.reducers() - avgCnt * (top.size() - 1);
+
+        assert lastCnt >= 0 : lastCnt;
 
         int i = 0;
 
         for (GridNode n : top) {
-            int cnt = i == 0 ? firstCnt : avgCnt;
+            int cnt = i == (top.size() - 1) ? lastCnt : avgCnt;
 
             int[] rdc = new int[cnt];
 
