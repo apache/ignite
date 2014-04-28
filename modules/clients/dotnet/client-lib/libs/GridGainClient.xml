@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <doc>
     <assembly>
-        <name>GridGainClient-6.0.1</name>
+        <name>GridGainClient</name>
     </assembly>
     <members>
         <member name="T:GridGain.Client.Balancer.IGridClientLoadBalancer">
