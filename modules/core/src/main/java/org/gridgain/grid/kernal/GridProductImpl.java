@@ -27,11 +27,17 @@ public class GridProductImpl implements GridProduct {
     /** GridGain version. */
     public static final String VER;
 
-    /** GridGain version as numeric array (generated from {@link #VER}). */
-    public static final byte[] VER_BYTES;
+    /** Enterprise release flag. */
+    public static final boolean ENT;
 
     /** Ant-augmented edition name. */
     public static final String EDITION = /*@java.edition*/"platform";
+
+    /** Compound GridGain version. */
+    public static final String COMPOUND_VERSION;
+
+    /** GridGain version as numeric array (generated from {@link #VER}). */
+    public static final byte[] VER_BYTES;
 
     /** Ant-augmented copyright blurb. */
     public static final String COPYRIGHT = /*@java.copyright*/"Copyright (C) 2014 GridGain Systems";
@@ -57,7 +63,19 @@ public class GridProductImpl implements GridProduct {
     /** Update notifier. */
     private final GridUpdateNotifier verChecker;
 
+    /** */
     static {
+        boolean ent0;
+
+        try {
+            ent0 = Class.forName("org.gridgain.grid.kernal.breadcrumb") != null;
+        }
+        catch (ClassNotFoundException ignored) {
+            ent0 = false;
+        }
+
+        ENT = ent0;
+
         final String propsFile = "gridgain.properties";
 
         Properties props = new Properties();
@@ -71,12 +89,14 @@ public class GridProductImpl implements GridProduct {
 
             if (F.isEmpty(VER))
                 throw new RuntimeException("Cannot read '" + prop + "' property from " + propsFile + " file.");
-
-            VER_BYTES = U.intToBytes(VER.hashCode());
         }
         catch (IOException e) {
             throw new RuntimeException("Cannot find '" + propsFile + "' file.", e);
         }
+
+        COMPOUND_VERSION = EDITION + "-" + (ENT ? "ent" : "os") + "-" + VER;
+
+        VER_BYTES = U.intToBytes(COMPOUND_VERSION.hashCode());
     }
 
     /**
