@@ -269,15 +269,10 @@ public class GridWebSessionFilter implements Filter {
 
             try {
                 if (txEnabled) {
-                    GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-                    try {
+                    try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         sesId = doFilter0(httpReq, res, chain);
 
                         tx.commit();
-                    }
-                    finally {
-                        tx.close();
                     }
                 }
                 else

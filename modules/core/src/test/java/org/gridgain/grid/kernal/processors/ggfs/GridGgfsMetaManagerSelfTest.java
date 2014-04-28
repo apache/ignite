@@ -98,6 +98,7 @@ public class GridGgfsMetaManagerSelfTest extends GridCommonAbstractTest {
             cacheCfg.setAffinityMapper(new GridGgfsGroupDataBlocksKeyMapper(128));
         }
 
+        cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 

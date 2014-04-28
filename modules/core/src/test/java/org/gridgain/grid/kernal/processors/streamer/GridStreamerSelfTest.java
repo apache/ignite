@@ -552,6 +552,54 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testRandomRouterWithEmptyTopology() throws Exception {
+        atLeastOnce = true;
+        router = new GridStreamerRandomEventRouter(new GridPredicate<GridNode>() {
+            @Override public boolean apply(GridNode node) {
+                return false;
+            }
+        });
+        p2pEnabled = false;
+
+        SC stage = new SC() {
+            @SuppressWarnings("unchecked")
+            @Override public Map<String, Collection<?>> applyx(String stageName, GridStreamerContext ctx,
+                Collection<Object> evts) {
+                return ctx.nextStageName() == null ? null : (Map)F.asMap(ctx.nextStageName(), F.asList(0));
+            }
+        };
+
+        stages = F.asList((GridStreamerStage)new GridTestStage("0", stage),new GridTestStage("1", stage),
+            new GridTestStage("2", stage));
+
+        startGrids(1);
+
+        try {
+            final int errCnt = 10;
+
+            final CountDownLatch errLatch = new CountDownLatch(errCnt);
+
+            grid(0).streamer(null).addStreamerFailureListener(new GridStreamerFailureListener() {
+                @Override public void onFailure(String stageName, Collection<Object> evts, Throwable err) {
+                    info("Expected failure: " + err.getMessage());
+
+                    errLatch.countDown();
+                }
+            });
+
+            for (int i = 0; i < errCnt; i++)
+                grid(0).streamer(null).addEvent(0);
+
+            assert errLatch.await(5, TimeUnit.SECONDS);
+        }
+        finally {
+            stopAllGrids(false);
+        }
+    }
+
+    /**
      * @param grid Grid to check metrics on.
      * @param stage Stage name.
      * @param evtCnt Event count.

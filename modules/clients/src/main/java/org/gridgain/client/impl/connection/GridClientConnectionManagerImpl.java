@@ -13,6 +13,8 @@ import io.netty.channel.nio.*;
 import org.gridgain.client.*;
 import org.gridgain.client.util.*;
 import io.netty.channel.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import javax.net.ssl.*;
 import java.io.*;
@@ -23,6 +25,7 @@ import java.util.logging.*;
 
 import static java.util.logging.Level.*;
 import static org.gridgain.client.impl.connection.GridClientConnectionCloseReason.*;
+import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
  * Cached connections manager.
@@ -175,11 +178,27 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
             return connection(routers);
 
         // Use node's connection, if node is available over rest.
-        Collection<InetSocketAddress> srvs = node.availableAddresses(cfg.getProtocol());
+        Collection<InetSocketAddress> endpoints = node.availableAddresses(cfg.getProtocol());
 
-        if (srvs.isEmpty()) {
+        if (endpoints.isEmpty()) {
             throw new GridServerUnreachableException("No available endpoints to connect " +
                 "(is rest enabled for this node?): " + node);
+        }
+
+        List<InetSocketAddress> srvs = new ArrayList<>(endpoints.size());
+
+        boolean sameHost = node.attributes().isEmpty() ||
+            F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));
+
+        if (sameHost) {
+            srvs.addAll(endpoints);
+
+            Collections.sort(srvs, GridClientUtils.inetSocketAddressesComparator(true));
+        }
+        else {
+            for (InetSocketAddress endpoint : endpoints)
+                if (!endpoint.getAddress().isLoopbackAddress())
+                    srvs.add(endpoint);
         }
 
         return connection(srvs);
