@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.apache.commons.io.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
@@ -133,6 +132,7 @@ public class GridGgfsProcessorSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        cacheCfg.setQueryIndexEnabled(false);
 
         return cacheCfg;
     }

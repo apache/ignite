@@ -497,7 +497,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
         }
         else {
-            // There are no remote nodes, ut we didn't throw topology exception.
+            // There are no remote nodes, but we didn't throw topology exception.
             assert locIncluded;
 
             // Do not wait anything from remote nodes.
@@ -696,6 +696,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
         catch (GridException e) {
             err = e;
+
+            U.error(log, "Failed to register handler [nodeId=" + nodeId + ", routineId=" + routineId + ']', e);
         }
 
         boolean registered = false;
@@ -711,6 +713,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
             catch (GridException e) {
                 err = e;
+
+                U.error(log, "Failed to register handler [nodeId=" + nodeId + ", routineId=" + routineId + ']', e);
             }
         }
 

@@ -42,6 +42,7 @@ public class GridCacheReplicatedEvictionSelfTest extends GridCacheAbstractSelfTe
         GridCacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
         ccfg.setEvictSynchronized(true);
+        ccfg.setEvictSynchronizedKeyBufferSize(1);
 
         return ccfg;
     }

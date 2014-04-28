@@ -137,7 +137,7 @@ public class CachePopularNumbersExample {
                         }
                     });
 
-                    for (int i = 0; i < cnt; i++) {
+                    for (int i = 0; i < cnt && i < results.size(); i++) {
                         List<?> res = results.get(i);
 
                         System.out.println(res.get(0) + "=" + res.get(1));

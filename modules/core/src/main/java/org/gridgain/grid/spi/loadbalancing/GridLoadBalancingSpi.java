@@ -63,7 +63,9 @@ import java.util.*;
  *        // more complicated assignments of jobs to nodes.
  *        for (int i = 0; i &lt; subgrid.size(); i++) {
  *            // Pick the next best balanced node for the job.
- *            jobs.put(new MyFooBarJob(arg), balancer.getBalancedNode())
+ *            GridComputeJob myJob = new MyFooBarJob(arg);
+ *
+ *            jobs.put(myJob, balancer.getBalancedNode(myJob, null));
  *        }
  *
  *        return jobs;
@@ -79,10 +81,10 @@ import java.util.*;
  *        for (GridComputeJobResult res : results) {
  *            // Append string representation of result
  *            // returned by every job.
- *            buf.append(res.getData().string());
+ *            buf.append(res.getData().toString());
  *        }
  *
- *        return buf.string();
+ *        return buf.toString();
  *    }
  * }
  * </pre>
