@@ -565,10 +565,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
 
     /** {@inheritDoc} */
     @Override public Collection<GridNode> nodes(int p, long topVer) {
-        // Don't remove redundant cast, or won't compile.
         Collection<GridNode> affNodes = cctx.affinity().nodes(p, topVer);
-
-        Collection<UUID> affIds = new HashSet<>(F.viewReadOnly(affNodes, F.node2id()));
 
         lock.readLock().lock();
 
@@ -576,25 +573,31 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
             assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer=" + topVer +
                 ", node2part=" + node2part + ']';
 
-            Collection<GridNode> nodes = new ArrayList<>(affNodes.size());
-
-            for (GridNode n : affNodes)
-                nodes.add(n);
+            Collection<GridNode> nodes = null;
 
             Collection<UUID> nodeIds = part2node.get(p);
 
             if (!F.isEmpty(nodeIds)) {
+                Collection<UUID> affIds = new HashSet<>(F.viewReadOnly(affNodes, F.node2id()));
+
                 for (UUID nodeId : nodeIds) {
                     if (!affIds.contains(nodeId) && hasState(p, nodeId, OWNING, MOVING, RENTING)) {
                         GridNode n = cctx.discovery().node(nodeId);
 
-                        if (n != null && (topVer < 0 || n.order() <= topVer))
+                        if (n != null && (topVer < 0 || n.order() <= topVer)) {
+                            if (nodes == null) {
+                                nodes = new ArrayList<>(affNodes.size() + 2);
+
+                                nodes.addAll(affNodes);
+                            }
+
                             nodes.add(n);
+                        }
                     }
                 }
             }
 
-            return nodes;
+            return nodes != null ? nodes : affNodes;
         }
         finally {
             lock.readLock().unlock();
