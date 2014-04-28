@@ -45,6 +45,11 @@ public class GridHadoopTasksV1Test extends GridHadoopTasksAllVersionsTest {
     }
 
     /** {@inheritDoc} */
+    @Override public String getOutputFileNamePrefix() {
+        return "part-";
+    }
+
+    /** {@inheritDoc} */
     @Override public void testMapTask() throws Exception {
         super.testMapTask();
     }
@@ -56,11 +61,11 @@ public class GridHadoopTasksV1Test extends GridHadoopTasksAllVersionsTest {
 
     /** {@inheritDoc} */
     @Override public void testCombinerTask() throws Exception {
-//        super.testCombinerTask();
+        super.testCombinerTask();
     }
 
     /** {@inheritDoc} */
     @Override public void testAllTasks() throws Exception {
-//        super.testAllTasks();
+        super.testAllTasks();
     }
 }

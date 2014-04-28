@@ -52,9 +52,12 @@ public class GridHadoopV2ReduceTask extends GridHadoopTask {
 
             hadoopCtx.writer(writer);
 
-            reducer.run(new WrappedReducer().getReducerContext(hadoopCtx));
-
-            writer.close(hadoopCtx);
+            try {
+                reducer.run(new WrappedReducer().getReducerContext(hadoopCtx));
+            }
+            finally {
+                writer.close(hadoopCtx);
+            }
 
             OutputCommitter outputCommitter = outputFormat.getOutputCommitter(hadoopCtx);
 

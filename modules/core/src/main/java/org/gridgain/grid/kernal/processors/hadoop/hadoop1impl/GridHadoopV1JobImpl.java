@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.hadoop1impl;
 
 import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapreduce.TaskType;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
@@ -46,8 +47,8 @@ public class GridHadoopV1JobImpl implements GridHadoopJob {
         return jobInfo;
     }
 
-    @Override
-    public Collection<GridHadoopFileBlock> input() throws GridException {
+    /** {@inheritDoc} */
+    @Override public Collection<GridHadoopFileBlock> input() throws GridException {
         return null;
     }
 
@@ -102,6 +103,35 @@ public class GridHadoopV1JobImpl implements GridHadoopJob {
     @Override public GridHadoopSerialization serialization() throws GridException {
         // TODO implement.
         return null;
+    }
+
+    /**
+     * @param type Task type.
+     * @return Hadoop task type.
+     */
+    private TaskType taskType(GridHadoopTaskType type) {
+        switch (type) {
+            case MAP:
+                return TaskType.MAP;
+
+            case REDUCE:
+                return TaskType.REDUCE;
+
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Creates Hadoop attempt ID.
+     *
+     * @param taskInfo Task info.
+     * @return Attempt ID.
+     */
+    public TaskAttemptID attemptId(GridHadoopTaskInfo taskInfo) {
+        TaskID tid = new TaskID(ctx.getJobID(), taskType(taskInfo.type()), taskInfo.taskNumber());
+
+        return new TaskAttemptID(tid, taskInfo.attempt());
     }
 
     /** Hadoop native job context. */

@@ -39,6 +39,11 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
     public abstract GridHadoopJob getHadoopJob(String inFile, String outFile) throws IOException;
 
     /**
+     * @return prefix of reducer output file name. It's "part-" for v1 and "part-r-" for v2 API
+     */
+    public abstract String getOutputFileNamePrefix();
+
+    /**
      * Tests map task execution.
      *
      * @throws Exception if fails.
@@ -152,13 +157,13 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
             assertEquals(
                 "word1\t5\n" +
                 "word2\t10\n",
-                readFile(outputDir + "/part-r-00000")
+                readFile(outputDir + "/" + getOutputFileNamePrefix() + "00000")
             );
 
             assertEquals(
                 "word3\t7\n" +
                 "word4\t15\n",
-                readFile(outputDir + "/part-r-00001")
+                readFile(outputDir + "/" + getOutputFileNamePrefix() + "00001")
             );
 
         } finally {
@@ -254,7 +259,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
                 "green\t150\n" +
                 "red\t100\n" +
                 "yellow\t70\n",
-                readFile(outputDir + "/part-r-00000")
+                readFile(outputDir + "/" + getOutputFileNamePrefix() + "00000")
             );
         }
         finally {
@@ -305,6 +310,4 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
 
         testInputFileWriter.close();
     }
-
-
 }

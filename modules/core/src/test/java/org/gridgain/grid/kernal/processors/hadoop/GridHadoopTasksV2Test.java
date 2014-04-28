@@ -44,6 +44,11 @@ public class GridHadoopTasksV2Test extends GridHadoopTasksAllVersionsTest {
     }
 
     /** {@inheritDoc} */
+    @Override public String getOutputFileNamePrefix() {
+        return "part-r-";
+    }
+
+    /** {@inheritDoc} */
     @Override public void testMapTask() throws Exception {
         super.testMapTask();
     }

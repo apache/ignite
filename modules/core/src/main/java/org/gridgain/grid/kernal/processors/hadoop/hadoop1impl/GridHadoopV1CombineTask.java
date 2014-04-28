@@ -9,20 +9,53 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.hadoop1impl;
 
+import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
+import java.io.IOException;
 
 /**
  * Hadoop combine task implementation for v1 API.
  */
 public class GridHadoopV1CombineTask extends GridHadoopTask {
-    /** {@inheritDoc} */
+    /**
+     * @param taskInfo Task info.
+     */
     public GridHadoopV1CombineTask(GridHadoopTaskInfo taskInfo) {
         super(taskInfo);
     }
 
     /** {@inheritDoc} */
-    @Override public void run(GridHadoopTaskContext ctx) throws GridInterruptedException, GridException {
+    @Override public void run(final GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
+        GridHadoopV1JobImpl jobImpl = (GridHadoopV1JobImpl)taskCtx.job();
 
+        JobContext jobCtx = jobImpl.hadoopJobContext();
+
+        Reducer combiner = U.newInstance(jobCtx.getJobConf().getCombinerClass());
+
+        combiner.configure(jobCtx.getJobConf());
+
+        GridHadoopTaskInput input = taskCtx.input();
+
+        Reporter reporter = Reporter.NULL;
+
+        OutputCollector collector = new OutputCollector() {
+            @Override public void collect(Object key, Object val) {
+                taskCtx.output().write(key, val);
+            }
+        };
+
+        try {
+            while (input.next()) {
+                combiner.reduce(input.key(), input.values(), collector, reporter);
+            }
+
+            combiner.close();
+        }
+        catch (IOException e) {
+            throw new GridException(e);
+        }
     }
 }
