@@ -26,7 +26,7 @@ import javax.servlet.http.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.processors.rest.GridRestResponse.STATUS_FAILED;
+import static org.gridgain.grid.kernal.processors.rest.GridRestResponse.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 
 /**
