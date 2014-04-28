@@ -11,7 +11,6 @@ package org.gridgain.client;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.passcode.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
