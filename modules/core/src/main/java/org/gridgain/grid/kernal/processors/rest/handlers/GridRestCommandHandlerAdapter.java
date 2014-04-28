@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.rest.handlers;
 
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.logger.*;
 
 /**
