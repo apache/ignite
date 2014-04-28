@@ -92,9 +92,7 @@ public final class GridClassLoaderCache {
             }
         }
 
-        ctxClsLdr = clsLdr;
-
-        return ctxClsLdr;
+        return clsLdr;
     }
 
     /**
