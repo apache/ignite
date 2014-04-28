@@ -1004,7 +1004,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     catch (GridException e) {
                         GridException ex = new GridException("Failed to deserialize task attributes [taskName=" +
                             req.getTaskName() + ", taskClsName=" + req.getTaskClassName() + ", codeVer=" +
-                            req.getUserVersion() + ", taskClsLdr=" + dep.classLoader() + ']');
+                            req.getUserVersion() + ", taskClsLdr=" + dep.classLoader() + ']', e);
 
                         U.error(log, ex.getMessage(), e);
 
