@@ -317,10 +317,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             GridHadoopJob job = ctx.jobFactory().createJob(jobId, meta.jobInfo());
 
+            GridHadoopMapReducePlan plan = meta.mapReducePlan();
+
             switch (meta.phase()) {
                 case PHASE_MAP: {
                     // Check if we should initiate new task on local node.
-                    Collection<GridHadoopFileBlock> mappers = meta.mapReducePlan().mappers(locNodeId);
+                    Collection<GridHadoopFileBlock> mappers = plan.mappers(locNodeId);
 
                     if (mappers != null) {
                         if (state == null)
@@ -336,9 +338,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                                     log.debug("Submitting MAP task for execution [locNodeId=" + locNodeId +
                                         ", block=" + block + ']');
 
-                                // TODO task number - how do we count it?
                                 GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(locNodeId,
-                                    GridHadoopTaskType.MAP, jobId, 0, attempt, block);
+                                    GridHadoopTaskType.MAP, jobId, meta.taskNumber(block), attempt, block);
 
                                 GridHadoopTask task = job.createTask(taskInfo);
 
@@ -371,7 +372,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         return;
                     }
 
-                    int[] reducers = meta.mapReducePlan().reducers(locNodeId);
+                    int[] reducers = plan.reducers(locNodeId);
 
                     if (reducers != null) {
                         if (state == null)
@@ -388,7 +389,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                                         ", rdc=" + rdc + ']');
 
                                 GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(locNodeId,
-                                    GridHadoopTaskType.REDUCE, jobId, rdc, attempt, null);
+                                    GridHadoopTaskType.REDUCE, jobId, meta.taskNumber(rdc), attempt, null);
 
                                 GridHadoopTask task = job.createTask(taskInfo);
 
@@ -421,7 +422,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     Collection<GridHadoopFileBlock> cancelMappers = new ArrayList<>();
                     Collection<Integer> cancelReducers = new ArrayList<>();
 
-                    Collection<GridHadoopFileBlock> mappers = meta.mapReducePlan().mappers(ctx.localNodeId());
+                    Collection<GridHadoopFileBlock> mappers = plan.mappers(ctx.localNodeId());
 
                     if (mappers != null) {
                         for (GridHadoopFileBlock b : mappers) {
@@ -430,7 +431,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         }
                     }
 
-                    int[] rdc = meta.mapReducePlan().reducers(ctx.localNodeId());
+                    int[] rdc = plan.reducers(ctx.localNodeId());
 
                     if (rdc != null) {
                         for (int r : rdc) {
@@ -481,7 +482,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         GridHadoopJob job = ctx.jobFactory().createJob(jobId, meta.jobInfo());
 
-        JobLocalState state = new JobLocalState(job);
+        JobLocalState state = new JobLocalState(job, meta);
 
         return F.addIfAbsent(activeJobs, jobId, state);
     }
@@ -493,6 +494,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         /** Job info. */
         private GridHadoopJob job;
 
+        /** Execution plan. */
+        private GridHadoopJobMetadata meta;
+
         /** Attempts. */
         private Map<Integer, AttemptGroup> attempts = new HashMap<>();
 
@@ -502,8 +506,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         /**
          * @param job Job.
          */
-        private JobLocalState(GridHadoopJob job) {
+        private JobLocalState(GridHadoopJob job, GridHadoopJobMetadata meta) {
             this.job = job;
+            this.meta = meta;
         }
 
         /**
@@ -584,7 +589,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 // Create combiner.
                 if (combine) {
                     GridHadoopTaskInfo info = new GridHadoopTaskInfo(ctx.localNodeId(), COMBINE, jobId,
-                        0, taskInfo.attempt(), null);
+                        meta.taskNumber(ctx.localNodeId()), taskInfo.attempt(), null);
 
                     GridHadoopTask task = job.createTask(info);
 
