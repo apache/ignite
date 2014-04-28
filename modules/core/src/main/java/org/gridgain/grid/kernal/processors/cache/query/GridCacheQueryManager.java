@@ -482,8 +482,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Cache set items iterator.
      * @throws GridException If failed.
      */
-    private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> setIterator(GridCacheQueryAdapter<?> qry)
-        throws GridException {
+    private GridCloseableIterator<GridIndexingKeyValueRow<K, V>> setIterator(GridCacheQueryAdapter<?> qry) {
         final GridSetQueryPredicate filter = (GridSetQueryPredicate)qry.scanFilter();
 
         filter.init(cctx);
