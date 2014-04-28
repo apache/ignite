@@ -89,14 +89,8 @@ public class GridHadoopV1JobImpl implements GridHadoopJob {
      *
      * @return Combiner class or {@code null} if combiner is not specified.
      */
-    private Class<? extends org.apache.hadoop.mapreduce.Reducer<?,?,?,?>> combinerClass() {
-        try {
-            return ctx.getCombinerClass();
-        }
-        catch (ClassNotFoundException e) {
-            // TODO check combiner class at initialization and throw meaningful exception.
-            throw new GridRuntimeException(e);
-        }
+    private Class<? extends Reducer> combinerClass() {
+        return ctx.getJobConf().getCombinerClass();
     }
 
     /** {@inheritDoc} */
