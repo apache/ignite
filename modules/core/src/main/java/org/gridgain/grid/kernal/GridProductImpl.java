@@ -63,7 +63,9 @@ public class GridProductImpl implements GridProduct {
     /** Update notifier. */
     private final GridUpdateNotifier verChecker;
 
-    /** */
+    /**
+     *
+     */
     static {
         boolean ent0;
 

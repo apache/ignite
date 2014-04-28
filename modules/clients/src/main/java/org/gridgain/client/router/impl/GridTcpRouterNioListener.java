@@ -119,6 +119,8 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
             }
         }
         else if (msg instanceof GridClientHandshakeRequest) {
+            GridClientHandshakeResponse res = null;
+
             GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
 
             byte[] verBytes = hs.versionBytes();
@@ -128,7 +130,7 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
                     ", expected=" + Arrays.toString(VER_BYTES)
                     + ", actual=" + Arrays.toString(verBytes) + ']');
 
-                ses.send(GridClientHandshakeResponse.ERR_VERSION_CHECK_FAILED);
+                res = GridClientHandshakeResponse.ERR_VERSION_CHECK_FAILED;
             }
 
             final byte protoId = hs.protocolId();
@@ -162,7 +164,7 @@ class GridTcpRouterNioListener implements GridNioServerListener<GridClientMessag
             else
                 ses.addMeta(MARSHALLER.ordinal(), marsh);
 
-            ses.send(GridClientHandshakeResponse.OK);
+            ses.send(res == null ? GridClientHandshakeResponse.OK : res);
         }
         else if (msg instanceof GridClientPingPacket)
             ses.send(GridClientPingPacket.PING_MESSAGE);
