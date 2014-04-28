@@ -12,14 +12,16 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
- * Partitioned cache metrics test.
+ * Partitioned atomic cache metrics test.
  */
-public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalAbstractMetricsSelfTest {
+public class GridCacheAtomicPartitionedMetricsSelfTest extends GridCacheAbstractMetricsSelfTest {
     /** */
     private static final int GRID_CNT = 2;
 
@@ -30,8 +32,9 @@ public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalA
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(gridCount() - 1);
         cfg.setPreloadMode(SYNC);
-        cfg.setTxSerializableEnabled(true);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setAtomicityMode(ATOMIC);
+        cfg.setAtomicWriteOrderMode(PRIMARY);
 
         return cfg;
     }
@@ -43,11 +46,11 @@ public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalA
 
     /** {@inheritDoc} */
     @Override protected int expectedReadsPerPut(boolean isPrimary) {
-        return isPrimary ? 1 : 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
     @Override protected int expectedMissesPerPut(boolean isPrimary) {
-        return isPrimary ? 1 : 2;
+        return 1;
     }
 }

@@ -43,8 +43,10 @@ import java.util.concurrent.*;
  * There is a separate timer task, which polls a second window index and displays
  * the users that have checked-in in the known places within the last 10 seconds.
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-streamer.xml'}.
+ * Remote nodes should always be started with special configuration file:
+ * {@code 'ggstart.{sh|bat} examples/config/example-streamer.xml'}.
+ * When starting nodes this way {@code GRIDGAIN_HOME/gridgain-examples.jar} file
+ * should be placed to {@code GRIDGAIN_HOME/libs/ext} folder.
  * <p>
  * Alternatively you can run {@link StreamingNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-streamer.xml} configuration.

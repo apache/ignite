@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
@@ -214,8 +215,16 @@ public class GridGgfsProcessor extends GridProcessorAdapter {
             if (dataCache == null)
                 throw new GridException("Data cache is not configured locally for GGFS: " + cfg);
 
-            if (ctx.cache().cache(cfg.getMetaCacheName()) == null)
+            if (dataCache.configuration().isQueryIndexEnabled())
+                throw new GridException("GGFS data cache cannot start with enabled query indexing.");
+
+            GridCache<Object, Object> metaCache = ctx.cache().cache(cfg.getMetaCacheName());
+
+            if (metaCache == null)
                 throw new GridException("Metadata cache is not configured locally for GGFS: " + cfg);
+
+            if (metaCache.configuration().isQueryIndexEnabled())
+                throw new GridException("GGFS metadata cache cannot start with enabled query indexing.");
 
             if (F.eq(cfg.getDataCacheName(), cfg.getMetaCacheName()))
                 throw new GridException("Cannot use same cache as both data and meta cache: " + cfg.getName());

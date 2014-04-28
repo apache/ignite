@@ -17,7 +17,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  * Replicated cache metrics test.
  */
-public class GridCacheReplicatedMetricsSelfTest extends GridCacheAbstractMetricsSelfTest {
+public class GridCacheReplicatedMetricsSelfTest extends GridCacheTransactionalAbstractMetricsSelfTest {
     /** */
     private static final int GRID_CNT = 2;
 
@@ -34,5 +34,15 @@ public class GridCacheReplicatedMetricsSelfTest extends GridCacheAbstractMetrics
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return GRID_CNT;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int expectedReadsPerPut(boolean isPrimary) {
+        return isPrimary ? 1 : 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int expectedMissesPerPut(boolean isPrimary) {
+        return isPrimary ? 1 : 2;
     }
 }
