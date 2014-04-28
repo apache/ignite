@@ -297,7 +297,7 @@ public final class GridTestUtils {
         int startPort = mcastPort;
 
         while (true) {
-            if (mcastPort == max_mcast_port)
+            if (mcastPort >= max_mcast_port)
                 mcastPort = default_mcast_port;
             else
                 mcastPort++;
@@ -341,7 +341,7 @@ public final class GridTestUtils {
         if (portRet != null)
             return portRet;
 
-        if (commPort == max_comm_port)
+        if (commPort >= max_comm_port)
             commPort = default_comm_port;
         else
             // Reserve 10 ports per test.
@@ -368,7 +368,7 @@ public final class GridTestUtils {
         if (portRet != null)
             return portRet;
 
-        if (discoPort == max_disco_port)
+        if (discoPort >= max_disco_port)
             discoPort = default_disco_port;
         else
             discoPort += 10;

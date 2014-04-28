@@ -359,8 +359,6 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         if (checkLocks()) {
             prepare0();
 
-            markInitialized();
-
             return true;
         }
 
