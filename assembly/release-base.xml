@@ -35,12 +35,6 @@
         </file>
 
         <file>
-            <source>examples/target/gridgain-examples-${gridgain.version}.jar</source>
-            <outputDirectory>/</outputDirectory>
-            <destName>gridgain-examples-${gridgain.edition}-${gridgain.version}.jar</destName>
-        </file>
-
-        <file>
             <source>apache-2.0.txt</source>
             <outputDirectory>/</outputDirectory>
         </file>
