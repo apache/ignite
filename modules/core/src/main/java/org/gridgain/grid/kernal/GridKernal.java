@@ -55,7 +55,6 @@ import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.product.*;
@@ -97,35 +96,14 @@ import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
  * misspelling.
  */
 public class GridKernal extends GridProjectionAdapter implements GridEx, GridKernalMBean {
-    /** Enterprise release flag. */
-    private static final boolean ent;
-
-    /** Compound GridGain version. */
-    private static final String COMPOUND_VERSION;
-
-    /**
-     *
-     */
-    static {
-        boolean ent0;
-
-        try {
-            ent0 = Class.forName("org.gridgain.grid.kernal.breadcrumb") != null;
-        }
-        catch (ClassNotFoundException ignored) {
-            ent0 = false;
-        }
-
-        ent = ent0;
-
-        COMPOUND_VERSION = EDITION + "-" + (ent ? "ent" : "os") + "-" + VER;
-    }
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /** Ant-augmented compatible versions. */
     private static final String COMPATIBLE_VERS = /*@java.compatible.vers*/"";
 
     /** GridGain site that is shown in log messages. */
-    static final String SITE = "www.gridgain." + (ent ? "com" : "org");
+    static final String SITE = "www.gridgain." + (ENT ? "com" : "org");
 
     /** System line separator. */
     private static final String NL = U.nl();
@@ -569,7 +547,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
-        String build = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD));
+        String build = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD * 1000));
 
         // Ack various information.
         ackAsciiLogo(build);
@@ -623,7 +601,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // Spin out SPIs & managers.
         try {
-            GridKernalContextImpl ctx = new GridKernalContextImpl(this, cfg, gw, ent);
+            GridKernalContextImpl ctx = new GridKernalContextImpl(this, cfg, gw, ENT);
 
             nodeLoc = new GridNodeLocalMapImpl(ctx);
 
@@ -1255,9 +1233,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         }
         // Add it to attributes.
         add(attrs, ATTR_JVM_ARGS, jvmArgs.toString());
-
-        // Stick in log file names.
-        add(attrs, ATTR_GG_LOG_FILES, (Serializable)GridLog4jLogger.logFiles());
 
         // Check daemon system property and override configuration if it's set.
         if (isDaemon())

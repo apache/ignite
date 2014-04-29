@@ -140,6 +140,38 @@ import org.jetbrains.annotations.*;
  * // Query all cache nodes.
  * mastersQry.execute();
  * </pre>
+ * Example of spatial index (supported in {@link GridH2IndexingSpi}):
+ * <pre name="code" class="java">
+ * private class MapPoint implements Serializable {
+ *     &#64;GridCacheQuerySqlField(index = true)
+ *     private com.vividsolutions.jts.geom.Point location;
+
+ *     &#64;GridCacheQuerySqlField
+ *     private String name;
+ *
+ *     public MapPoint(com.vividsolutions.jts.geom.Point location, String name) {
+ *         this.location = location;
+ *         this.name = name;
+ *     }
+ * }
+ * </pre>
+ * Example of spatial query on before mentioned field:
+ * <pre name="code" class="java">
+ * com.vividsolutions.jts.geom.GeometryFactory factory = new com.vividsolutions.jts.geom.GeometryFactory();
+ *
+ * com.vividsolutions.jts.geom.Polygon square = factory.createPolygon(new Coordinate[] {
+ *     new com.vividsolutions.jts.geom.Coordinate(0, 0),
+ *     new com.vividsolutions.jts.geom.Coordinate(0, 100),
+ *     new com.vividsolutions.jts.geom.Coordinate(100, 100),
+ *     new com.vividsolutions.jts.geom.Coordinate(100, 0),
+ *     new com.vividsolutions.jts.geom.Coordinate(0, 0)
+ * });
+ *
+ * Map.Entry<String, UserData> records = cache.queries().createSqlQuery(MapPoint.class, "select * from MapPoint where location && ?")
+ *     .queryArguments(square)
+ *     .execute()
+ *     .get();
+ * </pre>
  */
 public interface GridCacheQuery<T> {
     /** Default query page size. */

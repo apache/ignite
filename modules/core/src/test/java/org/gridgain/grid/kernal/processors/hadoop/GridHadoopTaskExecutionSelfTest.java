@@ -14,11 +14,14 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
+import org.apache.hadoop.mapreduce.lib.output.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 
 import java.io.*;
@@ -103,7 +106,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
      * @throws Exception If failed.
      */
     public void testMapCombineRun() throws Exception {
-        int lineCnt = 10000;
+        int lineCnt = 10001;
         String fileName = "/testFile";
 
         prepareFile(fileName, lineCnt);
@@ -121,23 +124,30 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
         job.setMapperClass(TestMapper.class);
         job.setCombinerClass(TestCombiner.class);
+        job.setReducerClass(TestReducer.class);
 
-        job.setNumReduceTasks(0);
+        job.setNumReduceTasks(2);
 
         job.setInputFormatClass(TextInputFormat.class);
 
         FileInputFormat.setInputPaths(job, new Path("ggfs://ipc/"));
+        FileOutputFormat.setOutputPath(job, new Path("ggfs://ipc/"));
 
         job.setJarByClass(getClass());
 
         GridHadoopProcessor hadoop = ((GridKernal)grid(0)).context().hadoop();
 
-        GridFuture<?> fut = hadoop.submit(new GridHadoopJobId(UUID.randomUUID(), 2),
+        GridHadoopJobId jobId = new GridHadoopJobId(UUID.randomUUID(), 2);
+
+        GridFuture<?> fut = hadoop.submit(jobId,
             new GridHadoopDefaultJobInfo(job.getConfiguration()));
 
         fut.get();
 
         assertEquals(lineCnt, totalLineCnt.get());
+
+        for (int g = 0; g < gridCount(); g++)
+            ((GridKernal)grid(g)).context().hadoop().status(jobId).finishFuture().get();
     }
 
     /**
@@ -221,6 +231,11 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
         public static final Text LINE_COUNT = new Text("lineCount");
 
         /** {@inheritDoc} */
+        @Override protected void setup(Context context) throws IOException, InterruptedException {
+            X.println("___ Mapper: " + context.getTaskAttemptID());
+        }
+
+        /** {@inheritDoc} */
         @Override protected void map(Object key, Text value, Context ctx) throws IOException, InterruptedException {
             if (ctx.getConfiguration().getBoolean(MAP_WRITE, false))
                 ctx.write(LINE_COUNT, ONE);
@@ -233,6 +248,14 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
      * Combiner calculates number of lines.
      */
     private static class TestCombiner extends Reducer<Text, IntWritable, Text, IntWritable> {
+        /** */
+        IntWritable sum = new IntWritable();
+
+        /** {@inheritDoc} */
+        @Override protected void setup(Context context) throws IOException, InterruptedException {
+            X.println("___ Combiner: ");
+        }
+
         /** {@inheritDoc} */
         @Override protected void reduce(Text key, Iterable<IntWritable> values, Context ctx) throws IOException,
             InterruptedException {
@@ -240,6 +263,43 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
             for (IntWritable value : values)
                 lineCnt += value.get();
+
+            sum.set(lineCnt);
+
+            X.println("___ combo: " + lineCnt);
+
+            ctx.write(key, sum);
+        }
+    }
+
+    /**
+     * Combiner calculates number of lines.
+     */
+    private static class TestReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+        /** */
+        IntWritable sum = new IntWritable();
+
+        /** {@inheritDoc} */
+        @Override protected void setup(Context context) throws IOException, InterruptedException {
+            X.println("___ Reducer: " + context.getTaskAttemptID());
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void reduce(Text key, Iterable<IntWritable> values, Context ctx) throws IOException,
+            InterruptedException {
+            int lineCnt = 0;
+
+            for (IntWritable value : values) {
+                lineCnt += value.get();
+
+                X.println("___ rdcr: " + value.get());
+            }
+
+            sum.set(lineCnt);
+
+            ctx.write(key, sum);
+
+            X.println("___ RDCR SUM: " + lineCnt);
 
             totalLineCnt.addAndGet(lineCnt);
         }

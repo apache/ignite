@@ -80,12 +80,7 @@ class GridHadoopTestTaskContext extends GridHadoopTaskContext {
         }
 
         /** {@inheritDoc} */
-        @Override public GridFuture<?> finish() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws Exception {
+        @Override public void close() {
             throw new UnsupportedOperationException();
         }
     };

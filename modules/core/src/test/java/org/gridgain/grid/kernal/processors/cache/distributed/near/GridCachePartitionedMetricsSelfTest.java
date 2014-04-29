@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -20,7 +19,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 /**
  * Partitioned cache metrics test.
  */
-public class GridCachePartitionedMetricsSelfTest extends GridCacheAbstractMetricsSelfTest {
+public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalAbstractMetricsSelfTest {
     /** */
     private static final int GRID_CNT = 2;
 
@@ -40,5 +39,15 @@ public class GridCachePartitionedMetricsSelfTest extends GridCacheAbstractMetric
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return GRID_CNT;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int expectedReadsPerPut(boolean isPrimary) {
+        return isPrimary ? 1 : 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int expectedMissesPerPut(boolean isPrimary) {
+        return isPrimary ? 1 : 2;
     }
 }

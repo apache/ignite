@@ -31,6 +31,9 @@ import static org.gridgain.grid.cache.GridCacheTxState.*;
  */
 public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements GridCacheMappedVersion {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private UUID nearNodeId;
 
     /** Near future ID. */
@@ -510,7 +513,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 fut.onError(e);
             }
             catch (GridException e) {
-                U.error(log, "Failed to prepare transaction: " + this, e);
+                U.error(log, "Failed to commit transaction: " + this, e);
 
                 fut.onError(e);
             }

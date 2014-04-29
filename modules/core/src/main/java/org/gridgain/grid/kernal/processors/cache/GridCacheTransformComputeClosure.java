@@ -18,6 +18,9 @@ import java.io.*;
  */
 public final class GridCacheTransformComputeClosure<V, R> implements GridClosure<V, V>, Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private GridClosure<V, GridBiTuple<V, R>> transformer;
 
     /** */

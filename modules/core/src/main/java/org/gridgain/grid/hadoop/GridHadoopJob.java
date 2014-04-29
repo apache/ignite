@@ -10,6 +10,7 @@
 package org.gridgain.grid.hadoop;
 
 import org.gridgain.grid.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -60,12 +61,20 @@ public interface GridHadoopJob {
     public GridHadoopPartitioner partitioner() throws GridException;
 
     /**
-     * Gets mapper output serialization.
+     * Creates new instance of key serialization object.
      *
      * @return Serialization facility.
      * @throws GridException if failed.
      */
-    public GridHadoopSerialization serialization() throws GridException;
+    public GridHadoopSerialization keySerialization() throws GridException;
+
+    /**
+     * Creates new instance of value serialization object.
+     *
+     * @return Serialization facility.
+     * @throws GridException if failed.
+     */
+    public GridHadoopSerialization valueSerialization() throws GridException;
 
     /**
      * Creates task to be executed.
@@ -74,4 +83,12 @@ public interface GridHadoopJob {
      * @return Task.
      */
     public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo);
+
+    /**
+     * Gets optional configuration property for the job.
+     *
+     * @param name Property name.
+     * @return Value or {@code null} if none.
+     */
+    @Nullable public String property(String name);
 }

@@ -14,12 +14,14 @@ import org.gridgain.grid.*;
 /**
  * This exception provides closures with facility to throw exceptions. Closures can't
  * throw checked exception and this class provides a standard idiom on how to wrap and pass an
- * exception up the call chain. It is also frequently used with {@link GridEither} to return
- * either wrapping exception or value from the closure.
- * @see GridEither
+ * exception up the call chain.
+ *
  * @see GridFunc#wrap(Throwable)
  */
 public class GridClosureException extends GridRuntimeException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Creates wrapper closure exception for given {@link GridException}.
      *

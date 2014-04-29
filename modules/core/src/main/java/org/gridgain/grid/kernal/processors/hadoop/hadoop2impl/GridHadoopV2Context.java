@@ -15,6 +15,7 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.security.*;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 
 import java.io.*;
@@ -84,8 +85,14 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
     @Override public void write(Object key, Object val) throws IOException, InterruptedException {
         if (writer != null)
             writer.write(key, val);
-        else
-            output.write(key, val);
+        else {
+            try {
+                output.write(key, val);
+            }
+            catch (GridException e) {
+                throw new IOException(e);
+            }
+        }
     }
 
     /** {@inheritDoc} */

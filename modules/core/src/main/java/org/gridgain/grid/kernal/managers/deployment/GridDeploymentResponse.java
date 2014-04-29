@@ -21,6 +21,9 @@ import java.nio.*;
  * Grid deployment response containing requested resource bytes.
  */
 public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Result state. */
     private boolean success;
 

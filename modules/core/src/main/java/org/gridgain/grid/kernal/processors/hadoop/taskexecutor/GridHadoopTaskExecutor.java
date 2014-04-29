@@ -13,9 +13,9 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
-import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -49,9 +49,28 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
         for (final GridHadoopTask task : tasks) {
             assert task != null;
 
-            GridChainedFuture<?> fut = new GridChainedFuture<>(ctx.kernalContext());
+            ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
+                @Override public GridFuture<?> call() throws Exception {
+                    GridHadoopTaskInfo info = task.info();
 
-            fut.listenAsync(new CIX1<GridFuture<?>>() {
+                    try (GridHadoopTaskOutput out = createOutput(info);
+                         GridHadoopTaskInput in = createInput(info)) {
+                        GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(ctx.kernalContext(), job, in, out);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Running task: " + task);
+
+                        task.run(taskCtx);
+                    }
+                    catch (Exception e) {
+                        U.error(log, "Failed to execute task: " + task.info(), e);
+
+                        throw e;
+                    }
+
+                    return null;
+                }
+            }, false).listenAsync(new CIX1<GridFuture<?>>() {
                 @Override public void applyx(GridFuture<?> f) throws GridException {
                     GridHadoopTaskState state = COMPLETED;
                     Throwable err = null;
@@ -67,24 +86,6 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
                     jobTracker.onTaskFinished(task.info(), new GridHadoopTaskStatus(state, err));
                 }
             });
-
-            ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<GridFuture<?>>() {
-                @Override public GridFuture<?> call() throws Exception {
-                    GridHadoopTaskInfo info = task.info();
-
-                    try (GridHadoopTaskOutput out = createOutput(info);
-                         GridHadoopTaskInput in = createInput(info)) {
-                        GridHadoopTaskContext taskCtx = new GridHadoopTaskContext(ctx.kernalContext(), job, in, out);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Running task: " + task);
-
-                        task.run(taskCtx);
-
-                        return out == null ? new GridFinishedFutureEx<>() : out.finish();
-                    }
-                }
-            }, false).listenAsync(fut);
         }
     }
 
@@ -108,11 +109,11 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
      * @param taskInfo Task info.
      * @return Task output.
      */
-    private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo taskInfo) {
-        if (taskInfo.type() == REDUCE)
+    private GridHadoopTaskOutput createOutput(GridHadoopTaskInfo taskInfo) throws GridException {
+        if (taskInfo.type() == REDUCE || taskInfo.type() == COMMIT || taskInfo.type() == ABORT)
             return null;
 
-        return ctx.shuffle().getMapperOutput(taskInfo);
+        return ctx.shuffle().output(taskInfo);
     }
 
     /**
@@ -121,10 +122,10 @@ public class GridHadoopTaskExecutor extends GridHadoopComponent {
      * @param taskInfo Task info.
      * @return Task input.
      */
-    private GridHadoopTaskInput createInput(GridHadoopTaskInfo taskInfo) {
-        if (taskInfo.type() == MAP)
+    private GridHadoopTaskInput createInput(GridHadoopTaskInfo taskInfo) throws GridException {
+        if (taskInfo.type() == MAP || taskInfo.type() == COMMIT || taskInfo.type() == ABORT)
             return null;
 
-        return ctx.shuffle().getReducerInput(taskInfo);
+        return ctx.shuffle().input(taskInfo);
     }
 }

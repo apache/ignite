@@ -10,7 +10,7 @@
 package org.gridgain.grid.hadoop;
 
 /**
- * TODO write doc
+ * Partitioner.
  */
 public interface GridHadoopPartitioner {
     /**

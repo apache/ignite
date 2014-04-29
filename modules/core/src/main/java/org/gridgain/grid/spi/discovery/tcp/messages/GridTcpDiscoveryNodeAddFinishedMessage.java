@@ -19,6 +19,9 @@ import java.util.*;
  */
 @GridTcpDiscoveryEnsureDelivery
 public class GridTcpDiscoveryNodeAddFinishedMessage extends GridTcpDiscoveryAbstractMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Added node ID. */
     private UUID nodeId;
 

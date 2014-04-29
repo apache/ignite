@@ -26,6 +26,9 @@ import java.util.*;
  * DHT prepare request.
  */
 public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequest<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Max order. */
     private UUID nearNodeId;
 
@@ -42,6 +45,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     private BitSet invalidateNearEntries;
 
     /** Near writes. */
+    @GridToStringInclude
     @GridDirectTransient
     private Collection<GridCacheTxEntry<K, V>> nearWrites;
 

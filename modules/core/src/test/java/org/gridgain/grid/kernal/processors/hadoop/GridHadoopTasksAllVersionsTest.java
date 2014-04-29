@@ -12,10 +12,8 @@ package org.gridgain.grid.kernal.processors.hadoop;
 import com.google.common.base.*;
 import org.apache.commons.io.*;
 import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -31,10 +29,10 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
     /**
      * Creates some grid hadoop job. Override this method to create tests for any job implementation.
      *
-     * @param inFile input file name for the job.
-     * @param outFile output file name for the job.
+     * @param inFile Input file name for the job.
+     * @param outFile Output file name for the job.
      * @return Hadoop job.
-     * @throws IOException if fails.
+     * @throws IOException If fails.
      */
     public abstract GridHadoopJob getHadoopJob(String inFile, String outFile) throws IOException;
 
@@ -46,7 +44,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
     /**
      * Tests map task execution.
      *
-     * @throws Exception if fails.
+     * @throws Exception If fails.
      */
     public void testMapTask() throws Exception {
         File testInputFile = File.createTempFile(GridGainWordCount2.class.getSimpleName(), "-input");
@@ -92,9 +90,9 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
     /**
      * Reads whole text file into String.
      *
-     * @param fileName name of file to read.
-     * @return String value.
-     * @throws IOException if could not read the file.
+     * @param fileName Name of the file to read.
+     * @return Content of the file as String value.
+     * @throws IOException If could not read the file.
      */
     private String readFile(String fileName) throws IOException {
         StringBuilder sb = new StringBuilder();
@@ -111,12 +109,12 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
     /**
      * Generates input data for reduce-like operation into mock context input and runs the operation.
      *
-     * @param gridJob to create reduce task from.
+     * @param gridJob Job is to create reduce task from.
      * @param taskType Type of task - combine or reduce.
      * @param taskNum Number of task in job.
      * @param words Pairs of words and its counts.
      * @return Context with mock output.
-     * @throws GridException if fails.
+     * @throws GridException If fails.
      */
     private GridHadoopTestTaskContext runTaskWithInput(GridHadoopJob gridJob, GridHadoopTaskType taskType,
                                                        int taskNum, String... words) throws GridException {
@@ -141,7 +139,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
     /**
      * Tests reduce task execution.
      *
-     * @throws Exception if fails.
+     * @throws Exception If fails.
      */
     public void testReduceTask() throws Exception {
         Path outputDir = Files.createTempDirectory(GridGainWordCount2.class.getSimpleName() + "-output");
@@ -157,15 +155,16 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
             assertEquals(
                 "word1\t5\n" +
                 "word2\t10\n",
-                readFile(outputDir + "/" + getOutputFileNamePrefix() + "00000")
+                readFile(outputDir + "/_temporary/0/task_00000000-0000-0000-0000-000000000000_0000_r_000000/" +
+                        getOutputFileNamePrefix() + "00000")
             );
 
             assertEquals(
                 "word3\t7\n" +
                 "word4\t15\n",
-                readFile(outputDir + "/" + getOutputFileNamePrefix() + "00001")
+                readFile(outputDir + "/_temporary/0/task_00000000-0000-0000-0000-000000000000_0000_r_000001/" +
+                        getOutputFileNamePrefix() + "00001")
             );
-
         } finally {
             FileUtils.deleteDirectory(outputDir.toFile());
         }
@@ -174,7 +173,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
     /**
      * Tests combine task execution.
      *
-     * @throws Exception if fails.
+     * @throws Exception If fails.
      */
     public void testCombinerTask() throws Exception {
         GridHadoopJob gridJob = getHadoopJob("/", "/");
@@ -195,7 +194,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
      * @param fileBlock block of input file to be processed.
      * @param gridJob Hadoop job implementation.
      * @return Context of combine task with mock output.
-     * @throws GridException if fails.
+     * @throws GridException If fails.
      */
     private GridHadoopTestTaskContext runMapCombineTask(GridHadoopFileBlock fileBlock, GridHadoopJob gridJob) throws GridException {
         GridHadoopTestTaskContext mapCtx = new GridHadoopTestTaskContext(gridJob);
@@ -219,7 +218,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
      * Tests all job in complex.
      * Runs 2 chains of map-combine tasks and sends result into one reduce task.
      *
-     * @throws Exception if fails.
+     * @throws Exception If fails.
      */
     public void testAllTasks() throws Exception {
         Path outputDir = Files.createTempDirectory(GridGainWordCount2.class.getSimpleName() + "-output");
@@ -254,6 +253,10 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
             GridHadoopTask task = gridJob.createTask(taskInfo);
             task.run(reduceCtx);
 
+            taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.COMMIT, gridJob.id(), 0, 0, null);
+            task = gridJob.createTask(taskInfo);
+            task.run(reduceCtx);
+
             assertEquals(
                 "blue\t200\n" +
                 "green\t150\n" +
@@ -270,9 +273,9 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
     /**
      * Generates text file with words. In one line there are from 5 to 9 words.
      *
-     * @param file file that there is generation for.
-     * @param wordCounts pair word and count, i.e "hello", 2, "world", 3, etc.
-     * @throws FileNotFoundException if could not create the file.
+     * @param file File that there is generation for.
+     * @param wordCounts Pair word and count, i.e "hello", 2, "world", 3, etc.
+     * @throws FileNotFoundException If could not create the file.
      */
     private void generateTestFile(File file, Object... wordCounts) throws FileNotFoundException {
         List<String> wordsArr = new ArrayList<>();

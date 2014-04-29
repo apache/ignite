@@ -9,21 +9,23 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 
 /**
- * Hadoop serialization.
+ * Hadoop serialization. Not thread safe object, must be created for each thread or correctly synchronized.
  */
-public interface GridHadoopSerialization<T> {
+public interface GridHadoopSerialization {
     /**
      * Writes the given object to output.
      *
      * @param out Output.
      * @param obj Object to serialize.
+     * @throws GridException If failed.
      */
-    public void write(DataOutput out, T obj);
+    public void write(DataOutput out, Object obj) throws GridException;
 
     /**
      * Reads object from the given input optionally reusing given instance.
@@ -31,6 +33,7 @@ public interface GridHadoopSerialization<T> {
      * @param in Input.
      * @param obj Object.
      * @return New object or reused instance.
+     * @throws GridException If failed.
      */
-    public T read(DataInput in, @Nullable T obj);
+    public Object read(DataInput in, @Nullable Object obj) throws GridException;
 }

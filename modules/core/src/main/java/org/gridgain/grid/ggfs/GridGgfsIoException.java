@@ -17,6 +17,9 @@ import java.io.*;
  * This exception is used to wrap standard {@link IOException} into {@link GridException}.
  */
 public class GridGgfsIoException extends GridException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Creates new exception with given throwable as a nested cause and
      * source of error message.

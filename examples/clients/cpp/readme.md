@@ -28,7 +28,7 @@ Now you can start a GridGain node as follows:
 
     $GRIDGAIN_HOME/bin/ggstart.{sh,bat} examples/config/example-cache.xml
 
-Alternatively you can run an instance of `GridClientExampleNodeStartup` or `GridClientCacheExampleNodeStartup` Java class, which will start up a GridGain node with proper configuration. You can do this from your favourite IDE.
+Alternatively you can run an instance of `ClientExampleNodeStartup` or `ClientCacheExampleNodeStartup` Java class, which will start up a GridGain node with proper configuration. You can do this from your favourite IDE.
 <br/><br/>
 Once the GridGain node is up and running you can run the examples:
 

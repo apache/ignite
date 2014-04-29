@@ -51,7 +51,7 @@ public class GridHadoopV2MapTask extends GridHadoopTask {
 
         GridHadoopFileBlock block = info().fileBlock();
 
-        //TODO: rework to use custom input split instead FileSplit
+        //TODO: rework to use custom input split instead FileSplit GG-8223
         InputSplit split = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), block.hosts());
 
         try {

@@ -19,6 +19,9 @@ import org.jetbrains.annotations.*;
  */
 public class GridEventAdapter implements GridEvent {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final GridUuid id = GridUuid.randomUuid();
 
     /** */

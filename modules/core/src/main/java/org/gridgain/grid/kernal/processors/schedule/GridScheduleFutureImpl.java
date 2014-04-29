@@ -35,6 +35,9 @@ import static java.util.concurrent.TimeUnit.*;
  * Implementation of {@link GridSchedulerFuture} interface.
  */
 class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements GridSchedulerFuture<R>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Empty time array. */
     private static final long[] EMPTY_TIMES = new long[] {};
 
@@ -771,6 +774,9 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
      */
     private static class GridScheduleFutureSnapshot<R> extends GridMetadataAwareAdapter implements
         GridSchedulerFuture<R> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private GridScheduleFutureImpl<R> ref;
 

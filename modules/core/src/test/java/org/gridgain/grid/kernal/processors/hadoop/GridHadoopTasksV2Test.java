@@ -24,8 +24,8 @@ public class GridHadoopTasksV2Test extends GridHadoopTasksAllVersionsTest {
     /**
      * Creates WordCount hadoop job for API v2.
      *
-     * @param inFile input file name for the job.
-     * @param outFile output file name for the job.
+     * @param inFile Input file name for the job.
+     * @param outFile Output file name for the job.
      * @return Hadoop job.
      * @throws IOException if fails.
      */
