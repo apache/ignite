@@ -15,7 +15,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import static org.gridgain.grid.cache.GridCacheMode.LOCAL;
 
 /**
- * Exception test for local cache.
+ * Tests local cache.
  */
 public class GridCacheLocalTxExceptionSelfTest extends GridCacheTxExceptionAbstractSelfTest {
     /** {@inheritDoc} */
