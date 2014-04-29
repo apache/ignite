@@ -29,6 +29,9 @@ import java.util.concurrent.atomic.*;
  */
 public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompoundIdentityFuture<GridCacheCommittedTxInfo<K, V>>
     implements GridCacheFuture<GridCacheCommittedTxInfo<K, V>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
@@ -264,6 +267,9 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
      *
      */
     private class MiniFuture extends GridFutureAdapter<GridCacheCommittedTxInfo<K, V>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Mini future ID. */
         private final GridUuid futId = GridUuid.randomUuid();
 
@@ -344,6 +350,9 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
      */
     private static class SingleReducer<K, V> implements
         GridReducer<GridCacheCommittedTxInfo<K, V>, GridCacheCommittedTxInfo<K, V>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private AtomicReference<GridCacheCommittedTxInfo<K, V>> collected = new AtomicReference<>();
 

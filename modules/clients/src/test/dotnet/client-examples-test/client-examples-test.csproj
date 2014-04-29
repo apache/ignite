@@ -64,8 +64,8 @@
     <Reference Include="Google.ProtocolBuffers">
       <HintPath>..\..\..\..\dotnet\client-lib\libs\Google.ProtocolBuffers.dll</HintPath>
     </Reference>
-    <Reference Include="GridGainClient">
-      <HintPath>..\..\..\..\dotnet\client-lib\libs\GridGainClient.dll</HintPath>
+    <Reference Include="GridGainClient-6.0.1">
+      <HintPath>..\..\..\..\dotnet\client-lib\libs\GridGainClient-6.0.1.dll</HintPath>
     </Reference>
     <Reference Include="nunit.framework, Version=2.5.10.11092, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

@@ -22,6 +22,9 @@ import java.util.*;
  * Deferred dht atomic update response.
  */
 public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 

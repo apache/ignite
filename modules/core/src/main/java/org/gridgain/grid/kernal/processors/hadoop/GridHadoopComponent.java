@@ -32,7 +32,7 @@ public abstract class GridHadoopComponent {
     }
 
     /**
-     * Starts manager.
+     * Stops manager.
      */
     public void stop(boolean cancel) {
         // No-op.

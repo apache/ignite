@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "client-lib-test-runner", ".
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "client-examples-test", "..\src\test\dotnet\client-examples-test\client-examples-test.csproj", "{68F3BF3F-86C1-4AFF-B914-1DD690A273CA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GridClientApiExample", "..\src\test\dotnet\GridClientApiExample.csproj", "{93C19D37-D5A4-41D0-8E10-F214B1F61213}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GridClientApiExample", "..\..\..\examples\clients\dotnet\GridClientApiExample.csproj", "{93C19D37-D5A4-41D0-8E10-F214B1F61213}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

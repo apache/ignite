@@ -59,7 +59,6 @@ public class GridHadoopV2ReduceTask extends GridHadoopTask {
             OutputCommitter outputCommitter = outputFormat.getOutputCommitter(hadoopCtx);
 
             outputCommitter.commitTask(hadoopCtx);
-            outputCommitter.commitJob(hadoopCtx);
         }
         catch (IOException e) {
             throw new GridException(e);

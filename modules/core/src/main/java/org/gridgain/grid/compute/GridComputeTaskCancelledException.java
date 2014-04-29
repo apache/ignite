@@ -16,6 +16,9 @@ import org.jetbrains.annotations.*;
  * This exception indicates that grid task was cancelled.
  */
 public class GridComputeTaskCancelledException extends GridException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Creates new task cancellation exception with given error message.
      *

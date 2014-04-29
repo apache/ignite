@@ -24,6 +24,9 @@ public class GridHadoopDefaultMapReducePlan implements GridHadoopMapReducePlan {
     /** Reducers map. */
     private Map<UUID, int[]> reducers;
 
+    /** */
+    private int reducersCnt;
+
     /**
      * @param mappers Mappers map.
      * @param reducers Reducers map.
@@ -32,6 +35,30 @@ public class GridHadoopDefaultMapReducePlan implements GridHadoopMapReducePlan {
         Map<UUID, int[]> reducers) {
         this.mappers = mappers;
         this.reducers = reducers;
+
+        if (reducers != null) {
+            for (int[] rdcrs : reducers.values())
+                reducersCnt += rdcrs.length;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int reducers() {
+        return reducersCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID nodeForReducer(int reducer) {
+        assert reducer >= 0 && reducer < reducersCnt : reducer;
+
+        for (Map.Entry<UUID, int[]> entry : reducers.entrySet()) {
+            for (int r : entry.getValue()) {
+                if (r == reducer)
+                    return entry.getKey();
+            }
+        }
+
+        throw new IllegalStateException("Not found reducer index: " + reducer);
     }
 
     /** {@inheritDoc} */

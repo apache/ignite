@@ -21,6 +21,9 @@ import java.util.*;
  * GGFS write blocks message.
  */
 public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** File id. */
     private GridUuid fileId;
 

@@ -27,6 +27,9 @@ import java.util.*;
  * Near transaction finish request.
  */
 public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Near node ID. */
     private UUID nearNodeId;
 

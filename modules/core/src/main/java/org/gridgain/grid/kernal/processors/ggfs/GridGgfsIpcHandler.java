@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.ggfs.common.*;
+import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
@@ -129,7 +130,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
                             // No need to pass data input for non-write-block commands.
                             return execute(ses, cmd, msg, null);
                         }
-                    }, false);
+                    }, GridClosurePolicy.GGFS_POOL);
                 }
             }
 

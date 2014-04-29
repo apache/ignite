@@ -29,6 +29,9 @@ import static org.gridgain.grid.kernal.GridProductImpl.*;
  * </ol>
  */
 public class GridClientHandshakeRequest extends GridClientAbstractMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Packet size. */
     private static final int PACKET_SIZE = 6;
 

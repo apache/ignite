@@ -9,7 +9,6 @@
 package org.gridgain.client.impl;
 
 import org.gridgain.client.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

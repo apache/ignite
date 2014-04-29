@@ -22,6 +22,9 @@ import java.util.*;
  * Cache-backed iterator.
  */
 public class GridCacheIterator<K, V, T> implements GridSerializableIterator<T> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Base iterator. */
     private final Iterator<? extends GridCacheEntry<K, V>> it;
 

@@ -106,13 +106,32 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         int parts = cctx.config().getAffinity().partitions();
 
         GridOffHeapEvictListener lsnr = !swapEnabled && !offheapEnabled ? null : new GridOffHeapEvictListener() {
+            private volatile boolean firstEvictWarn;
+
             @Override public void onEvict(int part, int hash, byte[] kb, byte[] vb) {
                 try {
+                    if (!firstEvictWarn)
+                        warnFirstEvict();
+
                     writeToSwap(part, null, kb, vb);
                 }
                 catch (GridException e) {
                     log.error("Failed to unmarshal off-heap entry [part=" + part + ", hash=" + hash + ']', e);
                 }
+            }
+
+            private void warnFirstEvict() {
+                synchronized (this) {
+                    if (firstEvictWarn)
+                        return;
+
+                    firstEvictWarn = true;
+                }
+
+                U.warn(log, "Off-heap evictions started. You may wish to increase 'offHeapMaxMemory' in " +
+                    "cache configuration [cache=" + cctx.name() +
+                    ", offHeapMaxMemory=" + cctx.config().getOffHeapMaxMemory() + ']',
+                    "Off-heap evictions started: " + cctx.name());
             }
         };
 
@@ -249,19 +268,13 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         while (true) {
             if (lsnrs != null) {
-                boolean empty;
-
                 synchronized (lsnrs) {
                     if (!lsnrs.isEmpty()) {
                         lsnrs.add(lsnr);
 
                         break;
                     }
-                    else
-                        empty = true;
                 }
-
-                assert empty;
 
                 lsnrs = swapLsnrs.remove(part, lsnrs) ? null : swapLsnrs.get(part);
             }
@@ -920,18 +933,19 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             }
 
             private void advance() throws GridException {
-                if (it != null && it.hasNext())
+                if (it.hasNext())
                     return;
 
-                if (it != null)
-                    it.close();
+                it.close();
 
                 if (offheap) {
                     offheap = false;
 
                     it = swapIterator(part);
 
-                    if (it == null || !it.hasNext()) {
+                    assert it != null;
+
+                    if (!it.hasNext()) {
                         it.close();
 
                         done = true;
@@ -997,12 +1011,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             {
                 it = rawOffHeapIterator();
 
-                if (it == null || !it.hasNext()) {
-                    it.close();
-
-                    offheapFlag = false;
-                }
-
                 advance();
             }
 
@@ -1017,7 +1025,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                     it = rawSwapIterator();
 
-                    if (it == null || !it.hasNext()) {
+                    if (!it.hasNext()) {
                         it.close();
 
                         done = true;
@@ -1376,6 +1384,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      *
      */
     private class IteratorWrapper extends GridCloseableIteratorAdapter<Map.Entry<byte[], GridCacheSwapEntry<V>>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> iter;
 

@@ -24,6 +24,9 @@ import java.util.*;
  * Unmodifiable file information.
  */
 public final class GridGgfsFileInfo implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** ID for the root directory. */
     public static final GridUuid ROOT_ID = new GridUuid(new UUID(0, 0), 0);
 

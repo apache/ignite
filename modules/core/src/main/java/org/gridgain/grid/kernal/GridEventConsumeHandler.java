@@ -30,6 +30,9 @@ import static org.gridgain.grid.events.GridEventType.*;
  * Continuous routine handler for remote event listening.
  */
 class GridEventConsumeHandler implements GridContinuousHandler {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Default callback. */
     private static final P2<UUID, GridEvent> DFLT_CALLBACK = new P2<UUID, GridEvent>() {
         @Override public boolean apply(UUID uuid, GridEvent e) {
@@ -290,6 +293,9 @@ class GridEventConsumeHandler implements GridContinuousHandler {
      * Event wrapper.
      */
     private static class EventWrapper implements GridCacheDeployable, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Event. */
         private GridEvent evt;
 

@@ -438,7 +438,7 @@ public class GridCheckpointManagerSelfTest extends GridCommonAbstractTest {
             try {
                 Thread.sleep(6000);
             }
-            catch(InterruptedException e) {
+            catch (InterruptedException e) {
                 throw new GridException(e);
             }
 

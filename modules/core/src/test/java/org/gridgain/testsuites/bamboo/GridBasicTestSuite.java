@@ -61,6 +61,7 @@ public class GridBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridExceptionHelpLinksSelfTest.class);
         suite.addTestSuite(GridSuppressedExceptionSelfTest.class);
         suite.addTestSuite(GridLifecycleAwareSelfTest.class);
+        suite.addTestSuite(GridMessageListenSelfTest.class);
 
         // Streamer.
         suite.addTest(GridStreamerSelfTestSuite.suite());

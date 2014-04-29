@@ -55,7 +55,6 @@ import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.product.*;
@@ -97,6 +96,9 @@ import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
  * misspelling.
  */
 public class GridKernal extends GridProjectionAdapter implements GridEx, GridKernalMBean {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Enterprise release flag. */
     private static final boolean ent;
 
@@ -569,7 +571,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
-        String build = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD));
+        String build = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD * 1000));
 
         // Ack various information.
         ackAsciiLogo(build);
@@ -1255,9 +1257,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         }
         // Add it to attributes.
         add(attrs, ATTR_JVM_ARGS, jvmArgs.toString());
-
-        // Stick in log file names.
-        add(attrs, ATTR_GG_LOG_FILES, (Serializable)GridLog4jLogger.logFiles());
 
         // Check daemon system property and override configuration if it's set.
         if (isDaemon())

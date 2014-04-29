@@ -36,6 +36,9 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
  */
 public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter implements GridCacheProjectionEx<K, V>,
     Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Key-value filter taking null values. */
     @GridToStringExclude
     private KeyValueFilter<K, V> withNullKvFilter;
@@ -212,7 +215,6 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
      * @param nonNulls Flag indicating whether nulls should be included.
      * @return {@code Anded} filter.
      */
-    @SuppressWarnings({"unchecked"})
     private GridPredicate<GridCacheEntry<K, V>> and(@Nullable final GridPredicate<GridCacheEntry<K, V>>[] f1,
         boolean nonNulls) {
         GridPredicate<GridCacheEntry<K, V>> entryFilter = entryFilter(nonNulls);
@@ -220,7 +222,7 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
         if (F.isEmpty(f1))
             return entryFilter;
 
-        return F0.and(f1, entryFilter);
+        return F0.and(entryFilter, f1);
     }
 
     /**
@@ -370,7 +372,10 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
 
     /** {@inheritDoc} */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    @Override public <K1, V1> GridCacheProjection<K1, V1> projection(Class<?> keyType, Class<?> valType) {
+    @Override public <K1, V1> GridCacheProjection<K1, V1> projection(
+        Class<? super K1> keyType,
+        Class<? super V1> valType
+    ) {
         A.notNull(keyType, "keyType", valType, "valType");
 
         if (cctx.deploymentEnabled()) {
@@ -1239,6 +1244,9 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
      * @param <V> Value type.
      */
     private static class FullFilter<K, V> implements GridPredicate<GridCacheEntry<K, V>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Key filter. */
         private GridBiPredicate<K, V> kvFilter;
 
@@ -1270,6 +1278,9 @@ public class GridCacheProjectionImpl<K, V> extends GridMetadataAwareAdapter impl
      * @param <V> Value type.
      */
     private static class KeyValueFilter<K, V> implements GridBiPredicate<K, V> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Key filter. */
         private GridBiPredicate<K, V> kvFilter;
 

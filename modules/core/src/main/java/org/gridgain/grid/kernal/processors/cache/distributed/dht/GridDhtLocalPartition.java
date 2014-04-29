@@ -462,6 +462,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
     }
 
     /**
+     * @param topVer Topology version.
      * @return {@code True} if local node is primary for this partition.
      */
     public boolean primary(long topVer) {

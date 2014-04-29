@@ -33,6 +33,9 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  * Replicated user transaction.
  */
 public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapter<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Near mappings. */
     protected Map<UUID, GridDistributedTxMapping<K, V>> nearMap =
         new ConcurrentHashMap8<>();
@@ -773,7 +776,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
 
             // If heuristic error.
             if (!isRollbackOnly()) {
-                invalidate = true;
+                systemInvalidate(true);
 
                 U.warn(log, "Set transaction invalidation flag to true due to error [tx=" + CU.txString(this) +
                     ", err=" + err + ']');

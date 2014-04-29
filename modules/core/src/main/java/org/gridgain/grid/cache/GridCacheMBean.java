@@ -41,6 +41,22 @@ public interface GridCacheMBean {
     public long getOverflowSize();
 
     /**
+     * Gets number of entries stored in off-heap memory.
+     *
+     * @return Number of entries stored in off-heap memory.
+     */
+    @GridMBeanDescription("Number of entries stored in off-heap memory.")
+    public long getOffHeapEntriesCount();
+
+    /**
+     * Gets memory size allocated in off-heap.
+     *
+     * @return Memory size allocated in off-heap.
+     */
+    @GridMBeanDescription("Memory size allocated in off-heap.")
+    public long getOffHeapAllocatedSize();
+
+    /**
      * Returns number of non-{@code null} values in the cache.
      *
      * @return Number of non-{@code null} values in the cache.

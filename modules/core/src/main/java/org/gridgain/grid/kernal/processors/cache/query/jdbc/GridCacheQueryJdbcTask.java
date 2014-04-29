@@ -38,6 +38,9 @@ import static org.gridgain.grid.compute.GridComputeJobResultPolicy.*;
  * Task for JDBC adapter.
  */
 public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[]> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Marshaller. */
     private static final GridMarshaller MARSHALLER = new GridJdkMarshaller();
 
@@ -114,6 +117,9 @@ public class GridCacheQueryJdbcTask extends GridComputeTaskAdapter<byte[], byte[
      * Job for JDBC adapter.
      */
     private static class JdbcDriverJob extends GridComputeJobAdapter implements GridOptimizedMarshallable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
         private static Object GG_CLASS_ID;

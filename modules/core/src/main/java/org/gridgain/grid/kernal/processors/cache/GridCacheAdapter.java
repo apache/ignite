@@ -63,6 +63,9 @@ import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.
  */
 public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter implements GridCache<K, V>,
     GridCacheProjectionEx<K, V>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** clearAll() split threshold. */
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
@@ -414,7 +417,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
-    @Override public <K1, V1> GridCacheProjection<K1, V1> projection(Class<?> keyType, Class<?> valType) {
+    @Override public <K1, V1> GridCacheProjection<K1, V1> projection(
+        Class<? super K1> keyType,
+        Class<? super V1> valType
+    ) {
         if (ctx.deploymentEnabled()) {
             try {
                 ctx.deploy().registerClasses(keyType, valType);
@@ -1918,8 +1924,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         ctx.denyOnLocalRead();
 
         return ctx.cloneOnFlag(syncOp(new SyncOp<V>(true) {
-            @Override
-            public V op(GridCacheTxLocalAdapter<K, V> tx) throws GridException {
+            @Override public V op(GridCacheTxLocalAdapter<K, V> tx) throws GridException {
                 return tx.put(key, val, cached, ttl, filter);
             }
 
@@ -4761,6 +4766,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      */
     @GridInternal
     private static class GlobalClearAllCallable implements Callable<Object>, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Cache name. */
         private String cacheName;
 

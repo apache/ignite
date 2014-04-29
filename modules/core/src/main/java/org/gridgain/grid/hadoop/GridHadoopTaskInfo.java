@@ -125,4 +125,9 @@ public class GridHadoopTaskInfo implements Externalizable {
     @Nullable public GridHadoopFileBlock fileBlock() {
         return fileBlock;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridHadoopTaskInfo.class, this);
+    }
 }

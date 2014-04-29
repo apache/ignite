@@ -43,6 +43,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /** */
     private final Executor pubPool;
 
+    /** */
+    private final Executor ggfsPool;
+
     /** Lock to control execution after stop. */
     private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
 
@@ -57,6 +60,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         sysPool = ctx.config().getSystemExecutorService();
         pubPool = ctx.config().getExecutorService();
+        ggfsPool = ctx.config().getGgfsExecutorService();
     }
 
     /** {@inheritDoc} */
@@ -619,22 +623,66 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Gets either system or public pool.
+     * Gets pool by execution policy.
      *
-     * @param sys Whether to get system or public pool.
+     * @param plc Whether to get system or public pool.
      * @return Requested worker pool.
      */
-    private Executor pool(boolean sys) {
-        return sys ? sysPool : pubPool;
+    private Executor pool(GridClosurePolicy plc) {
+        switch (plc) {
+            case PUBLIC_POOL:
+                return pubPool;
+
+            case SYSTEM_POOL:
+                return sysPool;
+
+            case GGFS_POOL:
+                return ggfsPool;
+
+            default:
+                throw new IllegalArgumentException("Invalid closure execution policy: " + plc);
+        }
+    }
+
+    /**
+     * Gets pool name by execution policy.
+     *
+     * @param plc Policy to choose executor pool.
+     * @return Pool name.
+     */
+    private String poolName(GridClosurePolicy plc) {
+        switch (plc) {
+            case PUBLIC_POOL:
+                return "public";
+
+            case SYSTEM_POOL:
+                return "system";
+
+            case GGFS_POOL:
+                return "ggfs";
+
+            default:
+                throw new IllegalArgumentException("Invalid closure execution policy: " + plc);
+        }
     }
 
     /**
      * @param c Closure to execute.
-     * @param sys Whether to run on system or public pool.
+     * @param sys If {@code true}, then system pool will be used, otherwise public pool will be used.
      * @return Future.
      * @throws GridException Thrown in case of any errors.
      */
     private GridFuture<?> runLocal(@Nullable final Runnable c, boolean sys) throws GridException {
+        return runLocal(c, sys ? GridClosurePolicy.SYSTEM_POOL : GridClosurePolicy.PUBLIC_POOL);
+    }
+
+    /**
+     * @param c Closure to execute.
+     * @param plc Whether to run on system or public pool.
+     * @return Future.
+     * @throws GridException Thrown in case of any errors.
+     */
+    private GridFuture<?> runLocal(@Nullable final Runnable c, GridClosurePolicy plc) throws GridException {
         if (c == null)
             return new GridFinishedFuture(ctx);
 
@@ -676,11 +724,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             fut.setWorker(w);
 
             try {
-                pool(sys).execute(w);
+                pool(plc).execute(w);
             }
             catch (RejectedExecutionException e) {
                 U.error(log, "Failed to execute worker due to execution rejection " +
-                    "(increase upper bound on " + (sys ? "system" : "public") + " executor service).", e);
+                    "(increase upper bound on " + poolName(plc) + " executor service).", e);
 
                 w.run();
             }
@@ -708,12 +756,24 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * the closure in the current thread (blocking).
      *
      * @param c Closure to execute.
-     * @param sys Whether to run on system or public pool.
+     * @param sys If {@code true}, then system pool will be used, otherwise public pool will be used.
      * @return Future.
      */
     public GridFuture<?> runLocalSafe(Runnable c, boolean sys) {
+        return runLocalSafe(c, sys ? GridClosurePolicy.SYSTEM_POOL : GridClosurePolicy.PUBLIC_POOL);
+    }
+
+    /**
+     * Companion to {@link #runLocal(Runnable, boolean)} but in case of rejected execution re-runs
+     * the closure in the current thread (blocking).
+     *
+     * @param c Closure to execute.
+     * @param plc Policy to choose executor pool.
+     * @return Future.
+     */
+    public GridFuture<?> runLocalSafe(Runnable c, GridClosurePolicy plc) {
         try {
-            return runLocal(c, sys);
+            return runLocal(c, plc);
         }
         catch (Throwable e) {
             if (e instanceof Error)
@@ -721,7 +781,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             // If execution was rejected - rerun locally.
             if (e.getCause() instanceof RejectedExecutionException) {
-                U.warn(log, "Closure execution has been rejected (will execute in the same thread) [sysPool=" + sys +
+                U.warn(log, "Closure execution has been rejected (will execute in the same thread) [plc=" + plc +
                     ", closure=" + c + ']');
 
                 try {
@@ -744,12 +804,22 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      * @param c Closure to execute.
-     * @param sys Whether to run on system or public pool.
-     * @param <R> Type of closure return value.
+     * @param sys If {@code true}, then system pool will be used, otherwise public pool will be used.
      * @return Future.
      * @throws GridException Thrown in case of any errors.
      */
     private <R> GridFuture<R> callLocal(@Nullable final Callable<R> c, boolean sys) throws GridException {
+        return callLocal(c, sys ? GridClosurePolicy.SYSTEM_POOL : GridClosurePolicy.PUBLIC_POOL);
+    }
+
+    /**
+     * @param c Closure to execute.
+     * @param plc Whether to run on system or public pool.
+     * @param <R> Type of closure return value.
+     * @return Future.
+     * @throws GridException Thrown in case of any errors.
+     */
+    private <R> GridFuture<R> callLocal(@Nullable final Callable<R> c, GridClosurePolicy plc) throws GridException {
         if (c == null)
             return new GridFinishedFuture<>(ctx);
 
@@ -789,11 +859,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             fut.setWorker(w);
 
             try {
-                pool(sys).execute(w);
+                pool(plc).execute(w);
             }
             catch (RejectedExecutionException e) {
                 U.error(log, "Failed to execute worker due to execution rejection " +
-                    "(increase upper bound on " + (sys ? "system" : "public") + " executor service).", e);
+                    "(increase upper bound on " + poolName(plc) + " executor service).", e);
 
                 w.run();
             }
@@ -817,21 +887,33 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Executes closure on system pool. Companion to {@link #callLocal(Callable, boolean)}
+     * but in case of rejected execution re-runs the closure in the current thread (blocking).
+     *
+     * @param c Closure to execute.
+     * @param sys If {@code true}, then system pool will be used, otherwise public pool will be used.
+     * @return Future.
+     */
+    public <R> GridFuture<R> callLocalSafe(Callable<R> c, boolean sys) {
+        return callLocalSafe(c, sys ? GridClosurePolicy.SYSTEM_POOL : GridClosurePolicy.PUBLIC_POOL);
+    }
+
+    /**
      * Companion to {@link #callLocal(Callable, boolean)} but in case of rejected execution re-runs
      * the closure in the current thread (blocking).
      *
      * @param c Closure to execute.
-     * @param sys Whether to run on system or public pool.
+     * @param plc Policy to choose executor pool.
      * @return Future.
      */
-    public <R> GridFuture<R> callLocalSafe(Callable<R> c, boolean sys) {
+    public <R> GridFuture<R> callLocalSafe(Callable<R> c, GridClosurePolicy plc) {
         try {
-            return callLocal(c, sys);
+            return callLocal(c, plc);
         }
         catch (GridException e) {
             // If execution was rejected - rerun locally.
             if (e.getCause() instanceof RejectedExecutionException) {
-                U.warn(log, "Closure execution has been rejected (will execute in the same thread) [sysPool=" + sys +
+                U.warn(log, "Closure execution has been rejected (will execute in the same thread) [plc=" + plc +
                     ", closure=" + c + ']');
 
                 try {
@@ -1107,6 +1189,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * No-reduce task adapter.
      */
     private abstract static class TaskNoReduceAdapter<T> extends GridPeerDeployAwareTaskAdapter<T, Void> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          * @param pda Peer deploy aware instance.
          */
@@ -1125,6 +1210,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * {@link GridClosureProcessor#runAsync(GridClosureCallMode, Collection, Collection)}.
      */
     private class T1 extends TaskNoReduceAdapter<Void> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         @GridLoadBalancerResource
         private GridComputeLoadBalancer lb;
@@ -1158,6 +1246,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     private class T2 extends TaskNoReduceAdapter<Void> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         @GridLoadBalancerResource
         private GridComputeLoadBalancer lb;
 
@@ -1186,6 +1277,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * {@link GridClosureProcessor#forkjoinAsync(GridClosureCallMode, Collection, GridReducer, Collection)}
      */
     private class T3<R1, R2> extends GridPeerDeployAwareTaskAdapter<Void, R2> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         @GridLoadBalancerResource
         private GridComputeLoadBalancer lb;
@@ -1239,6 +1333,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     private class T4 extends TaskNoReduceAdapter<Void> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final String cacheName;
 
         /** */
@@ -1276,6 +1373,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      */
     private class T5<R> extends GridPeerDeployAwareTaskAdapter<Void, R> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final String cacheName;
 
@@ -1327,6 +1427,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     private class T6<R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final GridClosureCallMode mode;
 
         /** */
@@ -1368,6 +1471,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     private class T7<R> extends GridPeerDeployAwareTaskAdapter<Void, R> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private GridBiTuple<GridClosureCallMode, Callable<R>> t;
 
         /** */
@@ -1403,6 +1509,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      */
     private class T8<T, R> extends GridPeerDeployAwareTaskAdapter<Void, R> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private GridClosure<T, R> job;
 
@@ -1445,6 +1554,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      */
     private class T9<T, R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private GridClosure<T, R> job;
 
@@ -1491,6 +1603,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      */
     private class T10<T, R1, R2> extends GridPeerDeployAwareTaskAdapter<Void, R2> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private GridClosure<T, R1> job;
 
@@ -1553,6 +1668,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      */
     private class T11<T, R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final GridClosure<T, R> job;
 

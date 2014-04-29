@@ -20,6 +20,9 @@ import java.util.concurrent.locks.*;
  */
 public class GridNioMessageTracker implements GridRunnable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final GridNioSession ses;
 
     /** */
