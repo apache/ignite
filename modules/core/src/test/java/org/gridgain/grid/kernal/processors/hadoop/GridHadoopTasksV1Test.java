@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
-import org.gridgain.grid.kernal.processors.hadoop.hadoop1impl.*;
+import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.GridHadoopV2JobImpl;
 
 import java.io.*;
 import java.util.*;
@@ -36,10 +36,7 @@ public class GridHadoopTasksV1Test extends GridHadoopTasksAllVersionsTest {
 
         GridHadoopJobId jobId = new GridHadoopJobId(new UUID(0, 0), 0);
 
-        GridHadoopV1JobImpl gridHadoopJob = new GridHadoopV1JobImpl(jobId, jobInfo);
-
-        //TODO: How to set job ID in v1?
-        // hadoopJob.setJobID(gridHadoopJob.hadoopJobContext().getJobID());
+        GridHadoopV2JobImpl gridHadoopJob = new GridHadoopV2JobImpl(jobId, jobInfo);
 
         return gridHadoopJob;
     }

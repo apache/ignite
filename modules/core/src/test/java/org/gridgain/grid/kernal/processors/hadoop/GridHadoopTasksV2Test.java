@@ -31,6 +31,8 @@ public class GridHadoopTasksV2Test extends GridHadoopTasksAllVersionsTest {
      */
     @Override public GridHadoopJob getHadoopJob(String inFile, String outFile) throws IOException {
         Job hadoopJob = GridGainWordCount2.getJob(inFile, outFile);
+        hadoopJob.getConfiguration().setBooleanIfUnset("mapred.mapper.new-api", true);
+        hadoopJob.getConfiguration().setBooleanIfUnset("mapred.reducer.new-api", true);
 
         GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(hadoopJob.getConfiguration());
 

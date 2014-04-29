@@ -10,13 +10,9 @@
 package org.gridgain.grid.kernal.processors.hadoop.hadoop1impl;
 
 import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.mapred.JobContext;
-import org.apache.hadoop.mapred.OutputCommitter;
-import org.apache.hadoop.mapred.OutputFormat;
-import org.apache.hadoop.mapred.RecordWriter;
-import org.apache.hadoop.mapred.Reducer;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.GridHadoopV2JobImpl;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.IOException;
@@ -33,33 +29,33 @@ public class GridHadoopV1ReduceTask extends GridHadoopTask {
 
     /** {@inheritDoc} */
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
-        GridHadoopV1JobImpl jobImpl = (GridHadoopV1JobImpl)taskCtx.job();
+        GridHadoopV2JobImpl jobImpl = (GridHadoopV2JobImpl) taskCtx.job();
 
-        JobContext jobCtx = jobImpl.hadoopJobContext();
+        JobConf jobConf = jobImpl.hadoopJobContext().getJobConf();
 
-        Reducer reducer = U.newInstance(jobCtx.getJobConf().getReducerClass());
+        Reducer reducer = U.newInstance(jobConf.getReducerClass());
 
-        OutputFormat outFormat = jobCtx.getJobConf().getOutputFormat();
+        OutputFormat outFormat = jobConf.getOutputFormat();
 
         Reporter reporter = Reporter.NULL;
 
-        NumberFormat numberFormat = NumberFormat.getInstance();
+        NumberFormat numFormat = NumberFormat.getInstance();
 
-        numberFormat.setMinimumIntegerDigits(5);
-        numberFormat.setGroupingUsed(false);
+        numFormat.setMinimumIntegerDigits(5);
+        numFormat.setGroupingUsed(false);
 
-        String fileName = "part-" + numberFormat.format(info().taskNumber());
+        String fileName = "part-" + numFormat.format(info().taskNumber());
 
-        reducer.configure(jobCtx.getJobConf());
+        reducer.configure(jobConf);
 
         GridHadoopTaskInput input = taskCtx.input();
 
         TaskAttemptID attempt = jobImpl.attemptId(info());
 
-        jobCtx.getJobConf().set("mapreduce.task.attempt.id", attempt.toString());
+        jobConf.set("mapreduce.task.attempt.id", attempt.toString());
 
         try {
-            final RecordWriter writer = outFormat.getRecordWriter(null, jobCtx.getJobConf(), fileName, reporter);
+            final RecordWriter writer = outFormat.getRecordWriter(null, jobConf, fileName, reporter);
 
             OutputCollector collector = new OutputCollector() {
                 @Override public void collect(Object key, Object val) throws IOException {
@@ -78,9 +74,9 @@ public class GridHadoopV1ReduceTask extends GridHadoopTask {
                 writer.close(reporter);
             }
 
-            OutputCommitter commiter = jobCtx.getJobConf().getOutputCommitter();
+            OutputCommitter commiter = jobConf.getOutputCommitter();
 
-            commiter.commitTask(new TaskAttemptContextImpl(jobCtx.getJobConf(), attempt));
+            commiter.commitTask(new TaskAttemptContextImpl(jobConf, attempt));
         }
         catch (IOException e) {
             throw new GridException(e);

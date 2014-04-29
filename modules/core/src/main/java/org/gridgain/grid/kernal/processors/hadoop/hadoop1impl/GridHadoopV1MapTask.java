@@ -13,6 +13,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.GridHadoopV2JobImpl;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -28,13 +29,13 @@ public class GridHadoopV1MapTask extends GridHadoopTask {
 
     /** {@inheritDoc} */
     @Override public void run(final GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
-        GridHadoopV1JobImpl jobImpl = (GridHadoopV1JobImpl)taskCtx.job();
+        GridHadoopV2JobImpl jobImpl = (GridHadoopV2JobImpl) taskCtx.job();
 
-        JobContext jobCtx = jobImpl.hadoopJobContext();
+        JobConf jobConf = jobImpl.hadoopJobContext().getJobConf();
 
-        Mapper mapper = U.newInstance(jobCtx.getJobConf().getMapperClass());
+        Mapper mapper = U.newInstance(jobConf.getMapperClass());
 
-        InputFormat inFormat = jobCtx.getJobConf().getInputFormat();
+        InputFormat inFormat = jobConf.getInputFormat();
 
         GridHadoopFileBlock block = info().fileBlock();
 
@@ -54,12 +55,12 @@ public class GridHadoopV1MapTask extends GridHadoopTask {
         Reporter reporter = Reporter.NULL;
 
         try {
-            RecordReader reader = inFormat.getRecordReader(split, jobCtx.getJobConf(), reporter);
+            RecordReader reader = inFormat.getRecordReader(split, jobConf, reporter);
 
             Object key = reader.createKey();
             Object val = reader.createValue();
 
-            mapper.configure(jobCtx.getJobConf());
+            mapper.configure(jobConf);
 
             while (reader.next(key, val)) {
                 mapper.map(key, val, collector, reporter);

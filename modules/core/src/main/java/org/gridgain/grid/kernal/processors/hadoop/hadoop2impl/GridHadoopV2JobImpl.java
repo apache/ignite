@@ -10,11 +10,13 @@
 package org.gridgain.grid.kernal.processors.hadoop.hadoop2impl;
 
 import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.mapreduce.task.*;
+import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapreduce.Partitioner;
+import org.apache.hadoop.mapreduce.TaskType;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.hadoop1impl.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -31,7 +33,7 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
     protected GridHadoopDefaultJobInfo jobInfo;
 
     /** Hadoop native job context. */
-    protected JobContext ctx;
+    protected JobContextImpl ctx;
 
     /** Key class. */
     private Class<?> keyCls;
@@ -47,7 +49,9 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
         this.jobId = jobId;
         this.jobInfo = jobInfo;
 
-        ctx = new JobContextImpl(jobInfo.configuration(), new JobID(jobId.globalId().toString(), jobId.localId()));
+        JobID hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
+
+        ctx = new JobContextImpl(new JobConf(jobInfo.configuration()), hadoopJobID);
 
         keyCls = ctx.getMapOutputKeyClass();
         valCls = ctx.getMapOutputValueClass();
@@ -75,10 +79,15 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public GridHadoopPartitioner partitioner() throws GridException {
-        try {
-            Class<? extends Partitioner> partCls = ctx.getPartitionerClass();
+        Class partClsOld = ctx.getConfiguration().getClass("mapred.partitioner.class", null);
 
-            return new GridHadoopV2PartitionerAdapter((Partitioner<Object, Object>)U.newInstance(partCls));
+        if (partClsOld != null)
+            return new GridHadoopV1PartitionerAdapter(U.newInstance(ctx.getJobConf().getPartitionerClass()));
+
+        try {
+            Class<? extends Partitioner<?, ?>> partCls = ctx.getPartitionerClass();
+
+            return new GridHadoopV2PartitionerAdapter((Partitioner<Object, Object>) U.newInstance(partCls));
         }
         catch (ClassNotFoundException e) {
             throw new GridException(e);
@@ -87,21 +96,37 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
+        boolean isAbort = taskInfo.type() == GridHadoopTaskType.ABORT;
+
         switch (taskInfo.type()) {
-            case MAP:
-                return new GridHadoopV2MapTask(taskInfo);
+            case MAP: {
+                if (ctx.getJobConf().getUseNewMapper())
+                    return new GridHadoopV2MapTask(taskInfo);
+                else
+                    return  new GridHadoopV1MapTask(taskInfo);
+            }
 
-            case REDUCE:
-                return new GridHadoopV2ReduceTask(taskInfo);
+            case REDUCE: {
+                if (ctx.getJobConf().getUseNewReducer())
+                    return new GridHadoopV2ReduceTask(taskInfo);
+                else
+                    return new GridHadoopV1ReduceTask(taskInfo);
+            }
 
-            case COMBINE:
-                return new GridHadoopV2CombineTask(taskInfo);
+            case COMBINE: {
+                if (ctx.getJobConf().getCombinerClass() == null)
+                    return new GridHadoopV2CombineTask(taskInfo);
+                else
+                    return new GridHadoopV1CombineTask(taskInfo);
+            }
 
             case COMMIT:
-                return new GridHadoopV2CleanupTask(taskInfo, false);
-
-            case ABORT:
-                return new GridHadoopV2CleanupTask(taskInfo, true);
+            case ABORT: {
+                if (ctx.getJobConf().getUseNewReducer())
+                    return new GridHadoopV2CleanupTask(taskInfo, isAbort);
+                else
+                    return new GridHadoopV1CleanupTask(taskInfo, isAbort);
+            }
 
             default:
                 return null;
@@ -118,9 +143,14 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
      *
      * @return Combiner class or {@code null} if combiner is not specified.
      */
-    private Class<? extends Reducer<?, ?, ?, ?>> combinerClass() {
+    private Class combinerClass() {
+        Class res = ctx.getJobConf().getCombinerClass();
+
         try {
-            return ctx.getCombinerClass();
+            if (res == null)
+                res = ctx.getCombinerClass();
+
+            return res;
         }
         catch (ClassNotFoundException e) {
             // TODO check combiner class at initialization and throw meaningful exception.

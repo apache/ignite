@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.hadoop1impl;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.GridHadoopV2JobImpl;
 
 import java.io.*;
 
@@ -34,7 +35,7 @@ public class GridHadoopV1CleanupTask extends GridHadoopTask {
 
     /** {@inheritDoc} */
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
-        GridHadoopV1JobImpl jobImpl = (GridHadoopV1JobImpl)taskCtx.job();
+        GridHadoopV2JobImpl jobImpl = (GridHadoopV2JobImpl) taskCtx.job();
 
         JobContext jobCtx = jobImpl.hadoopJobContext();
 
