@@ -35,6 +35,9 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
  */
 public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, V>
     implements GridCacheTxRemoteEx<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Read set. */
     @GridToStringInclude
     protected Map<K, GridCacheTxEntry<K, V>> readMap;
@@ -536,6 +539,9 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                     if (updateNearCache())
                                         nearCached = cctx.dht().near().peekExx(txEntry.key());
 
+                                    if (!F.isEmpty(txEntry.transformClosures()) || !F.isEmpty(txEntry.filters()))
+                                        txEntry.cached().unswap(true);
+
                                     GridTuple3<GridCacheOperation, V, byte[]> res = applyTransformClosures(txEntry,
                                         false);
 
@@ -593,7 +599,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
 
                                     if (op == CREATE || op == UPDATE) {
                                         // Invalidate only for near nodes (backups cannot be invalidated).
-                                        if (isInvalidate() && !cctx.isDht())
+                                        if (isSystemInvalidate() || (isInvalidate() && cctx.isNear()))
                                             cached.innerRemove(this, eventNodeId(), nodeId, false, false, true, true,
                                                 topVer, txEntry.filters(), replicate ? DR_BACKUP : DR_NONE,
                                                 near() ? null : explicitVer);

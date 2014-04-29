@@ -38,6 +38,9 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentityFuture<Boolean>
     implements GridCacheFuture<Boolean> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
@@ -1062,6 +1065,9 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final GridUuid futId = GridUuid.randomUuid();
 

@@ -51,10 +51,16 @@ enum GridClientCacheTestType {
  *
  */
 void StatsPrinterThreadProc() {
+	int LastIters = gIters.load(); // Save global iterations count so while
+
     while (true) {
-        std::cout << "Operations for last second: " << gIters << std::endl;
-        gIters = 0;
-        boost::this_thread::sleep(boost::posix_time::seconds(1));
+    	boost::this_thread::sleep(boost::posix_time::seconds(1));
+
+    	int CurIters = gIters.load();
+
+        std::cout << "Operations for last second: " << CurIters - LastIters << std::endl;
+
+        LastIters = CurIters;
     }
 }
 
@@ -112,7 +118,6 @@ public:
     void run(GridClientCacheTestType opType) {
         try {
             TGridClientDataPtr data = client->data(vm["cachename"].as<string>());
-            int value = 42;
 
             switch (opType) {
                 case PUT: { // block of code to avoid "jump to the case label" compilation error
@@ -180,7 +185,7 @@ private:
 typedef std::shared_ptr<TestThread> TestThreadPtr;
 
 int main(int argc, const char** argv) {
-
+	gIters = 0;
     gExit = false;
     gWarmupDone = false;
 
@@ -192,14 +197,31 @@ int main(int argc, const char** argv) {
 
     // Declare the supported options.
     options_description desc("Allowed options");
-    desc.add_options()("help", "produce help message")("host", value<string>(), "Host to connect to")("port", value<int>(),
-        "Port to connect to")("threads", value<int>(), "Number of threads")("testtype", value<string>(),
-        "Type of operations to run")("cachename", value<string>(), "Cache name")("warmupseconds", value<int>(),
-        "Seconds to warm up")("runseconds", value<int>(), "Seconds to run")("usetransactions",
-        boost::program_options::value<bool>(), "Use transactions (bool)");
+    desc.add_options()
+    		("help",	"produce help message")
+    		("host",	value<string>()->required(),	"Host to connect to")
+    		("port",	value<int>()->required(),	"Port to connect to")
+    		("threads",	value<int>()->required(),	"Number of threads")
+    		("testtype",	value<string>()->required(),	"Type of operations to run")
+    		("cachename",	value<string>()->required(),	"Cache name")
+    		("warmupseconds",	value<int>()->required(),	"Seconds to warm up")
+    		("runseconds",	value<int>()->required(),	"Seconds to run")
+    		("usetransactions",	boost::program_options::value<bool>()->required(),	"Use transactions (bool)");
 
-    store(parse_command_line(argc, argv, desc), vm);
-    notify(vm);
+    try {
+        store(parse_command_line(argc, argv, desc), vm);
+        notify(vm);
+    }
+    catch (exception &e) {
+    	cerr << "Error parsing arguments: " << e.what() << endl;
+    	cerr << desc << endl;
+    	return 1;
+    }
+
+    if (vm.count("help")) {
+    	cout << desc << endl;
+    	return 0;
+    }
 
     GridClientConfiguration cfg = clientConfig();
 
@@ -238,9 +260,13 @@ int main(int argc, const char** argv) {
     boost::this_thread::sleep(boost::posix_time::seconds(vm["warmupseconds"].as<int>()));
     gWarmupDone = true;
 
+    int itersBeforeTest = gIters.load(); // Save Iterations before final benchmark
+
     // Let tests run for requested amount of time and then signal the exit
     boost::this_thread::sleep(boost::posix_time::seconds(vm["runseconds"].as<int>()));
     gExit = true;
+
+    int itersAfterTest = gIters.load(); // Save iterations after final benchmark
 
     //join all threads
     for (std::vector<TestThreadPtr>::iterator i = workers.begin(); i != workers.end(); i++) {
@@ -251,6 +277,8 @@ int main(int argc, const char** argv) {
     client.reset();
 
     GridClientFactory::stopAll();
+
+    cout << "Average operations/s :" << (itersAfterTest - itersBeforeTest) / vm["runseconds"].as<int>() << endl;
 
     return EXIT_SUCCESS;
 }

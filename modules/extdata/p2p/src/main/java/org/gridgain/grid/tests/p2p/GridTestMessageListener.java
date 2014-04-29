@@ -14,6 +14,7 @@ import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Test message listener.
@@ -25,14 +26,21 @@ public class GridTestMessageListener implements P2<UUID, Object> {
 
     /** {@inheritDoc} */
     @Override public boolean apply(UUID nodeId, Object msg) {
-        X.println("Received message [nodeId=" + nodeId + ", locNodeId=" + grid.localNode().id() + ']');
+        grid.log().info("Received message [nodeId=" + nodeId + ", locNodeId=" + grid.localNode().id() +
+            ", msg=" + msg + ']');
 
-        Integer cnt = grid.<String, Integer>nodeLocalMap().get("msgCnt");
+        GridNodeLocalMap<String, AtomicInteger> map = grid.nodeLocalMap();
 
-        if (cnt == null)
-            cnt = 0;
+        AtomicInteger cnt = map.get("msgCnt");
 
-        grid.<String, Integer>nodeLocalMap().put("msgCnt", cnt + 1);
+        if (cnt == null) {
+            AtomicInteger old = map.putIfAbsent("msgCnt", cnt = new AtomicInteger(0));
+
+            if (old != null)
+                cnt = old;
+        }
+
+        cnt.incrementAndGet();
 
         return true;
     }

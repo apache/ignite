@@ -23,6 +23,9 @@ import static org.gridgain.grid.events.GridEventType.*;
  */
 @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
 public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Remote candidates snapshot. */
     private volatile List<GridCacheMvccCandidate<K>> rmts = Collections.emptyList();
 
@@ -688,7 +691,7 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
                         mvcc.orderCompleted(baseVer, committedVers, rolledbackVers);
                 }
 
-                if (sysInvalidate)
+                if (sysInvalidate && baseVer != null)
                     mvcc.salvageRemote(baseVer);
 
                 owner = mvcc.doneRemote(lockVer, maskNull(pendingVers), maskNull(committedVers),

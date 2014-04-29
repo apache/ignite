@@ -15,6 +15,9 @@ import org.jetbrains.annotations.*;
  * Exception thrown when parent supposed to be a directory is a file.
  */
 public class GridGgfsParentNotDirectoryException extends GridGgfsInvalidPathException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * @param msg Error message.
      */

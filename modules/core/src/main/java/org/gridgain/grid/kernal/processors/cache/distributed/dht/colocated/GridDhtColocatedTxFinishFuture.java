@@ -27,11 +27,16 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.gridgain.grid.cache.GridCacheTxState.*;
+
 /**
  * Colocated tx finish future.
  */
 public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFuture<GridCacheTx>
     implements GridCacheFuture<GridCacheTx> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
@@ -147,7 +152,7 @@ public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFu
         if (err.compareAndSet(null, e)) {
             boolean marked = tx.setRollbackOnly();
 
-            if (e instanceof GridCacheTxRollbackException)
+            if (e instanceof GridCacheTxRollbackException) {
                 if (marked) {
                     try {
                         tx.rollback();
@@ -156,6 +161,15 @@ public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFu
                         U.error(log, "Failed to automatically rollback transaction: " + tx, ex);
                     }
                 }
+            }
+            else if (tx.implicit() && tx.isSystemInvalidate()) { // Finish implicit transaction on heuristic error.
+                try {
+                    tx.close();
+                }
+                catch (GridException ex) {
+                    U.error(log, "Failed to invalidate transaction: " + tx, ex);
+                }
+            }
 
             onComplete();
         }
@@ -183,10 +197,12 @@ public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFu
     /** {@inheritDoc} */
     @Override public boolean onDone(GridCacheTx tx, Throwable err) {
         if (initialized() || err != null) {
-            if (this.tx.onePhaseCommit())
+            if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING))
                 this.tx.tmCommit();
 
-            if (super.onDone(tx, err)) {
+            Throwable e = this.err.get();
+
+            if (super.onDone(tx, e != null ? e : err)) {
                 // Don't forget to clean up.
                 cctx.mvcc().removeFuture(this);
 
@@ -357,6 +373,9 @@ public class GridDhtColocatedTxFinishFuture<K, V> extends GridCompoundIdentityFu
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<GridCacheTx> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final GridUuid futId = GridUuid.randomUuid();
 

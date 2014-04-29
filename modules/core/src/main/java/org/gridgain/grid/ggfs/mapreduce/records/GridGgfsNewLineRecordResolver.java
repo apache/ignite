@@ -19,6 +19,9 @@ import java.io.*;
  * Note that this resolver cannot be created and has one constant implementations: {@link #NEW_LINE}.
  */
 public class GridGgfsNewLineRecordResolver extends GridGgfsByteDelimiterRecordResolver {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Singleton new line resolver. This resolver will resolve records based on new lines
      * regardless if they have '\n' or '\r\n' patterns.

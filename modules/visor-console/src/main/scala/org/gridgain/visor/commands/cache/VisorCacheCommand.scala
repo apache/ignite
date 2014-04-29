@@ -473,7 +473,8 @@ class VisorCacheCommand {
             case "mi" => data.toList.sortBy(_.misses)
             case "rd" => data.toList.sortBy(_.reads)
             case "wr" => data.toList.sortBy(_.writes)
-            case "cn" => data.toList.sortWith((x, y) => x.cacheName == null || x.cacheName < y.cacheName)
+            case "cn" => data.toList.sortWith((x, y) => x.cacheName == null ||
+                x.cacheName.toLowerCase < y.cacheName.toLowerCase)
 
             case _ =>
                 assert(false, "Unknown sorting type: " + arg)
@@ -502,7 +503,8 @@ class VisorCacheCommand {
             case "mi" => data.toList.sortBy(_.avgMisses)
             case "rd" => data.toList.sortBy(_.avgReads)
             case "wr" => data.toList.sortBy(_.avgWrites)
-            case "cn" => data.toList.sortWith((x, y) => x.cacheName == null || x.cacheName < y.cacheName)
+            case "cn" => data.toList.sortWith((x, y) => x.cacheName == null ||
+                x.cacheName.toLowerCase < y.cacheName.toLowerCase)
 
             case _ =>
                 assert(false, "Unknown sorting type: " + arg)

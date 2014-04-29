@@ -20,6 +20,9 @@ import java.util.*;
  * Finished DHT future.
  */
 public class GridDhtFinishedFuture<T> extends GridFinishedFuture<T> implements GridDhtFuture<T> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */

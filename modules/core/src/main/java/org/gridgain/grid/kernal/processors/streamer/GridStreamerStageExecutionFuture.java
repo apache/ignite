@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
@@ -26,6 +27,9 @@ import java.util.concurrent.*;
  * Streamer execution future.
  */
 public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Logger. */
     private GridLogger log;
 
@@ -182,14 +186,15 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
                 log.debug("Mapped stage to nodes [futId=" + futId + ", stageName=" + stageName +
                     ", nodeIds=" + (routeMap != null ? U.nodeIds(routeMap.keySet()) : null) + ']');
 
-            if (routeMap == null) {
+            if (F.isEmpty(routeMap)) {
                 U.error(log, "Failed to route events to nodes (will fail pipeline execution) " +
                     "[streamer=" + streamer.name() + ", stageName=" + stageName + ", evts=" + evts + ']');
 
                 UUID locNodeId = streamer.kernalContext().localNodeId();
 
                 onFailed(locNodeId, new GridStreamerRouteFailedException("Failed to route " +
-                    "events to nodes (router returned null) [locNodeId=" + locNodeId + ", stageName=" + stageName + ']'));
+                    "events to nodes (router returned null or empty route map) [locNodeId=" + locNodeId + ", " +
+                    "stageName=" + stageName + ']'));
             }
             else {
                 execNodeIds.addAll(U.nodeIds(routeMap.keySet()));

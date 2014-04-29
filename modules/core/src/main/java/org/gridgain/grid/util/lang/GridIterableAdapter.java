@@ -18,6 +18,9 @@ import java.util.*;
  */
 public class GridIterableAdapter<T> implements GridIterable<T> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private GridIterator<T> impl;
 
     /**
@@ -75,6 +78,9 @@ public class GridIterableAdapter<T> implements GridIterable<T> {
      *
      */
     private static class IteratorWrapper<T> extends GridIteratorAdapter<T> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Base iterator. */
         private Iterator<T> it;
 

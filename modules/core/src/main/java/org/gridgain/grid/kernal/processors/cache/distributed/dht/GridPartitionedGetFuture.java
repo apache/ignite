@@ -34,6 +34,9 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
  */
 public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<Map<K, V>>
     implements GridCacheFuture<Map<K, V>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Default max remap count value. */
     public static final int DFLT_MAX_REMAP_CNT = 3;
 
@@ -503,6 +506,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Map<K, V>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final GridUuid futId = GridUuid.randomUuid();
 

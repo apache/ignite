@@ -118,7 +118,6 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         c.setPeerClassLoadingEnabled(false);
 
         // Enable tracing.
-//        System.setProperty(GridSystemProperties.GG_DEBUG_ENABLED, "true");
 //        Logger.getLogger("org.gridgain.grid.kernal.processors.cache.GridCacheDgcManager.trace").setLevel(Level.DEBUG);
 
         return c;

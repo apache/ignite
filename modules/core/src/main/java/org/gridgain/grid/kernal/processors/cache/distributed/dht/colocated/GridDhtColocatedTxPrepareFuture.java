@@ -40,6 +40,9 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  */
 public class GridDhtColocatedTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<GridCacheTxEx<K, V>>
     implements GridCacheFuture<GridCacheTxEx<K, V>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Logger reference. */
     private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
@@ -466,6 +469,9 @@ public class GridDhtColocatedTxPrepareFuture<K, V> extends GridCompoundIdentityF
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<GridCacheTxEx<K, V>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final GridUuid futId = GridUuid.randomUuid();
 

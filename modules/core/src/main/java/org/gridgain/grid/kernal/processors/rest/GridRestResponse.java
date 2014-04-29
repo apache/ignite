@@ -19,6 +19,9 @@ import java.io.*;
  * JSON response. Getters and setters must conform to JavaBean standard.
  */
 public class GridRestResponse implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Command succeeded. */
     public static final int STATUS_SUCCESS = 0;
 
