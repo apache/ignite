@@ -141,7 +141,8 @@ import org.jetbrains.annotations.*;
  * mastersQry.execute();
  * </pre>
  * <h1 class="header">Geo-Spatial Indexes and Queries</h1>
- * Example of spatial index (supported in {@link GridH2IndexingSpi}):
+ * GridGain also support <b>Geo-Spatial Indexes</b>. Here is an example of geo-spatial index
+ * (supported by {@link GridH2IndexingSpi}):
  * <pre name="code" class="java">
  * private class MapPoint implements Serializable {
  *     &#64;GridCacheQuerySqlField(index = true)
