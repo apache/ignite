@@ -17,7 +17,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.IOException;
+import java.io.*;
 
 /**
  * Hadoop map task implementation for v2 API.
@@ -51,7 +51,8 @@ public class GridHadoopV2MapTask extends GridHadoopTask {
 
         GridHadoopFileBlock block = info().fileBlock();
 
-        FileSplit split = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), block.hosts());
+        //TODO: rework to use custom input split instead FileSplit GG-8223
+        InputSplit split = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), block.hosts());
 
         try {
             RecordReader reader = inFormat.createRecordReader(split, hadoopCtx);
