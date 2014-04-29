@@ -50,14 +50,14 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
     /** {@inheritDoc} */
     @Override public GridFuture<GridRestResponse> handleAsync(GridRestRequest req) {
-        assert req != null;
+        assert req instanceof GridRestTopologyRequest : "Invalid command for topology handler: " + req;
+
+        assert SUPPORTED_COMMANDS.contains(req.command());
 
         if (log.isDebugEnabled())
             log.debug("Handling topology REST request: " + req);
 
-        assert req instanceof GridRestTopRequest : "Invalid command for topology handler: " + req;
-
-        GridRestTopRequest req0 = (GridRestTopRequest) req;
+        GridRestTopologyRequest req0 = (GridRestTopologyRequest)req;
 
         GridRestResponse res = new GridRestResponse();
 

@@ -104,6 +104,6 @@ public class GridRestTaskRequest extends GridRestRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridRestTaskRequest.class, this);
+        return S.toString(GridRestTaskRequest.class, this, super.toString());
     }
 }

@@ -115,14 +115,14 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
     /** {@inheritDoc} */
     @Override public GridFuture<GridRestResponse> handleAsync(final GridRestRequest req) {
-        assert req != null;
+        assert req instanceof GridRestCacheRequest : "Invalid command for topology handler: " + req;
+
+        assert SUPPORTED_COMMANDS.contains(req.command());
 
         GridLicenseUseRegistry.onUsage(DATA_GRID, getClass());
 
         if (log.isDebugEnabled())
             log.debug("Handling cache REST request: " + req);
-
-        assert req instanceof GridRestCacheRequest : "Invalid command for topology handler: " + req;
 
         GridRestCacheRequest req0 = (GridRestCacheRequest) req;
 

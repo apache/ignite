@@ -139,12 +139,12 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
      * @throws GridException On any handling exception.
      */
     private GridFuture<GridRestResponse> handleAsyncUnsafe(final GridRestRequest req) throws GridException {
-        assert req != null;
+        assert req instanceof GridRestTaskRequest : "Invalid command for topology handler: " + req;
+
+        assert SUPPORTED_COMMANDS.contains(req.command());
 
         if (log.isDebugEnabled())
             log.debug("Handling task REST request: " + req);
-
-        assert req instanceof GridRestTaskRequest : "Invalid command for topology handler: " + req;
 
         GridRestTaskRequest req0 = (GridRestTaskRequest) req;
 

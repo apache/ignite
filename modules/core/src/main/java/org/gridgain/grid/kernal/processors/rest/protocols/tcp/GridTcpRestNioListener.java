@@ -54,7 +54,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         new EnumMap<>(GridClientCacheRequest.GridCacheOperation.class);
 
     /**
-     *
+     * Fills {@code cacheCmdMap}.
      */
     static {
         cacheCmdMap.put(PUT, CACHE_PUT);
@@ -221,7 +221,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         GridRestRequest restReq = null;
 
         if (msg instanceof GridClientAuthenticationRequest) {
-            GridClientAuthenticationRequest req = (GridClientAuthenticationRequest) msg;
+            GridClientAuthenticationRequest req = (GridClientAuthenticationRequest)msg;
 
             restReq = new GridRestTaskRequest();
 
@@ -264,7 +264,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         else if (msg instanceof GridClientTopologyRequest) {
             GridClientTopologyRequest req = (GridClientTopologyRequest) msg;
 
-            GridRestTopRequest restTopReq = new GridRestTopRequest();
+            GridRestTopologyRequest restTopReq = new GridRestTopologyRequest();
 
             restTopReq.includeMetrics(req.includeMetrics());
             restTopReq.includeAttributes(req.includeAttributes());

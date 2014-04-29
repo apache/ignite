@@ -42,6 +42,10 @@ public class GridVersionCommandHandler extends GridRestCommandHandlerAdapter {
 
     /** {@inheritDoc} */
     @Override public GridFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+        assert req != null;
+
+        assert SUPPORTED_COMMANDS.contains(req.command());
+
         return new GridFinishedFuture<>(ctx, new GridRestResponse(ctx.version()));
     }
 }

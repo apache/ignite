@@ -348,7 +348,7 @@ public class GridJettyRestHandler extends AbstractHandler {
 
             case TOPOLOGY:
             case NODE: {
-                GridRestTopRequest restReq0 = new GridRestTopRequest();
+                GridRestTopologyRequest restReq0 = new GridRestTopologyRequest();
 
                 restReq0.includeMetrics(Boolean.parseBoolean((String) params.get("mtr")));
                 restReq0.includeAttributes(Boolean.parseBoolean((String) params.get("attr")));

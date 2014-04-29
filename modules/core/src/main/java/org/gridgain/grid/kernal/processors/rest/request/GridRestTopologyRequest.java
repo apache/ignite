@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Grid command topology request.
  */
-public class GridRestTopRequest extends GridRestRequest {
+public class GridRestTopologyRequest extends GridRestRequest {
     /** Id of requested node. */
     private UUID nodeId;
 
@@ -87,6 +87,6 @@ public class GridRestTopRequest extends GridRestRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridRestTopRequest.class, this);
+        return S.toString(GridRestTopologyRequest.class, this, super.toString());
     }
 }

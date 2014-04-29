@@ -68,6 +68,6 @@ public class GridRestLogRequest extends GridRestRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridRestLogRequest.class, this);
+        return S.toString(GridRestLogRequest.class, this, super.toString());
     }
 }
