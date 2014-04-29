@@ -246,12 +246,6 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedP2PEnabledByteArrayValuesSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedP2PDisabledByteArrayValuesSelfTest.class);
 
-        // TODO uncomment tests when GG-4154 fixed.
-//        suite.addTestSuite(GridCacheLocalTxExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheReplicatedTxExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheNearTxExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheColocatedTxExceptionSelfTest.class);
-
         // Near-only cache.
         suite.addTest(GridCacheNearOnlySelfTestSuite.suite());
 
