@@ -34,19 +34,20 @@ public class GridHadoopV1MapTask extends GridHadoopTask {
 
         Mapper mapper = U.newInstance(jobCtx.getJobConf().getMapperClass());
 
-        //TODO: Is there a difference how to create instance?
-        //inFormat = U.newInstance(jobCtx.getJobConf().getClass("mapred.input.format.class", TextInputFormat.class,
-        //        InputFormat.class));
         InputFormat inFormat = jobCtx.getJobConf().getInputFormat();
 
         GridHadoopFileBlock block = info().fileBlock();
 
-        //TODO: rework to use custom input split instead FileSplit
         InputSplit split = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), block.hosts());
 
         OutputCollector collector = new OutputCollector() {
-            @Override public void collect(Object key, Object val) {
-                taskCtx.output().write(key, val);
+            @Override public void collect(Object key, Object val) throws IOException {
+                try {
+                    taskCtx.output().write(key, val);
+                }
+                catch (GridException e) {
+                    throw new IOException(e);
+                }
             }
         };
 

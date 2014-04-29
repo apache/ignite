@@ -42,8 +42,13 @@ public class GridHadoopV1CombineTask extends GridHadoopTask {
         Reporter reporter = Reporter.NULL;
 
         OutputCollector collector = new OutputCollector() {
-            @Override public void collect(Object key, Object val) {
-                taskCtx.output().write(key, val);
+            @Override public void collect(Object key, Object val) throws IOException {
+                try {
+                    taskCtx.output().write(key, val);
+                }
+                catch (GridException e) {
+                    throw new IOException(e);
+                }
             }
         };
 

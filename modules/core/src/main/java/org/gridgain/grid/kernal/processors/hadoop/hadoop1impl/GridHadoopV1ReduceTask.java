@@ -26,13 +26,6 @@ import java.text.NumberFormat;
  * Hadoop reduce task implementation for v1 API.
  */
 public class GridHadoopV1ReduceTask extends GridHadoopTask {
-    /** Format of number in output file name. */
-    private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance();
-    static {
-        NUMBER_FORMAT.setMinimumIntegerDigits(5);
-        NUMBER_FORMAT.setGroupingUsed(false);
-    }
-
     /** {@inheritDoc} */
     public GridHadoopV1ReduceTask(GridHadoopTaskInfo taskInfo) {
         super(taskInfo);
@@ -46,14 +39,16 @@ public class GridHadoopV1ReduceTask extends GridHadoopTask {
 
         Reducer reducer = U.newInstance(jobCtx.getJobConf().getReducerClass());
 
-        //TODO: Is there a difference how to create instance?
-        //OutputFormat outFormat = U.newInstance(jobCtx.getJobConf().getClass("mapred.output.format.class", TextOutputFormat.class,
-        //        OutputFormat.class));
         OutputFormat outFormat = jobCtx.getJobConf().getOutputFormat();
 
         Reporter reporter = Reporter.NULL;
 
-        String fileName = "part-" + NUMBER_FORMAT.format(info().taskNumber());
+        NumberFormat numberFormat = NumberFormat.getInstance();
+
+        numberFormat.setMinimumIntegerDigits(5);
+        numberFormat.setGroupingUsed(false);
+
+        String fileName = "part-" + numberFormat.format(info().taskNumber());
 
         reducer.configure(jobCtx.getJobConf());
 
@@ -86,7 +81,6 @@ public class GridHadoopV1ReduceTask extends GridHadoopTask {
             OutputCommitter commiter = jobCtx.getJobConf().getOutputCommitter();
 
             commiter.commitTask(new TaskAttemptContextImpl(jobCtx.getJobConf(), attempt));
-            commiter.commitJob(jobCtx);
         }
         catch (IOException e) {
             throw new GridException(e);

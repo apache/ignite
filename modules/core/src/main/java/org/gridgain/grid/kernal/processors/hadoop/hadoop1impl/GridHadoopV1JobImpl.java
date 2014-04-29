@@ -14,6 +14,7 @@ import org.apache.hadoop.mapreduce.TaskType;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
@@ -30,6 +31,10 @@ public class GridHadoopV1JobImpl implements GridHadoopJob {
     /** Hadoop job context. */
     private JobContext ctx;
 
+    /**
+     * @param jobId Job ID.
+     * @param jobInfo Job info.
+     */
     public GridHadoopV1JobImpl(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfo) {
         this.jobId = jobId;
         this.jobInfo = jobInfo;
@@ -62,6 +67,15 @@ public class GridHadoopV1JobImpl implements GridHadoopJob {
         return null;
     }
 
+    @Override
+    public GridHadoopSerialization keySerialization() throws GridException {
+        return null;
+    }
+
+    @Override public GridHadoopSerialization valueSerialization() throws GridException {
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public GridHadoopTask createTask(GridHadoopTaskInfo taskInfo) {
         switch (taskInfo.type()) {
@@ -74,9 +88,18 @@ public class GridHadoopV1JobImpl implements GridHadoopJob {
             case COMBINE:
                 return new GridHadoopV1CombineTask(taskInfo);
 
+            case COMMIT:
+                return new GridHadoopV1CleanupTask(taskInfo, false);
+
+            case ABORT:
+                return new GridHadoopV1CleanupTask(taskInfo, true);
             default:
                 return null;
         }
+    }
+
+    @Nullable @Override public String property(String name) {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -93,12 +116,6 @@ public class GridHadoopV1JobImpl implements GridHadoopJob {
         return ctx.getJobConf().getCombinerClass();
     }
 
-    /** {@inheritDoc} */
-    @Override public GridHadoopSerialization serialization() throws GridException {
-        // TODO implement.
-        return null;
-    }
-
     /**
      * @param type Task type.
      * @return Hadoop task type.
@@ -110,6 +127,10 @@ public class GridHadoopV1JobImpl implements GridHadoopJob {
 
             case REDUCE:
                 return TaskType.REDUCE;
+
+            case COMMIT:
+            case ABORT:
+                return TaskType.JOB_CLEANUP;
 
             default:
                 return null;
