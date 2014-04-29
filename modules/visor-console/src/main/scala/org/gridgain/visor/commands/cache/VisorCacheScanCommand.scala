@@ -320,7 +320,7 @@ import VisorScanCache._
 @GridInternal
 private class VisorScanCacheTask extends VisorConsoleOneNodeTask[VisorScanCacheTaskArgs, Either[Exception, VisorScanCacheResult]] {
     @impl protected def run(g: GridEx, arg: VisorScanCacheTaskArgs): Either[Exception, VisorScanCacheResult] = {
-        val nodeLclKey = SCAN_QRY_KEY + "-" + UUID.randomUUID()
+        val qryId = SCAN_QRY_KEY + "-" + UUID.randomUUID()
 
         try {
             val c = g.cachex[Object, Object](arg.cacheName)
@@ -336,11 +336,11 @@ private class VisorScanCacheTask extends VisorConsoleOneNodeTask[VisorScanCacheT
 
                 val (rows, next) = fetchRows(fut, null, arg.pageSize)
 
-                g.nodeLocalMap[String, VisorScanStorageValType]().put(nodeLclKey, (fut, next, arg.pageSize, false))
+                g.nodeLocalMap[String, VisorScanStorageValType]().put(qryId, (fut, next, arg.pageSize, false))
 
-                scheduleRemoval(g, nodeLclKey)
+                scheduleRemoval(g, qryId)
 
-                Right(new VisorScanCacheResult(g.localNode().id(), nodeLclKey, rows, next != null))
+                Right(new VisorScanCacheResult(g.localNode().id(), qryId, rows, next != null))
             }
         }
         catch {

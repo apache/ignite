@@ -209,11 +209,10 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @return Cache projection for given key and value types.
      * @see `org.gridgain.grid.cache.GridCacheProjection.projection(...)`
      */
-    def viewByType[A, B](k: Class[A], v: Class[B]):
-        GridCacheProjection[A, B] = {
+    def viewByType[A, B](k: Class[A], v: Class[B]): GridCacheProjection[A, B] = {
         assert(k != null && v != null)
 
-        value.projection(toJavaType(k), toJavaType(v))
+        value.projection(toJavaType(k), toJavaType(v)).asInstanceOf[GridCacheProjection[A, B]]
     }
 
     /**

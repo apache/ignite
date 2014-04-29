@@ -44,8 +44,8 @@ import static org.gridgain.grid.util.GridConcurrentFactory.*;
  * Cache transaction manager.
  */
 public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
-    /** Maximum number of transactions that have completed (initialized to 100K). */
-    private static final int MAX_COMPLETED_TX_CNT = Integer.getInteger(GG_MAX_COMPLETED_TX_COUNT, 262144); // 2^18
+    /** Default maximum number of transactions that have completed. */
+    private static final int DFLT_MAX_COMPLETED_TX_CNT = 262144; // 2^18
 
     /** Slow tx warn timeout (initialized to 0). */
     private static final int SLOW_TX_WARN_TIMEOUT = Integer.getInteger(GG_SLOW_TX_WARN_TIMEOUT, 0);
@@ -74,11 +74,11 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /** Committed local transactions. */
     private final GridBoundedConcurrentOrderedSet<GridCacheVersion> committedVers =
-        new GridBoundedConcurrentOrderedSet<>(MAX_COMPLETED_TX_CNT);
+        new GridBoundedConcurrentOrderedSet<>(Integer.getInteger(GG_MAX_COMPLETED_TX_COUNT, DFLT_MAX_COMPLETED_TX_CNT));
 
     /** Rolled back local transactions. */
     private final NavigableSet<GridCacheVersion> rolledbackVers =
-        new GridBoundedConcurrentOrderedSet<>(MAX_COMPLETED_TX_CNT);
+        new GridBoundedConcurrentOrderedSet<>(Integer.getInteger(GG_MAX_COMPLETED_TX_COUNT, DFLT_MAX_COMPLETED_TX_CNT));
 
     /** Pessimistic commit buffer. */
     private GridCacheTxCommitBuffer<K, V> pessimisticRecoveryBuf;
@@ -1093,10 +1093,13 @@ public class GridCacheTxManager<K, V> extends GridCacheManagerAdapter<K, V> {
          */
 
         // 1. Make sure that committed version has been recorded.
-        if (!(committedVers.contains(tx.xidVersion()) || tx.writeSet().isEmpty() || tx.isSystemInvalidate()))
+        if (!(committedVers.contains(tx.xidVersion()) || tx.writeSet().isEmpty() || tx.isSystemInvalidate())) {
+            uncommitTx(tx);
+
             throw new GridRuntimeException("Missing commit version (consider increasing " +
                 GG_MAX_COMPLETED_TX_COUNT + " system property) [ver=" + tx.xidVersion() + ", firstVer=" +
                 committedVers.firstx() + ", lastVer=" + committedVers.lastx() + ", tx=" + tx.xid() + ']');
+        }
 
         if (idMap.remove(tx.xidVersion(), tx)) {
             // 2. Must process completed entries before unlocking!
