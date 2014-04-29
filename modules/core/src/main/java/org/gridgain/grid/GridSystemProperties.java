@@ -21,13 +21,6 @@ import javax.net.ssl.*;
  */
 public final class GridSystemProperties {
     /**
-     * Property identifying whether GridGain debug is enabled or not. If enabled,
-     * the standard logger configuration will be used, otherwise logger settings
-     * will be bypassed and debug won't be printed.
-     */
-    public static final String GG_DEBUG_ENABLED = "GRIDGAIN_DEBUG_ENABLED";
-
-    /**
      * If this system property is present the GridGain will include grid name into verbose log.
      */
     public static final String GG_LOG_GRID_NAME = "GRIDGAIN_LOG_GRID_NAME";
