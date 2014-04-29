@@ -140,6 +140,7 @@ import org.jetbrains.annotations.*;
  * // Query all cache nodes.
  * mastersQry.execute();
  * </pre>
+ * <h1 class="header">Geo-Spatial Indexes and Queries</h1>
  * Example of spatial index (supported in {@link GridH2IndexingSpi}):
  * <pre name="code" class="java">
  * private class MapPoint implements Serializable {
@@ -155,7 +156,7 @@ import org.jetbrains.annotations.*;
  *     }
  * }
  * </pre>
- * Example of spatial query on before mentioned field:
+ * Example of spatial query on the geo-indexed field from above:
  * <pre name="code" class="java">
  * com.vividsolutions.jts.geom.GeometryFactory factory = new com.vividsolutions.jts.geom.GeometryFactory();
  *
