@@ -7,24 +7,17 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
+package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Tests replicated cache.
+ * Tests cache with near cache disabled.
  */
-public class GridCacheReplicatedTxExceptionSelfTest extends GridCacheTxExceptionAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return REPLICATED;
-    }
-
-    /** {@inheritDoc} */
+public class GridCachePartitionedOnlyProjectionSelfTest extends GridCachePartitionedProjectionSelfTest {
     @Override protected GridCacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
     }

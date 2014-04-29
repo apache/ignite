@@ -64,13 +64,21 @@ public class GridCachePartitionedProjectionSelfTest extends GridCacheAbstractPro
             assert near != null;
 
             // Populate near cache.
-            near.cache(null).flagsOn(INVALIDATE).put(key, Integer.valueOf(key));
+            near.cache(null).flagsOn(INVALIDATE).put(key, val);
 
             // The entry is either in near cache, or otherwise it is in
             // DHT primary or backup caches. Since we have 3 nodes, all
             // peek operations should return non-null value.
-            for (int i = 0; i < 3; i++)
-                assertNotNull(grid(i).<String, Integer>cache(null).peek(key));
+            for (int i = 0; i < 3; i++) {
+                if (grid(i) != near)
+                    assertNotNull(grid(i).<String, Integer>cache(null).peek(key));
+                else {
+                    if (nearEnabled())
+                        assertNotNull(grid(i).<String, Integer>cache(null).peek(key));
+                    else
+                        assertNull(grid(i).<String, Integer>cache(null).peek(key));
+                }
+            }
 
             // Invalidate near.
             primary.cache(null).flagsOn(INVALIDATE).put(key, val);
