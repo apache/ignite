@@ -23,6 +23,9 @@ public class GridProductImpl implements GridProduct {
     /** Copyright blurb. */
     public static final String COPYRIGHT = "2014 Copyright (C) GridGain Systems";
 
+    /** Enterprise edition flag. */
+    public static final boolean ENT;
+
     /** Edition name. */
     public static final String EDITION;
 
@@ -40,6 +43,9 @@ public class GridProductImpl implements GridProduct {
 
     /** GridGain version as numeric array (generated from {@link #VER}). */
     public static final byte[] VER_BYTES;
+
+    /** Compound version. */
+    public static final String COMPOUND_VERSION;
 
     /** */
     private final GridKernalContext ctx;
