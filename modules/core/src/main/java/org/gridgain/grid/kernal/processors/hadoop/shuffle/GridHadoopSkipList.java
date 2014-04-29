@@ -7,21 +7,17 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.tests.p2p;
+package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
-import java.io.*;
+import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.*;
+import sun.misc.*;
+
+import java.util.*;
 
 /**
- * Test message topic.
+ * TODO write doc
  */
-public class GridTestMessageTopic implements Serializable {
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        return this != o && getClass() == o.getClass();
-    }
+public class GridHadoopSkipList {
 
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return 123;
-    }
 }

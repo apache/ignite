@@ -9,12 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.hadoop2impl;
 
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.task.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -22,14 +24,20 @@ import java.util.*;
  * Hadoop job implementation for v2 API.
  */
 public class GridHadoopV2JobImpl implements GridHadoopJob {
-    /** Job ID. */
+    /** Hadoop job ID. */
     private GridHadoopJobId jobId;
 
     /** Job info. */
     protected GridHadoopDefaultJobInfo jobInfo;
 
-    /** Hadoop job context. */
-    private JobContext ctx;
+    /** Hadoop native job context. */
+    protected JobContext ctx;
+
+    /** Key class. */
+    private Class<?> keyCls;
+
+    /** Value class. */
+    private Class<?> valCls;
 
     /**
      * @param jobId Job ID.
@@ -40,6 +48,9 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
         this.jobInfo = jobInfo;
 
         ctx = new JobContextImpl(jobInfo.configuration(), new JobID(jobId.globalId().toString(), jobId.localId()));
+
+        keyCls = ctx.getMapOutputKeyClass();
+        valCls = ctx.getMapOutputValueClass();
     }
 
     /** {@inheritDoc} */
@@ -86,6 +97,12 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
             case COMBINE:
                 return new GridHadoopV2CombineTask(taskInfo);
 
+            case COMMIT:
+                return new GridHadoopV2CleanupTask(taskInfo, false);
+
+            case ABORT:
+                return new GridHadoopV2CleanupTask(taskInfo, true);
+
             default:
                 return null;
         }
@@ -101,7 +118,7 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
      *
      * @return Combiner class or {@code null} if combiner is not specified.
      */
-    private Class<? extends Reducer<?,?,?,?>> combinerClass() {
+    private Class<? extends Reducer<?, ?, ?, ?>> combinerClass() {
         try {
             return ctx.getCombinerClass();
         }
@@ -112,9 +129,18 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopSerialization serialization() throws GridException {
-        // TODO implement.
-        return null;
+    @Override public GridHadoopSerialization keySerialization() throws GridException {
+        return new GridHadoopWritableSerialization((Class<? extends Writable>)keyCls);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopSerialization valueSerialization() throws GridException {
+        return new GridHadoopWritableSerialization((Class<? extends Writable>)valCls);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String property(String name) {
+        return jobInfo.configuration().get(name);
     }
 
     /**
@@ -128,6 +154,10 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
 
             case REDUCE:
                 return TaskType.REDUCE;
+
+            case COMMIT:
+            case ABORT:
+                return TaskType.JOB_CLEANUP;
 
             default:
                 return null;

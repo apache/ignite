@@ -60,6 +60,7 @@ public class GridHadoopJobId implements Externalizable {
         jobId = in.readInt();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -78,10 +79,12 @@ public class GridHadoopJobId implements Externalizable {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         return 31 * nodeId.hashCode() + jobId;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return nodeId + "_" + jobId;
     }

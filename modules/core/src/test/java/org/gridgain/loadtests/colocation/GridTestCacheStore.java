@@ -55,7 +55,7 @@ public class GridTestCacheStore extends GridCacheStoreAdapter<GridTestKey, Long>
             assert cache != null;
 
             // Get projection just to check affinity for Integer.
-            final GridCacheProjection<Integer, Long> prj = cache.projection(Long.class, Long.class);
+            final GridCacheProjection<Integer, Long> prj = cache.projection(Integer.class, Long.class);
 
             final LongAdder adder = new LongAdder();
 
