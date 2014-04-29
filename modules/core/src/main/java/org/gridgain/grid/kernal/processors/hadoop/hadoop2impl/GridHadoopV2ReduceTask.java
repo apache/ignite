@@ -15,7 +15,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.IOException;
+import java.io.*;
 
 /**
  * Hadoop reduce task implementation for v2 API.

@@ -99,35 +99,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Enterprise release flag. */
-    private static final boolean ent;
-
-    /** Compound GridGain version. */
-    private static final String COMPOUND_VERSION;
-
-    /**
-     *
-     */
-    static {
-        boolean ent0;
-
-        try {
-            ent0 = Class.forName("org.gridgain.grid.kernal.breadcrumb") != null;
-        }
-        catch (ClassNotFoundException ignored) {
-            ent0 = false;
-        }
-
-        ent = ent0;
-
-        COMPOUND_VERSION = EDITION + "-" + (ent ? "ent" : "os") + "-" + VER;
-    }
-
     /** Ant-augmented compatible versions. */
     private static final String COMPATIBLE_VERS = /*@java.compatible.vers*/"";
 
     /** GridGain site that is shown in log messages. */
-    static final String SITE = "www.gridgain." + (ent ? "com" : "org");
+    static final String SITE = "www.gridgain." + (ENT ? "com" : "org");
 
     /** System line separator. */
     private static final String NL = U.nl();
@@ -625,7 +601,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // Spin out SPIs & managers.
         try {
-            GridKernalContextImpl ctx = new GridKernalContextImpl(this, cfg, gw, ent);
+            GridKernalContextImpl ctx = new GridKernalContextImpl(this, cfg, gw, ENT);
 
             nodeLoc = new GridNodeLocalMapImpl(ctx);
 
