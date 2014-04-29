@@ -169,6 +169,6 @@ public class GridRestCacheRequest extends GridRestRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridRestCacheRequest.class, this);
+        return S.toString(GridRestCacheRequest.class, this, super.toString());
     }
 }

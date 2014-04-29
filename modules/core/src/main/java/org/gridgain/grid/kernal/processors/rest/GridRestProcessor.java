@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
+import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.log.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.task.*;

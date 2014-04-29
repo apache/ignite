@@ -419,9 +419,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         return ctx.closure().callLocalSafe(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-                try {
+                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     Object curVal = cache.get(key);
 
                     if (curVal == null)
@@ -434,9 +432,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     cache.putx(key, newVal);
 
                     tx.commit();
-                }
-                finally {
-                    tx.close();
                 }
 
                 return true;

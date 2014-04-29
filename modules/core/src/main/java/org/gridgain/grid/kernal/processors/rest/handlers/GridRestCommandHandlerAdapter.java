@@ -10,19 +10,12 @@
 package org.gridgain.grid.kernal.processors.rest.handlers;
 
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.typedef.internal.*;
-
-import java.util.*;
 
 /**
  * Abstract command handler.
  */
 public abstract class GridRestCommandHandlerAdapter implements GridRestCommandHandler {
-    /** Supported commands. */
-    private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList();
-
     /** Kernal context. */
     protected final GridKernalContext ctx;
 
@@ -38,11 +31,6 @@ public abstract class GridRestCommandHandlerAdapter implements GridRestCommandHa
         log = ctx.log(getClass());
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<GridRestCommand> supportedCommands() {
-        return SUPPORTED_COMMANDS;
-    }
-
     /**
      * Return missing parameter error message.
      *
@@ -51,15 +39,5 @@ public abstract class GridRestCommandHandlerAdapter implements GridRestCommandHa
      */
     protected static String missingParameter(String param) {
         return "Failed to find mandatory parameter in request: " + param;
-    }
-
-    /**
-     * Return invalid numeric parameter error message.
-     *
-     * @param param Parameter name.
-     * @return Invalid numeric parameter error message.
-     */
-    protected static String invalidNumericParameter(String param) {
-        return "Failed to parse numeric parameter: " + param;
     }
 }
