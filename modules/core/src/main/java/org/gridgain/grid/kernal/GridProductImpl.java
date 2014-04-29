@@ -53,7 +53,21 @@ public class GridProductImpl implements GridProduct {
     /** Update notifier. */
     private final GridUpdateNotifier verChecker;
 
+    /**
+     *
+     */
     static {
+        boolean ent0;
+
+        try {
+            ent0 = Class.forName("org.gridgain.grid.kernal.breadcrumb") != null;
+        }
+        catch (ClassNotFoundException ignored) {
+            ent0 = false;
+        }
+
+        ENT = ent0;
+
         EDITION = GridProperties.get("gridgain.edition");
         VER = GridProperties.get("gridgain.version");
         BUILD = Long.valueOf(GridProperties.get("gridgain.build"));
@@ -61,6 +75,8 @@ public class GridProductImpl implements GridProduct {
         RELEASE_DATE = GridProperties.get("gridgain.rel.date");
 
         VER_BYTES = U.intToBytes(VER.hashCode());
+
+        COMPOUND_VERSION = EDITION + "-" + (ENT ? "ent" : "os") + "-" + VER;
     }
 
     /**

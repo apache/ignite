@@ -62,8 +62,8 @@
     <Reference Include="Google.ProtocolBuffers">
       <HintPath>..\..\..\clients\dotnet\Google.ProtocolBuffers.dll</HintPath>
     </Reference>
-    <Reference Include="GridGainClient-6.0.1">
-      <HintPath>..\..\..\modules\clients\dotnet\client-lib\libs\GridGainClient-6.0.1.dll</HintPath>
+    <Reference Include="GridGainClient">
+      <HintPath>..\..\..\clients\dotnet\GridGainClient.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
