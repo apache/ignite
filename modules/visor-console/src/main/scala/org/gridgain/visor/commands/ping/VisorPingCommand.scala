@@ -191,14 +191,13 @@ object VisorPingCommand {
         spec = List("ping <id81> <id82> ... <id8k>"),
         args = List(
             ("<id8k>",
-                "ID8 of the node to ping." +
-                "Note you can also use '@n0' ... '@nn' variables as shortcut to <id8k>.")
+                "ID8 of the node to ping. Note you can also use '@n0' ... '@nn' variables as shortcut to <id8k>.")
         ),
         examples = List(
             "ping 12345678" ->
                 "Pings node with '12345678' ID8.",
             "ping @n0" ->
-                "Pings node with 'specified node with ID8 taken from 'n0' memory variable",
+                "Pings node with 'specified node with ID8 taken from 'n0' memory variable.",
             "ping" ->
                 "Pings all nodes in the topology."
         ),
