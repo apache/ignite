@@ -77,7 +77,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
 
             srvrs.add(ipcSrv);
         }
-        catch (GridGgfsIpcEndpointBindException ignored) {
+        catch (GridIpcEndpointBindException ignored) {
             int port = ipcSrv.getIpcServerEndpoint().getPort();
 
             String portMsg = port != -1 ? " Failed to bind to port (is port already in use?): " + port : "";

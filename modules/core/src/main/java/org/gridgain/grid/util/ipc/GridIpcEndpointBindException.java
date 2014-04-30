@@ -7,14 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.ggfs;
+package org.gridgain.grid.util.ipc;
 
 import org.gridgain.grid.*;
 
 /**
  * Represents exception occurred during IPC endpoint binding.
  */
-public class GridGgfsIpcEndpointBindException extends GridException {
+public class GridIpcEndpointBindException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -23,7 +23,7 @@ public class GridGgfsIpcEndpointBindException extends GridException {
      *
      * @param msg Message.
      */
-    public GridGgfsIpcEndpointBindException(String msg) {
+    public GridIpcEndpointBindException(String msg) {
         super(msg);
     }
 
@@ -33,7 +33,7 @@ public class GridGgfsIpcEndpointBindException extends GridException {
      * @param msg Message.
      * @param cause Cause.
      */
-    public GridGgfsIpcEndpointBindException(String msg, Throwable cause) {
+    public GridIpcEndpointBindException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }
