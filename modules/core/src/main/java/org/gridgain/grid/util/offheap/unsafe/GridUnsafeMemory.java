@@ -101,31 +101,6 @@ public class GridUnsafeMemory {
     }
 
     /**
-     * Tries to reserve memory.
-     *
-     * @param size Needed size in bytes.
-     * @return {@code true} If succeeded.
-     */
-    public boolean tryReserve(long size) {
-        if (total == 0) {
-            allocated.addAndGet(size);
-
-            return true;
-        }
-
-        for (;;) {
-            long oldSize = allocated.get();
-            long newSize = oldSize + size;
-
-            if (newSize > total)
-                return false;
-
-            if (allocated.compareAndSet(oldSize, newSize))
-                return true;
-        }
-    }
-
-    /**
      * Allocates memory of given size in bytes.
      *
      * @param size Size of allocated block.

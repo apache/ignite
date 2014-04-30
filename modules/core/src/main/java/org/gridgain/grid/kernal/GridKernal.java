@@ -1272,8 +1272,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         addAttributes(attrs, cfg.getSecureSessionSpi());
         addAttributes(attrs, cfg.getDeploymentSpi());
 
-        addGgfsAttributes(cfg, attrs);
-
         // Set user attributes for this node.
         if (cfg.getUserAttributes() != null) {
             for (Map.Entry<String, ?> e : cfg.getUserAttributes().entrySet()) {
@@ -1286,59 +1284,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         }
 
         return attrs;
-    }
-
-    /**
-     * Adds GGFS-related attributes.
-     *
-     * @param gridCfg Grid configuration.
-     * @param attrs Node attributes map.
-     */
-    private void addGgfsAttributes(GridConfiguration gridCfg, Map<String, Object> attrs) {
-        // TODO: GG-8219: Careful here. Where is this logic now?
-//        // Node doesn't have GGFS if it:
-//        // is daemon;
-//        // doesn't have configured GGFS;
-//        // doesn't have configured caches.
-//        if (gridCfg.isDaemon() || F.isEmpty(gridCfg.getGgfsConfiguration()) ||
-//            F.isEmpty(gridCfg.getCacheConfiguration()))
-//            return;
-//
-//        final Map<String, GridCacheConfiguration> cacheCfgs = new HashMap<>();
-//
-//        F.forEach(gridCfg.getCacheConfiguration(), new CI1<GridCacheConfiguration>() {
-//            @Override public void apply(GridCacheConfiguration c) {
-//                cacheCfgs.put(c.getName(), c);
-//            }
-//        });
-//
-//        Collection<GridGgfsAttributes> attrVals = new ArrayList<>();
-//
-//        for (GridGgfsConfiguration ggfsCfg : gridCfg.getGgfsConfiguration()) {
-//            GridCacheConfiguration cacheCfg = cacheCfgs.get(ggfsCfg.getDataCacheName());
-//
-//            if (cacheCfg == null)
-//                continue; // No cache for the given GGFS configuration.
-//
-//            GridCacheAffinityKeyMapper affMapper = cacheCfg.getAffinityMapper();
-//
-//            if (!(affMapper instanceof GridGgfsGroupDataBlocksKeyMapper))
-//                // Do not create GGFS attributes for such a node nor throw error about invalid configuration.
-//                // Configuration will be validated later, while starting GridGgfsProcessor.
-//                continue;
-//
-//            attrVals.add(new GridGgfsAttributes(
-//                ggfsCfg.getName(),
-//                ggfsCfg.getBlockSize(),
-//                ((GridGgfsGroupDataBlocksKeyMapper)affMapper).groupSize(),
-//                ggfsCfg.getMetaCacheName(),
-//                ggfsCfg.getDataCacheName(),
-//                ggfsCfg.getDefaultMode(),
-//                ggfsCfg.getPathModes(),
-//                ggfsCfg.isFragmentizerEnabled()));
-//        }
-//
-//        attrs.put(ATTR_GGFS, attrVals.toArray(new GridGgfsAttributes[attrVals.size()]));
     }
 
     /**
