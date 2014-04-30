@@ -10,8 +10,8 @@
 package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
-import org.gridgain.grid.ggfs.ggfs.*;
-import org.gridgain.grid.kernal.processors.ggfs.ggfs.*;
+import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.processors.ggfs.*;
 
 /**
  * Test suite for Hadoop file system over GridGain cache.

@@ -10,9 +10,10 @@
 package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
-import org.gridgain.grid.ggfs.ggfs.*;
-import org.gridgain.grid.kernal.processors.ggfs.ggfs.*;
+import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.ggfs.ggfs.split.*;
+import org.gridgain.grid.kernal.processors.ggfs.split.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.ipc.*;
 
