@@ -48,7 +48,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
      * @param evictExclude Evict exclude flag.
      * @param blockId Block ID.
      */
-    GridGgfsBlockKey(GridUuid fileId, @Nullable GridUuid affKey, boolean evictExclude, long blockId) {
+    public GridGgfsBlockKey(GridUuid fileId, @Nullable GridUuid affKey, boolean evictExclude, long blockId) {
         assert fileId != null;
         assert blockId >= 0;
 
@@ -94,7 +94,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(GridGgfsBlockKey o) {
+    @Override public int compareTo(@NotNull GridGgfsBlockKey o) {
         int res = fileId.compareTo(o.fileId);
 
         if (res != 0)

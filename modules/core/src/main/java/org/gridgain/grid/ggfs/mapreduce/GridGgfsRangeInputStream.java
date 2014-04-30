@@ -10,7 +10,6 @@
 package org.gridgain.grid.ggfs.mapreduce;
 
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -22,9 +21,6 @@ import java.io.*;
  * working with {@link GridGgfsJob} directly.
  */
 public final class GridGgfsRangeInputStream extends GridGgfsInputStream {
-    /** Empty chunks result. */
-    private static final byte[][] EMPTY_CHUNKS = new byte[0][];
-
     /** Base input stream. */
     private final GridGgfsInputStream is;
 
@@ -52,13 +48,13 @@ public final class GridGgfsRangeInputStream extends GridGgfsInputStream {
         if (start < 0)
             throw new IllegalArgumentException("Start position cannot be negative.");
 
-        if (start >= is.fileInfo().length())
+        if (start >= is.length())
             throw new IllegalArgumentException("Start position cannot be greater that file length.");
 
         if (maxLen < 0)
             throw new IllegalArgumentException("Length cannot be negative.");
 
-        if (start + maxLen > is.fileInfo().length())
+        if (start + maxLen > is.length())
             throw new IllegalArgumentException("Sum of start position and length cannot be greater than file length.");
 
         this.is = is;
@@ -66,6 +62,11 @@ public final class GridGgfsRangeInputStream extends GridGgfsInputStream {
         this.maxLen = maxLen;
 
         is.seek(start);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long length() {
+        return is.length();
     }
 
     /**
@@ -137,21 +138,6 @@ public final class GridGgfsRangeInputStream extends GridGgfsInputStream {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[][] readChunks(long pos, int len) throws IOException {
-        if (pos < maxLen) {
-            len = (int)Math.min(len, maxLen - pos);
-
-            byte[][] res = is.readChunks(start + pos, len);
-
-            this.pos = pos + len;
-
-            return res;
-        }
-        else
-            return EMPTY_CHUNKS;
-    }
-
-    /** {@inheritDoc} */
     @Override public void seek(long pos) throws IOException {
         if (pos < 0)
             throw new IOException("Seek position cannot be negative: " + pos);
@@ -193,11 +179,6 @@ public final class GridGgfsRangeInputStream extends GridGgfsInputStream {
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
         is.close();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridGgfsFileInfo fileInfo() {
-        return is.fileInfo();
     }
 
     /** {@inheritDoc} */

@@ -302,7 +302,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
                 break;
 
             case OPEN_READ: {
-                GridGgfsInputStream ggfsIn = !req.flag() ? ggfs.open(req.path(), bufSize) :
+                GridGgfsInputStreamAdapter ggfsIn = !req.flag() ? ggfs.open(req.path(), bufSize) :
                     ggfs.open(req.path(), bufSize, req.sequentialReadsBeforePrefetch());
 
                 long streamId = registerResource(ses, ggfsIn);
