@@ -59,8 +59,6 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
-import org.springframework.beans.*;
-import org.springframework.context.*;
 
 import javax.management.*;
 import java.io.*;
@@ -403,31 +401,7 @@ public class GridGainEx {
      *      also if default grid has already been started.
      */
     public static Grid start() throws GridException {
-        return start((ApplicationContext)null);
-    }
-
-    /**
-     * Starts grid with default configuration. By default this method will
-     * use grid configuration defined in {@code GRIDGAIN_HOME/config/default-config.xml}
-     * configuration file. If such file is not found, then all system defaults will be used.
-     *
-     * @param springCtx Optional Spring application context, possibly {@code null}.
-     *      Spring bean definitions for bean injection are taken from this context.
-     *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link GridSpringApplicationContextResource @GridSpringApplicationContextResource} annotation.
-     * @return Started grid.
-     * @throws GridException If default grid could not be started. This exception will be thrown
-     *      also if default grid has already been started.
-     */
-    public static Grid start(@Nullable ApplicationContext springCtx) throws GridException {
-        URL url = U.resolveGridGainUrl(DFLT_CFG);
-
-        if (url != null)
-            return start(DFLT_CFG, springCtx);
-
-        U.warn(null, "Default Spring XML file not found (is GRIDGAIN_HOME set?): " + DFLT_CFG);
-
-        return start0(new GridStartContext(new GridConfiguration(), null, springCtx)).grid();
+        return start(null);
     }
 
     /**
@@ -740,7 +714,7 @@ public class GridGainEx {
      * @return Started grid.
      * @throws GridException If grid could not be started.
      */
-    private static GridNamedInstance start0(GridStartContext startCtx) throws GridException {
+    public static GridNamedInstance start0(GridStartContext startCtx) throws GridException {
         assert startCtx != null;
 
         String name = startCtx.config().getGridName();
@@ -980,7 +954,7 @@ public class GridGainEx {
         private URL cfgUrl;
 
         /** Optional Spring application context. */
-        private ApplicationContext springCtx;
+        private GridResourceContext rsrcCtx;
 
         /** Whether or not this is a single grid instance in current VM. */
         private boolean single;
@@ -989,14 +963,14 @@ public class GridGainEx {
          *
          * @param cfg User-defined configuration.
          * @param cfgUrl Optional configuration path.
-         * @param springCtx Optional Spring application context.
+         * @param rsrcCtx Optional resource context.
          */
-        GridStartContext(GridConfiguration cfg, @Nullable URL cfgUrl, @Nullable ApplicationContext springCtx) {
+        GridStartContext(GridConfiguration cfg, @Nullable URL cfgUrl, @Nullable GridResourceContext rsrcCtx) {
             assert(cfg != null);
 
             this.cfg = cfg;
             this.cfgUrl = cfgUrl;
-            this.springCtx = springCtx;
+            this.rsrcCtx = rsrcCtx;
         }
 
         /**
@@ -1016,43 +990,43 @@ public class GridGainEx {
         /**
          * @return User-defined configuration.
          */
-        GridConfiguration config() {
+        public GridConfiguration config() {
             return cfg;
         }
 
         /**
          * @param cfg User-defined configuration.
          */
-        void config(GridConfiguration cfg) {
+        public void config(GridConfiguration cfg) {
             this.cfg = cfg;
         }
 
         /**
          * @return Optional configuration path.
          */
-        URL configUrl() {
+        public URL configUrl() {
             return cfgUrl;
         }
 
         /**
          * @param cfgUrl Optional configuration path.
          */
-        void configUrl(URL cfgUrl) {
+        public void configUrl(URL cfgUrl) {
             this.cfgUrl = cfgUrl;
         }
 
         /**
-         * @return Optional Spring application context.
+         * @return Optional resource context.
          */
-        ApplicationContext springContext() {
-            return springCtx;
+        public GridResourceContext resourceContext() {
+            return rsrcCtx;
         }
 
         /**
-         * @param springCtx Optional Spring application context.
+         * @param rsrcCtx Optional start context.
          */
-        void springContext(ApplicationContext springCtx) {
-            this.springCtx = springCtx;
+        public void resourceContext(GridResourceContext rsrcCtx) {
+            this.rsrcCtx = rsrcCtx;
         }
     }
 

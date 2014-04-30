@@ -154,7 +154,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     private long startTime = U.currentTimeMillis();
 
     /** Spring context, potentially {@code null}. */
-    private ApplicationContext springCtx;
+    private GridResourceContext rsrcCtx;
 
     /** */
     private Timer updateNtfTimer;
@@ -200,12 +200,12 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /**
-     * @param springCtx Optional Spring application context.
+     * @param rsrcCtx Optional resoruce context.
      */
-    public GridKernal(@Nullable ApplicationContext springCtx) {
+    public GridKernal(@Nullable GridResourceContext rsrcCtx) {
         super(null, null, (GridPredicate<GridNode>)null);
 
-        this.springCtx = springCtx;
+        this.rsrcCtx = rsrcCtx;
 
         String[] compatibleVers = COMPATIBLE_VERS.split(",");
 
@@ -611,7 +611,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // by all other managers and processors.
             GridResourceProcessor rsrcProc = new GridResourceProcessor(ctx);
 
-            rsrcProc.setSpringContext(springCtx);
+            // FIXME
+            // rsrcProc.setSpringContext(springCtx);
 
             // Set node version.
             ctx.version(COMPOUND_VERSION);

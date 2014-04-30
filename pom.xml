@@ -41,6 +41,7 @@
         <module>modules/visor-console</module>
         <module>modules/jdbc-driver</module>
         <module>modules/jdk8-backport</module>
+        <module>modules/spring-config</module>
     </modules>
 
     <build>
