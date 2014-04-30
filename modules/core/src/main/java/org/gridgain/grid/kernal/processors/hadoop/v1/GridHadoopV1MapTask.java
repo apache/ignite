@@ -7,13 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.hadoop1impl;
+package org.gridgain.grid.kernal.processors.hadoop.v1;
 
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.GridHadoopV2JobImpl;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -29,9 +29,9 @@ public class GridHadoopV1MapTask extends GridHadoopTask {
 
     /** {@inheritDoc} */
     @Override public void run(final GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
-        GridHadoopV2JobImpl jobImpl = (GridHadoopV2JobImpl) taskCtx.job();
+        GridHadoopV2Job job = (GridHadoopV2Job) taskCtx.job();
 
-        JobConf jobConf = jobImpl.hadoopJobContext().getJobConf();
+        JobConf jobConf = job.hadoopJobContext().getJobConf();
 
         Mapper mapper = U.newInstance(jobConf.getMapperClass());
 
@@ -62,9 +62,8 @@ public class GridHadoopV1MapTask extends GridHadoopTask {
 
             mapper.configure(jobConf);
 
-            while (reader.next(key, val)) {
+            while (reader.next(key, val))
                 mapper.map(key, val, collector, reporter);
-            }
 
             mapper.close();
         }

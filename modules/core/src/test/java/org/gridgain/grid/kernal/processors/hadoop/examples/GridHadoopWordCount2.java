@@ -21,7 +21,7 @@ import java.io.*;
 /**
  * Example job for testing hadoop task execution.
  */
-public class GridGainWordCount2 {
+public class GridHadoopWordCount2 {
     /**
      * Entry point to start job.
      *
@@ -52,9 +52,9 @@ public class GridGainWordCount2 {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
 
-        job.setMapperClass(GridGainWordCount2Mapper.class);
-        job.setCombinerClass(GridGainWordCount2Reducer.class);
-        job.setReducerClass(GridGainWordCount2Reducer.class);
+        job.setMapperClass(GridHadoopWordCount2Mapper.class);
+        job.setCombinerClass(GridHadoopWordCount2Reducer.class);
+        job.setReducerClass(GridHadoopWordCount2Reducer.class);
 
         job.setInputFormatClass(TextInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);
@@ -62,7 +62,7 @@ public class GridGainWordCount2 {
         FileInputFormat.setInputPaths(job, new Path(input));
         FileOutputFormat.setOutputPath(job, new Path(output));
 
-        job.setJarByClass(GridGainWordCount2.class);
+        job.setJarByClass(GridHadoopWordCount2.class);
         return job;
     }
 }

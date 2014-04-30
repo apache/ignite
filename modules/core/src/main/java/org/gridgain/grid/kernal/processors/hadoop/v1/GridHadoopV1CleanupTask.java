@@ -7,12 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.hadoop1impl;
+package org.gridgain.grid.kernal.processors.hadoop.v1;
 
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.GridHadoopV2JobImpl;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 
 import java.io.*;
 
@@ -35,9 +35,9 @@ public class GridHadoopV1CleanupTask extends GridHadoopTask {
 
     /** {@inheritDoc} */
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
-        GridHadoopV2JobImpl jobImpl = (GridHadoopV2JobImpl) taskCtx.job();
+        GridHadoopV2Job job = (GridHadoopV2Job) taskCtx.job();
 
-        JobContext jobCtx = jobImpl.hadoopJobContext();
+        JobContext jobCtx = job.hadoopJobContext();
 
         try {
             OutputCommitter commiter = jobCtx.getJobConf().getOutputCommitter();

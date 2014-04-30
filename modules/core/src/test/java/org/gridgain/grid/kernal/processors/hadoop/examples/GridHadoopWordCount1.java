@@ -16,7 +16,7 @@ import org.apache.hadoop.mapred.*;
 /**
  * Example job for testing hadoop task execution.
  */
-public class GridGainWordCount1 {
+public class GridHadoopWordCount1 {
     /**
      * Entry point to start job.
      * @param args command line parameters.
@@ -41,15 +41,15 @@ public class GridGainWordCount1 {
      * @return Job configuration
      */
     public static JobConf getJob(String input, String output) {
-        JobConf conf = new JobConf(GridGainWordCount1.class);
+        JobConf conf = new JobConf(GridHadoopWordCount1.class);
         conf.setJobName("wordcount");
 
         conf.setOutputKeyClass(Text.class);
         conf.setOutputValueClass(IntWritable.class);
 
-        conf.setMapperClass(GridGainWordCount1Map.class);
-        conf.setCombinerClass(GridGainWordCount1Reduce.class);
-        conf.setReducerClass(GridGainWordCount1Reduce.class);
+        conf.setMapperClass(GridHadoopWordCount1Map.class);
+        conf.setCombinerClass(GridHadoopWordCount1Reduce.class);
+        conf.setReducerClass(GridHadoopWordCount1Reduce.class);
 
         conf.setInputFormat(TextInputFormat.class);
         conf.setOutputFormat(TextOutputFormat.class);

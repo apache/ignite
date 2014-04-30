@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
-import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.GridHadoopV2JobImpl;
+import org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Job;
 
 import java.io.*;
 import java.util.*;
@@ -30,13 +30,13 @@ public class GridHadoopTasksV1Test extends GridHadoopTasksAllVersionsTest {
      * @throws IOException If fails.
      */
     @Override public GridHadoopJob getHadoopJob(String inFile, String outFile) throws Exception {
-        JobConf hadoopJob = GridGainWordCount1.getJob(inFile, outFile);
+        JobConf hadoopJob = GridHadoopWordCount1.getJob(inFile, outFile);
 
         GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(hadoopJob);
 
         GridHadoopJobId jobId = new GridHadoopJobId(new UUID(0, 0), 0);
 
-        GridHadoopV2JobImpl gridHadoopJob = new GridHadoopV2JobImpl(jobId, jobInfo);
+        GridHadoopV2Job gridHadoopJob = new GridHadoopV2Job(jobId, jobInfo);
 
         return gridHadoopJob;
     }

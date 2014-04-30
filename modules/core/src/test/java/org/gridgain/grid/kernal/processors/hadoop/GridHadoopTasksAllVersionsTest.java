@@ -47,7 +47,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testMapTask() throws Exception {
-        File testInputFile = File.createTempFile(GridGainWordCount2.class.getSimpleName(), "-input");
+        File testInputFile = File.createTempFile(GridHadoopWordCount2.class.getSimpleName(), "-input");
 
         testInputFile.deleteOnExit();
 
@@ -142,7 +142,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testReduceTask() throws Exception {
-        Path outputDir = Files.createTempDirectory(GridGainWordCount2.class.getSimpleName() + "-output");
+        Path outputDir = Files.createTempDirectory(GridHadoopWordCount2.class.getSimpleName() + "-output");
 
         try {
             URI testOutputDirURI = URI.create(outputDir.toString());
@@ -221,12 +221,12 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testAllTasks() throws Exception {
-        Path outputDir = Files.createTempDirectory(GridGainWordCount2.class.getSimpleName() + "-output");
+        Path outputDir = Files.createTempDirectory(GridHadoopWordCount2.class.getSimpleName() + "-output");
 
         try {
             URI testOutputDirURI = URI.create(outputDir.toString());
 
-            File testInputFile = File.createTempFile(GridGainWordCount2.class.getSimpleName(), "-input");
+            File testInputFile = File.createTempFile(GridHadoopWordCount2.class.getSimpleName(), "-input");
             testInputFile.deleteOnExit();
 
             URI testInputFileURI = URI.create(testInputFile.getAbsolutePath());

@@ -20,14 +20,13 @@ import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopJobProperty.*;
+import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
 import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
 
 /**

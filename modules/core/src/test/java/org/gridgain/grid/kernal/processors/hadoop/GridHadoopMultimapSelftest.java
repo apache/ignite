@@ -14,7 +14,7 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
@@ -50,7 +50,7 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
         job.setMapOutputKeyClass(IntWritable.class);
         job.setMapOutputValueClass(IntWritable.class);
 
-        GridHadoopMultimap m = new GridHadoopMultimap(new GridHadoopV2JobImpl(new GridHadoopJobId(UUID.randomUUID(), 10),
+        GridHadoopMultimap m = new GridHadoopMultimap(new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 10),
             new GridHadoopDefaultJobInfo(job.getConfiguration())), mem, mapSize);
 
         GridHadoopMultimap.Adder a = m.startAdding();

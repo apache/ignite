@@ -21,7 +21,6 @@ import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 
 import java.io.*;
