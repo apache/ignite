@@ -8249,11 +8249,13 @@ public abstract class GridUtils {
      * @param suppressed The collections of suppressed exceptions.
      * @return {@code GridException}.
      */
-    public static GridException exceptionWithSuppressed(String msg, Collection<Throwable> suppressed) {
+    public static GridException exceptionWithSuppressed(String msg, @Nullable Collection<Throwable> suppressed) {
         GridException e = new GridException(msg);
 
-        for (Throwable th : suppressed)
-            e.addSuppressed(th);
+        if (suppressed != null) {
+            for (Throwable th : suppressed)
+                e.addSuppressed(th);
+        }
 
         return e;
     }
