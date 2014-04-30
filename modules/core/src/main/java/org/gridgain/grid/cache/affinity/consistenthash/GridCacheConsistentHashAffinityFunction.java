@@ -10,6 +10,7 @@
 package org.gridgain.grid.cache.affinity.consistenthash;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
@@ -44,6 +45,8 @@ import java.util.concurrent.atomic.*;
  *      primary and backup nodes will be selected out of all nodes available for this cache.
  * </li>
  * </ul>
+ * <p>
+ * Cache affinity can be configured for individual caches via {@link GridCacheConfiguration#getAffinity()} method.
  */
 public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinityFunction {
     /** */
