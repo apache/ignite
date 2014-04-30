@@ -89,7 +89,7 @@ public abstract class GridGgfsProcessor extends GridProcessorAdapter {
      * @param name GGFS name.
      * @return Collection of endpoints or {@code null} in case GGFS is not defined.
      */
-    @Nullable public abstract Collection<GridIpcServerEndpoint> endpoints(@Nullable String name);
+    public abstract Collection<GridIpcServerEndpoint> endpoints(@Nullable String name);
 
     /**
      * Create compute job for the given GGFs job.

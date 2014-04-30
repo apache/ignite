@@ -52,8 +52,8 @@ public class GridGgfsNopProcessor extends GridGgfsProcessor {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<GridIpcServerEndpoint> endpoints(@Nullable String name) {
-        return null;
+    @Override public Collection<GridIpcServerEndpoint> endpoints(@Nullable String name) {
+        return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
