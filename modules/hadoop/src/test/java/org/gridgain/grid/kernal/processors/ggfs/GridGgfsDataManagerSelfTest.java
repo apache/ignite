@@ -33,7 +33,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.testframework.GridTestUtils.*;
 
 /**
- * {@link org.gridgain.grid.kernal.processors.ggfs.GridGgfsDataManager} test case.
+ * {@link GridGgfsDataManager} test case.
  */
 public class GridGgfsDataManagerSelfTest extends GridCommonAbstractTest {
     /** Test IP finder. */

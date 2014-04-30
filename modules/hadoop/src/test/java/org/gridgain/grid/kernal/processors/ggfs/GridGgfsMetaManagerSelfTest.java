@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.lang.*;
@@ -34,7 +33,7 @@ import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo.*;
 import static org.gridgain.testframework.GridTestUtils.*;
 
 /**
- * {@link org.gridgain.grid.kernal.processors.ggfs.GridGgfsMetaManager} test case.
+ * {@link GridGgfsMetaManager} test case.
  */
 public class GridGgfsMetaManagerSelfTest extends GridCommonAbstractTest {
     /** Test IP finder. */

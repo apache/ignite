@@ -365,7 +365,7 @@ public class GridGgfsMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBlockMetrics() throws Exception {
-        GridGgfs ggfs = ggfsPrimary[0];
+        GridGgfsEx ggfs = (GridGgfsEx)ggfsPrimary[0];
 
         GridGgfsPath fileRemote = new GridGgfsPath("/fileRemote");
         GridGgfsPath file1 = new GridGgfsPath("/file1");
@@ -404,7 +404,7 @@ public class GridGgfsMetricsSelfTest extends GridCommonAbstractTest {
         checkBlockMetrics(initMetrics, ggfs.metrics(), 0, 0, 0, 3, 0, blockSize * 3);
 
         // Read data from the first file.
-        GridGgfsInputStream is = ggfs.open(file1);
+        GridGgfsInputStreamAdapter is = ggfs.open(file1);
         is.readFully(0, new byte[blockSize * 2]);
         is.close();
 

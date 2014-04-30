@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -31,7 +32,7 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
 
 /**
- * Base test class for {@link org.gridgain.grid.kernal.processors.ggfs.GridGgfsServer} checking IPC endpoint registrations.
+ * Base test class for {@link GridGgfsServer} checking IPC endpoint registrations.
  */
 public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTest extends GridCommonAbstractTest {
     /** IP finder. */

@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.*;
 import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
 
 /**
- * Tests for {@link org.gridgain.grid.kernal.processors.ggfs.GridGgfsServer} that checks all IPC endpoint registration types
+ * Tests for {@link GridGgfsServer} that checks all IPC endpoint registration types
  * permitted for Linux and Mac OS.
  */
 public class GridGgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest

@@ -19,7 +19,7 @@ import java.util.concurrent.*;
 import static org.gridgain.testframework.GridTestUtils.*;
 
 /**
- * Tests for {@link org.gridgain.grid.kernal.processors.ggfs.GridGgfsServerManager} that checks shmem IPC endpoint registration
+ * Tests for {@link GridGgfsServerManager} that checks shmem IPC endpoint registration
  * forbidden for Windows.
  */
 public class GridGgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest

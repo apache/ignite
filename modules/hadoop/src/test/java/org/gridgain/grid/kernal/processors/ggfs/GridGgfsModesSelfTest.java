@@ -11,10 +11,8 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -567,7 +565,7 @@ public class GridGgfsModesSelfTest extends GridCommonAbstractTest {
         // Check file content.
         GridGgfsInputStream is = ggfs.open(file);
 
-        assertEquals(testData.length, is.fileInfo().length());
+        assertEquals(testData.length, is.length());
 
         byte[] data = new byte[testData.length];
 
@@ -588,7 +586,7 @@ public class GridGgfsModesSelfTest extends GridCommonAbstractTest {
                 try {
                     isSecondary = ggfsSecondary.open(file);
 
-                    if (isSecondary.fileInfo().length() == testData.length)
+                    if (isSecondary.length() == testData.length)
                         break;
                     else
                         U.sleep(100);
@@ -600,7 +598,7 @@ public class GridGgfsModesSelfTest extends GridCommonAbstractTest {
 
             GridGgfsInputStream isSecondary = ggfsSecondary.open(file);
 
-            assertEquals(testData.length, isSecondary.fileInfo().length());
+            assertEquals(testData.length, isSecondary.length());
 
             isSecondary.read(data, 0, testData.length);
 

@@ -23,7 +23,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * {@link org.gridgain.grid.ggfs.GridGgfsPath} self test.
+ * {@link GridGgfsPath} self test.
  */
 public class GridGgfsPathSelfTest extends GridCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */
