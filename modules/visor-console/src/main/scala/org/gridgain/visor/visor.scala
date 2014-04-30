@@ -1834,7 +1834,7 @@ object visor extends VisorTag {
 
             t.render()
 
-            val a = ask("\nChoose node ('c' to cancel) [c]: ", "c")
+            val a = ask("\nChoose node number ('c' to cancel) [c]: ", "c")
 
             if (a.toLowerCase == "c")
                 None
@@ -1917,7 +1917,7 @@ object visor extends VisorTag {
 
             t.render()
 
-            val a = ask("\nChoose host ('c' to cancel) [c]: ", "c")
+            val a = ask("\nChoose host number ('c' to cancel) [c]: ", "c")
 
             if (a.toLowerCase == "c")
                 None
@@ -1958,7 +1958,7 @@ object visor extends VisorTag {
 
             t.render()
 
-            val a = ask("\nChoose configuration file ('c' to cancel) [0]: ", "0")
+            val a = ask("\nChoose configuration file number ('c' to cancel) [0]: ", "0")
 
             if (a.toLowerCase == "c")
                 None

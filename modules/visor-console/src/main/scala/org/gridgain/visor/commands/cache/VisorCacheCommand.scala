@@ -563,7 +563,7 @@ class VisorCacheCommand {
 
         sumT.render()
 
-        val a = ask("\nChoose cache ('c' to cancel) [c]: ", "c")
+        val a = ask("\nChoose cache number ('c' to cancel) [c]: ", "c")
 
         if (a.toLowerCase == "c")
             None
