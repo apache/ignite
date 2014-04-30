@@ -81,7 +81,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      * @param incMeta Include metadata flag.
      * @param prjPred Cache projection filter.
      */
-    protected GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridCacheQueryType type,
+    public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx, GridCacheQueryType type,
         @Nullable GridPredicate<GridCacheEntry<Object, Object>> prjPred, @Nullable Class<?> cls,
         @Nullable String clause, @Nullable GridBiPredicate<Object, Object> filter, boolean incMeta) {
         assert cctx != null;
