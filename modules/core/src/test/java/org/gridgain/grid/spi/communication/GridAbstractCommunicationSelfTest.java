@@ -52,7 +52,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends GridCommunicat
 
     static {
         GridTcpCommunicationMessageFactory.registerCustom(new GridTcpCommunicationMessageProducer() {
-            @Override public GridTcpCommunicationMessageAdapter create(int type) {
+            @Override public GridTcpCommunicationMessageAdapter create(byte type) {
                 return new GridTestMessage();
             }
         }, GridTestMessage.DIRECT_TYPE);
