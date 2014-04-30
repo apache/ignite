@@ -48,7 +48,7 @@
     -->
     <bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration" scope="singleton">
         <!-- Explicitly set to local host address. -->
-        <property name="localHost" value="127.0.0.1"/>
+        <property name="localHost" value="192.168.1.10"/>
 
         <property name="marshaller">
             <bean class="org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller">
@@ -139,7 +139,8 @@
                         <property name="addresses">
                             <list>
                                 <!-- In distributed environment, replace with actual host IP address. -->
-                                <value>127.0.0.1:47500..47509</value>
+                                <value>192.168.1.10:47500</value>
+                                <value>192.168.1.34:47500</value>
                             </list>
                         </property>
                     </bean>
