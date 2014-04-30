@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.kernal.ggfs.common;
 
-import org.gridgain.grid.kernal.ggfs.common.*;
-
 import static org.gridgain.grid.kernal.ggfs.common.GridGgfsIpcCommand.*;
 
 /**

@@ -130,7 +130,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
                             // No need to pass data input for non-write-block commands.
                             return execute(ses, cmd, msg, null);
                         }
-                    }, false);
+                    }, GridClosurePolicy.GGFS_POOL);
                 }
             }
 
