@@ -10,6 +10,9 @@
 package org.gridgain.grid.kernal.processors.hadoop.hadoop2impl;
 
 import org.apache.hadoop.io.*;
+import org.apache.hadoop.io.serializer.Serialization;
+import org.apache.hadoop.io.serializer.SerializationFactory;
+import org.apache.hadoop.io.serializer.WritableSerialization;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.TaskType;
@@ -144,7 +147,7 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
      * @return Combiner class or {@code null} if combiner is not specified.
      */
     private Class combinerClass() {
-        Class res = ctx.getJobConf().getCombinerClass();
+        Class<?> res = ctx.getJobConf().getCombinerClass();
 
         try {
             if (res == null)
@@ -158,14 +161,31 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
         }
     }
 
+    /**
+     *
+     * @param cls
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    private GridHadoopSerialization getSerialization(Class<?> cls) {
+        SerializationFactory factory = new SerializationFactory(ctx.getJobConf());
+
+        Serialization<?> serialization = factory.getSerialization(cls);
+
+//        if (serialization.getClass() == WritableSerialization.class)
+//            return new GridHadoopWritableSerialization((Class<? extends Writable>)cls);
+
+        return new GridHadoopSerializationAdapter(serialization, cls);
+    }
+
     /** {@inheritDoc} */
     @Override public GridHadoopSerialization keySerialization() throws GridException {
-        return new GridHadoopWritableSerialization((Class<? extends Writable>)keyCls);
+        return getSerialization(keyCls);
     }
 
     /** {@inheritDoc} */
     @Override public GridHadoopSerialization valueSerialization() throws GridException {
-        return new GridHadoopWritableSerialization((Class<? extends Writable>)valCls);
+        return getSerialization(valCls);
     }
 
     /** {@inheritDoc} */
