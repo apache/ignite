@@ -35,10 +35,10 @@ import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
-import static org.gridgain.grid.cache.GridCacheTxState.ACTIVE;
+import static org.gridgain.grid.cache.GridCacheTxState.*;
 import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
-import static org.gridgain.grid.kernal.processors.dr.GridDrType.DR_NONE;
+import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
 /**
  * Adapter for cache entry.

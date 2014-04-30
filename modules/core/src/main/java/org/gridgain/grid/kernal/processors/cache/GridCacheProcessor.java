@@ -42,14 +42,14 @@ import java.lang.reflect.*;
 import java.util.*;
 
 import static org.gridgain.grid.GridDeploymentMode.*;
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.ATOMIC;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheConfiguration.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.SERIALIZABLE;
+import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.dr.cache.receiver.GridDrReceiverCacheConflictResolverMode.DR_AUTO;
+import static org.gridgain.grid.dr.cache.receiver.GridDrReceiverCacheConflictResolverMode.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
