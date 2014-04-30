@@ -84,14 +84,10 @@
                             </links>
                             <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
                             <excludePackageNames>*.impl:*.util:*.marshaller:*.typedef:*.router.impl</excludePackageNames>
-                            <includeDependencySources>true</includeDependencySources>
-                            <dependencySourceIncludes>
-                                <dependencySourceInclude>org.gridgain.client.ssl:*</dependencySourceInclude>
-                            </dependencySourceIncludes>
                             <groups>
                                 <group>
                                     <title>Client APIs</title>
-                                    <packages>org.gridgain.client:org.gridgain.client.balancer:org.gridgain.client.ssl</packages>
+                                    <packages>org.gridgain.client:org.gridgain.client.balancer</packages>
                                 </group>
                                 <group>
                                     <title>Router APIs</title>

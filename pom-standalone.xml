@@ -645,6 +645,24 @@
                                     </fileset>
                                 </replaceregexp>
 
+                                <replace token="@sh.file.version" value="${gridgain.version}">
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.sh"/>
+                                    </fileset>
+                                </replace>
+
+                                <replace token="@bat.file.version" value="${gridgain.version}">
+                                    <fileset dir="target/release-package/bin">
+                                        <include name="**/*.bat"/>
+                                    </fileset>
+                                </replace>
+
+                                <replace token="@xml.file.version" value="${gridgain.version}">
+                                    <fileset dir="target/release-package">
+                                        <include name="**/*.xml"/>
+                                    </fileset>
+                                </replace>
+
                                 <zip destfile="target/gridgain-${gridgain.edition}-os-${gridgain.version}-win.zip"
                                      encoding="UTF-8">
                                     <zipfileset dir="target/release-package"
