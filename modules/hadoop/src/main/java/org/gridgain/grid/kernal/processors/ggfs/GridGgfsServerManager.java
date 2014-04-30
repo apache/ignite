@@ -180,8 +180,8 @@ public class GridGgfsServerManager extends GridGgfsManager {
                         it.remove();
                     }
                     catch (GridException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to bind GGFS endpoint [cfg=" + cfg + ", err=" + e.getMessage() + ']');
+                        if (GridWorker.log.isDebugEnabled())
+                            GridWorker.log.debug("Failed to bind GGFS endpoint [cfg=" + cfg + ", err=" + e.getMessage() + ']');
                     }
                 }
 

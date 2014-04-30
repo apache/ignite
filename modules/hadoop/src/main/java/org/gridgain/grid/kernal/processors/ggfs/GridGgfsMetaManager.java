@@ -827,7 +827,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         // which will be used by delete worker for event notifications.
         id2InfoPrj.transform(fileId, new UpdatePath(path));
 
-        return GridGgfsFileInfo.builder(fileInfo).path(path).build();
+        return builder(fileInfo).path(path).build();
     }
 
     /**
@@ -2663,7 +2663,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
         /** {@inheritDoc} */
         @Override public GridGgfsFileInfo apply(GridGgfsFileInfo info) {
-            return GridGgfsFileInfo.builder(info).path(path).build();
+            return builder(info).path(path).build();
         }
 
         /** {@inheritDoc} */

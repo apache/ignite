@@ -19,7 +19,7 @@ import org.gridgain.grid.util.tostring.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsIpcCommand.*;
+import static org.gridgain.grid.kernal.ggfs.common.GridGgfsIpcCommand.*;
 
 /**
  * GGFS path command response.
