@@ -450,7 +450,7 @@ public class GridGgfsMetaManagerSelfTest extends GridCommonAbstractTest {
      */
     private void expectsRemoveFail(final GridUuid parentId, final String fileName, final GridUuid fileId,
         final GridGgfsPath path, @Nullable String msg) {
-        GridTestUtils.assertThrows(log, new Callable() {
+        assertThrows(log, new Callable() {
             @Nullable @Override public Object call() throws Exception {
                 mgr.removeIfEmpty(parentId, fileName, fileId, path, true);
 
