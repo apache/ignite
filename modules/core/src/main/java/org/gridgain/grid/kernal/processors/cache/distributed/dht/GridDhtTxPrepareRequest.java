@@ -45,6 +45,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     private BitSet invalidateNearEntries;
 
     /** Near writes. */
+    @GridToStringInclude
     @GridDirectTransient
     private Collection<GridCacheTxEntry<K, V>> nearWrites;
 
