@@ -1044,17 +1044,17 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsInputStream open(GridGgfsPath path) throws GridException {
+    @Override public GridGgfsInputStreamAdapter open(GridGgfsPath path) throws GridException {
         return open(path, cfg.getStreamBufferSize(), cfg.getSequentialReadsBeforePrefetch());
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsInputStream open(GridGgfsPath path, int bufSize) throws GridException {
+    @Override public GridGgfsInputStreamAdapter open(GridGgfsPath path, int bufSize) throws GridException {
         return open(path, bufSize, cfg.getSequentialReadsBeforePrefetch());
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsInputStream open(GridGgfsPath path, int bufSize, int seqReadsBeforePrefetch)
+    @Override public GridGgfsInputStreamAdapter open(GridGgfsPath path, int bufSize, int seqReadsBeforePrefetch)
         throws GridException {
         A.notNull(path, "path");
         A.ensure(bufSize >= 0, "bufSize >= 0");
@@ -1357,20 +1357,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
         return affinity(path, start, len, 0L);
     }
 
-    /**
-     * Get affinity block locations for data blocks of the file. In case {@code maxLen} parameter is set and
-     * particular block location length is greater than this value, block locations will be split into smaller
-     * chunks.
-     *
-     * @param path File path to get affinity for.
-     * @param start Position in the file to start affinity resolution from.
-     * @param len Size of data in the file to resolve affinity for.
-     * @param maxLen Maximum length of a single returned block location length.
-     * @return Affinity block locations.
-     * @throws GridException In case of error.
-     * @throws GridGgfsFileNotFoundException If path doesn't exist.
-     */
-    public Collection<GridGgfsBlockLocation> affinity(GridGgfsPath path, long start, long len, long maxLen)
+    /** {@inheritDoc} */
+    @Override public Collection<GridGgfsBlockLocation> affinity(GridGgfsPath path, long start, long len, long maxLen)
         throws GridException {
         A.notNull(path, "path");
         A.ensure(start >= 0, "start >= 0");

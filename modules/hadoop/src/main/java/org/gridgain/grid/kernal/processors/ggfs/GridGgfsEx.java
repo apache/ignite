@@ -34,6 +34,16 @@ public interface GridGgfsEx extends GridGgfs {
      */
     public GridGgfsPaths proxyPaths();
 
+    /** {@inheritDoc} */
+    @Override GridGgfsInputStreamAdapter open(GridGgfsPath path, int bufSize, int seqReadsBeforePrefetch)
+        throws GridException;
+
+    /** {@inheritDoc} */
+    @Override GridGgfsInputStreamAdapter open(GridGgfsPath path) throws GridException;
+
+    /** {@inheritDoc} */
+    @Override GridGgfsInputStreamAdapter open(GridGgfsPath path, int bufSize) throws GridException;
+
     /**
      * Gets global space counters.
      *
