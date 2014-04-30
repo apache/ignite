@@ -45,9 +45,20 @@
         </file>
 
         <file>
+            <source>modules/clients/dotnet/readme.pdf</source>
+            <outputDirectory>/clients/dotnet</outputDirectory>
+        </file>
+
+        <file>
             <source>examples/pom-standalone.xml</source>
             <outputDirectory>/examples</outputDirectory>
             <destName>pom.xml</destName>
+        </file>
+
+        <file>
+            <source>examples/clients/dotnet/GridClientApiExample.csprojrel</source>
+            <outputDirectory>/examples/clients/dotnet</outputDirectory>
+            <destName>GridClientApiExample.csproj</destName>
         </file>
     </files>
 
@@ -76,15 +87,45 @@
         </fileSet>
 
         <fileSet>
-            <directory>modules/clients</directory>
-            <outputDirectory>clients</outputDirectory>
+            <directory>modules/clients/src/main/java</directory>
+            <outputDirectory>/clients/java</outputDirectory>
             <includes>
-                <include>cpp/**</include>
-                <include>dotnet/**</include>
-                <include>java/config/**</include>
-                <include>java/readme.pdf</include>
-                <include>java/readme.txt</include>
+                <include>config/**</include>
+                <include>readme.pdf</include>
+                <include>readme.txt</include>
             </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/clients/cpp</directory>
+            <outputDirectory>/clients/cpp</outputDirectory>
+            <excludes>
+                <exclude>main/tests/**</exclude>
+                <exclude>vsproject/gridgain-tests/**</exclude>
+                <exclude>vsproject/gridgain-router-tests/**</exclude>
+                <exclude>vsproject/gridgain-client-dev.sln</exclude>
+                <exclude>**/*.md</exclude>
+                <exclude>**/*.dxg</exclude>
+            </excludes>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/clients/dotnet/client-lib/libs</directory>
+            <outputDirectory>/clients/dotnet</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>examples</directory>
+            <outputDirectory>/examples</outputDirectory>
+            <includes>
+                <include>clients/**</include>
+                <include>libs/**</include>
+            </includes>
+            <excludes>
+                <exclude>**/*.md</exclude>
+                <exclude>clients/dotnet/GridClientApiExample-public-key.txt</exclude>
+                <exclude>clients/dotnet/GridClientApiExample.csproj*</exclude>
+            </excludes>
         </fileSet>
 
         <fileSet>
@@ -103,7 +144,7 @@
 
         <fileSet>
             <directory>modules/scalar/target/site/scaladocs</directory>
-            <outputDirectory>/docs/scaladoc</outputDirectory>
+            <outputDirectory>/docs/scaladoc/scalar</outputDirectory>
         </fileSet>
 
         <fileSet>
