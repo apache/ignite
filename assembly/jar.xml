@@ -44,6 +44,7 @@
 
             <excludes>
                 <exclude>org.gridgain:gridgain-examples</exclude>
+                <exclude>org.gridgain:gridgain-tools</exclude>
             </excludes>
         </moduleSet>
     </moduleSets>
