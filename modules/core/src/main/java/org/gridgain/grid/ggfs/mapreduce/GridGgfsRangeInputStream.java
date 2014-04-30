@@ -11,6 +11,7 @@ package org.gridgain.grid.ggfs.mapreduce;
 
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 
@@ -95,7 +96,7 @@ public final class GridGgfsRangeInputStream extends GridGgfsInputStream {
     }
 
     /** {@inheritDoc} */
-    @Override public int read(byte[] b, int off, int len) throws IOException {
+    @Override public int read(@NotNull byte[] b, int off, int len) throws IOException {
         if (pos < maxLen) {
             len = (int)Math.min(len, maxLen - pos);
 
