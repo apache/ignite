@@ -27,12 +27,10 @@ public class GridHadoopTasksV2Test extends GridHadoopTasksAllVersionsTest {
      * @param inFile Input file name for the job.
      * @param outFile Output file name for the job.
      * @return Hadoop job.
-     * @throws IOException if fails.
+     * @throws Exception if fails.
      */
-    @Override public GridHadoopJob getHadoopJob(String inFile, String outFile) throws IOException {
+    @Override public GridHadoopJob getHadoopJob(String inFile, String outFile) throws Exception {
         Job hadoopJob = GridGainWordCount2.getJob(inFile, outFile);
-        hadoopJob.getConfiguration().setBooleanIfUnset("mapred.mapper.new-api", true);
-        hadoopJob.getConfiguration().setBooleanIfUnset("mapred.reducer.new-api", true);
 
         GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(hadoopJob.getConfiguration());
 

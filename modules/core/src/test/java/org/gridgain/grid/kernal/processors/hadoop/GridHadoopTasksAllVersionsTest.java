@@ -34,7 +34,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
      * @return Hadoop job.
      * @throws IOException If fails.
      */
-    public abstract GridHadoopJob getHadoopJob(String inFile, String outFile) throws IOException;
+    public abstract GridHadoopJob getHadoopJob(String inFile, String outFile) throws Exception;
 
     /**
      * @return prefix of reducer output file name. It's "part-" for v1 and "part-r-" for v2 API

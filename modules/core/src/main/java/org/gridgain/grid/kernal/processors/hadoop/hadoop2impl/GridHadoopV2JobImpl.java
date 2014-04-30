@@ -51,7 +51,7 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
 
         JobID hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
-        ctx = new JobContextImpl(new JobConf(jobInfo.configuration()), hadoopJobID);
+        ctx = new JobContextImpl((JobConf)jobInfo.configuration(), hadoopJobID);
 
         keyCls = ctx.getMapOutputKeyClass();
         valCls = ctx.getMapOutputValueClass();

@@ -23,7 +23,6 @@ public class GridHadoopDefaultJobFactory implements GridHadoopJobFactory {
         if (jobInfo instanceof GridHadoopDefaultJobInfo) {
             GridHadoopDefaultJobInfo info = (GridHadoopDefaultJobInfo)jobInfo;
 
-            // TODO check for use new API.
             return new GridHadoopV2JobImpl(id, info);
         }
         else

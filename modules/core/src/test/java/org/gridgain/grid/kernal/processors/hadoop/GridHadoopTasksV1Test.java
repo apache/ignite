@@ -24,12 +24,12 @@ public class GridHadoopTasksV1Test extends GridHadoopTasksAllVersionsTest {
     /**
      * Creates WordCount hadoop job for API v1.
      *
-     * @param inFile input file name for the job.
-     * @param outFile output file name for the job.
+     * @param inFile Input file name for the job.
+     * @param outFile Output file name for the job.
      * @return Hadoop job.
-     * @throws IOException if fails.
+     * @throws IOException If fails.
      */
-    @Override public GridHadoopJob getHadoopJob(String inFile, String outFile) throws IOException {
+    @Override public GridHadoopJob getHadoopJob(String inFile, String outFile) throws Exception {
         JobConf hadoopJob = GridGainWordCount1.getJob(inFile, outFile);
 
         GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(hadoopJob);
