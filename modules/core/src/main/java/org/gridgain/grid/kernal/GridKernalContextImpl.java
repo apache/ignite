@@ -600,6 +600,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <K, V> GridDataLoaderProcessor<K, V> dataLoad() {
         return (GridDataLoaderProcessor<K, V>)dataLdrProc;
     }
