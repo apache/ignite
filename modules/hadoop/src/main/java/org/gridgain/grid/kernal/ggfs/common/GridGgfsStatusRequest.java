@@ -7,11 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.ggfs;
+package org.gridgain.grid.kernal.ggfs.common;
 
 import org.gridgain.grid.kernal.ggfs.common.*;
 
-import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsIpcCommand.*;
+import static org.gridgain.grid.kernal.ggfs.common.GridGgfsIpcCommand.*;
 
 /**
  * GGFS status (total/used/free space) request.

@@ -23,7 +23,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsIpcCommand.*;
+import static org.gridgain.grid.kernal.ggfs.common.GridGgfsIpcCommand.*;
 
 /**
  * GGFS client. Responsible for sending and receiving messages.

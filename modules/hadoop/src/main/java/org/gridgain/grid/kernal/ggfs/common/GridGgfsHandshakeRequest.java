@@ -9,9 +9,7 @@
 
 package org.gridgain.grid.kernal.ggfs.common;
 
-import org.gridgain.grid.kernal.processors.ggfs.*;
-
-import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsIpcCommand.*;
+import static org.gridgain.grid.kernal.ggfs.common.GridGgfsIpcCommand.*;
 
 /**
  * Handshake request.

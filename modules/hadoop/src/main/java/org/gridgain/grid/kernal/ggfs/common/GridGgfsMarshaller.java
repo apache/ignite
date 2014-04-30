@@ -11,14 +11,13 @@ package org.gridgain.grid.kernal.ggfs.common;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsIpcCommand.*;
+import static org.gridgain.grid.kernal.ggfs.common.GridGgfsIpcCommand.*;
 
 /**
  * Implementation of GGFS client message marshaller.

@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.kernal.ggfs.common;
 
-import org.gridgain.grid.kernal.processors.ggfs.*;
-
 /**
  * Abstract class for all messages sent between GGFS client (Hadoop File System implementation) and
  * GGFS server (GridGain data node).

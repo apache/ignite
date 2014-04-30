@@ -154,7 +154,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
             }
         }
         catch (InterruptedException ignored) {
-            Thread.currentThread().interrupt();
+            currentThread().interrupt();
         }
     }
 
