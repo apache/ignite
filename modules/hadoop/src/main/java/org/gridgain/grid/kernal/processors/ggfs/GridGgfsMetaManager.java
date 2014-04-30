@@ -2663,7 +2663,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
         /** {@inheritDoc} */
         @Override public GridGgfsFileInfo apply(GridGgfsFileInfo info) {
-            return builder(info).path(path).build();
+            return GridGgfsFileInfo.builder(info).path(path).build();
         }
 
         /** {@inheritDoc} */

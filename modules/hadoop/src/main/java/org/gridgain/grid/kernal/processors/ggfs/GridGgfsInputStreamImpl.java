@@ -25,7 +25,7 @@ import java.util.concurrent.locks.*;
 /**
  * Input stream to read data from grid cache with separate blocks.
  */
-public class GridGgfsInputStreamImpl extends GridGgfsInputStream {
+public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
     /** Empty chunks result. */
     private static final byte[][] EMPTY_CHUNKS = new byte[0][];
 
