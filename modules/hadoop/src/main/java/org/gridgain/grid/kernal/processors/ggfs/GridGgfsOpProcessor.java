@@ -12,6 +12,8 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
+import org.gridgain.grid.cache.eviction.*;
+import org.gridgain.grid.cache.eviction.ggfs.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
@@ -19,6 +21,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.ipc.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -66,14 +69,44 @@ public class GridGgfsOpProcessor extends GridGgfsProcessor {
 
         GridGgfsConfiguration[] cfgs = ctx.config().getGgfsConfiguration();
 
-        if (F.isEmpty(cfgs)) {
-            if (log.isDebugEnabled())
-                log.debug("Ignored GGFS processor start callback (no GGFS are configured)");
+        assert cfgs != null && cfgs.length > 0;
 
-            return;
-        }
+        // Register GGFS messages.
+        GridTcpCommunicationMessageFactory.registerCommon(new GridTcpCommunicationMessageProducer() {
+            @Override
+            public GridTcpCommunicationMessageAdapter create(byte type) {
+                switch (type) {
+                    case 65:
+                        return new GridGgfsAckMessage();
 
-        assert cfgs != null;
+                    case 66:
+                        return new GridGgfsBlockKey();
+
+                    case 67:
+                        return new GridGgfsBlocksMessage();
+
+                    case 68:
+                        return new GridGgfsDeleteMessage();
+
+                    case 69:
+                        return new GridGgfsFileAffinityRange();
+
+                    case 70:
+                        return new GridGgfsFragmentizerRequest();
+
+                    case 71:
+                        return new GridGgfsFragmentizerResponse();
+
+                    case 72:
+                        return new GridGgfsSyncMessage();
+
+                    default:
+                        assert false : "Invalid GGFS message type.";
+
+                        return null;
+                }
+            }
+        }, 65, 66, 67, 68, 69,70, 71, 72);
 
         // Register HDFS edition usage with license manager.
         GridLicenseUseRegistry.onUsage(HADOOP, getClass());
@@ -191,6 +224,7 @@ public class GridGgfsOpProcessor extends GridGgfsProcessor {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void addAttributes(Map<String, Object> attrs) throws GridException {
         super.addAttributes(attrs);
 
@@ -213,6 +247,8 @@ public class GridGgfsOpProcessor extends GridGgfsProcessor {
         });
 
         Collection<GridGgfsAttributes> attrVals = new ArrayList<>();
+
+        assert gridCfg.getGgfsConfiguration() != null;
 
         for (GridGgfsConfiguration ggfsCfg : gridCfg.getGgfsConfiguration()) {
             GridCacheConfiguration cacheCfg = cacheCfgs.get(ggfsCfg.getDataCacheName());
@@ -239,6 +275,32 @@ public class GridGgfsOpProcessor extends GridGgfsProcessor {
         }
 
         attrs.put(ATTR_GGFS, attrVals.toArray(new GridGgfsAttributes[attrVals.size()]));
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isGgfsBlockKey(Object key) {
+        return key instanceof GridGgfsBlockKey;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void preProcessCacheConfiguration(GridCacheConfiguration cfg) {
+        GridCacheEvictionPolicy evictPlc = cfg.getEvictionPolicy();
+
+        if (evictPlc instanceof GridCacheGgfsPerBlockLruEvictionPolicy && cfg.getEvictionFilter() == null)
+            cfg.setEvictionFilter(new GridCacheGgfsEvictionFilter());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void validateCacheConfiguration(GridCacheConfiguration cfg) throws GridException {
+        GridCacheEvictionPolicy evictPlc =  cfg.getEvictionPolicy();
+
+        if (evictPlc != null && evictPlc instanceof GridCacheGgfsPerBlockLruEvictionPolicy) {
+            GridCacheEvictionFilter evictFilter = cfg.getEvictionFilter();
+
+            if (evictFilter != null && !(evictFilter instanceof GridCacheGgfsEvictionFilter))
+                throw new GridException("Eviction filter cannot be set explicitly when using " +
+                    "GridCacheGgfsPerBlockLruEvictionPolicy:" + cfg.getName());
+        }
     }
 
     /**

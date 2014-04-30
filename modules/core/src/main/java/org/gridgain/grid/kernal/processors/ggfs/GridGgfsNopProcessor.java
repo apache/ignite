@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
@@ -58,5 +60,20 @@ public class GridGgfsNopProcessor extends GridGgfsProcessor {
     @Nullable @Override public GridComputeJob createJob(GridGgfsJob job, @Nullable String ggfsName, GridGgfsPath path,
         long start, long length, GridGgfsRecordResolver recRslv) {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isGgfsBlockKey(Object key) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void preProcessCacheConfiguration(GridCacheConfiguration cfg) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void validateCacheConfiguration(GridCacheConfiguration cfg) throws GridException {
+        // No-op.
     }
 }

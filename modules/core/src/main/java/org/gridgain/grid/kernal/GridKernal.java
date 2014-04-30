@@ -679,6 +679,10 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
+            GridGgfsProcessor ggfsProc = GridGgfsProcessor.instance(ctx, F.isEmpty(cfg.getGgfsConfiguration()));
+
+            ctx.add(ggfsProc);
+
             startProcessor(ctx, new GridClockSyncProcessor(ctx), attrs);
             startProcessor(ctx, createComponent(GridLicenseProcessor.class, ctx), attrs);
             startProcessor(ctx, new GridAffinityProcessor(ctx), attrs);
@@ -691,7 +695,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridRestProcessor(ctx), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
-            startProcessor(ctx, GridGgfsProcessor.instance(ctx, F.isEmpty(cfg.getGgfsConfiguration())), attrs);
+            startProcessor(ctx, ggfsProc, attrs, false);
             startProcessor(ctx, new GridContinuousProcessor(ctx), attrs);
             startProcessor(ctx, createComponent(GridDrProcessor.class, ctx), attrs);
 
@@ -1442,7 +1446,20 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      */
     private void startProcessor(GridKernalContextImpl ctx, GridProcessor proc, Map<String, Object> attrs)
         throws GridException {
-        ctx.add(proc);
+        startProcessor(ctx, proc, attrs, true);
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param proc Processor to start.
+     * @param attrs Attributes.
+     * @param add Whether to add processro to context ({@code false} if already added).
+     * @throws GridException Thrown in case of any error.
+     */
+    private void startProcessor(GridKernalContextImpl ctx, GridProcessor proc, Map<String, Object> attrs, boolean add)
+        throws GridException {
+        if (add)
+            ctx.add(proc);
 
         try {
             proc.start();

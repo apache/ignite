@@ -25,7 +25,6 @@ import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.messages.internal.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.task.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.spi.collision.jobstealing.*;
@@ -246,30 +245,7 @@ public class GridTcpCommunicationMessageFactory {
                     case 64:
                         return new GridDrInternalResponse();
 
-                    // TODO: Register from GGFS processor.
-                    case 65:
-                        return new GridGgfsAckMessage();
-
-                    case 66:
-                        return new GridGgfsBlockKey();
-
-                    case 67:
-                        return new GridGgfsBlocksMessage();
-
-                    case 68:
-                        return new GridGgfsDeleteMessage();
-
-                    case 69:
-                        return new GridGgfsFileAffinityRange();
-
-                    case 70:
-                        return new GridGgfsFragmentizerRequest();
-
-                    case 71:
-                        return new GridGgfsFragmentizerResponse();
-
-                    case 72:
-                        return new GridGgfsSyncMessage();
+                    // 65-72 are GGFS messages (see GridGgfsOpProcessor).
 
                     case 73:
                         return new GridTaskResultRequest();
@@ -305,7 +281,7 @@ public class GridTcpCommunicationMessageFactory {
         },  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
            20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
            40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
-           60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+           60, 61, 62, 63, 64, /* 65-72 - GGFS messages. */    73, 74, 75, 76, 77, 78, 79,
            80);
     }
 
