@@ -141,22 +141,22 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
         pid = GridIpcSharedMemoryUtils.pid();
 
         if (pid == -1)
-            throw new GridGgfsIpcEndpointBindException("Failed to get PID of the current process.");
+            throw new GridIpcEndpointBindException("Failed to get PID of the current process.");
 
         if (size <= 0)
-            throw new GridGgfsIpcEndpointBindException("Space size should be positive: " + size);
+            throw new GridIpcEndpointBindException("Space size should be positive: " + size);
 
         String tokDirPath = this.tokDirPath;
 
         if (F.isEmpty(tokDirPath))
-            throw new GridGgfsIpcEndpointBindException("Token directory path is empty.");
+            throw new GridIpcEndpointBindException("Token directory path is empty.");
 
         tokDirPath = tokDirPath + '/' + locNodeId.toString() + '-' + GridIpcSharedMemoryUtils.pid();
 
         tokDir = U.resolveWorkDirectory(tokDirPath, null, true, false);
 
         if (port <= 0 || port >= 0xffff)
-            throw new GridGgfsIpcEndpointBindException("Port value is illegal: " + port);
+            throw new GridIpcEndpointBindException("Port value is illegal: " + port);
 
         try {
             srvSock = new ServerSocket();
@@ -168,7 +168,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
             // Although empty socket constructor never throws exception, close it just in case.
             U.closeQuiet(srvSock);
 
-            throw new GridGgfsIpcEndpointBindException("Failed to bind shared memory IPC endpoint (is port already " +
+            throw new GridIpcEndpointBindException("Failed to bind shared memory IPC endpoint (is port already " +
                 "in use?): " + port, e);
         }
 

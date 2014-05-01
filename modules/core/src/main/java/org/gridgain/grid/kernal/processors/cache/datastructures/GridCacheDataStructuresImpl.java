@@ -88,6 +88,17 @@ public class GridCacheDataStructuresImpl<K, V> implements GridCacheDataStructure
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public <T> GridCacheSet<T> set(String name, boolean collocated, boolean create)
+        throws GridException {
+        return dsMgr.set(name, collocated, create);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removeSet(String name) throws GridException {
+        return dsMgr.removeSet(name);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public GridCacheCountDownLatch countDownLatch(String name, int cnt, boolean autoDel,
         boolean create) throws GridException {
         return dsMgr.countDownLatch(name, cnt, autoDel, create);
