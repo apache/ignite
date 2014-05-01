@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.future.*;

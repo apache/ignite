@@ -97,7 +97,9 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         GridKernal kernal = (GridKernal)grid;
 
-        GridHadoopMapReducePlanner planner = kernal.context().hadoop().context().planner();
+        GridHadoopOpProcessor hadoopProc = (GridHadoopOpProcessor)kernal.context().hadoop();
+
+        GridHadoopMapReducePlanner planner = hadoopProc.context().planner();
 
         for (int reducers = 1; reducers < 12; reducers++) {
 

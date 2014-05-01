@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.io.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 
 import java.util.*;
