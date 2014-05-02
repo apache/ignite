@@ -36,9 +36,6 @@ public class GridHadoopJobMetadata implements Externalizable {
     /** Pending reducers. */
     private Collection<Integer> pendingReducers;
 
-    /** Attempt map. */
-    private Map<Object, Integer> attemptMap = new HashMap<>();
-
     /** Task number map. */
     private Map<Object, Integer> taskNumMap = new HashMap<>();
 
@@ -74,7 +71,6 @@ public class GridHadoopJobMetadata implements Externalizable {
      */
     public GridHadoopJobMetadata(GridHadoopJobMetadata src) {
         // Make sure to preserve alphabetic order.
-        attemptMap = src.attemptMap;
         failCause = src.failCause;
         jobId = src.jobId;
         jobInfo = src.jobInfo;
@@ -192,19 +188,6 @@ public class GridHadoopJobMetadata implements Externalizable {
     }
 
     /**
-     * @param obj Task source.
-     * @return Attempt number.
-     */
-    public int attempt(Object obj) {
-        Integer res = attemptMap.get(obj);
-
-        if (res == null)
-            return 0;
-
-        return res;
-    }
-
-    /**
      * @param src Task source.
      * @return Task number.
      */
@@ -237,7 +220,6 @@ public class GridHadoopJobMetadata implements Externalizable {
         out.writeObject(mrPlan);
         out.writeObject(pendingBlocks);
         out.writeObject(pendingReducers);
-        out.writeObject(attemptMap);
         out.writeObject(taskNumMap);
         out.writeInt(nextTaskNum);
         out.writeObject(phase);
@@ -251,7 +233,6 @@ public class GridHadoopJobMetadata implements Externalizable {
         mrPlan = (GridHadoopMapReducePlan)in.readObject();
         pendingBlocks = (Collection<GridHadoopFileBlock>)in.readObject();
         pendingReducers = (Collection<Integer>)in.readObject();
-        attemptMap = (Map<Object, Integer>)in.readObject();
         taskNumMap = (Map<Object, Integer>)in.readObject();
         nextTaskNum = in.readInt();
         phase = (GridHadoopJobPhase)in.readObject();
