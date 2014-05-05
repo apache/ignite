@@ -19,46 +19,9 @@ import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.util.ipc.*;
 import org.jetbrains.annotations.*;
 
-import java.lang.reflect.*;
 import java.util.*;
 
 public abstract class GridGgfsProcessor extends GridProcessorAdapter {
-    /** Real processor class name. */
-    private static final String CLS_NAME = "org.gridgain.grid.kernal.processors.ggfs.GridGgfsOpProcessor";
-
-    /**
-     * Get GGFS processor instance.
-     *
-     * @param ctx Kernal context.
-     * @param nop Nop flag.
-     * @return Created processor.
-     * @throws GridException If failed.
-     */
-    public static GridGgfsProcessor instance(GridKernalContext ctx, boolean nop) throws GridException {
-        if (nop)
-            return new GridGgfsNopProcessor(ctx);
-        else {
-            try {
-                Class<?> cls = Class.forName(CLS_NAME);
-
-                Constructor<?> ctor = cls.getConstructor(GridKernalContext.class);
-
-                return (GridGgfsProcessor)ctor.newInstance(ctx);
-            }
-            catch (ClassNotFoundException e) {
-                throw new GridException("Failed to instantiate GGFS processor because it's class is not found " +
-                    "(is it in classpath?): " + CLS_NAME, e);
-            }
-            catch (NoSuchMethodException e) {
-                throw new GridException("Failed to instantiate GGFS processor because it's class doesn't have " +
-                    "required constructor (is class version correct?): " + CLS_NAME, e);
-            }
-            catch (ReflectiveOperationException e) {
-                throw new GridException("Failed to instantiate GGFS processor: " + CLS_NAME, e);
-            }
-        }
-    }
-
     /**
      * Constructor.
      *
@@ -89,7 +52,7 @@ public abstract class GridGgfsProcessor extends GridProcessorAdapter {
      * @param name GGFS name.
      * @return Collection of endpoints or {@code null} in case GGFS is not defined.
      */
-    @Nullable public abstract Collection<GridIpcServerEndpoint> endpoints(@Nullable String name);
+    public abstract Collection<GridIpcServerEndpoint> endpoints(@Nullable String name);
 
     /**
      * Create compute job for the given GGFs job.

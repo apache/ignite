@@ -12,7 +12,6 @@ package org.gridgain.examples.ggfs.filesystem;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
-//import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

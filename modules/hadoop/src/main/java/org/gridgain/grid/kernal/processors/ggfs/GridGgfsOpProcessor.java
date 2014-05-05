@@ -211,10 +211,10 @@ public class GridGgfsOpProcessor extends GridGgfsProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Collection<GridIpcServerEndpoint> endpoints(@Nullable String name) {
+    @Nullable public Collection<GridIpcServerEndpoint> endpoints(@Nullable String name) {
         GridGgfsContext ggfsCtx = ggfsCache.get(maskName(name));
 
-        return ggfsCtx == null ? null : ggfsCtx.server().endpoints();
+        return ggfsCtx == null ? Collections.<GridIpcServerEndpoint>emptyList() : ggfsCtx.server().endpoints();
     }
 
     /** {@inheritDoc} */
