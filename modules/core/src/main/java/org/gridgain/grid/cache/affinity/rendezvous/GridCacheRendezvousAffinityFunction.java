@@ -9,11 +9,8 @@
 
 package org.gridgain.grid.cache.affinity.rendezvous;
 
-import java.io.*;
-import java.security.*;
-import java.util.*;
-
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
@@ -22,6 +19,10 @@ import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
+
+import java.io.*;
+import java.security.*;
+import java.util.*;
 
 /**
  * Affinity function for partitioned cache based on Highest Random Weight algorithm.
@@ -42,6 +43,7 @@ import org.jetbrains.annotations.*;
  * </li>
  * </ul>
  * <p>
+ * Cache affinity can be configured for individual caches via {@link GridCacheConfiguration#getAffinity()} method.
  */
 public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFunction, Externalizable {
     /** */

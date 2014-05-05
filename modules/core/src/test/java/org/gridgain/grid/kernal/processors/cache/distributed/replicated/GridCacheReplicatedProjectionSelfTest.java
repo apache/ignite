@@ -41,16 +41,13 @@ public class GridCacheReplicatedProjectionSelfTest extends GridCacheAbstractProj
             for (int i = 0; i < 3; i++)
                 assertEquals(val, grid(i).cache(null).peek(key));
 
-            // Put value again, it should be invalidated on remote nodes.
+            // Put value again, remote nodes are backups and should not be invalidated.
             cache(0).flagsOn(INVALIDATE).put(key, val);
 
             for (int i = 0; i < 3; i++) {
                 Object peeked = grid(i).cache(null).peek(key);
 
-                if (i == 0)
-                    assertEquals(val, peeked);
-                else
-                    assertNull(peeked);
+                assertEquals(val, peeked);
             }
         }
         finally {

@@ -15,7 +15,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Tx exception test for near cache.
+ * Tests near cache.
  */
 public class GridCacheNearTxExceptionSelfTest extends GridCacheTxExceptionAbstractSelfTest {
     /** {@inheritDoc} */

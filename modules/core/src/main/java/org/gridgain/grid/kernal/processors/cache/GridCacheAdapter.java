@@ -1924,8 +1924,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         ctx.denyOnLocalRead();
 
         return ctx.cloneOnFlag(syncOp(new SyncOp<V>(true) {
-            @Override
-            public V op(GridCacheTxLocalAdapter<K, V> tx) throws GridException {
+            @Override public V op(GridCacheTxLocalAdapter<K, V> tx) throws GridException {
                 return tx.put(key, val, cached, ttl, filter);
             }
 
