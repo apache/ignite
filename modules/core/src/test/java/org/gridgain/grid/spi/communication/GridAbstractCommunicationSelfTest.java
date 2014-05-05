@@ -51,12 +51,11 @@ public abstract class GridAbstractCommunicationSelfTest<T extends GridCommunicat
     private static final ObjectName mBeanName;
 
     static {
-        GridTcpCommunicationMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE,
-            new CO<GridTcpCommunicationMessageAdapter>() {
-                @Override public GridTcpCommunicationMessageAdapter apply() {
-                    return new GridTestMessage();
-                }
-            });
+        GridTcpCommunicationMessageFactory.registerCustom(new GridTcpCommunicationMessageProducer() {
+            @Override public GridTcpCommunicationMessageAdapter create(byte type) {
+                return new GridTestMessage();
+            }
+        }, GridTestMessage.DIRECT_TYPE);
 
         try {
             mBeanName = new ObjectName("mbeanAdaptor:protocol=HTTP");
