@@ -16,7 +16,7 @@ import org.apache.hadoop.mapred.*;
 /**
  * Example job for testing hadoop task execution.
  */
-public class GridGainWordCount1 {
+public class GridHadoopWordCount1 {
     /**
      * Entry point to start job.
      * @param args command line parameters.
@@ -41,18 +41,13 @@ public class GridGainWordCount1 {
      * @return Job configuration
      */
     public static JobConf getJob(String input, String output) {
-        JobConf conf = new JobConf(GridGainWordCount1.class);
+        JobConf conf = new JobConf(GridHadoopWordCount1.class);
         conf.setJobName("wordcount");
 
         conf.setOutputKeyClass(Text.class);
         conf.setOutputValueClass(IntWritable.class);
 
-        conf.setMapperClass(GridGainWordCount1Map.class);
-        conf.setCombinerClass(GridGainWordCount1Reduce.class);
-        conf.setReducerClass(GridGainWordCount1Reduce.class);
-
-        conf.setInputFormat(TextInputFormat.class);
-        conf.setOutputFormat(TextOutputFormat.class);
+        setTasksClasses(conf, true, true, true);
 
         FileInputFormat.setInputPaths(conf, new Path(input));
         FileOutputFormat.setOutputPath(conf, new Path(output));
@@ -60,5 +55,26 @@ public class GridGainWordCount1 {
         return conf;
     }
 
+    /**
+     * Sets task classes with related info if needed into configuration object.
+     *
+     * @param jobConf Configuration to change.
+     * @param setMapper Option to set mapper and input format classes.
+     * @param setCombiner Option to set combiner class.
+     * @param setReducer Option to set reducer and output format classes.
+     */
+    public static void setTasksClasses(JobConf jobConf, boolean setMapper, boolean setCombiner, boolean setReducer) {
+        if (setMapper) {
+            jobConf.setMapperClass(GridHadoopWordCount1Map.class);
+            jobConf.setInputFormat(TextInputFormat.class);
+        }
 
+        if (setCombiner)
+            jobConf.setCombinerClass(GridHadoopWordCount1Reduce.class);
+
+        if (setReducer) {
+            jobConf.setReducerClass(GridHadoopWordCount1Reduce.class);
+            jobConf.setOutputFormat(TextOutputFormat.class);
+        }
+    }
 }

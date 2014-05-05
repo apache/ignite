@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.hadoop2impl;
+package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.*;
@@ -32,7 +32,7 @@ public class GridHadoopV2MapTask extends GridHadoopTask {
 
     /** {@inheritDoc} */
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
-        GridHadoopV2JobImpl jobImpl = (GridHadoopV2JobImpl)taskCtx.job();
+        GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
 
         JobContext jobCtx = jobImpl.hadoopJobContext();
 

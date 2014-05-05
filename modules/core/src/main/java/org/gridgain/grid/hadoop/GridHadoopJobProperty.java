@@ -7,9 +7,8 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop;
+package org.gridgain.grid.hadoop;
 
-import org.gridgain.grid.hadoop.*;
 import org.jetbrains.annotations.*;
 
 /**

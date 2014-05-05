@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.planner.GridHadoopDefaultMapReducePlan;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

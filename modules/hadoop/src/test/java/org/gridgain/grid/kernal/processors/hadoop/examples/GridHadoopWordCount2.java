@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.examples;
 
-import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
@@ -21,7 +20,7 @@ import java.io.*;
 /**
  * Example job for testing hadoop task execution.
  */
-public class GridGainWordCount2 {
+public class GridHadoopWordCount2 {
     /**
      * Entry point to start job.
      *
@@ -48,21 +47,40 @@ public class GridGainWordCount2 {
      * @throws IOException If fails.
      */
     public static Job getJob(String input, String output) throws IOException {
-        Job job = Job.getInstance(new Configuration());
+        Job job = Job.getInstance();
+
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
 
-        job.setMapperClass(GridGainWordCount2Mapper.class);
-        job.setCombinerClass(GridGainWordCount2Reducer.class);
-        job.setReducerClass(GridGainWordCount2Reducer.class);
-
-        job.setInputFormatClass(TextInputFormat.class);
-        job.setOutputFormatClass(TextOutputFormat.class);
+        setTasksClasses(job, true, true, true);
 
         FileInputFormat.setInputPaths(job, new Path(input));
         FileOutputFormat.setOutputPath(job, new Path(output));
 
-        job.setJarByClass(GridGainWordCount2.class);
+        job.setJarByClass(GridHadoopWordCount2.class);
         return job;
+    }
+
+    /**
+     * Sets task classes with related info if needed into configuration object.
+     *
+     * @param job Configuration to change.
+     * @param setMapper Option to set mapper and input format classes.
+     * @param setCombiner Option to set combiner class.
+     * @param setReducer Option to set reducer and output format classes.
+     */
+    public static void setTasksClasses(Job job, boolean setMapper, boolean setCombiner, boolean setReducer) {
+        if (setMapper) {
+            job.setMapperClass(GridHadoopWordCount2Mapper.class);
+            job.setInputFormatClass(TextInputFormat.class);
+        }
+
+        if (setCombiner)
+            job.setCombinerClass(GridHadoopWordCount2Reducer.class);
+
+        if (setReducer) {
+            job.setReducerClass(GridHadoopWordCount2Reducer.class);
+            job.setOutputFormatClass(TextOutputFormat.class);
+        }
     }
 }

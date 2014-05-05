@@ -7,20 +7,17 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.hadoop2impl;
+package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.serializer.Serialization;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.io.serializer.WritableSerialization;
 import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.hadoop1impl.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -28,7 +25,7 @@ import java.util.*;
 /**
  * Hadoop job implementation for v2 API.
  */
-public class GridHadoopV2JobImpl implements GridHadoopJob {
+public class GridHadoopV2Job implements GridHadoopJob {
     /** Hadoop job ID. */
     private GridHadoopJobId jobId;
 
@@ -48,13 +45,13 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
      * @param jobId Job ID.
      * @param jobInfo Job info.
      */
-    public GridHadoopV2JobImpl(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfo) {
+    public GridHadoopV2Job(GridHadoopJobId jobId, GridHadoopDefaultJobInfo jobInfo) {
         this.jobId = jobId;
         this.jobInfo = jobInfo;
 
         JobID hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
-        ctx = new JobContextImpl((JobConf)jobInfo.configuration(), hadoopJobID);
+        ctx = new JobContextImpl(jobInfo.configuration(), hadoopJobID);
 
         keyCls = ctx.getMapOutputKeyClass();
         valCls = ctx.getMapOutputValueClass();
@@ -82,15 +79,13 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
 
     /** {@inheritDoc} */
     @Override public GridHadoopPartitioner partitioner() throws GridException {
-        Class partClsOld = ctx.getConfiguration().getClass("mapred.partitioner.class", null);
+        Class<?> partClsOld = ctx.getConfiguration().getClass("mapred.partitioner.class", null);
 
         if (partClsOld != null)
-            return new GridHadoopV1PartitionerAdapter(U.newInstance(ctx.getJobConf().getPartitionerClass()));
+            return new GridHadoopV1Partitioner(ctx.getJobConf().getPartitionerClass());
 
         try {
-            Class<? extends Partitioner<?, ?>> partCls = ctx.getPartitionerClass();
-
-            return new GridHadoopV2PartitionerAdapter((Partitioner<Object, Object>) U.newInstance(partCls));
+            return new GridHadoopV2Partitioner(ctx.getPartitionerClass());
         }
         catch (ClassNotFoundException e) {
             throw new GridException(e);
@@ -106,7 +101,7 @@ public class GridHadoopV2JobImpl implements GridHadoopJob {
                 if (ctx.getJobConf().getUseNewMapper())
                     return new GridHadoopV2MapTask(taskInfo);
                 else
-                    return  new GridHadoopV1MapTask(taskInfo);
+                    return new GridHadoopV1MapTask(taskInfo);
             }
 
             case REDUCE: {

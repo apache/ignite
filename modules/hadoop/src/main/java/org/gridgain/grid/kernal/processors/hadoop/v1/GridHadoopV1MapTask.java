@@ -7,40 +7,39 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.hadoop1impl;
+package org.gridgain.grid.kernal.processors.hadoop.v1;
 
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.GridHadoopV2JobImpl;
+import org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Job;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.io.IOException;
+import java.io.*;
 
 /**
- * Hadoop combine task implementation for v1 API.
+ * Hadoop map task implementation for v1 API.
  */
-public class GridHadoopV1CombineTask extends GridHadoopTask {
-    /**
-     * @param taskInfo Task info.
-     */
-    public GridHadoopV1CombineTask(GridHadoopTaskInfo taskInfo) {
+public class GridHadoopV1MapTask extends GridHadoopTask {
+    /** {@inheritDoc} */
+    public GridHadoopV1MapTask(GridHadoopTaskInfo taskInfo) {
         super(taskInfo);
     }
 
     /** {@inheritDoc} */
     @Override public void run(final GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
-        GridHadoopV2JobImpl jobImpl = (GridHadoopV2JobImpl) taskCtx.job();
+        GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
         JobConf jobConf = jobImpl.hadoopJobContext().getJobConf();
 
-        Reducer combiner = U.newInstance(jobConf.getCombinerClass());
+        Mapper mapper = U.newInstance(jobConf.getMapperClass());
 
-        combiner.configure(jobConf);
+        InputFormat inFormat = jobConf.getInputFormat();
 
-        GridHadoopTaskInput input = taskCtx.input();
+        GridHadoopFileBlock block = info().fileBlock();
 
-        Reporter reporter = Reporter.NULL;
+        InputSplit split = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), block.hosts());
 
         OutputCollector collector = new OutputCollector() {
             @Override public void collect(Object key, Object val) throws IOException {
@@ -53,12 +52,20 @@ public class GridHadoopV1CombineTask extends GridHadoopTask {
             }
         };
 
-        try {
-            while (input.next()) {
-                combiner.reduce(input.key(), input.values(), collector, reporter);
-            }
+        Reporter reporter = Reporter.NULL;
 
-            combiner.close();
+        try {
+            RecordReader reader = inFormat.getRecordReader(split, jobConf, reporter);
+
+            Object key = reader.createKey();
+            Object val = reader.createValue();
+
+            mapper.configure(jobConf);
+
+            while (reader.next(key, val))
+                mapper.map(key, val, collector, reporter);
+
+            mapper.close();
         }
         catch (IOException e) {
             throw new GridException(e);
