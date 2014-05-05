@@ -120,9 +120,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
 
     /** {@inheritDoc} */
     @Override public AccessControlList getQueueAdmins(String queueName) throws IOException {
-        // TODO
-
-        return null;
+        return new AccessControlList("*");
     }
 
     /** {@inheritDoc} */

@@ -32,7 +32,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
             String host = conf.get(PROP_SRV_HOST);
             int port = conf.getInt(PROP_SRV_PORT, DFLT_SRV_PORT);
 
-            return create0(new InetSocketAddress(host, port), conf);
+            return create0(host, port, conf);
         }
 
         return null;
@@ -41,7 +41,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
     /** {@inheritDoc} */
     @Override public ClientProtocol create(InetSocketAddress addr, Configuration conf) throws IOException {
         if (GridHadoopClientProtocol.PROP_FRAMEWORK_NAME.equals(conf.get(MRConfig.FRAMEWORK_NAME)))
-            return create0(addr, conf);
+            return create0(addr.getHostName(), addr.getPort(), conf);
 
         return null;
     }
@@ -49,18 +49,21 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
     /**
      * Internal protocol creation routine.
      *
-     * @param addr Socket address.
+     * @param host Host.
+     * @param port Port.
      * @param conf Configuration.
      * @return Client protocol.
      * @throws IOException If failed.
      */
-    private ClientProtocol create0(InetSocketAddress addr, Configuration conf) throws IOException {
+    private ClientProtocol create0(String host, int port, Configuration conf) throws IOException {
+        String addr = host + ":" + port;
+
         try {
             // TODO: Client caching (Like in YARNRunner)? Static?
             GridClientConfiguration cliCfg = new GridClientConfiguration();
 
             cliCfg.setProtocol(GridClientProtocol.TCP);
-            cliCfg.setServers(Collections.singletonList(addr.toString()));
+            cliCfg.setServers(Collections.singletonList(addr));
             cliCfg.setMarshaller(new GridClientOptimizedMarshaller());
 
             GridClient cli = GridClientFactory.start(cliCfg);
