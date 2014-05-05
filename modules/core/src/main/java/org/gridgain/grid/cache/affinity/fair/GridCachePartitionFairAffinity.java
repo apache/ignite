@@ -700,10 +700,7 @@ public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction
 
     /**
      * Applies a supplemental hash function to a given hashCode, which
-     * defends against poor quality hash functions.  This is critical
-     * because ConcurrentHashMap uses power-of-two length hash tables,
-     * that otherwise encounter collisions for hashCodes that do not
-     * differ in lower or upper bits.
+     * defends against poor quality hash functions.
      *
      * @param h Hash code.
      * @return Enhanced hash code.

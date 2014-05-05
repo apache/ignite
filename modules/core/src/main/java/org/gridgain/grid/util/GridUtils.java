@@ -5112,8 +5112,10 @@ public abstract class GridUtils {
         if (ldr == null)
             ldr = gridClassLoader;
 
+        String lambdaParent = U.lambdaEnclosingClassName(clsName);
+
         try {
-            ldr.loadClass(clsName);
+            ldr.loadClass(lambdaParent == null ? clsName : lambdaParent);
 
             return true;
         }
