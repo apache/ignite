@@ -527,11 +527,6 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @GridSpiInfo(
-        author = "GridGain Systems",
-        url = "www.gridgain.org",
-        email = "support@gridgain.com",
-        version = "1.5")
     @GridSpiMultipleInstancesSupport(true)
     private static class TestMultipleInstancesCollisionSpi extends GridSpiAdapter implements GridCollisionSpi {
         /** Grid logger. */
@@ -571,11 +566,6 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      * DO NOT CHANGE MULTIPLE INSTANCES SUPPORT.
      * This test might be working on distributed environment.
      */
-    @GridSpiInfo(
-        author = "GridGain Systems",
-        url = "www.gridgain.org",
-        email = "support@gridgain.com",
-        version = "1.5")
     @GridSpiMultipleInstancesSupport(true)
     private static class TestSingleInstancesCollisionSpi extends GridSpiAdapter implements GridCollisionSpi {
         /** Grid logger. */
