@@ -13,8 +13,11 @@ package org.gridgain.grid.kernal;
  * Component type.
  */
 public enum GridComponentType {
-    /** GGFS, */
-    GGFS("org.gridgain.grid.kernal.processors.ggfs.GridGgfsOpProcessor");
+    /** GGFS. */
+    COMP_GGFS("org.gridgain.grid.kernal.processors.ggfs.GridGgfsOpProcessor"),
+
+    /** Hadoop. */
+    COMP_HADOOP("org.gridgain.grid.kernal.processors.hadoop.GridHadoopOpProcessor");
 
     /** Class name. */
     private final String clsName;

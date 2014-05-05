@@ -680,9 +680,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
-            GridGgfsProcessor ggfsProc = U.createComponent(ctx, GGFS, new GridGgfsNopProcessor(ctx),
+            GridGgfsProcessor ggfsProc = U.createComponent(ctx, COMP_GGFS, new GridGgfsNopProcessor(ctx),
                 F.isEmpty(cfg.getGgfsConfiguration()));
-            GridHadoopProcessor hadoopProc = GridHadoopProcessor.instance(ctx, cfg.getHadoopConfiguration() == null);
+
+            GridHadoopProcessor hadoopProc = U.createComponent(ctx, COMP_HADOOP, new GridHadoopNopProcessor(ctx),
+                cfg.getHadoopConfiguration() == null);
 
             ctx.add(ggfsProc);
 
