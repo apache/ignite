@@ -13,6 +13,9 @@ package org.gridgain.grid.hadoop;
  * Hadoop configuration.
  */
 public class GridHadoopConfiguration {
+    /** Default finished jbo info time-to-live. */
+    public static final long DFLT_FINISHED_JOB_INFO_TTL = 10_000;
+
     /** System cache name. TODO get rid of it. */
     private String sysCacheName;
 
@@ -21,6 +24,9 @@ public class GridHadoopConfiguration {
 
     /** Map reduce planner. */
     private GridHadoopMapReducePlanner planner;
+
+    /** Finished job info TTL. */
+    private long finishedJobInfoTtl = DFLT_FINISHED_JOB_INFO_TTL;
 
     /**
      * Default constructor.
@@ -36,9 +42,28 @@ public class GridHadoopConfiguration {
      */
     public GridHadoopConfiguration(GridHadoopConfiguration cfg) {
         // Preserve alphabetic order.
+        finishedJobInfoTtl = cfg.getFinishedJobInfoTtl();
         jobFactory = cfg.getJobFactory();
         planner = cfg.getMapReducePlanner();
         sysCacheName = cfg.getSystemCacheName();
+    }
+
+    /**
+     * Gets finished job info time-to-live in milliseconds.
+     *
+     * @return Finished job info time-to-live.
+     */
+    public long getFinishedJobInfoTtl() {
+        return finishedJobInfoTtl;
+    }
+
+    /**
+     * Sets finished job info time-to-live.
+     *
+     * @param finishedJobInfoTtl Finished job info time-to-live.
+     */
+    public void setFinishedJobInfoTtl(long finishedJobInfoTtl) {
+        this.finishedJobInfoTtl = finishedJobInfoTtl;
     }
 
     /**

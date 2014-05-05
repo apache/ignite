@@ -376,28 +376,38 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     public void testInvalidateFlag() throws Exception {
-        GridClientData d = client.data(REPLICATED_CACHE_NAME);
+        GridEx g0 = grid(0);
 
-        assertTrue(d.put("xxx", "yyy"));
+        GridCache<String, String> cache = g0.cache(PARTITIONED_CACHE_NAME);
 
-        assertEquals("yyy", grid(0).cache(REPLICATED_CACHE_NAME).get("xxx"));
+        String key = null;
 
-        d.flagsOn(GridClientCacheFlag.INVALIDATE).put("xxx", "zzz");
+        for (int i = 0; i < 10_000; i++) {
+            if (!cache.affinity().isPrimaryOrBackup(g0.localNode(), String.valueOf(i))) {
+                key = String.valueOf(i);
 
-        int notNulls = 0;
-
-        for (Grid g : G.allGrids()) {
-            GridCache<String, Object> cache = g.cache(REPLICATED_CACHE_NAME);
-
-            Object val = cache != null ? cache.peek("xxx") : null;
-
-            if ("zzz".equals(val))
-                notNulls++;
-            else
-                assertNull(val);
+                break;
+            }
         }
 
-        assertEquals(1, notNulls);
+        assertNotNull(key);
+
+        cache.put(key, key); // Create entry in near cache, it is invalidated if INVALIDATE flag is set.
+
+        assertNotNull(cache.peek(key));
+
+        GridClientData d = client.data(PARTITIONED_CACHE_NAME);
+
+        d.flagsOn(GridClientCacheFlag.INVALIDATE).put(key, "zzz");
+
+        for (Grid g : G.allGrids()) {
+            cache = g.cache(PARTITIONED_CACHE_NAME);
+
+            if (cache.affinity().isPrimaryOrBackup(g.localNode(), key))
+                assertEquals("zzz", cache.peek(key));
+            else
+                assertNull(cache.peek(key));
+        }
     }
 
     /**

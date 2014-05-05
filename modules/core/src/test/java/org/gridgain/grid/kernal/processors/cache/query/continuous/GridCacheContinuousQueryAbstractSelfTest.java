@@ -103,7 +103,19 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        assertEquals(gridCount(), grid(0).nodes().size());
+        GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                for (int i = 0; i < gridCount(); i++) {
+                    if (grid(i).nodes().size() != gridCount())
+                        return false;
+                }
+
+                return true;
+            }
+        }, 3000);
+
+        for (int i = 0; i < gridCount(); i++)
+            assertEquals(gridCount(), grid(i).nodes().size());
 
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(null).removeAll();

@@ -18,15 +18,14 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.extras.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.dr.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -34,10 +33,10 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.gridgain.grid.events.GridEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
@@ -183,7 +182,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         assert Thread.holdsLock(this);
 
         // In case we deal with GGFS cache, count updated data
-        if (cctx.cache().isGgfsDataCache() && key() instanceof GridGgfsBlockKey) {
+        if (cctx.cache().isGgfsDataCache() && cctx.kernalContext().ggfs().isGgfsBlockKey(key())) {
             int newSize = valueLength((byte[])val, valBytes != null ? GridCacheValueBytes.marshaled(valBytes) :
                 GridCacheValueBytes.nil());
             int oldSize = valueLength((byte[])this.val, this.val == null ? valueBytesUnlocked() :
@@ -1044,6 +1043,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (mode == GridCacheMode.LOCAL || mode == GridCacheMode.REPLICATED ||
                 (tx != null && (tx.dht() || tx.colocated()) && tx.local()))
                 cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), false);
+
+            cctx.dataStructures().onEntryUpdated(key, false);
         }
 
         if (log.isDebugEnabled())
@@ -1165,6 +1166,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (mode == GridCacheMode.LOCAL || mode == GridCacheMode.REPLICATED ||
                     (tx != null && (tx.dht() || tx.colocated()) && tx.local()))
                     cctx.continuousQueries().onEntryUpdate(this, key, null, null, false);
+
+                cctx.dataStructures().onEntryUpdated(key, true);
             }
         }
         finally {
@@ -1316,6 +1319,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 cctx.cache().metrics0().onWrite();
 
             cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), false);
+
+            cctx.dataStructures().onEntryUpdated(key, op == DELETE);
         }
 
         return new GridBiTuple<>(res, old);
@@ -1618,6 +1623,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             if (primary || cctx.isReplicated())
                 cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), false);
+
+            cctx.dataStructures().onEntryUpdated(key, op == DELETE);
         }
 
         if (log.isDebugEnabled())
@@ -2537,8 +2544,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 drReplicate(drType, val, valBytes, ver);
 
-                if (!skipQryNtf && (cctx.affinity().primary(cctx.localNode(), key, topVer) || cctx.isReplicated()))
-                    cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), true);
+                if (!skipQryNtf) {
+                    if (cctx.affinity().primary(cctx.localNode(), key, topVer) || cctx.isReplicated())
+                        cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), true);
+
+                    cctx.dataStructures().onEntryUpdated(key, false);
+                }
 
                 return true;
             }
