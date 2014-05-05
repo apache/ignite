@@ -9,10 +9,10 @@
 
 package org.gridgain.client.impl.connection;
 
+import io.netty.channel.*;
 import io.netty.channel.nio.*;
 import org.gridgain.client.*;
 import org.gridgain.client.util.*;
-import io.netty.channel.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
