@@ -25,6 +25,10 @@ public class GridHadoopProtocolJobStatusTask extends GridHadoopProtocolTaskAdapt
         UUID nodeId = UUID.fromString(args.<String>get(0));
         int id = args.get(1);
 
-        return proc.status(new GridHadoopJobId(nodeId, id));
+        // TODO: GG-8035: Poll timeout should be configured either in GG config or in job config, or in both.
+        GridHadoopJobStatus status = proc.status(new GridHadoopJobId(nodeId, id), 100);
+
+        // TODO: GG-8035: Implement once data model is clear.
+        return null;
     }
 }

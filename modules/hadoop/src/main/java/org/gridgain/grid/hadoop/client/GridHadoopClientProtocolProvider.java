@@ -56,6 +56,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
      */
     private ClientProtocol create0(InetSocketAddress addr, Configuration conf) throws IOException {
         try {
+            // TODO: Client caching (Like in YARNRunner)? Static?
             GridClientConfiguration cliCfg = new GridClientConfiguration();
 
             cliCfg.setProtocol(GridClientProtocol.TCP);

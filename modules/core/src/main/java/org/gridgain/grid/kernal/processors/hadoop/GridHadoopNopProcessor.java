@@ -52,4 +52,8 @@ public class GridHadoopNopProcessor extends GridHadoopProcessor {
     @Override public GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException {
         return new GridHadoopJobStatus(new GridFinishedFutureEx<>(new GridException("Hadoop is not available")), null);
     }
+
+    @Override public GridHadoopJobStatus status(GridHadoopJobId jobId, long pollTimeout) throws GridException {
+        return new GridHadoopJobStatus(new GridFinishedFutureEx<>(new GridException("Hadoop is not available")), null);
+    }
 }

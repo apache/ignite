@@ -18,15 +18,22 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.protocol.*;
 import org.apache.hadoop.mapreduce.security.token.delegation.*;
 import org.apache.hadoop.mapreduce.v2.*;
+import org.apache.hadoop.mapreduce.v2.jobhistory.*;
+import org.apache.hadoop.mapreduce.v2.util.*;
 import org.apache.hadoop.security.*;
 import org.apache.hadoop.security.authorize.*;
 import org.apache.hadoop.security.token.*;
 import org.gridgain.client.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.proto.*;
+import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Hadoop client protocol.
@@ -35,17 +42,11 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     /** GridGain framework name. */
     public static final String PROP_FRAMEWORK_NAME = "gg.framework.name";
 
-    /** GridGain staging directory. */
-    public static final String PROP_STAGING_DIR = "gg.staging.dir";
-
     /** GridGain server host. */
     public static final String PROP_SRV_HOST = "gg.server.host";
 
     /** GridGain server port. */
     public static final String PROP_SRV_PORT = "gg.server.port";
-
-    /** Default staging directory prefix. */
-    public static final String DFLT_STAGING_DIR = "/tmp/hadoop-gridgain/staging";
 
     /** Default server port. */
     public static final int DFLT_SRV_PORT = 6666;
@@ -53,14 +54,14 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     /** Protocol version. */
     public static final long PROTO_VER = 1L;
 
-    /** Staging directory constant. */
-    public static final String STAGING_DIR_CONST = ".staging";
-
     /** Configuration. */
     private final Configuration conf;
 
     /** GG client. */
     private final GridClient cli;
+
+    /** Current status worker. */
+    private final AtomicReference<StatusWorker> statusWorkerRef = new AtomicReference<>();
 
     /**
      * Constructor.
@@ -92,7 +93,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
             GridHadoopJobStatus status = cli.compute().execute(GridHadoopProtocolSubmitJobTask.class.getName(),
                 new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId(), conf));
 
-            // TODO: ???
+            // TODO GG-8035: Job status.
             return new JobStatus();
         }
         catch (GridClientException e) {
@@ -145,15 +146,51 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     /** {@inheritDoc} */
     @Override public JobStatus getJobStatus(JobID jobId) throws IOException, InterruptedException {
         try {
-            GridHadoopJobStatus jobStatus = cli.compute().execute(GridHadoopProtocolJobStatusTask.class.getName(),
-                new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId()));
+            StatusFuture fut;
 
-            // TODO: ???
-            return new JobStatus();
+            for (;;) {
+                // First get worker.
+                StatusWorker worker = statusWorkerRef.get();
+
+                if (worker == null) {
+                    StatusWorker newWorker = new StatusWorker(jobId);
+
+                    if (statusWorkerRef.compareAndSet(null, newWorker)) {
+                        fut = newWorker.fut;
+
+                        new Thread(newWorker).start();
+
+                        break;
+                    }
+                }
+                else {
+                    fut = worker.submit(jobId);
+
+                    if (fut != null)
+                        break;
+                }
+            }
+
+            return fut.get();
         }
-        catch (GridClientException e) {
+        catch (GridException e) {
             throw new IOException("Failed to get job status: " + jobId, e);
         }
+    }
+
+    /**
+     * Internal job status routine.
+     *
+     * @param jobId Job ID.
+     * @return Job status.
+     * @throws GridClientException If failed.
+     */
+    private JobStatus jobStatus(JobID jobId) throws GridClientException {
+        GridHadoopJobStatus jobStatus = cli.compute().execute(GridHadoopProtocolJobStatusTask.class.getName(),
+            new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId()));
+
+        // TODO: Convert.
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -206,31 +243,28 @@ public class GridHadoopClientProtocol implements ClientProtocol {
 
     /** {@inheritDoc} */
     @Override public TaskTrackerInfo[] getBlacklistedTrackers() throws IOException, InterruptedException {
-        // TODO
-
         return new TaskTrackerInfo[0];
     }
 
     /** {@inheritDoc} */
     @Override public String getSystemDir() throws IOException, InterruptedException {
-        // TODO
+        Path sysDir = new Path(MRJobConfig.JOB_SUBMIT_DIR);
 
-        return null;
+        return sysDir.toString();
     }
 
     /** {@inheritDoc} */
     @Override public String getStagingAreaDir() throws IOException, InterruptedException {
         String usr = UserGroupInformation.getCurrentUser().getShortUserName();
 
-        return new SB(conf.get(PROP_STAGING_DIR, DFLT_STAGING_DIR)).a(Path.SEPARATOR).a(usr).a(Path.SEPARATOR)
-            .a(STAGING_DIR_CONST).toString();
+        Path path = MRApps.getStagingAreaDir(conf, usr);
+
+        return path.toString();
     }
 
     /** {@inheritDoc} */
     @Override public String getJobHistoryDir() throws IOException, InterruptedException {
-        // TODO
-
-        return null;
+        return JobHistoryUtils.getConfiguredHistoryServerDoneDirPrefix(conf);
     }
 
     /** {@inheritDoc} */
@@ -314,5 +348,119 @@ public class GridHadoopClientProtocol implements ClientProtocol {
      */
     void close() {
         cli.close();
+    }
+
+    /**
+     * Status future.
+     */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+    private static class StatusFuture extends GridFutureAdapter<JobStatus> {
+        private final JobID jobId;
+
+        private StatusFuture(JobID jobId) {
+            this.jobId = jobId;
+        }
+    }
+
+    /**
+     * Status worker.
+     */
+    private class StatusWorker implements Runnable {
+        /** Status future. */
+        private volatile StatusFuture fut;
+
+        /** Stopping flag. */
+        private volatile boolean stopping;
+
+        /**
+         * Constructor.
+         *
+         * @param jobId Job ID.
+         */
+        private StatusWorker(JobID jobId) {
+            this.fut = new StatusFuture(jobId);
+        }
+
+        /**
+         * Submit new status task to worker.
+         *
+         * @param jobId Job ID.
+         * @return Future or {@code null} is worker is stopping.
+         */
+        @Nullable private StatusFuture submit(JobID jobId) {
+            if (stopping)
+                // Stopping, cannot enqueue.
+                return null;
+            else {
+                StatusFuture fut0 = fut;
+
+                if (fut0 != null)
+                    assert F.eq(jobId, fut0.jobId); // Protocol-per-job approach.
+                else {
+                    // Fallback to synchronizer.
+                    synchronized (this) {
+                        if (stopping)
+                            return null;
+                        else {
+                            fut0 = fut;
+
+                            if (fut0 != null)
+                                assert F.eq(jobId, fut0.jobId); // Protocol-per-job approach.
+                            else {
+                                fut0 = new StatusFuture(jobId);
+
+                                fut = fut0;
+
+                                notifyAll();
+                            }
+                        }
+                    }
+                }
+
+                return fut0;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            while (true) {
+                StatusFuture fut0 = fut;
+
+                if (fut0 == null) {
+                    synchronized (this) {
+                        fut0 = fut;
+
+                        if (fut0 == null) {
+                            try {
+                                wait(1000); // TODO GG-8035: Move to configuration.
+                            }
+                            catch (InterruptedException ignore) {
+                                // Should never happen in current implementation.
+                            }
+
+                            fut0 = fut;
+                        }
+
+                        if (fut0 == null) {
+                            stopping = true;
+
+                            return;
+                        }
+                    }
+                }
+
+                try {
+                    fut0.onDone(jobStatus(fut0.jobId));
+                }
+                catch (Throwable e) {
+                    fut0.onDone(e);
+                }
+                finally {
+                    synchronized (this) {
+                        fut = null;
+                    }
+                }
+            }
+        }
     }
 }

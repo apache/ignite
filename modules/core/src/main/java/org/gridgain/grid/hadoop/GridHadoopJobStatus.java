@@ -12,7 +12,7 @@ package org.gridgain.grid.hadoop;
 import org.gridgain.grid.*;
 
 /**
- * Hadoop jop status.
+ * Hadoop job status.
  */
 public class GridHadoopJobStatus {
     /** Finish future. */

@@ -118,32 +118,28 @@ public class GridHadoopOpProcessor extends GridHadoopProcessor {
         return hctx;
     }
 
-    /**
-     * @return Collection of generated IDs.
-     */
+    /** {@inheritDoc} */
     @Override public GridHadoopJobId nextJobId() {
         return new GridHadoopJobId(id, idCtr.incrementAndGet());
     }
 
-    /**
-     * Submits job to job tracker.
-     *
-     * @param jobId Job ID to submit.
-     * @param jobInfo Job info to submit.
-     * @return Execution future.
-     */
+    /** {@inheritDoc} */
     @Override public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
         return hctx.jobTracker().submit(jobId, jobInfo);
     }
 
-    /**
-     * Gets hadoop job execution status.
-     *
-     * @param jobId Job ID to get status for.
-     * @return Job execution status.
-     */
+    /** {@inheritDoc} */
     @Override public GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException {
         return hctx.jobTracker().status(jobId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoopJobStatus status(GridHadoopJobId jobId, long pollTimeout) throws GridException {
+        GridHadoopJobStatus status = status(jobId);
+
+        status.finishFuture().get(pollTimeout);
+
+        return status(jobId);
     }
 
     /**

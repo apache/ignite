@@ -43,10 +43,21 @@ public abstract class GridHadoopProcessor extends GridProcessorAdapter {
     public abstract GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo);
 
     /**
-     * Gets hadoop job execution status.
+     * Gets Hadoop job execution status.
      *
      * @param jobId Job ID to get status for.
      * @return Job execution status.
+     * @throws GridException If failed.
      */
     public abstract GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException;
+
+    /**
+     * Gets Hadoop job execution status optionally waiting for the given timeout for job completion.
+     *
+     * @param jobId Job ID to get status for.
+     * @param pollTimeout Poll timeout.
+     * @return Job execution status.
+     * @throws GridException If failed.
+     */
+    public abstract GridHadoopJobStatus status(GridHadoopJobId jobId, long pollTimeout) throws GridException;
 }
