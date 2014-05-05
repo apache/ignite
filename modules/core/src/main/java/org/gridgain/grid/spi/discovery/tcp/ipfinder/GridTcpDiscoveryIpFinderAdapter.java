@@ -10,6 +10,7 @@
 package org.gridgain.grid.spi.discovery.tcp.ipfinder;
 
 import org.gridgain.grid.spi.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.net.*;
@@ -23,6 +24,7 @@ public abstract class GridTcpDiscoveryIpFinderAdapter implements GridTcpDiscover
     private boolean shared;
 
     /** SPI context. */
+    @GridToStringExclude
     private volatile GridSpiContext spiCtx;
 
     /** {@inheritDoc} */

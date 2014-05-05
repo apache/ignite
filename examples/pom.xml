@@ -98,9 +98,6 @@
     <build>
         <resources>
             <resource>
-                <directory>config</directory>
-            </resource>
-            <resource>
                 <directory>src/main/java</directory>
             </resource>
         </resources>
