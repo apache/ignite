@@ -7,23 +7,25 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.hadoop1impl;
+package org.gridgain.grid.kernal.processors.hadoop.v2;
 
-import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapreduce.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Hadoop partitioner adapter for v2 API.
  */
-public class GridHadoopV1PartitionerAdapter implements GridHadoopPartitioner {
+public class GridHadoopV2Partitioner implements GridHadoopPartitioner {
     /** Partitioner instance. */
-    private Partitioner part;
+    private Partitioner<Object, Object> part;
 
     /**
-     * @param part Hadoop partitioner.
+     * @param cls Hadoop partitioner class.
      */
-    public GridHadoopV1PartitionerAdapter(Partitioner part) {
-        this.part = part;
+    public GridHadoopV2Partitioner(Class<? extends Partitioner<?, ?>> cls) throws GridException {
+        part = (Partitioner<Object, Object>) U.newInstance(cls);
     }
 
     /** {@inheritDoc} */
@@ -31,4 +33,3 @@ public class GridHadoopV1PartitionerAdapter implements GridHadoopPartitioner {
         return part.getPartition(key, val, parts);
     }
 }
-

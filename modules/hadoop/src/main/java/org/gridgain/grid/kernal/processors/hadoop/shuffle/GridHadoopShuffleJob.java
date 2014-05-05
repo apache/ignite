@@ -26,7 +26,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.kernal.processors.hadoop.GridHadoopJobProperty.*;
+import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
 import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
 
 /**

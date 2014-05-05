@@ -14,7 +14,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.net.*;
@@ -277,7 +277,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
     /**
      * Test job.
      */
-    private static class HadoopTestJob extends GridHadoopV2JobImpl {
+    private static class HadoopTestJob extends GridHadoopV2Job {
         /**
          * @param jobId Job ID.
          * @param jobInfoImpl Job info.

@@ -7,13 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop;
+package org.gridgain.grid.hadoop;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.gridgain.grid.*;
-import org.gridgain.grid.hadoop.*;
 import java.io.*;
 
 /**
@@ -34,6 +33,15 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
      */
     public GridHadoopDefaultJobInfo() {
         // No-op.
+    }
+
+    /**
+     * @param cfg Hadoop configuration.
+     */
+    public GridHadoopDefaultJobInfo(Configuration cfg) throws GridException {
+        this.cfg = new JobConf(cfg);
+
+        setUseNewAPI();
     }
 
     /**
@@ -100,18 +108,9 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
     }
 
     /**
-     * @param cfg Hadoop configuration.
-     */
-    public GridHadoopDefaultJobInfo(Configuration cfg) throws GridException {
-        this.cfg = new JobConf(cfg);
-
-        setUseNewAPI();
-    }
-
-    /**
      * @return Hadoop configuration.
      */
-    public Configuration configuration() {
+    public JobConf configuration() {
         return cfg;
     }
 

@@ -47,7 +47,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testMapTask() throws Exception {
-        File testInputFile = File.createTempFile(GridGainWordCount2.class.getSimpleName(), "-input");
+        File testInputFile = File.createTempFile(GridHadoopWordCount2.class.getSimpleName(), "-input");
 
         testInputFile.deleteOnExit();
 
@@ -99,9 +99,8 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
         BufferedReader reader = new BufferedReader(new FileReader(fileName));
 
         String line;
-        while ((line = reader.readLine()) != null) {
+        while ((line = reader.readLine()) != null)
             sb.append(line).append("\n");
-        }
 
         return sb.toString();
     }
@@ -123,16 +122,17 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
         for (int i = 0; i < words.length; i+=2) {
             List<IntWritable> valList = new ArrayList<>();
 
-            for (int j = 0; j < Integer.parseInt(words[i + 1]); j++) {
+            for (int j = 0; j < Integer.parseInt(words[i + 1]); j++)
                 valList.add(new IntWritable(1));
-            }
 
             ctx.mockInput().put(new Text(words[i]), valList);
         }
 
         GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, taskType, gridJob.id(), taskNum, 0, null);
         GridHadoopTask task = gridJob.createTask(taskInfo);
+
         task.run(ctx);
+
         return ctx;
     }
 
@@ -142,7 +142,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testReduceTask() throws Exception {
-        Path outputDir = Files.createTempDirectory(GridGainWordCount2.class.getSimpleName() + "-output");
+        Path outputDir = Files.createTempDirectory(GridHadoopWordCount2.class.getSimpleName() + "-output");
 
         try {
             URI testOutputDirURI = URI.create(outputDir.toString());
@@ -165,7 +165,8 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
                 readFile(outputDir + "/_temporary/0/task_00000000-0000-0000-0000-000000000000_0000_r_000001/" +
                         getOutputFileNamePrefix() + "00001")
             );
-        } finally {
+        }
+        finally {
             FileUtils.deleteDirectory(outputDir.toFile());
         }
     }
@@ -201,6 +202,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
 
         GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock);
         GridHadoopTask task = gridJob.createTask(taskInfo);
+
         task.run(mapCtx);
 
         //Prepare input for combine
@@ -209,6 +211,7 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
 
         taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.COMBINE, gridJob.id(), 0, 0, null);
         task = gridJob.createTask(taskInfo);
+
         task.run(combineCtx);
 
         return combineCtx;
@@ -221,12 +224,12 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testAllTasks() throws Exception {
-        Path outputDir = Files.createTempDirectory(GridGainWordCount2.class.getSimpleName() + "-output");
+        Path outputDir = Files.createTempDirectory(GridHadoopWordCount2.class.getSimpleName() + "-output");
 
         try {
             URI testOutputDirURI = URI.create(outputDir.toString());
 
-            File testInputFile = File.createTempFile(GridGainWordCount2.class.getSimpleName(), "-input");
+            File testInputFile = File.createTempFile(GridHadoopWordCount2.class.getSimpleName(), "-input");
             testInputFile.deleteOnExit();
 
             URI testInputFileURI = URI.create(testInputFile.getAbsolutePath());
@@ -251,10 +254,12 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
 
             GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.REDUCE, gridJob.id(), 0, 0, null);
             GridHadoopTask task = gridJob.createTask(taskInfo);
+
             task.run(reduceCtx);
 
             taskInfo = new GridHadoopTaskInfo(null, GridHadoopTaskType.COMMIT, gridJob.id(), 0, 0, null);
             task = gridJob.createTask(taskInfo);
+
             task.run(reduceCtx);
 
             assertEquals(
@@ -285,9 +290,8 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
             String word = (String) wordCounts[i];
             int cnt = (Integer) wordCounts[i + 1];
 
-            while (cnt-- > 0) {
+            while (cnt-- > 0)
                 wordsArr.add(word);
-            }
         }
 
         //Shuffling

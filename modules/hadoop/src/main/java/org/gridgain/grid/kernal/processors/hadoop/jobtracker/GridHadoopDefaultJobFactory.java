@@ -11,8 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 
 /**
  * Default Hadoop job factory.
@@ -23,7 +22,7 @@ public class GridHadoopDefaultJobFactory implements GridHadoopJobFactory {
         if (jobInfo instanceof GridHadoopDefaultJobInfo) {
             GridHadoopDefaultJobInfo info = (GridHadoopDefaultJobInfo)jobInfo;
 
-            return new GridHadoopV2JobImpl(id, info);
+            return new GridHadoopV2Job(id, info);
         }
         else
             throw new GridRuntimeException("Unsupported job info class: " + jobInfo.getClass().getName());
