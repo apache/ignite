@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Tests of Map, Combine and Reduce task executions of any version of hadoop API.
  */
-abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
+abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCountTest {
     /**
      * Creates some grid hadoop job. Override this method to create tests for any job implementation.
      *
@@ -85,24 +85,6 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
         task.run(ctx);
 
         assertEquals("hello2,1; world2,1; world3,1; hello3,1", Joiner.on("; ").join(ctx.mockOutput()));
-    }
-
-    /**
-     * Reads whole text file into String.
-     *
-     * @param fileName Name of the file to read.
-     * @return Content of the file as String value.
-     * @throws IOException If could not read the file.
-     */
-    private String readFile(String fileName) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new FileReader(fileName));
-
-        String line;
-        while ((line = reader.readLine()) != null)
-            sb.append(line).append("\n");
-
-        return sb.toString();
     }
 
     /**
@@ -275,46 +257,4 @@ abstract class GridHadoopTasksAllVersionsTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * Generates text file with words. In one line there are from 5 to 9 words.
-     *
-     * @param file File that there is generation for.
-     * @param wordCounts Pair word and count, i.e "hello", 2, "world", 3, etc.
-     * @throws FileNotFoundException If could not create the file.
-     */
-    private void generateTestFile(File file, Object... wordCounts) throws FileNotFoundException {
-        List<String> wordsArr = new ArrayList<>();
-
-        //Generating
-        for (int i = 0; i < wordCounts.length; i += 2) {
-            String word = (String) wordCounts[i];
-            int cnt = (Integer) wordCounts[i + 1];
-
-            while (cnt-- > 0)
-                wordsArr.add(word);
-        }
-
-        //Shuffling
-        for (int i = 0; i < wordsArr.size(); i++) {
-            int j = (int)(Math.random() * wordsArr.size());
-
-            Collections.swap(wordsArr, i, j);
-        }
-
-        //Input file preparing
-        PrintWriter testInputFileWriter = new PrintWriter(file);
-
-        int j = 0;
-
-        while (j < wordsArr.size()) {
-            int i = 5 + (int)(Math.random() * 5);
-
-            List<String> subList = wordsArr.subList(j, Math.min(j + i, wordsArr.size()));
-            j += i;
-
-            testInputFileWriter.println(Joiner.on(' ').join(subList));
-        }
-
-        testInputFileWriter.close();
-    }
 }

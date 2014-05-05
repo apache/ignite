@@ -12,13 +12,13 @@ package org.gridgain.grid.kernal.processors.hadoop;
 import org.apache.hadoop.mapred.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
-import org.gridgain.grid.kernal.processors.hadoop.v2.GridHadoopV2Job;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 
 import java.io.*;
 import java.util.*;
 
 /**
- * Tests of Map, Combine and Reduce task executions via running of job of hadoop API v1
+ * Tests of Map, Combine and Reduce task executions via running of job of hadoop API v1.
  */
 public class GridHadoopTasksV1Test extends GridHadoopTasksAllVersionsTest {
     /**
