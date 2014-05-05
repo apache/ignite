@@ -32,41 +32,6 @@ public abstract class GridHadoopProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Get Hadoop processor instance.
-     *
-     * @param ctx Kernal context.
-     * @param nop Nop flag.
-     * @return Created processor.
-     * @throws GridException If failed.
-     */
-    public static GridHadoopProcessor instance(GridKernalContext ctx, boolean nop) throws GridException {
-        if (nop)
-            return new GridHadoopNopProcessor(ctx);
-        else {
-            try {
-                Class<?> cls = Class.forName(CLS_NAME);
-
-                Constructor<?> ctor = cls.getConstructor(GridKernalContext.class);
-
-                return (GridHadoopProcessor)ctor.newInstance(ctx);
-            }
-            catch (ClassNotFoundException e) {
-                throw new GridException("Failed to instantiate Hadoop processor because it's class is not found " +
-                    "(is it in classpath?): " + CLS_NAME, e);
-            }
-            catch (NoSuchMethodException e) {
-                throw new GridException("Failed to instantiate Hadoop processor because it's class doesn't have " +
-                    "required constructor (is class version correct?): " + CLS_NAME, e);
-            }
-            catch (ReflectiveOperationException e) {
-                throw new GridException("Failed to instantiate Hadoop processor: " + CLS_NAME, e);
-            }
-        }
-    }
-
-
-
-    /**
      * @param cnt Number of IDs to generate.
      * @return Collection of generated IDs.
      */
