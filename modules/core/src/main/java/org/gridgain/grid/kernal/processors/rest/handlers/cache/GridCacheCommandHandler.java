@@ -124,7 +124,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         if (log.isDebugEnabled())
             log.debug("Handling cache REST request: " + req);
 
-        GridRestCacheRequest req0 = (GridRestCacheRequest) req;
+        GridRestCacheRequest req0 = (GridRestCacheRequest)req;
 
         final String cacheName = req0.cacheName();
 
