@@ -23,11 +23,6 @@ import org.jetbrains.annotations.*;
  * control the number of concurrent jobs by setting maximum thread pool size defined
  * by {@link GridConfiguration#getExecutorService()} configuration property.
  */
-@GridSpiInfo(
-    author = /*@java.spi.author*/"GridGain Systems",
-    url = /*@java.spi.url*/"www.gridgain.com",
-    email = /*@java.spi.email*/"support@gridgain.com",
-    version = /*@java.spi.version*/"x.x")
 @GridSpiNoop
 @GridSpiMultipleInstancesSupport(true)
 public class GridNoopCollisionSpi extends GridSpiAdapter implements GridCollisionSpi {
