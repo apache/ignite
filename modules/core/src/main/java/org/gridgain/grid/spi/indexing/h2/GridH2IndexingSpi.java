@@ -134,11 +134,6 @@ import static org.h2.result.SortOrder.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridIndexingSpi
  */
-@GridSpiInfo(
-    author = /*@java.spi.author*/"GridGain Systems",
-    url = /*@java.spi.url*/"www.gridgain.com",
-    email = /*@java.spi.email*/"support@gridgain.com",
-    version = /*@java.spi.version*/"x.x")
 @GridSpiMultipleInstancesSupport(true)
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
 public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi, GridH2IndexingSpiMBean {
