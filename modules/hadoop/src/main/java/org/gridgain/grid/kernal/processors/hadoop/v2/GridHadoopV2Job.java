@@ -10,9 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.io.*;
-import org.apache.hadoop.io.serializer.Serialization;
-import org.apache.hadoop.io.serializer.SerializationFactory;
-import org.apache.hadoop.io.serializer.WritableSerialization;
+import org.apache.hadoop.io.serializer.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.gridgain.grid.*;
@@ -157,9 +155,9 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /**
-     *
-     * @param cls
-     * @return
+     * Gets serializer for specified class.
+     * @param cls Class.
+     * @return Appropriate serializer.
      */
     @SuppressWarnings("unchecked")
     private GridHadoopSerialization getSerialization(Class<?> cls) {
@@ -167,10 +165,10 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         Serialization<?> serialization = factory.getSerialization(cls);
 
-//        if (serialization.getClass() == WritableSerialization.class)
-//            return new GridHadoopWritableSerialization((Class<? extends Writable>)cls);
+        if (serialization.getClass() == WritableSerialization.class)
+            return new GridHadoopWritableSerialization((Class<? extends Writable>)cls);
 
-        return new GridHadoopSerializationAdapter(serialization, cls);
+        return new GridHadoopSerializationWrapper(serialization, cls);
     }
 
     /** {@inheritDoc} */

@@ -579,8 +579,9 @@ public class GridHadoopMultimap implements AutoCloseable {
         }
 
         /** {@inheritDoc} */
-        @Override public void close()  {
-            // TODO
+        @Override public void close() throws GridException {
+            keySer.close();
+            valSer.close();
         }
     }
 

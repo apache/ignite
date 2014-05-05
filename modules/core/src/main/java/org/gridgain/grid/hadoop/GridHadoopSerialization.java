@@ -36,4 +36,11 @@ public interface GridHadoopSerialization {
      * @throws GridException If failed.
      */
     public Object read(DataInput in, @Nullable Object obj) throws GridException;
+
+    /**
+     * Finalise the internal objects.
+     * 
+     * @throws GridException If failed.
+     */
+    public void close() throws GridException;
 }
