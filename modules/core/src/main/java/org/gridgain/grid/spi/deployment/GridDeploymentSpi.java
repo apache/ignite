@@ -13,7 +13,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.deployment.local.*;
-import org.gridgain.grid.spi.deployment.uri.*;
 import org.jetbrains.annotations.*;
 
 /**

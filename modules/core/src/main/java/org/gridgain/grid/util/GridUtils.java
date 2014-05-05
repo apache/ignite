@@ -17,7 +17,6 @@ import org.gridgain.grid.compute.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
-import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.lang.*;
@@ -25,6 +24,7 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
+import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.mbean.*;
 import org.gridgain.grid.util.typedef.*;
@@ -32,14 +32,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
-import org.springframework.beans.*;
-import org.springframework.beans.factory.*;
-import org.springframework.beans.factory.config.*;
-import org.springframework.beans.factory.support.*;
-import org.springframework.beans.factory.xml.*;
-import org.springframework.context.*;
-import org.springframework.context.support.*;
-import org.springframework.core.io.*;
 import sun.misc.*;
 
 import javax.mail.*;
@@ -113,14 +105,8 @@ public abstract class GridUtils {
     /** System line separator. */
     private static final String NL = System.getProperty("line.separator");
 
-    /** Path to {@code gridgain.xml} file. */
-    public static final String GRIDGAIN_XML_PATH = "META-INF/gridgain.xml";
-
     /** Default user version. */
     public static final String DFLT_USER_VERSION = "0";
-
-    /** System class loader user version. */
-    private static final AtomicReference<String> SYS_LDR_VER = new AtomicReference<>(null);
 
     /** Cache for {@link GridPeerDeployAware} fields to speed up reflection. */
     private static final ConcurrentMap<String, GridBiTuple<Class<?>, Collection<Field>>> p2pFields =
@@ -1642,78 +1628,6 @@ public abstract class GridUtils {
         }
 
         return macs;
-    }
-
-    /**
-     * Gets user version for given class loader by checking
-     * {@code META-INF/gridgain.xml} file for {@code userVersion} attribute. If
-     * {@code gridgain.xml} file is not found, or user version is not specified there,
-     * then default version (empty string) is returned.
-     *
-     * @param ldr Class loader.
-     * @param log Logger.
-     * @return User version for given class loader or empty string if no version
-     *      was explicitly specified.
-     */
-    public static String getUserVersion(ClassLoader ldr, GridLogger log) {
-        assert ldr != null;
-        assert log != null;
-
-        // For system class loader return cached version.
-        if (ldr == gridClassLoader() && SYS_LDR_VER.get() != null)
-            return SYS_LDR_VER.get();
-
-        String usrVer = DFLT_USER_VERSION;
-
-        InputStream in = ldr.getResourceAsStream(GRIDGAIN_XML_PATH);
-
-        if (in != null) {
-            // Note: use ByteArrayResource instead of InputStreamResource because
-            // InputStreamResource doesn't work.
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-            try {
-                copy(in, out);
-
-                DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
-
-                XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(factory);
-
-                reader.loadBeanDefinitions(new ByteArrayResource(out.toByteArray()));
-
-                usrVer = (String)factory.getBean("userVersion");
-
-                usrVer = usrVer == null ? DFLT_USER_VERSION : usrVer.trim();
-            }
-            catch (NoSuchBeanDefinitionException ignored) {
-                if (log.isInfoEnabled())
-                    log.info("User version is not explicitly defined (will use default version) [file=" +
-                        GRIDGAIN_XML_PATH + ", clsLdr=" + ldr + ']');
-
-                usrVer = DFLT_USER_VERSION;
-            }
-            catch (BeansException e) {
-                U.error(log, "Failed to parse Spring XML file (will use default user version) [file=" +
-                    GRIDGAIN_XML_PATH + ", clsLdr=" + ldr + ']', e);
-
-                usrVer = DFLT_USER_VERSION;
-            }
-            catch (IOException e) {
-                U.error(log, "Failed to read Spring XML file (will use default user version) [file=" +
-                    GRIDGAIN_XML_PATH + ", clsLdr=" + ldr + ']', e);
-
-                usrVer = DFLT_USER_VERSION;
-            }
-            finally {
-                close(out, log);
-            }
-        }
-
-        // For system class loader return cached version.
-        if (ldr == gridClassLoader())
-            SYS_LDR_VER.compareAndSet(null, usrVer);
-
-        return usrVer;
     }
 
     /**
@@ -6679,6 +6593,22 @@ public abstract class GridUtils {
     }
 
     /**
+     * @param cls Class.
+     * @return All declared methods on the given class and all superclasses.
+     */
+    public static Method[] allDeclaredMethods(Class<?> cls) {
+        Collection<Method> methods = new ArrayList<>();
+
+        while (cls != null) {
+            Collections.addAll(methods, cls.getDeclaredMethods());
+
+            cls = cls.getSuperclass();
+        }
+
+        return toArray(methods, new Method[methods.size()]);
+    }
+
+    /**
      * Awaits for condition.
      *
      * @param cond Condition to await for.
@@ -7607,6 +7537,51 @@ public abstract class GridUtils {
     }
 
     /**
+     * @param indexingSpi Indexing SPI.
+     * @return {@code True} if given SPI is GridH2IndexingSpi with enabled property {@code isDefaultIndexPrimitiveKey}.
+     */
+    public static boolean isDefaultIndexPrimitiveKey(GridIndexingSpi indexingSpi) {
+        if (indexingSpi.getClass().getName().equals(GridComponentType.H2_INDEXING.className())) {
+            try {
+                Method method = indexingSpi.getClass().getMethod("isDefaultIndexPrimitiveKey");
+
+                return (Boolean)method.invoke(indexingSpi);
+            }
+            catch (Exception e) {
+                throw new GridRuntimeException("Failed to invoke 'isDefaultIndexPrimitiveKey' method " +
+                    "on GridH2IndexingSpi.", e);
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param cls Field type.
+     * @return {@code True} if given type is a spatial geometry type based on {@code com.vividsolutions.jts} library.
+     * @throws GridException If failed.
+     */
+    public static boolean isGeometryClass(Class<?> cls) throws GridException {
+        Class<?> dataTypeCls;
+
+        try {
+            dataTypeCls = Class.forName("org.h2.value.DataType");
+        }
+        catch (ClassNotFoundException ignored) {
+            return false; // H2 is not in classpath.
+        }
+
+        try {
+            Method method = dataTypeCls.getMethod("isGeometryClass", Class.class);
+
+            return (Boolean)method.invoke(dataTypeCls, cls);
+        }
+        catch (Exception e) {
+            throw new GridException("Failed to invoke 'org.h2.value.DataType.isGeometryClass' method.", e);
+        }
+    }
+
+    /**
      * Attaches node ID to log file name.
      *
      * @param nodeId Node ID.
@@ -7861,57 +7836,6 @@ public abstract class GridUtils {
             System.arraycopy(src, off, resBuf, resOff, len);
 
         return resOff + len;
-    }
-
-    /**
-     * Creates Spring application context. Optionally excluded properties can be specified,
-     * it means that if such a property is found in {@link GridConfiguration}
-     * then it is removed before the bean is instantiated.
-     * For example, {@code streamerConfiguration} can be excluded from the configs that Visor uses.
-     *
-     * @param cfgUrl Resource where config file is located.
-     * @param excludedProps Properties to be excluded.
-     * @return Spring application context.
-     */
-    public static ApplicationContext applicationContext(URL cfgUrl, final String... excludedProps) {
-        GenericApplicationContext springCtx = new GenericApplicationContext();
-
-        BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
-            @Override public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
-                throws BeansException {
-                for (String beanName : beanFactory.getBeanDefinitionNames()) {
-                    BeanDefinition def = beanFactory.getBeanDefinition(beanName);
-
-                    if (def.getBeanClassName() != null) {
-                        try {
-                            Class.forName(def.getBeanClassName());
-                        }
-                        catch (ClassNotFoundException ignored) {
-                            ((BeanDefinitionRegistry)beanFactory).removeBeanDefinition(beanName);
-
-                            continue;
-                        }
-                    }
-
-                    MutablePropertyValues vals = def.getPropertyValues();
-
-                    for (PropertyValue val : new ArrayList<>(vals.getPropertyValueList())) {
-                        for (String excludedProp : excludedProps) {
-                            if (val.getName().equals(excludedProp))
-                                vals.removePropertyValue(val);
-                        }
-                    }
-                }
-            }
-        };
-
-        springCtx.addBeanFactoryPostProcessor(postProc);
-
-        new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(cfgUrl));
-
-        springCtx.refresh();
-
-        return springCtx;
     }
 
     /**

@@ -13,8 +13,12 @@ package org.gridgain.grid.kernal;
  * Component type.
  */
 public enum GridComponentType {
-    /** GGFS, */
-    GGFS("org.gridgain.grid.kernal.processors.ggfs.GridGgfsOpProcessor");
+    /** GGFS. */
+    GGFS("org.gridgain.grid.kernal.processors.ggfs.GridGgfsOpProcessor"),
+    /** Spring. */
+    SPRING("org.gridgain.grid.kernal.processors.config.spring.GridSpringConfigurationProcessor"),
+    /** H2 indexing SPI. */
+    H2_INDEXING("org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi");
 
     /** Class name. */
     private final String clsName;
@@ -24,10 +28,13 @@ public enum GridComponentType {
      *
      * @param clsName Class name.
      */
-    private GridComponentType(String clsName) {
+    GridComponentType(String clsName) {
         this.clsName = clsName;
     }
 
+    /**
+     * @return Component class name.
+     */
     public String className() {
         return clsName;
     }

@@ -26,6 +26,7 @@ import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
+import org.gridgain.grid.kernal.processors.config.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.*;
@@ -57,6 +58,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridKernalState.*;
 
 /**
@@ -222,6 +224,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringExclude
+    private GridConfigurationProcessor configProcessor;
+
+    /** */
+    @GridToStringExclude
     private List<GridComponent> comps = new LinkedList<>();
 
     /** */
@@ -278,6 +284,15 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         this.cfg = cfg;
         this.gw = gw;
         this.ent = ent;
+
+        try {
+            configProcessor = U.createComponent(this, SPRING, null, false);
+        }
+        catch (GridException ignored) {
+            if (grid.log().isDebugEnabled())
+                grid.log().debug("Failed to load spring component, will not be able to extract userVersion from " +
+                    "META-INF/gridgain.xml.");
+        }
     }
 
     /** {@inheritDoc} */
@@ -377,7 +392,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             drProc = (GridDrProcessor)comp;
         else if (comp instanceof GridVersionProcessor)
             verProc = (GridVersionProcessor)comp;
-
+        else if (comp instanceof GridConfigurationProcessor)
+            configProcessor = (GridConfigurationProcessor)comp;
         else
             assert false : "Unknown manager class: " + comp.getClass();
 
@@ -698,6 +714,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public boolean isDaemon() {
         return config().isDaemon() || "true".equalsIgnoreCase(System.getProperty(GG_DAEMON));
+    }
+
+    /** {@inheritDoc} */
+    @Override public String userVersion(ClassLoader ldr) {
+        return configProcessor != null ? configProcessor.userVersion(ldr, log()) : U.DFLT_USER_VERSION;
     }
 
     /** {@inheritDoc} */

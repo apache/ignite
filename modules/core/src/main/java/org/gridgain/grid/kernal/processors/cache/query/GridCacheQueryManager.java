@@ -24,7 +24,6 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
-import org.gridgain.grid.spi.indexing.h2.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -1220,11 +1219,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         if (GridUtils.isPrimitiveOrWrapper(cls)) {
             for (GridIndexingSpi indexingSpi : cctx.gridConfig().getIndexingSpi()) {
-                if (indexingSpi instanceof GridH2IndexingSpi)
-                    if (!((GridH2IndexingSpiMBean)indexingSpi).isDefaultIndexPrimitiveKey())
-                        throw new IllegalStateException("Invalid use of primitive class type in queries when " +
-                            "GridH2IndexingSpi.isDefaultIndexPrimitiveKey() is disabled " +
-                            "(consider enabling indexing for primitive types).");
+                if (!U.isDefaultIndexPrimitiveKey(indexingSpi))
+                    throw new IllegalStateException("Invalid use of primitive class type in queries when " +
+                        "GridH2IndexingSpi.isDefaultIndexPrimitiveKey() is disabled " +
+                        "(consider enabling indexing for primitive types).");
             }
         }
     }

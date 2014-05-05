@@ -445,4 +445,16 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return Enterprise release flag.
      */
     public boolean isEnterprise();
+
+    /**
+     * Gets user version for given class loader by checking
+     * {@code META-INF/gridgain.xml} file for {@code userVersion} attribute. If
+     * {@code gridgain.xml} file is not found, or user version is not specified there,
+     * then default version (empty string) is returned.
+     *
+     * @param ldr Class loader.
+     * @return User version for given class loader or empty string if no version
+     *      was explicitly specified.
+     */
+    public String userVersion(ClassLoader ldr);
 }

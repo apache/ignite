@@ -131,7 +131,7 @@ public class GridServletStartup extends HttpServlet {
                 "either absolute, relative to GRIDGAIN_HOME, or relative to META-INF folder): " + cfgFile);
 
         try {
-            GridBiTuple<Collection<GridConfiguration>, ? extends GridResourceContext> t =
+            GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> t =
                 GridGainEx.loadConfigurations(cfgUrl);
 
             Collection<GridConfiguration> cfgs = t.get1();

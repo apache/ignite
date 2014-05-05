@@ -11,8 +11,6 @@ package org.gridgain.grid.cache.query;
 
 import java.lang.annotation.*;
 
-import org.gridgain.grid.spi.indexing.h2.*;
-
 /**
  * Annotates fields for SQL queries. All fields that will be involved in SQL clauses must have
  * this annotation. For more information about cache queries see {@link GridCacheQuery} documentation.

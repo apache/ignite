@@ -11,11 +11,8 @@ package org.gridgain.grid;
 
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.lang.*;
-import org.gridgain.grid.resources.*;
 import org.gridgain.grid.startup.cmdline.*;
 import org.gridgain.grid.startup.servlet.*;
-import org.gridgain.grid.startup.tomcat.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
@@ -30,7 +27,6 @@ import java.util.*;
  * {@link org.gridgain.grid.startup} package, for example:
  * <ul>
  * <li>{@link GridCommandLineStartup}</li>
- * <li>{@link GridTomcatStartup}</li>
  * <li>{@link GridServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>

@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.cache.query;
 
-import org.gridgain.grid.spi.indexing.h2.*;
-
 import java.lang.annotation.*;
 
 /**

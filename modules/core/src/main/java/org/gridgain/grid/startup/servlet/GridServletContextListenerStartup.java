@@ -89,7 +89,7 @@ public class GridServletContextListenerStartup implements ServletContextListener
         String cfgFile = ctx.getInitParameter(GRIDGAIN_CFG_FILE_PATH_PARAM);
 
         Collection<GridConfiguration> cfgs;
-        GridResourceContext rsrcCtx = null;
+        GridSpringResourceContext rsrcCtx = null;
 
         if (cfgFile != null) {
             URL cfgUrl = null;
@@ -109,7 +109,7 @@ public class GridServletContextListenerStartup implements ServletContextListener
                 throw new GridRuntimeException("Failed to find Spring configuration file (path provided should be " +
                     "either absolute, relative to GRIDGAIN_HOME, or relative to META-INF folder): " + cfgFile);
 
-            GridBiTuple<Collection<GridConfiguration>, ? extends GridResourceContext> t;
+            GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> t;
 
             try {
                 t = GridGainEx.loadConfigurations(cfgUrl);

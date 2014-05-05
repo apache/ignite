@@ -24,7 +24,6 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
-import org.h2.value.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -664,7 +663,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             if (sqlAnn.index() || sqlAnn.unique()) {
                 String idxName = prop.name() + "_idx";
 
-                desc.addIndex(idxName, DataType.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+                desc.addIndex(idxName, GridUtils.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
 
                 desc.addFieldToIndex(idxName, prop.name(), 0, sqlAnn.descending());
             }
