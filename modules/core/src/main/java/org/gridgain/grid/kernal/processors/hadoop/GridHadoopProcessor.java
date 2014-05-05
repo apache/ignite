@@ -15,7 +15,6 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 
 import java.lang.reflect.*;
-import java.util.*;
 
 /**
  * Hadoop processor.
@@ -64,13 +63,10 @@ public abstract class GridHadoopProcessor extends GridProcessorAdapter {
         }
     }
 
-
-
     /**
-     * @param cnt Number of IDs to generate.
      * @return Collection of generated IDs.
      */
-    public abstract Collection<GridHadoopJobId> getNextJobIds(int cnt);
+    public abstract GridHadoopJobId nextJobId();
 
     /**
      * Submits job to job tracker.

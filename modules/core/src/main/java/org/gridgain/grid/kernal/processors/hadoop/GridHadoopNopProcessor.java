@@ -14,8 +14,6 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.future.*;
 
-import java.util.*;
-
 /**
  * Hadoop processor.
  */
@@ -28,10 +26,9 @@ public class GridHadoopNopProcessor extends GridHadoopProcessor {
     }
 
     /**
-     * @param cnt Number of IDs to generate.
      * @return Collection of generated IDs.
      */
-    @Override public Collection<GridHadoopJobId> getNextJobIds(int cnt) {
+    public GridHadoopJobId nextJobId() {
         return null;
     }
 

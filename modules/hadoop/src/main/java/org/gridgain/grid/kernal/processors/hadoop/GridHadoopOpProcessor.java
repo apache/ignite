@@ -18,11 +18,18 @@ import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Hadoop processor.
  */
 public class GridHadoopOpProcessor extends GridHadoopProcessor {
+    /** Unique ID of this processor. */
+    private final UUID id = UUID.randomUUID();
+
+    /** Job ID counter. */
+    private final AtomicInteger idCtr = new AtomicInteger();
+
     /** Hadoop context. */
     private GridHadoopContext hctx;
 
@@ -112,11 +119,10 @@ public class GridHadoopOpProcessor extends GridHadoopProcessor {
     }
 
     /**
-     * @param cnt Number of IDs to generate.
      * @return Collection of generated IDs.
      */
-    @Override public Collection<GridHadoopJobId> getNextJobIds(int cnt) {
-        return null;
+    @Override public GridHadoopJobId nextJobId() {
+        return new GridHadoopJobId(id, idCtr.incrementAndGet());
     }
 
     /**
