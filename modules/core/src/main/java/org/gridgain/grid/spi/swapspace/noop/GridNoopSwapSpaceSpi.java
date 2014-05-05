@@ -23,11 +23,6 @@ import java.util.*;
 /**
  * No-op implementation of {@link GridSwapSpaceSpi}. Exists for testing and benchmarking purposes.
  */
-@GridSpiInfo(
-    author = /*@java.spi.author*/"GridGain Systems",
-    url = /*@java.spi.url*/"www.gridgain.com",
-    email = /*@java.spi.email*/"support@gridgain.com",
-    version = /*@java.spi.version*/"x.x")
 @GridSpiNoop
 @GridSpiMultipleInstancesSupport(true)
 public class GridNoopSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpaceSpi {

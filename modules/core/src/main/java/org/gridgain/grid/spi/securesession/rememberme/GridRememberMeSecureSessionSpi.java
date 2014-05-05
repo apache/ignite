@@ -80,11 +80,6 @@ import static org.gridgain.grid.util.GridUtils.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridSecureSessionSpi
  */
-@GridSpiInfo(
-    author = /*@java.spi.author*/"GridGain Systems",
-    url = /*@java.spi.url*/"www.gridgain.com",
-    email = /*@java.spi.email*/"support@gridgain.com",
-    version = /*@java.spi.version*/"x.x")
 @GridSpiMultipleInstancesSupport(true)
 public class GridRememberMeSecureSessionSpi extends GridSpiAdapter
     implements GridSecureSessionSpi, GridRememberMeSecureSessionSpiMBean {
