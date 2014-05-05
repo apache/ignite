@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("GridGain")]
 [assembly: AssemblyProduct("GridClientApiExampleTest")]
-[assembly: AssemblyCopyright("Copyright ©  2012 GridGain")]
+[assembly: AssemblyCopyright("Copyright ©  2014 GridGain")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -17,5 +17,5 @@ using System.Runtime.InteropServices;
 
 [assembly: Guid("6a13f4d7-cfa5-4e71-b1f1-89e8a27314ef")]
 
-[assembly: AssemblyVersion("6.0.1")]
-[assembly: AssemblyFileVersion("6.0.1")]
+[assembly: AssemblyVersion("6.1.1")]
+[assembly: AssemblyFileVersion("6.1.1")]
