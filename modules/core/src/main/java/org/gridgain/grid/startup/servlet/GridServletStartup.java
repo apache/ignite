@@ -10,12 +10,11 @@
 package org.gridgain.grid.startup.servlet;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.resource.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.springframework.beans.*;
-import org.springframework.beans.factory.xml.*;
-import org.springframework.context.support.*;
-import org.springframework.core.io.*;
 
 import javax.servlet.*;
 import javax.servlet.http.*;
@@ -131,45 +130,21 @@ public class GridServletStartup extends HttpServlet {
             throw new ServletException("Failed to find Spring configuration file (path provided should be " +
                 "either absolute, relative to GRIDGAIN_HOME, or relative to META-INF folder): " + cfgFile);
 
-        GenericApplicationContext springCtx;
-
         try {
-            springCtx = new GenericApplicationContext();
+            GridBiTuple<Collection<GridConfiguration>, ? extends GridResourceContext> t =
+                GridGainEx.loadConfigurations(cfgUrl);
 
-            XmlBeanDefinitionReader xmlReader = new XmlBeanDefinitionReader(springCtx);
+            Collection<GridConfiguration> cfgs = t.get1();
 
-            xmlReader.loadBeanDefinitions(new UrlResource(cfgUrl));
+            if (cfgs == null)
+                throw new ServletException("Failed to find a single grid factory configuration in: " + cfgUrl);
 
-            springCtx.refresh();
-        }
-        catch (BeansException e) {
-            throw new ServletException("Failed to instantiate Spring XML application context: " + e.getMessage(), e);
-        }
-
-        Map cfgMap;
-
-        try {
-            // Note: Spring is not generics-friendly.
-            cfgMap = springCtx.getBeansOfType(GridConfiguration.class);
-        }
-        catch (BeansException e) {
-            throw new ServletException("Failed to instantiate bean [type=" + GridConfiguration.class + ", err=" +
-                e.getMessage() + ']', e);
-        }
-
-        if (cfgMap == null)
-            throw new ServletException("Failed to find a single grid factory configuration in: " + cfgUrl);
-
-        if (cfgMap.isEmpty())
-            throw new ServletException("Can't find grid factory configuration in: " + cfgUrl);
-
-        try {
-            for (GridConfiguration cfg : (Collection<GridConfiguration>)cfgMap.values()) {
+            for (GridConfiguration cfg : cfgs) {
                 assert cfg != null;
 
                 GridConfiguration adapter = new GridConfiguration(cfg);
 
-                Grid grid = G.start(adapter, springCtx);
+                Grid grid = GridGainEx.start(adapter, t.get2());
 
                 // Test if grid is not null - started properly.
                 if (grid != null)

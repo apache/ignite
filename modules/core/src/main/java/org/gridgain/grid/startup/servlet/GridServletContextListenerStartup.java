@@ -10,12 +10,11 @@
 package org.gridgain.grid.startup.servlet;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.resource.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.springframework.beans.*;
-import org.springframework.beans.factory.xml.*;
-import org.springframework.context.support.*;
-import org.springframework.core.io.*;
 
 import javax.servlet.*;
 import java.net.*;
@@ -90,7 +89,7 @@ public class GridServletContextListenerStartup implements ServletContextListener
         String cfgFile = ctx.getInitParameter(GRIDGAIN_CFG_FILE_PATH_PARAM);
 
         Collection<GridConfiguration> cfgs;
-        GenericApplicationContext springCtx = null;
+        GridResourceContext rsrcCtx = null;
 
         if (cfgFile != null) {
             URL cfgUrl = null;
@@ -110,37 +109,20 @@ public class GridServletContextListenerStartup implements ServletContextListener
                 throw new GridRuntimeException("Failed to find Spring configuration file (path provided should be " +
                     "either absolute, relative to GRIDGAIN_HOME, or relative to META-INF folder): " + cfgFile);
 
-            try {
-                springCtx = new GenericApplicationContext();
-
-                XmlBeanDefinitionReader xmlReader = new XmlBeanDefinitionReader(springCtx);
-
-                xmlReader.loadBeanDefinitions(new UrlResource(cfgUrl));
-
-                springCtx.refresh();
-            }
-            catch (BeansException e) {
-                throw new GridRuntimeException("Failed to instantiate Spring XML application context: " +
-                    e.getMessage(), e);
-            }
-
-            Map<String, GridConfiguration> cfgMap;
+            GridBiTuple<Collection<GridConfiguration>, ? extends GridResourceContext> t;
 
             try {
-                cfgMap = springCtx.getBeansOfType(GridConfiguration.class);
+                t = GridGainEx.loadConfigurations(cfgUrl);
             }
-            catch (BeansException e) {
-                throw new GridRuntimeException("Failed to instantiate bean [type=" + GridConfiguration.class +
-                    ", err=" + e.getMessage() + ']', e);
+            catch (GridException e) {
+                throw new GridRuntimeException("Failed to load GridGain configuration.", e);
             }
 
-            if (cfgMap == null)
-                throw new GridRuntimeException("Failed to find a single grid factory configuration in: " + cfgUrl);
+            cfgs = t.get1();
+            rsrcCtx  = t.get2();
 
-            if (cfgMap.isEmpty())
+            if (cfgs.isEmpty())
                 throw new GridRuntimeException("Can't find grid factory configuration in: " + cfgUrl);
-
-            cfgs = cfgMap.values();
         }
         else
             cfgs = Collections.<GridConfiguration>singleton(new GridConfiguration());
@@ -158,7 +140,7 @@ public class GridServletContextListenerStartup implements ServletContextListener
                         grid = G.grid(cfg.getGridName());
                     }
                     catch (GridIllegalStateException ignored) {
-                        grid = G.start(new GridConfiguration(cfg), springCtx);
+                        grid = GridGainEx.start(new GridConfiguration(cfg), rsrcCtx);
                     }
                 }
 

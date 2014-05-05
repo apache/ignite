@@ -32,7 +32,6 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
-import org.springframework.util.*;
 
 import java.io.*;
 import java.sql.*;
@@ -1219,7 +1218,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (cls == null)
             return;
 
-        if (ClassUtils.isPrimitiveOrWrapper(cls)) {
+        if (GridUtils.isPrimitiveOrWrapper(cls)) {
             for (GridIndexingSpi indexingSpi : cctx.gridConfig().getIndexingSpi()) {
                 if (indexingSpi instanceof GridH2IndexingSpi)
                     if (!((GridH2IndexingSpiMBean)indexingSpi).isDefaultIndexPrimitiveKey())

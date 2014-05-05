@@ -124,7 +124,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Grid, Di
             cfg = new GridConfiguration();
         }
 
-        G.start(cfg, appCtx);
+        GridGainSpring.start(cfg, appCtx);
 
         g = G.grid(cfg.getGridName());
     }

@@ -14,6 +14,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;
@@ -21,8 +22,6 @@ import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
-import org.springframework.aop.framework.*;
-import org.springframework.context.*;
 
 import javax.management.*;
 import java.lang.annotation.*;
@@ -35,39 +34,10 @@ import java.util.concurrent.*;
  */
 public class GridResourceProcessor extends GridProcessorAdapter {
     /** */
-    private static final Collection<Class<? extends Annotation>> JOB_INJECTIONS = Arrays.asList(
-        GridTaskSessionResource.class,
-        GridJobContextResource.class,
-        GridInstanceResource.class,
-        GridExecutorServiceResource.class,
-        GridLocalNodeIdResource.class,
-        GridLocalHostResource.class,
-        GridMBeanServerResource.class,
-        GridHomeResource.class,
-        GridNameResource.class,
-        GridMarshallerResource.class,
-        GridSpringApplicationContextResource.class,
-        GridSpringResource.class,
-        GridLoggerResource.class,
-        GridUserResource.class);
+    private Collection<Class<? extends Annotation>> jobInjections;
 
     /** */
-    private static final Collection<Class<? extends Annotation>> TASK_INJECTIONS = Arrays.asList(
-        GridTaskSessionResource.class,
-        GridLoadBalancerResource.class,
-        GridTaskContinuousMapperResource.class,
-        GridInstanceResource.class,
-        GridExecutorServiceResource.class,
-        GridLocalNodeIdResource.class,
-        GridLocalHostResource.class,
-        GridMBeanServerResource.class,
-        GridHomeResource.class,
-        GridNameResource.class,
-        GridMarshallerResource.class,
-        GridSpringApplicationContextResource.class,
-        GridSpringResource.class,
-        GridLoggerResource.class,
-        GridUserResource.class);
+    private Collection<Class<? extends Annotation>> taskInjections;
 
     /** Grid instance injector. */
     private GridResourceBasicInjector<Grid> gridInjector;
@@ -93,20 +63,17 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     /** Local node ID injector. */
     private GridResourceBasicInjector<UUID> nodeIdInjector;
 
-    /** Spring application context injector. */
-    private GridResourceBasicInjector<ApplicationContext> springCtxInjector;
-
     /** Logger injector. */
     private GridResourceBasicInjector<GridLogger> logInjector;
-
-    /** Spring bean resources injector. */
-    private GridResourceSpringBeanInjector springBeanInjector;
 
     /** Task resources injector. */
     private GridResourceCustomInjector customInjector;
 
     /** Cleaning injector. */
     private final GridResourceInjector nullInjector = new GridResourceBasicInjector<>(null);
+
+    /** */
+    private GridResourceContext rsrcCtx;
 
     /** */
     private final GridResourceIoc ioc = new GridResourceIoc();
@@ -141,9 +108,43 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         customInjector.setMbeanServerInjector(mbeanSrvInjector);
         customInjector.setNodeIdInjector(nodeIdInjector);
         customInjector.setMarshallerInjector(marshInjector);
-        customInjector.setSpringContextInjector(springCtxInjector);
-        customInjector.setSpringBeanInjector(springBeanInjector);
         customInjector.setLogInjector(logInjector);
+        customInjector.setResourceContext(rsrcCtx);
+
+        jobInjections = new ArrayList<>(Arrays.asList(
+            GridTaskSessionResource.class,
+            GridJobContextResource.class,
+            GridInstanceResource.class,
+            GridExecutorServiceResource.class,
+            GridLocalNodeIdResource.class,
+            GridLocalHostResource.class,
+            GridMBeanServerResource.class,
+            GridHomeResource.class,
+            GridNameResource.class,
+            GridMarshallerResource.class,
+            GridLoggerResource.class,
+            GridUserResource.class));
+
+        taskInjections = new ArrayList<>(Arrays.asList(
+            GridTaskSessionResource.class,
+            GridLoadBalancerResource.class,
+            GridTaskContinuousMapperResource.class,
+            GridInstanceResource.class,
+            GridExecutorServiceResource.class,
+            GridLocalNodeIdResource.class,
+            GridLocalHostResource.class,
+            GridMBeanServerResource.class,
+            GridHomeResource.class,
+            GridNameResource.class,
+            GridMarshallerResource.class,
+            GridLoggerResource.class,
+            GridUserResource.class));
+
+        for (GridBiTuple<Class<? extends Annotation>, GridResourceInjector> t : rsrcCtx.injectors()) {
+            jobInjections.add(t.get1());
+
+            taskInjections.add(t.get1());
+        }
 
         if (log.isDebugEnabled())
             log.debug("Started resource processor.");
@@ -160,12 +161,10 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     /**
      * Sets Spring application context.
      *
-     * @param springCtx Spring application context.
+     * @param rsrcCtx Resource context.
      */
-    public void setSpringContext(ApplicationContext springCtx) {
-        springCtxInjector = new GridResourceBasicInjector<>(springCtx);
-
-        springBeanInjector = new GridResourceSpringBeanInjector(springCtx);
+    public void setSpringContext(GridResourceContext rsrcCtx) {
+        this.rsrcCtx = rsrcCtx;
     }
 
     /**
@@ -229,12 +228,24 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         ioc.inject(target, GridHomeResource.class, ggHomeInjector, dep, depCls);
         ioc.inject(target, GridNameResource.class, ggNameInjector, dep, depCls);
         ioc.inject(target, GridMarshallerResource.class, marshInjector, dep, depCls);
-        ioc.inject(target, GridSpringApplicationContextResource.class, springCtxInjector, dep, depCls);
-        ioc.inject(target, GridSpringResource.class, springBeanInjector, dep, depCls);
         ioc.inject(target, GridLoggerResource.class, logInjector, dep, depCls);
+
+        injectOptional(target, dep, depCls);
 
         // Inject users resource.
         ioc.inject(target, GridUserResource.class, customInjector, dep, depCls);
+    }
+
+    private void injectOptional(Object target, GridDeployment dep, Class<?> depCls)
+        throws GridException {
+        for (GridBiTuple<Class<? extends Annotation>, GridResourceInjector> t : rsrcCtx.injectors())
+            ioc.inject(target, t.get1(), t.get2(), dep, depCls);
+    }
+
+    private void cleanupOptional(Object target)
+        throws GridException {
+        for (GridBiTuple<Class<? extends Annotation>, GridResourceInjector> t : rsrcCtx.injectors())
+            ioc.inject(target, t.get1(), nullInjector, null, null);
     }
 
     /**
@@ -277,10 +288,10 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         ioc.inject(obj, GridHomeResource.class, ggHomeInjector, null, null);
         ioc.inject(obj, GridNameResource.class, ggNameInjector, null, null);
         ioc.inject(obj, GridMarshallerResource.class, marshInjector, null, null);
-        ioc.inject(obj, GridSpringApplicationContextResource.class, springCtxInjector, null, null);
-        ioc.inject(obj, GridSpringResource.class, springBeanInjector, null, null);
         ioc.inject(obj, GridInstanceResource.class, gridInjector, null, null);
         ioc.inject(obj, GridLoggerResource.class, logInjector, null, null);
+
+        injectOptional(obj, null, null);
     }
 
     /**
@@ -304,9 +315,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
             ioc.inject(obj, GridHomeResource.class, nullInjector, null, null);
             ioc.inject(obj, GridNameResource.class, nullInjector, null, null);
             ioc.inject(obj, GridMarshallerResource.class, nullInjector, null, null);
-            ioc.inject(obj, GridSpringApplicationContextResource.class, nullInjector, null, null);
-            ioc.inject(obj, GridSpringResource.class, nullInjector, null, null);
             ioc.inject(obj, GridInstanceResource.class, nullInjector, null, null);
+
+            cleanupOptional(obj);
         }
     }
 
@@ -350,7 +361,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      */
     private void injectToJob(GridDeployment dep, Class<?> taskCls, Object job, GridComputeTaskSession ses,
         GridJobContextImpl jobCtx) throws GridException {
-        Class<? extends Annotation>[] filtered = ioc.filter(dep, job, JOB_INJECTIONS);
+        Class<? extends Annotation>[] filtered = ioc.filter(dep, job, jobInjections);
 
         if (filtered.length > 0) {
             for (Class<? extends Annotation> annCls : filtered) {
@@ -375,16 +386,15 @@ public class GridResourceProcessor extends GridProcessorAdapter {
                     ioc.inject(job, GridNameResource.class, ggNameInjector, dep, taskCls);
                 else if (annCls == GridMarshallerResource.class)
                     ioc.inject(job, GridMarshallerResource.class, marshInjector, dep, taskCls);
-                else if (annCls == GridSpringApplicationContextResource.class)
-                    ioc.inject(job, GridSpringApplicationContextResource.class, springCtxInjector, dep, taskCls);
-                else if (annCls == GridSpringResource.class)
-                    ioc.inject(job, GridSpringResource.class, springBeanInjector, dep, taskCls);
                 else if (annCls == GridLoggerResource.class)
                     ioc.inject(job, GridLoggerResource.class, logInjector, dep, taskCls);
-                else {
-                    assert annCls == GridUserResource.class;
-
+                else if (annCls == GridUserResource.class)
                     ioc.inject(job, GridUserResource.class, customInjector, dep, taskCls);
+                else {
+                    for (GridBiTuple<Class<? extends Annotation>, GridResourceInjector> t : rsrcCtx.injectors()) {
+                        if (t.get1() == annCls)
+                            ioc.inject(job, t.get1(), t.get2(), dep, taskCls);
+                    }
                 }
             }
         }
@@ -421,7 +431,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         // Unwrap Proxy object.
         Object obj = unwrapTarget(task);
 
-        Class<? extends Annotation>[] filtered = ioc.filter(dep, obj, TASK_INJECTIONS);
+        Class<? extends Annotation>[] filtered = ioc.filter(dep, obj, taskInjections);
 
         if (filtered.length == 0)
             return;
@@ -451,16 +461,15 @@ public class GridResourceProcessor extends GridProcessorAdapter {
                 ioc.inject(obj, GridNameResource.class, ggNameInjector, dep, taskCls);
             else if (annCls == GridMarshallerResource.class)
                 ioc.inject(obj, GridMarshallerResource.class, marshInjector, dep, taskCls);
-            else if (annCls == GridSpringApplicationContextResource.class)
-                ioc.inject(obj, GridSpringApplicationContextResource.class, springCtxInjector, dep, taskCls);
-            else if (annCls == GridSpringResource.class)
-                ioc.inject(obj, GridSpringResource.class, springBeanInjector, dep, taskCls);
             else if (annCls == GridLoggerResource.class)
                 ioc.inject(obj, GridLoggerResource.class, logInjector, dep, taskCls);
-            else {
-                assert annCls == GridUserResource.class;
-
+            else if (annCls == GridUserResource.class)
                 ioc.inject(obj, GridUserResource.class, customInjector, dep, taskCls);
+            else {
+                for (GridBiTuple<Class<? extends Annotation>, GridResourceInjector> t : rsrcCtx.injectors()) {
+                    if (t.get1() == annCls)
+                        ioc.inject(obj, t.get1(), t.get2(), dep, taskCls);
+                }
             }
         }
     }
@@ -498,9 +507,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         ioc.inject(obj, GridHomeResource.class, ggHomeInjector, null, null);
         ioc.inject(obj, GridNameResource.class, ggNameInjector, null, null);
         ioc.inject(obj, GridMarshallerResource.class, marshInjector, null, null);
-        ioc.inject(obj, GridSpringApplicationContextResource.class, springCtxInjector, null, null);
-        ioc.inject(obj, GridSpringResource.class, springBeanInjector, null, null);
         ioc.inject(obj, GridLoggerResource.class, logInjector, null, null);
+
+        injectOptional(obj, null, null);
     }
 
     /**
@@ -525,8 +534,8 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         ioc.inject(obj, GridHomeResource.class, nullInjector, null, null);
         ioc.inject(obj, GridNameResource.class, nullInjector, null, null);
         ioc.inject(obj, GridMarshallerResource.class, nullInjector, null, null);
-        ioc.inject(obj, GridSpringApplicationContextResource.class, nullInjector, null, null);
-        ioc.inject(obj, GridSpringResource.class, nullInjector, null, null);
+
+        injectOptional(obj, null, null);
     }
 
     /**
@@ -550,10 +559,10 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         ioc.inject(obj, GridHomeResource.class, ggHomeInjector, null, null);
         ioc.inject(obj, GridNameResource.class, ggNameInjector, null, null);
         ioc.inject(obj, GridMarshallerResource.class, marshInjector, null, null);
-        ioc.inject(obj, GridSpringApplicationContextResource.class, springCtxInjector, null, null);
-        ioc.inject(obj, GridSpringResource.class, springBeanInjector, null, null);
         ioc.inject(obj, GridInstanceResource.class, gridInjector, null, null);
         ioc.inject(obj, GridLoggerResource.class, logInjector, null, null);
+
+        injectOptional(obj, null, null);
     }
 
     /**
@@ -579,9 +588,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         ioc.inject(obj, GridHomeResource.class, nullInjector, null, null);
         ioc.inject(obj, GridNameResource.class, nullInjector, null, null);
         ioc.inject(obj, GridMarshallerResource.class, nullInjector, null, null);
-        ioc.inject(obj, GridSpringApplicationContextResource.class, nullInjector, null, null);
-        ioc.inject(obj, GridSpringResource.class, nullInjector, null, null);
         ioc.inject(obj, GridInstanceResource.class, nullInjector, null, null);
+
+        cleanupOptional(obj);
     }
 
     /**
@@ -679,17 +688,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @throws GridException If unwrap failed.
      */
     private Object unwrapTarget(Object target) throws GridException {
-        if (target instanceof Advised) {
-            try {
-                return ((Advised)target).getTargetSource().getTarget();
-            }
-            catch (Exception e) {
-                throw new GridException("Failed to unwrap Spring proxy target [cls=" + target.getClass().getName() +
-                    ", target=" + target + ']', e);
-            }
-        }
-
-        return target;
+        return rsrcCtx.unwrapTarget(target);
     }
 
     /** {@inheritDoc} */

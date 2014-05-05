@@ -6660,6 +6660,24 @@ public abstract class GridUtils {
     }
 
     /**
+     * @param cls Class.
+     * @return {@code True} if given class represents a primitive or a primitive wrapper class.
+     *
+     */
+    public static boolean isPrimitiveOrWrapper(Class<?> cls) {
+        return cls.isPrimitive() ||
+            Boolean.class.equals(cls) ||
+            Byte.class.equals(cls) ||
+            Character.class.equals(cls) ||
+            Short.class.equals(cls) ||
+            Integer.class.equals(cls) ||
+            Long.class.equals(cls) ||
+            Float.class.equals(cls) ||
+            Double.class.equals(cls) ||
+            Void.class.equals(cls);
+    }
+
+    /**
      * Awaits for condition.
      *
      * @param cond Condition to await for.

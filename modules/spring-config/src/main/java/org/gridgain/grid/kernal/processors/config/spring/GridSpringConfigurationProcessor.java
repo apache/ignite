@@ -10,23 +10,47 @@
 package org.gridgain.grid.kernal.processors.config.spring;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.config.*;
-import org.jetbrains.annotations.*;
+import org.gridgain.grid.kernal.processors.resource.*;
+import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.springframework.beans.*;
+import org.springframework.context.*;
+
+import java.net.*;
+import java.util.*;
 
 /**
  * Spring configuration processor.
  */
 public class GridSpringConfigurationProcessor extends GridConfigurationProcessor {
-    /**
-     * @param ctx Kernal context.
-     */
-    public GridSpringConfigurationProcessor(GridKernalContext ctx) {
-        super(ctx);
-    }
-
     /** {@inheritDoc} */
-    @Override public GridConfiguration loadConfiguration(@Nullable String cfgPath) throws GridException {
-        return super.loadConfiguration(cfgPath);
+    @Override public GridBiTuple<Collection<GridConfiguration>, ? extends GridResourceContext> loadConfigurations(URL cfgUrl)
+        throws GridException {
+        ApplicationContext springCtx;
+
+        try {
+            springCtx = U.applicationContext(cfgUrl);
+        }
+        catch (BeansException e) {
+            throw new GridException("Failed to instantiate Spring XML application context [springUrl=" +
+                cfgUrl + ", err=" + e.getMessage() + ']', e);
+        }
+
+        Map<String, GridConfiguration> cfgMap;
+
+        try {
+            cfgMap = springCtx.getBeansOfType(GridConfiguration.class);
+        }
+        catch (BeansException e) {
+            throw new GridException("Failed to instantiate bean [type=" + GridConfiguration.class + ", err=" +
+                e.getMessage() + ']', e);
+        }
+
+        if (cfgMap == null || cfgMap.isEmpty())
+            throw new GridException("Failed to find grid configuration in: " + cfgUrl);
+
+        return F.t(cfgMap.values(), new GridSpringResourceContext(springCtx));
     }
 }

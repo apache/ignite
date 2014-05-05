@@ -20,7 +20,7 @@ import java.lang.annotation.*;
  * Annotates a field or a setter method for injection of Spring {@link ApplicationContext} resource.
  * When GridGain starts using Spring configuration, the Application Context for Spring
  * Configuration is injected as this resource. Spring application context can also be explicitly
- * passed into the grid via {@link GridGain#start(GridConfiguration, ApplicationContext)}
+ * passed into the grid via {@link GridGainSpring#start(GridConfiguration, ApplicationContext)}
  * method.
  * <p>
  * Spring Application Context can be injected into instances of following classes:

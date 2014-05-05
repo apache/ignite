@@ -17,7 +17,6 @@ import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.springframework.context.*;
 import javax.management.*;
 import java.lang.annotation.*;
 import java.lang.reflect.*;
@@ -62,17 +61,14 @@ class GridResourceCustomInjector implements GridResourceInjector {
     /** Marshaller injector. */
     private GridResourceBasicInjector<GridMarshaller> marshallerInjector;
 
-    /** Spring application context injector. */
-    private GridResourceBasicInjector<ApplicationContext> springCtxInjector;
-
     /** Logger injector. */
     private GridResourceBasicInjector<GridLogger> logInjector;
 
-    /** Spring bean resources injector. */
-    private GridResourceSpringBeanInjector springBeanInjector;
-
     /** Null injector for cleaning resources. */
     private final GridResourceInjector nullInjector = new GridResourceBasicInjector<>(null);
+
+    /** */
+    private GridResourceContext rsrcCtx;
 
     /** Resource container. */
     private final GridResourceIoc ioc;
@@ -160,19 +156,12 @@ class GridResourceCustomInjector implements GridResourceInjector {
     /**
      * Sets injector with Spring application context.
      *
-     * @param springCtxInjector Spring application context.
+     * @param rsrcCtx Spring application context.
      */
-    void setSpringContextInjector(GridResourceBasicInjector<ApplicationContext> springCtxInjector) {
-        this.springCtxInjector = springCtxInjector;
-    }
+    void setResourceContext(GridResourceContext rsrcCtx) {
+        assert rsrcCtx != null;
 
-    /**
-     * Sets injector for Spring beans.
-     *
-     * @param springBeanInjector Injector for Spring beans.
-     */
-    public void setSpringBeanInjector(GridResourceSpringBeanInjector springBeanInjector) {
-        this.springBeanInjector = springBeanInjector;
+        this.rsrcCtx = rsrcCtx;
     }
 
     /**
@@ -443,9 +432,10 @@ class GridResourceCustomInjector implements GridResourceInjector {
             ioc.inject(rsrc, GridHomeResource.class, ggHomeInjector, dep, depCls);
             ioc.inject(rsrc, GridNameResource.class, ggNameInjector, dep, depCls);
             ioc.inject(rsrc, GridMarshallerResource.class, marshallerInjector, dep, depCls);
-            ioc.inject(rsrc, GridSpringApplicationContextResource.class, springCtxInjector, dep, depCls);
-            ioc.inject(rsrc, GridSpringResource.class, springBeanInjector, dep, depCls);
             ioc.inject(rsrc, GridLoggerResource.class, logInjector, dep, depCls);
+
+            for (GridBiTuple<Class<? extends Annotation>, GridResourceInjector> t : rsrcCtx.injectors())
+                ioc.inject(rsrc, t.get1(), t.get2(), dep, depCls);
 
             for (Method mtd : getMethodsWithAnnotation(rsrcCls, GridUserResourceOnDeployed.class)) {
                 mtd.setAccessible(true);
@@ -495,7 +485,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
     }
 
     /** */
-    private class CachedResource {
+    private static class CachedResource {
         /** */
         private final Object rsrc;
 

@@ -33,5 +33,12 @@
             <artifactId>gridgain-core</artifactId>
             <version>${gridgain.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-spring-deps</artifactId>
+            <version>1.1</version>
+            <type>pom</type>
+        </dependency>
     </dependencies>
 </project>
