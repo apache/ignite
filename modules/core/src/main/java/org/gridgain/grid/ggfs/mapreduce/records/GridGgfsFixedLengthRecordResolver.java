@@ -53,8 +53,8 @@ public class GridGgfsFixedLengthRecordResolver implements GridGgfsRecordResolver
         long endRem = suggestedEnd % recLen;
 
         long start = Math.min(suggestedRecord.start() + (startRem != 0 ? (recLen - startRem) : 0),
-            stream.fileInfo().length());
-        long end = Math.min(suggestedEnd + (endRem != 0 ? (recLen - endRem) : 0), stream.fileInfo().length());
+            stream.length());
+        long end = Math.min(suggestedEnd + (endRem != 0 ? (recLen - endRem) : 0), stream.length());
 
         assert end >= start;
 
