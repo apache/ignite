@@ -81,6 +81,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.GridLifecycleEventType.*;
 import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridKernalState.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridProductImpl.*;
@@ -679,7 +680,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
-            GridGgfsProcessor ggfsProc = GridGgfsProcessor.instance(ctx, F.isEmpty(cfg.getGgfsConfiguration()));
+            GridGgfsProcessor ggfsProc = U.createComponent(ctx, GGFS, new GridGgfsNopProcessor(ctx),
+                F.isEmpty(cfg.getGgfsConfiguration()));
             GridHadoopProcessor hadoopProc = GridHadoopProcessor.instance(ctx, cfg.getHadoopConfiguration() == null);
 
             ctx.add(ggfsProc);
