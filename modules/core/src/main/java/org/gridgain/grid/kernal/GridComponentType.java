@@ -13,8 +13,10 @@ package org.gridgain.grid.kernal;
  * Component type.
  */
 public enum GridComponentType {
-    /** GGFS, */
-    GGFS("org.gridgain.grid.kernal.processors.ggfs.GridGgfsOpProcessor");
+    /** GGFS. */
+    GGFS("org.gridgain.grid.kernal.processors.ggfs.GridGgfsOpProcessor"),
+    /** Spring. */
+    SPRING("org.gridgain.grid.kernal.processors.config.spring.GridSpringConfigurationProcessor");
 
     /** Class name. */
     private final String clsName;

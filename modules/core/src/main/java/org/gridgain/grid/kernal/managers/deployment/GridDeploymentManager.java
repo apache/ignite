@@ -61,7 +61,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
                     ctx.config().getDeploymentMode(),
                     U.gridClassLoader(),
                     GridUuid.fromUuid(ctx.localNodeId()),
-                    U.getUserVersion(U.gridClassLoader(), log),
+                    ctx.userVersion(U.gridClassLoader()),
                     String.class.getName()) :
                 null;
         }

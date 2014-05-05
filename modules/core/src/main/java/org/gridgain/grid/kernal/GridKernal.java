@@ -32,6 +32,7 @@ import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
+import org.gridgain.grid.kernal.processors.config.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.*;
@@ -153,7 +154,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     private long startTime = U.currentTimeMillis();
 
     /** Spring context, potentially {@code null}. */
-    private GridResourceContext rsrcCtx;
+    private GridSpringResourceContext rsrcCtx;
 
     /** */
     private Timer updateNtfTimer;
@@ -201,7 +202,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /**
      * @param rsrcCtx Optional resoruce context.
      */
-    public GridKernal(@Nullable GridResourceContext rsrcCtx) {
+    public GridKernal(@Nullable GridSpringResourceContext rsrcCtx) {
         super(null, null, (GridPredicate<GridNode>)null);
 
         this.rsrcCtx = rsrcCtx;
@@ -610,8 +611,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // by all other managers and processors.
             GridResourceProcessor rsrcProc = new GridResourceProcessor(ctx);
 
-            // FIXME
-            // rsrcProc.setSpringContext(springCtx);
+            rsrcProc.setSpringContext(rsrcCtx);
 
             // Set node version.
             ctx.version(COMPOUND_VERSION);

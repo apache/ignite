@@ -76,6 +76,7 @@ import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
+import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
 
 /**
@@ -401,7 +402,7 @@ public class GridGainEx {
      *      also if default grid has already been started.
      */
     public static Grid start() throws GridException {
-        return start((GridResourceContext)null);
+        return start((GridSpringResourceContext)null);
     }
 
     /**
@@ -409,7 +410,7 @@ public class GridGainEx {
      * use grid configuration defined in {@code GRIDGAIN_HOME/config/default-config.xml}
      * configuration file. If such file is not found, then all system defaults will be used.
      *
-     * @param rsrcCtx Optional resource context, possibly {@code null}.
+     * @param springCtx Optional Spring application context, possibly {@code null}.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
      *      {@link GridSpringApplicationContextResource @GridSpringApplicationContextResource} annotation.
@@ -417,15 +418,15 @@ public class GridGainEx {
      * @throws GridException If default grid could not be started. This exception will be thrown
      *      also if default grid has already been started.
      */
-    public static Grid start(@Nullable GridResourceContext rsrcCtx) throws GridException {
+    public static Grid start(@Nullable GridSpringResourceContext springCtx) throws GridException {
         URL url = U.resolveGridGainUrl(DFLT_CFG);
 
         if (url != null)
-            return start(DFLT_CFG, rsrcCtx);
+            return start(DFLT_CFG, springCtx);
 
         U.warn(null, "Default Spring XML file not found (is GRIDGAIN_HOME set?): " + DFLT_CFG);
 
-        return start0(new GridStartContext(new GridConfiguration(), null, rsrcCtx)).grid();
+        return start0(new GridStartContext(new GridConfiguration(), null, springCtx)).grid();
     }
 
     /**
@@ -446,7 +447,7 @@ public class GridGainEx {
      * provided in given configuration is already started.
      *
      * @param cfg Grid configuration. This cannot be {@code null}.
-     * @param rsrcCtx Optional resource context, possibly {@code null}.
+     * @param springCtx Optional Spring application context, possibly {@code null}.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
      *      {@link GridSpringApplicationContextResource @GridSpringApplicationContextResource} annotation.
@@ -454,10 +455,10 @@ public class GridGainEx {
      * @throws GridException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Grid start(GridConfiguration cfg, @Nullable GridResourceContext rsrcCtx) throws GridException {
+    public static Grid start(GridConfiguration cfg, @Nullable GridSpringResourceContext springCtx) throws GridException {
         A.notNull(cfg, "cfg");
 
-        return start0(new GridStartContext(cfg, null, rsrcCtx)).grid();
+        return start0(new GridStartContext(cfg, null, springCtx)).grid();
     }
 
     /**
@@ -469,33 +470,35 @@ public class GridGainEx {
      * Grid configuration bean(s) is retrieved form configuration file by type, so the name of
      * the Grid configuration bean is ignored.
      *
-     * @param cfgPath Configuration file path or URL.
-     * @return Started grid. If configuration contains multiple grid instances,
+     * @param springCfgPath Spring XML configuration file path or URL.
+     * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
      * @throws GridException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
-     *      been started or configuration file is invalid.
+     *      been started or Spring XML configuration file is invalid.
      */
-    public static Grid start(@Nullable String cfgPath) throws GridException {
-        return cfgPath == null ? start() : start(cfgPath, null);
+    public static Grid start(@Nullable String springCfgPath) throws GridException {
+        return springCfgPath == null ? start() : start(springCfgPath, null);
     }
 
     /**
-     * Loads all grid configurations specified within given configuration file.
+     * Loads all grid configurations specified within given Spring XML configuration file.
      * <p>
      * Usually Spring XML configuration file will contain only one Grid definition. Note that
      * Grid configuration bean(s) is retrieved form configuration file by type, so the name of
      * the Grid configuration bean is ignored.
      *
-     * @param cfgUrl Configuration file path or URL. This cannot be {@code null}.
+     * @param springCfgUrl Spring XML configuration file path or URL. This cannot be {@code null}.
      * @return Tuple containing all loaded configurations and Spring context used to load them.
      * @throws GridException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<Collection<GridConfiguration>, ? extends GridResourceContext> loadConfigurations(URL cfgUrl)
+    public static GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(URL springCfgUrl)
         throws GridException {
-        return GridConfigurationProcessor.instance().loadConfigurations(cfgUrl);
+        GridConfigurationProcessor cfgProc = GridUtils.createComponent(null, SPRING, null, false);
+
+        return cfgProc.loadConfigurations(springCfgUrl);
     }
 
     /**
@@ -511,7 +514,7 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<Collection<GridConfiguration>, ? extends GridResourceContext> loadConfigurations(String springCfgPath)
+    public static GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(String springCfgPath)
         throws GridException {
         A.notNull(springCfgPath, "springCfgPath");
 
@@ -545,9 +548,9 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<GridConfiguration, GridResourceContext> loadConfiguration(URL springCfgUrl)
+    public static GridBiTuple<GridConfiguration, GridSpringResourceContext> loadConfiguration(URL springCfgUrl)
         throws GridException {
-        GridBiTuple<Collection<GridConfiguration>, ? extends GridResourceContext> t = loadConfigurations(springCfgUrl);
+        GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> t = loadConfigurations(springCfgUrl);
 
         return F.t(F.first(t.get1()), t.get2());
     }
@@ -565,9 +568,9 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<GridConfiguration, GridResourceContext> loadConfiguration(String springCfgPath)
+    public static GridBiTuple<GridConfiguration, GridSpringResourceContext> loadConfiguration(String springCfgPath)
         throws GridException {
-        GridBiTuple<Collection<GridConfiguration>, ? extends GridResourceContext> t = loadConfigurations(springCfgPath);
+        GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> t = loadConfigurations(springCfgPath);
 
         return F.t(F.first(t.get1()), t.get2());
     }
@@ -581,8 +584,8 @@ public class GridGainEx {
      * Grid configuration bean(s) is retrieved form configuration file by type, so the name of
      * the Grid configuration bean is ignored.
      *
-     * @param cfgPath Spring XML configuration file path or URL. This cannot be {@code null}.
-     * @param rsrcCtx Optional Spring application context, possibly {@code null}.
+     * @param springCfgPath Spring XML configuration file path or URL. This cannot be {@code null}.
+     * @param springCtx Optional Spring application context, possibly {@code null}.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
      *      {@link GridSpringApplicationContextResource @GridSpringApplicationContextResource} annotation.
@@ -592,24 +595,24 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Grid start(String cfgPath, @Nullable GridResourceContext rsrcCtx) throws GridException {
-        A.notNull(cfgPath, "cfgPath");
+    public static Grid start(String springCfgPath, @Nullable GridSpringResourceContext springCtx) throws GridException {
+        A.notNull(springCfgPath, "springCfgPath");
 
         URL url;
 
         try {
-            url = new URL(cfgPath);
+            url = new URL(springCfgPath);
         }
         catch (MalformedURLException e) {
-            url = U.resolveGridGainUrl(cfgPath);
+            url = U.resolveGridGainUrl(springCfgPath);
 
             if (url == null)
-                throw new GridException("Configuration path is invalid: " + cfgPath +
+                throw new GridException("Spring XML configuration path is invalid: " + springCfgPath +
                     ". Note that this path should be either absolute or a relative local file system path, " +
                     "relative to META-INF in classpath or valid URL to GRIDGAIN_HOME.", e);
         }
 
-        return start(url, rsrcCtx);
+        return start(url, springCtx);
     }
 
     /**
@@ -641,8 +644,8 @@ public class GridGainEx {
      * Grid configuration bean(s) is retrieved form configuration file by type, so the name of
      * the Grid configuration bean is ignored.
      *
-     * @param cfgUrl Spring XML configuration file URL. This cannot be {@code null}.
-     * @param rsrcCtx Optional Spring application context, possibly {@code null}.
+     * @param springCfgUrl Spring XML configuration file URL. This cannot be {@code null}.
+     * @param springCtx Optional Spring application context, possibly {@code null}.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
      *      {@link GridSpringApplicationContextResource @GridSpringApplicationContextResource} annotation.
@@ -653,8 +656,8 @@ public class GridGainEx {
      *      been started or Spring XML configuration file is invalid.
      */
     // Warning is due to Spring.
-    public static Grid start(URL cfgUrl, @Nullable GridResourceContext rsrcCtx) throws GridException {
-        A.notNull(cfgUrl, "cfgUrl");
+    public static Grid start(URL springCfgUrl, @Nullable GridSpringResourceContext springCtx) throws GridException {
+        A.notNull(springCfgUrl, "springCfgUrl");
 
         boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
 
@@ -663,10 +666,10 @@ public class GridGainEx {
         if (isLog4jUsed)
             t = U.addLog4jNoOpLogger();
 
-        GridBiTuple<Collection<GridConfiguration>, ? extends GridResourceContext> cfgMap;
+        GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> cfgMap;
 
         try {
-            cfgMap = loadConfigurations(cfgUrl);
+            cfgMap = loadConfigurations(springCfgUrl);
         }
         finally {
             if (isLog4jUsed && t != null)
@@ -681,7 +684,7 @@ public class GridGainEx {
 
                 // Use either user defined context or our one.
                 GridNamedInstance grid = start0(
-                    new GridStartContext(cfg, cfgUrl, rsrcCtx == null ? cfgMap.get2() : rsrcCtx));
+                    new GridStartContext(cfg, springCfgUrl, springCtx == null ? cfgMap.get2() : springCtx));
 
                 // Add it if it was not stopped during startup.
                 if (grid != null)
@@ -715,7 +718,7 @@ public class GridGainEx {
      * @return Started grid.
      * @throws GridException If grid could not be started.
      */
-    public static GridNamedInstance start0(GridStartContext startCtx) throws GridException {
+    private static GridNamedInstance start0(GridStartContext startCtx) throws GridException {
         assert startCtx != null;
 
         String name = startCtx.config().getGridName();
@@ -954,8 +957,8 @@ public class GridGainEx {
         /** Optional configuration path. */
         private URL cfgUrl;
 
-        /** Optional resource context. */
-        private GridResourceContext rsrcCtx;
+        /** Optional Spring application context. */
+        private GridSpringResourceContext springCtx;
 
         /** Whether or not this is a single grid instance in current VM. */
         private boolean single;
@@ -964,14 +967,14 @@ public class GridGainEx {
          *
          * @param cfg User-defined configuration.
          * @param cfgUrl Optional configuration path.
-         * @param rsrcCtx Optional resource context.
+         * @param springCtx Optional Spring application context.
          */
-        GridStartContext(GridConfiguration cfg, @Nullable URL cfgUrl, @Nullable GridResourceContext rsrcCtx) {
+        GridStartContext(GridConfiguration cfg, @Nullable URL cfgUrl, @Nullable GridSpringResourceContext springCtx) {
             assert(cfg != null);
 
             this.cfg = cfg;
             this.cfgUrl = cfgUrl;
-            this.rsrcCtx = rsrcCtx;
+            this.springCtx = springCtx;
         }
 
         /**
@@ -991,43 +994,36 @@ public class GridGainEx {
         /**
          * @return User-defined configuration.
          */
-        public GridConfiguration config() {
+        GridConfiguration config() {
             return cfg;
         }
 
         /**
          * @param cfg User-defined configuration.
          */
-        public void config(GridConfiguration cfg) {
+        void config(GridConfiguration cfg) {
             this.cfg = cfg;
         }
 
         /**
          * @return Optional configuration path.
          */
-        public URL configUrl() {
+        URL configUrl() {
             return cfgUrl;
         }
 
         /**
          * @param cfgUrl Optional configuration path.
          */
-        public void configUrl(URL cfgUrl) {
+        void configUrl(URL cfgUrl) {
             this.cfgUrl = cfgUrl;
         }
 
         /**
-         * @return Optional resource context.
+         * @return Optional Spring application context.
          */
-        public GridResourceContext resourceContext() {
-            return rsrcCtx;
-        }
-
-        /**
-         * @param rsrcCtx Optional start context.
-         */
-        public void resourceContext(GridResourceContext rsrcCtx) {
-            this.rsrcCtx = rsrcCtx;
+        public GridSpringResourceContext springContext() {
+            return springCtx;
         }
     }
 
@@ -1810,7 +1806,7 @@ public class GridGainEx {
             boolean started = false;
 
             try {
-                GridKernal grid0 = new GridKernal(startCtx.resourceContext());
+                GridKernal grid0 = new GridKernal(startCtx.springContext());
 
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;
