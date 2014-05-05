@@ -171,6 +171,31 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public <T> GridCacheSet<T> set(String name, boolean collocated, boolean create)
+        throws GridException {
+        GridCacheProjectionImpl<K, V> old = gate.enter(null);
+
+        try {
+            return delegate.set(name, collocated, create);
+        }
+        finally {
+            gate.leave(old);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removeSet(String name) throws GridException {
+        GridCacheProjectionImpl<K, V> old = gate.enter(null);
+
+        try {
+            return delegate.removeSet(name);
+        }
+        finally {
+            gate.leave(old);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public GridCacheCountDownLatch countDownLatch(String name, int cnt, boolean autoDel,
         boolean create) throws GridException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);

@@ -727,7 +727,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 Collection<GridNode> nearNodes = null;
 
                 if (!F.isEmpty(readers)) {
-                    nearNodes = cctx.discovery().nodes(readers, F0.<UUID>not(F.idForNodeId(tx.nearNodeId())));
+                    nearNodes = cctx.discovery().nodes(readers, F0.not(F.idForNodeId(tx.nearNodeId())));
 
                     if (log.isDebugEnabled())
                         log.debug("Mapping entry to near nodes [nodes=" + U.toShortString(nearNodes) +
@@ -740,8 +740,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 ret = map(entry, F.view(dhtNodes, F.remoteNodes(cctx.nodeId())), dhtMap, futDhtMap);
 
                 // Exclude DHT nodes.
-                ret |= map(entry, F.view(nearNodes, F0.not(F.<GridNode>nodeForNodeIds(dhtMap.keySet()))), nearMap,
-                    futNearMap);
+                ret |= map(entry, F.view(nearNodes, F0.notIn(dhtNodes)), nearMap, futNearMap);
 
                 break;
             }

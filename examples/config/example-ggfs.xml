@@ -15,10 +15,10 @@
     GridGain Spring configuration file to startup grid cache.
 
     When starting a standalone GridGain node, you need to execute the following command:
-    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-ggfs-no-endpoint.xml
+    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-ggfs.xml
 
     When starting GridGain from Java IDE, pass path to this file into GridGain:
-    GridGain.start("examples/config/example-ggfs-no-endpoint.xml");
+    GridGain.start("examples/config/example-ggfs.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"

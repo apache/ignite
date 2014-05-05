@@ -73,10 +73,6 @@
     </appender>
 
     <!--
-        To enable GridGain debugging uncomment this category and add additional JVM option
-        "-DGRIDGAIN_DEBUG_ENABLED=true" in GridGain launch script.
-    -->
-    <!--
     <category name="org.gridgain">
         <level value="DEBUG"/>
     </category>

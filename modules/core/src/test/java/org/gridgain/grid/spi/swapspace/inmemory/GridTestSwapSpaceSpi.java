@@ -24,11 +24,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 /**
  * Test swap space SPI that stores values in map.
  */
-@GridSpiInfo(
-    author = /*@java.spi.author*/"GridGain Systems",
-    url = /*@java.spi.url*/"www.gridgain.com",
-    email = /*@java.spi.email*/"support@gridgain.com",
-    version = /*@java.spi.version*/"x.x")
 @GridSpiMultipleInstancesSupport(true)
 public class GridTestSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpaceSpi {
     /** Listener. */

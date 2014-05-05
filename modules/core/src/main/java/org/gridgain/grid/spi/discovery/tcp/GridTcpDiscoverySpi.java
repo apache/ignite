@@ -32,6 +32,7 @@ import org.gridgain.grid.spi.discovery.tcp.metricsstore.jdbc.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.s3.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.sharedfs.*;
 import org.gridgain.grid.spi.discovery.tcp.metricsstore.vm.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
@@ -144,11 +145,6 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridDiscoverySpi
  */
-@GridSpiInfo(
-    author = /*@java.spi.author*/"GridGain Systems",
-    url = /*@java.spi.url*/"www.gridgain.com",
-    email = /*@java.spi.email*/"support@gridgain.com",
-    version = /*@java.spi.version*/"x.x")
 @GridSpiMultipleInstancesSupport(true)
 @GridDiscoverySpiOrderSupport(true)
 @GridDiscoverySpiReconnectSupport(true)
@@ -295,10 +291,12 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     private InetAddress locHost;
 
     /** Grid discovery listener. */
+    @GridToStringExclude
     private volatile GridDiscoverySpiListener lsnr;
 
     /** Discovery data exchange handler. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
+    @GridToStringExclude
     private GridDiscoverySpiDataExchange exchange;
 
     /** Metrics provider. */
@@ -308,6 +306,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     private Map<String, Object> nodeAttrs;
 
     /** Local node version. */
+    @GridToStringExclude
     private GridProductVersion nodeVer;
 
     /** IP finder. */
@@ -318,6 +317,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     private GridTcpDiscoveryMetricsStore metricsStore;
 
     /** Nodes ring. */
+    @GridToStringExclude
     private final GridTcpDiscoveryNodesRing ring = new GridTcpDiscoveryNodesRing();
 
     /** Topology snapshots history. */
@@ -360,6 +360,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     private Collection<GridTcpDiscoveryNode> leavingNodes = new HashSet<>();
 
     /** Statistics. */
+    @GridToStringExclude
     private final GridTcpDiscoveryStatistics stats = new GridTcpDiscoveryStatistics();
 
     /** If non-shared IP finder is used this flag shows whether IP finder contains local address. */
@@ -378,6 +379,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
     private final GridTuple<GridTcpDiscoveryAbstractMessage> joinRes = F.t1();
 
     /** Context initialization latch. */
+    @GridToStringExclude
     private final CountDownLatch ctxInitLatch = new CountDownLatch(1);
 
     /** Mutex. */
@@ -1078,6 +1080,13 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
             U.warn(log, "Heartbeat frequency is too high (at least 2000 ms recommended): " + hbFreq);
 
         registerMBean(gridName, this, GridTcpDiscoverySpiMBean.class);
+
+        if (ipFinder instanceof GridTcpDiscoveryMulticastIpFinder) {
+            GridTcpDiscoveryMulticastIpFinder mcastIpFinder = ((GridTcpDiscoveryMulticastIpFinder)ipFinder);
+
+            if (mcastIpFinder.getLocalAddress() == null)
+                mcastIpFinder.setLocalAddress(locAddr);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1483,7 +1492,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
 
                 long timeout = netTimeout;
 
-                while (spiState != CONNECTED && timeout > 0) {
+                while (spiState == CONNECTING && timeout > 0) {
                     try {
                         mux.wait(timeout);
 

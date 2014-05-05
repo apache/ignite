@@ -16,7 +16,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 
 /**
- * Test tx exceptions for colocated cache.
+ * Tests colocated cache.
  */
 public class GridCacheColocatedTxExceptionSelfTest extends GridCacheTxExceptionAbstractSelfTest {
     /** {@inheritDoc} */

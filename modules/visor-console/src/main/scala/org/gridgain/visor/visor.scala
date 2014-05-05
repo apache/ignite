@@ -1748,7 +1748,7 @@ object visor extends VisorTag {
         else {
             val n = grid.node(id)
 
-            val id8 = nid8(n)
+            val id8 = nid8(id)
             val v = mfind(id8)
 
             id8 +
@@ -1768,9 +1768,7 @@ object visor extends VisorTag {
         assert(id != null)
         assert(isCon)
 
-        val n = grid.node(id)
-
-        val id8 = nid8(n)
+        val id8 = nid8(id)
         val v = mfind(id8)
 
         id8 + (if (v.isDefined) "(@" + v.get._1 + ")" else "")
@@ -2551,7 +2549,17 @@ object visor extends VisorTag {
      * @return Node ID in ID8 format.
      */
     def nid8(node: GridNode): String = {
-        node.id().toString.take(8).toUpperCase
+        nid8(node.id())
+    }
+
+    /**
+     * Transform node ID to ID8 string.
+     *
+     * @param nid Node ID.
+     * @return Node ID in ID8 format.
+     */
+    def nid8(nid: UUID): String = {
+        nid.toString.take(8).toUpperCase
     }
 
     /**

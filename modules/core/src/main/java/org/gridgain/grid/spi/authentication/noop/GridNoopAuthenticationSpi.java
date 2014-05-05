@@ -54,11 +54,6 @@ import org.jetbrains.annotations.*;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-@GridSpiInfo(
-    author = /*@java.spi.author*/"GridGain Systems",
-    url = /*@java.spi.url*/"www.gridgain.com",
-    email = /*@java.spi.email*/"support@gridgain.com",
-    version = /*@java.spi.version*/"x.x")
 @GridSpiNoop
 @GridSpiMultipleInstancesSupport(true)
 public class GridNoopAuthenticationSpi extends GridSpiAdapter

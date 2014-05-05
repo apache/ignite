@@ -349,7 +349,7 @@ class VisorLicenseCommand {
                 case _: IOException => scold("Failed to read the license file: " + licPath)
                 case _: GridException => scold(
                     "Failed to update the license due to system error.",
-                    "Note: some licenses may haven been updated."
+                    "Note: Some licenses may haven been updated."
                 )
             }
         }
