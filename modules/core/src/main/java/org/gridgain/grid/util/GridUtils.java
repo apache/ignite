@@ -8210,6 +8210,7 @@ public abstract class GridUtils {
                     return;
 
                 File workDir;
+
                 if (!F.isEmpty(userWorkDir))
                     workDir = new File(userWorkDir);
                 else if (!F.isEmpty(userGgHome))
@@ -8270,7 +8271,7 @@ public abstract class GridUtils {
             String ggWork0 = ggWork;
 
             if (F.isEmpty(ggWork0))
-                throw new GridException("Work directory didn't set, cannot resolve path: " + path);
+                throw new GridException("Failed to resolve path (work directory has not been set): " + path);
 
             dir = new File(ggWork0, dir.getPath());
         }

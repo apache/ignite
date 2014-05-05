@@ -66,7 +66,8 @@ goto checkGridGainHome2
 :checkGridGainHome3
 if exist "%GRIDGAIN_HOME%\config" goto checkGridGainHome4
     echo %0, ERROR: GridGain installation folder is not found or GRIDGAIN_HOME environment variable is not valid.
-    echo %0, ERROR: GRIDGAIN_HOME variable must point to GridGain installation folder.
+    echo Please create GRIDGAIN_HOME environment variable pointing to location of
+    echo GridGain installation folder.
     goto error_finish
 
 :checkGridGainHome4

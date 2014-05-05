@@ -89,7 +89,7 @@ setGridGainHome() {
     if [ ! -d "${GRIDGAIN_HOME}/config" ]; then
         echo $0", ERROR:"
         echo "GridGain installation folder is not found or GRIDGAIN_HOME environment variable is not valid."
-        echo "Please create GRIDGAIN_HOME variable pointing to location of GridGain installation folder."
+        echo "Please create GRIDGAIN_HOME environment variable pointing to location of GridGain installation folder."
 
         exit 1
     fi
