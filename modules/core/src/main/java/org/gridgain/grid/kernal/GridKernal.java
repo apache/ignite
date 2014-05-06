@@ -478,7 +478,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws GridException Thrown in case of any errors.
      */
-    @SuppressWarnings("CatchGenericClass")
+    @SuppressWarnings({"CatchGenericClass", "unchecked"})
     public void start(final GridConfiguration cfg, @Nullable ExecutorService drPool, GridAbsClosure errHnd)
         throws GridException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
@@ -759,6 +759,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             verChecker.reportStatus(log);
 
         if (notifyEnabled) {
+            assert verChecker != null;
+
             verChecker.reportOnlyNew(true);
             verChecker.licenseProcessor(ctx.license());
 
@@ -1060,6 +1062,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /**
      * Checks whether physical RAM is not exceeded.
      */
+    @SuppressWarnings("ConstantConditions")
     private void checkPhysicalRam() {
         long ram = ctx.discovery().localNode().attribute(ATTR_PHY_RAM);
 
