@@ -26,7 +26,7 @@ import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
-import org.gridgain.grid.kernal.processors.config.*;
+import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.*;
@@ -176,7 +176,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
-    private GridEmailProcessor emailProc;
+    private GridEmailProcessorAdapter emailProc;
 
     /** */
     @GridToStringInclude
@@ -224,7 +224,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringExclude
-    private GridConfigurationProcessor configProcessor;
+    private GridSpringProcessor spring;
 
     /** */
     @GridToStringExclude
@@ -286,7 +286,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         this.ent = ent;
 
         try {
-            configProcessor = SPRING.create(this, false);
+            spring = SPRING.create(false);
         }
         catch (GridException ignored) {
             if (grid.log().isDebugEnabled())
@@ -364,8 +364,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             sesProc = (GridTaskSessionProcessor)comp;
         else if (comp instanceof GridPortProcessor)
             portProc = (GridPortProcessor)comp;
-        else if (comp instanceof GridEmailProcessor)
-            emailProc = (GridEmailProcessor)comp;
+        else if (comp instanceof GridEmailProcessorAdapter)
+            emailProc = (GridEmailProcessorAdapter)comp;
         else if (comp instanceof GridClosureProcessor)
             closProc = (GridClosureProcessor)comp;
         else if (comp instanceof GridScheduleProcessor)
@@ -392,8 +392,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             drProc = (GridDrProcessor)comp;
         else if (comp instanceof GridVersionProcessor)
             verProc = (GridVersionProcessor)comp;
-        else if (comp instanceof GridConfigurationProcessor)
-            configProcessor = (GridConfigurationProcessor)comp;
+        else if (comp instanceof GridSpringProcessor)
+            spring = (GridSpringProcessor)comp;
         else
             assert false : "Unknown manager class: " + comp.getClass();
 
@@ -516,7 +516,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridEmailProcessor email() {
+    @Override public GridEmailProcessorAdapter email() {
         return emailProc;
     }
 
@@ -718,7 +718,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** {@inheritDoc} */
     @Override public String userVersion(ClassLoader ldr) {
-        return configProcessor != null ? configProcessor.userVersion(ldr, log()) : U.DFLT_USER_VERSION;
+        return spring != null ? spring.userVersion(ldr, log()) : U.DFLT_USER_VERSION;
     }
 
     /** {@inheritDoc} */

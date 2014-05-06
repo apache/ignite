@@ -32,7 +32,6 @@ import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.kernal.processors.closure.*;
-import org.gridgain.grid.kernal.processors.config.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.dr.*;
@@ -44,7 +43,6 @@ import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.kernal.processors.resource.*;
-import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.schedule.*;
 import org.gridgain.grid.kernal.processors.segmentation.*;
 import org.gridgain.grid.kernal.processors.session.*;
@@ -636,7 +634,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridClosureProcessor(ctx), attrs);
 
             // Start some other processors (order & place is important).
-            startProcessor(ctx, new GridEmailProcessor(ctx), attrs);
+            startProcessor(ctx, (GridProcessor)EMAIL.create(ctx, cfg.getSmtpHost() == null), attrs);
             startProcessor(ctx, new GridPortProcessor(ctx), attrs);
             startProcessor(ctx, new GridJobMetricsProcessor(ctx), attrs);
 
@@ -676,7 +674,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridJobProcessor(ctx), attrs);
             startProcessor(ctx, new GridTaskProcessor(ctx), attrs);
             startProcessor(ctx, new GridScheduleProcessor(ctx), attrs);
-            startProcessor(ctx, (GridProcessor)REST.create(ctx, cfg.isRestEnabled()), attrs);
+            startProcessor(ctx, (GridProcessor)REST.create(ctx, !cfg.isRestEnabled()), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
             startProcessor(ctx, ggfsProc, attrs, false);
@@ -1766,6 +1764,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                 notifyLifecycleBeansEx(GridLifecycleEventType.BEFORE_GRID_STOP);
             }
 
+            GridEmailProcessorAdapter email = ctx.email();
+
             List<GridComponent> comps = ctx.components();
 
             // Callback component in reverse order while kernal is still functional
@@ -1946,25 +1946,11 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                         "| " + SITE + NL +
                         "| support@gridgain.com" + NL;
 
-                // We can't use email processor at this point.
-                // So we use "raw" method of sending.
                 try {
-                    U.sendEmail(
-                        // Static SMTP configuration data.
-                        cfg.getSmtpHost(),
-                        cfg.getSmtpPort(),
-                        cfg.isSmtpSsl(),
-                        cfg.isSmtpStartTls(),
-                        cfg.getSmtpUsername(),
-                        cfg.getSmtpPassword(),
-                        cfg.getSmtpFromEmail(),
-
-                        // Per-email data.
-                        subj,
+                    email.sendNow(subj,
                         body,
                         false,
-                        Arrays.asList(cfg.getAdminEmails())
-                    );
+                        Arrays.asList(cfg.getAdminEmails()));
                 }
                 catch (GridException e) {
                     U.error(log, "Failed to send lifecycle email notification.", e);

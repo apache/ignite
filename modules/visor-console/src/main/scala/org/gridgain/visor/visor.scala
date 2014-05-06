@@ -38,7 +38,7 @@ import org.gridgain.visor.commands.{VisorTextTable, VisorConsoleCommand}
 import org.gridgain.grid.resources.GridInstanceResource
 import org.gridgain.grid.kernal.processors.task.GridInternal
 import org.gridgain.grid.util.scala.impl
-import org.gridgain.grid.kernal.processors.config.GridConfigurationProcessor
+import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
 import org.gridgain.grid.kernal.GridComponentType._
 
 /**
@@ -1428,11 +1428,11 @@ object visor extends VisorTag {
 
             var log4jTup: GridBiTuple[AnyRef, AnyRef] = null
 
-            val cfgProcessor: GridConfigurationProcessor = SPRING.create(false)
+            val spring: GridSpringProcessor = SPRING.create(false)
 
             val cfgs =
                 try {
-                    cfgProcessor.loadConfigurations(url).get1()
+                    spring.loadConfigurations(url).get1()
                 }
                 finally {
                     if (isLog4jUsed && log4jTup != null)

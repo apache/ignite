@@ -11,18 +11,19 @@ package org.gridgain.grid.kernal.processors.email;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.worker.*;
 
+import javax.mail.*;
+import javax.mail.internet.*;
 import java.util.*;
 
 /**
  * Email (SMTP) processor. Responsible for sending emails.
  */
-public class GridEmailProcessor extends GridProcessorAdapter {
+public class GridEmailProcessor extends GridEmailProcessorAdapter {
     /** Maximum emails queue size. */
     public static final int QUEUE_SIZE = 1024;
 
@@ -115,33 +116,17 @@ public class GridEmailProcessor extends GridProcessorAdapter {
             log.debug("Stopped email processor.");
     }
 
-    /**
-     * Sends given email to all admin emails, if any, in the current thread blocking until it's either
-     * successfully sent or failed. If SMTP is disabled or admin emails are not provided - this method is no-op.
-     *
-     * @param subj Email subject.
-     * @param body Email body.
-     * @param html HTML format flag.
-     * @throws GridException Thrown in case of any failure on sending.
-     */
-    public void sendNow(String subj, String body, boolean html) throws GridException {
+    /** {@inheritDoc} */
+    @Override public void sendNow(String subj, String body, boolean html) throws GridException {
         String[] addrs = ctx.config().getAdminEmails();
 
         if (addrs != null && addrs.length > 0)
             sendNow(subj, body, html, Arrays.asList(addrs));
     }
 
-    /**
-     * Sends given email in the current thread blocking until it's either successfully sent or failed.
-     * If SMTP is disabled - this method is no-op.
-     *
-     * @param subj Email subject.
-     * @param body Email body.
-     * @param html HTML format flag.
-     * @param addrs Addresses.
-     * @throws GridException Thrown in case of any failure on sending.
-     */
-    public void sendNow(String subj, String body, boolean html, Collection<String> addrs) throws GridException {
+    /** {@inheritDoc} */
+    @Override public void sendNow(String subj, String body, boolean html, Collection<String> addrs)
+        throws GridException {
         assert subj != null;
         assert body != null;
         assert addrs != null;
@@ -150,7 +135,7 @@ public class GridEmailProcessor extends GridProcessorAdapter {
         if (isSmtpEnabled) {
             GridConfiguration cfg = ctx.config();
 
-            U.sendEmail(
+            sendEmail(
                 // Static SMTP configuration data.
                 cfg.getSmtpHost(),
                 cfg.getSmtpPort(),
@@ -169,36 +154,17 @@ public class GridEmailProcessor extends GridProcessorAdapter {
         }
     }
 
-    /**
-     * Schedules sending of given email to all admin emails, if any. If SMTP is disabled or admin emails
-     * are not provided - this method is no-op. Emails will be send asynchronously from a different thread.
-     * If email sending fails - the error log will be created for each email.
-     *
-     * @param subj Email subject.
-     * @param body Email body.
-     * @param html HTML format flag.
-     * @return Future for scheduled email.
-     */
-    public GridFuture<Boolean> schedule(String subj, String body, boolean html) {
+    /** {@inheritDoc} */
+    @Override public GridFuture<Boolean> schedule(String subj, String body, boolean html) {
         String[] addrs = ctx.config().getAdminEmails();
 
         return addrs == null || addrs.length == 0 ? new GridFinishedFuture<>(ctx, false) :
             schedule(subj, body, html, Arrays.asList(addrs));
     }
 
-    /**
-     * Schedules sending of given email. If SMTP is disabled - this method is no-op. Emails will be send
-     * asynchronously from a different thread. If email sending fails - the error log will be created
-     * for each email.
-     *
-     * @param subj Email subject.
-     * @param body Email body.
-     * @param html HTML format flag.
-     * @param addrs Addresses.
-     * @return Future for scheduled email.
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings({"SynchronizeOnNonFinalField"})
-    public GridFuture<Boolean> schedule(String subj, String body, boolean html, Collection<String> addrs) {
+    @Override public GridFuture<Boolean> schedule(String subj, String body, boolean html, Collection<String> addrs) {
         assert subj != null;
         assert body != null;
         assert addrs != null;
@@ -237,5 +203,85 @@ public class GridEmailProcessor extends GridProcessorAdapter {
             }
         else
             return new GridFinishedFuture<>(ctx, false);
+    }
+    /**
+     *
+     * @param smtpHost SMTP host.
+     * @param smtpPort SMTP port.
+     * @param ssl SMTP SSL.
+     * @param startTls Start TLS flag.
+     * @param username Email authentication user name.
+     * @param pwd Email authentication password.
+     * @param from From email.
+     * @param subj Email subject.
+     * @param body Email body.
+     * @param html HTML format flag.
+     * @param addrs Addresses to send email to.
+     * @throws GridException Thrown in case when sending email failed.
+     */
+    public static void sendEmail(String smtpHost, int smtpPort, boolean ssl, boolean startTls, final String username,
+        final String pwd, String from, String subj, String body, boolean html, Collection<String> addrs)
+        throws GridException {
+        assert smtpHost != null;
+        assert smtpPort > 0;
+        assert from != null;
+        assert subj != null;
+        assert body != null;
+        assert addrs != null;
+        assert !addrs.isEmpty();
+
+        Properties props = new Properties();
+
+        props.setProperty("mail.transport.protocol", "smtp");
+        props.setProperty("mail.smtp.host", smtpHost);
+        props.setProperty("mail.smtp.port", Integer.toString(smtpPort));
+
+        if (ssl)
+            props.setProperty("mail.smtp.ssl", "true");
+
+        if (startTls)
+            props.setProperty("mail.smtp.starttls.enable", "true");
+
+        Authenticator auth = null;
+
+        // Add property for authentication by username.
+        if (username != null && !username.isEmpty()) {
+            props.setProperty("mail.smtp.auth", "true");
+
+            auth = new Authenticator() {
+                @Override public PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(username, pwd);
+                }
+            };
+        }
+
+        Session ses = Session.getInstance(props, auth);
+
+        MimeMessage email = new MimeMessage(ses);
+
+        try {
+            email.setFrom(new InternetAddress(from));
+            email.setSubject(subj);
+            email.setSentDate(new Date());
+
+            if (html)
+                email.setText(body, "UTF-8", "html");
+            else
+                email.setText(body);
+
+            Address[] rcpts = new Address[addrs.size()];
+
+            int i = 0;
+
+            for (String addr : addrs)
+                rcpts[i++] = new InternetAddress(addr);
+
+            email.setRecipients(MimeMessage.RecipientType.TO, rcpts);
+
+            Transport.send(email);
+        }
+        catch (MessagingException e) {
+            throw new GridException("Failed to send email.", e);
+        }
     }
 }

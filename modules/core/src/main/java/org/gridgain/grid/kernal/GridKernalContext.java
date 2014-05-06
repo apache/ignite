@@ -247,7 +247,7 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      *
      * @return Email processor.
      */
-    public GridEmailProcessor email();
+    public GridEmailProcessorAdapter email();
 
     /**
      * Gets schedule processor.

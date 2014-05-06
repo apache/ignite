@@ -11,7 +11,7 @@ package org.gridgain.client.router.impl;
 
 import org.gridgain.client.router.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.processors.config.*;
+import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.util.typedef.*;
@@ -122,7 +122,7 @@ public class GridRouterCommandLineStartup {
             " "
         );
 
-        GridConfigurationProcessor cfgProcessor = SPRING.create(false);
+        GridSpringProcessor spring = SPRING.create(false);
 
         if (args.length < 1) {
             X.error("Missing XML configuration path.");
@@ -150,7 +150,7 @@ public class GridRouterCommandLineStartup {
         Map<Class<?>, Object> beans;
 
         try {
-            beans = cfgProcessor.loadBeans(cfgUrl, GridLogger.class, GridTcpRouterConfiguration.class,
+            beans = spring.loadBeans(cfgUrl, GridLogger.class, GridTcpRouterConfiguration.class,
                 GridHttpRouterConfiguration.class);
         }
         finally {

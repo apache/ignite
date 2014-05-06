@@ -7,11 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.config.spring;
+package org.gridgain.grid.kernal.processors.spring;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.config.*;
+import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
@@ -36,23 +36,16 @@ import java.util.concurrent.atomic.*;
 /**
  * Spring configuration processor.
  */
-public class GridSpringConfigurationProcessor implements GridConfigurationProcessor {
+public class GridSpringProcessorImpl implements GridSpringProcessor {
     /** Path to {@code gridgain.xml} file. */
     public static final String GRIDGAIN_XML_PATH = "META-INF/gridgain.xml";
 
     /** System class loader user version. */
     private static final AtomicReference<String> SYS_LDR_VER = new AtomicReference<>(null);
 
-    /**
-     * @param ctx Kernal context.
-     */
-    public GridSpringConfigurationProcessor(GridKernalContext ctx) {
-        // No-op.
-    }
-
     /** {@inheritDoc} */
-    @Override public GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(URL cfgUrl,
-        String... excludedProps) throws GridException {
+    @Override public GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
+        URL cfgUrl, String... excludedProps) throws GridException {
         ApplicationContext springCtx;
 
         try {
@@ -229,45 +222,5 @@ public class GridSpringConfigurationProcessor implements GridConfigurationProces
         springCtx.refresh();
 
         return springCtx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void start() throws GridException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart() throws GridException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStop(boolean cancel) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Object collectDiscoveryData(UUID nodeId) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(Object data) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void printMemoryStats() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public GridNodeValidationResult validateNode(GridNode node) {
-        return null;
     }
 }

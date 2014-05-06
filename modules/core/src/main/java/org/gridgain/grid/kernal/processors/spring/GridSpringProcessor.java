@@ -7,10 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.config;
+package org.gridgain.grid.kernal.processors.spring;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
@@ -19,9 +18,10 @@ import java.net.*;
 import java.util.*;
 
 /**
- * Configuration processor.
+ * Spring processor which can parse Spring configuration files, interface was introduced to avoid mandatory
+ * runtime dependency on Spring framework.
  */
-public interface GridConfigurationProcessor extends GridComponent {
+public interface GridSpringProcessor {
     /**
      * Loads all grid configurations specified within given configuration file.
      * <p>
@@ -36,8 +36,8 @@ public interface GridConfigurationProcessor extends GridComponent {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(URL cfgUrl,
-        String... excludedProps) throws GridException;
+    public GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
+        URL cfgUrl, String... excludedProps) throws GridException;
 
     /**
      * Loads bean instances that match the given types from given configuration file.

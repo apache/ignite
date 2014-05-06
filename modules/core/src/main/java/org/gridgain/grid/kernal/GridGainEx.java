@@ -15,7 +15,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.dr.hub.sender.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.processors.config.*;
+import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
@@ -494,9 +494,9 @@ public class GridGainEx {
      */
     public static GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(URL springCfgUrl)
         throws GridException {
-        GridConfigurationProcessor cfgProc = SPRING.create(null, false);
+        GridSpringProcessor spring = SPRING.create(false);
 
-        return cfgProc.loadConfigurations(springCfgUrl);
+        return spring.loadConfigurations(springCfgUrl);
     }
 
     /**

@@ -34,9 +34,6 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
-import javax.mail.*;
-import javax.mail.Authenticator;
-import javax.mail.internet.*;
 import javax.management.*;
 import javax.naming.*;
 import javax.net.ssl.*;
@@ -860,87 +857,6 @@ public abstract class GridUtils {
 
         for (LockInfo info : syncs)
             sb.a(NL).a("        ").a(info);
-    }
-
-    /**
-     *
-     * @param smtpHost SMTP host.
-     * @param smtpPort SMTP port.
-     * @param ssl SMTP SSL.
-     * @param startTls Start TLS flag.
-     * @param username Email authentication user name.
-     * @param pwd Email authentication password.
-     * @param from From email.
-     * @param subj Email subject.
-     * @param body Email body.
-     * @param html HTML format flag.
-     * @param addrs Addresses to send email to.
-     * @throws GridException Thrown in case when sending email failed.
-     */
-    public static void sendEmail(String smtpHost, int smtpPort, boolean ssl, boolean startTls,
-        final String username, final String pwd, String from, String subj, String body,
-        boolean html, Collection<String> addrs) throws GridException {
-        assert smtpHost != null;
-        assert smtpPort > 0;
-        assert from != null;
-        assert subj != null;
-        assert body != null;
-        assert addrs != null;
-        assert !addrs.isEmpty();
-
-        Properties props = new Properties();
-
-        props.setProperty("mail.transport.protocol", "smtp");
-        props.setProperty("mail.smtp.host", smtpHost);
-        props.setProperty("mail.smtp.port", Integer.toString(smtpPort));
-
-        if (ssl)
-            props.setProperty("mail.smtp.ssl", "true");
-
-        if (startTls)
-            props.setProperty("mail.smtp.starttls.enable", "true");
-
-        Authenticator auth = null;
-
-        // Add property for authentication by username.
-        if (username != null && !username.isEmpty()) {
-            props.setProperty("mail.smtp.auth", "true");
-
-            auth = new Authenticator() {
-                @Override public javax.mail.PasswordAuthentication getPasswordAuthentication() {
-                    return new javax.mail.PasswordAuthentication(username, pwd);
-                }
-            };
-        }
-
-        Session ses = Session.getInstance(props, auth);
-
-        MimeMessage email = new MimeMessage(ses);
-
-        try {
-            email.setFrom(new InternetAddress(from));
-            email.setSubject(subj);
-            email.setSentDate(new Date());
-
-            if (html)
-                email.setText(body, "UTF-8", "html");
-            else
-                email.setText(body);
-
-            Address[] rcpts = new Address[addrs.size()];
-
-            int i = 0;
-
-            for (String addr : addrs)
-                rcpts[i++] = new InternetAddress(addr);
-
-            email.setRecipients(MimeMessage.RecipientType.TO, rcpts);
-
-            Transport.send(email);
-        }
-        catch (MessagingException e) {
-            throw new GridException("Failed to send email.", e);
-        }
     }
 
     /**
