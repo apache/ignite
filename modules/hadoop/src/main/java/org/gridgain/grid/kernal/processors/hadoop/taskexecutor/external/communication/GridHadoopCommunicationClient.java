@@ -67,12 +67,4 @@ public interface GridHadoopCommunicationClient {
      * @throws GridException If failed.
      */
     public void sendMessage(GridHadoopProcessDescriptor desc, GridHadoopMessage msg) throws GridException;
-
-    /**
-     * Awaits for the handshake completion.
-     *
-     * @param timeout Await timeout.
-     * @throws GridException If wait failed.
-     */
-    public void awaitHandshake(long timeout) throws GridException;
 }

@@ -9,13 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Implements basic lifecycle for communication clients.
@@ -26,9 +22,6 @@ public abstract class GridHadoopAbstractCommunicationClient implements GridHadoo
 
     /** Reservations. */
     private final AtomicInteger reserves = new AtomicInteger();
-
-    /** Handshake latch. */
-    private CountDownLatch handshakeLatch = new CountDownLatch(1);
 
     /** {@inheritDoc} */
     @Override public boolean close() {
@@ -91,24 +84,5 @@ public abstract class GridHadoopAbstractCommunicationClient implements GridHadoo
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridHadoopAbstractCommunicationClient.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void awaitHandshake(long timeout) throws GridException {
-        try {
-            handshakeLatch.await(timeout, MILLISECONDS);
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new GridException(e);
-        }
-    }
-
-    /**
-     * Callback that should be invoked when handshake is finished.
-     */
-    public void onHandshakeFinished() {
-        handshakeLatch.countDown();
     }
 }

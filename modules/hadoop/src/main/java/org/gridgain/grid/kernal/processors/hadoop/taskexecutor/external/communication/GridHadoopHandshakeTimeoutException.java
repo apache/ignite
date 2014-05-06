@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication;
 
 import org.gridgain.grid.*;
+import org.jetbrains.annotations.*;
 
 /** Internal exception class for proper timeout handling. */
 class GridHadoopHandshakeTimeoutException extends GridException {
@@ -21,5 +22,13 @@ class GridHadoopHandshakeTimeoutException extends GridException {
      */
     GridHadoopHandshakeTimeoutException(String msg) {
         super(msg);
+    }
+
+    /**
+     * @param msg Message.
+     * @param cause Cause.
+     */
+    GridHadoopHandshakeTimeoutException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
     }
 }

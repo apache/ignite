@@ -10,10 +10,12 @@
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication.*;
-import org.gridgain.grid.util.nio.*;
+import org.gridgain.grid.logger.log4j.*;
+import org.gridgain.grid.marshaller.optimized.*;
 
 import java.lang.reflect.*;
-import java.net.*;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Hadoop external process base class.
@@ -31,28 +33,18 @@ public class GridHadoopExternalProcessStarter {
         try {
             GridHadoopChildProcessBase process = createProcess(args);
 
-            GridHadoopExternalCommunication comm = new GridHadoopExternalCommunication(process.listener());
+            GridHadoopExternalCommunication comm;
+            comm = new GridHadoopExternalCommunication(UUID.randomUUID(),
+                new GridOptimizedMarshaller(), new GridLog4jLogger(), Executors.newFixedThreadPool(1), "test");
 
-            // TODO wrap around start port.
-            for (int port = 20000; port < 21000; port++) {
-                try {
-                    comm.start(port);
-
-                    System.out.println(port);
-                    System.out.flush();
-
-                    // Override process output streams.
-                    System.setOut();
-                    System.setErr();
-                }
-                catch (GridNioBindException ignored) {
-                    // Continue to next port.
-                }
-            }
+            comm.start();
         }
         catch (Exception e) {
             e.printStackTrace();
             // TODO.
+        }
+        finally {
+
         }
     }
 

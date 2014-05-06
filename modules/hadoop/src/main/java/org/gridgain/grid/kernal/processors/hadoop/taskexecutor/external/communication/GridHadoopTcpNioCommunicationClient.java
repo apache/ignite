@@ -33,7 +33,7 @@ public class GridHadoopTcpNioCommunicationClient extends GridHadoopAbstractCommu
     /**
      * @param ses Session.
      */
-    public GridHadoopTcpNioCommunicationClient(GridNioSession ses, boolean handshakeFinished) {
+    public GridHadoopTcpNioCommunicationClient(GridNioSession ses) {
         assert ses != null;
 
         this.ses = ses;

@@ -47,7 +47,7 @@ public class GridHadoopMarshallerFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws GridException {
-        assert msg instanceof GridHadoopMessage;
+        assert msg instanceof GridHadoopMessage : "Invalid message type: " + msg;
 
         return proceedSessionWrite(ses, marshaller.marshal(msg));
     }

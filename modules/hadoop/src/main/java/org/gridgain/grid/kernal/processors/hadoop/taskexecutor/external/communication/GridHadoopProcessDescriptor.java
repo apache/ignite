@@ -9,14 +9,15 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication;
 
-import org.gridgain.grid.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * Process descriptor used to identify process for which task is running.
  */
-public class GridHadoopProcessDescriptor {
+public class GridHadoopProcessDescriptor implements Serializable {
     /** Parent node ID. */
     private UUID parentNodeId;
 
@@ -33,9 +34,11 @@ public class GridHadoopProcessDescriptor {
     private int shmemPort;
 
     /**
+     * @param parentNodeId Parent node ID.
      * @param procId Process ID.
      */
     public GridHadoopProcessDescriptor(UUID parentNodeId, UUID procId) {
+        this.parentNodeId = parentNodeId;
         this.procId = procId;
     }
 
@@ -57,8 +60,22 @@ public class GridHadoopProcessDescriptor {
         return parentNodeId;
     }
 
+    /**
+     * Gets host address.
+     *
+     * @return Host address.
+     */
     public String address() {
         return addr;
+    }
+
+    /**
+     * Sets host address.
+     *
+     * @param addr Host address.
+     */
+    public void address(String addr) {
+        this.addr = addr;
     }
 
     /**
@@ -69,9 +86,32 @@ public class GridHadoopProcessDescriptor {
     }
 
     /**
+     * Sets shared memory port.
+     *
+     * @param shmemPort Shared memory port.
+     */
+    public void sharedMemoryPort(int shmemPort) {
+        this.shmemPort = shmemPort;
+    }
+
+    /**
      * @return TCP port.
      */
     public int tcpPort() {
         return tcpPort;
+    }
+
+    /**
+     * Sets TCP port.
+     *
+     * @param tcpPort TCP port.
+     */
+    public void tcpPort(int tcpPort) {
+        this.tcpPort = tcpPort;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridHadoopProcessDescriptor.class, this);
     }
 }

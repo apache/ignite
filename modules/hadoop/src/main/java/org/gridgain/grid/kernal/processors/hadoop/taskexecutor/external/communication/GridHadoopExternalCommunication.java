@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communi
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
-import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.thread.*;
@@ -31,7 +30,6 @@ import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.GridSystemProperties.*;
 
@@ -46,9 +44,6 @@ public class GridHadoopExternalCommunication {
 
     /** Default port which node sets listener for shared memory connections (value is <tt>48100</tt>). */
     public static final int DFLT_SHMEM_PORT = 48100;
-
-    /** Default idle connection timeout (value is <tt>30000</tt>ms). */
-    public static final long DFLT_IDLE_CONN_TIMEOUT = 30000;
 
     /** Default connection timeout (value is <tt>1000</tt>ms). */
     public static final long DFLT_CONN_TIMEOUT = 1000;
@@ -71,6 +66,9 @@ public class GridHadoopExternalCommunication {
     /** Node ID meta for session. */
     private static final int PROCESS_META = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** Handshake timeout meta for session. */
+    private static final int HANDSHAKE_FINISH_META = GridNioSessionMetaKey.nextUniqueKey();
+
     /** Message tracker meta for session. */
     private static final int TRACKER_META = GridNioSessionMetaKey.nextUniqueKey();
 
@@ -83,16 +81,6 @@ public class GridHadoopExternalCommunication {
     /** Default value for {@code TCP_NODELAY} socket option (value is <tt>true</tt>). */
     public static final boolean DFLT_TCP_NODELAY = true;
 
-    /** No-op runnable. */
-    private static final GridRunnable NOOP = new GridRunnable() {
-        @Override public void run() {
-            // No-op.
-        }
-    };
-
-    /** */
-    private static final AtomicLong timeoutIdGen = new AtomicLong();
-
     /** Server listener. */
     private final GridNioServerListener<GridHadoopMessage> srvLsnr =
         new GridNioServerListenerAdapter<GridHadoopMessage>() {
@@ -100,28 +88,6 @@ public class GridHadoopExternalCommunication {
                 GridHadoopProcessDescriptor desc = ses.meta(PROCESS_META);
 
                 assert desc != null : "Received connected notification without finished handshake: " + ses;
-
-                UUID rmtId = desc.processId();
-
-                if (log.isDebugEnabled())
-                    log.debug("Finished handshake with remote client: " + ses);
-
-                Object sync = locks.tryLock(rmtId);
-
-                if (sync != null) {
-                    try {
-                        if (clients.get(rmtId) == null) {
-                            if (log.isDebugEnabled())
-                                log.debug("Will reuse session for node: " + rmtId);
-
-                            // Handshake finished flag is true.
-                            clients.put(rmtId, new GridHadoopTcpNioCommunicationClient(ses, true));
-                        }
-                    }
-                    finally {
-                        locks.unlock(rmtId, sync);
-                    }
-                }
             }
 
             /** {@inheritDoc} */
@@ -162,6 +128,12 @@ public class GridHadoopExternalCommunication {
     /** Marshaller. */
     private GridMarshaller marsh;
 
+    /** Message notification executor service. */
+    private ExecutorService execSvc;
+
+    /** Grid name. */
+    private String gridName;
+
     /** Local IP address. */
     private String locAddr;
 
@@ -176,9 +148,6 @@ public class GridHadoopExternalCommunication {
 
     /** Local port which node uses to accept shared memory connections. */
     private int shmemPort = DFLT_SHMEM_PORT;
-
-    /** Grid name. */
-    private String gridName;
 
     /** Allocate direct buffer or heap buffer. */
     private boolean directBuf = true;
@@ -223,14 +192,8 @@ public class GridHadoopExternalCommunication {
     /** Shared memory accept worker. */
     private ShmemAcceptWorker shmemAcceptWorker;
 
-    /** Socket timeout worker. */
-    private SocketTimeoutWorker sockTimeoutWorker;
-
     /** Shared memory workers. */
     private final Collection<ShmemWorker> shmemWorkers = new ConcurrentLinkedDeque8<>();
-
-    /** Message notification executor service. */
-    private ExecutorService execSvc;
 
     /** Clients. */
     private final ConcurrentMap<UUID, GridHadoopCommunicationClient> clients = GridConcurrentFactory.newMap();
@@ -248,10 +211,32 @@ public class GridHadoopExternalCommunication {
     private int selectorsCnt = DFLT_SELECTORS_CNT;
 
     /** Local node ID message. */
-    private NodeIdMessage locIdMsg;
+    private ProcessHandshakeMessage locIdMsg;
 
     /** Locks. */
     private final GridKeyLock locks = new GridKeyLock();
+
+    /**
+     * @param parentNodeId Parent node ID.
+     * @param marsh Marshaller to use.
+     * @param log Logger.
+     * @param execSvc Executor service for message notification.
+     * @param gridName Grid name.
+     */
+    public GridHadoopExternalCommunication(
+        UUID parentNodeId,
+        GridMarshaller marsh,
+        GridLogger log,
+        ExecutorService execSvc,
+        String gridName
+    ) {
+        locProcDesc = new GridHadoopProcessDescriptor(parentNodeId, UUID.randomUUID());
+
+        this.marsh = marsh;
+        this.log = log;
+        this.execSvc = execSvc;
+        this.gridName = gridName;
+    }
 
     /**
      * Sets local host address for socket binding. Note that one node could have
@@ -262,9 +247,7 @@ public class GridHadoopExternalCommunication {
      *      IP address.
      */
     public void setLocalAddress(String locAddr) {
-        // Injection should not override value already set by Spring or user.
-        if (this.locAddr == null)
-            this.locAddr = locAddr;
+        this.locAddr = locAddr;
     }
 
     /** {@inheritDoc} */
@@ -550,8 +533,11 @@ public class GridHadoopExternalCommunication {
         return bufSizeRatio;
     }
 
-    /** {@inheritDoc} */
-    // TODO
+    /**
+     * Sets Hadoop communication message listener.
+     *
+     * @param lsnr Message listener.
+     */
     public void setListener(GridHadoopMessageListener lsnr) {
         this.lsnr = lsnr;
     }
@@ -561,9 +547,7 @@ public class GridHadoopExternalCommunication {
         return nioSrvr.outboundMessagesQueueSize();
     }
 
-    public void initServers() throws GridException {
-        locIdMsg = new NodeIdMessage(locProcDesc);
-
+    public void start() throws GridException {
         filters = new GridNioFilter[] {
             new GridNioAsyncNotifyFilter(gridName, execSvc, log),
             new HandshakeAndBackpressureFilter(),
@@ -572,7 +556,7 @@ public class GridHadoopExternalCommunication {
         };
 
         try {
-            locHost = U.resolveLocalHost(locAddr);
+            locHost = locAddr == null ? U.getLocalHost() : U.resolveLocalHost(locAddr);
         }
         catch (IOException e) {
             throw new GridException("Failed to initialize local address: " + locAddr, e);
@@ -593,10 +577,12 @@ public class GridHadoopExternalCommunication {
         catch (GridException e) {
             throw new GridException("Failed to initialize TCP server: " + locHost, e);
         }
-    }
 
-    public void start(String gridName) throws GridException {
-        assert locHost != null;
+        locProcDesc.address(locHost.getHostAddress());
+        locProcDesc.sharedMemoryPort(boundTcpShmemPort);
+        locProcDesc.tcpPort(boundTcpPort);
+
+        locIdMsg = new ProcessHandshakeMessage(locProcDesc);
 
         if (shmemSrv != null) {
             shmemAcceptWorker = new ShmemAcceptWorker(shmemSrv);
@@ -605,10 +591,15 @@ public class GridHadoopExternalCommunication {
         }
 
         nioSrvr.start();
+    }
 
-        sockTimeoutWorker = new SocketTimeoutWorker();
-
-        sockTimeoutWorker.start();
+    /**
+     * Gets local process descriptor.
+     *
+     * @return Local process descriptor.
+     */
+    public GridHadoopProcessDescriptor localProcessDescriptor() {
+        return locProcDesc;
     }
 
     /**
@@ -640,7 +631,7 @@ public class GridHadoopExternalCommunication {
                         .socketSendBufferSize(sockSndBuf)
                         .socketReceiveBufferSize(sockRcvBuf)
                         .sendQueueLimit(msgQueueLimit)
-                        .directMode(true)
+                        .directMode(false)
                         .filters(filters)
                         .build();
 
@@ -724,10 +715,6 @@ public class GridHadoopExternalCommunication {
         U.cancel(shmemAcceptWorker);
         U.join(shmemAcceptWorker, log);
 
-        U.interrupt(sockTimeoutWorker);
-
-        U.join(sockTimeoutWorker, log);
-
         U.cancel(shmemWorkers);
         U.join(shmemWorkers, log);
 
@@ -791,6 +778,10 @@ public class GridHadoopExternalCommunication {
             GridHadoopCommunicationClient client = clients.get(procId);
 
             if (client == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Did not find client for remote process [locProcDesc=" + locProcDesc + ", desc=" +
+                        desc + ']');
+
                 // Do not allow concurrent connects.
                 Object sync = locks.lock(procId);
 
@@ -886,16 +877,22 @@ public class GridHadoopExternalCommunication {
 
                 shmemWorkers.add(worker);
 
-                client = new GridHadoopTcpNioCommunicationClient(worker.session(), false);
+                GridNioSession ses = worker.session();
+
+                HandshakeFinish fin = new HandshakeFinish();
+
+                // We are in lock, it is safe to get session and attach
+                ses.addMeta(HANDSHAKE_FINISH_META, fin);
+
+                client = new GridHadoopTcpNioCommunicationClient(ses);
 
                 new GridThread(worker).start();
 
-                // We are in lock, it is safe to get session and attach
-                client.awaitHandshake(connTimeout0);
+                fin.await(connTimeout0);
             }
             catch (GridHadoopHandshakeTimeoutException e) {
                 if (log.isDebugEnabled())
-                    log.debug("Handshake timedout (will retry with increased timeout) [timeout=" + connTimeout0 +
+                    log.debug("Handshake timed out (will retry with increased timeout) [timeout=" + connTimeout0 +
                         ", err=" + e.getMessage() + ", client=" + client + ']');
 
                 if (client != null)
@@ -918,7 +915,7 @@ public class GridHadoopExternalCommunication {
                     continue;
                 }
             }
-            catch (GridException | RuntimeException | Error e) {
+            catch (RuntimeException | Error e) {
                 if (log.isDebugEnabled())
                     log.debug(
                         "Caught exception (will close client) [err=" + e.getMessage() + ", client=" + client + ']');
@@ -945,8 +942,11 @@ public class GridHadoopExternalCommunication {
 
         int port = desc.tcpPort();
 
+        if (log.isDebugEnabled())
+            log.debug("Trying to connect to remote process [locProcDesc=" + locProcDesc + ", desc=" + desc + ']');
+
         boolean conn = false;
-        GridHadoopCommunicationClient client = null;
+        GridHadoopTcpNioCommunicationClient client = null;
         GridException errs = null;
 
         int connectAttempts = 1;
@@ -972,11 +972,16 @@ public class GridHadoopExternalCommunication {
 
                 ch.socket().connect(new InetSocketAddress(addr, port), (int)connTimeout);
 
-                GridNioSession ses = nioSrvr.createSession(ch, null).get();
+                HandshakeFinish fin = new HandshakeFinish();
 
-                client = new GridHadoopTcpNioCommunicationClient(ses, false);
+                GridNioSession ses = nioSrvr.createSession(ch, F.asMap(HANDSHAKE_FINISH_META, fin)).get();
 
-                client.awaitHandshake(connTimeout0);
+                client = new GridHadoopTcpNioCommunicationClient(ses);
+
+                if (log.isDebugEnabled())
+                    log.debug("Waiting for handshake finish for client: " + client);
+
+                fin.await(connTimeout0);
 
                 conn = true;
             }
@@ -1076,8 +1081,8 @@ public class GridHadoopExternalCommunication {
             // Notify listener of a new message.
             lsnr.onMessageReceived(desc, msg);
         else if (log.isDebugEnabled())
-            log.debug("Received communication message without any registered listeners (will ignore, " +
-                "is node stopping?) [senderNodeId=" + desc + ", msg=" + msg + ']');
+            log.debug("Received communication message without any registered listeners (will ignore) " +
+                "[senderProcDesc=" + desc + ", msg=" + msg + ']');
     }
 
     /** {@inheritDoc} */
@@ -1195,176 +1200,35 @@ public class GridHadoopExternalCommunication {
     }
 
     /**
-     * Handles sockets timeouts.
-     */
-    private class SocketTimeoutWorker extends Thread {
-        /** Time-based sorted set for timeout objects. */
-        private final GridConcurrentSkipListSet<TimeoutObject> timeoutObjs =
-            new GridConcurrentSkipListSet<>(new Comparator<TimeoutObject>() {
-                @Override public int compare(TimeoutObject o1, TimeoutObject o2) {
-                    long time1 = o1.endTime();
-                    long time2 = o2.endTime();
-
-                    long id1 = o1.id();
-                    long id2 = o2.id();
-
-                    return time1 < time2 ? -1 : time1 > time2 ? 1 :
-                        id1 < id2 ? -1 : id1 > id2 ? 1 : 0;
-                }
-            });
-
-        /** Mutex. */
-        private final Object mux0 = new Object();
-
-        /**
-         *
-         */
-        SocketTimeoutWorker() {
-            super("hadoop-comm-sock-timeout-worker");
-        }
-
-        /**
-         * @param timeoutObj Timeout object to add.
-         */
-        @SuppressWarnings({"NakedNotify"})
-        public void addTimeoutObject(TimeoutObject timeoutObj) {
-            assert timeoutObj != null && timeoutObj.endTime() > 0 && timeoutObj.endTime() != Long.MAX_VALUE;
-
-            timeoutObjs.add(timeoutObj);
-
-            if (timeoutObjs.firstx() == timeoutObj) {
-                synchronized (mux0) {
-                    mux0.notifyAll();
-                }
-            }
-        }
-
-        /**
-         * @param timeoutObj Timeout object to remove.
-         */
-        public void removeTimeoutObject(TimeoutObject timeoutObj) {
-            assert timeoutObj != null;
-
-            timeoutObjs.remove(timeoutObj);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            if (log.isDebugEnabled())
-                log.debug("Socket timeout worker has been started.");
-
-            try {
-                while (!isInterrupted()) {
-                    long now = U.currentTimeMillis();
-
-                    for (Iterator<TimeoutObject> iter = timeoutObjs.iterator(); iter.hasNext(); ) {
-                        TimeoutObject timeoutObj = iter.next();
-
-                        if (timeoutObj.endTime() <= now) {
-                            iter.remove();
-
-                            timeoutObj.onTimeout();
-                        }
-                        else
-                            break;
-                    }
-
-                    synchronized (mux0) {
-                        while (true) {
-                            // Access of the first element must be inside of
-                            // synchronization block, so we don't miss out
-                            // on thread notification events sent from
-                            // 'addTimeoutObject(..)' method.
-                            TimeoutObject first = timeoutObjs.firstx();
-
-                            if (first != null) {
-                                long waitTime = first.endTime() - U.currentTimeMillis();
-
-                                if (waitTime > 0)
-                                    mux0.wait(waitTime);
-                                else
-                                    break;
-                            }
-                            else
-                                mux0.wait(5000);
-                        }
-                    }
-                }
-            }
-            catch (InterruptedException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Socket timeout worker was interrupted, exiting.");
-
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
-    /**
      *
      */
-    private abstract static class TimeoutObject {
-        /** */
-        private final long id = timeoutIdGen.incrementAndGet();
-
-        /** */
-        private final long endTime;
-
-        /** */
-        private final AtomicBoolean done = new AtomicBoolean();
+    private static class HandshakeFinish {
+        /** Await latch. */
+        private CountDownLatch latch = new CountDownLatch(1);
 
         /**
-         * @param endTime End time.
+         * Finishes handshake.
          */
-        private TimeoutObject(long endTime) {
-            assert endTime > 0;
-
-            this.endTime = endTime;
+        public void finish() {
+            latch.countDown();
         }
 
         /**
-         * @return {@code True} if object has not yet been timed out.
+         * @param time Time to wait.
+         * @throws GridHadoopHandshakeTimeoutException If failed to wait.
          */
-        boolean cancel() {
-            return done.compareAndSet(false, true);
-        }
-
-        /**
-         * @return {@code True} if object has not yet been canceled.
-         */
-        boolean onTimeout() {
-            if (done.compareAndSet(false, true)) {
-                // Invoke callback.
-                body();
-
-                return true;
+        public void await(long time) throws GridHadoopHandshakeTimeoutException {
+            try {
+                if (!latch.await(time, TimeUnit.MILLISECONDS))
+                    throw new GridHadoopHandshakeTimeoutException("Failed to wait for handshake to finish [timeout=" +
+                        time + ']');
             }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
 
-            return false;
-        }
-
-        /**
-         * Timeout callback.
-         */
-        protected abstract void body();
-
-        /**
-         * @return End time.
-         */
-        long endTime() {
-            return endTime;
-        }
-
-        /**
-         * @return ID.
-         */
-        long id() {
-            return id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(TimeoutObject.class, this);
+                throw new GridHadoopHandshakeTimeoutException("Failed to wait for handshake to finish (thread was " +
+                    "interrupted) [timeout=" + time + ']', e);
+            }
         }
     }
 
@@ -1380,12 +1244,22 @@ public class GridHadoopExternalCommunication {
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionOpened(GridNioSession ses) throws GridException {
+        @Override public void onSessionOpened(final GridNioSession ses) throws GridException {
             if (ses.accepted()) {
                 // Server initiates handshake.
-                ses.send(locProcDesc);
+                ses.send(locIdMsg).listenAsync(new CI1<GridNioFuture<?>>() {
+                    @Override public void apply(GridNioFuture<?> fut) {
+                        try {
+                            // Make sure there were no errors.
+                            fut.get();
+                        }
+                        catch (GridException | IOException e) {
+                            log.warning("Failed to send handshake message, will close session: " + ses, e);
 
-                // TODO timeout.
+                            ses.close();
+                        }
+                    }
+                });
             }
         }
 
@@ -1401,7 +1275,7 @@ public class GridHadoopExternalCommunication {
 
         /** {@inheritDoc} */
         @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws GridException {
-            if (ses.meta(PROCESS_META) == null)
+            if (ses.meta(PROCESS_META) == null && !(msg instanceof ProcessHandshakeMessage))
                 log.warning("Writing message before handshake has finished [ses=" + ses + ", msg=" + msg + ']');
 
             return proceedSessionWrite(ses, msg);
@@ -1411,10 +1285,10 @@ public class GridHadoopExternalCommunication {
         @Override public void onMessageReceived(GridNioSession ses, Object msg) throws GridException {
             GridHadoopProcessDescriptor desc = ses.meta(PROCESS_META);
 
-            UUID rmtProcId = desc.processId();
+            UUID rmtProcId = desc == null ? null : desc.processId();
 
             if (rmtProcId == null) {
-                if (!(msg instanceof NodeIdMessage)) {
+                if (!(msg instanceof ProcessHandshakeMessage)) {
                     log.warning("Invalid handshake message received, will close connection [ses=" + ses +
                         ", msg=" + msg + ']');
 
@@ -1423,13 +1297,58 @@ public class GridHadoopExternalCommunication {
                     return;
                 }
 
-                NodeIdMessage nId = (NodeIdMessage)msg;
+                ProcessHandshakeMessage nId = (ProcessHandshakeMessage)msg;
+
+                if (log.isDebugEnabled())
+                    log.debug("Received handshake message [ses=" + ses + ", msg=" + msg + ']');
 
                 ses.addMeta(PROCESS_META, nId.processDescriptor());
 
                 if (!ses.accepted())
                     // Send handshake reply.
                     ses.send(locIdMsg);
+                else {
+                    //
+                    rmtProcId = nId.processDescriptor().processId();
+
+                    if (log.isDebugEnabled())
+                        log.debug("Finished handshake with remote client: " + ses);
+
+                    Object sync = locks.tryLock(rmtProcId);
+
+                    if (sync != null) {
+                        try {
+                            if (clients.get(rmtProcId) == null) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Will reuse session for descriptor: " + rmtProcId);
+
+                                // Handshake finished flag is true.
+                                clients.put(rmtProcId, new GridHadoopTcpNioCommunicationClient(ses));
+                            }
+                            else {
+                                if (log.isDebugEnabled())
+                                    log.debug("Will not reuse client as another already exists [locProcDesc=" +
+                                        locProcDesc + ", desc=" + desc + ']');
+                            }
+                        }
+                        finally {
+                            locks.unlock(rmtProcId, sync);
+                        }
+                    }
+                    else {
+                        if (log.isDebugEnabled())
+                            log.debug("Concurrent connection is being established, will not reuse client session [" +
+                                "locProcDesc=" + locProcDesc + ", desc=" + desc + ']');
+                    }
+                }
+
+                if (log.isDebugEnabled())
+                    log.debug("Handshake is finished for session [ses=" + ses + ", locProcDesc=" + locProcDesc + ']');
+
+                HandshakeFinish to = ses.meta(HANDSHAKE_FINISH_META);
+
+                if (to != null)
+                    to.finish();
 
                 // Notify session opened (both parties).
                 proceedSessionOpened(ses);
@@ -1469,22 +1388,22 @@ public class GridHadoopExternalCommunication {
     }
 
     /**
-     * Node ID message.
+     * Process ID message.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class NodeIdMessage extends GridHadoopMessage implements Externalizable {
+    public static class ProcessHandshakeMessage extends GridHadoopMessage implements Externalizable {
         /** Node ID. */
         private GridHadoopProcessDescriptor procDesc;
 
         /** */
-        public NodeIdMessage() {
+        public ProcessHandshakeMessage() {
             // No-op.
         }
 
         /**
          * @param procDesc Process descriptor.
          */
-        private NodeIdMessage(GridHadoopProcessDescriptor procDesc) {
+        private ProcessHandshakeMessage(GridHadoopProcessDescriptor procDesc) {
             this.procDesc = procDesc;
         }
 
