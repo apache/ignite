@@ -60,7 +60,25 @@ public class GridGainWordCount2 {
 
             Job job = getJob("/input", "/output");
 
-            job.submit();
+            job.waitForCompletion(true);
+
+            for (GridGgfsPath path : ggfs.listPaths(new GridGgfsPath("/output"))) {
+                System.out.println(path);
+
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(ggfs.open(path)))) {
+                    String line = br.readLine();
+
+                    while (line != null) {
+                        System.out.println(line);
+
+                        line = br.readLine();
+                    }
+                }
+
+                System.out.println("");
+            }
+
+            return;
         }
         finally {
             G.stopAll(true);
