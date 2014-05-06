@@ -14,20 +14,16 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 
-import java.lang.reflect.*;
 import java.util.*;
 
 /**
  * Hadoop processor.
  */
-public abstract class GridHadoopProcessor extends GridProcessorAdapter {
-    /** Implementation class name. */
-    private static final String CLS_NAME = "org.gridgain.grid.kernal.processors.hadoop.GridHadoopOpProcessor";
-
+public abstract class GridHadoopProcessorAdapter extends GridProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    protected GridHadoopProcessor(GridKernalContext ctx) {
+    protected GridHadoopProcessorAdapter(GridKernalContext ctx) {
         super(ctx);
     }
 

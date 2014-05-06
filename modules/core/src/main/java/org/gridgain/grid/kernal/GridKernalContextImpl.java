@@ -219,7 +219,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringExclude
-    private GridHadoopProcessor hadoopProc;
+    private GridHadoopProcessorAdapter hadoopProc;
 
     /** */
     @GridToStringExclude
@@ -382,8 +382,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             drProc = (GridDrProcessor)comp;
         else if (comp instanceof GridVersionProcessor)
             verProc = (GridVersionProcessor)comp;
-        else if (comp instanceof GridHadoopProcessor)
-            hadoopProc = (GridHadoopProcessor)comp;
+        else if (comp instanceof GridHadoopProcessorAdapter)
+            hadoopProc = (GridHadoopProcessorAdapter)comp;
 
         else
             assert false : "Unknown manager class: " + comp.getClass();
@@ -628,7 +628,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopProcessor hadoop() {
+    @Override public GridHadoopProcessorAdapter hadoop() {
         return hadoopProc;
     }
 

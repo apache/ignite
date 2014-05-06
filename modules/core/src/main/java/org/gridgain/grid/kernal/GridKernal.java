@@ -402,7 +402,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // That's why Java sucks...
         return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
-            @Override public String apply(Map.Entry<String, ?> e) {
+            @Override
+            public String apply(Map.Entry<String, ?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });
@@ -666,7 +667,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             // be able to start receiving messages once discovery completes.
             GridGgfsProcessorAdapter ggfsProc =  COMP_GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration()));
 
-            GridHadoopProcessor hadoopProc = COMP_HADOOP.create(ctx, cfg.getHadoopConfiguration() == null);
+            GridHadoopProcessorAdapter hadoopProc = COMP_HADOOP.create(ctx, cfg.getHadoopConfiguration() == null);
 
             ctx.add(ggfsProc);
 
