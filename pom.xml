@@ -59,6 +59,7 @@
         <module>modules/ssh</module>
         <module>modules/servlet-startup</module>
         <module>modules/rest</module>
+        <module>modules/mail</module>
     </modules>
 
     <build>
