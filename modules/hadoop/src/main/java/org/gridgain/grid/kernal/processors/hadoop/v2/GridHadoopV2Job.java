@@ -159,13 +159,13 @@ public class GridHadoopV2Job implements GridHadoopJob {
      * @return Appropriate serializer.
      */
     @SuppressWarnings("unchecked")
-    private GridHadoopSerialization getSerialization(Class<?> cls) {
+    private GridHadoopSerialization getSerialization(Class<?> cls) throws GridException {
         SerializationFactory factory = new SerializationFactory(ctx.getJobConf());
 
         Serialization<?> serialization = factory.getSerialization(cls);
 
-        if (serialization.getClass() == WritableSerialization.class)
-            return new GridHadoopWritableSerialization((Class<? extends Writable>)cls);
+//        if (serialization.getClass() == WritableSerialization.class)
+//            return new GridHadoopWritableSerialization((Class<? extends Writable>)cls);
 
         return new GridHadoopSerializationWrapper(serialization, cls);
     }

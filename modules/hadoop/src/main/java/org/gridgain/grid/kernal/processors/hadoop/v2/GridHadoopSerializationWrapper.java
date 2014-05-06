@@ -25,31 +25,54 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
 
     /** External serializer - reader */
     private final Deserializer<T> deserializer;
-    private OutputStream outStream;
-    private InputStream inStream;
+
+    /** */
+    private DataOutput currOut;
+
+    /** */
+    private DataInput currIn;
 
     /**
      * @param serialization External serializer to wrap.
      * @param cls The class to serialize.
      */
-    public GridHadoopSerializationWrapper(Serialization<T> serialization, Class<T> cls) {
+    public GridHadoopSerializationWrapper(Serialization<T> serialization, Class<T> cls) throws GridException {
         serializer = serialization.getSerializer(cls);
         deserializer = serialization.getDeserializer(cls);
+
+        try {
+            OutputStream outStream = new OutputStream() {
+                /** {@inheritDoc} */
+                @Override public void write(int b) throws IOException {
+                    currOut.write(b);
+                }
+
+                /** {@inheritDoc} */
+                @Override public void write(byte[] b, int off, int len) throws IOException {
+                    currOut.write(b, off, len);
+                }
+            };
+
+            serializer.open(outStream);
+
+            InputStream inStream = new InputStream() {
+                /** {@inheritDoc} */
+                @Override public int read() throws IOException {
+                    return currIn.readUnsignedByte();
+                }
+            };
+
+            deserializer.open(inStream);
+        }
+        catch (IOException e) {
+            throw new GridException(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void write(DataOutput out, Object obj) throws GridException {
-        assert out instanceof OutputStream;
-
         try {
-            if (outStream != out) {
-                if (outStream != null)
-                    serializer.close();
-
-                outStream = (OutputStream) out;
-
-                serializer.open(outStream);
-            }
+            currOut = out;
 
             serializer.serialize((T)obj);
         }
@@ -60,42 +83,24 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
 
     /** {@inheritDoc} */
     @Override public Object read(DataInput in, @Nullable Object obj) throws GridException {
-        assert in instanceof InputStream;
-
         try {
-            if (inStream != in) {
-                if (inStream != null)
-                    deserializer.close();
+            currIn = in;
 
-                inStream = (InputStream) in;
-
-                deserializer.open(inStream);
-            }
-
-            obj = deserializer.deserialize((T) obj);
+            return deserializer.deserialize((T)obj);
         }
         catch (IOException e) {
             throw new GridException(e);
         }
-
-        return obj;
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws GridException {
-        try {
-            if (outStream != null) {
-                serializer.close();
-                outStream = null;
-            }
-
-            if (inStream != null) {
-                deserializer.close();
-                inStream = null;
-            }
-        }
-        catch (IOException e) {
-            throw new GridException(e);
-        }
+//        try {
+//            serializer.close();
+//            deserializer.close();
+//        }
+//        catch (IOException e) {
+//            throw new GridException(e);
+//        }
     }
 }

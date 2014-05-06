@@ -58,21 +58,21 @@ public class GridHadoopMultimapSelftest extends GridCommonAbstractTest {
         Multimap<Integer, Integer> mm = ArrayListMultimap.create();
         Multimap<Integer, Integer> vis = ArrayListMultimap.create();
 
-        for (int i = 0, vals = 4 * mapSize + rnd.nextInt(25); i < vals; i++) {
-            int key = rnd.nextInt(mapSize);
-            int val = rnd.nextInt();
+//        for (int i = 0, vals = 4 * mapSize + rnd.nextInt(25); i < vals; i++) {
+//            int key = rnd.nextInt(mapSize);
+//            int val = rnd.nextInt();
+//
+//            a.add(new IntWritable(key), new IntWritable(val));
+//            mm.put(key, val);
+//
+//            X.println("k: " + key + " v: " + val);
+//
+//            check(m, mm, vis);
+//        }
 
-            a.add(new IntWritable(key), new IntWritable(val));
-            mm.put(key, val);
-
-            X.println("k: " + key + " v: " + val);
-
-            check(m, mm, vis);
-        }
-
-//        a.add(new IntWritable(10), new IntWritable(2));
-//        mm.put(10, 2);
-//        check(m, mm);
+        a.add(new IntWritable(10), new IntWritable(2));
+        mm.put(10, 2);
+        check(m, mm, vis);
 
         a.close();
 
