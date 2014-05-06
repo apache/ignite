@@ -38,7 +38,6 @@ public class ComputeClosureExample {
             System.out.println();
             System.out.println(">>> Compute closure example started.");
 
-
             // Execute closure on all grid nodes.
             Collection<Integer> res = g.compute().apply(
                 (GridClosure<String, Integer>) word -> {

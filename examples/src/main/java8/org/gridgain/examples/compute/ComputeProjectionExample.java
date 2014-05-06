@@ -30,11 +30,7 @@ public class ComputeProjectionExample {
      */
     public static void main(String[] args) throws Exception {
         try (Grid grid = GridGain.start("examples/config/example-compute.xml")) {
-            System.out.println(grid.configuration().getDeploymentMode());
-
-            int prjSize = grid.nodes().size();
-
-            if (prjSize < 2) {
+            if (grid.nodes().size() < 2) {
                 System.out.println();
                 System.out.println(">>> Please start at least 2 grid nodes to run example.");
                 System.out.println();
