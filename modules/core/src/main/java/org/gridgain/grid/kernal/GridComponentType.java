@@ -23,22 +23,30 @@ public enum GridComponentType {
         "org.gridgain.grid.kernal.processors.ggfs.GridGgfsNoopProcessor",
         "org.gridgain.grid.kernal.processors.ggfs.GridGgfsProcessor"
     ),
-    /** Spring framework. */
+    /** Spring XML parsing. */
     SPRING(
-        "org.gridgain.grid.kernal.processors.config.spring.GridSpringConfigurationProcessor",
-        null),
+        null,
+        "org.gridgain.grid.kernal.processors.spring.GridSpringProcessorImpl"
+    ),
     /** H2 indexing SPI. */
     H2_INDEXING(
-        "org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi",
-        "org.gridgain.grid.spi.indexing.GridIndexingNoopSpi"),
+        "org.gridgain.grid.spi.indexing.GridIndexingNoopSpi",
+        "org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi"
+    ),
     /** Nodes starting using SSH. */
     SSH(
-        "org.gridgain.grid.util.nodestart.GridSshProcessorImpl",
-        null),
+        null,
+        "org.gridgain.grid.util.nodestart.GridSshProcessorImpl"
+    ),
     /** REST access. */
     REST(
-        "org.gridgain.grid.kernal.processors.rest.GridRestProcessor",
-        "org.gridgain.grid.kernal.processors.rest.GridRestNoopProcessor"
+        "org.gridgain.grid.kernal.processors.rest.GridRestNoopProcessor",
+        "org.gridgain.grid.kernal.processors.rest.GridRestProcessor"
+    ),
+    /** Email sending. */
+    EMAIL(
+        "org.gridgain.grid.kernal.processors.email.GridEmailNoopProcessor",
+        "org.gridgain.grid.kernal.processors.email.GridEmailProcessor"
     );
 
     /** No-op class name. */
