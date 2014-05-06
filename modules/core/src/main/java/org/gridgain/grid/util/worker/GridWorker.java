@@ -24,7 +24,7 @@ import java.util.concurrent.*;
  */
 public abstract class GridWorker implements Runnable {
     /** Grid logger. */
-    private static volatile GridLogger log;
+    protected static volatile GridLogger log;
 
     /** Thread name. */
     private final String name;

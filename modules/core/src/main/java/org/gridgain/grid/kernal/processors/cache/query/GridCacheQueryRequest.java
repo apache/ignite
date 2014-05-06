@@ -174,8 +174,8 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         Object[] args,
         boolean incMeta) {
         assert type != null || fields;
-        assert clause != null || type == SCAN;
-        assert clsName != null || fields || type == SCAN;
+        assert clause != null || (type == SCAN || type == SET);
+        assert clsName != null || fields || type == SCAN || type == SET;
 
         this.id = id;
         this.cacheName = cacheName;
