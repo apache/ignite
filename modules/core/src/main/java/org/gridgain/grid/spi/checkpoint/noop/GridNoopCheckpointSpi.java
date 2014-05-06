@@ -20,11 +20,6 @@ import org.jetbrains.annotations.*;
  * No-op implementation of {@link GridCheckpointSpi}. This is default implementation
  * since {@code 4.5.0} version.
  */
-@GridSpiInfo(
-    author = /*@java.spi.author*/"GridGain Systems",
-    url = /*@java.spi.url*/"www.gridgain.com",
-    email = /*@java.spi.email*/"support@gridgain.com",
-    version = /*@java.spi.version*/"x.x")
 @GridSpiNoop
 @GridSpiMultipleInstancesSupport(true)
 public class GridNoopCheckpointSpi extends GridSpiAdapter implements GridCheckpointSpi {

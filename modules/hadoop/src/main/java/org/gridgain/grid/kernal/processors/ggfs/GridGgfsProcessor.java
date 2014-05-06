@@ -31,16 +31,16 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheMemoryMode.OFFHEAP_VALUES;
-import static org.gridgain.grid.cache.GridCacheMode.PARTITIONED;
-import static org.gridgain.grid.ggfs.GridGgfsMode.PROXY;
-import static org.gridgain.grid.kernal.GridNodeAttributes.ATTR_GGFS;
-import static org.gridgain.grid.product.GridProductEdition.HADOOP;
+import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.gridgain.grid.product.GridProductEdition.*;
 
 /**
  * Fully operational GGFS processor.
  */
-public class GridGgfsOpProcessor extends GridGgfsProcessor {
+public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
     /** Null GGFS name. */
     private static final String NULL_NAME = UUID.randomUUID().toString();
 
@@ -58,7 +58,7 @@ public class GridGgfsOpProcessor extends GridGgfsProcessor {
     /**
      * @param ctx Kernal context.
      */
-    public GridGgfsOpProcessor(GridKernalContext ctx) {
+    public GridGgfsProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
@@ -211,7 +211,7 @@ public class GridGgfsOpProcessor extends GridGgfsProcessor {
     }
 
     /** {@inheritDoc} */
-    @Nullable public Collection<GridIpcServerEndpoint> endpoints(@Nullable String name) {
+    @Override @Nullable public Collection<GridIpcServerEndpoint> endpoints(@Nullable String name) {
         GridGgfsContext ggfsCtx = ggfsCache.get(maskName(name));
 
         return ggfsCtx == null ? Collections.<GridIpcServerEndpoint>emptyList() : ggfsCtx.server().endpoints();

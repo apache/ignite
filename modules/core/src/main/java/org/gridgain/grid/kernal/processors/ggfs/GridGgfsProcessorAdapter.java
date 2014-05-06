@@ -21,13 +21,13 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-public abstract class GridGgfsProcessor extends GridProcessorAdapter {
+public abstract class GridGgfsProcessorAdapter extends GridProcessorAdapter {
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
      */
-    protected GridGgfsProcessor(GridKernalContext ctx) {
+    protected GridGgfsProcessorAdapter(GridKernalContext ctx) {
         super(ctx);
     }
 

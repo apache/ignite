@@ -17,7 +17,7 @@ import org.gridgain.testframework.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT;
+import static org.gridgain.grid.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
 
 /**
  * GGFS Hadoop file system IPC self test.

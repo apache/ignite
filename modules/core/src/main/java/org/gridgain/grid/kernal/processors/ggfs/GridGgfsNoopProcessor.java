@@ -24,13 +24,13 @@ import java.util.*;
 /**
  * Nop GGFS processor implementation.
  */
-public class GridGgfsNopProcessor extends GridGgfsProcessor {
+public class GridGgfsNoopProcessor extends GridGgfsProcessorAdapter {
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
      */
-    public GridGgfsNopProcessor(GridKernalContext ctx) {
+    public GridGgfsNoopProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 

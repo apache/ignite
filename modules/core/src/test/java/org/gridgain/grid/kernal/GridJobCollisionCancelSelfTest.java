@@ -220,11 +220,6 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
     /**
      * Test collision SPI.
      */
-    @GridSpiInfo(
-        author = /*@java.spi.author*/"GridGain Systems",
-        url = /*@java.spi.url*/"www.gridgain.com",
-        email = /*@java.spi.email*/"support@gridgain.com",
-        version = /*@java.spi.version*/"x.x")
     @GridSpiMultipleInstancesSupport(true)
     public static class GridTestCollision extends GridSpiAdapter implements GridCollisionSpi {
         /** */

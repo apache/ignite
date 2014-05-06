@@ -283,7 +283,7 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      *
      * @return File system processor.
      */
-    public GridGgfsProcessor ggfs();
+    public GridGgfsProcessorAdapter ggfs();
 
     /**
      * Gets stream processor.

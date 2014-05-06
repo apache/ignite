@@ -100,7 +100,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     private static final long serialVersionUID = 0L;
 
     /** Ant-augmented compatible versions. */
-    private static final String COMPATIBLE_VERS = /*@java.compatible.vers*/"";
+    private static final String COMPATIBLE_VERS = GridProperties.get("gridgain.compatible.vers");
 
     /** GridGain site that is shown in log messages. */
     static final String SITE = "www.gridgain." + (ENT ? "com" : "org");
@@ -423,22 +423,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /**
-     * @param spiCls SPI class.
-     * @return Spi version.
-     * @throws GridException Thrown if {@link GridSpiInfo} annotation cannot be found.
-     */
-    private Serializable getSpiVersion(Class<? extends GridSpi> spiCls) throws GridException {
-        assert spiCls != null;
-
-        GridSpiInfo ann = U.getAnnotation(spiCls, GridSpiInfo.class);
-
-        if (ann == null)
-            throw new GridException("SPI implementation does not have annotation: " + GridSpiInfo.class);
-
-        return ann.version();
-    }
-
-    /**
      * @param attrs Current attributes.
      * @param name  New attribute name.
      * @param val New attribute value.
@@ -495,7 +479,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws GridException Thrown in case of any errors.
      */
-    @SuppressWarnings("CatchGenericClass")
+    @SuppressWarnings({"CatchGenericClass", "unchecked"})
     public void start(final GridConfiguration cfg, @Nullable ExecutorService drPool, GridAbsClosure errHnd)
         throws GridException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
@@ -680,11 +664,9 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
-            GridGgfsProcessor ggfsProc = U.createComponent(ctx, COMP_GGFS, new GridGgfsNopProcessor(ctx),
-                F.isEmpty(cfg.getGgfsConfiguration()));
+            GridGgfsProcessorAdapter ggfsProc =  COMP_GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration()));
 
-            GridHadoopProcessor hadoopProc = U.createComponent(ctx, COMP_HADOOP, new GridHadoopNopProcessor(ctx),
-                cfg.getHadoopConfiguration() == null);
+            GridHadoopProcessor hadoopProc = COMP_HADOOP.create(ctx, cfg.getHadoopConfiguration() == null);
 
             ctx.add(ggfsProc);
 
@@ -781,6 +763,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             verChecker.reportStatus(log);
 
         if (notifyEnabled) {
+            assert verChecker != null;
+
             verChecker.reportOnlyNew(true);
             verChecker.licenseProcessor(ctx.license());
 
@@ -1082,6 +1066,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     /**
      * Checks whether physical RAM is not exceeded.
      */
+    @SuppressWarnings("ConstantConditions")
     private void checkPhysicalRam() {
         long ram = ctx.discovery().localNode().attribute(ATTR_PHY_RAM);
 
@@ -1308,7 +1293,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             Class<? extends GridSpi> spiCls = spi.getClass();
 
             add(attrs, U.spiAttribute(spi, ATTR_SPI_CLASS), spiCls.getName());
-            add(attrs, U.spiAttribute(spi, ATTR_SPI_VER), getSpiVersion(spiCls));
         }
     }
 
