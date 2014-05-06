@@ -1342,6 +1342,17 @@ public abstract class GridUtils {
     }
 
     /**
+     * Convert array to seal list.
+     *
+     * @param a Array for convert to seal list.
+     * @param <E> Entry type
+     * @return Sealed collection.
+     */
+    public static <E> List<E> sealList(E... a) {
+        return Collections.unmodifiableList(Arrays.asList(a));
+    }
+
+    /**
      * Gets display name of the network interface this IP address belongs to.
      *
      * @param addr IP address for which to find network interface name.
