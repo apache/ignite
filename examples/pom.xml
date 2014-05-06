@@ -71,6 +71,12 @@
             <artifactId>scalatest_2.10</artifactId>
             <version>2.1.3</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.scala-lang</groupId>
+                    <artifactId>scala-library</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- ENTERPRISE DEPENDENCIES START -->
         <dependency>
