@@ -10,7 +10,6 @@
 package org.gridgain.grid.util.ipc.shmem;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;

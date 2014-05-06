@@ -53,11 +53,6 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
 
     /** */
     @SuppressWarnings( {"PublicInnerClass"})
-    @GridSpiInfo(
-        author = "GridGain Systems",
-        url = "www.gridgain.org",
-        email = "support@gridgain.com",
-        version = "1.5")
     @GridSpiMultipleInstancesSupport(true)
     public static class TestCollisionSpi extends GridSpiAdapter implements GridCollisionSpi {
         /** Grid logger. */
