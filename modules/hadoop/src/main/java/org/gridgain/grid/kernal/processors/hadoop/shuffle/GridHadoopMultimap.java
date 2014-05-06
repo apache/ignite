@@ -82,6 +82,13 @@ public class GridHadoopMultimap implements AutoCloseable {
     }
 
     /**
+     * @return Current table capacity.
+     */
+    public int capacity() {
+        return oldTbl.length();
+    }
+
+    /**
      * @return Adder object.
      */
     public Adder startAdding() throws GridException {
@@ -619,8 +626,7 @@ public class GridHadoopMultimap implements AutoCloseable {
         private final Reader keyReader;
 
         /** */
-        @SuppressWarnings("UnusedDeclaration")
-        private volatile int keysCnt;
+        volatile int keysCnt;
 
         /** */
         private final Random rnd = ThreadLocalRandom.current();
