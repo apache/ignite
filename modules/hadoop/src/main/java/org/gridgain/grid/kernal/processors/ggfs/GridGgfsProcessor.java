@@ -40,7 +40,7 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 /**
  * Fully operational GGFS processor.
  */
-public class GridGgfsOpProcessor extends GridGgfsProcessor {
+public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
     /** Null GGFS name. */
     private static final String NULL_NAME = UUID.randomUUID().toString();
 
@@ -58,7 +58,7 @@ public class GridGgfsOpProcessor extends GridGgfsProcessor {
     /**
      * @param ctx Kernal context.
      */
-    public GridGgfsOpProcessor(GridKernalContext ctx) {
+    public GridGgfsProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 

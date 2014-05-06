@@ -8273,45 +8273,4 @@ public abstract class GridUtils {
 
         return idx != -1 ? clsName.substring(0, idx) : null;
     }
-
-    /**
-     * Create GridGain component.
-     *
-     * @param ctx Kernal context.
-     * @param compTyp Component type.
-     * @param nop NOP implementation.
-     * @param useNop Whether NOP implemnetation should be used.
-     * @return Created component.
-     * @throws GridException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    public static  <T extends GridComponent> T createComponent(GridKernalContext ctx, GridComponentType compTyp, T nop,
-        boolean useNop) throws GridException {
-        if (useNop)
-            return nop;
-        else {
-            String clsName = compTyp.className();
-
-            try {
-                Class<?> cls = Class.forName(clsName);
-
-                Constructor<?> ctor = cls.getConstructor(GridKernalContext.class);
-
-                return (T)ctor.newInstance(ctx);
-            }
-            catch (ClassNotFoundException e) {
-                throw new GridException("Failed to create GridGain component because it's class is not found " +
-                    "(is it in classpath?) [component=" + compTyp + ", class=" + clsName + ']', e);
-            }
-            catch (NoSuchMethodException e) {
-                throw new GridException("Failed to create GridGain component because it's class doesn't have " +
-                    "required constructor (is class version correct?) [component=" + compTyp + ", class=" +
-                    clsName + ']', e);
-            }
-            catch (ReflectiveOperationException e) {
-                throw new GridException("Failed to instantiate GridGain component [component=" + compTyp + ", class=" +
-                    clsName + ']', e);
-            }
-        }
-    }
 }
