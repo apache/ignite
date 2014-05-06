@@ -9,8 +9,18 @@
 
 package org.gridgain.grid.util.nodestart;
 
+import java.util.concurrent.*;
+
 /**
- * TODO
+ * SSH processor, interface was introduced to avoid mandatory runtime dependency on SSH library.
  */
-public class GridSshProcessor {
+public interface GridSshProcessor {
+    /**
+     * Creates {@link Callable} starting node using SSH.
+     *
+     * @param spec Specification.
+     * @param timeout Connection timeout.
+     * @return {@link Callable} starting node using SSH.
+     */
+    public GridNodeCallable nodeStartCallable(GridRemoteStartSpecification spec, int timeout);
 }

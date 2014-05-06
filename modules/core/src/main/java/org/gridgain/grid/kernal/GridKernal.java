@@ -2495,6 +2495,8 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         guard();
 
         try {
+            GridSshProcessor sshProcessor = GridComponentType.SSH.create(false);
+
             Map<String, Collection<GridRemoteStartSpecification>> specsMap = specifications(hosts, dflts);
 
             Map<String, ConcurrentLinkedQueue<GridNodeCallable>> runMap = new HashMap<>();
@@ -2550,7 +2552,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
                     assert spec.host().equals(host);
 
                     for (int i = startIdx; i <= spec.nodes(); i++) {
-                        nodeRuns.add(new GridNodeCallable(spec, timeout));
+                        nodeRuns.add(sshProcessor.nodeStartCallable(spec, timeout));
 
                         nodeCallCnt++;
                     }

@@ -286,7 +286,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         this.ent = ent;
 
         try {
-            configProcessor = U.createComponent(this, SPRING, null, false);
+            configProcessor = SPRING.create(this, false);
         }
         catch (GridException ignored) {
             if (grid.log().isDebugEnabled())
