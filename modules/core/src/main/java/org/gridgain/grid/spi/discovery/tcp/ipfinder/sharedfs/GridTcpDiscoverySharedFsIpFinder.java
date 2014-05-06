@@ -47,12 +47,6 @@ public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAd
     /** Default path for local testing only. */
     public static final String DFLT_PATH = "work/disco/tcp";
 
-    /**
-     * Default directory name for SPI when {@code GRIDGAIN_HOME} not defined.
-     * This directory name relative to file path in {@code java.io.tmpdir} system property value.
-     */
-    private static final String DFLT_TMP_DIR = ".gg.sharedfs.disco";
-
     /** Delimiter to use between address and port tokens in file names. */
     public static final String DELIM = "#";
 
