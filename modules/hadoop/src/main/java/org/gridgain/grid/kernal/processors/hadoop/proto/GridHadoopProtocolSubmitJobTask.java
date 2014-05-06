@@ -25,11 +25,11 @@ public class GridHadoopProtocolSubmitJobTask extends GridHadoopProtocolTaskAdapt
         throws GridException {
         UUID nodeId = UUID.fromString(args.<String>get(0));
         int id = args.get(1);
-        Configuration conf = args.get(2);
+        GridHadoopProtocolConfigurationWrapper conf = args.get(2);
 
         GridHadoopJobId jobId = new GridHadoopJobId(nodeId, id);
 
-        proc.submit(new GridHadoopJobId(nodeId, id), new GridHadoopDefaultJobInfo(conf));
+        proc.submit(new GridHadoopJobId(nodeId, id), new GridHadoopDefaultJobInfo(conf.get()));
 
         return proc.status(jobId);
     }

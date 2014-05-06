@@ -24,29 +24,27 @@ import org.apache.hadoop.security.*;
 import org.apache.hadoop.security.authorize.*;
 import org.apache.hadoop.security.token.*;
 import org.gridgain.client.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
+import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.proto.*;
-import org.gridgain.grid.util.future.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.util.concurrent.atomic.*;
 
 /**
  * Hadoop client protocol.
  */
 public class GridHadoopClientProtocol implements ClientProtocol {
-    /** GridGain framework name. */
+    /** GridGain framework name property. */
     public static final String PROP_FRAMEWORK_NAME = "gg.framework.name";
 
-    /** GridGain server host. */
+    /** GridGain server host property. */
     public static final String PROP_SRV_HOST = "gg.server.host";
 
-    /** GridGain server port. */
+    /** GridGain server port property. */
     public static final String PROP_SRV_PORT = "gg.server.port";
+
+    /** GridGain status poll delay property. */
+    public static final String PROP_STATUS_POLL_DELAY = "gg.status.poll_delay";
 
     /** Default server port. */
     public static final int DFLT_SRV_PORT = 6666;
@@ -59,9 +57,6 @@ public class GridHadoopClientProtocol implements ClientProtocol {
 
     /** GG client. */
     private final GridClient cli;
-
-    /** Current status worker. */
-    private final AtomicReference<StatusWorker> statusWorkerRef = new AtomicReference<>();
 
     /**
      * Constructor.
@@ -91,10 +86,12 @@ public class GridHadoopClientProtocol implements ClientProtocol {
         InterruptedException {
         try {
             GridHadoopJobStatus status = cli.compute().execute(GridHadoopProtocolSubmitJobTask.class.getName(),
-                new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId(), conf));
+                new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId(),
+                    new GridHadoopProtocolConfigurationWrapper(conf)));
 
-            // TODO GG-8035: Job status.
-            return new JobStatus();
+            assert status != null;
+
+            return GridHadoopUtils.status(status);
         }
         catch (GridClientException e) {
             throw new IOException("Failed to submit job.", e);
@@ -144,51 +141,19 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     /** {@inheritDoc} */
     @Override public JobStatus getJobStatus(JobID jobId) throws IOException, InterruptedException {
         try {
-            StatusFuture fut;
+            Long delay = conf.getLong(PROP_STATUS_POLL_DELAY, -1);
 
-            for (;;) {
-                // First get worker.
-                StatusWorker worker = statusWorkerRef.get();
+            GridHadoopJobStatus status = cli.compute().execute(GridHadoopProtocolJobStatusTask.class.getName(),
+                new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId(), delay));
 
-                if (worker == null) {
-                    StatusWorker newWorker = new StatusWorker(jobId);
+            if (status == null)
+                throw new IOException("Job tracker doesn't have any information about the job: " + jobId);
 
-                    if (statusWorkerRef.compareAndSet(null, newWorker)) {
-                        fut = newWorker.fut;
-
-                        new Thread(newWorker).start();
-
-                        break;
-                    }
-                }
-                else {
-                    fut = worker.submit(jobId);
-
-                    if (fut != null)
-                        break;
-                }
-            }
-
-            return fut.get();
+            return GridHadoopUtils.status(status);
         }
-        catch (GridException e) {
+        catch (GridClientException e) {
             throw new IOException("Failed to get job status: " + jobId, e);
         }
-    }
-
-    /**
-     * Internal job status routine.
-     *
-     * @param jobId Job ID.
-     * @return Job status.
-     * @throws GridClientException If failed.
-     */
-    private JobStatus jobStatus(JobID jobId) throws GridClientException {
-        GridHadoopJobStatus jobStatus = cli.compute().execute(GridHadoopProtocolJobStatusTask.class.getName(),
-            new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId()));
-
-        // TODO: Convert.
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -346,119 +311,5 @@ public class GridHadoopClientProtocol implements ClientProtocol {
      */
     void close() {
         cli.close();
-    }
-
-    /**
-     * Status future.
-     */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    private static class StatusFuture extends GridFutureAdapter<JobStatus> {
-        private final JobID jobId;
-
-        private StatusFuture(JobID jobId) {
-            this.jobId = jobId;
-        }
-    }
-
-    /**
-     * Status worker.
-     */
-    private class StatusWorker implements Runnable {
-        /** Status future. */
-        private volatile StatusFuture fut;
-
-        /** Stopping flag. */
-        private volatile boolean stopping;
-
-        /**
-         * Constructor.
-         *
-         * @param jobId Job ID.
-         */
-        private StatusWorker(JobID jobId) {
-            this.fut = new StatusFuture(jobId);
-        }
-
-        /**
-         * Submit new status task to worker.
-         *
-         * @param jobId Job ID.
-         * @return Future or {@code null} is worker is stopping.
-         */
-        @Nullable private StatusFuture submit(JobID jobId) {
-            if (stopping)
-                // Stopping, cannot enqueue.
-                return null;
-            else {
-                StatusFuture fut0 = fut;
-
-                if (fut0 != null)
-                    assert F.eq(jobId, fut0.jobId); // Protocol-per-job approach.
-                else {
-                    // Fallback to synchronizer.
-                    synchronized (this) {
-                        if (stopping)
-                            return null;
-                        else {
-                            fut0 = fut;
-
-                            if (fut0 != null)
-                                assert F.eq(jobId, fut0.jobId); // Protocol-per-job approach.
-                            else {
-                                fut0 = new StatusFuture(jobId);
-
-                                fut = fut0;
-
-                                notifyAll();
-                            }
-                        }
-                    }
-                }
-
-                return fut0;
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            while (true) {
-                StatusFuture fut0 = fut;
-
-                if (fut0 == null) {
-                    synchronized (this) {
-                        fut0 = fut;
-
-                        if (fut0 == null) {
-                            try {
-                                wait(1000); // TODO GG-8035: Move to configuration.
-                            }
-                            catch (InterruptedException ignore) {
-                                // Should never happen in current implementation.
-                            }
-
-                            fut0 = fut;
-                        }
-
-                        if (fut0 == null) {
-                            stopping = true;
-
-                            return;
-                        }
-                    }
-                }
-
-                try {
-                    fut0.onDone(jobStatus(fut0.jobId));
-                }
-                catch (Throwable e) {
-                    fut0.onDone(e);
-                }
-                finally {
-                    synchronized (this) {
-                        fut = null;
-                    }
-                }
-            }
-        }
     }
 }

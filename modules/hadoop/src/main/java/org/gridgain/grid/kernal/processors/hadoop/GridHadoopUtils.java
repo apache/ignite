@@ -73,7 +73,7 @@ public class GridHadoopUtils {
 
         // TODO: Add missing data.
         return new JobStatus(jobId, 0.0f, 0.0f, 0.0f, 0.0f, state, JobPriority.NORMAL, status.user(), status.jobName(),
-            null, null);
+            null, "N/A");
     }
 
     /**
