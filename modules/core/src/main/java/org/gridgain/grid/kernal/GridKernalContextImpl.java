@@ -184,7 +184,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
-    private GridRestProcessor restProc;
+    private GridRestProcessorAdapter restProc;
 
     /** */
     @GridToStringInclude
@@ -286,7 +286,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         this.ent = ent;
 
         try {
-            configProcessor = U.createComponent(this, SPRING, null, false);
+            configProcessor = SPRING.create(this, false);
         }
         catch (GridException ignored) {
             if (grid.log().isDebugEnabled())
@@ -374,8 +374,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             segProc = (GridSegmentationProcessor)comp;
         else if (comp instanceof GridAffinityProcessor)
             affProc = (GridAffinityProcessor)comp;
-        else if (comp instanceof GridRestProcessor)
-            restProc = (GridRestProcessor)comp;
+        else if (comp instanceof GridRestProcessorAdapter)
+            restProc = (GridRestProcessorAdapter)comp;
         else if (comp instanceof GridDataLoaderProcessor)
             dataLdrProc = (GridDataLoaderProcessor)comp;
         else if (comp instanceof GridGgfsProcessorAdapter)
@@ -606,7 +606,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridRestProcessor rest() {
+    @Override public GridRestProcessorAdapter rest() {
         return restProc;
     }
 

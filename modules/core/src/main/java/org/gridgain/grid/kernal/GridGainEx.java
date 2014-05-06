@@ -51,7 +51,6 @@ import org.gridgain.grid.spi.securesession.noop.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.spi.swapspace.file.*;
 import org.gridgain.grid.startup.cmdline.*;
-import org.gridgain.grid.startup.servlet.*;
 import org.gridgain.grid.streamer.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
@@ -495,7 +494,7 @@ public class GridGainEx {
      */
     public static GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(URL springCfgUrl)
         throws GridException {
-        GridConfigurationProcessor cfgProc = GridUtils.createComponent(null, SPRING, null, false);
+        GridConfigurationProcessor cfgProc = SPRING.create(null, false);
 
         return cfgProc.loadConfigurations(springCfgUrl);
     }
@@ -1578,9 +1577,7 @@ public class GridGainEx {
                 swapspaceSpi = new GridFileSwapSpaceSpi();
 
             if (indexingSpi == null)
-                indexingSpi = new GridIndexingSpi[] {
-                    // TODO
-                    /*GridUtils.createComponent(null, GridComponentType.H2_INDEXING, new GridIndexingNoopSpi(), false)*/};
+                indexingSpi = new GridIndexingSpi[] {(GridIndexingSpi)H2_INDEXING.createOptional()};
 
             myCfg.setCommunicationSpi(commSpi);
             myCfg.setDiscoverySpi(discoSpi);

@@ -34,7 +34,7 @@ import static org.gridgain.grid.spi.GridSecuritySubjectType.*;
 /**
  * Rest processor implementation.
  */
-public class GridRestProcessor extends GridProcessorAdapter {
+public class GridRestProcessor extends GridRestProcessorAdapter {
     /** */
     private static final byte[] EMPTY_ID = new byte[0];
 

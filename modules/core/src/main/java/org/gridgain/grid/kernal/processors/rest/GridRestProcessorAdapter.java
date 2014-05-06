@@ -7,15 +7,19 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.util.nodestart;
+package org.gridgain.grid.kernal.processors.rest;
 
-import org.gridgain.grid.util.lang.*;
-
-import java.util.concurrent.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.*;
 
 /**
- * SSH-based node starter, returns tuple which contains hostname, success flag and error message
- * if attempt was not successful.
+ * Rest processor.
  */
-public interface GridNodeCallable extends Callable<GridTuple3<String, Boolean, String>> {
+public abstract class GridRestProcessorAdapter extends GridProcessorAdapter {
+    /**
+     * @param ctx Kernal context.
+     */
+    protected GridRestProcessorAdapter(GridKernalContext ctx) {
+        super(ctx);
+    }
 }

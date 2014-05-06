@@ -1428,7 +1428,7 @@ object visor extends VisorTag {
 
             var log4jTup: GridBiTuple[AnyRef, AnyRef] = null
 
-            val cfgProcessor: GridConfigurationProcessor = U.createComponent(null, SPRING, null, false)
+            val cfgProcessor: GridConfigurationProcessor = SPRING.create(false)
 
             val cfgs =
                 try {

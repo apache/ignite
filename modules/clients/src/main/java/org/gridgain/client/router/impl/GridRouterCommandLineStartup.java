@@ -122,7 +122,7 @@ public class GridRouterCommandLineStartup {
             " "
         );
 
-        GridConfigurationProcessor cfgProcessor = U.createComponent(null, SPRING, null, false);
+        GridConfigurationProcessor cfgProcessor = SPRING.create(false);
 
         if (args.length < 1) {
             X.error("Missing XML configuration path.");

@@ -10,7 +10,11 @@
 package org.gridgain.grid.util.nodestart;
 
 /**
- * TODO
+ * Implementation of {@link GridSshProcessor}.
  */
-public class GridSshProcessorImpl {
+public class GridSshProcessorImpl implements GridSshProcessor {
+    /** {@inheritDoc} */
+    @Override public GridNodeCallable nodeStartCallable(GridRemoteStartSpecification spec, int timeout) {
+        return new GridNodeCallableImpl(spec, timeout);
+    }
 }

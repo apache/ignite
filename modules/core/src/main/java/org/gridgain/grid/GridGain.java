@@ -12,7 +12,6 @@ package org.gridgain.grid;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.startup.cmdline.*;
-import org.gridgain.grid.startup.servlet.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;

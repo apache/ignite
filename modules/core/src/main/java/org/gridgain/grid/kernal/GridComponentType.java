@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
+import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
 
@@ -21,6 +22,23 @@ public enum GridComponentType {
     COMP_GGFS(
         "org.gridgain.grid.kernal.processors.ggfs.GridGgfsNoopProcessor",
         "org.gridgain.grid.kernal.processors.ggfs.GridGgfsProcessor"
+    ),
+    /** Spring framework. */
+    SPRING(
+        "org.gridgain.grid.kernal.processors.config.spring.GridSpringConfigurationProcessor",
+        null),
+    /** H2 indexing SPI. */
+    H2_INDEXING(
+        "org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi",
+        "org.gridgain.grid.spi.indexing.GridIndexingNoopSpi"),
+    /** Nodes starting using SSH. */
+    SSH(
+        "org.gridgain.grid.util.nodestart.GridSshProcessorImpl",
+        null),
+    /** REST access. */
+    REST(
+        "org.gridgain.grid.kernal.processors.rest.GridRestProcessor",
+        "org.gridgain.grid.kernal.processors.rest.GridRestNoopProcessor"
     );
 
     /** No-op class name. */
@@ -32,6 +50,7 @@ public enum GridComponentType {
     /**
      * Constructor.
      *
+     * @param noOpClsName Class name for no-op implementation.
      * @param clsName Class name.
      */
     GridComponentType(String noOpClsName, String clsName) {
@@ -39,25 +58,68 @@ public enum GridComponentType {
         this.clsName = clsName;
     }
 
+    /**
+     * @return Component class name.
+     */
     public String className() {
         return clsName;
     }
 
     /**
-     * Create component.
+     * Creates component.
      *
      * @param ctx Kernal context.
      * @param noOp No-op flag.
      * @return Created component.
      * @throws GridException If failed.
      */
-    @SuppressWarnings("unchecked")
     public <T extends GridComponent> T create(GridKernalContext ctx, boolean noOp) throws GridException {
         return create0(ctx, noOp ? noOpClsName : clsName);
     }
 
     /**
-     * Create component instance.
+     * Creates component.
+     *
+     * @param noOp No-op flag.
+     * @return Created component.
+     * @throws GridException If failed.
+     */
+    public <T> T create(boolean noOp) throws GridException {
+        return create0(null, noOp ? noOpClsName : clsName);
+    }
+
+    /**
+     * First tries to find main component class, if it is not found creates no-op implementation.
+     * @return Created component or no-op implementation.
+     * @throws GridException If failed.
+     */
+    public <T> T createOptional() throws GridException {
+        Class<?> cls;
+
+        try {
+            cls = Class.forName(clsName);
+        }
+        catch (ClassNotFoundException ignored) {
+            try {
+                cls = Class.forName(noOpClsName);
+            }
+            catch (ClassNotFoundException e) {
+                throw new GridException("Failed to find both real component class and no-op class.", e);
+            }
+        }
+
+        try {
+            Constructor<?> ctor = cls.getConstructor(GridKernalContext.class);
+
+            return (T) ctor.newInstance();
+        }
+        catch (Exception e) {
+            throw new GridException("Failed to create component.", e);
+        }
+    }
+
+    /**
+     * Creates component instance.
      *
      * @param ctx Kernal context.
      * @param clsName Component class name.
@@ -65,13 +127,20 @@ public enum GridComponentType {
      * @throws GridException If failed.
      */
     @SuppressWarnings("unchecked")
-    private <T extends GridComponent> T create0(GridKernalContext ctx, String clsName) throws GridException {
+    private <T> T create0(@Nullable GridKernalContext ctx, String clsName) throws GridException {
         try {
             Class<?> cls = Class.forName(clsName);
 
-            Constructor<?> ctor = cls.getConstructor(GridKernalContext.class);
+            if (ctx == null) {
+                Constructor<?> ctor = cls.getConstructor();
 
-            return (T)ctor.newInstance(ctx);
+                return (T)ctor.newInstance();
+            }
+            else {
+                Constructor<?> ctor = cls.getConstructor(GridKernalContext.class);
+
+                return (T)ctor.newInstance(ctx);
+            }
         }
         catch (ClassNotFoundException e) {
             throw new GridException("Failed to create GridGain component because it's class is not found " +
