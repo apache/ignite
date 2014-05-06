@@ -9,42 +9,94 @@
 
 package org.gridgain.grid.hadoop;
 
-import org.gridgain.grid.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
+import java.io.*;
 
 /**
  * Hadoop job status.
  */
-public class GridHadoopJobStatus {
-    /** Finish future. */
-    private GridFuture<?> finishFut;
+public class GridHadoopJobStatus implements Externalizable {
+    /** Job ID. */
+    private GridHadoopJobId jobId;
 
-    /** Job info. */
-    private GridHadoopJobInfo jobInfo;
+    /** Job state. */
+    private GridHadoopJobState jobState;
+
+    /** Job name. */
+    private String jobName;
+
+    /** User. */
+    private String usr;
 
     /**
-     * @param finishFut Finish future.
-     * @param jobInfo Job info.
+     * {@link Externalizable}  support.
      */
-    public GridHadoopJobStatus(GridFuture<?> finishFut, GridHadoopJobInfo jobInfo) {
-        this.finishFut = finishFut;
-        this.jobInfo = jobInfo;
+    public GridHadoopJobStatus() {
+        // No-op.
     }
 
     /**
-     * Gets job execution finish future.
+     * Constructor.
      *
-     * @return Finish future.
+     * @param jobId Job ID.
+     * @param jobState Job state.
+     * @param jobName Job name.
+     * @param usr User.
      */
-    public GridFuture<?> finishFuture() {
-        return finishFut;
+    public GridHadoopJobStatus(GridHadoopJobId jobId, GridHadoopJobState jobState, String jobName, String usr) {
+        this.jobId = jobId;
+        this.jobState = jobState;
+        this.jobName = jobName;
+        this.usr = usr;
     }
 
     /**
-     * Gets job info.
-     *
-     * @return Job info.
+     * @return Job ID.
      */
-    public GridHadoopJobInfo jobInfo() {
-        return jobInfo;
+    public GridHadoopJobId jobId() {
+        return jobId;
+    }
+
+    /**
+     * @return Job state.
+     */
+    public GridHadoopJobState jobState() {
+        return jobState;
+    }
+
+    /**
+     * @return Job name.
+     */
+    public String jobName() {
+        return jobName;
+    }
+
+    /**
+     * @return User.
+     */
+    public String user() {
+        return usr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridHadoopJobStatus.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(jobId);
+        out.writeObject(jobState);
+        U.writeString(out, jobName);
+        U.writeString(out, usr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        jobId = (GridHadoopJobId)in.readObject();
+        jobState = (GridHadoopJobState)in.readObject();
+        jobName = U.readString(in);
+        usr = U.readString(in);
     }
 }

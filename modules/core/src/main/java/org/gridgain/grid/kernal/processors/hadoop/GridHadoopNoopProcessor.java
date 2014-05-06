@@ -31,6 +31,11 @@ public class GridHadoopNoopProcessor extends GridHadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public GridHadoopConfiguration config() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridHadoopJobId nextJobId() {
         return null;
     }
@@ -42,12 +47,7 @@ public class GridHadoopNoopProcessor extends GridHadoopProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException {
-        return new GridHadoopJobStatus(new GridFinishedFutureEx<>(new GridException("Hadoop is not available")), null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridHadoopJobStatus status(GridHadoopJobId jobId, long pollTimeout) throws GridException {
-        return new GridHadoopJobStatus(new GridFinishedFutureEx<>(new GridException("Hadoop is not available")), null);
+        return null;
     }
 
     /** {@inheritDoc} */

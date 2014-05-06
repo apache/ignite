@@ -24,11 +24,28 @@ public class GridHadoopProtocolJobStatusTask extends GridHadoopProtocolTaskAdapt
         throws GridException {
         UUID nodeId = UUID.fromString(args.<String>get(0));
         int id = args.get(1);
+        Long pollDelay = args.get(2);
 
-        // TODO: GG-8035: Poll timeout should be configured either in GG config or in job config, or in both.
-        GridHadoopJobStatus status = proc.status(new GridHadoopJobId(nodeId, id), 100);
+        GridHadoopJobId jobId = new GridHadoopJobId(nodeId, id);
 
-        // TODO: GG-8035: Implement once data model is clear.
-        return null;
+        if (pollDelay == null)
+            pollDelay = proc.config().getJobStatusPollDelay();
+
+        if (pollDelay > 0) {
+            GridFuture<?> fut = proc.finishFuture(jobId);
+
+            if (fut == null)
+                return null;
+            else {
+                try {
+                    fut.get(pollDelay);
+                }
+                catch (GridException ignore) {
+                    // No-op.
+                }
+            }
+        }
+
+        return proc.status(jobId);
     }
 }

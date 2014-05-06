@@ -33,6 +33,7 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     /** Hadoop context. */
     private GridHadoopContext hctx;
 
+    /** Hadoop facade for public API. */
     private GridHadoop hadoop;
 
     /**
@@ -130,6 +131,11 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public GridHadoopConfiguration config() {
+        return hctx.configuration();
+    }
+
+    /** {@inheritDoc} */
     @Override public GridHadoopJobId nextJobId() {
         return new GridHadoopJobId(id, idCtr.incrementAndGet());
     }
@@ -145,19 +151,8 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopJobStatus status(GridHadoopJobId jobId, long pollTimeout) throws GridException {
-        GridHadoopJobStatus status = status(jobId);
-
-        status.finishFuture().get(pollTimeout);
-
-        return status(jobId);
-    }
-
-    /** {@inheritDoc} */
     @Override public GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
-        // TODO: Implement.
-
-        return null;
+        return hctx.jobTracker().finishFuture(jobId);
     }
 
     /**
