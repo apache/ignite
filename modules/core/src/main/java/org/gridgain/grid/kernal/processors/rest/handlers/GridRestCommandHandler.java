@@ -7,19 +7,22 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.rest;
+package org.gridgain.grid.kernal.processors.rest.handlers;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.kernal.processors.rest.*;
+import org.gridgain.grid.kernal.processors.rest.request.*;
+
+import java.util.*;
 
 /**
  * Command handler.
  */
 public interface GridRestCommandHandler {
     /**
-     * @param cmd Command to check.
-     * @return {@code True} if command is supported.
+     * @return Collection of supported commands.
      */
-    public boolean supported(GridRestCommand cmd);
+    public Collection<GridRestCommand> supportedCommands();
 
     /**
      * @param req Request.

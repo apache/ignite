@@ -12,12 +12,12 @@ package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
+import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nio.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -189,51 +189,36 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
      * @return REST request.
      */
     @SuppressWarnings("unchecked")
-    private GridRestRequest createRestRequest(GridMemcachedMessage req, GridRestCommand cmd) {
+    private GridRestCacheRequest createRestRequest(GridMemcachedMessage req, GridRestCommand cmd) {
         assert req != null;
 
-        GridRestRequest restReq = new GridRestRequest(cmd);
+        GridRestCacheRequest restReq = new GridRestCacheRequest();
 
-        restReq.setClientId(req.clientId());
-
-        Map<String, Object> params = new GridLeanMap<>(6);
-
-        Long exp = req.expiration();
-
-        if (exp != null)
-            params.put("exp", exp);
-
-        Long delta = req.delta();
-
-        if (delta != null)
-            params.put("delta", delta);
-
-        Long init = req.initial();
-
-        if (init != null)
-            params.put("init", init);
-
-        params.put("cacheName", req.cacheName());
-
-        if (req.key() != null)
-            params.put("key", req.key());
+        restReq.command(cmd);
+        restReq.clientId(req.clientId());
+        restReq.ttl(req.expiration());
+        restReq.delta(req.delta());
+        restReq.initial(req.initial());
+        restReq.cacheName(req.cacheName());
+        restReq.key(req.key());
 
         if (cmd == CACHE_REMOVE_ALL) {
-            Object[] keys = (Object[])req.value();
+            Object[] keys = (Object[]) req.value();
 
             if (keys != null) {
-                int i = 1;
+                Map<Object, Object> map = new HashMap<>();
 
-                for (Object key : keys)
-                    params.put("k" + i++, key);
+                for (Object key : keys) {
+                    map.put(key, null);
+                }
+
+                restReq.values(map);
             }
         }
         else {
             if (req.value() != null)
-                params.put("val", req.value());
+                restReq.value(req.value());
         }
-
-        restReq.setParameters(params);
 
         return restReq;
     }
