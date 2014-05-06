@@ -19,38 +19,6 @@ import java.util.*;
  */
 public interface GridSpiManagementMBean {
     /**
-     * Gets SPI provider's author.
-     *
-     * @return SPI provider's author.
-     */
-    @GridMBeanDescription("SPI provider's author.")
-    public String getAuthor();
-
-    /**
-     * Gets vendor's URL.
-     *
-     * @return Vendor's URL.
-     */
-    @GridMBeanDescription("Vendor's URL.")
-    public String getVendorUrl();
-
-    /**
-     * Gets vendor's email (info or support).
-     *
-     * @return Vendor's email (info or support).
-     */
-    @GridMBeanDescription("Vendor's email (info or support).")
-    public String getVendorEmail();
-
-    /**
-     * Gets SPI implementation version.
-     *
-     * @return SPI implementation version.
-     */
-    @GridMBeanDescription("SPI implementation version.")
-    public String getVersion();
-
-    /**
      * Gets string presentation of the start timestamp.
      *
      * @return String presentation of the start timestamp.

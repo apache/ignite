@@ -12,15 +12,14 @@ package org.gridgain.grid.spi;
 import java.lang.annotation.*;
 
 /**
- * Annotation for SPI main interface implementation. Every SPI implementation should be
- * annotated with this annotations. Kernel will not load SPI implementation without this
- * annotation.
+ * @deprecated This annotation is ignored.
  */
 @SuppressWarnings({"JavaDoc"})
 @Documented
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
+@Deprecated
 public @interface GridSpiInfo {
     /**
      * SPI provider's author.

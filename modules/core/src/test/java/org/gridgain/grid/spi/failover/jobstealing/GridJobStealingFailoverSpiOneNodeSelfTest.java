@@ -11,12 +11,12 @@ package org.gridgain.grid.spi.failover.jobstealing;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.collision.jobstealing.*;
 import org.gridgain.grid.spi.failover.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.spi.*;
+
 import java.util.*;
 
 /**
@@ -47,21 +47,9 @@ public class GridJobStealingFailoverSpiOneNodeSelfTest extends GridSpiAbstractTe
             U.spiAttribute(getSpi(), GridNodeAttributes.ATTR_SPI_CLASS),
             GridJobStealingCollisionSpi.class.getName());
 
-        GridSpiInfo ann = U.getAnnotation(GridJobStealingCollisionSpi.class, GridSpiInfo.class);
-
-        node.addAttribute(
-            U.spiAttribute(getSpi(), GridNodeAttributes.ATTR_SPI_VER),
-            ann.version());
-
         node.addAttribute(
             U.spiAttribute(getSpi(), GridNodeAttributes.ATTR_SPI_CLASS),
             GridJobStealingCollisionSpi.class.getName());
-
-        ann = U.getAnnotation(GridJobStealingCollisionSpi.class, GridSpiInfo.class);
-
-        node.addAttribute(
-            U.spiAttribute(getSpi(), GridNodeAttributes.ATTR_SPI_VER),
-            ann.version());
 
         return node;
     }

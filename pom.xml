@@ -21,6 +21,14 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <properties>
+        <gridgain.edition>platform</gridgain.edition>
+        <gridgain.compatible.vers></gridgain.compatible.vers>
+        <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
+        <doxygen.exec>doxygen</doxygen.exec>
+        <git.exec>git</git.exec>
+    </properties>
+
     <artifactId>gridgain</artifactId>
     <packaging>pom</packaging>
 
@@ -41,6 +49,7 @@
         <module>modules/visor-console</module>
         <module>modules/jdbc-driver</module>
         <module>modules/jdk8-backport</module>
+        <module>modules/tools</module>
     </modules>
 
     <build>
