@@ -20,7 +20,7 @@ import java.io.*;
  * Hadoop cleanup task implementation for v1 API.
  */
 public class GridHadoopV1CleanupTask extends GridHadoopTask {
-    //** Abort flag */
+    /** Abort flag. */
     private boolean abort;
 
     /**
@@ -40,12 +40,12 @@ public class GridHadoopV1CleanupTask extends GridHadoopTask {
         JobContext jobCtx = jobImpl.hadoopJobContext();
 
         try {
-            OutputCommitter commiter = jobCtx.getJobConf().getOutputCommitter();
+            OutputCommitter committer = jobCtx.getJobConf().getOutputCommitter();
 
             if (abort)
-                commiter.abortJob(jobCtx, JobStatus.State.FAILED);
+                committer.abortJob(jobCtx, JobStatus.State.FAILED);
             else
-                commiter.commitJob(jobCtx);
+                committer.commitJob(jobCtx);
         }
         catch (IOException e) {
             throw new GridException(e);

@@ -55,7 +55,6 @@ public class GridHadoopV2CleanupTask extends GridHadoopTask {
             OutputCommitter committer = outputFormat.getOutputCommitter(hCtx);
 
             if (abort)
-                // TODO how to get getUseNewMapper?
                 committer.abortJob(jobCtx, JobStatus.State.FAILED);
             else
                 committer.commitJob(jobCtx);

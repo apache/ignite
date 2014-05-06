@@ -31,7 +31,7 @@ public class GridHadoopV1MapTask extends GridHadoopTask {
     @Override public void run(final GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
-        JobConf jobConf = jobImpl.hadoopJobContext().getJobConf();
+        JobConf jobConf = new JobConf(jobImpl.hadoopJobContext().getJobConf());
 
         Mapper mapper = U.newInstance(jobConf.getMapperClass());
 
