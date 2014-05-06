@@ -32,7 +32,7 @@ public class GridHadoopV1CombineTask extends GridHadoopTask {
     @Override public void run(final GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
         GridHadoopV2Job jobImpl = (GridHadoopV2Job) taskCtx.job();
 
-        JobConf jobConf = jobImpl.hadoopJobContext().getJobConf();
+        JobConf jobConf = new JobConf(jobImpl.hadoopJobContext().getJobConf());
 
         Reducer combiner = U.newInstance(jobConf.getCombinerClass());
 

@@ -116,9 +116,7 @@ public class GridHadoopDefaultJobInfo implements GridHadoopJobInfo, Externalizab
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        synchronized (cfg) {
-            cfg.write(out);
-        }
+        cfg.write(out);
     }
 
     /** {@inheritDoc} */

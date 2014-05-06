@@ -19,11 +19,11 @@ import java.util.*;
 /**
  * Hadoop processor.
  */
-public class GridHadoopNopProcessor extends GridHadoopProcessor {
+public class GridHadoopNoopProcessor extends GridHadoopProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public GridHadoopNopProcessor(GridKernalContext ctx) {
+    public GridHadoopNoopProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 

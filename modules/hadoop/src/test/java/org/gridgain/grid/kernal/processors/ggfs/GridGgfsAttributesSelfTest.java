@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.commons.lang.builder.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;

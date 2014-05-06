@@ -98,7 +98,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
         try {
             GridKernal kernal = (GridKernal)grid(0);
 
-            GridHadoopProcessor hadoop = kernal.context().hadoop();
+            GridHadoopProcessorAdapter hadoop = kernal.context().hadoop();
 
             UUID globalId = UUID.randomUUID();
 
@@ -159,7 +159,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
         try {
             GridKernal kernal = (GridKernal)grid(0);
 
-            GridHadoopProcessor hadoop = kernal.context().hadoop();
+            GridHadoopProcessorAdapter hadoop = kernal.context().hadoop();
 
             UUID globalId = UUID.randomUUID();
 
@@ -245,7 +245,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
         for (int i = 0; i < gridCount(); i++) {
             GridKernal kernal = (GridKernal)grid(i);
 
-            GridHadoopProcessor hadoop = kernal.context().hadoop();
+            GridHadoopProcessorAdapter hadoop = kernal.context().hadoop();
 
             GridHadoopJobStatus stat = hadoop.status(jobId);
 

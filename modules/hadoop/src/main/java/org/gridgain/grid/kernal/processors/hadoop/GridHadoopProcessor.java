@@ -22,14 +22,14 @@ import java.util.*;
 /**
  * Hadoop processor.
  */
-public class GridHadoopOpProcessor extends GridHadoopProcessor {
+public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     /** Hadoop context. */
     private GridHadoopContext hctx;
 
     /**
      * @param ctx Kernal context.
      */
-    public GridHadoopOpProcessor(GridKernalContext ctx) {
+    public GridHadoopProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 

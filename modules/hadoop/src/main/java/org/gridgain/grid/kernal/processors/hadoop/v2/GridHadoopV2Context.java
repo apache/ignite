@@ -50,7 +50,7 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
      * @param taskAttemptID Task execution id.
      */
     public GridHadoopV2Context(Configuration cfg, GridHadoopTaskContext ctx, TaskAttemptID taskAttemptID) {
-        this.cfg = cfg;
+        this.cfg = new Configuration(cfg);
         this.taskAttemptID = taskAttemptID;
 
         output = ctx.output();

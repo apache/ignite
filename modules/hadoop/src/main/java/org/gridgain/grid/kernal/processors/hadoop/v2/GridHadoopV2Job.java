@@ -24,6 +24,15 @@ import java.util.*;
  * Hadoop job implementation for v2 API.
  */
 public class GridHadoopV2Job implements GridHadoopJob {
+    /** Flag is set if new context-object code is used for running the mapper. */
+    private final boolean useNewMapper;
+
+    /** Flag is set if new context-object code is used for running the reducer. */
+    private final boolean useNewReducer;
+
+    /** Flag is set if new context-object code is used for running the combiner. */
+    private final boolean useNewCombiner;
+
     /** Hadoop job ID. */
     private GridHadoopJobId jobId;
 
@@ -49,7 +58,13 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         JobID hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
-        ctx = new JobContextImpl(jobInfo.configuration(), hadoopJobID);
+        JobConf cfg = jobInfo.configuration();
+
+        ctx = new JobContextImpl(cfg, hadoopJobID);
+
+        useNewMapper = cfg.getUseNewMapper();
+        useNewReducer = cfg.getUseNewReducer();
+        useNewCombiner = cfg.getCombinerClass() == null;
 
         keyCls = ctx.getMapOutputKeyClass();
         valCls = ctx.getMapOutputValueClass();
@@ -95,34 +110,18 @@ public class GridHadoopV2Job implements GridHadoopJob {
         boolean isAbort = taskInfo.type() == GridHadoopTaskType.ABORT;
 
         switch (taskInfo.type()) {
-            case MAP: {
-                if (ctx.getJobConf().getUseNewMapper())
-                    return new GridHadoopV2MapTask(taskInfo);
-                else
-                    return new GridHadoopV1MapTask(taskInfo);
-            }
+            case MAP:
+                return useNewMapper ? new GridHadoopV2MapTask(taskInfo) : new GridHadoopV1MapTask(taskInfo);
 
-            case REDUCE: {
-                if (ctx.getJobConf().getUseNewReducer())
-                    return new GridHadoopV2ReduceTask(taskInfo);
-                else
-                    return new GridHadoopV1ReduceTask(taskInfo);
-            }
+            case REDUCE:
+                return useNewReducer ? new GridHadoopV2ReduceTask(taskInfo) : new GridHadoopV1ReduceTask(taskInfo);
 
-            case COMBINE: {
-                if (ctx.getJobConf().getCombinerClass() == null)
-                    return new GridHadoopV2CombineTask(taskInfo);
-                else
-                    return new GridHadoopV1CombineTask(taskInfo);
-            }
+            case COMBINE:
+                return useNewCombiner ? new GridHadoopV2CombineTask(taskInfo) : new GridHadoopV1CombineTask(taskInfo);
 
             case COMMIT:
-            case ABORT: {
-                if (ctx.getJobConf().getUseNewReducer())
-                    return new GridHadoopV2CleanupTask(taskInfo, isAbort);
-                else
-                    return new GridHadoopV1CleanupTask(taskInfo, isAbort);
-            }
+            case ABORT:
+                return useNewReducer ? new GridHadoopV2CleanupTask(taskInfo, isAbort) : new GridHadoopV1CleanupTask(taskInfo, isAbort);
 
             default:
                 return null;
@@ -139,7 +138,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
      *
      * @return Combiner class or {@code null} if combiner is not specified.
      */
-    private Class combinerClass() {
+    private Class<?> combinerClass() {
         Class<?> res = ctx.getJobConf().getCombinerClass();
 
         try {
