@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.*;
  */
 public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAdapter {
     /** Default path for local testing only. */
-    public static final String DFLT_PATH = "work/disco/tcp";
+    public static final String DFLT_PATH = "disco/tcp";
 
     /** Delimiter to use between address and port tokens in file names. */
     public static final String DELIM = "#";

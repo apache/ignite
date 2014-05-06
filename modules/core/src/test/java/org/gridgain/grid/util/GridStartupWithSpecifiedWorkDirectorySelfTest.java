@@ -112,6 +112,8 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
                     assertTrue("Work directory must be located in OS temp directory",
                         testWorkDir.getAbsolutePath().startsWith(TMP_DIR));
 
+                    System.out.println(testWorkDir);
+
                     X.println("Stopping grid " + g.localNode().id());
                 }
             }

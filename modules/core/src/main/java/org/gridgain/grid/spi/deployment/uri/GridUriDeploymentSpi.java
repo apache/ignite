@@ -303,10 +303,10 @@ import java.util.Map.*;
 @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
 public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeploymentSpi, GridUriDeploymentSpiMBean {
     /**
-     * Default deployment directory where SPI will pick up GAR files (value is {@code work/deployment/file}).
-     * Note that this path relative to {@code GRIDGAIN_HOME} folder.
+     * Default deployment directory where SPI will pick up GAR files (value is {@code deployment/file}).
+     * Note that this path relative to {@code GRIDGAIN_HOME/work} folder.
      */
-    public static final String DFLT_DEPLOY_DIR = "work/deployment/file";
+    public static final String DFLT_DEPLOY_DIR = "deployment/file";
 
     /** Default scan frequency for {@code file://} and {@code classes://} protocols (value is {@code 5000}). */
     public static final int DFLT_DISK_SCAN_FREQUENCY = 5000;

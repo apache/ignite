@@ -96,10 +96,10 @@ import java.util.*;
 public class GridSharedFsCheckpointSpi extends GridSpiAdapter implements GridCheckpointSpi,
     GridSharedFsCheckpointSpiMBean {
     /**
-     * Default checkpoint directory (value is {@code work/checkpoint/sharedfs}).
-     * Note that this path used relatively {@code GRIDGAIN_HOME} directory when {@code GRIDGAIN_HOME} exists.
+     * Default checkpoint directory (value is {@code cp/sharedfs}).
+     * Note that this path used relatively {@code GRIDGAIN_HOME/work} directory when {@code GRIDGAIN_HOME} exists.
      */
-    public static final String DFLT_DIR_PATH = "work/cp/sharedfs";
+    public static final String DFLT_DIR_PATH = "cp/sharedfs";
 
     /** */
     private static final String CODES = "0123456789QWERTYUIOPASDFGHJKLZXCVBNM";

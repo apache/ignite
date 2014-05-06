@@ -48,7 +48,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
     public static final int DFLT_SPACE_SIZE = 256 * 1024;
 
     /** Default shared memory space in bytes. */
-    public static final String DFLT_TOKEN_DIR_PATH = "work/ipc/shmem";
+    public static final String DFLT_TOKEN_DIR_PATH = "ipc/shmem";
 
     /**
      * Shared memory token file name prefix.
@@ -315,7 +315,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
      * @param out Output stream.
      * @param err Error cause.
      */
-    private void sendErrorResponse(ObjectOutputStream out, Exception err) {
+    private void sendErrorResponse(ObjectOutput out, Exception err) {
         try {
             out.writeObject(new GridIpcSharedMemoryInitResponse(err));
         }
