@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -18,7 +18,7 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
  */
 public class GridHadoopProtocolNextTaskIdTask extends GridHadoopProtocolTaskAdapter<GridHadoopJobId> {
     /** {@inheritDoc} */
-    @Override public GridHadoopJobId run(GridHadoopProcessor proc, GridHadoopProtocolTaskArguments args)
+    @Override public GridHadoopJobId run(GridHadoopProcessorAdapter proc, GridHadoopProtocolTaskArguments args)
         throws GridException {
         return proc.nextJobId();
     }

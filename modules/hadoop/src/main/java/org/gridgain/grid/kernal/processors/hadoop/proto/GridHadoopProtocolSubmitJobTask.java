@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -21,7 +21,7 @@ import java.util.*;
  */
 public class GridHadoopProtocolSubmitJobTask extends GridHadoopProtocolTaskAdapter<GridHadoopJobStatus> {
     /** {@inheritDoc} */
-    @Override public GridHadoopJobStatus run(GridHadoopProcessor proc, GridHadoopProtocolTaskArguments args)
+    @Override public GridHadoopJobStatus run(GridHadoopProcessorAdapter proc, GridHadoopProtocolTaskArguments args)
         throws GridException {
         UUID nodeId = UUID.fromString(args.<String>get(0));
         int id = args.get(1);

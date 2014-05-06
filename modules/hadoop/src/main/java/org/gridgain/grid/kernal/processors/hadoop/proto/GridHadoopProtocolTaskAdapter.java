@@ -1,4 +1,4 @@
-// @java.file.header
+/* @java.file.header */
 
 /*  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -83,5 +83,5 @@ public abstract class GridHadoopProtocolTaskAdapter<R> implements GridComputeTas
      * @return Job result.
      * @throws GridException If failed.
      */
-    public abstract R run(GridHadoopProcessor proc, GridHadoopProtocolTaskArguments args) throws GridException;
+    public abstract R run(GridHadoopProcessorAdapter proc, GridHadoopProtocolTaskArguments args) throws GridException;
 }

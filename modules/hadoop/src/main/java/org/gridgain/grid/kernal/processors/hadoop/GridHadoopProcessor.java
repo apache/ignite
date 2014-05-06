@@ -33,11 +33,15 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     /** Hadoop context. */
     private GridHadoopContext hctx;
 
+    private GridHadoop hadoop;
+
     /**
      * @param ctx Kernal context.
      */
     public GridHadoopProcessor(GridKernalContext ctx) {
         super(ctx);
+
+
     }
 
     /** {@inheritDoc} */
@@ -64,6 +68,8 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
 
         for (GridHadoopComponent c : hctx.components())
             c.start(hctx);
+
+        hadoop = new GridHadoopImpl(this);
     }
 
     /** {@inheritDoc} */
@@ -119,6 +125,11 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public GridHadoop hadoop() {
+        return hadoop;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridHadoopJobId nextJobId() {
         return new GridHadoopJobId(id, idCtr.incrementAndGet());
     }
@@ -140,6 +151,13 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
         status.finishFuture().get(pollTimeout);
 
         return status(jobId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
+        // TODO: Implement.
+
+        return null;
     }
 
     /**

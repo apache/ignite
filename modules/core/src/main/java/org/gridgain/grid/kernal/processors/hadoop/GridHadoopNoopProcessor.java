@@ -25,35 +25,33 @@ public class GridHadoopNoopProcessor extends GridHadoopProcessorAdapter {
         super(ctx);
     }
 
-    /**
-     * @return Collection of generated IDs.
-     */
-    public GridHadoopJobId nextJobId() {
+    /** {@inheritDoc} */
+    @Override public GridHadoop hadoop() {
         return null;
     }
 
-    /**
-     * Submits job to job tracker.
-     *
-     * @param jobId Job ID to submit.
-     * @param jobInfo Job info to submit.
-     * @return Execution future.
-     */
+    /** {@inheritDoc} */
+    @Override public GridHadoopJobId nextJobId() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
         return new GridFinishedFutureEx<>(new GridException("Hadoop is not available."));
     }
 
-    /**
-     * Gets hadoop job execution status.
-     *
-     * @param jobId Job ID to get status for.
-     * @return Job execution status.
-     */
+    /** {@inheritDoc} */
     @Override public GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException {
         return new GridHadoopJobStatus(new GridFinishedFutureEx<>(new GridException("Hadoop is not available")), null);
     }
 
+    /** {@inheritDoc} */
     @Override public GridHadoopJobStatus status(GridHadoopJobId jobId, long pollTimeout) throws GridException {
         return new GridHadoopJobStatus(new GridFinishedFutureEx<>(new GridException("Hadoop is not available")), null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
+        return null;
     }
 }

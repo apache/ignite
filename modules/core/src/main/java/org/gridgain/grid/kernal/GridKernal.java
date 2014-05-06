@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dataload.*;
 import org.gridgain.grid.dr.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.authentication.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
@@ -2841,6 +2842,18 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         try{
             return ctx.ggfs().ggfss();
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridHadoop hadoop() {
+        guard();
+
+        try{
+            return ctx.hadoop().hadoop();
         }
         finally {
             unguard();

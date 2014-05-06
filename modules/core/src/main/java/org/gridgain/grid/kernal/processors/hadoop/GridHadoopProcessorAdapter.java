@@ -26,6 +26,11 @@ public abstract class GridHadoopProcessorAdapter extends GridProcessorAdapter {
     }
 
     /**
+     * @return Hadoop facade.
+     */
+    public abstract GridHadoop hadoop();
+
+    /**
      * @return Collection of generated IDs.
      */
     public abstract GridHadoopJobId nextJobId();
@@ -57,4 +62,13 @@ public abstract class GridHadoopProcessorAdapter extends GridProcessorAdapter {
      * @throws GridException If failed.
      */
     public abstract GridHadoopJobStatus status(GridHadoopJobId jobId, long pollTimeout) throws GridException;
+
+    /**
+     * Gets Hadoop job finish future.
+     *
+     * @param jobId Job ID.
+     * @return Job finish future or {@code null}.
+     * @throws GridException If failed.
+     */
+    public abstract GridFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException;
 }
