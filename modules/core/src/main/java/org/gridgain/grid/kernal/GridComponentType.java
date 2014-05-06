@@ -24,7 +24,7 @@ public enum GridComponentType {
      *
      * @param clsName Class name.
      */
-    private GridComponentType(String clsName) {
+    GridComponentType(String clsName) {
         this.clsName = clsName;
     }
 
