@@ -132,11 +132,6 @@ import static org.gridgain.grid.events.GridEventType.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridCommunicationSpi
  */
-@GridSpiInfo(
-    author = "GridGain Project",
-    url = "www.gridgain.org",
-    email = "support@gridgain.com",
-    version = "3.0")
 @GridSpiMultipleInstancesSupport(true)
 @GridSpiConsistencyChecked(optional = false)
 public class GridTcpCommunicationSpi extends GridSpiAdapter

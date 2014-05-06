@@ -24,7 +24,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 /**
  * Abstract class for Hadoop tests.
  */
-public class GridHadoopAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest {
     /** Hadoop system cache name. */
     protected static final String hadoopSysCacheName = "hadoop-system-cache";
 
