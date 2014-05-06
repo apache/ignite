@@ -17,7 +17,7 @@ import org.apache.hadoop.mapreduce.*;
 /**
  * Combiner and Reducer phase of WordCount job.
  */
-public class GridGainWordCount2Reducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+public class GridHadoopWordCount2Reducer extends Reducer<Text, IntWritable, Text, IntWritable> {
     /** Writable container for writing sum of word counts. */
     private IntWritable totalWordCnt = new IntWritable();
 
@@ -25,9 +25,8 @@ public class GridGainWordCount2Reducer extends Reducer<Text, IntWritable, Text, 
     @Override public void reduce(Text key, Iterable<IntWritable> values, Context ctx) throws IOException, InterruptedException {
         int wordCnt = 0;
 
-        for (IntWritable value : values) {
+        for (IntWritable value : values)
             wordCnt += value.get();
-        }
 
         totalWordCnt.set(wordCnt);
         ctx.write(key, totalWordCnt);

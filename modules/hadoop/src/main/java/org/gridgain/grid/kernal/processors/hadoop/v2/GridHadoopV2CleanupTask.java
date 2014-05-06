@@ -7,10 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.hadoop2impl;
+package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.mapreduce.lib.reduce.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -18,47 +17,47 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Hadoop reduce task implementation for v2 API.
+ * Hadoop cleanup task (commits or aborts job).
  */
-public class GridHadoopV2ReduceTask extends GridHadoopTask {
+public class GridHadoopV2CleanupTask extends GridHadoopTask {
+    /** Abort flag. */
+    private boolean abort;
+
     /**
      * @param taskInfo Task info.
+     * @param abort Abort flag.
      */
-    public GridHadoopV2ReduceTask(GridHadoopTaskInfo taskInfo) {
+    public GridHadoopV2CleanupTask(GridHadoopTaskInfo taskInfo, boolean abort) {
         super(taskInfo);
+
+        this.abort = abort;
     }
 
     /** {@inheritDoc} */
     @Override public void run(GridHadoopTaskContext taskCtx) throws GridInterruptedException, GridException {
-        GridHadoopV2JobImpl jobImpl = (GridHadoopV2JobImpl)taskCtx.job();
+        GridHadoopV2Job jobImpl = (GridHadoopV2Job)taskCtx.job();
 
         JobContext jobCtx = jobImpl.hadoopJobContext();
 
-        Reducer reducer;
         OutputFormat outputFormat;
 
         try {
-            reducer = U.newInstance(jobCtx.getReducerClass());
             outputFormat = U.newInstance(jobCtx.getOutputFormatClass());
         }
         catch (ClassNotFoundException e) {
             throw new GridException(e);
         }
 
-        GridHadoopV2Context hadoopCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx, jobImpl.attemptId(info()));
+        TaskAttemptContext hCtx = new GridHadoopV2Context(jobCtx.getConfiguration(), taskCtx,
+            jobImpl.attemptId(info()));
 
         try {
-            RecordWriter writer = outputFormat.getRecordWriter(hadoopCtx);
+            OutputCommitter committer = outputFormat.getOutputCommitter(hCtx);
 
-            hadoopCtx.writer(writer);
-
-            reducer.run(new WrappedReducer().getReducerContext(hadoopCtx));
-
-            writer.close(hadoopCtx);
-
-            OutputCommitter outputCommitter = outputFormat.getOutputCommitter(hadoopCtx);
-
-            outputCommitter.commitTask(hadoopCtx);
+            if (abort)
+                committer.abortJob(jobCtx, JobStatus.State.FAILED);
+            else
+                committer.commitJob(jobCtx);
         }
         catch (IOException e) {
             throw new GridException(e);

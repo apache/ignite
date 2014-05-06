@@ -16,7 +16,7 @@ import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.kernal.processors.hadoop.planner.*;
 import org.gridgain.grid.util.typedef.*;
 
@@ -107,7 +107,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
             GridHadoopDefaultJobInfo info = new GridHadoopDefaultJobInfo(cfg);
 
-            GridHadoopJob job = new GridHadoopV2JobImpl(new GridHadoopJobId(UUID.randomUUID(), 1), info);
+            GridHadoopJob job = new GridHadoopV2Job(new GridHadoopJobId(UUID.randomUUID(), 1), info);
 
             Collection<GridNode> nodes = grid.nodes();
 
