@@ -18,7 +18,7 @@ import org.apache.hadoop.mapreduce.*;
 /**
  * Mapper phase of WordCount job.
  */
-public class GridGainWordCount2Mapper extends Mapper<Object, Text, Text, IntWritable> {
+public class GridHadoopWordCount2Mapper extends Mapper<Object, Text, Text, IntWritable> {
     /** Writable container for writing word. */
     private Text word = new Text();
 

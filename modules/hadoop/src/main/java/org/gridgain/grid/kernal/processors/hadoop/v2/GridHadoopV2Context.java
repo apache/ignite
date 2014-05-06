@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.hadoop2impl;
+package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
@@ -50,7 +50,7 @@ public class GridHadoopV2Context implements MapContext, ReduceContext {
      * @param taskAttemptID Task execution id.
      */
     public GridHadoopV2Context(Configuration cfg, GridHadoopTaskContext ctx, TaskAttemptID taskAttemptID) {
-        this.cfg = cfg;
+        this.cfg = new Configuration(cfg);
         this.taskAttemptID = taskAttemptID;
 
         output = ctx.output();
