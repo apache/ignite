@@ -10,6 +10,7 @@
 package org.gridgain.examples.datagrid.hibernate;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.util.typedef.*;
 import org.hibernate.*;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.*;
@@ -60,10 +61,14 @@ public class HibernateL2CacheExample {
     /** JDBC URL for backing database (an H2 in-memory database is used). */
     private static final String JDBC_URL = "jdbc:h2:mem:example;DB_CLOSE_DELAY=-1";
 
+    /** Default path to hibernate configuration file. This path is relative to GridGain installation folder. */
+    private static final String HIBERNATE_DFLT_CFG = "examples/config/hibernate/example-hibernate-L2-cache.xml";
+
     /**
      * Executes example.
      *
-     * @param args Command line arguments, none required.
+     * @param args Command line arguments. First argument is optional and may contain path to
+     * hibernate configuration file.
      * @throws GridException If example execution failed.
      */
     public static void main(String[] args) throws GridException {
@@ -75,7 +80,9 @@ public class HibernateL2CacheExample {
             System.out.println();
             System.out.println(">>> Hibernate L2 cache example started.");
 
-            SessionFactory sesFactory = createHibernateSessionFactory(grid);
+            File hibernateCfg = resolveHibernateConfig(grid, args);
+
+            SessionFactory sesFactory = createHibernateSessionFactory(hibernateCfg);
 
             System.out.println();
             System.out.println(">>> Creating objects.");
@@ -143,6 +150,49 @@ public class HibernateL2CacheExample {
         }
     }
 
+    /**
+     * Resolves location of hibernate configuration file.
+     *
+     * @param grid Grid.
+     * @param args Command line arguments. First argument is optional and may contain path to
+     * hibernate configuration file.
+     * @return Hibernate configuration file.
+     */
+    private static File resolveHibernateConfig(Grid grid, String[] args) {
+        File cfgFile;
+
+        if (!F.isEmpty(args)) {
+            cfgFile = new File(args[0]);
+
+            if (!cfgFile.isAbsolute())
+                cfgFile = new File(resolveGridGainHome(grid), args[0]);
+        }
+        else
+            cfgFile = new File(resolveGridGainHome(grid), HIBERNATE_DFLT_CFG);
+
+        if (!cfgFile.exists())
+            throw new RuntimeException("Resolved path to hibernate configuration file does not exist: " +
+                cfgFile.getAbsolutePath());
+
+        return cfgFile;
+    }
+
+    /**
+     * Resolves location of GridGain installation folder.
+     *
+     * @param grid Grid.
+     * @return Path to GridGain installation folder.
+     */
+    private static String resolveGridGainHome(Grid grid) {
+        String ggHome = grid.configuration().getGridGainHome();
+
+        if (ggHome == null)
+            throw new RuntimeException("Failed to resolve path to hibernate configuration file (please create " +
+                "GRIDGAIN_HOME system or environment variable pointing to GridGain installation folder).");
+
+        return ggHome;
+    }
+
     /** Entity names for stats output. */
     private static final List<String> ENTITY_NAMES =
         Arrays.asList(User.class.getName(), Post.class.getName(), User.class.getName() + ".posts");
@@ -151,22 +201,17 @@ public class HibernateL2CacheExample {
      * Creates a new Hibernate {@link SessionFactory} using a programmatic
      * configuration.
      *
+     * @param hibernateCfg Hibernate configuration file.
      * @return New Hibernate {@link SessionFactory}.
      */
-    private static SessionFactory createHibernateSessionFactory(Grid g) {
-        String ggHome = g.configuration().getGridGainHome();
-
-        if (ggHome == null)
-            throw new RuntimeException("Failed to resolve path to hibernate configuration file (please create " +
-                "GRIDGAIN_HOME system or environment variable pointing to GridGain installation folder).");
-
+    private static SessionFactory createHibernateSessionFactory(File hibernateCfg) {
         ServiceRegistryBuilder builder = new ServiceRegistryBuilder();
 
         builder.applySetting("hibernate.connection.url", JDBC_URL);
         builder.applySetting("hibernate.show_sql", true);
 
         return new Configuration()
-            .configure(new File(ggHome, "examples/config/hibernate/example-hibernate-L2-cache.xml"))
+            .configure(hibernateCfg)
             .buildSessionFactory(builder.buildServiceRegistry());
     }
 

@@ -9,13 +9,13 @@
 
 package org.gridgain.examples.ggfs;
 
+import org.gridgain.examples.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
 import org.gridgain.grid.ggfs.mapreduce.records.*;
 import org.gridgain.grid.product.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -120,8 +120,8 @@ public class GgfsMapReduceExample {
             }
         }
         finally {
-            U.closeQuiet(os);
-            U.closeQuiet(fis);
+            ExamplesUtils.closeQuiet(os);
+            ExamplesUtils.closeQuiet(fis);
         }
     }
 

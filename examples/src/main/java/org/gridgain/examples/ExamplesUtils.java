@@ -11,6 +11,10 @@ package org.gridgain.examples;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.streamer.*;
+import org.jetbrains.annotations.*;
+
+import java.io.*;
+import java.sql.*;
 
 /**
  *
@@ -67,5 +71,35 @@ public class ExamplesUtils {
         }
 
         return false;
+    }
+
+    /**
+     * Quietly closes given resource ignoring possible checked exception.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     */
+    public static void closeQuiet(@Nullable Closeable rsrc) {
+        if (rsrc != null)
+            try {
+                rsrc.close();
+            }
+            catch (IOException ignored) {
+                // No-op.
+            }
+    }
+
+    /**
+     * Quietly closes JDBC connection ignoring possible checked exception.
+     *
+     * @param rsrc JDBC connection to close. If connection is {@code null}, it's no-op.
+     */
+    public static void closeQuiet(@Nullable Connection rsrc) {
+        if (rsrc != null)
+            try {
+                rsrc.close();
+            }
+            catch (SQLException ignored) {
+                // No-op.
+            }
     }
 }
