@@ -9,6 +9,9 @@
 
 package org.gridgain.grid.spi.deployment.uri;
 
+import org.apache.commons.codec.binary.*;
+import org.apache.commons.codec.digest.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.spi.*;
@@ -19,6 +22,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.net.*;
+import java.security.*;
 import java.util.*;
 
 import static org.gridgain.grid.spi.deployment.uri.GridUriDeploymentSpi.*;
@@ -109,9 +113,159 @@ final class GridUriDeploymentFileProcessor {
         }
 
         if (res != null)
-            res.setMd5(U.md5(gar, log));
+            res.setMd5(md5(gar, log));
 
         return res;
+    }
+
+    /**
+     * Calculates md5 checksum for the given file o directory.
+     * For directories tries to walk all nested files accumulating the result.
+     *
+     * @param file file to calculate sum or root directory for accumulating calculation.
+     * @param log logger to log all failures.
+     * @return string representation of the calculated checksum or {@code null} if calculation failed.
+     */
+    @Nullable public static String md5(@Nullable File file, @Nullable GridLogger log) {
+        if (file != null)
+            return file.isFile() ? fileMd5(file, log) : directoryMd5(file, log);
+
+        return null;
+    }
+
+    /**
+     * Calculates md5 checksum for the given file
+     *
+     * @param file file to calculate md5.
+     * @param log logger to log all failures.
+     * @return string representation of the calculated checksum or {@code null} if calculation failed.
+     */
+    @Nullable public static String fileMd5(@Nullable File file, @Nullable GridLogger log) {
+        String md5 = null;
+
+        if (file != null) {
+            if (!file.isFile()) {
+                U.warn(log, "Failed to find file for md5 calculation: " + file);
+
+                return null;
+            }
+
+            InputStream in = null;
+
+            try {
+                in = new BufferedInputStream(new FileInputStream(file));
+
+                md5 = DigestUtils.md5Hex(in);
+            }
+            catch (IOException e) {
+                U.warn(log, "Failed to open input stream for md5 calculation: " + e.getMessage());
+            }
+            finally {
+                U.closeQuiet(in);
+            }
+        }
+
+        return md5;
+    }
+
+    /**
+     * For directories tries to walk all nested files accumulating them into single md5 checksum.
+     *
+     * @param dir directory to calculate md5.
+     * @param log logger to log all failures.
+     * @return string representation of the calculated checksum or {@code null} if calculation failed.
+     */
+    @Nullable public static String directoryMd5(@Nullable File dir, @Nullable GridLogger log) {
+        if (dir != null) {
+            if (!dir.isDirectory()) {
+                U.warn(log, "Failed to find directory for md5 calculation: " + dir);
+
+                return null;
+            }
+
+            try {
+                MessageDigest digest = MessageDigest.getInstance("MD5");
+
+                return addDirectoryDigest(dir, digest, log) ? Hex.encodeHexString(digest.digest()) : null;
+            }
+            catch (NoSuchAlgorithmException e) {
+                throw new GridRuntimeException("MD5 digest algorithm not found.", e);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Repulsively adds all files in the given directory to the given Digest object.
+     *
+     * @param file directory to start calculation from.
+     * @param digest digest object where all available files should be applied.
+     * @param log logger to report errors.
+     * @return {@code true} if digest was added successfully, {@code false} otherwise.
+     */
+    private static boolean addDirectoryDigest(File file, MessageDigest digest, @Nullable GridLogger log) {
+        assert file.isDirectory();
+
+        File[] files = file.listFiles();
+
+        if (files == null)
+            return true;
+
+        for (File visited : files) {
+            if (visited.isFile()) {
+                if (!addFileDigest(visited, digest, log))
+                    return false;
+            }
+            else if (visited.isDirectory()) {
+                if (!addDirectoryDigest(visited, digest, log))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Adds given file to the given Digest object.
+     *
+     * @param file file for digest calculations.
+     * @param digest digest object to add file.
+     * @param log logger to report errors.
+     * @return {@code true} if digest was added successfully, {@code false} otherwise.
+     */
+    private static boolean addFileDigest(File file, MessageDigest digest, @Nullable GridLogger log) {
+        if (!file.isFile()) {
+            U.error(log, "Failed to add file to directory digest (will not check MD5 hash): " + file);
+
+            return false;
+        }
+
+        InputStream in = null;
+
+        try {
+            in = new BufferedInputStream(new FileInputStream(file));
+
+            byte[] buf = new byte[1024];
+
+            int read = in.read(buf, 0, 1024);
+
+            while (read > -1) {
+                digest.update(buf, 0, read);
+
+                read = in.read(buf, 0, 1024);
+            }
+        }
+        catch (IOException e) {
+            U.error(log, "Failed to add file to directory digest (will not check MD5 hash): " + file, e);
+
+            return false;
+        }
+        finally {
+            U.closeQuiet(in);
+        }
+
+        return true;
     }
 
     /**

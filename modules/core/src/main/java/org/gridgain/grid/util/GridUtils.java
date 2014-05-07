@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.util;
 
-import org.apache.commons.codec.binary.*;
-import org.apache.commons.codec.digest.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
@@ -24,7 +22,6 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
-import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.mbean.*;
 import org.gridgain.grid.util.typedef.*;
@@ -2052,8 +2049,20 @@ public abstract class GridUtils {
         if (!F.isEmpty(ggHome0))
             return ggHome0;
 
+        Class<?> libsCls;
+
+        try {
+            libsCls = Class.forName("org.springframework.context.ApplicationContext");
+        }
+        catch (ClassNotFoundException ignored) {
+            libsCls = null;
+        }
+
+        Collection<Class<?>> clsList = libsCls != null ? Arrays.asList(GridUtils.class, libsCls) :
+            Collections.<Class<?>>singleton(GridUtils.class);
+
         // Order: gridgain.jar, 'libs'.
-        for (Class<?> cls : Arrays.asList(GridUtils.class, Hex.class)) {
+        for (Class<?> cls : clsList) {
             URI uri;
 
             try {
@@ -5368,156 +5377,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Calculates md5 checksum for the given file o directory.
-     * For directories tries to walk all nested files accumulating the result.
-     *
-     * @param file file to calculate sum or root directory for accumulating calculation.
-     * @param log logger to log all failures.
-     * @return string representation of the calculated checksum or {@code null} if calculation failed.
-     */
-    @Nullable public static String md5(@Nullable File file, @Nullable GridLogger log) {
-        if (file != null)
-            return file.isFile() ? fileMd5(file, log) : directoryMd5(file, log);
-
-        return null;
-    }
-
-    /**
-     * Calculates md5 checksum for the given file
-     *
-     * @param file file to calculate md5.
-     * @param log logger to log all failures.
-     * @return string representation of the calculated checksum or {@code null} if calculation failed.
-     */
-    @Nullable public static String fileMd5(@Nullable File file, @Nullable GridLogger log) {
-        String md5 = null;
-
-        if (file != null) {
-            if (!file.isFile()) {
-                warn(log, "Failed to find file for md5 calculation: " + file);
-
-                return null;
-            }
-
-            InputStream in = null;
-
-            try {
-                in = new BufferedInputStream(new FileInputStream(file));
-
-                md5 = DigestUtils.md5Hex(in);
-            }
-            catch (IOException e) {
-                warn(log, "Failed to open input stream for md5 calculation: " + e.getMessage());
-            }
-            finally {
-                closeQuiet(in);
-            }
-        }
-
-        return md5;
-    }
-
-    /**
-     * For directories tries to walk all nested files accumulating them into single md5 checksum.
-     *
-     * @param dir directory to calculate md5.
-     * @param log logger to log all failures.
-     * @return string representation of the calculated checksum or {@code null} if calculation failed.
-     */
-    @Nullable public static String directoryMd5(@Nullable File dir, @Nullable GridLogger log) {
-        if (dir != null) {
-            if (!dir.isDirectory()) {
-                warn(log, "Failed to find directory for md5 calculation: " + dir);
-
-                return null;
-            }
-
-            try {
-                MessageDigest digest = MessageDigest.getInstance("MD5");
-
-                return addDirectoryDigest(dir, digest, log) ? Hex.encodeHexString(digest.digest()) : null;
-            }
-            catch (NoSuchAlgorithmException e) {
-                throw new GridRuntimeException("MD5 digest algorithm not found.", e);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Repulsively adds all files in the given directory to the given Digest object.
-     *
-     * @param file directory to start calculation from.
-     * @param digest digest object where all available files should be applied.
-     * @param log logger to report errors.
-     * @return {@code true} if digest was added successfully, {@code false} otherwise.
-     */
-    private static boolean addDirectoryDigest(File file, MessageDigest digest, @Nullable GridLogger log) {
-        assert file.isDirectory();
-
-        File[] files = file.listFiles();
-
-        if (files == null)
-            return true;
-
-        for (File visited : files) {
-            if (visited.isFile()) {
-                if (!addFileDigest(visited, digest, log))
-                    return false;
-            }
-            else if (visited.isDirectory()) {
-                if (!addDirectoryDigest(visited, digest, log))
-                    return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Adds given file to the given Digest object.
-     *
-     * @param file file for digest calculations.
-     * @param digest digest object to add file.
-     * @param log logger to report errors.
-     * @return {@code true} if digest was added successfully, {@code false} otherwise.
-     */
-    private static boolean addFileDigest(File file, MessageDigest digest, @Nullable GridLogger log) {
-        if (!file.isFile()) {
-            error(log, "Failed to add file to directory digest (will not check MD5 hash): " + file);
-
-            return false;
-        }
-
-        InputStream in = null;
-
-        try {
-            in = new BufferedInputStream(new FileInputStream(file));
-
-            byte[] buf = new byte[1024];
-
-            int read = in.read(buf, 0, 1024);
-
-            while (read > -1) {
-                digest.update(buf, 0, read);
-
-                read = in.read(buf, 0, 1024);
-            }
-        }
-        catch (IOException e) {
-            error(log, "Failed to add file to directory digest (will not check MD5 hash): " + file, e);
-
-            return false;
-        }
-        finally {
-            closeQuiet(in);
-        }
-
-        return true;
-    }
-
-    /**
      * Gets OS JDK string.
      *
      * @return OS JDK string.
@@ -8085,5 +7944,59 @@ public abstract class GridUtils {
         int idx = clsName.indexOf("$$Lambda$");
 
         return idx != -1 ? clsName.substring(0, idx) : null;
+    }
+
+    /**
+     * Converts an array of characters representing hexidecimal values into an
+     * array of bytes of those same values. The returned array will be half the
+     * length of the passed array, as it takes two characters to represent any
+     * given byte. An exception is thrown if the passed char array has an odd
+     * number of elements.
+     *
+     * @param data An array of characters containing hexidecimal digits
+     * @return A byte array containing binary data decoded from
+     *         the supplied char array.
+     * @throws GridException Thrown if an odd number or illegal of characters is supplied.
+     */
+    public static byte[] decodeHex(char[] data) throws GridException {
+
+        int len = data.length;
+
+        if ((len & 0x01) != 0)
+            throw new GridException("Odd number of characters.");
+
+        byte[] out = new byte[len >> 1];
+
+        // two characters form the hex value.
+        for (int i = 0, j = 0; j < len; i++) {
+            int f = toDigit(data[j], j) << 4;
+
+            j++;
+
+            f |= toDigit(data[j], j);
+
+            j++;
+
+            out[i] = (byte)(f & 0xFF);
+        }
+
+        return out;
+    }
+
+    /**
+     * Converts a hexadecimal character to an integer.
+     *
+     * @param ch A character to convert to an integer digit
+     * @param index The index of the character in the source
+     * @return An integer
+     * @throws GridException Thrown if ch is an illegal hex character
+     */
+    protected static int toDigit(char ch, int index) throws GridException {
+        int digit = Character.digit(ch, 16);
+
+        if (digit == -1)
+            throw new GridException("Illegal hexadecimal character " + ch + " at index " + index);
+
+        return digit;
     }
 }

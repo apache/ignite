@@ -14,7 +14,7 @@ import org.springframework.aop.framework.*;
 import org.springframework.context.*;
 
 /**
- * TODO
+ * Implementation of {@link GridSpringResourceContext}.
  */
 public class GridSpringResourceContextImpl implements GridSpringResourceContext {
     /** Spring application context injector. */
@@ -31,14 +31,17 @@ public class GridSpringResourceContextImpl implements GridSpringResourceContext 
         springBeanInjector = new GridResourceSpringBeanInjector(springCtx);
     }
 
+    /** {@inheritDoc} */
     @Override public GridResourceInjector springBeanInjector() {
         return springBeanInjector;
     }
 
+    /** {@inheritDoc} */
     @Override public GridResourceInjector springContextInjector() {
         return springCtxInjector;
     }
 
+    /** {@inheritDoc} */
     @Override public Object unwrapTarget(Object target) throws GridException {
         if (target instanceof Advised) {
             try {

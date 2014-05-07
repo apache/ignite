@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.tools.marshaller.optimized;
 
-import org.jetbrains.annotations.*;
-
 import java.io.*;
 import java.lang.reflect.*;
 import java.net.*;
@@ -255,7 +253,7 @@ public class OptimizedClassNamesGenerator {
      *
      * @return {@code GRIDGAIN_HOME} property.
      */
-    @Nullable private static String home() {
+    private static String home() {
         String home = System.getProperty(GG_HOME_SYS_PROP);
 
         if (home == null || home.isEmpty()) {
