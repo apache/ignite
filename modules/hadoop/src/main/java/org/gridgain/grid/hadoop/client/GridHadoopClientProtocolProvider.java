@@ -66,6 +66,20 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
     }
 
     /**
+     * Close all currently existent clients.
+     */
+    @SuppressWarnings("StatementWithEmptyBody")
+    public static void closeAll() {
+        for (ClientMap map : cliMap.values()) {
+            for (Client cli : map.map.values()) {
+                while (!cli.release()) {
+                    // Spin.
+                }
+            }
+        }
+    }
+
+    /**
      * Acquire client protocol.
      *
      * @param addr Address.
@@ -160,6 +174,20 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
         catch (GridClientException e) {
             throw new IOException("Failed to establish connection with GridGain node: " + addr, e);
         }
+    }
+
+    /**
+     * Get active clients count (for testing purposes only).
+     *
+     * @return Active clients count.
+     */
+    private static int activeClients() {
+        int cnt = 0;
+
+        for (ClientMap map : cliMap.values())
+            cnt += map.map.size();
+
+        return cnt;
     }
 
     /**

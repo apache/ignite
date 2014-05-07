@@ -138,14 +138,14 @@ public class GridHadoopJobStatus implements Externalizable {
      * @return Block progress.
      */
     public float blockProgress() {
-        return totalBlockCnt == 0 ? 1.0f : (float)pendingBlockCnt / totalBlockCnt;
+        return totalBlockCnt == 0 ? 1.0f : (float)(totalBlockCnt - pendingBlockCnt) / totalBlockCnt;
     }
 
     /**
      * @return Reducer progress.
      */
     public float reducerProgress() {
-        return totalReducerCnt == 0 ? 1.0f : (float)pendingReducerCnt / totalReducerCnt;
+        return totalReducerCnt == 0 ? 1.0f : (float)(totalReducerCnt - pendingReducerCnt) / totalReducerCnt;
     }
 
     /**
