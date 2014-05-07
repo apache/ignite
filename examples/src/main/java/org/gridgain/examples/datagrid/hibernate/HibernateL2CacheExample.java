@@ -159,7 +159,7 @@ public class HibernateL2CacheExample {
         builder.applySetting("hibernate.connection.url", JDBC_URL);
         builder.applySetting("hibernate.show_sql", true);
 
-        return new Configuration().configure(U.resolveGridGainUrl("examples/config/hibernate/hibernate-L2-cache.xml"))
+        return new Configuration().configure(U.resolveGridGainUrl("examples/config/hibernate/example-hibernate-L2-cache.xml"))
             .buildSessionFactory(builder.buildServiceRegistry());
     }
 
