@@ -27,6 +27,20 @@ public class GridHadoopExternalCommunicationSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testSimpleMessageSendingTcp() throws Exception {
+        checkSimpleMessageSending(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSimpleMessageSendingShmem() throws Exception {
+        checkSimpleMessageSending(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkSimpleMessageSending(boolean useShmem) throws Exception {
         UUID parentNodeId = UUID.randomUUID();
 
         GridMarshaller marsh = new GridOptimizedMarshaller();
@@ -46,7 +60,8 @@ public class GridHadoopExternalCommunicationSelfTest extends GridCommonAbstractT
                 comms[i] = new GridHadoopExternalCommunication(parentNodeId, marsh, log, Executors.newFixedThreadPool(1),
                     name);
 
-                comms[i].setSharedMemoryPort(-1);
+                if (useShmem)
+                    comms[i].setSharedMemoryPort(14000);
 
                 lsnrs[i] = new TestHadoopListener(msgs);
 

@@ -116,9 +116,6 @@ public class GridHadoopExternalCommunication {
             }
         };
 
-    /** Filters. */
-    private GridNioFilter[] filters;
-
     /** Logger. */
     private GridLogger log;
 
@@ -548,13 +545,6 @@ public class GridHadoopExternalCommunication {
     }
 
     public void start() throws GridException {
-        filters = new GridNioFilter[] {
-            new GridNioAsyncNotifyFilter(gridName, execSvc, log),
-            new HandshakeAndBackpressureFilter(),
-            new GridHadoopMarshallerFilter(marsh),
-            new GridNioCodecFilter(new GridBufferedParser(directBuf, ByteOrder.nativeOrder()), log, false)
-        };
-
         try {
             locHost = locAddr == null ? U.getLocalHost() : U.resolveLocalHost(locAddr);
         }
@@ -603,6 +593,20 @@ public class GridHadoopExternalCommunication {
     }
 
     /**
+     * Gets filters used by communication.
+     *
+     * @return Filters array.
+     */
+    private GridNioFilter[] filters() {
+        return new GridNioFilter[] {
+            new GridNioAsyncNotifyFilter(gridName, execSvc, log),
+            new HandshakeAndBackpressureFilter(),
+            new GridHadoopMarshallerFilter(marsh),
+            new GridNioCodecFilter(new GridBufferedParser(directBuf, ByteOrder.nativeOrder()), log, false)
+        };
+    }
+
+    /**
      * Recreates tpcSrvr socket instance.
      *
      * @return Server instance.
@@ -632,7 +636,7 @@ public class GridHadoopExternalCommunication {
                         .socketReceiveBufferSize(sockRcvBuf)
                         .sendQueueLimit(msgQueueLimit)
                         .directMode(false)
-                        .filters(filters)
+                        .filters(filters())
                         .build();
 
                 boundTcpPort = port;
@@ -873,7 +877,7 @@ public class GridHadoopExternalCommunication {
             GridHadoopCommunicationClient client = null;
 
             try {
-                ShmemWorker worker = new ShmemWorker(clientEndpoint);
+                ShmemWorker worker = new ShmemWorker(clientEndpoint, false);
 
                 shmemWorkers.add(worker);
 
@@ -1111,7 +1115,7 @@ public class GridHadoopExternalCommunication {
         @Override protected void body() throws InterruptedException {
             try {
                 while (!Thread.interrupted()) {
-                    ShmemWorker e = new ShmemWorker(srv.accept());
+                    ShmemWorker e = new ShmemWorker(srv.accept(), true);
 
                     shmemWorkers.add(e);
 
@@ -1148,21 +1152,22 @@ public class GridHadoopExternalCommunication {
         /**
          * @param endpoint Endpoint.
          */
-        private ShmemWorker(GridIpcEndpoint endpoint) {
+        private ShmemWorker(GridIpcEndpoint endpoint, boolean accepted) {
             super(gridName, "shmem-worker", log);
 
             this.endpoint = endpoint;
+
+            adapter = new GridHadoopIpcToNioAdapter<>(
+                GridHadoopExternalCommunication.this.log,
+                endpoint,
+                accepted,
+                srvLsnr,
+                filters());
         }
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             try {
-                adapter = new GridHadoopIpcToNioAdapter<>(
-                GridHadoopExternalCommunication.this.log,
-                endpoint,
-                srvLsnr,
-                filters);
-
                 adapter.serve();
             }
             finally {
@@ -1246,6 +1251,9 @@ public class GridHadoopExternalCommunication {
         /** {@inheritDoc} */
         @Override public void onSessionOpened(final GridNioSession ses) throws GridException {
             if (ses.accepted()) {
+                if (log.isDebugEnabled())
+                    log.debug("Accepted connection, initiating handshake: " + ses);
+
                 // Server initiates handshake.
                 ses.send(locIdMsg).listenAsync(new CI1<GridNioFuture<?>>() {
                     @Override public void apply(GridNioFuture<?> fut) {

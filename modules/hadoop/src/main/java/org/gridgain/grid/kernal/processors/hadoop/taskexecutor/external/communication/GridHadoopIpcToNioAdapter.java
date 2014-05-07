@@ -48,12 +48,12 @@ public class GridHadoopIpcToNioAdapter<T> {
      * @param lsnr Listener.
      * @param filters Filters.
      */
-    public GridHadoopIpcToNioAdapter(GridLogger log, GridIpcEndpoint endp,
+    public GridHadoopIpcToNioAdapter(GridLogger log, GridIpcEndpoint endp, boolean accepted,
         GridNioServerListener<T> lsnr, GridNioFilter... filters) {
         this.endp = endp;
 
         chain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
-        ses = new GridNioSessionImpl(chain, null, null, true);
+        ses = new GridNioSessionImpl(chain, null, null, accepted);
 
         writeBuf = ByteBuffer.allocate(8 << 10);
 
@@ -128,11 +128,17 @@ public class GridHadoopIpcToNioAdapter<T> {
      * @param msg Buffer to send.
      * @return Send result.
      */
-    private GridNioFuture<?> send(byte[] msg) {
+    private GridNioFuture<?> send(ByteBuffer msg) {
         assert writeBuf.hasArray();
 
         try {
-            endp.outputStream().write(msg);
+            while (msg.hasRemaining()) {
+                writeBuf.clear();
+
+                writeBuf.put(msg);
+
+                endp.outputStream().write(writeBuf.array(), 0, writeBuf.position());
+            }
         }
         catch (IOException | GridException e) {
             return new GridNioFinishedFuture<Object>(e);
@@ -169,9 +175,10 @@ public class GridHadoopIpcToNioAdapter<T> {
 
         /** {@inheritDoc} */
         @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) {
-            assert ses == GridHadoopIpcToNioAdapter.this.ses;
+            assert ses == GridHadoopIpcToNioAdapter.this.ses : "ses=" + ses +
+                ", this.ses=" + GridHadoopIpcToNioAdapter.this.ses;
 
-            return send((byte[])msg);
+            return send((ByteBuffer)msg);
         }
 
         /** {@inheritDoc} */
