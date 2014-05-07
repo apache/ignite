@@ -74,8 +74,11 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             if (useCustomSerializer)
                 jobConf.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 
-            //To split into about 40 items
+            //To split into about 40 items for v2
             jobConf.setInt(FileInputFormat.SPLIT_MAXSIZE, 65000);
+
+            //For v1
+            jobConf.setInt("fs.local.block.size", 65000);
 
             GridHadoopWordCount1.setTasksClasses(jobConf, !useNewMapper, !useNewCombiner, !useNewReducer);
 

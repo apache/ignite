@@ -81,8 +81,11 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridHadoopFileBlock> input() throws GridException {
-        return GridHadoopV2Splitter.splitJob(ctx);
+    @Override public Collection<GridHadoopInputSplit> input() throws GridException {
+        if (useNewMapper)
+            return GridHadoopV2Splitter.splitJob(ctx);
+        else
+            return GridHadoopV1Splitter.splitJob(ctx.getJobConf());
     }
 
     /** {@inheritDoc} */

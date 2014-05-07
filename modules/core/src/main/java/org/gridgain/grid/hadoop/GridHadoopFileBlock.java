@@ -16,10 +16,12 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import org.jetbrains.annotations.*;
+
 /**
  * Hadoop file block.
  */
-public class GridHadoopFileBlock implements Externalizable {
+public class GridHadoopFileBlock implements GridHadoopInputSplit {
     /** */
     protected String[] hosts;
 
@@ -115,11 +117,14 @@ public class GridHadoopFileBlock implements Externalizable {
         this.file = file;
     }
 
-    /**
-     * @return Hosts.
-     */
+    /** {@inheritDoc} */
     public String[] hosts() {
         return hosts;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object innerSplit() {
+        return null;
     }
 
     /**
