@@ -44,7 +44,13 @@ import java.util.concurrent.atomic.*;
  * Note that this finder is shared by default (see {@link GridTcpDiscoveryIpFinder#isShared()}.
  */
 public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAdapter {
-    /** Default path for local testing only. */
+    /**
+     * Default path for discovering of local nodes (testing only). Note that this path is relative to
+     * {@code GRIDGAIN_HOME/work} folder if {@code GRIDGAIN_HOME} system or environment variable specified,
+     * otherwise it is relative to {@code work} folder under system {@code java.io.tmpdir} folder.
+     *
+     * @see GridConfiguration#getWorkDirectory()
+     */
     public static final String DFLT_PATH = "disco/tcp";
 
     /** Delimiter to use between address and port tokens in file names. */

@@ -179,6 +179,11 @@ object visor extends VisorTag {
     @volatile private var shutdownCbs = Seq.empty[() => Unit]
 
     /** Default log file path. */
+    /**
+     * Default log file path. Note that this path is relative to `GRIDGAIN_HOME/work` folder
+     * if `GRIDGAIN_HOME` system or environment variable specified, otherwise it is relative to
+     * `work` folder under system `java.io.tmpdir` folder.
+     */
     private final val DFLT_LOG_PATH = "visor/visor-log"
 
     /** Default configuration path relative to GridGain home. */

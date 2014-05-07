@@ -95,7 +95,13 @@ import static org.gridgain.grid.events.GridEventType.*;
 @GridSpiMultipleInstancesSupport(true)
 @SuppressWarnings({"PackageVisibleInnerClass", "PackageVisibleField"})
 public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpaceSpi, GridFileSwapSpaceSpiMBean {
-    /** Default base directory. */
+    /**
+     * Default base directory. Note that this path is relative to {@code GRIDGAIN_HOME/work} folder
+     * if {@code GRIDGAIN_HOME} system or environment variable specified, otherwise it is relative to
+     * {@code work} folder under system {@code java.io.tmpdir} folder.
+     *
+     * @see GridConfiguration#getWorkDirectory()
+     */
     public static final String DFLT_BASE_DIR = "swapspace";
 
     /** Default maximum sparsity. */
