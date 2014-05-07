@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 import org.apache.commons.io.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
+import org.apache.hadoop.io.serializer.*;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
@@ -45,6 +46,11 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
     }
 
     /**
+     * Custom serialization class that inherits behaviour of native {@link WritableSerialization}.
+     */
+    private static class CustomSerialization extends WritableSerialization { }
+
+    /**
      * Tests whole job execution with all phases in all combination of new and old versions of API.
      * @throws Exception If fails.
      */
@@ -57,12 +63,16 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
         File testOutputDir = Files.createTempDirectory("job-output").toFile();
 
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 16; i++) {
             boolean useNewMapper = (i & 1) == 0;
             boolean useNewCombiner = (i & 2) == 0;
             boolean useNewReducer = (i & 4) == 0;
+            boolean useCustomSerializer = (i & 8) == 0;
 
             JobConf jobConf = new JobConf();
+
+            if (useCustomSerializer)
+                jobConf.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 
             //To split into about 40 items
             jobConf.setInt(FileInputFormat.SPLIT_MAXSIZE, 65000);

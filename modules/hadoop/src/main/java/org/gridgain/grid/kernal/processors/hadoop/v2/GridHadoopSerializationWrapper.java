@@ -20,59 +20,64 @@ import org.jetbrains.annotations.*;
  * The wrapper around external serializer.
  */
 public class GridHadoopSerializationWrapper<T> implements GridHadoopSerialization {
-    /** External serializer - writer */
+    /** External serializer - writer. */
     private final Serializer<T> serializer;
 
-    /** External serializer - reader */
+    /** External serializer - reader. */
     private final Deserializer<T> deserializer;
 
-    /** */
+    /** Data output for current write operation. */
     private DataOutput currOut;
 
-    /** */
+    /** Data input for current read operation. */
     private DataInput currIn;
+
+    /** Wrapper around current output to provide OutputStream interface. */
+    private final OutputStream outStream = new OutputStream() {
+        /** {@inheritDoc} */
+        @Override public void write(int b) throws IOException {
+            currOut.write(b);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(byte[] b, int off, int len) throws IOException {
+            currOut.write(b, off, len);
+        }
+    };
+
+    /** Wrapper around current input to provide InputStream interface. */
+    private final InputStream inStream = new InputStream() {
+        /** {@inheritDoc} */
+        @Override public int read() throws IOException {
+            return currIn.readUnsignedByte();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int read(byte[] b, int off, int len) throws IOException {
+            currIn.readFully(b, off, len);
+
+            return len;
+        }
+    };
 
     /**
      * @param serialization External serializer to wrap.
      * @param cls The class to serialize.
      */
-    public GridHadoopSerializationWrapper(Serialization<T> serialization, Class<T> cls) throws GridException {
+    public GridHadoopSerializationWrapper(Serialization<T> serialization, Class<T> cls) {
         serializer = serialization.getSerializer(cls);
         deserializer = serialization.getDeserializer(cls);
-
-        try {
-            OutputStream outStream = new OutputStream() {
-                /** {@inheritDoc} */
-                @Override public void write(int b) throws IOException {
-                    currOut.write(b);
-                }
-
-                /** {@inheritDoc} */
-                @Override public void write(byte[] b, int off, int len) throws IOException {
-                    currOut.write(b, off, len);
-                }
-            };
-
-            serializer.open(outStream);
-
-            InputStream inStream = new InputStream() {
-                /** {@inheritDoc} */
-                @Override public int read() throws IOException {
-                    return currIn.readUnsignedByte();
-                }
-            };
-
-            deserializer.open(inStream);
-        }
-        catch (IOException e) {
-            throw new GridException(e);
-        }
     }
 
     /** {@inheritDoc} */
     @Override public void write(DataOutput out, Object obj) throws GridException {
         try {
+            boolean isFirstWrite = (currOut == null);
+
             currOut = out;
+
+            if (isFirstWrite)
+                serializer.open(outStream);
 
             serializer.serialize((T)obj);
         }
@@ -84,7 +89,12 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
     /** {@inheritDoc} */
     @Override public Object read(DataInput in, @Nullable Object obj) throws GridException {
         try {
+            boolean isFirstRead = (currIn == null);
+
             currIn = in;
+
+            if (isFirstRead)
+                deserializer.open(inStream);
 
             return deserializer.deserialize((T)obj);
         }
@@ -95,12 +105,15 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
 
     /** {@inheritDoc} */
     @Override public void close() throws GridException {
-//        try {
-//            serializer.close();
-//            deserializer.close();
-//        }
-//        catch (IOException e) {
-//            throw new GridException(e);
-//        }
+        try {
+            if ((currOut != null))
+                serializer.close();
+
+            if ((currIn != null))
+                deserializer.close();
+        }
+        catch (IOException e) {
+            throw new GridException(e);
+        }
     }
 }

@@ -11,33 +11,36 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.serializer.*;
-import org.gridgain.grid.hadoop.GridHadoopSerialization;
+import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
-import org.gridgain.testframework.junits.common.GridCommonAbstractTest;
+import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
 
+/**
+ * Test of wrapper of the native serialization.
+ */
 public class GridHadoopSerializationWrapperSelfTest extends GridCommonAbstractTest {
-
-    public void testWritableSerialization() throws Exception {
-        Serialization nativeSer = new WritableSerialization();
-
-        //GridHadoopSerialization ser = new GridHadoopSerializationWrapper(nativeSer, IntWritable.class);
-
-        GridHadoopSerialization ser = new GridHadoopWritableSerialization(IntWritable.class);
+    /**
+     * Tests read/write of IntWritable via native WritableSerialization.
+     * @throws Exception If fails.
+     */
+    public void testIntWritableSerialization() throws Exception {
+        GridHadoopSerialization ser = new GridHadoopSerializationWrapper(new WritableSerialization(), IntWritable.class);
 
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
+
         DataOutput out = new DataOutputStream(buf);
+
         ser.write(out, new IntWritable(3));
         ser.write(out, new IntWritable(-5));
 
-        System.out.println(Arrays.toString(buf.toByteArray()));
+        assertEquals("[0, 0, 0, 3, -1, -1, -1, -5]", Arrays.toString(buf.toByteArray()));
 
-        DataInputStream in = new DataInputStream(new ByteArrayInputStream(buf.toByteArray()));
+        DataInput in = new DataInputStream(new ByteArrayInputStream(buf.toByteArray()));
 
-        System.out.println(ser.read(in, null));
-        System.out.println(ser.read(in, new IntWritable()));
+        assertEquals(3, ((IntWritable)ser.read(in, null)).get());
+        assertEquals(-5, ((IntWritable)ser.read(in, null)).get());
     }
-
 }

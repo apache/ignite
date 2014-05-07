@@ -164,8 +164,8 @@ public class GridHadoopV2Job implements GridHadoopJob {
 
         Serialization<?> serialization = factory.getSerialization(cls);
 
-//        if (serialization.getClass() == WritableSerialization.class)
-//            return new GridHadoopWritableSerialization((Class<? extends Writable>)cls);
+        if (serialization.getClass() == WritableSerialization.class)
+            return new GridHadoopWritableSerialization((Class<? extends Writable>)cls);
 
         return new GridHadoopSerializationWrapper(serialization, cls);
     }
