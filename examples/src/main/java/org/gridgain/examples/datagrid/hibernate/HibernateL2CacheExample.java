@@ -10,13 +10,13 @@
 package org.gridgain.examples.datagrid.hibernate;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.hibernate.*;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.*;
 import org.hibernate.service.*;
 import org.hibernate.stat.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -75,7 +75,7 @@ public class HibernateL2CacheExample {
             System.out.println();
             System.out.println(">>> Hibernate L2 cache example started.");
 
-            SessionFactory sesFactory = createHibernateSessionFactory();
+            SessionFactory sesFactory = createHibernateSessionFactory(grid);
 
             System.out.println();
             System.out.println(">>> Creating objects.");
@@ -153,13 +153,20 @@ public class HibernateL2CacheExample {
      *
      * @return New Hibernate {@link SessionFactory}.
      */
-    private static SessionFactory createHibernateSessionFactory() {
+    private static SessionFactory createHibernateSessionFactory(Grid g) {
+        String ggHome = g.configuration().getGridGainHome();
+
+        if (ggHome == null)
+            throw new RuntimeException("Failed to resolve path to hibernate configuration file (please create " +
+                "GRIDGAIN_HOME system or environment variable pointing to GridGain installation folder).");
+
         ServiceRegistryBuilder builder = new ServiceRegistryBuilder();
 
         builder.applySetting("hibernate.connection.url", JDBC_URL);
         builder.applySetting("hibernate.show_sql", true);
 
-        return new Configuration().configure(U.resolveGridGainUrl("examples/config/hibernate/example-hibernate-L2-cache.xml"))
+        return new Configuration()
+            .configure(new File(ggHome, "examples/config/hibernate/example-hibernate-L2-cache.xml"))
             .buildSessionFactory(builder.buildServiceRegistry());
     }
 

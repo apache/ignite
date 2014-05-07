@@ -54,23 +54,6 @@ public class ExamplesUtils {
     }
 
     /**
-     * @return Resolved GridGain home via system or environment properties.
-     * @throws RuntimeException If failed to resolve.
-     */
-    public static String resolveGridGainHome() throws RuntimeException {
-        String var = System.getProperty("GRIDGAIN_HOME");
-
-        if (var == null)
-            var = System.getenv("GRIDGAIN_HOME");
-
-        if (var == null)
-            throw new RuntimeException("Failed to resolve GridGain home folder " +
-                "(please set 'GRIDGAIN_HOME' environment or system variable)");
-
-        return var;
-    }
-
-    /**
      * @param grid Grid.
      * @param name Streamer name.
      * @return {@code True} if grid has streamer with given name.
