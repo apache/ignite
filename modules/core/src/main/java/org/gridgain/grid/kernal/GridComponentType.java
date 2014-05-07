@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.scheduler.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
@@ -51,7 +52,11 @@ public enum GridComponentType {
     /** Integration of cache transactions with JTA. */
     JTA(
         "org.gridgain.grid.kernal.processors.cache.jta.GridCacheJtaNoopManager",
-        "org.gridgain.grid.kernal.processors.cache.jta.GridCacheJtaManager");
+        "org.gridgain.grid.kernal.processors.cache.jta.GridCacheJtaManager"),
+    /** Cron-based scheduling, see {@link GridScheduler}. */
+    SCHEDULE(
+        "org.gridgain.grid.kernal.processors.schedule.GridScheduleNoopProcessor",
+        "org.gridgain.grid.kernal.processors.schedule.GridScheduleProcessor");
 
     /** No-op class name. */
     private final String noOpClsName;
@@ -102,10 +107,33 @@ public enum GridComponentType {
 
     /**
      * First tries to find main component class, if it is not found creates no-op implementation.
+     *
+     * @param ctx Kernal context.
+     * @return Created component or no-op implementation.
+     * @throws GridException If failed.
+     */
+    public <T> T createOptional(GridKernalContext ctx) throws GridException {
+        return createOptional0(ctx);
+    }
+
+    /**
+     * First tries to find main component class, if it is not found creates no-op implementation.
+     *
      * @return Created component or no-op implementation.
      * @throws GridException If failed.
      */
     public <T> T createOptional() throws GridException {
+        return createOptional0(null);
+    }
+
+    /**
+     * First tries to find main component class, if it is not found creates no-op implementation.
+     *
+     * @param ctx Kernal context.
+     * @return Created component or no-op implementation.
+     * @throws GridException If failed.
+     */
+    private <T> T createOptional0(@Nullable GridKernalContext ctx) throws GridException {
         Class<?> cls;
 
         try {
@@ -121,9 +149,16 @@ public enum GridComponentType {
         }
 
         try {
-            Constructor<?> ctor = cls.getConstructor(GridKernalContext.class);
+            if (ctx == null) {
+                Constructor<?> ctor = cls.getConstructor();
 
-            return (T) ctor.newInstance();
+                return (T)ctor.newInstance();
+            }
+            else {
+                Constructor<?> ctor = cls.getConstructor(GridKernalContext.class);
+
+                return (T)ctor.newInstance();
+            }
         }
         catch (Exception e) {
             throw new GridException("Failed to create component.", e);

@@ -110,9 +110,10 @@ public class GridIndexingNoopSpi extends GridSpiAdapter implements GridIndexingS
     }
 
     /**
-     * @return SPI usage exception.
+     * @return No-op SPI usage exception.
      */
     private GridSpiException spiException() {
+        // TODO
         return new GridSpiException("No-op SPI does not support queries, please use GridH2IndexingSpi.");
     }
 }

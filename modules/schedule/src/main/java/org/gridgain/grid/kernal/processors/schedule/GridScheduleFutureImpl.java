@@ -303,7 +303,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
 
         this.task = task;
 
-        ctx.schedule().onScheduled(this);
+        ((GridScheduleProcessor)ctx.schedule()).onScheduled(this);
 
         if (delay > 0) {
             // Schedule after delay.
@@ -345,7 +345,7 @@ class GridScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Grid
         if (descheduled.compareAndSet(false, true)) {
             sched.deschedule(id);
 
-            ctx.schedule().onDescheduled(this);
+            ((GridScheduleProcessor)ctx.schedule()).onDescheduled(this);
         }
     }
 

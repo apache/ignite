@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.product.*;
@@ -17,8 +18,9 @@ import org.gridgain.grid.util.worker.*;
 import org.jetbrains.annotations.*;
 import org.w3c.dom.*;
 import org.w3c.dom.Node;
-import org.w3c.tidy.*;
+import org.xml.sax.*;
 
+import javax.xml.parsers.*;
 import java.io.*;
 import java.net.*;
 import java.util.concurrent.*;
@@ -61,7 +63,7 @@ class GridUpdateNotifier {
     private volatile String latestVer;
 
     /** HTML parsing helper. */
-    private final Tidy tidy;
+    private final DocumentBuilder documentBuilder;
 
     /** Grid name. */
     private final String gridName;
@@ -86,23 +88,35 @@ class GridUpdateNotifier {
      * @param ver Compound GridGain version.
      * @param site Site.
      * @param reportOnlyNew Whether or not to report only new version.
+     * @throws GridException If failed.
      */
-    GridUpdateNotifier(String gridName, String edition, String ver, String site, boolean reportOnlyNew) {
-        tidy = new Tidy();
+    GridUpdateNotifier(String gridName, String edition, String ver, String site, boolean reportOnlyNew)
+        throws GridException {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
-        tidy.setQuiet(true);
-        tidy.setOnlyErrors(true);
-        tidy.setShowWarnings(false);
-        tidy.setInputEncoding("UTF8");
-        tidy.setOutputEncoding("UTF8");
+            documentBuilder = factory.newDocumentBuilder();
 
-        this.ver = ver;
-        this.edition = edition;
+            documentBuilder.setEntityResolver(new EntityResolver() {
+                @Override public InputSource resolveEntity(String publicId, String systemId) {
+                    if (systemId.endsWith(".dtd"))
+                        return new InputSource(new StringReader(""));
 
-        url = "http://" + site + "/update_status.php" + URL_SUFFIX;
+                    return null;
+                }
+            });
 
-        this.gridName = gridName;
-        this.reportOnlyNew = reportOnlyNew;
+            this.ver = ver;
+            this.edition = edition;
+
+            url = "http://" + site + URL_SUFFIX;
+
+            this.gridName = gridName;
+            this.reportOnlyNew = reportOnlyNew;
+        }
+        catch (ParserConfigurationException e) {
+            throw new GridException("Failed to create xml parser.", e);
+        }
     }
 
     /**
@@ -252,7 +266,20 @@ class GridUpdateNotifier {
                         if (in == null)
                             return;
 
-                        dom = tidy.parseDOM(in, null);
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"));
+
+                        StringBuilder xml = new StringBuilder();
+
+                        String line;
+
+                        while ((line = reader.readLine()) != null) {
+                            if (line.contains("<meta") && !line.contains("/>"))
+                                line = line.replace(">", "/>");
+
+                            xml.append(line).append('\n');
+                        }
+
+                        dom = documentBuilder.parse(new ByteArrayInputStream(xml.toString().getBytes("UTF-8")));
                     }
                     catch (IOException e) {
                         if (log.isDebugEnabled())

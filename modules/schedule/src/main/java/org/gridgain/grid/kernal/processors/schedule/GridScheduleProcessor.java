@@ -25,7 +25,7 @@ import java.util.concurrent.*;
 /**
  * Schedules cron-based execution of grid tasks and closures.
  */
-public class GridScheduleProcessor extends GridProcessorAdapter {
+public class GridScheduleProcessor extends GridScheduleProcessorAdapter {
     /** Cron scheduler. */
     private Scheduler sched;
 
@@ -39,13 +39,8 @@ public class GridScheduleProcessor extends GridProcessorAdapter {
         super(ctx);
     }
 
-    /**
-     * @param c Closure to schedule to run as a background cron-based job.
-     * @param pattern Scheduling pattern in UNIX cron format with prefix "{n1, n2} " where n1 is delay of scheduling
-     *      and n2 is the number of task calls.
-     * @return Descriptor of the scheduled execution.
-     */
-    public GridSchedulerFuture<?> schedule(final Runnable c, String pattern) {
+    /** {@inheritDoc} */
+    @Override public GridSchedulerFuture<?> schedule(final Runnable c, String pattern) {
         assert c != null;
         assert pattern != null;
 
@@ -62,13 +57,8 @@ public class GridScheduleProcessor extends GridProcessorAdapter {
         return fut;
     }
 
-    /**
-     * @param c Closure to schedule to run as a background cron-based job.
-     * @param pattern Scheduling pattern in UNIX cron format with prefix "{n1, n2} " where n1 is delay of scheduling
-     *      and n2 is the number of task calls.
-     * @return Descriptor of the scheduled execution.
-     */
-    public <R> GridSchedulerFuture<R> schedule(Callable<R> c, String pattern) {
+    /** {@inheritDoc} */
+    @Override public <R> GridSchedulerFuture<R> schedule(Callable<R> c, String pattern) {
         assert c != null;
         assert pattern != null;
 

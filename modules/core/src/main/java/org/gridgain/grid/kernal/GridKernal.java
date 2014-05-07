@@ -550,15 +550,21 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         boolean notifyEnabled = !"false".equalsIgnoreCase(X.getSystemOrEnv(GG_UPDATE_NOTIFIER));
 
-        final GridUpdateNotifier verChecker;
+        GridUpdateNotifier verChecker0 = null;
 
         if (notifyEnabled) {
-            verChecker = new GridUpdateNotifier(gridName, EDITION, VER, SITE, false);
+            try {
+                verChecker0 = new GridUpdateNotifier(gridName, EDITION, VER, SITE, false);
 
-            verChecker.checkForNewVersion(cfg.getExecutorService(), log);
+                verChecker0.checkForNewVersion(cfg.getExecutorService(), log);
+            }
+            catch (GridException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to create GridUpdateNotifier: " + e);
+            }
         }
-        else
-            verChecker = null;
+
+        final GridUpdateNotifier verChecker = verChecker0;
 
         // Ack 3-rd party licenses location.
         if (log.isInfoEnabled() && cfg.getGridGainHome() != null)
@@ -673,7 +679,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             startProcessor(ctx, new GridTaskSessionProcessor(ctx), attrs);
             startProcessor(ctx, new GridJobProcessor(ctx), attrs);
             startProcessor(ctx, new GridTaskProcessor(ctx), attrs);
-            startProcessor(ctx, new GridScheduleProcessor(ctx), attrs);
+            startProcessor(ctx, (GridProcessor)SCHEDULE.createOptional(ctx), attrs);
             startProcessor(ctx, (GridProcessor)REST.create(ctx, !cfg.isRestEnabled()), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);

@@ -180,7 +180,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** */
     @GridToStringInclude
-    private GridScheduleProcessor scheduleProc;
+    private GridScheduleProcessorAdapter scheduleProc;
 
     /** */
     @GridToStringInclude
@@ -368,8 +368,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             emailProc = (GridEmailProcessorAdapter)comp;
         else if (comp instanceof GridClosureProcessor)
             closProc = (GridClosureProcessor)comp;
-        else if (comp instanceof GridScheduleProcessor)
-            scheduleProc = (GridScheduleProcessor)comp;
+        else if (comp instanceof GridScheduleProcessorAdapter)
+            scheduleProc = (GridScheduleProcessorAdapter)comp;
         else if (comp instanceof GridSegmentationProcessor)
             segProc = (GridSegmentationProcessor)comp;
         else if (comp instanceof GridAffinityProcessor)
@@ -526,7 +526,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public GridScheduleProcessor schedule() {
+    @Override public GridScheduleProcessorAdapter schedule() {
         return scheduleProc;
     }
 
