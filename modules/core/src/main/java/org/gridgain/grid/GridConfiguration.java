@@ -1322,12 +1322,15 @@ public class GridConfiguration {
     }
 
     /**
-     * Should return GridGain work folder. If not provided, the method will use work folder under
-     * {@code GRIDGAIN_HOME} specified by {@link GridConfiguration#setGridGainHome(String)}.
-     * If {@code GRIDGAIN_HOME} is not provided, then grid will use system temp folder.
+     * Gets GridGain work folder. If not provided, the method will use work folder under
+     * {@code GRIDGAIN_HOME} specified by {@link GridConfiguration#setGridGainHome(String)} or
+     * {@code GRIDGAIN_HOME} environment variable or system property.
+     * <p>
+     * If {@code GRIDGAIN_HOME} is not provided, then system temp folder is used.
      *
      * @return GridGain work folder or {@code null} to make the system attempt to infer it automatically.
      * @see GridConfiguration#getGridGainHome()
+     * @see GridSystemProperties#GG_HOME
      */
     @Nullable public String getWorkDirectory() {
         return ggWork;

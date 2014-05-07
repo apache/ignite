@@ -655,15 +655,10 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            StringBuilder buf = new StringBuilder();
-
-            buf.append(getClass().getSimpleName());
-            buf.append(" [spi=").append(spi);
-            buf.append(", discoSpi=").append(discoSpi);
-            buf.append(", allAttrs=").append(allAttrs);
-            buf.append(']');
-
-            return buf.toString();
+            return getClass().getSimpleName() +
+                " [spi=" + spi +
+                ", discoSpi=" + discoSpi +
+                ", allAttrs=" + allAttrs + ']';
         }
     }
 }
