@@ -25,7 +25,6 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.spi.indexing.h2.*;
 import org.gridgain.grid.spi.swapspace.file.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -45,7 +44,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
     private static final boolean TEST_INFO = true;
 
     /** Number of test grids (nodes). Should not be less than 2. */
-    private static final int GRID_CNT = 1; // TODO: Change back to 2.
+    private static final int GRID_CNT = 2;
 
     /** */
     private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
@@ -57,11 +56,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
     private static AtomicInteger idxUnswapCnt = new AtomicInteger();
 
     /** */
-    private static final long DURATION = 30 * 1000 * 10;
-
-    @Override protected long getTestTimeout() {
-        return DURATION * 10;
-    }
+    private static final long DURATION = 30 * 1000;
 
     /** Don't start grid by default. */
     public GridCacheQueryMultiThreadedSelfTest() {
@@ -84,15 +79,15 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setAtomicityMode(ATOMIC); // TODO: Atomic.
-        cacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
+        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        cacheCfg.setDistributionMode(GridCacheDistributionMode.NEAR_PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(true);
         cacheCfg.setBackups(1);
         cacheCfg.setEvictionPolicy(evictsEnabled() ? new GridCacheLruEvictionPolicy(100) : null);
 
         if (offheapEnabled() && evictsEnabled())
-            cacheCfg.setOffHeapMaxMemory(1 * 10000); // TODO: Enlarge // Small offheap for evictions.
+            cacheCfg.setOffHeapMaxMemory(1000); // Small offheap for evictions.
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -130,7 +125,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
     /** @return {@code true} If evictions enabled. */
     protected boolean evictsEnabled() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -147,7 +142,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        assert GRID_CNT >= 1 : "Constant GRID_CNT must be greater than or equal to 2.";
+        assert GRID_CNT >= 2 : "Constant GRID_CNT must be greater than or equal to 2.";
 
         startGridsMultiThreaded(GRID_CNT);
     }
@@ -466,14 +461,14 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testMultiThreadedSwapUnswapObject() throws Exception {
-        int threadCnt = 150; // TODO: Was 50 initially.
-        final int keyCnt = 10000;  // TODO: Change back to 4000.
+        int threadCnt = 50;
+        final int keyCnt = 4000;
         final int valCnt = 10000;
 
         final Grid g = grid(0);
 
         // Put test values into cache.
-        final GridCache<Long, TestValue> c = g.cache(null);
+        final GridCache<Integer, TestValue> c = g.cache(null);
 
         assertEquals(0, g.cache(null).size());
         assertEquals(0, c.queries().createSqlQuery(String.class, "1 = 1").execute().get().size());
@@ -481,12 +476,12 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         Random rnd = new Random();
 
-//        for (int i = 0; i < keyCnt; i += 1 + rnd.nextInt(3)) {
-//            c.putx(i, new TestValue(rnd.nextInt(valCnt)));
-//
-//            if (evictsEnabled() && rnd.nextBoolean())
-//                assertTrue(c.evict(i));
-//        }
+        for (int i = 0; i < keyCnt; i += 1 + rnd.nextInt(3)) {
+            c.putx(i, new TestValue(rnd.nextInt(valCnt)));
+
+            if (evictsEnabled() && rnd.nextBoolean())
+                assertTrue(c.evict(i));
+        }
 
         final AtomicBoolean done = new AtomicBoolean();
 
@@ -495,13 +490,39 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
                 Random rnd = new Random();
 
                 while (!done.get()) {
-                    long key = (long)rnd.nextInt(keyCnt);
+                    int key = rnd.nextInt(keyCnt);
 
-                    switch (rnd.nextInt(1)) {
+                    switch (rnd.nextInt(5)) {
                         case 0:
                             c.putx(key, new TestValue(rnd.nextInt(valCnt)));
 
                             break;
+                        case 1:
+                            if (evictsEnabled())
+                                c.evict(key);
+
+                            break;
+                        case 2:
+                            c.remove(key);
+
+                            break;
+                        case 3:
+                            c.get(key);
+
+                            break;
+                        case 4:
+                            GridCacheQuery<Map.Entry<Integer, TestValue>> qry = c.queries().createSqlQuery(
+                                Long.class, "TestValue.val between ? and ?");
+
+                            int from = rnd.nextInt(valCnt);
+
+                            GridCacheQueryFuture<Map.Entry<Integer, TestValue>> f = qry.execute(from, from + 250);
+
+                            Collection<Map.Entry<Integer, TestValue>> res = f.get();
+
+                            for (Map.Entry<Integer, TestValue> ignored : res) {
+                                //No-op.
+                            }
                     }
                 }
             }
@@ -814,10 +835,6 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
          */
         public int value() {
             return val;
-        }
-
-        @Override public String toString() {
-            return S.toString(TestValue.class, this);
         }
     }
 }

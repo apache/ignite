@@ -388,12 +388,6 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
         byte[] val = space.remove(key, c != null);
 
-        if (val != null && val[0] != 114)
-            U.dumpStack("FAULTY ARRAY ON REMOVE [key=" + Arrays.toString(key.keyBytes()) + ", val=" + Arrays.toString(val) + ']');
-
-        //U.debug("REMOVE [space=" + spaceName + ", key=" + key + ", val=" + Arrays.toString(val) + ']');
-        //U.debug("REMOVE [space=" + spaceName + ", key=" + key + ", len=" + (val != null ? val.length : -1) + ']');
-
         if (c != null)
             c.apply(val);
 
@@ -432,12 +426,6 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
         Space space = space(spaceName, true);
 
         assert space != null;
-
-        if (val != null && val[0] != 114)
-            U.dumpStack("FAULTY ARRAY ON STORE [key=" + Arrays.toString(key.keyBytes()) + ", val=" + Arrays.toString(val) + ']');
-
-        //U.debug("STORE [space=" + spaceName + ", key=" + key + ", val=" + Arrays.toString(val) + ']');
-        //U.debug("STORE [space=" + spaceName + ", key=" + key + ", len=" + (val != null ? val.length : -1) + ']');
 
         space.store(key, val);
 

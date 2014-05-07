@@ -1119,9 +1119,8 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
 
                                     valBytes = mem.readBytes(cur + HEADER + keyLen, valLen);
                                 }
-                                else {
+                                else
                                     valBytes = EMPTY_BYTES;
-                                }
                             }
 
                             // Prepare release of memory.
