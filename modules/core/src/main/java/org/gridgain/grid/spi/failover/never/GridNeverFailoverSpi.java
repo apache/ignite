@@ -51,11 +51,6 @@ import java.util.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridFailoverSpi
  */
-@GridSpiInfo(
-    author = /*@java.spi.author*/"GridGain Systems",
-    url = /*@java.spi.url*/"www.gridgain.com",
-    email = /*@java.spi.email*/"support@gridgain.com",
-    version = /*@java.spi.version*/"x.x")
 @GridSpiMultipleInstancesSupport(true)
 public class GridNeverFailoverSpi extends GridSpiAdapter implements GridFailoverSpi, GridNeverFailoverSpiMBean {
     /** Injected grid logger. */

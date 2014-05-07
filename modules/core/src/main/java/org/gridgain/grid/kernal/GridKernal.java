@@ -99,7 +99,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     private static final long serialVersionUID = 0L;
 
     /** Ant-augmented compatible versions. */
-    private static final String COMPATIBLE_VERS = /*@java.compatible.vers*/"";
+    private static final String COMPATIBLE_VERS = GridProperties.get("gridgain.compatible.vers");
 
     /** GridGain site that is shown in log messages. */
     static final String SITE = "www.gridgain." + (ENT ? "com" : "org");
@@ -419,22 +419,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         GridLifecycleBean[] beans = cfg.getLifecycleBeans();
 
         return F.isEmpty(beans) ? Collections.<String>emptyList() : F.transform(beans, F.<GridLifecycleBean>string());
-    }
-
-    /**
-     * @param spiCls SPI class.
-     * @return Spi version.
-     * @throws GridException Thrown if {@link GridSpiInfo} annotation cannot be found.
-     */
-    private Serializable getSpiVersion(Class<? extends GridSpi> spiCls) throws GridException {
-        assert spiCls != null;
-
-        GridSpiInfo ann = U.getAnnotation(spiCls, GridSpiInfo.class);
-
-        if (ann == null)
-            throw new GridException("SPI implementation does not have annotation: " + GridSpiInfo.class);
-
-        return ann.version();
     }
 
     /**
@@ -1352,7 +1336,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             Class<? extends GridSpi> spiCls = spi.getClass();
 
             add(attrs, U.spiAttribute(spi, ATTR_SPI_CLASS), spiCls.getName());
-            add(attrs, U.spiAttribute(spi, ATTR_SPI_VER), getSpiVersion(spiCls));
         }
     }
 
