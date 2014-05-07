@@ -75,7 +75,7 @@ public class GridHibernateTransactionalDataRegion extends GridHibernateRegion im
                     throw new CacheException("Hibernate TRANSACTIONAL access strategy must have GridGain cache with " +
                         "'TRANSACTIONAL' atomicity mode: " + cache.name());
 
-                if (cache.configuration().getTransactionManagerLookup() == null)
+                if (cache.configuration().getTransactionManagerLookupClassName() == null)
                     throw new CacheException("Hibernate TRANSACTIONAL access strategy must have GridGain cache with " +
                         "TransactionManagerLookup configured: " + cache.name());
 

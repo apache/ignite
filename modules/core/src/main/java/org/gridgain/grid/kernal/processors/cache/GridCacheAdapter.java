@@ -113,12 +113,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** Cache metrics. */
     protected volatile GridCacheMetricsAdapter metrics;
 
-    /** */
-    private final ThreadLocal<GridCacheXAResource> xaRsrc = new ThreadLocal<>();
-
-    /** */
-    private TransactionManager jtaTm;
-
     /** Before lock callback. */
     protected GridBiClosure<Collection<K>, Boolean, GridFuture<Object>> beforePessimisticLock;
 
@@ -3172,65 +3166,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /**
      * Checks if cache is working in JTA transaction and enlist cache as XAResource if necessary.
      *
-     * @throws GridException In case of lookup error.
+     * @throws GridException In case of error.
      */
     protected void checkJta() throws GridException {
-        if (jtaTm == null) {
-            if (cacheCfg.getTransactionManagerLookup() != null) {
-                jtaTm = cacheCfg.getTransactionManagerLookup().getTm();
-            }
-        }
-
-        if (jtaTm != null) {
-            GridCacheXAResource rsrc = xaRsrc.get();
-
-            if (rsrc == null || rsrc.isFinished()) {
-                try {
-                    Transaction jtaTx = jtaTm.getTransaction();
-
-                    if (jtaTx != null) {
-                        GridCacheTx tx = ctx.tm().userTx();
-
-                        if (tx == null) {
-                            // Start with default concurrency and isolation.
-                            GridCacheConfiguration cfg = ctx.config();
-
-                            tx = ctx.tm().onCreated(
-                                newTx(
-                                    false,
-                                    false,
-                                    cfg.getDefaultTxConcurrency(),
-                                    cfg.getDefaultTxIsolation(),
-                                    cfg.getDefaultTxTimeout(),
-                                    cfg.isInvalidate() || ctx.hasFlag(INVALIDATE),
-                                    ctx.syncCommit(),
-                                    ctx.syncRollback(),
-                                    ctx.isSwapEnabled(),
-                                    ctx.isStoreEnabled(),
-                                    0,
-                                    /** group lock keys */null,
-                                    /** partition lock */false
-                                )
-                            );
-                        }
-
-                        rsrc = new GridCacheXAResource((GridCacheTxEx)tx, ctx);
-
-                        if (!jtaTx.enlistResource(rsrc)) {
-                            throw new GridException("Failed to enlist XA resource to JTA user transaction.");
-                        }
-
-                        xaRsrc.set(rsrc);
-                    }
-                }
-                catch (SystemException e) {
-                    throw new GridException("Failed to obtain JTA transaction.", e);
-                }
-                catch (RollbackException e) {
-                    throw new GridException("Failed to enlist XAResource to JTA transaction.", e);
-                }
-            }
-        }
+        ctx.jta().checkJta();
     }
 
     /** {@inheritDoc} */

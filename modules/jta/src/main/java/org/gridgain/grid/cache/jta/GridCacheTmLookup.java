@@ -20,7 +20,7 @@ import javax.transaction.*;
 /**
  * Allows grid to use different transactional systems. Implement this interface
  * to look up native transaction manager within your environment. Transaction
- * manager lookup is configured via {@link GridCacheConfiguration#getTransactionManagerLookup()}
+ * manager lookup is configured via {@link GridCacheConfiguration#getTransactionManagerLookupClassName()}
  * method.
  * <p>
  * The following implementations are provided out of the box:

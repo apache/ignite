@@ -26,6 +26,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
+import org.gridgain.grid.kernal.processors.cache.jta.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.local.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
@@ -50,6 +51,7 @@ import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.dr.cache.receiver.GridDrReceiverCacheConflictResolverMode.*;
+import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
@@ -457,14 +459,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param cfg Configuration.
+     * @param objs Extra components.
      * @throws GridException If failed to inject.
      */
-    private void prepare(GridCacheConfiguration cfg) throws GridException {
+    private void prepare(GridCacheConfiguration cfg, Object... objs) throws GridException {
         prepare(cfg, cfg.getEvictionPolicy(), false);
         prepare(cfg, cfg.getNearEvictionPolicy(), true);
         prepare(cfg, cfg.getAffinity(), false);
         prepare(cfg, cfg.getAffinityMapper(), false);
-        prepare(cfg, cfg.getTransactionManagerLookup(), false);
         prepare(cfg, cfg.getCloner(), false);
         prepare(cfg, cfg.getStore(), false);
         prepare(cfg, cfg.getEvictionFilter(), false);
@@ -478,6 +480,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (drRcvCfg != null)
             prepare(cfg, drRcvCfg.getConflictResolver(), false);
+
+        for (Object obj : objs)
+            prepare(cfg, obj, false);
     }
 
     /**
@@ -506,7 +511,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cleanup(cfg, cfg.getNearEvictionPolicy(), true);
         cleanup(cfg, cfg.getAffinity(), false);
         cleanup(cfg, cfg.getAffinityMapper(), false);
-        cleanup(cfg, cfg.getTransactionManagerLookup(), false);
+        cleanup(cfg, cctx.jta().tmLookup(), false);
         cleanup(cfg, cfg.getCloner(), false);
         cleanup(cfg, cfg.getStore(), false);
 
@@ -591,9 +596,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             validate(ctx.config(), cfg);
 
-            prepare(cfg);
+            GridCacheJtaManagerAdapter jta = JTA.create(cfg.getTransactionManagerLookupClassName() == null);
 
-            U.startLifecycleAware(lifecycleAwares(cfg));
+            jta.createTmLookup(cfg);
+
+            prepare(cfg, jta.tmLookup());
+
+            U.startLifecycleAware(lifecycleAwares(cfg, jta.tmLookup()));
 
             cfgs[i] = cfg; // Replace original configuration value.
 
@@ -639,7 +648,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 tm,
                 dataStructuresMgr,
                 ttlMgr,
-                drMgr);
+                drMgr,
+                jta);
 
             GridCacheAdapter cache = null;
 
@@ -788,7 +798,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     tm,
                     dataStructuresMgr,
                     ttlMgr,
-                    drMgr);
+                    drMgr,
+                    jta);
 
                 GridDhtCacheAdapter dht = null;
 
@@ -1450,7 +1461,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     mgr.stop(cancel);
             }
 
-            U.stopLifecycleAware(log, lifecycleAwares(cache.configuration()));
+            U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.jta().tmLookup()));
 
             if (log.isInfoEnabled())
                 log.info("Stopped cache: " + cache.name());
@@ -1765,12 +1776,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param ccfg Cache configuration.
+     * @param objs Extra components.
      * @return Components provided in cache configuration which can implement {@link GridLifecycleAware} interface.
      */
-    private Iterable<Object> lifecycleAwares(GridCacheConfiguration ccfg) {
-        return F.asList(ccfg.getAffinity(), ccfg.getAffinityMapper(), ccfg.getCloner(),
-            ccfg.getEvictionFilter(), ccfg.getEvictionPolicy(), ccfg.getNearEvictionPolicy(),
-            ccfg.getTransactionManagerLookup());
+    private Iterable<Object> lifecycleAwares(GridCacheConfiguration ccfg, Object...objs) {
+        List<Object> ret = new ArrayList<>(6 + objs.length);
+
+        ret.add(ccfg.getAffinity());
+        ret.add(ccfg.getAffinityMapper());
+        ret.add(ccfg.getCloner());
+        ret.add(ccfg.getEvictionFilter());
+        ret.add(ccfg.getEvictionPolicy());
+        ret.add(ccfg.getNearEvictionPolicy());
+
+        Collections.addAll(ret, objs);
+
+        return ret;
     }
 
     /**

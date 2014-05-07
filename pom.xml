@@ -60,6 +60,7 @@
         <module>modules/servlet-startup</module>
         <module>modules/rest</module>
         <module>modules/mail</module>
+        <module>modules/jta</module>
     </modules>
 
     <build>

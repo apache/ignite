@@ -47,7 +47,11 @@ public enum GridComponentType {
     EMAIL(
         "org.gridgain.grid.kernal.processors.email.GridEmailNoopProcessor",
         "org.gridgain.grid.kernal.processors.email.GridEmailProcessor"
-    );
+    ),
+    /** Integration of cache transactions with JTA. */
+    JTA(
+        "org.gridgain.grid.kernal.processors.cache.jta.GridCacheJtaNoopManager",
+        "org.gridgain.grid.kernal.processors.cache.jta.GridCacheJtaManager");
 
     /** No-op class name. */
     private final String noOpClsName;
