@@ -19,7 +19,6 @@ public class GridGgfsInvalidPathException extends GridGgfsException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates exception with given error message.
      *

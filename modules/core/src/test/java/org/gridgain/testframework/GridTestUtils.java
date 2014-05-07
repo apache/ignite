@@ -297,7 +297,7 @@ public final class GridTestUtils {
         int startPort = mcastPort;
 
         while (true) {
-            if (mcastPort == max_mcast_port)
+            if (mcastPort >= max_mcast_port)
                 mcastPort = default_mcast_port;
             else
                 mcastPort++;
@@ -341,7 +341,7 @@ public final class GridTestUtils {
         if (portRet != null)
             return portRet;
 
-        if (commPort == max_comm_port)
+        if (commPort >= max_comm_port)
             commPort = default_comm_port;
         else
             // Reserve 10 ports per test.
@@ -368,7 +368,7 @@ public final class GridTestUtils {
         if (portRet != null)
             return portRet;
 
-        if (discoPort == max_disco_port)
+        if (discoPort >= max_disco_port)
             discoPort = default_disco_port;
         else
             discoPort += 10;
@@ -919,6 +919,50 @@ public final class GridTestUtils {
                 return res;
             }
         };
+    }
+
+    /**
+     * Get object field value via reflection.
+     *
+     * @param obj Object or class to get field value from.
+     * @param cls Class.
+     * @param fieldName Field names to get value for.
+     * @param <T> Expected field class.
+     * @return Field value.
+     * @throws GridRuntimeException In case of error.
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    public static <T> T getFieldValue(Object obj, Class cls, String fieldName) throws GridRuntimeException {
+        assert obj != null;
+        assert fieldName != null;
+
+        try {
+            // Resolve inner field.
+            Field field = cls.getDeclaredField(fieldName);
+
+            synchronized (field) {
+                // Backup accessible field state.
+                boolean accessible = field.isAccessible();
+
+                try {
+                    if (!accessible)
+                        field.setAccessible(true);
+
+                    obj = field.get(obj);
+                }
+                finally {
+                    // Recover accessible field state.
+                    if (!accessible)
+                        field.setAccessible(false);
+                }
+            }
+
+            return (T)obj;
+        }
+        catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new GridRuntimeException("Failed to get object field [obj=" + obj +
+                ", fieldName=" + fieldName + ']', e);
+        }
     }
 
     /**

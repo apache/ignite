@@ -42,11 +42,11 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  */
 public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     implements GridCacheTxEx<K, V>, Externalizable {
-    /** Static logger to avoid re-creation. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Static logger to avoid re-creation. */
+    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
     protected static GridLogger log;
@@ -1082,8 +1082,14 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                         /*event*/false,
                         CU.<K, V>empty());
 
-                for (GridClosure<V, V> clos : txEntry.transformClosures())
-                    val = clos.apply(val);
+                try {
+                    for (GridClosure<V, V> clos : txEntry.transformClosures())
+                        val = clos.apply(val);
+                }
+                catch (Throwable e) {
+                    throw new GridRuntimeException("Transform closure must not throw any exceptions " +
+                        "(transaction will be invalidated)", e);
+                }
 
                 GridCacheOperation op = val == null ? DELETE : UPDATE;
 

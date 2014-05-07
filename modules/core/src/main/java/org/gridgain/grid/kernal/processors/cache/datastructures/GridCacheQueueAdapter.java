@@ -608,7 +608,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /**
          * Required by {@link Externalizable}.
          */

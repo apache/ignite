@@ -40,7 +40,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -444,7 +443,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 ", tx=" + tx + ']');
 
         try {
-            if (req.commit()) {
+            if (req.commit() || req.isSystemInvalidate()) {
                 if (tx.commitVersion(req.commitVersion())) {
                     tx.invalidate(req.isInvalidate());
                     tx.systemInvalidate(req.isSystemInvalidate());

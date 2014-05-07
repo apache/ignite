@@ -23,6 +23,9 @@ import java.util.*;
  * Session listener for web sessions caching.
  */
 class GridWebSessionListener {
+    /** */
+    private static final long RETRY_DELAY = 1;
+
     /** Cache. */
     private final GridCache<String, GridWebSession> cache;
 
@@ -95,8 +98,11 @@ class GridWebSessionListener {
                         U.warn(log, "Failed to apply updates for session (maximum number of retries exceeded) [sesId=" +
                             sesId + ", retries=" + retries + ']');
                     }
-                    else
+                    else {
                         U.warn(log, "Failed to apply updates for session (will retry): " + sesId);
+
+                        U.sleep(RETRY_DELAY);
+                    }
                 }
             }
         }

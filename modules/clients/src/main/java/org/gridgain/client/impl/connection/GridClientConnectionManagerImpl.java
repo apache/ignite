@@ -9,10 +9,13 @@
 
 package org.gridgain.client.impl.connection;
 
+import io.netty.channel.*;
 import io.netty.channel.nio.*;
 import org.gridgain.client.*;
 import org.gridgain.client.util.*;
-import io.netty.channel.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
 import java.io.*;
@@ -23,6 +26,7 @@ import java.util.logging.*;
 
 import static java.util.logging.Level.*;
 import static org.gridgain.client.impl.connection.GridClientConnectionCloseReason.*;
+import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
  * Cached connections manager.
@@ -39,6 +43,9 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
     /** Active connections. */
     private final ConcurrentMap<InetSocketAddress, GridClientConnection> conns = new ConcurrentHashMap<>();
+
+    /** Active connections of nodes. */
+    private final ConcurrentMap<UUID, GridClientConnection> nodeConns = new ConcurrentHashMap<>();
 
     /** SSL context. */
     private final SSLContext sslCtx;
@@ -116,7 +123,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                 GridClientConnection conn = null;
 
                 try {
-                    conn = connect(srvsCp);
+                    conn = connect(null, srvsCp);
 
                     conn.topology(cfg.isAutoFetchAttributes(), cfg.isAutoFetchMetrics(), null).get();
 
@@ -172,29 +179,57 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
         // Use router's connections if defined.
         if (!routers.isEmpty())
-            return connection(routers);
+            return connection(null, routers);
+
+        GridClientConnection conn = nodeConns.get(node.nodeId());
+
+        if (conn != null) {
+            // Ignore closed connections.
+            if (conn.closeIfIdle(cfg.getMaxConnectionIdleTime()))
+                closeIdle();
+            else
+                return conn;
+        }
 
         // Use node's connection, if node is available over rest.
-        Collection<InetSocketAddress> srvs = node.availableAddresses(cfg.getProtocol());
+        Collection<InetSocketAddress> endpoints = node.availableAddresses(cfg.getProtocol());
 
-        if (srvs.isEmpty()) {
+        if (endpoints.isEmpty()) {
             throw new GridServerUnreachableException("No available endpoints to connect " +
                 "(is rest enabled for this node?): " + node);
         }
 
-        return connection(srvs);
+        List<InetSocketAddress> srvs = new ArrayList<>(endpoints.size());
+
+        boolean sameHost = node.attributes().isEmpty() ||
+            F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));
+
+        if (sameHost) {
+            srvs.addAll(endpoints);
+
+            Collections.sort(srvs, GridClientUtils.inetSocketAddressesComparator(true));
+        }
+        else {
+            for (InetSocketAddress endpoint : endpoints)
+                if (!endpoint.getAddress().isLoopbackAddress())
+                    srvs.add(endpoint);
+        }
+
+        return connection(node.nodeId(), srvs);
     }
 
     /**
      * Returns connection to one of the given addresses.
      *
+     * @param nodeId {@code UUID} of node for mapping with connection.
+     *      {@code null} if no need of mapping.
      * @param srvs Collection of addresses to connect to.
      * @return Connection to use for operations, targeted for the given node.
      * @throws GridServerUnreachableException If connection can't be established.
      * @throws GridClientClosedException If connections manager has been closed already.
      * @throws InterruptedException If connection was interrupted.
      */
-    public GridClientConnection connection(Collection<InetSocketAddress> srvs)
+    public GridClientConnection connection(@Nullable UUID nodeId, Collection<InetSocketAddress> srvs)
         throws GridServerUnreachableException, GridClientClosedException, InterruptedException {
         if (srvs == null || srvs.isEmpty())
             throw new GridServerUnreachableException("Failed to establish connection to the grid" +
@@ -218,22 +253,27 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
                 continue;
             }
 
+            if (nodeId != null)
+                nodeConns.put(nodeId, conn);
+
             return conn;
         }
 
-        return connect(srvs);
+        return connect(nodeId, srvs);
     }
 
     /**
      * Creates a connected facade and returns it. Called either from constructor or inside
      * a write lock.
      *
+     * @param nodeId {@code UUID} of node for mapping with connection.
+     *      {@code null} if no need of mapping.
      * @param srvs List of server addresses that this method will try to connect to.
      * @return Established connection.
      * @throws GridServerUnreachableException If none of the servers can be reached.
      * @throws InterruptedException If connection was interrupted.
      */
-    protected GridClientConnection connect(Collection<InetSocketAddress> srvs) throws GridServerUnreachableException,
+    protected GridClientConnection connect(@Nullable UUID nodeId, Collection<InetSocketAddress> srvs) throws GridServerUnreachableException,
         InterruptedException {
         if (srvs.isEmpty())
             throw new GridServerUnreachableException("Failed to establish connection to the grid node (address " +
@@ -243,7 +283,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
         for (InetSocketAddress srv : srvs) {
             try {
-                return connect(srv);
+                return connect(nodeId, srv);
             }
             catch (InterruptedException e) {
                 throw e;
@@ -264,13 +304,15 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
     /**
      * Create new connection to specified server.
      *
+     * @param nodeId {@code UUID} of node for mapping with connection.
+     *      {@code null} if no need of mapping.
      * @param addr Remote socket to connect.
      * @return Established connection.
      * @throws IOException If connection failed.
      * @throws GridClientException If protocol error happened.
      * @throws InterruptedException If thread was interrupted before connection was established.
      */
-    protected GridClientConnection connect(InetSocketAddress addr)
+    protected GridClientConnection connect(@Nullable UUID nodeId, InetSocketAddress addr)
         throws IOException, GridClientException, InterruptedException {
 
         endpointStripedLock.lock(addr);
@@ -278,8 +320,12 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
         try {
             GridClientConnection old = conns.get(addr);
 
-            if (old != null)
+            if (old != null) {
+                if (nodeId != null)
+                    nodeConns.put(nodeId, old);
+
                 return old;
+            }
 
             GridClientConnection conn;
 
@@ -312,6 +358,9 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
             assert old == null;
 
+            if (nodeId != null)
+                nodeConns.put(nodeId, conn);
+
             return conn;
         }
         finally {
@@ -325,7 +374,7 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
             log.fine("Connection with remote node was terminated [node=" + node + ", srvAddr=" +
                 conn.serverAddress() + ", errMsg=" + e.getMessage() + ']');
 
-        conns.remove(conn.serverAddress(), conn);
+        closeIdle();
 
         conn.close(FAILED, false);
     }
@@ -350,6 +399,8 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
 
         conns.clear();
 
+        nodeConns.clear();
+
         // Close old connection outside the writer lock.
         for (GridClientConnection conn : closeConns)
             conn.close(CLIENT_CLOSED, waitCompletion);
@@ -365,7 +416,20 @@ public class GridClientConnectionManagerImpl implements GridClientConnectionMana
      * Close all connections idling for more then
      * {@link GridClientConfiguration#getMaxConnectionIdleTime()} milliseconds.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     private void closeIdle() {
+        for (Iterator<Map.Entry<UUID, GridClientConnection>> it = nodeConns.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<UUID, GridClientConnection> entry = it.next();
+
+            GridClientConnection conn = entry.getValue();
+
+            if (conn.closeIfIdle(cfg.getMaxConnectionIdleTime())) {
+                conns.remove(conn.serverAddress(), conn);
+
+                nodeConns.remove(entry.getKey(), conn);
+            }
+        }
+
         for (GridClientConnection conn : conns.values())
             if (conn.closeIfIdle(cfg.getMaxConnectionIdleTime()))
                 conns.remove(conn.serverAddress(), conn);

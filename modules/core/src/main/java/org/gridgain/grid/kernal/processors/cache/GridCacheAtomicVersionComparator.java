@@ -19,7 +19,6 @@ public class GridCacheAtomicVersionComparator implements Comparator<GridCacheVer
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /** {@inheritDoc} */
     @Override public int compare(GridCacheVersion one, GridCacheVersion other) {
         int topVer = one.topologyVersion();

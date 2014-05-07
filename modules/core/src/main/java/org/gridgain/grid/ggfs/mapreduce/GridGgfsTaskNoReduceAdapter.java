@@ -21,7 +21,6 @@ public abstract class GridGgfsTaskNoReduceAdapter<T, R> extends GridGgfsTask<T, 
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Default implementation which will ignore all results sent from execution nodes.
      *

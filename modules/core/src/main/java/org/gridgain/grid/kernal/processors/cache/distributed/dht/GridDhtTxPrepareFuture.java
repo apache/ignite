@@ -33,11 +33,11 @@ import static org.gridgain.grid.cache.GridCacheTxState.*;
  */
 public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<GridCacheTxEx<K, V>>
     implements GridCacheMvccFuture<K, V, GridCacheTxEx<K, V>> {
-    /** Logger reference. */
-    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Logger reference. */
+    private static final AtomicReference<GridLogger> logRef = new AtomicReference<>();
 
     /** Context. */
     private GridCacheContext<K, V> cctx;
@@ -358,8 +358,6 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     private boolean mapIfLocked() {
         if (checkLocks()) {
             prepare0();
-
-            markInitialized();
 
             return true;
         }
@@ -729,7 +727,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 Collection<GridNode> nearNodes = null;
 
                 if (!F.isEmpty(readers)) {
-                    nearNodes = cctx.discovery().nodes(readers, F0.<UUID>not(F.idForNodeId(tx.nearNodeId())));
+                    nearNodes = cctx.discovery().nodes(readers, F0.not(F.idForNodeId(tx.nearNodeId())));
 
                     if (log.isDebugEnabled())
                         log.debug("Mapping entry to near nodes [nodes=" + U.toShortString(nearNodes) +
@@ -742,8 +740,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 ret = map(entry, F.view(dhtNodes, F.remoteNodes(cctx.nodeId())), dhtMap, futDhtMap);
 
                 // Exclude DHT nodes.
-                ret |= map(entry, F.view(nearNodes, F0.not(F.<GridNode>nodeForNodeIds(dhtMap.keySet()))), nearMap,
-                    futNearMap);
+                ret |= map(entry, F.view(nearNodes, F0.notIn(dhtNodes)), nearMap, futNearMap);
 
                 break;
             }

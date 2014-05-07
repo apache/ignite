@@ -132,6 +132,7 @@ public class GridGgfsStreamsSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        cacheCfg.setQueryIndexEnabled(false);
 
         return cacheCfg;
     }

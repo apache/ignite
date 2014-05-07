@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -117,6 +116,7 @@ public class GridGgfsDataManagerSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        cacheCfg.setQueryIndexEnabled(false);
 
         return cacheCfg;
     }
@@ -388,7 +388,8 @@ public class GridGgfsDataManagerSelfTest extends GridCommonAbstractTest {
         GridGgfsFileInfo info = new GridGgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null);
 
         for (int pos = 0; pos < 5 * grpSize; pos++) {
-            assertEquals("Expects no affinity for zero length.", Collections.emptyList(), mgr.affinity(info, pos, 0));
+            assertEquals("Expects no affinity for zero length.", Collections.<GridGgfsBlockLocation>emptyList(),
+                mgr.affinity(info, pos, 0));
 
             // Expects grouped data blocks are interpreted as a single block location.
             // And no guaranties for blocks out of the group.

@@ -17,7 +17,6 @@ public class GridGgfsConcurrentModificationException extends GridGgfsException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates new exception.
      */

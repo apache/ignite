@@ -9,11 +9,8 @@
 
 package org.gridgain.grid.cache.affinity.rendezvous;
 
-import java.io.*;
-import java.security.*;
-import java.util.*;
-
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.lang.*;
@@ -22,6 +19,10 @@ import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
+
+import java.io.*;
+import java.security.*;
+import java.util.*;
 
 /**
  * Affinity function for partitioned cache based on Highest Random Weight algorithm.
@@ -42,17 +43,18 @@ import org.jetbrains.annotations.*;
  * </li>
  * </ul>
  * <p>
+ * Cache affinity can be configured for individual caches via {@link GridCacheConfiguration#getAffinity()} method.
  */
 public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFunction, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Default number of partitions. */
     public static final int DFLT_PARTITION_COUNT = 10000;
 
     /** Comparator. */
     private static final Comparator<GridBiTuple<Long, GridNode>> COMPARATOR =
         new HashComparator();
-    /** */
-    private static final long serialVersionUID = 0L;
-
 
     /** Thread local message digest. */
     private ThreadLocal<MessageDigest> digest = new ThreadLocal<MessageDigest>() {
@@ -466,7 +468,6 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
     private static class HashComparator implements Comparator<GridBiTuple<Long, GridNode>>, Serializable {
         /** */
         private static final long serialVersionUID = 0L;
-
 
         /** {@inheritDoc} */
         @Override public int compare(GridBiTuple<Long, GridNode> o1, GridBiTuple<Long, GridNode> o2) {

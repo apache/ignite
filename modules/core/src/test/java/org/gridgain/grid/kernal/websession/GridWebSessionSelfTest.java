@@ -96,14 +96,13 @@ public class GridWebSessionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    // TODO: GG-7045
-    public void _testRestarts() throws Exception {
+    public void testRestarts() throws Exception {
         final AtomicReference<String> sesIdRef = new AtomicReference<>();
 
         final AtomicReferenceArray<Server> srvs = new AtomicReferenceArray<>(SRV_CNT);
 
         for (int idx = 0; idx < SRV_CNT; idx++) {
-            String cfg = "/module/core/src/test/config/websession/spring-cache-" + (idx + 1) + ".xml";
+            String cfg = "/modules/core/src/test/config/websession/spring-cache-" + (idx + 1) + ".xml";
 
             srvs.set(idx, startServer(
                 TEST_JETTY_PORT + idx, cfg, "grid-" + (idx + 1), new RestartsTestServlet(sesIdRef)));
@@ -131,7 +130,7 @@ public class GridWebSessionSelfTest extends GridCommonAbstractTest {
 
                     stopServer(srv);
 
-                    String cfg = "/module/core/src/test/config/websession/spring-cache-" + (idx + 1) + ".xml";
+                    String cfg = "/modules/core/src/test/config/websession/spring-cache-" + (idx + 1) + ".xml";
 
                     srv = startServer(
                         TEST_JETTY_PORT + idx, cfg, "grid-" + (idx + 1), new RestartsTestServlet(sesIdRef));
@@ -220,6 +219,7 @@ public class GridWebSessionSelfTest extends GridCommonAbstractTest {
         ctx.setInitParameter("GridGainConfigurationFilePath", cfg);
         ctx.setInitParameter("GridGainWebSessionsGridName", gridName);
         ctx.setInitParameter("GridGainWebSessionsCacheName", getCacheName());
+        ctx.setInitParameter("GridGainWebSessionsMaximumRetriesOnFail", "100");
 
         ctx.addServlet(new ServletHolder(servlet), "/*");
 

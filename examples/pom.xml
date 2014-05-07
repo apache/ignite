@@ -71,6 +71,12 @@
             <artifactId>scalatest_2.10</artifactId>
             <version>1.9.2</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.scala-lang</groupId>
+                    <artifactId>scala-library</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- ENTERPRISE DEPENDENCIES START -->
         <dependency>
@@ -91,9 +97,6 @@
 
     <build>
         <resources>
-            <resource>
-                <directory>config</directory>
-            </resource>
             <resource>
                 <directory>src/main/java</directory>
             </resource>

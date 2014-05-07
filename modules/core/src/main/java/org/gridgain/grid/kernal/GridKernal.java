@@ -54,7 +54,6 @@ import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.kernal.processors.version.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.product.*;
@@ -96,35 +95,14 @@ import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
  * misspelling.
  */
 public class GridKernal extends GridProjectionAdapter implements GridEx, GridKernalMBean {
-    /** Enterprise release flag. */
-    private static final boolean ent;
-
-    /** Compound GridGain version. */
-    private static final String COMPOUND_VERSION;
-
-    /**
-     *
-     */
-    static {
-        boolean ent0;
-
-        try {
-            ent0 = Class.forName("org.gridgain.grid.kernal.breadcrumb") != null;
-        }
-        catch (ClassNotFoundException ignored) {
-            ent0 = false;
-        }
-
-        ent = ent0;
-
-        COMPOUND_VERSION = EDITION + "-" + (ent ? "ent" : "os") + "-" + VER;
-    }
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /** Ant-augmented compatible versions. */
-    private static final String COMPATIBLE_VERS = /*@java.compatible.vers*/"";
+    private static final String COMPATIBLE_VERS = GridProperties.get("gridgain.compatible.vers");
 
     /** GridGain site that is shown in log messages. */
-    static final String SITE = "www.gridgain." + (ent ? "com" : "org");
+    static final String SITE = "www.gridgain." + (ENT ? "com" : "org");
 
     /** System line separator. */
     private static final String NL = U.nl();
@@ -143,9 +121,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
     /** Shutdown delay in msec. when license violation detected. */
     private static final int SHUTDOWN_DELAY = 60 * 1000;
-    /** */
-    private static final long serialVersionUID = 0L;
-
 
     /** */
     private GridConfiguration cfg;
@@ -447,22 +422,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
     }
 
     /**
-     * @param spiCls SPI class.
-     * @return Spi version.
-     * @throws GridException Thrown if {@link GridSpiInfo} annotation cannot be found.
-     */
-    private Serializable getSpiVersion(Class<? extends GridSpi> spiCls) throws GridException {
-        assert spiCls != null;
-
-        GridSpiInfo ann = U.getAnnotation(spiCls, GridSpiInfo.class);
-
-        if (ann == null)
-            throw new GridException("SPI implementation does not have annotation: " + GridSpiInfo.class);
-
-        return ann.version();
-    }
-
-    /**
      * @param attrs Current attributes.
      * @param name  New attribute name.
      * @param val New attribute value.
@@ -625,7 +584,7 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
 
         // Spin out SPIs & managers.
         try {
-            GridKernalContextImpl ctx = new GridKernalContextImpl(this, cfg, gw, ent);
+            GridKernalContextImpl ctx = new GridKernalContextImpl(this, cfg, gw, ENT);
 
             nodeLoc = new GridNodeLocalMapImpl(ctx);
 
@@ -1257,9 +1216,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
         // Add it to attributes.
         add(attrs, ATTR_JVM_ARGS, jvmArgs.toString());
 
-        // Stick in log file names.
-        add(attrs, ATTR_GG_LOG_FILES, (Serializable)GridLog4jLogger.logFiles());
-
         // Check daemon system property and override configuration if it's set.
         if (isDaemon())
             add(attrs, ATTR_DAEMON, "true");
@@ -1380,7 +1336,6 @@ public class GridKernal extends GridProjectionAdapter implements GridEx, GridKer
             Class<? extends GridSpi> spiCls = spi.getClass();
 
             add(attrs, U.spiAttribute(spi, ATTR_SPI_CLASS), spiCls.getName());
-            add(attrs, U.spiAttribute(spi, ATTR_SPI_VER), getSpiVersion(spiCls));
         }
     }
 

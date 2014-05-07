@@ -10,6 +10,7 @@
 package org.gridgain.grid.cache.affinity.consistenthash;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.resources.*;
@@ -44,8 +45,13 @@ import java.util.concurrent.atomic.*;
  *      primary and backup nodes will be selected out of all nodes available for this cache.
  * </li>
  * </ul>
+ * <p>
+ * Cache affinity can be configured for individual caches via {@link GridCacheConfiguration#getAffinity()} method.
  */
 public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinityFunction {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Flag to enable/disable consistency check (for internal use only). */
     private static final boolean AFFINITY_CONSISTENCY_CHECK = Boolean.getBoolean("GRIDGAIN_AFFINITY_CONSISTENCY_CHECK");
 
@@ -60,9 +66,6 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
      * Default value is {@code gg:affinity:node:replicas}.
      */
     public static final String DFLT_REPLICA_COUNT_ATTR_NAME = "gg:affinity:node:replicas";
-    /** */
-    private static final long serialVersionUID = 0L;
-
 
     /** Node hash. */
     private transient GridConsistentHash<NodeInfo> nodeHash;

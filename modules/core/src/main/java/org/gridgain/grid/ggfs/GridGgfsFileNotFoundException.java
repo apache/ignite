@@ -16,7 +16,6 @@ public class GridGgfsFileNotFoundException extends GridGgfsInvalidPathException 
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates exception with error message specified.
      *

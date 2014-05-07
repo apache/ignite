@@ -26,7 +26,6 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */

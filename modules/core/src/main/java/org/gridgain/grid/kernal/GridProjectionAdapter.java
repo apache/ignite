@@ -659,7 +659,6 @@ public class GridProjectionAdapter extends GridMetadataAwareAdapter implements G
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /** {@inheritDoc} */
         @Override public boolean apply(GridNode n) {
             return n.isDaemon();

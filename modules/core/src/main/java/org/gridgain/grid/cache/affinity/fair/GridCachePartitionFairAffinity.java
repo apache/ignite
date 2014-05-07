@@ -10,6 +10,7 @@
 package org.gridgain.grid.cache.affinity.fair;
 
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.events.*;
 import org.gridgain.grid.lang.*;
@@ -22,20 +23,22 @@ import java.util.*;
 /**
  * Fair affinity function which tries to ensure that all nodes get equal number of partitions with
  * minimum amount of reassignments between existing nodes.
+ * <p>
+ * Cache affinity can be configured for individual caches via {@link GridCacheConfiguration#getAffinity()} method.
  *
  * @author @java.author
  * @version @java.version
  */
 @GridCacheCentralizedAffinityFunction
 public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Ascending comparator. */
     private static final Comparator<PartitionSet> ASC_CMP = new PartitionSetComparator(false);
 
     /** Descending comparator. */
     private static final Comparator<PartitionSet> DESC_CMP = new PartitionSetComparator(true);
-    /** */
-    private static final long serialVersionUID = 0L;
-
 
     /** */
     private int parts;

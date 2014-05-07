@@ -23,7 +23,6 @@ public class GridAtomicLong extends AtomicLong {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * Creates a new AtomicLong with initial value {@code 0}.
      */

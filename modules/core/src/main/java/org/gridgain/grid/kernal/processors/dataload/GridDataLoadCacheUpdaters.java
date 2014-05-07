@@ -109,7 +109,6 @@ public class GridDataLoadCacheUpdaters {
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /** {@inheritDoc} */
         @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
             throws GridException {
@@ -137,7 +136,6 @@ public class GridDataLoadCacheUpdaters {
     private static class Batched<K, V> implements GridDataLoadCacheUpdater<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
-
 
         /** {@inheritDoc} */
         @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
@@ -180,7 +178,6 @@ public class GridDataLoadCacheUpdaters {
         /** */
         private static final long serialVersionUID = 0L;
 
-
         /** {@inheritDoc} */
         @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
             throws GridException {
@@ -221,7 +218,6 @@ public class GridDataLoadCacheUpdaters {
     private static class GroupLocked<K, V> implements GridDataLoadCacheUpdater<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
-
 
         /** {@inheritDoc} */
         @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
