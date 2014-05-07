@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communi
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
+import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.thread.*;
@@ -215,6 +216,7 @@ public class GridHadoopExternalCommunication {
 
     /**
      * @param parentNodeId Parent node ID.
+     * @param procId Process ID.
      * @param marsh Marshaller to use.
      * @param log Logger.
      * @param execSvc Executor service for message notification.
@@ -222,12 +224,13 @@ public class GridHadoopExternalCommunication {
      */
     public GridHadoopExternalCommunication(
         UUID parentNodeId,
+        UUID procId,
         GridMarshaller marsh,
         GridLogger log,
         ExecutorService execSvc,
         String gridName
     ) {
-        locProcDesc = new GridHadoopProcessDescriptor(parentNodeId, UUID.randomUUID());
+        locProcDesc = new GridHadoopProcessDescriptor(parentNodeId, procId);
 
         this.marsh = marsh;
         this.log = log;

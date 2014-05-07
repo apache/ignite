@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication;
+package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 
 import org.gridgain.grid.util.typedef.internal.*;
 

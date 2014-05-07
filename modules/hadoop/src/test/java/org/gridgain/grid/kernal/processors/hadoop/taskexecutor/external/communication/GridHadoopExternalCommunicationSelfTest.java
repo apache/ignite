@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication;
 
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
+import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.optimized.*;
@@ -57,8 +58,8 @@ public class GridHadoopExternalCommunicationSelfTest extends GridCommonAbstractT
             int msgs = 10;
 
             for (int i = 0; i < comms.length; i++) {
-                comms[i] = new GridHadoopExternalCommunication(parentNodeId, marsh, log, Executors.newFixedThreadPool(1),
-                    name);
+                comms[i] = new GridHadoopExternalCommunication(parentNodeId, UUID.randomUUID(), marsh, log,
+                    Executors.newFixedThreadPool(1), name + i);
 
                 if (useShmem)
                     comms[i].setSharedMemoryPort(14000);

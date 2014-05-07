@@ -9,16 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 
-import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication.*;
+import org.gridgain.grid.kernal.processors.hadoop.message.*;
 
 /**
- * Hadoop process base.
+ * Process started message.
  */
-public abstract class GridHadoopChildProcessBase {
-    /**
-     * Starts
-     */
-    public void start(GridHadoopExternalCommunication comm, GridHadoopProcessDescriptor nodeProcDesc) {
+public class GridHadoopProcessStartedReply extends GridHadoopMessage {
 
-    }
 }

@@ -9,16 +9,15 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 
-import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication.*;
+import java.util.*;
 
 /**
- * Hadoop process base.
+ * TODO: Add class description.
  */
-public abstract class GridHadoopChildProcessBase {
-    /**
-     * Starts
-     */
-    public void start(GridHadoopExternalCommunication comm, GridHadoopProcessDescriptor nodeProcDesc) {
+public class GridHadoopExternalProcessMetadata {
+    /** Process classpath. */
+    private Collection<String> classpath;
 
-    }
+    /** JVM options. */
+    private String jvmOpts;
 }

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication;
 
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
+import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 
 /**
  * Hadoop communication message listener.

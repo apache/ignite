@@ -11,13 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communi
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
-import org.gridgain.grid.util.direct.*;
-import org.jetbrains.annotations.*;
-import org.gridgain.grid.util.lang.*;
-
-import java.io.*;
-import java.nio.*;
-import java.util.*;
+import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 
 /**
  *
