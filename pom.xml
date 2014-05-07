@@ -61,6 +61,7 @@
         <module>modules/rest</module>
         <module>modules/mail</module>
         <module>modules/jta</module>
+        <module>modules/aws</module>
     </modules>
 
     <build>

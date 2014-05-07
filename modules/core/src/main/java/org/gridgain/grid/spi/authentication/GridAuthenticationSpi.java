@@ -52,7 +52,7 @@ import org.jetbrains.annotations.*;
  * to undefined behavior and explicitly not supported.
  */
 @GridSpiConsistencyChecked(optional = true)
-public interface GridAuthenticationSpi extends GridSpi, GridSpiJsonConfigurable {
+public interface GridAuthenticationSpi extends GridSpi {
     /**
      * Checks if given subject is supported by this SPI. If not, then next authentication SPI
      * in the list will be checked.
