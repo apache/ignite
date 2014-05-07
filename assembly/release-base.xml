@@ -56,6 +56,18 @@
         </file>
 
         <file>
+            <source>examples/pom-standalone.xml</source>
+            <outputDirectory>/examples</outputDirectory>
+            <destName>pom.xml</destName>
+        </file>
+
+        <file>
+            <source>examples/pom-standalone-java8.xml</source>
+            <outputDirectory>/examples</outputDirectory>
+            <destName>pom-java8.xml</destName>
+        </file>
+
+        <file>
             <source>examples/clients/dotnet/GridClientApiExample.csprojrel</source>
             <outputDirectory>/examples/clients/dotnet</outputDirectory>
             <destName>GridClientApiExample.csproj</destName>
