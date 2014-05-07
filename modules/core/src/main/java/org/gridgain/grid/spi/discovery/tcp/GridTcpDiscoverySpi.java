@@ -3308,7 +3308,7 @@ public class GridTcpDiscoverySpi extends GridSpiAdapter implements GridDiscovery
                         Collection<String> locCompatibleVers = locNode.attribute(ATTR_COMPATIBLE_VERS);
                         Collection<String> rmtCompatibleVers = node.attribute(ATTR_COMPATIBLE_VERS);
 
-                        if (true /*F.contains(rmtCompatibleVers, locBuildVer) || F.contains(locCompatibleVers, rmtBuildVer*/) {
+                        if (F.contains(rmtCompatibleVers, locBuildVer) || F.contains(locCompatibleVers, rmtBuildVer)) {
                             String errMsg = "Local node's build version differs from remote node's, " +
                                 "but they are compatible (will continue join process) " +
                                 "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
