@@ -320,24 +320,26 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
         res.add(primary);
 
         // Select backups.
-        for (int i = 1; i < lst.size(); i++) {
-            GridBiTuple<Long, GridNode> next = lst.get(i);
+        if (backups > 0) {
+            for (int i = 1; i < lst.size(); i++) {
+                GridBiTuple<Long, GridNode> next = lst.get(i);
 
-            GridNode node = next.get2();
+                GridNode node = next.get2();
 
-            if (exclNeighbors) {
-                Collection<GridNode> allNeighbors = allNeighbors(neighborhoodCache, res);
+                if (exclNeighbors) {
+                    Collection<GridNode> allNeighbors = allNeighbors(neighborhoodCache, res);
 
-                if (!allNeighbors.contains(node))
-                    res.add(node);
+                    if (!allNeighbors.contains(node))
+                        res.add(node);
+                }
+                else {
+                    if (!res.contains(node) && (backupFilter == null || backupFilter.apply(primary, node)))
+                        res.add(next.get2());
+                }
+
+                if (res.size() == primaryAndBackups)
+                    break;
             }
-            else {
-                if (!res.contains(node) && (backupFilter == null || backupFilter.apply(primary, node)))
-                    res.add(next.get2());
-            }
-
-            if (res.size() == primaryAndBackups)
-                break;
         }
 
         if (res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups && exclNeighbors) {
@@ -354,6 +356,8 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
                     break;
             }
         }
+
+        assert res.size() <= primaryAndBackups;
 
         return res;
     }
