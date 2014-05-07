@@ -233,7 +233,7 @@ public class GridHadoopExternalCommunication {
         locProcDesc = new GridHadoopProcessDescriptor(parentNodeId, procId);
 
         this.marsh = marsh;
-        this.log = log;
+        this.log = log.getLogger(GridHadoopExternalCommunication.class);
         this.execSvc = execSvc;
         this.gridName = gridName;
     }
@@ -629,7 +629,7 @@ public class GridHadoopExternalCommunication {
                         .address(locHost)
                         .port(port)
                         .listener(srvLsnr)
-                        .logger(log)
+                        .logger(log.getLogger(GridNioServer.class))
                         .selectorCount(selectorsCnt)
                         .gridName(gridName)
                         .tcpNoDelay(tcpNoDelay)
@@ -682,7 +682,8 @@ public class GridHadoopExternalCommunication {
         // If configured TCP port is busy, find first available in range.
         for (int port = shmemPort; port < shmemPort + locPortRange; port++) {
             try {
-                GridIpcSharedMemoryServerEndpoint srv = new GridIpcSharedMemoryServerEndpoint(log,
+                GridIpcSharedMemoryServerEndpoint srv = new GridIpcSharedMemoryServerEndpoint(
+                    log.getLogger(GridIpcSharedMemoryServerEndpoint.class),
                     locProcDesc.processId(), gridName);
 
                 srv.setPort(port);

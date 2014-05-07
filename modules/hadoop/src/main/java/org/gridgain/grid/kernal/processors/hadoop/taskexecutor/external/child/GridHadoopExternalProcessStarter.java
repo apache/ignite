@@ -7,19 +7,40 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
+package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.child;
 
+import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication.*;
-import org.gridgain.grid.logger.log4j.*;
+import org.gridgain.grid.logger.*;
+import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.marshaller.optimized.*;
+import org.gridgain.grid.util.ipc.shmem.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.logging.*;
 
 /**
  * Hadoop external process base class.
  */
 public class GridHadoopExternalProcessStarter {
+    /** Arguments. */
+    private Args args;
+
+    /** System out. */
+    private OutputStream out;
+
+    /** System err. */
+    private OutputStream err;
+
+    /**
+     * @param args Parsed arguments.
+     */
+    public GridHadoopExternalProcessStarter(Args args) {
+        this.args = args;
+    }
+
     /**
      * @param cmdArgs Process arguments.
      */
@@ -27,33 +48,93 @@ public class GridHadoopExternalProcessStarter {
         try {
             Args args = arguments(cmdArgs);
 
-            GridHadoopExternalCommunication comm = new GridHadoopExternalCommunication(
-                args.nodeId,
-                args.childProcId,
-                new GridOptimizedMarshaller(),
-                new GridLog4jLogger(),
-                Executors.newFixedThreadPool(1),
-                "test"
-            );
-
-            comm.start();
-
-            GridHadoopProcessDescriptor nodeDesc = new GridHadoopProcessDescriptor(args.nodeId, args.parentProcId);
-            nodeDesc.address(args.addr);
-            nodeDesc.tcpPort(args.tcpPort);
-            nodeDesc.sharedMemoryPort(args.shmemPort);
-
-
-            // At this point node knows that this process has started.
-            comm.sendMessage(nodeDesc, new GridHadoopProcessStartedReply());
+            new GridHadoopExternalProcessStarter(args).run();
         }
         catch (Exception e) {
-            e.printStackTrace();
-            // TODO.
-        }
-        finally {
+            System.err.println("Failed");
 
+            System.err.println(e.getMessage());
+
+            e.printStackTrace(System.err);
         }
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    public void run() throws Exception {
+        initializeStreams();
+
+        GridHadoopExternalCommunication comm = new GridHadoopExternalCommunication(
+            args.nodeId,
+            args.childProcId,
+            new GridOptimizedMarshaller(),
+            logger(),
+            Executors.newFixedThreadPool(1),
+            "test"
+        );
+
+        comm.start();
+
+        GridHadoopProcessDescriptor nodeDesc = new GridHadoopProcessDescriptor(args.nodeId, args.parentProcId);
+        nodeDesc.address(args.addr);
+        nodeDesc.tcpPort(args.tcpPort);
+        nodeDesc.sharedMemoryPort(args.shmemPort);
+
+        GridHadoopChildProcessRunner runner = new GridHadoopChildProcessRunner();
+
+        runner.start(comm, nodeDesc);
+
+        System.err.println("Started");
+        System.err.flush();
+
+        System.setOut(new PrintStream(out));
+        System.setErr(new PrintStream(err));
+    }
+
+    /**
+     * @throws Exception
+     */
+    private void initializeStreams() throws Exception {
+        File f = new File(args.out);
+
+        if (!f.exists()) {
+            if (!f.mkdirs())
+                throw new IOException("Failed to create output directory: " + args.out);
+        }
+        else {
+            if (f.isFile())
+                throw new IOException("Output directory is a file: " + args.out);
+        }
+
+        out = new FileOutputStream(new File(f, args.childProcId + ".out"));
+        err = new FileOutputStream(new File(f, args.childProcId + ".err"));
+    }
+
+    /**
+     * @return Logger.
+     * @throws IOException If failed.
+     */
+    private GridLogger logger() throws IOException {
+        Logger log = Logger.getLogger("");
+
+        log.setLevel(Level.FINEST);
+
+        for (Handler h : log.getHandlers())
+            log.removeHandler(h);
+
+        FileHandler h = new FileHandler(args.out + File.separator + args.childProcId + ".log", true);
+
+        SimpleFormatter f = new SimpleFormatter();
+
+        h.setFormatter(f);
+
+        log.addHandler(h);
+
+        Logger.getLogger(GridIpcSharedMemorySpace.class.toString()).setLevel(Level.WARNING);
+
+        return new GridJavaLogger(log);
     }
 
     /**
@@ -67,18 +148,6 @@ public class GridHadoopExternalProcessStarter {
             String arg = processArgs[i];
 
             switch (arg) {
-                case "-p": {
-                    if (i == processArgs.length - 1)
-                        throw new Exception("Missing process class name for '-p' parameter");
-
-                    String processClsName = processArgs[++i];
-
-                    args.procCls = (Class<? extends GridHadoopChildProcessBase>)
-                        Class.forName(processClsName);
-
-                    break;
-                }
-
                 case "-cpid": {
                     if (i == processArgs.length - 1)
                         throw new Exception("Missing process ID for '-cpid' parameter");
@@ -138,6 +207,15 @@ public class GridHadoopExternalProcessStarter {
 
                     break;
                 }
+
+                case "-out": {
+                    if (i == processArgs.length - 1)
+                        throw new Exception("Missing output folder name for '-out' parameter");
+
+                    args.out = processArgs[++i];
+
+                    break;
+                }
             }
         }
 
@@ -145,10 +223,10 @@ public class GridHadoopExternalProcessStarter {
         return args;
     }
 
+    /**
+     * Execution arguments.
+     */
     private static class Args {
-        /** Process class. */
-        private Class<? extends GridHadoopChildProcessBase> procCls;
-
         /** Process ID. */
         private UUID childProcId;
 
@@ -166,5 +244,8 @@ public class GridHadoopExternalProcessStarter {
 
         /** Shmem port. */
         private int shmemPort = -1;
+
+        /** Output folder. */
+        private String out;
     }
 }

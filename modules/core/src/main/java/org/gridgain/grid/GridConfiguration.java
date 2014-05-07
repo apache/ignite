@@ -167,9 +167,6 @@ public class GridConfiguration {
     /** Default size of management thread pool. */
     public static final int DFLT_MGMT_THREAD_CNT = 4;
 
-    /** Default max queue capacity of GGFS thread pool. */
-    public static final int DFLT_GGFS_THREADPOOL_QUEUE_CAP = 16;
-
     /** Default segmentation policy. */
     public static final GridSegmentationPolicy DFLT_SEG_PLC = STOP;
 
@@ -1124,7 +1121,6 @@ public class GridConfiguration {
      * <ul>
      *     <li>Core pool size - number of processors available in system</li>
      *     <li>Max pool size - number of processors available in system</li>
-     *     <li>Queue capacity - {@link #DFLT_GGFS_THREADPOOL_QUEUE_CAP}</li>
      * </ul>
      *
      * @return Thread pool implementation to be used for GGFS outgoing message sending.
