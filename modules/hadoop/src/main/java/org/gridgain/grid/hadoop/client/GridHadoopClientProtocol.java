@@ -38,16 +38,10 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     public static final String PROP_FRAMEWORK_NAME = "gg.framework.name";
 
     /** GridGain server host property. */
-    public static final String PROP_SRV_HOST = "gg.server.host";
-
-    /** GridGain server port property. */
-    public static final String PROP_SRV_PORT = "gg.server.port";
+    public static final String PROP_SRV_ADDR = "gg.server.address";
 
     /** GridGain status poll delay property. */
     public static final String PROP_STATUS_POLL_DELAY = "gg.status.poll_delay";
-
-    /** Default server port. */
-    public static final int DFLT_SRV_PORT = 6666;
 
     /** Protocol version. */
     public static final long PROTO_VER = 1L;
@@ -55,8 +49,11 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     /** Configuration. */
     private final Configuration conf;
 
+    /** GG client address. */
+    private final String cliAddr;
+
     /** GG client. */
-    private final GridClient cli;
+    private volatile GridClient cli;
 
     /**
      * Constructor.
@@ -64,8 +61,12 @@ public class GridHadoopClientProtocol implements ClientProtocol {
      * @param conf Configuration.
      * @param cli GG client.
      */
-    GridHadoopClientProtocol(Configuration conf, GridClient cli) {
+    GridHadoopClientProtocol(Configuration conf, String cliAddr, GridClient cli) {
+        assert cliAddr != null;
+        assert cli != null;
+
         this.conf = conf;
+        this.cliAddr = cliAddr;
         this.cli = cli;
     }
 
@@ -310,6 +311,6 @@ public class GridHadoopClientProtocol implements ClientProtocol {
      * Closes protocol.
      */
     void close() {
-        cli.close();
+        GridHadoopClientProtocolProvider.release(cliAddr);
     }
 }

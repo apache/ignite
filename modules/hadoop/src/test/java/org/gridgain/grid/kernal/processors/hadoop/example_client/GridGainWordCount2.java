@@ -62,6 +62,8 @@ public class GridGainWordCount2 {
 
             job.waitForCompletion(true);
 
+            job.getCluster().close();
+
             for (GridGgfsPath path : ggfs.listPaths(new GridGgfsPath("/output"))) {
                 System.out.println(path);
 
@@ -77,8 +79,6 @@ public class GridGainWordCount2 {
 
                 System.out.println("");
             }
-
-            return;
         }
         finally {
             G.stopAll(true);
@@ -97,8 +97,7 @@ public class GridGainWordCount2 {
         Configuration conf = new Configuration();
 
         conf.set(MRConfig.FRAMEWORK_NAME, GridHadoopClientProtocol.PROP_FRAMEWORK_NAME);
-        conf.set(GridHadoopClientProtocol.PROP_SRV_HOST, "127.0.0.1");
-        conf.setInt(GridHadoopClientProtocol.PROP_SRV_PORT, 11212);
+        conf.set(GridHadoopClientProtocol.PROP_SRV_ADDR, "127.0.0.1:11212");
 
         conf.set("fs.default.name", "ggfs://ipc");
         conf.set("fs.ggfs.impl", "org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem");
