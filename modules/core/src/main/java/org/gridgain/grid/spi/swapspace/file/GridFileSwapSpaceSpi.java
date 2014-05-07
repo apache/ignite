@@ -17,8 +17,6 @@ import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
@@ -97,65 +95,6 @@ import static org.gridgain.grid.events.GridEventType.*;
 @GridSpiMultipleInstancesSupport(true)
 @SuppressWarnings({"PackageVisibleInnerClass", "PackageVisibleField"})
 public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpaceSpi, GridFileSwapSpaceSpiMBean {
-
-    private static final ConcurrentLinkedDeque<Op> ops = new ConcurrentLinkedDeque<>();
-
-    private static final ThreadLocal<GridSwapKey> KEY = new ThreadLocal<>();
-
-    public static void dumpOps(String file) {
-//        GridSwapKey key = KEY.get();
-//
-//        System.out.println("DUMPING OPS [file=" + file + ", key=" + key + ']');
-//
-//        try {
-//            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file + "-" + key + ".dump")));
-//
-//            ArrayList<Long> ptrs = new ArrayList<>();
-//
-//            for (Op op : ops) {
-//                if (F.eq(key, op.swapKey)) {
-//                    bw.write(op.toString() + "\n");
-//
-//                    if (op.offHeapPtr != null) {
-//                        if (op.val != null && op.val[0] != 114)
-//                            ptrs.add(op.offHeapPtr);
-//                    }
-//                }
-//            }
-//
-//            GridUnsafeMap.Op.dump(bw, ptrs);
-//
-//            bw.close();
-//
-//            System.out.println("DUMPING FINISHED [file=" + file + ", key=" + key + ']');
-//        }
-//        catch (IOException e) {
-//            throw new RuntimeException(e);
-//        }
-    }
-
-    public static class Op {
-        private final Long offHeapPtr;
-
-        private final boolean rmv;
-        private final GridSwapKey swapKey;
-        private final byte[] val;
-
-        public Op(boolean rmv, GridSwapKey swapKey, byte[] val) {
-            this.rmv = rmv;
-            this.swapKey = swapKey;
-            this.val = val;
-
-            offHeapPtr = GridUnsafeMap.PTR.get();
-        }
-
-        @Override public String toString() {
-            return "" + (rmv ? "REMOVE" : "STORE ") + " [offheapPtr=" + (offHeapPtr != null ? offHeapPtr : "         ") + ", key=" + swapKey.key() +
-                ", keyBytes=" + Arrays.toString(swapKey.keyBytes()) + ", valLen=" + (val != null ? val.length : -1) +
-                ", val=" + Arrays.toString(val) + ']';
-        }
-    }
-
     /** Default base directory. */
     public static final String DFLT_BASE_DIR = "work/swapspace";
 
@@ -404,9 +343,6 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
         byte[] val = space.read(key);
 
-        //U.debug("READ [space=" + spaceName + ", key=" + key + ", val=" + Arrays.toString(val) + ']');
-        //U.debug("READ [space=" + spaceName + ", key=" + key + ", len=" + (val != null ? val.length : -1) + ']');
-
         notifyListener(EVT_SWAP_SPACE_DATA_READ, spaceName);
 
         return val;
@@ -452,15 +388,11 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
         byte[] val = space.remove(key, c != null);
 
-        ops.add(new Op(true, key, val));
-
         if (val != null && val[0] != 114)
             U.dumpStack("FAULTY ARRAY ON REMOVE [key=" + Arrays.toString(key.keyBytes()) + ", val=" + Arrays.toString(val) + ']');
 
         //U.debug("REMOVE [space=" + spaceName + ", key=" + key + ", val=" + Arrays.toString(val) + ']');
         //U.debug("REMOVE [space=" + spaceName + ", key=" + key + ", len=" + (val != null ? val.length : -1) + ']');
-
-        KEY.set(key);
 
         if (c != null)
             c.apply(val);
@@ -501,15 +433,11 @@ public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpac
 
         assert space != null;
 
-        ops.add(new Op(false, key, val));
-
         if (val != null && val[0] != 114)
             U.dumpStack("FAULTY ARRAY ON STORE [key=" + Arrays.toString(key.keyBytes()) + ", val=" + Arrays.toString(val) + ']');
 
         //U.debug("STORE [space=" + spaceName + ", key=" + key + ", val=" + Arrays.toString(val) + ']');
         //U.debug("STORE [space=" + spaceName + ", key=" + key + ", len=" + (val != null ? val.length : -1) + ']');
-
-        KEY.set(key);
 
         space.store(key, val);
 

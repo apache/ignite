@@ -20,7 +20,7 @@ import java.util.concurrent.locks.*;
  * Striped LRU queue.
  */
 @SuppressWarnings("ForLoopReplaceableByForEach")
-public class GridUnsafeLru {
+class GridUnsafeLru {
     /** Number of stripes. */
     private final short cnt;
 
@@ -45,7 +45,7 @@ public class GridUnsafeLru {
      * @param cnt Number of stripes.
      * @param mem Unsafe memory.
      */
-    public GridUnsafeLru(short cnt, GridUnsafeMemory mem) {
+    GridUnsafeLru(short cnt, GridUnsafeMemory mem) {
         assert cnt > 0;
         assert mem != null;
 
@@ -100,7 +100,7 @@ public class GridUnsafeLru {
      * @param qAddr Queue node address.
      * @return Order of LRU stripe.
      */
-    public short order(long qAddr) {
+    short order(long qAddr) {
         return LruStripe.order(qAddr, mem);
     }
 
@@ -111,7 +111,7 @@ public class GridUnsafeLru {
      * @param qAddr Queue node address.
      * @return Entry partition.
      */
-    public int partition(short order, long qAddr) {
+    int partition(short order, long qAddr) {
         return lrus[order].partition(qAddr);
     }
 
@@ -155,7 +155,7 @@ public class GridUnsafeLru {
      *
      * @return Queue node address.
      */
-    public long prePoll() {
+    long prePoll() {
         int idx = rmvIdx.getAndIncrement();
 
         // Must try to poll from each LRU.

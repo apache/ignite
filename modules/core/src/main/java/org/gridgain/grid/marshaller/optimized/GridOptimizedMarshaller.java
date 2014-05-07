@@ -12,7 +12,6 @@ package org.gridgain.grid.marshaller.optimized;
 import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
-import org.gridgain.grid.spi.swapspace.file.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -22,7 +21,6 @@ import sun.misc.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.marshaller.optimized.GridOptimizedMarshallerUtils.*;
 
@@ -354,14 +352,10 @@ public class GridOptimizedMarshaller extends GridAbstractMarshaller {
         catch (IOException e) {
             U.dumpStack("MARSHALLER FAILURE");
 
-            GridFileSwapSpaceSpi.dumpOps("C:\\Personal\\opdump");
-
             throw new GridException("Failed to deserialize object with given class loader: " + clsLdr, e);
         }
         catch (ClassNotFoundException e) {
             U.dumpStack("MARSHALLER FAILURE");
-
-            GridFileSwapSpaceSpi.dumpOps("C:\\Personal\\opdump");
 
             throw new GridException("Failed to find class with given class loader for unmarshalling " +
                 "(make sure same version of all classes are available on all nodes or enable peer-class-loading): " +
