@@ -92,7 +92,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
 
             assert status != null;
 
-            return GridHadoopUtils.status(status);
+            return GridHadoopUtils.status(status, conf);
         }
         catch (GridClientException e) {
             throw new IOException("Failed to submit job.", e);
@@ -150,7 +150,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
             if (status == null)
                 throw new IOException("Job tracker doesn't have any information about the job: " + jobId);
 
-            return GridHadoopUtils.status(status);
+            return GridHadoopUtils.status(status, conf);
         }
         catch (GridClientException e) {
             throw new IOException("Failed to get job status: " + jobId, e);

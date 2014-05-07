@@ -29,6 +29,21 @@ public class GridHadoopJobStatus implements Externalizable {
     /** User. */
     private String usr;
 
+    /** Pending block count. */
+    private int pendingBlockCnt;
+
+    /** Pending reducer count. */
+    private int pendingReducerCnt;
+
+    /** Total block count. */
+    private int totalBlockCnt;
+
+    /** Total reducer count. */
+    private int totalReducerCnt;
+
+    /** Phase. */
+    private GridHadoopJobPhase jobPhase;
+
     /**
      * {@link Externalizable}  support.
      */
@@ -43,12 +58,24 @@ public class GridHadoopJobStatus implements Externalizable {
      * @param jobState Job state.
      * @param jobName Job name.
      * @param usr User.
+     * @param pendingBlockCnt Pending block count.
+     * @param pendingReducerCnt Pending reducer count.
+     * @param totalBlockCnt Total block count.
+     * @param totalReducerCnt Total reducer count.
+     * @param jobPhase Job phase.
      */
-    public GridHadoopJobStatus(GridHadoopJobId jobId, GridHadoopJobState jobState, String jobName, String usr) {
+    public GridHadoopJobStatus(GridHadoopJobId jobId, GridHadoopJobState jobState, String jobName, String usr,
+        int pendingBlockCnt, int pendingReducerCnt, int totalBlockCnt, int totalReducerCnt,
+        GridHadoopJobPhase jobPhase) {
         this.jobId = jobId;
         this.jobState = jobState;
         this.jobName = jobName;
         this.usr = usr;
+        this.pendingBlockCnt = pendingBlockCnt;
+        this.pendingReducerCnt = pendingReducerCnt;
+        this.totalBlockCnt = totalBlockCnt;
+        this.totalReducerCnt = totalReducerCnt;
+        this.jobPhase = jobPhase;
     }
 
     /**
@@ -79,6 +106,55 @@ public class GridHadoopJobStatus implements Externalizable {
         return usr;
     }
 
+    /**
+     * @return Pending block count.
+     */
+    public int pendingBlockCnt() {
+        return pendingBlockCnt;
+    }
+
+    /**
+     * @return Pending reducer count.
+     */
+    public int pendingReducerCnt() {
+        return pendingReducerCnt;
+    }
+
+    /**
+     * @return Total block count.
+     */
+    public int totalBlockCnt() {
+        return totalBlockCnt;
+    }
+
+    /**
+     * @return Total reducer count.
+     */
+    public int totalReducerCnt() {
+        return totalReducerCnt;
+    }
+
+    /**
+     * @return Block progress.
+     */
+    public float blockProgress() {
+        return totalBlockCnt == 0 ? 1.0f : (float)pendingBlockCnt / totalBlockCnt;
+    }
+
+    /**
+     * @return Reducer progress.
+     */
+    public float reducerProgress() {
+        return totalReducerCnt == 0 ? 1.0f : (float)pendingReducerCnt / totalReducerCnt;
+    }
+
+    /**
+     * @return Job phase.
+     */
+    public GridHadoopJobPhase jobPhase() {
+        return jobPhase;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridHadoopJobStatus.class, this);
@@ -90,6 +166,11 @@ public class GridHadoopJobStatus implements Externalizable {
         out.writeObject(jobState);
         U.writeString(out, jobName);
         U.writeString(out, usr);
+        out.writeInt(pendingBlockCnt);
+        out.writeInt(pendingReducerCnt);
+        out.writeInt(totalBlockCnt);
+        out.writeInt(totalReducerCnt);
+        out.writeObject(jobPhase);
     }
 
     /** {@inheritDoc} */
@@ -98,5 +179,10 @@ public class GridHadoopJobStatus implements Externalizable {
         jobState = (GridHadoopJobState)in.readObject();
         jobName = U.readString(in);
         usr = U.readString(in);
+        pendingBlockCnt = in.readInt();
+        pendingReducerCnt = in.readInt();
+        totalBlockCnt = in.readInt();
+        totalReducerCnt = in.readInt();
+        jobPhase = (GridHadoopJobPhase)in.readObject();
     }
 }

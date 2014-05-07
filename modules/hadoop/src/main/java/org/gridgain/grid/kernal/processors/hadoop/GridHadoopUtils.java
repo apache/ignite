@@ -9,11 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.v2.util.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 
-import static org.gridgain.grid.kernal.processors.hadoop.jobtracker.GridHadoopJobPhase.*;
+import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
 import static org.gridgain.grid.hadoop.GridHadoopJobState.*;
 
 /**
@@ -34,7 +36,12 @@ public class GridHadoopUtils {
             meta.jobId(),
             meta.phase() == PHASE_COMPLETE ? meta.failCause() == null ? STATE_SUCCEEDED : STATE_FAILED : STATE_RUNNING,
             jobInfo.configuration().getJobName(),
-            jobInfo.configuration().getUser()
+            jobInfo.configuration().getUser(),
+            meta.pendingBlocks() != null ? meta.pendingBlocks().size() : 0,
+            meta.pendingReducers() != null ? meta.pendingReducers().size() : 0,
+            meta.totalBlockCount(),
+            meta.totalReducerCount(),
+            meta.phase()
         );
     }
 
@@ -44,7 +51,7 @@ public class GridHadoopUtils {
      * @param status GG job status.
      * @return Hadoop job status.
      */
-    public static JobStatus status(GridHadoopJobStatus status) {
+    public static JobStatus status(GridHadoopJobStatus status, Configuration conf) {
         JobID jobId = new JobID(status.jobId().globalId().toString(), status.jobId().localId());
 
         JobStatus.State state;
@@ -71,9 +78,44 @@ public class GridHadoopUtils {
                 state = JobStatus.State.KILLED;
         }
 
-        // TODO: Add missing data.
-        return new JobStatus(jobId, 0.0f, 0.0f, 0.0f, 0.0f, state, JobPriority.NORMAL, status.user(), status.jobName(),
-            null, "N/A");
+        float mapProgress;
+        float reduceProgress;
+        float cleanupProgress;
+
+        switch (status.jobPhase()) {
+            case PHASE_MAP:
+                mapProgress = status.blockProgress();
+                reduceProgress = 0.0f;
+                cleanupProgress = 0.0f;
+
+                break;
+
+            case PHASE_REDUCE:
+                mapProgress = 1.0f;
+                reduceProgress = status.reducerProgress();
+                cleanupProgress = 0.0f;
+
+                break;
+
+            case PHASE_CANCELLING:
+                // Do not know where cancel occurred, hence calculate map/reduce progress.
+                mapProgress = status.blockProgress();
+                reduceProgress = status.reducerProgress();
+                cleanupProgress = 0.0f;
+
+                break;
+
+            default:
+                assert status.jobPhase() == PHASE_COMPLETE;
+
+                // Do not know whether this is complete on success or failure, hence calculate map/reduce progress.
+                mapProgress = status.blockProgress();
+                reduceProgress = status.reducerProgress();
+                cleanupProgress = 1.0f;
+        }
+
+        return new JobStatus(jobId, 1.0f, mapProgress, reduceProgress, cleanupProgress, state, JobPriority.NORMAL,
+            status.user(), status.jobName(), MRApps.getJobFile(conf, status.user(), jobId), "N/A");
     }
 
     /**

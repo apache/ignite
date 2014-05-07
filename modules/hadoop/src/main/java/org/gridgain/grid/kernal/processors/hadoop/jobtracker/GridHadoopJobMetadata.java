@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.processors.hadoop.jobtracker.GridHadoopJobPhase.*;
+import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
 
 /**
  * Hadoop job metadata. Internal object used for distributed job state tracking.
@@ -48,6 +48,12 @@ public class GridHadoopJobMetadata implements Externalizable {
     /** Fail cause. */
     private Throwable failCause;
 
+    /** Total block count. */
+    private int totalBlockCnt;
+
+    /** Total reducer count. */
+    private int totalReducerCnt;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -56,12 +62,22 @@ public class GridHadoopJobMetadata implements Externalizable {
     }
 
     /**
+     * Constructor.
+     *
      * @param jobId Job ID.
      * @param jobInfo Job info.
+     * @param pendingBlocks Pending blocks.
+     * @param pendingReducers Pending reducers.
      */
-    public GridHadoopJobMetadata(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
+    public GridHadoopJobMetadata(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo,
+        Collection<GridHadoopFileBlock> pendingBlocks, Collection<Integer> pendingReducers) {
         this.jobId = jobId;
         this.jobInfo = jobInfo;
+        this.pendingBlocks = pendingBlocks;
+        this.pendingReducers = pendingReducers;
+
+        totalBlockCnt = pendingBlocks == null ? 0 : pendingBlocks.size();
+        totalReducerCnt = pendingReducers == null ? 0 : pendingReducers.size();
     }
 
     /**
@@ -79,6 +95,8 @@ public class GridHadoopJobMetadata implements Externalizable {
         pendingReducers = src.pendingReducers;
         phase = src.phase;
         taskNumMap = src.taskNumMap;
+        totalBlockCnt = src.totalBlockCnt;
+        totalReducerCnt = src.totalReducerCnt;
     }
 
     /**
@@ -136,6 +154,20 @@ public class GridHadoopJobMetadata implements Externalizable {
      */
     public GridHadoopJobId jobId() {
         return jobId;
+    }
+
+    /**
+     * @return Total block count.
+     */
+    public int totalBlockCount() {
+        return totalBlockCnt;
+    }
+
+    /**
+     * @return Total reducer count.
+     */
+    public int totalReducerCount() {
+        return totalReducerCnt;
     }
 
     /**
@@ -224,6 +256,8 @@ public class GridHadoopJobMetadata implements Externalizable {
         out.writeInt(nextTaskNum);
         out.writeObject(phase);
         out.writeObject(failCause);
+        out.writeInt(totalBlockCnt);
+        out.writeInt(totalReducerCnt);
     }
 
     /** {@inheritDoc} */
@@ -237,6 +271,8 @@ public class GridHadoopJobMetadata implements Externalizable {
         nextTaskNum = in.readInt();
         phase = (GridHadoopJobPhase)in.readObject();
         failCause = (Throwable)in.readObject();
+        totalBlockCnt = in.readInt();
+        totalReducerCnt = in.readInt();
     }
 
     /** {@inheritDoc} */

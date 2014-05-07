@@ -32,7 +32,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
-import static org.gridgain.grid.kernal.processors.hadoop.jobtracker.GridHadoopJobPhase.*;
+import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
 import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
 /**
@@ -162,12 +162,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             GridHadoopMapReducePlan mrPlan = mrPlanner.preparePlan(blocks, ctx.nodes(), job, null);
 
-            GridHadoopJobMetadata meta = new GridHadoopJobMetadata(jobId, info);
+            Collection<GridHadoopFileBlock> allBlocks = allBlocks(mrPlan);
+            Collection<Integer> allReducers = allReducers(job);
+
+            GridHadoopJobMetadata meta = new GridHadoopJobMetadata(jobId, info, allBlocks, allReducers);
 
             meta.mapReducePlan(mrPlan);
-
-            meta.pendingBlocks(allBlocks(mrPlan));
-            meta.pendingReducers(allReducers(job));
 
             GridFutureAdapter<GridHadoopJobId> completeFut = new GridFutureAdapter<>();
 
