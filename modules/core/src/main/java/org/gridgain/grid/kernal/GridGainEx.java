@@ -19,7 +19,7 @@ import org.gridgain.grid.kernal.processors.spring.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.logger.log4j.*;
+import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.marshaller.jdk.*;
 import org.gridgain.grid.marshaller.optimized.*;
@@ -62,6 +62,7 @@ import org.jetbrains.annotations.*;
 import javax.management.*;
 import java.io.*;
 import java.lang.management.*;
+import java.lang.reflect.*;
 import java.net.*;
 import java.util.*;
 import java.util.Map.*;
@@ -1259,18 +1260,7 @@ public class GridGainEx {
             if (nodeId == null)
                 nodeId = UUID.randomUUID();
 
-            GridLogger cfgLog = cfg.getGridLogger();
-
-            if (cfgLog == null) {
-                URL url = U.resolveGridGainUrl("config/gridgain-log4j.xml");
-
-                cfgLog = url == null || GridLog4jLogger.isConfigured() ? new GridLog4jLogger() :
-                    new GridLog4jLogger(url);
-            }
-
-            // Set node IDs for all file appenders.
-            if (cfgLog instanceof GridLog4jLogger)
-                GridLog4jLogger.setNodeId(nodeId);
+            GridLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId);
 
             assert cfgLog != null;
 
@@ -1865,6 +1855,59 @@ public class GridGainEx {
                 if (log.isDebugEnabled())
                     log.debug("Shutdown hook has not been installed because environment " +
                         "or system property " + GG_NO_SHUTDOWN_HOOK + " is set.");
+            }
+        }
+
+        /**
+         * @param cfgLog Configured logger.
+         * @param nodeId Local node ID.
+         * @return Initialized logger.
+         * @throws GridException If failed.
+         */
+        private GridLogger initLogger(@Nullable GridLogger cfgLog, UUID nodeId) throws GridException {
+            try {
+                final String log4jClsName = "org.gridgain.grid.logger.log4j.GridLog4jLogger";
+
+                if (cfgLog == null) {
+                    Class<?> log4jCls;
+
+                    try {
+                        log4jCls = Class.forName(log4jClsName);
+                    }
+                    catch (ClassNotFoundException ignored) {
+                        log4jCls = null;
+                    }
+
+                    if (log4jCls != null) {
+                        URL url = U.resolveGridGainUrl("config/gridgain-log4j.xml");
+
+                        if (url != null) {
+                            boolean configured = (Boolean)log4jCls.getMethod("isConfigured").invoke(null);
+
+                            if (configured)
+                                url = null;
+                        }
+
+                        if (url != null) {
+                            Constructor<?> ctor = log4jCls.getConstructor(String.class);
+
+                            cfgLog = (GridLogger)ctor.newInstance(url);
+                        }
+                        else
+                            cfgLog = (GridLogger)log4jCls.newInstance();
+                    }
+                    else
+                        cfgLog = new GridJavaLogger();
+                }
+
+                // Set node IDs for all file appenders.
+                if (cfgLog.getClass().getName().equals(log4jClsName))
+                    cfgLog.getClass().getMethod("setNodeId").invoke(null, nodeId);
+
+                return cfgLog;
+            }
+            catch (Exception e) {
+                throw new GridException("Failed to create GridLog4jLogger.", e);
             }
         }
 

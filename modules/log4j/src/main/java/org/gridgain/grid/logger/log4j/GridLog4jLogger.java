@@ -241,12 +241,8 @@ public class GridLog4jLogger extends GridMetadataAwareAdapter implements GridLog
         impl.setLevel(level);
     }
 
-    /**
-     * Gets name of the file to log to if file appender is enabled, {@code null} otherwise.
-     *
-     * @return Name of the file to log to or {@code null} if one does not exist.
-     */
-    @Nullable public String fileName() {
+    /** {@inheritDoc} */
+    @Nullable @Override public String fileName() {
         FileAppender fapp = F.first(fileAppenders);
 
         return fapp != null ? fapp.getFile() : null;

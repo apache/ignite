@@ -7453,51 +7453,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * @param indexingSpi Indexing SPI.
-     * @return {@code True} if given SPI is GridH2IndexingSpi with enabled property {@code isDefaultIndexPrimitiveKey}.
-     */
-    public static boolean isDefaultIndexPrimitiveKey(GridIndexingSpi indexingSpi) {
-        if (indexingSpi.getClass().getName().equals(GridComponentType.H2_INDEXING.className())) {
-            try {
-                Method method = indexingSpi.getClass().getMethod("isDefaultIndexPrimitiveKey");
-
-                return (Boolean)method.invoke(indexingSpi);
-            }
-            catch (Exception e) {
-                throw new GridRuntimeException("Failed to invoke 'isDefaultIndexPrimitiveKey' method " +
-                    "on GridH2IndexingSpi.", e);
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @param cls Field type.
-     * @return {@code True} if given type is a spatial geometry type based on {@code com.vividsolutions.jts} library.
-     * @throws GridException If failed.
-     */
-    public static boolean isGeometryClass(Class<?> cls) throws GridException {
-        Class<?> dataTypeCls;
-
-        try {
-            dataTypeCls = Class.forName("org.h2.value.DataType");
-        }
-        catch (ClassNotFoundException ignored) {
-            return false; // H2 is not in classpath.
-        }
-
-        try {
-            Method method = dataTypeCls.getMethod("isGeometryClass", Class.class);
-
-            return (Boolean)method.invoke(dataTypeCls, cls);
-        }
-        catch (Exception e) {
-            throw new GridException("Failed to invoke 'org.h2.value.DataType.isGeometryClass' method.", e);
-        }
-    }
-
-    /**
      * Attaches node ID to log file name.
      *
      * @param nodeId Node ID.

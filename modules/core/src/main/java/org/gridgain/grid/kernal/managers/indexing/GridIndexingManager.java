@@ -663,7 +663,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             if (sqlAnn.index() || sqlAnn.unique()) {
                 String idxName = prop.name() + "_idx";
 
-                desc.addIndex(idxName, GridUtils.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+                desc.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
 
                 desc.addFieldToIndex(idxName, prop.name(), 0, sqlAnn.descending());
             }
@@ -701,6 +701,31 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
         }
 
         return spaceTypes;
+    }
+
+    /**
+     * @param cls Field type.
+     * @return {@code True} if given type is a spatial geometry type based on {@code com.vividsolutions.jts} library.
+     * @throws GridException If failed.
+     */
+    private static boolean isGeometryClass(Class<?> cls) throws GridException {
+        Class<?> dataTypeCls;
+
+        try {
+            dataTypeCls = Class.forName("org.h2.value.DataType");
+        }
+        catch (ClassNotFoundException ignored) {
+            return false; // H2 is not in classpath.
+        }
+
+        try {
+            Method method = dataTypeCls.getMethod("isGeometryClass", Class.class);
+
+            return (Boolean)method.invoke(null, cls);
+        }
+        catch (Exception e) {
+            throw new GridException("Failed to invoke 'org.h2.value.DataType.isGeometryClass' method.", e);
+        }
     }
 
     /**

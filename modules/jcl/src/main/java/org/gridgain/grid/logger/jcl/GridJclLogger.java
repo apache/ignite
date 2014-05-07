@@ -152,6 +152,11 @@ public class GridJclLogger extends GridMetadataAwareAdapter implements GridLogge
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public String fileName() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "GridJclLogger [impl=" + impl + ']';
     }

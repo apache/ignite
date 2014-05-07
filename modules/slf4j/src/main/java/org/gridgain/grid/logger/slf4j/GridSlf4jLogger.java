@@ -128,4 +128,9 @@ public class GridSlf4jLogger extends GridMetadataAwareAdapter implements GridLog
     @Override public boolean isQuiet() {
         return !isInfoEnabled() && !isDebugEnabled();
     }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String fileName() {
+        return null;
+    }
 }

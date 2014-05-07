@@ -63,6 +63,9 @@
         <module>modules/jta</module>
         <module>modules/aws</module>
         <module>modules/schedule</module>
+        <module>modules/log4j</module>
+        <module>modules/slf4j</module>
+        <module>modules/jcl</module>
     </modules>
 
     <build>
