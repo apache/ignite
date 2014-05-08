@@ -40,7 +40,7 @@ public class GridGgfsExamplesSelfTest extends GridAbstractExamplesTest {
             (U.isWindows() ? GGFS_LOOPBACK_CFG : GGFS_SHMEM_CFG) :
             GGFS_NO_ENDPOINT_CFG;
 
-        GridConfiguration cfg = G.loadConfiguration(cfgPath).get1();
+        GridConfiguration cfg = loadConfiguration(cfgPath);
 
         cfg.setGridName(gridName);
 

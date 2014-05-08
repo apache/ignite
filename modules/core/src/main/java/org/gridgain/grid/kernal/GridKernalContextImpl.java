@@ -270,12 +270,14 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /**
      * Creates new kernal context.
      *
+     * @param log Logger.
      * @param grid Grid instance managed by kernal.
      * @param cfg Grid configuration.
      * @param gw Kernal gateway.
      * @param ent Release enterprise flag.
      */
-    protected GridKernalContextImpl(GridEx grid, GridConfiguration cfg, GridKernalGateway gw, boolean ent) {
+    protected GridKernalContextImpl(GridLoggerProxy log, GridEx grid, GridConfiguration cfg, GridKernalGateway gw,
+        boolean ent) {
         assert grid != null;
         assert cfg != null;
         assert gw != null;
@@ -289,8 +291,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             spring = SPRING.create(false);
         }
         catch (GridException ignored) {
-            if (grid.log().isDebugEnabled())
-                grid.log().debug("Failed to load spring component, will not be able to extract userVersion from " +
+            if (log != null && log.isDebugEnabled())
+                log.debug("Failed to load spring component, will not be able to extract userVersion from " +
                     "META-INF/gridgain.xml.");
         }
     }

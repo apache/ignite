@@ -24,7 +24,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      *
      */
     public GridTestKernalContext() {
-        super(new GridKernal(null), new GridConfiguration(), new GridKernalGatewayImpl(null), false);
+        super(null, new GridKernal(null), new GridConfiguration(), new GridKernalGatewayImpl(null), false);
     }
 
     /**

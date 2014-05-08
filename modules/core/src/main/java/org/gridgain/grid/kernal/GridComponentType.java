@@ -157,7 +157,7 @@ public enum GridComponentType {
             else {
                 Constructor<?> ctor = cls.getConstructor(GridKernalContext.class);
 
-                return (T)ctor.newInstance();
+                return (T)ctor.newInstance(ctx);
             }
         }
         catch (Exception e) {
