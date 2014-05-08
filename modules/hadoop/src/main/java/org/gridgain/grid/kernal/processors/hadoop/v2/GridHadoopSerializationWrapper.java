@@ -14,7 +14,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import java.io.*;
 
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -66,7 +65,7 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
      * @param cls The class to serialize.
      */
     public GridHadoopSerializationWrapper(Serialization<T> serialization, Class<T> cls) throws GridException {
-        A.notNull(cls, "cls");
+        assert cls != null;
 
         serializer = serialization.getSerializer(cls);
         deserializer = serialization.getDeserializer(cls);
@@ -82,7 +81,8 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
 
     /** {@inheritDoc} */
     @Override public void write(DataOutput out, Object obj) throws GridException {
-        A.notNull(out, "out", obj, "obj");
+        assert out != null;
+        assert obj != null;
 
         try {
             currOut = out;
@@ -98,7 +98,7 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
 
     /** {@inheritDoc} */
     @Override public Object read(DataInput in, @Nullable Object obj) throws GridException {
-        A.notNull(in, "in");
+        assert in != null;
 
         try {
             currIn = in;
