@@ -487,7 +487,7 @@ public class GridHadoopShuffleJob implements AutoCloseable {
         }
 
         /** {@inheritDoc} */
-        @Override public void close() {
+        @Override public void close() throws GridException {
             for (GridHadoopMultimap.Adder adder : adders) {
                 if (adder != null)
                     adder.close();

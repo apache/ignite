@@ -19,7 +19,7 @@ import java.util.*;
  */
 public class GridHadoopDefaultMapReducePlan implements GridHadoopMapReducePlan {
     /** Mappers map. */
-    private Map<UUID, Collection<GridHadoopFileBlock>> mappers;
+    private Map<UUID, Collection<GridHadoopInputSplit>> mappers;
 
     /** Reducers map. */
     private Map<UUID, int[]> reducers;
@@ -31,7 +31,7 @@ public class GridHadoopDefaultMapReducePlan implements GridHadoopMapReducePlan {
      * @param mappers Mappers map.
      * @param reducers Reducers map.
      */
-    public GridHadoopDefaultMapReducePlan(Map<UUID, Collection<GridHadoopFileBlock>> mappers,
+    public GridHadoopDefaultMapReducePlan(Map<UUID, Collection<GridHadoopInputSplit>> mappers,
         Map<UUID, int[]> reducers) {
         this.mappers = mappers;
         this.reducers = reducers;
@@ -62,7 +62,7 @@ public class GridHadoopDefaultMapReducePlan implements GridHadoopMapReducePlan {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Collection<GridHadoopFileBlock> mappers(UUID nodeId) {
+    @Override @Nullable public Collection<GridHadoopInputSplit> mappers(UUID nodeId) {
         return mappers.get(nodeId);
     }
 

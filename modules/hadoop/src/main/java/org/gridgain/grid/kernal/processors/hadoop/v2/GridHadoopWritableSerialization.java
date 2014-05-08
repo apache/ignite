@@ -66,4 +66,9 @@ public class GridHadoopWritableSerialization implements GridHadoopSerialization 
 
         return w;
     }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        // No-op.
+    }
 }

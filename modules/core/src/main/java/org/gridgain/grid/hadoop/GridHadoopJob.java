@@ -37,7 +37,7 @@ public interface GridHadoopJob {
      *
      * @return Input blocks.
      */
-    public Collection<GridHadoopFileBlock> input() throws GridException;
+    public Collection<GridHadoopInputSplit> input() throws GridException;
 
     /**
      * Gets number of reducers for this job.

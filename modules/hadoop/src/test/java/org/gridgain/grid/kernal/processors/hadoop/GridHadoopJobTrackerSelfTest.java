@@ -287,10 +287,10 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridHadoopFileBlock> input() throws GridException {
+        @Override public Collection<GridHadoopInputSplit> input() throws GridException {
             int blocks = jobInfo.configuration().getInt(BLOCK_CNT, 0);
 
-            Collection<GridHadoopFileBlock> res = new ArrayList<>(blocks);
+            Collection<GridHadoopInputSplit> res = new ArrayList<>(blocks);
 
             try {
                 for (int i = 0; i < blocks; i++)

@@ -15,7 +15,6 @@ import org.apache.hadoop.io.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
 import java.net.*;
@@ -26,6 +25,9 @@ import java.util.*;
  * Tests of Map, Combine and Reduce task executions of any version of hadoop API.
  */
 abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCountTest {
+    /** Empty hosts array. */
+    private static final String[] HOSTS = new String[0];
+
     /**
      * Creates some grid hadoop job. Override this method to create tests for any job implementation.
      *
@@ -59,14 +61,14 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
         testInputFileWriter.println("world1 hello1");
         testInputFileWriter.flush();
 
-        GridHadoopFileBlock fileBlock1 = new GridHadoopFileBlock(null, testInputFileURI, 0, testInputFile.length() - 1);
+        GridHadoopFileBlock fileBlock1 = new GridHadoopFileBlock(HOSTS, testInputFileURI, 0, testInputFile.length() - 1);
 
         testInputFileWriter.println("hello2 world2");
         testInputFileWriter.println("world3 hello3");
         testInputFileWriter.close();
 
         GridHadoopFileBlock fileBlock2 =
-                new GridHadoopFileBlock(null, testInputFileURI, fileBlock1.length(), testInputFile.length() - fileBlock1.length());
+                new GridHadoopFileBlock(HOSTS, testInputFileURI, fileBlock1.length(), testInputFile.length() - fileBlock1.length());
 
         GridHadoopJob gridJob = getHadoopJob(testInputFileURI.toString(), "/");
 
@@ -220,8 +222,8 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
 
             //Split file into two blocks
             Long l = testInputFile.length() / 2;
-            GridHadoopFileBlock fileBlock1 = new GridHadoopFileBlock(null, testInputFileURI, 0, l);
-            GridHadoopFileBlock fileBlock2 = new GridHadoopFileBlock(null, testInputFileURI, l, testInputFile.length() - l);
+            GridHadoopFileBlock fileBlock1 = new GridHadoopFileBlock(HOSTS, testInputFileURI, 0, l);
+            GridHadoopFileBlock fileBlock2 = new GridHadoopFileBlock(HOSTS, testInputFileURI, l, testInputFile.length() - l);
 
             GridHadoopJob gridJob = getHadoopJob(testInputFileURI.toString(), testOutputDirURI.toString());
 
