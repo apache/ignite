@@ -31,7 +31,7 @@
     <dependencies>
         <dependency>
             <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-core</artifactId>
+            <artifactId>gridgain</artifactId>
             <version>${gridgain.version}</version>
             <scope>system</scope>
             <systemPath>${basedir}/../${gridgain.jar}</systemPath>
