@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.68)
-AC_INIT([GridGain C++ client],[6.1.1],[info@gridgain.com],[gridgain-client],[www.gridgain.com])
+AC_INIT([GridGain C++ client],[6.1.8],[info@gridgain.com],[gridgain-client],[www.gridgain.com])
 AC_CONFIG_SRCDIR([src])
 
 dnl initialize Doxygen support
