@@ -43,8 +43,7 @@ public class GridHadoopSplitWrapper implements GridHadoopInputSplit {
      * @param hosts Hosts where split is located.
      */
     public GridHadoopSplitWrapper(Writable innerSplit, String[] hosts) {
-        assert innerSplit != null;
-        assert hosts != null;
+        A.notNull(innerSplit, "innerSplit", hosts, "hosts");
 
         this.innerSplit = innerSplit;
         this.hosts = hosts;

@@ -53,8 +53,7 @@ public class GridHadoopFileBlock implements GridHadoopInputSplit {
      * @param len Length of the block.
      */
     public GridHadoopFileBlock(String[] hosts, URI file, long start, long len) {
-        assert hosts != null;
-        assert file != null;
+        A.notNull(hosts, "hosts", file, "file");
 
         this.hosts = hosts;
         this.file = file;
@@ -134,7 +133,7 @@ public class GridHadoopFileBlock implements GridHadoopInputSplit {
      * @param hosts New hosts.
      */
     public void hosts(String[] hosts) {
-        assert hosts != null;
+        A.notNull(hosts, "hosts");
 
         this.hosts = hosts;
     }
