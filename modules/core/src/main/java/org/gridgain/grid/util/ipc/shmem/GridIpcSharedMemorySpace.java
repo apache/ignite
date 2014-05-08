@@ -21,6 +21,7 @@ import java.util.concurrent.locks.*;
 /**
  *
  */
+@SuppressWarnings({"PointlessBooleanExpression", "ConstantConditions"})
 public class GridIpcSharedMemorySpace implements Closeable {
     /** Debug flag (enable for testing). */
     private static final boolean DEBUG = false;
@@ -77,7 +78,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
 
         opSize = size;
 
-        shmemPtr = GridIpcSharedMemoryUtils.allocateSystemResources(tokFileName, size, DEBUG);
+        shmemPtr = GridIpcSharedMemoryUtils.allocateSystemResources(tokFileName, size, DEBUG && log.isDebugEnabled());
 
         shmemId = GridIpcSharedMemoryUtils.sharedMemoryId(shmemPtr);
         semId = GridIpcSharedMemoryUtils.semaphoreId(shmemPtr);
@@ -117,7 +118,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
         this.readerPid = readerPid;
         this.tokFileName = tokFileName;
 
-        shmemPtr = GridIpcSharedMemoryUtils.attach(shmemId, DEBUG);
+        shmemPtr = GridIpcSharedMemoryUtils.attach(shmemId, DEBUG && log.isDebugEnabled());
 
         semId = GridIpcSharedMemoryUtils.semaphoreId(shmemPtr);
     }
