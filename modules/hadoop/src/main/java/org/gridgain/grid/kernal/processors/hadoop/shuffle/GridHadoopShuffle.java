@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
@@ -31,30 +32,35 @@ public class GridHadoopShuffle extends GridHadoopComponent {
     /** */
     private GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
+    /** */
+    private ConcurrentMap<Long, GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapter<?>>> sentMsgs =
+        new ConcurrentHashMap<>();
+
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws GridException {
         ctx.kernalContext().io().addUserMessageListener(GridTopic.TOPIC_HADOOP,
             new GridBiPredicate<UUID, Object>() {
                 @Override public boolean apply(UUID nodeId, Object msg) {
                     if (msg instanceof GridHadoopShuffleMessage) {
-                        GridHadoopShuffleMessage m = ((GridHadoopShuffleMessage) msg);
+                        GridHadoopShuffleMessage m = (GridHadoopShuffleMessage)msg;
 
                         try {
-                            job(m.jobId()).onShuffleMessage(nodeId, m);
+                            job(m.jobId()).onShuffleMessage(m);
                         }
                         catch (GridException e) {
                             U.error(log, "Message handling failed.", e);
                         }
+
+                        // Reply with ack.
+                        send0(nodeId, new GridHadoopShuffleAck(m.id(), m.jobId()));
                     }
                     else if (msg instanceof GridHadoopShuffleAck) {
                         GridHadoopShuffleAck m = (GridHadoopShuffleAck)msg;
 
-                        try {
-                            job(m.jobId()).onAckMessage(m);
-                        }
-                        catch (GridException e) {
-                            U.error(log, "Message handling failed.", e);
-                        }
+                        GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapter<?>> t = sentMsgs.remove(m.id());
+
+                        if (t != null)
+                            t.get2().onDone();
                     }
                     else
                         throw new IllegalStateException("Message unknown: " + msg);
@@ -65,6 +71,21 @@ public class GridHadoopShuffle extends GridHadoopComponent {
     }
 
     /**
+     * @param nodeId Node id.
+     * @param msg Message.
+     */
+    private void send0(UUID nodeId, Object msg) {
+        GridNode node = ctx.kernalContext().discovery().node(nodeId);
+
+        try {
+            ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0);
+        }
+        catch (GridException e) {
+            U.error(log, "Failed to send message.", e);
+        }
+    }
+
+    /**
      * @param jobId Task info.
      * @return Shuffle job.
      */
@@ -72,7 +93,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
         GridHadoopShuffleJob res = jobs.get(jobId);
 
         if (res == null) {
-            res = new GridHadoopShuffleJob(ctx, log, ctx.jobTracker().job(jobId), mem, ctx.jobTracker().plan(jobId));
+            res = new GridHadoopShuffleJob(ctx.localNodeId(), log, ctx.jobTracker().job(jobId), mem, ctx.jobTracker().plan(jobId));
 
             GridHadoopShuffleJob old = jobs.putIfAbsent(jobId, res);
 
@@ -80,6 +101,22 @@ public class GridHadoopShuffle extends GridHadoopComponent {
                 res.close();
 
                 res = old;
+            }
+            else {
+                res.startSending(ctx.kernalContext().gridName(),
+                    new GridBiClosure<UUID, GridHadoopShuffleMessage, GridFuture<?>>() {
+                        @Override public GridFuture<?> apply(UUID nodeId, GridHadoopShuffleMessage msg) {
+                            GridFutureAdapter<?> f = new GridFutureAdapter<>(ctx.kernalContext());
+
+                            sentMsgs.putIfAbsent(msg.id(),
+                                new GridBiTuple<GridHadoopShuffleMessage, GridFutureAdapter<?>>(msg, f));
+
+                            send0(nodeId, msg);
+
+                            return f;
+                        }
+                    }
+                );
             }
         }
 
