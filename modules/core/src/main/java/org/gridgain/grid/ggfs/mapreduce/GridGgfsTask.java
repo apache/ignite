@@ -12,6 +12,7 @@ package org.gridgain.grid.ggfs.mapreduce;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.resources.*;
 import org.jetbrains.annotations.*;
@@ -25,7 +26,7 @@ import java.util.*;
  * {@link GridGgfsTask#createJob(GridGgfsPath, GridGgfsFileRange, GridGgfsTaskArgs)} method.
  * <p>
  * Each file participating in GGFS task is split into {@link GridGgfsFileRange}s first. Normally range is a number of
- * consequent bytes located on a single node (see {@link GridGgfsGroupDataBlocksKeyMapper}). In case maximum range size
+ * consequent bytes located on a single node (see {@code GridGgfsGroupDataBlocksKeyMapper}). In case maximum range size
  * is provided (either through {@link GridGgfsConfiguration#getMaximumTaskRangeLength()} or {@code GridGgfs.execute()}
  * argument), then ranges could be further divided into smaller chunks.
  * <p>
@@ -75,8 +76,10 @@ public abstract class GridGgfsTask<T, R> extends GridComputeTaskAdapter<GridGgfs
     @Nullable @Override public final Map<? extends GridComputeJob, GridNode> map(List<GridNode> subgrid,
         @Nullable GridGgfsTaskArgs<T> args) throws GridException {
         assert grid != null;
+        assert args != null;
 
-        GridGgfsImpl ggfs = (GridGgfsImpl)grid.ggfs(args.ggfsName());
+        GridGgfs ggfs = grid.ggfs(args.ggfsName());
+        GridGgfsProcessorAdapter ggfsProc = ((GridKernal)grid).context().ggfs();
 
         Map<GridComputeJob, GridNode> splitMap = new HashMap<>();
 
@@ -113,8 +116,8 @@ public abstract class GridGgfsTask<T, R> extends GridComputeTaskAdapter<GridGgfs
                 GridGgfsJob job = createJob(path, new GridGgfsFileRange(file.path(), loc.start(), loc.length()), args);
 
                 if (job != null) {
-                    GridComputeJob jobImpl = new GridGgfsJobImpl(job, ggfs.name(), file.path(), loc.start(), loc.length(),
-                        args.recordResolver());
+                    GridComputeJob jobImpl = ggfsProc.createJob(job, ggfs.name(), file.path(), loc.start(),
+                        loc.length(), args.recordResolver());
 
                     splitMap.put(jobImpl, node);
                 }

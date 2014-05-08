@@ -28,13 +28,13 @@ import static org.gridgain.grid.util.offheap.GridOffHeapEvent.*;
  */
 public class GridUnsafeMemory {
     /** Unsafe handle. */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
+    public static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** Free byte. */
     private static final byte FREE = (byte)0;
 
     /** Byte array offset. */
-    private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
+    public static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
     /** Address size. */
     private static final int ADDR_SIZE = UNSAFE.addressSize();
@@ -178,7 +178,8 @@ public class GridUnsafeMemory {
             return ptr;
         }
         catch (OutOfMemoryError ignore) {
-            cnt.addAndGet(-size);
+            if (!reserved)
+                cnt.addAndGet(-size);
 
             throw new GridOffHeapOutOfMemoryException(totalSize(), size);
         }
