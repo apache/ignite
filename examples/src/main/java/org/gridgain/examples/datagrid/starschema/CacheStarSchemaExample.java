@@ -192,6 +192,9 @@ public class CacheStarSchemaExample {
      */
     @SuppressWarnings("UnusedDeclaration")
     private static <T> T rand(Collection<? extends T> c) {
+        if (c == null)
+            throw new IllegalArgumentException();
+
         int n = ThreadLocalRandom.current().nextInt(c.size());
 
         int i = 0;
