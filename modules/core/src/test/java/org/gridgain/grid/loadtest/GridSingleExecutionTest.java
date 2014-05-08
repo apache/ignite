@@ -14,11 +14,11 @@ import org.apache.log4j.varia.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
+import org.gridgain.testframework.junits.logger.*;
 import org.springframework.beans.*;
 import org.springframework.context.*;
 import org.springframework.context.support.*;
@@ -157,8 +157,7 @@ public final class GridSingleExecutionTest {
 
         Logger.getLogger("org.gridgain").setLevel(Level.DEBUG);
 
-        // TODO 8242.
-        return new GridJavaLogger();//return new GridLog4jLogger(false);
+        return new GridTestLog4jLogger(false);
     }
 
     /**
