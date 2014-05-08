@@ -42,10 +42,15 @@
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-spring-deps</artifactId>
-            <version>1.1</version>
-            <type>pom</type>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>3.2.2.RELEASE</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aop</artifactId>
+            <version>3.2.2.RELEASE</version>
         </dependency>
 
         <dependency>
@@ -53,6 +58,12 @@
             <artifactId>gridgain-log4j</artifactId>
             <version>${gridgain.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>aopalliance</groupId>
+            <artifactId>aopalliance</artifactId>
+            <version>1.0</version>
         </dependency>
 
         <dependency>

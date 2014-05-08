@@ -71,6 +71,24 @@
         </dependency>
 
         <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>3.2.2.RELEASE</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>3.2.2.RELEASE</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>3.2.2.RELEASE</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.code.simple-spring-memcached</groupId>
             <artifactId>spymemcached</artifactId>
             <version>2.7.3</version>
