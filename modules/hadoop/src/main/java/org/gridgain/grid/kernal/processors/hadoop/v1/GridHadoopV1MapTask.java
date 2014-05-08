@@ -22,6 +22,9 @@ import java.io.*;
  * Hadoop map task implementation for v1 API.
  */
 public class GridHadoopV1MapTask extends GridHadoopTask {
+    /** */
+    private static final String[] EMPTY_HOSTS = new String[0];
+
     /** {@inheritDoc} */
     public GridHadoopV1MapTask(GridHadoopTaskInfo taskInfo) {
         super(taskInfo);
@@ -33,20 +36,23 @@ public class GridHadoopV1MapTask extends GridHadoopTask {
 
         JobConf jobConf = new JobConf(jobImpl.hadoopJobContext().getJobConf());
 
-        Mapper mapper  = U.newInstance(jobConf.getMapperClass());
+        Mapper mapper = U.newInstance(jobConf.getMapperClass());
 
         InputFormat inFormat = jobConf.getInputFormat();
 
         GridHadoopInputSplit split = info().inputSplit();
 
         InputSplit nativeSplit;
-        if (split instanceof GridHadoopFileBlock) {
-            GridHadoopFileBlock block = (GridHadoopFileBlock) split;
 
-            nativeSplit = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), block.hosts());
+        if (split instanceof GridHadoopFileBlock) {
+            GridHadoopFileBlock block = (GridHadoopFileBlock)split;
+
+            nativeSplit = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), EMPTY_HOSTS);
         }
         else
-            nativeSplit = (InputSplit) split.innerSplit();
+            nativeSplit = (InputSplit)split.innerSplit();
+
+        assert nativeSplit != null;
 
         OutputCollector collector = new OutputCollector() {
             @Override public void collect(Object key, Object val) throws IOException {

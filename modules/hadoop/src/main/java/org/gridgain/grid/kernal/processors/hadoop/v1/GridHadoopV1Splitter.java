@@ -23,7 +23,7 @@ import java.util.*;
 public class GridHadoopV1Splitter {
     /**
      * @param jobConf Job configuration.
-     * @return Collection of mapped blocks.
+     * @return Collection of mapped splits.
      * @throws GridException If mapping failed.
      */
     public static Collection<GridHadoopInputSplit> splitJob(JobConf jobConf) throws GridException {

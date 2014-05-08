@@ -19,7 +19,7 @@ import java.util.*;
  */
 public interface GridHadoopMapReducePlanner {
     /**
-     * Prepares map-reduce execution plan for the given collection of file blocks and topology.
+     * Prepares map-reduce execution plan for the given collection of input splits and topology.
      *
      * @param splits Input splits.
      * @param top Topology.

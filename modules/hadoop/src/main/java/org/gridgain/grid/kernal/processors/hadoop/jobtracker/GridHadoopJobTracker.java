@@ -324,56 +324,6 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     }
 
     /**
-     * @param info Job info.
-     * @param splits Splits to init nodes for.
-     */
-    private void assignSplitHosts(GridHadoopDefaultJobInfo info, Iterable<GridHadoopInputSplit> splits)
-        throws GridException {
-        Path path = null;
-        FileSystem fs = null;
-        FileStatus stat = null;
-
-        for (GridHadoopInputSplit split : splits) {
-            try {
-                GridHadoopFileBlock block = (GridHadoopFileBlock) split;
-
-                Path p = new Path(block.file());
-
-                // Get file system and status only on path change.
-                if (!F.eq(path, p)) {
-                    path = p;
-
-                    fs = path.getFileSystem(info.configuration());
-
-                    stat = fs.getFileStatus(path);
-                }
-
-                BlockLocation[] locs = fs.getFileBlockLocations(stat, block.start(), block.length());
-
-                assert locs != null;
-                assert locs.length != 0;
-
-                long maxLen = Long.MIN_VALUE;
-                BlockLocation max = null;
-
-                for (BlockLocation l : locs) {
-                    if (maxLen < l.getLength()) {
-                        maxLen = l.getLength();
-                        max = l;
-                    }
-                }
-
-                assert max != null;
-
-                block.hosts(max.getHosts());
-            }
-            catch (IOException e) {
-                throw new GridException(e);
-            }
-        }
-    }
-
-    /**
      * Gets all input splits for given hadoop map-reduce plan.
      *
      * @param plan Map-reduce plan.

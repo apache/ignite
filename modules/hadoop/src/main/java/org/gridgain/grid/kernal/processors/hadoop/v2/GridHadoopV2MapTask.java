@@ -54,12 +54,14 @@ public class GridHadoopV2MapTask extends GridHadoopTask {
         InputSplit nativeSplit;
 
         if (split instanceof GridHadoopFileBlock) {
-            GridHadoopFileBlock block = (GridHadoopFileBlock) split;
+            GridHadoopFileBlock block = (GridHadoopFileBlock)split;
 
-            nativeSplit = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), block.hosts());
+            nativeSplit = new FileSplit(new Path(block.file().toString()), block.start(), block.length(), null);
         }
         else
-            nativeSplit = (InputSplit) split.innerSplit();
+            nativeSplit = (InputSplit)split.innerSplit();
+
+        assert nativeSplit != null;
 
         try {
             RecordReader reader = inFormat.createRecordReader(nativeSplit, hadoopCtx);

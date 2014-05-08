@@ -20,11 +20,13 @@ import java.io.*;
 import org.jetbrains.annotations.*;
 
 /**
- *
+ * The wrapper for native hadoop input splits.
  */
 public class GridHadoopSplitWrapper implements GridHadoopInputSplit {
+    /** Hosts where split is located. */
     private String[] hosts;
 
+    /** Native hadoop input split. */
     private Writable innerSplit;
 
     /**
@@ -37,15 +39,21 @@ public class GridHadoopSplitWrapper implements GridHadoopInputSplit {
     /**
      * Creates new split wrapper.
      *
-     * @param innerSplit Native
+     * @param innerSplit Native hadoop input split to wrap.
+     * @param hosts Hosts where split is located.
      */
     public GridHadoopSplitWrapper(Writable innerSplit, String[] hosts) {
+        assert innerSplit != null;
+        assert hosts != null;
+
         this.innerSplit = innerSplit;
         this.hosts = hosts;
     }
 
     /** {@inheritDoc} */
     @Override public String[] hosts() {
+        assert hosts != null;
+
         return hosts;
     }
 
@@ -56,8 +64,6 @@ public class GridHadoopSplitWrapper implements GridHadoopInputSplit {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(hosts);
-
         out.writeObject(innerSplit.getClass());
 
         innerSplit.write(out);
@@ -65,8 +71,6 @@ public class GridHadoopSplitWrapper implements GridHadoopInputSplit {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        hosts = (String[])in.readObject();
-
         Class<Writable> cls = (Class<Writable>)in.readObject();
 
         try {

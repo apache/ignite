@@ -25,7 +25,7 @@ import java.util.*;
 public class GridHadoopV2Splitter {
     /**
      * @param ctx Job context.
-     * @return Collection of mapped blocks.
+     * @return Collection of mapped splits.
      * @throws GridException If mapping failed.
      */
     public static Collection<GridHadoopInputSplit> splitJob(JobContext ctx) throws GridException {

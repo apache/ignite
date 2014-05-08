@@ -178,16 +178,14 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
     }
 
     /**
-     * Gets GGFS instance for given split, if such instance exists.
+     * Gets GGFS instance for given block, if such instance exists.
      *
      * @param job Job.
-     * @param split Block.
+     * @param block Block.
      * @return GGFS instance, if available.
      */
-    @Nullable private GridGgfs ggfsForBlock(GridHadoopJob job, GridHadoopInputSplit split) {
+    @Nullable private GridGgfs ggfsForBlock(GridHadoopJob job, GridHadoopFileBlock block) {
         try {
-            GridHadoopFileBlock block = (GridHadoopFileBlock) split;
-
             Path path = new Path(block.file());
 
             FileSystem fs = path.getFileSystem(((GridHadoopDefaultJobInfo)job.info()).configuration());

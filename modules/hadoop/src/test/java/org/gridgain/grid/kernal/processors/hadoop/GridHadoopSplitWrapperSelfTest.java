@@ -13,9 +13,11 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.gridgain.testframework.*;
 
 import java.io.*;
-import java.util.Arrays;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Self test of {@link GridHadoopSplitWrapper}.
@@ -42,11 +44,16 @@ public class GridHadoopSplitWrapperSelfTest extends GridHadoopAbstractSelfTest {
 
         ObjectInput in = new ObjectInputStream(new ByteArrayInputStream(buf.toByteArray()));
 
-        GridHadoopInputSplit res = (GridHadoopInputSplit) in.readObject();
+        final GridHadoopInputSplit res = (GridHadoopInputSplit)in.readObject();
 
         assertEquals("/path/to/file:100+500", res.innerSplit().toString());
 
-        assertEquals("[host1, host2]", Arrays.toString(res.hosts()));
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                res.hosts();
 
+                return null;
+            }
+        }, AssertionError.class, null);
     }
 }

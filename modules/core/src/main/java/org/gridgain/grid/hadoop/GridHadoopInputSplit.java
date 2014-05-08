@@ -23,7 +23,7 @@ public interface GridHadoopInputSplit extends Externalizable {
     public String[] hosts();
 
     /**
-     * @return Either null or native input split if it's not FileSplit.
+     * @return Either {@code null} or native input split if it's not FileSplit.
      */
     @Nullable public Object innerSplit();
 }
