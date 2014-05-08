@@ -41,8 +41,6 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
      */
     public GridHadoopProcessor(GridKernalContext ctx) {
         super(ctx);
-
-
     }
 
     /** {@inheritDoc} */

@@ -142,7 +142,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     /** {@inheritDoc} */
     @Override public JobStatus getJobStatus(JobID jobId) throws IOException, InterruptedException {
         try {
-            Long delay = conf.getLong(PROP_STATUS_POLL_DELAY, -1);
+            Long delay = conf.getLong(PROP_STATUS_POLL_DELAY, 0);
 
             GridHadoopJobStatus status = cli.compute().execute(GridHadoopProtocolJobStatusTask.class.getName(),
                 new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId(), delay));

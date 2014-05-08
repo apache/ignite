@@ -21,6 +21,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import static org.gridgain.client.GridClientProtocol.*;
 import static org.gridgain.grid.hadoop.client.GridHadoopClientProtocol.*;
 
 /**
@@ -44,7 +45,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
         if (GridHadoopClientProtocol.PROP_FRAMEWORK_NAME.equals(conf.get(MRConfig.FRAMEWORK_NAME))) {
             String addr = conf.get(PROP_SRV_ADDR);
 
-            return create0(addr, conf);
+            return createProtocol(addr, conf);
         }
 
         return null;
@@ -53,7 +54,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
     /** {@inheritDoc} */
     @Override public ClientProtocol create(InetSocketAddress addr, Configuration conf) throws IOException {
         if (GridHadoopClientProtocol.PROP_FRAMEWORK_NAME.equals(conf.get(MRConfig.FRAMEWORK_NAME)))
-            return create0(addr.getHostString() + ":" + addr.getPort(), conf);
+            return createProtocol(addr.getHostString() + ":" + addr.getPort(), conf);
 
         return null;
     }
@@ -156,7 +157,11 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
      * @return Client protocol.
      * @throws IOException If failed.
      */
-    private static ClientProtocol create0(String addr, Configuration conf) throws IOException {
+    private static ClientProtocol createProtocol(String addr, Configuration conf) throws IOException {
+        if (addr == null || addr.isEmpty())
+            throw new IOException("Failed to create client protocol because server address is not specified (is " +
+                PROP_SRV_ADDR + " property set?).");
+
         return new GridHadoopClientProtocol(conf, addr, acquire(addr));
     }
 
@@ -170,7 +175,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
     private static GridClient createClient(String addr) throws IOException {
         GridClientConfiguration cliCfg = new GridClientConfiguration();
 
-        cliCfg.setProtocol(GridClientProtocol.TCP);
+        cliCfg.setProtocol(TCP);
         cliCfg.setServers(Collections.singletonList(addr));
         cliCfg.setMarshaller(new GridClientOptimizedMarshaller());
 

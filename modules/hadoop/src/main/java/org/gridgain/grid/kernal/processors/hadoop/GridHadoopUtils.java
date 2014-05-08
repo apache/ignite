@@ -114,12 +114,8 @@ public class GridHadoopUtils {
                 cleanupProgress = 1.0f;
         }
 
-        JobStatus s0 = new JobStatus(jobId, 1.0f, mapProgress, reduceProgress, cleanupProgress, state,
+        return new JobStatus(jobId, 1.0f, mapProgress, reduceProgress, cleanupProgress, state,
             JobPriority.NORMAL, status.user(), status.jobName(), MRApps.getJobFile(conf, status.user(), jobId), "N/A");
-
-        System.out.println("Status: " + s0);
-
-        return s0;
     }
 
     /**
