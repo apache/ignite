@@ -27,10 +27,10 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
     private final Deserializer<T> deserializer;
 
     /** Data output for current write operation. */
-    private DataOutput currOut;
+    private OutputStream currOut;
 
     /** Data input for current read operation. */
-    private DataInput currIn;
+    private InputStream currIn;
 
     /** Wrapper around current output to provide OutputStream interface. */
     private final OutputStream outStream = new OutputStream() {
@@ -49,14 +49,12 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
     private final InputStream inStream = new InputStream() {
         /** {@inheritDoc} */
         @Override public int read() throws IOException {
-            return currIn.readUnsignedByte();
+            return currIn.read();
         }
 
         /** {@inheritDoc} */
         @Override public int read(byte[] b, int off, int len) throws IOException {
-            currIn.readFully(b, off, len);
-
-            return len;
+            return currIn.read(b, off, len);
         }
     };
 
@@ -85,11 +83,11 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
         assert obj != null;
 
         try {
-            currOut = out;
+            currOut = (OutputStream)out;
 
             serializer.serialize((T)obj);
 
-            currOut = null;
+            //currOut = null;
         }
         catch (IOException e) {
             throw new GridException(e);
@@ -101,11 +99,11 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
         assert in != null;
 
         try {
-            currIn = in;
+            currIn = (InputStream)in;
 
             T res = deserializer.deserialize((T) obj);
 
-            currIn = null;
+            //currIn = null;
 
             return res;
         }

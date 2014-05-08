@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.serializer.*;
+import org.apache.hadoop.io.serializer.avro.AvroReflectSerialization;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.testframework.junits.common.*;
@@ -43,4 +44,42 @@ public class GridHadoopSerializationWrapperSelfTest extends GridCommonAbstractTe
         assertEquals(3, ((IntWritable)ser.read(in, null)).get());
         assertEquals(-5, ((IntWritable)ser.read(in, null)).get());
     }
+
+
+    public void testIntJavaSerialization() throws Exception {
+        GridHadoopSerialization ser = new GridHadoopSerializationWrapper(new JavaSerialization(), Integer.class);
+
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+
+        DataOutput out = new DataOutputStream(buf);
+
+        ser.write(out, 3);
+        ser.write(out, -5);
+        ser.close();
+
+        DataInput in = new DataInputStream(new ByteArrayInputStream(buf.toByteArray()));
+
+        assertEquals(3, ((Integer)ser.read(in, null)).intValue());
+        assertEquals(-5, ((Integer)ser.read(in, null)).intValue());
+    }
+
+    public void testAvroReflectSerialization() throws Exception {
+        GridHadoopSerialization ser = new GridHadoopSerializationWrapper(new AvroReflectSerialization(), Integer.class);
+
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+
+        DataOutput out = new DataOutputStream(buf);
+
+        ser.write(out, 3);
+        ser.write(out, -5);
+        ser.close();
+
+        assertEquals("[6, 9]", Arrays.toString(buf.toByteArray()));
+
+        DataInput in = new DataInputStream(new ByteArrayInputStream(buf.toByteArray()));
+
+        assertEquals(3, ((Integer)ser.read(in, null)).intValue());
+        assertEquals(-5, ((Integer)ser.read(in, null)).intValue());
+    }
+
 }
