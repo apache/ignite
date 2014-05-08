@@ -2115,7 +2115,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 GridGgfsPath changed = null;
 
                 for (Map.Entry<GridGgfsPath, GridUuid> entry : pathToId.entrySet()) {
-                    if (!idToInfo.containsKey(entry.getValue()) || !F.eq(entry.getValue(), fileId(entry.getKey(), true))) {
+                    if (!idToInfo.containsKey(entry.getValue()) ||
+                        !F.eq(entry.getValue(), fileId(entry.getKey(), true))) {
                         changed = entry.getKey();
 
                         break;
