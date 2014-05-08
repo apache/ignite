@@ -52,7 +52,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
@@ -192,6 +192,8 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         job.submit();
 
+        U.sleep(Long.MAX_VALUE - 1);
+
         JobID jobId = job.getJobID();
 
         checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 1.0f, 0.0f, 0.0f, 0.0f);
@@ -219,6 +221,10 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 //        job.waitForCompletion(true);
 //
 //        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.SUCCEEDED, 1.0f, 1.0f, 1.0f, 1.0f);
+    }
+
+    @Override protected long getTestTimeout() {
+        return Long.MAX_VALUE;
     }
 
     private static void checkJobStatus(JobStatus status, JobID expJobId, String expJobName, String expUser,
@@ -285,7 +291,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         /** {@inheritDoc} */
         @Override public void map(Object key, Text val, Context ctx) throws IOException, InterruptedException {
-            mapLatch.await();
+//            mapLatch.await();
 
             StringTokenizer wordList = new StringTokenizer(val.toString());
 
@@ -306,7 +312,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         /** {@inheritDoc} */
         @Override public void reduce(Text key, Iterable<IntWritable> values, Context ctx) throws IOException,
             InterruptedException {
-            reduceLatch.await();
+//            reduceLatch.await();
 
             int wordCnt = 0;
 
