@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.io.*;
+import org.apache.hadoop.io.serializer.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.gridgain.grid.*;
@@ -80,8 +81,11 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridHadoopFileBlock> input() throws GridException {
-        return GridHadoopV2Splitter.splitJob(ctx);
+    @Override public Collection<GridHadoopInputSplit> input() throws GridException {
+        if (useNewMapper)
+            return GridHadoopV2Splitter.splitJob(ctx);
+        else
+            return GridHadoopV1Splitter.splitJob(ctx.getJobConf());
     }
 
     /** {@inheritDoc} */
@@ -152,14 +156,31 @@ public class GridHadoopV2Job implements GridHadoopJob {
         }
     }
 
+    /**
+     * Gets serializer for specified class.
+     * @param cls Class.
+     * @return Appropriate serializer.
+     */
+    @SuppressWarnings("unchecked")
+    private GridHadoopSerialization getSerialization(Class<?> cls) throws GridException {
+        SerializationFactory factory = new SerializationFactory(ctx.getJobConf());
+
+        Serialization<?> serialization = factory.getSerialization(cls);
+
+        if (serialization.getClass() == WritableSerialization.class)
+            return new GridHadoopWritableSerialization((Class<? extends Writable>)cls);
+
+        return new GridHadoopSerializationWrapper(serialization, cls);
+    }
+
     /** {@inheritDoc} */
     @Override public GridHadoopSerialization keySerialization() throws GridException {
-        return new GridHadoopWritableSerialization((Class<? extends Writable>)keyCls);
+        return getSerialization(keyCls);
     }
 
     /** {@inheritDoc} */
     @Override public GridHadoopSerialization valueSerialization() throws GridException {
-        return new GridHadoopWritableSerialization((Class<? extends Writable>)valCls);
+        return getSerialization(valCls);
     }
 
     /** {@inheritDoc} */

@@ -29,13 +29,13 @@ public class GridHadoopTaskInfo implements Externalizable {
     private GridHadoopJobId jobId;
 
     /** */
-    private int taskNumber;
+    private int taskNum;
 
     /** */
     private int attempt;
 
     /** */
-    private GridHadoopFileBlock fileBlock;
+    private GridHadoopInputSplit inputSplit;
 
     /**
      * For {@link Externalizable}.
@@ -50,18 +50,18 @@ public class GridHadoopTaskInfo implements Externalizable {
      * @param nodeId Node id.
      * @param type Task type.
      * @param jobId Job id.
-     * @param taskNumber Task number.
+     * @param taskNum Task number.
      * @param attempt Attempt for this task.
-     * @param fileBlock File block.
+     * @param inputSplit Input split.
      */
-    public GridHadoopTaskInfo(UUID nodeId, GridHadoopTaskType type, GridHadoopJobId jobId, int taskNumber, int attempt,
-        @Nullable GridHadoopFileBlock fileBlock) {
+    public GridHadoopTaskInfo(UUID nodeId, GridHadoopTaskType type, GridHadoopJobId jobId, int taskNum, int attempt,
+        @Nullable GridHadoopInputSplit inputSplit) {
         this.nodeId = nodeId;
         this.type = type;
         this.jobId = jobId;
-        this.taskNumber = taskNumber;
+        this.taskNum = taskNum;
         this.attempt = attempt;
-        this.fileBlock = fileBlock;
+        this.inputSplit = inputSplit;
     }
 
     /** {@inheritDoc} */
@@ -69,9 +69,9 @@ public class GridHadoopTaskInfo implements Externalizable {
         out.writeByte(type.ordinal());
         U.writeUuid(out, nodeId);
         out.writeObject(jobId);
-        out.writeInt(taskNumber);
+        out.writeInt(taskNum);
         out.writeInt(attempt);
-        out.writeObject(fileBlock);
+        out.writeObject(inputSplit);
     }
 
     /** {@inheritDoc} */
@@ -79,9 +79,9 @@ public class GridHadoopTaskInfo implements Externalizable {
         type = GridHadoopTaskType.fromOrdinal(in.readByte());
         nodeId = U.readUuid(in);
         jobId = (GridHadoopJobId)in.readObject();
-        taskNumber = in.readInt();
+        taskNum = in.readInt();
         attempt = in.readInt();
-        fileBlock = (GridHadoopFileBlock)in.readObject();
+        inputSplit = (GridHadoopInputSplit)in.readObject();
     }
 
     /**
@@ -109,7 +109,7 @@ public class GridHadoopTaskInfo implements Externalizable {
      * @return Task number.
      */
     public int taskNumber() {
-        return taskNumber;
+        return taskNum;
     }
 
     /**
@@ -120,10 +120,10 @@ public class GridHadoopTaskInfo implements Externalizable {
     }
 
     /**
-     * @return File block.
+     * @return Input split.
      */
-    @Nullable public GridHadoopFileBlock fileBlock() {
-        return fileBlock;
+    @Nullable public GridHadoopInputSplit inputSplit() {
+        return inputSplit;
     }
 
     /** {@inheritDoc} */
