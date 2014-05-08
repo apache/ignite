@@ -18,10 +18,8 @@ import org.apache.hadoop.mapreduce.lib.output.*;
 import org.apache.hadoop.mapreduce.protocol.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.client.*;
-import org.gridgain.grid.kernal.processors.hadoop.example_client.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 
 import java.io.*;
@@ -52,7 +50,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 1;
+        return 2;
     }
 
     /** {@inheritDoc} */
@@ -172,7 +170,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         Configuration conf = config(REST_PORT);
 
-        Job job = Job.getInstance(conf);
+        final Job job = Job.getInstance(conf);
 
         job.setUser(USR);
         job.setJobName(JOB_NAME);
@@ -181,7 +179,6 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         job.setOutputValueClass(IntWritable.class);
 
         job.setMapperClass(TestMapper.class);
-        job.setCombinerClass(TestReducer.class);
         job.setReducerClass(TestReducer.class);
 
         job.setInputFormatClass(TextInputFormat.class);
@@ -192,41 +189,46 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         job.submit();
 
-        U.sleep(Long.MAX_VALUE - 1);
-
         JobID jobId = job.getJobID();
 
         checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 1.0f, 0.0f, 0.0f, 0.0f);
 
         mapLatch.countDown();
 
-        System.out.println("MAP COUNTDOWN");
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override
+            public boolean apply() {
+                try {
+                    return F.eq(1.0f, job.getStatus().getMapProgress());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }, 5000);
 
-        for (int i = 0; i < 1000; i++) {
-            job.getStatus();
+        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 1.0f, 1.0f, 0.0f, 0.0f);
 
-            U.sleep(1000);
-        }
+        reduceLatch.countDown();
 
-//        U.sleep(200);
-//
-//        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 1.0f, 1.0f, 0.0f, 0.0f);
-//
-//        reduceLatch.countDown();
-//
-//        U.sleep(2000);
-//
-//        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.SUCCEEDED, 1.0f, 1.0f, 1.0f, 1.0f);
-//
-//        job.waitForCompletion(true);
-//
-//        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.SUCCEEDED, 1.0f, 1.0f, 1.0f, 1.0f);
+        job.waitForCompletion(false);
+
+        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.SUCCEEDED, 1.0f, 1.0f, 1.0f, 1.0f);
     }
 
-    @Override protected long getTestTimeout() {
-        return Long.MAX_VALUE;
-    }
-
+    /**
+     * Check job status.
+     *
+     * @param status Job status.
+     * @param expJobId Expected job ID.
+     * @param expJobName Expected job name.
+     * @param expUser Expected user.
+     * @param expState Expected state.
+     * @param expSetupProgress Expected setup progress.
+     * @param expMapProgress Expected map progress.
+     * @param expReduceProgress Expected reduce progress.
+     * @param expCleanupProgress Expected cleanup progress.
+     * @throws Exception If failed.
+     */
     private static void checkJobStatus(JobStatus status, JobID expJobId, String expJobName, String expUser,
         JobStatus.State expState, float expSetupProgress, float expMapProgress, float expReduceProgress,
         float expCleanupProgress) throws Exception {
@@ -291,7 +293,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         /** {@inheritDoc} */
         @Override public void map(Object key, Text val, Context ctx) throws IOException, InterruptedException {
-//            mapLatch.await();
+            mapLatch.await();
 
             StringTokenizer wordList = new StringTokenizer(val.toString());
 
@@ -312,7 +314,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         /** {@inheritDoc} */
         @Override public void reduce(Text key, Iterable<IntWritable> values, Context ctx) throws IOException,
             InterruptedException {
-//            reduceLatch.await();
+            reduceLatch.await();
 
             int wordCnt = 0;
 

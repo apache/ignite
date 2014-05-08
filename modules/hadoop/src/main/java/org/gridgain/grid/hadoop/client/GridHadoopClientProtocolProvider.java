@@ -71,10 +71,16 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
     @SuppressWarnings("StatementWithEmptyBody")
     public static void closeAll() {
         for (ClientMap map : cliMap.values()) {
-            for (Client cli : map.map.values()) {
+            Set<String> keys = new HashSet<>(map.map.keySet());
+
+            for (String key : keys) {
+                Client cli = map.map.get(key);
+
                 while (!cli.release()) {
                     // Spin.
                 }
+
+                map.map.remove(key);
             }
         }
     }
@@ -181,6 +187,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
      *
      * @return Active clients count.
      */
+    @SuppressWarnings("UnusedDeclaration")
     private static int activeClients() {
         int cnt = 0;
 
