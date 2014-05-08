@@ -35,9 +35,8 @@ public class GridJmxPortFinder {
      * then replaced with newly found port.
      *
      * @param args Program arguments.
-     * @throws IOException In case of error while reading or writing to file.
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         try {
             InetAddress.getLocalHost();
         }
@@ -46,8 +45,6 @@ public class GridJmxPortFinder {
             // Do not return anything to signal inability to run JMX.
             return;
         }
-
-        int port;
 
         RandomAccessFile ra = null;
         FileLock lock = null;
@@ -66,49 +63,50 @@ public class GridJmxPortFinder {
 
             String startPortStr = ra.readLine();
 
-            int startPort;
+            int startPort = MIN_PORT;
 
             if (startPortStr != null && !startPortStr.isEmpty()) {
-                startPort = Integer.valueOf(startPortStr) + 1;
+                try {
+                    startPort = Integer.valueOf(startPortStr) + 1;
 
-                if (startPort > MAX_PORT)
-                    startPort = MIN_PORT;
+                    if (startPort < MIN_PORT || startPort > MAX_PORT)
+                        startPort = MIN_PORT;
+                }
+                catch (NumberFormatException e) {
+                    e.printStackTrace();
+                    // Ignore, just use default lower bound port.
+                }
             }
-            else
-                startPort = MIN_PORT;
 
-            port = findPort(startPort);
+            int port = findPort(startPort);
 
             ra.setLength(0);
 
             ra.writeBytes(String.valueOf(port));
+
+            // Ack the port for others to read...
+            System.out.println(port);
+        }
+        catch (IOException ignored) {
+            // Do not return anything to signal inability to run JMX.
         }
         finally {
             if (lock != null)
-                lock.release();
+                try {
+                    lock.release();
+                }
+                catch (IOException ignored) {
+                    // No-op.
+                }
 
             if (ra != null)
-                ra.close();
+                try {
+                    ra.close();
+                }
+                catch (IOException ignored) {
+                    // No-op.
+                }
         }
-
-        // Ack the port for others to read...
-        System.out.println(port);
-    }
-
-    /**
-     * Finds first available port beginning from start port trying given number of ports.
-     *
-     * @param startPort Start Port number.
-     * @param range Number of ports to try. {@code 1} means try just the given number.
-     * @return Available port number, or 0 if no available port found.
-     */
-    public static int findPort(int startPort, int range) {
-        for (int port = startPort; port < startPort + range; port ++) {
-            if (isAvailable(port))
-                return port;
-        }
-
-        return 0;
     }
 
     /**
@@ -118,7 +116,12 @@ public class GridJmxPortFinder {
      * @return Available port number, or 0 if no available port found.
      */
     private static int findPort(int startPort) {
-        return findPort(startPort, MAX_PORT - startPort + 1);
+        for (int port = startPort; port <= MAX_PORT; port++) {
+            if (isAvailable(port))
+                return port;
+        }
+
+        return 0;
     }
 
     /**
