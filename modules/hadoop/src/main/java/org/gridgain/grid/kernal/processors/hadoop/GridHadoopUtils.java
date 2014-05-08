@@ -37,9 +37,9 @@ public class GridHadoopUtils {
             meta.phase() == PHASE_COMPLETE ? meta.failCause() == null ? STATE_SUCCEEDED : STATE_FAILED : STATE_RUNNING,
             jobInfo.configuration().getJobName(),
             jobInfo.configuration().getUser(),
-            meta.pendingBlocks() != null ? meta.pendingBlocks().size() : 0,
+            meta.pendingSplits() != null ? meta.pendingSplits().size() : 0,
             meta.pendingReducers() != null ? meta.pendingReducers().size() : 0,
-            meta.totalBlockCount(),
+            meta.totalSplitCount(),
             meta.totalReducerCount(),
             meta.phase()
         );
@@ -84,7 +84,7 @@ public class GridHadoopUtils {
 
         switch (status.jobPhase()) {
             case PHASE_MAP:
-                mapProgress = status.blockProgress();
+                mapProgress = status.splitProgress();
                 reduceProgress = 0.0f;
                 cleanupProgress = 0.0f;
 
@@ -99,7 +99,7 @@ public class GridHadoopUtils {
 
             case PHASE_CANCELLING:
                 // Do not know where cancel occurred, hence calculate map/reduce progress.
-                mapProgress = status.blockProgress();
+                mapProgress = status.splitProgress();
                 reduceProgress = status.reducerProgress();
                 cleanupProgress = 0.0f;
 
@@ -109,7 +109,7 @@ public class GridHadoopUtils {
                 assert status.jobPhase() == PHASE_COMPLETE;
 
                 // Do not know whether this is complete on success or failure, hence calculate map/reduce progress.
-                mapProgress = status.blockProgress();
+                mapProgress = status.splitProgress();
                 reduceProgress = status.reducerProgress();
                 cleanupProgress = 1.0f;
         }

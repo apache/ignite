@@ -162,15 +162,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             GridHadoopMapReducePlan mrPlan = mrPlanner.preparePlan(splits, ctx.nodes(), job, null);
 
-            Collection<GridHadoopFileBlock> allBlocks = allBlocks(mrPlan);
+            Collection<GridHadoopInputSplit> allBlocks = allSplits(mrPlan);
             Collection<Integer> allReducers = allReducers(job);
 
             GridHadoopJobMetadata meta = new GridHadoopJobMetadata(jobId, info, allBlocks, allReducers);
 
             meta.mapReducePlan(mrPlan);
-
-            meta.pendingSplits(allSplits(mrPlan));
-            meta.pendingReducers(allReducers(job));
 
             GridFutureAdapter<GridHadoopJobId> completeFut = new GridFutureAdapter<>();
 

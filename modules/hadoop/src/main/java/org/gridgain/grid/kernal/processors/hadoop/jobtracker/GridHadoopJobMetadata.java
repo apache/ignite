@@ -48,8 +48,8 @@ public class GridHadoopJobMetadata implements Externalizable {
     /** Fail cause. */
     private Throwable failCause;
 
-    /** Total block count. */
-    private int totalBlockCnt;
+    /** Total split count. */
+    private int totalSplitCnt;
 
     /** Total reducer count. */
     private int totalReducerCnt;
@@ -66,17 +66,17 @@ public class GridHadoopJobMetadata implements Externalizable {
      *
      * @param jobId Job ID.
      * @param jobInfo Job info.
-     * @param pendingBlocks Pending blocks.
+     * @param pendingSplits Pending splits.
      * @param pendingReducers Pending reducers.
      */
     public GridHadoopJobMetadata(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo,
-        Collection<GridHadoopFileBlock> pendingBlocks, Collection<Integer> pendingReducers) {
+        Collection<GridHadoopInputSplit> pendingSplits, Collection<Integer> pendingReducers) {
         this.jobId = jobId;
         this.jobInfo = jobInfo;
-        this.pendingBlocks = pendingBlocks;
+        this.pendingSplits = pendingSplits;
         this.pendingReducers = pendingReducers;
 
-        totalBlockCnt = pendingBlocks == null ? 0 : pendingBlocks.size();
+        totalSplitCnt = pendingSplits == null ? 0 : pendingSplits.size();
         totalReducerCnt = pendingReducers == null ? 0 : pendingReducers.size();
     }
 
@@ -95,7 +95,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         pendingReducers = src.pendingReducers;
         phase = src.phase;
         taskNumMap = src.taskNumMap;
-        totalBlockCnt = src.totalBlockCnt;
+        totalSplitCnt = src.totalSplitCnt;
         totalReducerCnt = src.totalReducerCnt;
     }
 
@@ -157,10 +157,10 @@ public class GridHadoopJobMetadata implements Externalizable {
     }
 
     /**
-     * @return Total block count.
+     * @return Total split count.
      */
-    public int totalBlockCount() {
-        return totalBlockCnt;
+    public int totalSplitCount() {
+        return totalSplitCnt;
     }
 
     /**
@@ -256,7 +256,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         out.writeInt(nextTaskNum);
         out.writeObject(phase);
         out.writeObject(failCause);
-        out.writeInt(totalBlockCnt);
+        out.writeInt(totalSplitCnt);
         out.writeInt(totalReducerCnt);
     }
 
@@ -271,7 +271,7 @@ public class GridHadoopJobMetadata implements Externalizable {
         nextTaskNum = in.readInt();
         phase = (GridHadoopJobPhase)in.readObject();
         failCause = (Throwable)in.readObject();
-        totalBlockCnt = in.readInt();
+        totalSplitCnt = in.readInt();
         totalReducerCnt = in.readInt();
     }
 
