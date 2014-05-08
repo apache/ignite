@@ -198,15 +198,27 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
 
         mapLatch.countDown();
 
-        U.sleep(200);
+        System.out.println("MAP COUNTDOWN");
 
-        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 1.0f, 1.0f, 0.0f, 0.0f);
+        for (int i = 0; i < 1000; i++) {
+            job.getStatus();
 
-        reduceLatch.countDown();
+            U.sleep(1000);
+        }
 
-        U.sleep(200);
-
-        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.SUCCEEDED, 1.0f, 1.0f, 1.0f, 1.0f);
+//        U.sleep(200);
+//
+//        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.RUNNING, 1.0f, 1.0f, 0.0f, 0.0f);
+//
+//        reduceLatch.countDown();
+//
+//        U.sleep(2000);
+//
+//        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.SUCCEEDED, 1.0f, 1.0f, 1.0f, 1.0f);
+//
+//        job.waitForCompletion(true);
+//
+//        checkJobStatus(job.getStatus(), jobId, JOB_NAME, USR, JobStatus.State.SUCCEEDED, 1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     private static void checkJobStatus(JobStatus status, JobID expJobId, String expJobName, String expUser,
