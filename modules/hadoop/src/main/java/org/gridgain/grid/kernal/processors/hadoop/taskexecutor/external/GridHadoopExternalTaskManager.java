@@ -85,7 +85,8 @@ public class GridHadoopExternalTaskManager {
             ctx.localNodeId(),
             UUID.randomUUID(),
             ctx.kernalContext().config().getMarshaller(),
-            log, Executors.newFixedThreadPool(1),
+            log,
+            ctx.kernalContext().config().getSystemExecutorService(),
             ctx.kernalContext().gridName());
 
         comm.setListener(new MessageListener());
@@ -100,6 +101,21 @@ public class GridHadoopExternalTaskManager {
         if (nodeDesc.sharedMemoryPort() != -1)
             ctx.kernalContext().ports().registerPort(nodeDesc.sharedMemoryPort(), GridPortProtocol.TCP,
                 GridHadoopExternalTaskManager.class);
+    }
+
+    public void stop() throws GridException {
+        comm.stop();
+
+        startExec.shutdown();
+
+        try {
+            startExec.awaitTermination(10, TimeUnit.SECONDS);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new GridInternalException(e);
+        }
     }
 
     public GridFuture<GridHadoopProcessDescriptor> startProcess(final GridHadoopExternalTaskMetadata meta) {
@@ -122,8 +138,6 @@ public class GridHadoopExternalTaskManager {
 
                     // Read up all the process output.
                     while ((line = rdr.readLine()) != null) {
-                        U.debug(">>>>>>>>>>>> " + line);
-
                         if ("Started".equals(line)) {
                             // Process started successfully, it should not write anything more to the output stream.
                             if (log.isDebugEnabled())

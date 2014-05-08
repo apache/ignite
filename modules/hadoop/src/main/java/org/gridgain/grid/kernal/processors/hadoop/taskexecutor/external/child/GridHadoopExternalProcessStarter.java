@@ -66,12 +66,16 @@ public class GridHadoopExternalProcessStarter {
     public void run() throws Exception {
         initializeStreams();
 
+        ExecutorService msgExecSvc = Executors.newFixedThreadPool(1);
+
+        GridLogger log = logger();
+
         GridHadoopExternalCommunication comm = new GridHadoopExternalCommunication(
             args.nodeId,
             args.childProcId,
             new GridOptimizedMarshaller(),
-            logger(),
-            Executors.newFixedThreadPool(1),
+            log,
+            msgExecSvc,
             "test"
         );
 
@@ -84,7 +88,7 @@ public class GridHadoopExternalProcessStarter {
 
         GridHadoopChildProcessRunner runner = new GridHadoopChildProcessRunner();
 
-        runner.start(comm, nodeDesc);
+        runner.start(comm, nodeDesc, msgExecSvc, log);
 
         System.err.println("Started");
         System.err.flush();

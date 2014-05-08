@@ -47,6 +47,8 @@ public class GridHadoopExternalTaskManagerSelfTest extends GridHadoopAbstractSel
             GridHadoopProcessDescriptor proc = fut.get();
 
             System.out.println(">>>>>>>>> Started process: " + proc);
+
+            registry.stop();
         }
         finally {
             stopAllGrids();

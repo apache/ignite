@@ -93,6 +93,9 @@ public class GridHadoopExternalCommunication {
 
             /** {@inheritDoc} */
             @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
+                if (log.isDebugEnabled())
+                    log.debug("Closed connection for session: " + ses);
+
                 GridHadoopProcessDescriptor desc = ses.meta(PROCESS_META);
 
                 if (desc != null) {
@@ -101,6 +104,12 @@ public class GridHadoopExternalCommunication {
                     if (rmv != null)
                         rmv.forceClose();
                 }
+
+                GridHadoopMessageListener lsnr0 = lsnr;
+
+                if (lsnr0 != null)
+                    // Notify listener about connection close.
+                    lsnr0.onConnectionLost(desc);
             }
 
             /** {@inheritDoc} */

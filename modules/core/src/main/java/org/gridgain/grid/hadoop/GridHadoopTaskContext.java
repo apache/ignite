@@ -29,7 +29,7 @@ public class GridHadoopTaskContext {
     private final GridHadoopTaskOutput output;
 
     /**
-     * @param ctx Kernal context.
+     * @param ctx Kernal context if running task in embedded mode..
      * @param job Job.
      * @param input Input.
      * @param output Output.
@@ -60,11 +60,14 @@ public class GridHadoopTaskContext {
     }
 
     /**
-     * Gets local grid instance.
+     * Gets local grid instance if running task in embedded mode.
      *
      * @return Grid instance.
      */
     public Grid grid() {
+        if (ctx == null)
+            return null;
+
         return ctx.grid();
     }
 
