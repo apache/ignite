@@ -81,7 +81,7 @@ public class GridHibernateL2CacheTransactionalSelfTest extends GridHibernateL2Ca
     @Override protected GridCacheConfiguration transactionalRegionConfiguration(String regionName) {
         GridCacheConfiguration cfg = super.transactionalRegionConfiguration(regionName);
 
-        cfg.setTransactionManagerLookup(new TestTmLookup());
+        cfg.setTransactionManagerLookupClassName(TestTmLookup.class.getName());
 
         cfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
 

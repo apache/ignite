@@ -48,12 +48,14 @@
             <scope>test</scope>
         </dependency>
 
+        <!--
         <dependency>
             <groupId>org.ow2.jotm</groupId>
             <artifactId>jotm-core</artifactId>
             <version>2.1.9</version>
             <scope>test</scope>
         </dependency>
+        -->
 
         <dependency>
             <groupId>commons-dbcp</groupId>

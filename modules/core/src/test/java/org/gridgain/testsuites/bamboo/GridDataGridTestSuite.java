@@ -59,7 +59,6 @@ public class GridDataGridTestSuite extends TestSuite {
 //        suite.addTestSuite(GridCacheP2PUndeploySelfTest.class); TODO uncomment in DR branch.
         suite.addTestSuite(GridCacheConfigurationValidationSelfTest.class);
         suite.addTestSuite(GridCacheConfigurationConsistencySelfTest.class);
-        suite.addTestSuite(GridCacheHibernateBlobStoreSelfTest.class);
         suite.addTestSuite(GridCacheJdbcBlobStoreSelfTest.class);
         suite.addTestSuite(GridCacheJdbcBlobStoreMultithreadedSelfTest.class);
         suite.addTestSuite(GridCacheAffinityApiSelfTest.class);
@@ -293,11 +292,6 @@ public class GridDataGridTestSuite extends TestSuite {
 
         // Web sessions.
         suite.addTest(GridWebSessionSelfTestSuite.suite());
-
-        // Hibernate L2 cache.
-        suite.addTestSuite(GridHibernateL2CacheSelfTest.class);
-        suite.addTestSuite(GridHibernateL2CacheTransactionalSelfTest.class);
-        suite.addTestSuite(GridHibernateL2CacheConfigurationSelfTest.class);
 
         // Add tx recovery test suite.
         suite.addTest(GridCacheTxRecoverySelfTestSuite.suite());
