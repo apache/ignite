@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal.managers.checkpoint;
 
-import com.amazonaws.auth.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;

@@ -9,9 +9,7 @@
 
 package org.gridgain.grid.util.nio.impl;
 
-import org.gridgain.client.marshaller.protobuf.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.testframework.junits.common.*;
@@ -267,7 +265,8 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
          * Creates empty mock session.
          */
         public MockNioSession() {
-            addMeta(MARSHALLER.ordinal(), new GridClientProtobufMarshaller());
+            // TODO: 8242.
+            addMeta(MARSHALLER.ordinal(), null/*new GridClientProtobufMarshaller()*/);
         }
 
         /**

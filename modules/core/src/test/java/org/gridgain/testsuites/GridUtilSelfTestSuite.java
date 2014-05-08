@@ -15,7 +15,6 @@ import org.gridgain.grid.lang.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.json.*;
 import org.gridgain.grid.util.mbeans.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.impl.*;
@@ -40,7 +39,6 @@ public class GridUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridStringBuilderFactorySelfTest.class);
         suite.addTestSuite(GridToStringBuilderSelfTest.class);
         suite.addTestSuite(GridByteArrayListSelfTest.class);
-        suite.addTestSuite(GridJsonDeserializerSelfTest.class);
         suite.addTestSuite(GridMBeanSelfTest.class);
         suite.addTestSuite(GridLongListSelfTest.class);
         suite.addTestSuite(GridCacheUtilsSelfTest.class);

@@ -10,6 +10,9 @@
 package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.resource.*;
+import org.gridgain.grid.p2p.*;
 import org.gridgain.grid.spi.deployment.uri.*;
 import org.gridgain.grid.spi.deployment.uri.scanners.file.*;
 import org.gridgain.grid.spi.deployment.uri.scanners.http.*;
@@ -40,6 +43,9 @@ public class GridUriDeploymentTestSuite {
 
         // GAR Ant task tests.
         suite.addTest(GridToolsSelfTestSuite.suite());
+
+        suite.addTestSuite(GridTaskUriDeploymentDeadlockSelfTest.class);
+        suite.addTest(new TestSuite(GridP2PDisabledSelfTest.class));
 
         return suite;
     }

@@ -28,6 +28,11 @@ public class GridCacheQuerySelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain Cache Queries Test Suite");
 
+        // TODO 8242
+        suite.addTestSuite(GridCacheOffHeapAndSwapSelfTest.class);
+        suite.addTest(new TestSuite(GridIndexingWithNoopSwapSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedHitsAndMissesSelfTest.class));
+
         suite.addTestSuite(GridCacheQueryLoadSelfTest.class);
         suite.addTestSuite(GridCacheQueryMetricsSelfTest.class);
         suite.addTestSuite(GridCacheQueryUserResourceSelfTest.class);

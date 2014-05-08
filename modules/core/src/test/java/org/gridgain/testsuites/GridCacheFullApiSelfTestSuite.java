@@ -15,7 +15,6 @@ import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.dr.cache.*;
-import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
 
 /**
  * Test suite for cache API.

@@ -22,7 +22,6 @@ import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.preloader.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
-import org.gridgain.grid.kernal.websession.*;
 import org.gridgain.testsuites.*;
 
 /**
@@ -42,7 +41,6 @@ public class GridDataGridTestSuite extends TestSuite {
         // Swap tests.
         suite.addTestSuite(GridCacheSwapPreloadSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapAndSwapSelfTest.class);
         suite.addTestSuite(GridCacheSwapSelfTest.class);
         suite.addTestSuite(GridCacheSwapReloadSelfTest.class);
 
@@ -285,9 +283,6 @@ public class GridDataGridTestSuite extends TestSuite {
 
         // Iterators.
         suite.addTest(GridCacheIteratorsSelfTestSuite.suite());
-
-        // Web sessions.
-        suite.addTest(GridWebSessionSelfTestSuite.suite());
 
         // Add tx recovery test suite.
         suite.addTest(GridCacheTxRecoverySelfTestSuite.suite());

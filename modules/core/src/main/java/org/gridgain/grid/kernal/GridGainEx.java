@@ -493,8 +493,8 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(URL springCfgUrl)
-        throws GridException {
+    public static GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
+        URL springCfgUrl) throws GridException {
         GridSpringProcessor spring = SPRING.create(false);
 
         return spring.loadConfigurations(springCfgUrl);
@@ -513,8 +513,8 @@ public class GridGainEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(String springCfgPath)
-        throws GridException {
+    public static GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
+        String springCfgPath) throws GridException {
         A.notNull(springCfgPath, "springCfgPath");
 
         URL url;
@@ -569,7 +569,8 @@ public class GridGainEx {
      */
     public static GridBiTuple<GridConfiguration, GridSpringResourceContext> loadConfiguration(String springCfgPath)
         throws GridException {
-        GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> t = loadConfigurations(springCfgPath);
+        GridBiTuple<Collection<GridConfiguration>, ? extends GridSpringResourceContext> t =
+            loadConfigurations(springCfgPath);
 
         return F.t(F.first(t.get1()), t.get2());
     }

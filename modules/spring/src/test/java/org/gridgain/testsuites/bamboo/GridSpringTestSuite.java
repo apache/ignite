@@ -11,6 +11,7 @@ package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.resource.*;
 
 /**
  * Spring tests.
@@ -24,6 +25,7 @@ public class GridSpringTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Spring Test Suite");
 
         suite.addTestSuite(GridSpringBeanSerializationSelfTest.class);
+        suite.addTestSuite(GridFactorySelfTest.class);
 
         return suite;
     }

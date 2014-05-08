@@ -12,9 +12,10 @@ package org.gridgain.loadtests.hashmap;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.dr.os.*;
+import org.gridgain.grid.kernal.processors.cache.jta.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
-import org.gridgain.grid.logger.log4j.*;
+import org.gridgain.grid.logger.java.*;
 import org.gridgain.testframework.junits.*;
 
 import static org.gridgain.testframework.junits.GridAbstractTest.*;
@@ -28,7 +29,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
     @SuppressWarnings("NullableProblems")
     public GridCacheTestContext() {
         super(
-            new GridTestKernalContext(new GridLog4jLogger()),
+            new GridTestKernalContext(new GridJavaLogger()),
             defaultCacheConfiguration(),
             new GridCacheMvccManager<K, V>(),
             new GridCacheVersionManager<K, V>(),
@@ -45,6 +46,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             new GridCacheTxManager<K, V>(),
             new GridCacheDataStructuresManager<K, V>(),
             new GridCacheTtlManager<K, V>(),
-            new GridOsCacheDrManager<K, V>());
+            new GridOsCacheDrManager<K, V>(),
+            new GridCacheJtaNoopManager<K, V>());
     }
 }

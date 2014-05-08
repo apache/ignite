@@ -54,8 +54,8 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
 
             ctx.registerBeanDefinition(SPRING_BEAN_RSRC_NAME, bf);
 
-            grid1 = startGrid(1, ctx);
-            grid2 = startGrid(2, ctx);
+            grid1 = startGrid(1, new GridSpringResourceContextImpl(ctx));
+            grid2 = startGrid(2, new GridSpringResourceContextImpl(ctx));
 
             grid1.compute().execute(ResourceOverrideTask.class, null).get();
 

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.resource;
 
 import org.gridgain.grid.*;
+import org.jetbrains.annotations.*;
 import org.springframework.aop.framework.*;
 import org.springframework.context.*;
 
@@ -26,7 +27,7 @@ public class GridSpringResourceContextImpl implements GridSpringResourceContext 
     /**
      * @param springCtx Spring application context.
      */
-    public GridSpringResourceContextImpl(ApplicationContext springCtx) {
+    public GridSpringResourceContextImpl(@Nullable ApplicationContext springCtx) {
         springCtxInjector = new GridResourceBasicInjector<>(springCtx);
         springBeanInjector = new GridResourceSpringBeanInjector(springCtx);
     }

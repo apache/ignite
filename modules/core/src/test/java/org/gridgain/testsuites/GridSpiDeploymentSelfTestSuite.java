@@ -11,9 +11,6 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.spi.deployment.local.*;
-import org.gridgain.grid.spi.deployment.uri.*;
-import org.gridgain.grid.spi.deployment.uri.scanners.file.*;
-import org.gridgain.grid.spi.deployment.uri.scanners.http.*;
 
 /**
  * Test suit for deployment SPIs.

@@ -49,7 +49,6 @@ public class GridBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);
         suite.addTestSuite(GridClosureProcessorSelfTest.class);
         suite.addTestSuite(GridStartStopSelfTest.class);
-        suite.addTestSuite(GridFactorySelfTest.class);
         suite.addTestSuite(GridProjectionForCachesSelfTest.class);
         suite.addTestSuite(GridSpiLocalHostInjectionTest.class);
         suite.addTestSuite(GridLifecycleBeanSelfTest.class);

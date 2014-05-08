@@ -13,9 +13,7 @@ import org.apache.commons.cli.*;
 import org.apache.log4j.*;
 import org.apache.log4j.varia.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
@@ -330,8 +328,9 @@ public final class GridRandomCommandLineLoader {
 
         assert cfg != null;
 
-        if (logCfgPath != null)
-            cfg.setGridLogger(new GridLog4jLogger(U.resolveGridGainUrl(logCfgPath)));
+        // TODO 8242.
+        //if (logCfgPath != null)
+            //cfg.setGridLogger(new GridLog4jLogger(U.resolveGridGainUrl(logCfgPath)));
 
         return cfg;
     }

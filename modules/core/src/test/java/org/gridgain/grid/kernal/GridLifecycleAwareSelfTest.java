@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.java.*;
-import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.segmentation.*;
 import org.gridgain.testframework.junits.common.*;

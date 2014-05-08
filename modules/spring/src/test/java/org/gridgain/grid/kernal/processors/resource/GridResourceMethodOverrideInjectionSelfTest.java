@@ -16,6 +16,7 @@ import org.gridgain.grid.resources.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.springframework.context.*;
+import org.springframework.context.support.*;
 
 import javax.management.*;
 import java.io.*;
@@ -42,8 +43,8 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         Grid grid2 = null;
 
         try {
-            grid1 = startGrid(1);
-            grid2 = startGrid(2);
+            grid1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
+            grid2 = startGrid(2, new GridSpringResourceContextImpl(new GenericApplicationContext()));
 
             grid1.compute().execute(MethodResourceOverrideTask.class, null).get();
 

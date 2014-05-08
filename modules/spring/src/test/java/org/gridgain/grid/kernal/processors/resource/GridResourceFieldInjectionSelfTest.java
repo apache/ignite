@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.resource;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.compute.*;
+import org.gridgain.grid.lang.*;
 import org.gridgain.grid.logger.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.resources.*;
@@ -33,21 +34,22 @@ import static org.gridgain.grid.kernal.processors.resource.GridResourceTestUtils
  */
 @GridCommonTest(group = "Resource Self")
 @SuppressWarnings({"PublicInnerClass"})
-public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest {
+public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String SPRING_BEAN_RSRC_NAME = "test-bean";
 
     /** */
-    public GridResourceMethodInjectionSelfTest() {
+    public GridResourceFieldInjectionSelfTest() {
         super(/*start grid*/false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testMethodInjection() throws Exception {
+    public void testFieldInjection() throws Exception {
         Grid grid1 = null;
         Grid grid2 = null;
+
         try {
             GenericApplicationContext ctx = new GenericApplicationContext();
 
@@ -57,8 +59,11 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
 
             ctx.registerBeanDefinition(SPRING_BEAN_RSRC_NAME, bf);
 
-            grid1 = startGrid(1, ctx);
-            grid2 = startGrid(2, ctx);
+            grid1 = startGrid(1, new GridSpringResourceContextImpl(ctx));
+            grid2 = startGrid(2, new GridSpringResourceContextImpl(ctx));
+
+            assert grid1.forRemotes().nodes().size() == 1;
+            assert grid2.forRemotes().nodes().size() == 1;
 
             grid1.compute().execute(UserResourceTask.class, null).get();
 
@@ -86,6 +91,134 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         checkUsageCount(undeployClss, UserResource5.class, 8);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonTransientFieldInjection() throws Exception {
+        Grid grid = startGrid(getTestGridName(), new GridSpringResourceContextImpl(createContext()));
+
+        try {
+            grid.compute().execute(NonTransientUserResourceTask.class, null).get();
+
+            assert false : "Did not get exception for non-transient field.";
+        }
+        catch (GridException e) {
+            info("Got correct exception for non-transient field: " + e.getMessage());
+        }
+        finally {
+            GridTestUtils.close(grid, log());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonTransientSpringBeanFieldInjection() throws Exception {
+        Grid grid = startGrid(getTestGridName(), new GridSpringResourceContextImpl(createContext()));
+
+        try {
+            grid.compute().execute(NonTransientSpringBeanResourceTask.class, null).get();
+
+            assert false : "Did not get exception for non-transient field.";
+        }
+        catch (GridException e) {
+            info("Got correct exception for non-transient field: " + e.getMessage());
+        }
+
+        stopGrid(getTestGridName());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testUnknownNameSpringBeanFieldInjection() throws Exception {
+        Grid grid = startGrid(getTestGridName(), new GridSpringResourceContextImpl(createContext()));
+
+        try {
+            grid.compute().execute(UnknownNameSpringBeanResourceTask.class, null).get();
+
+            assert false : "Did not get exception for unknown Spring bean name.";
+        }
+        catch (GridException e) {
+            info("Got correct exception for with unknown Spring bean name: " + e.getMessage());
+        }
+
+        stopGrid(getTestGridName());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvalidTypeSpringBeanFieldInjection() throws Exception {
+        Grid grid = startGrid(getTestGridName(), new GridSpringResourceContextImpl(createContext()));
+
+        try {
+            grid.compute().execute(InvalidTypeSpringBeanResourceTask.class, null).get();
+
+            assert false : "Did not get exception for different Spring bean classes.";
+        }
+        catch (GridException e) {
+            info("Got correct exception for for different Spring bean classes: " + e.getMessage());
+        }
+
+        stopGrid(getTestGridName());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInjectInClosure() throws Exception {
+        Grid grid = startGrid();
+
+        try {
+            grid.compute().apply(new GridClosure<Object, Object>() {
+                /** */
+                @GridInstanceResource
+                private Grid grid;
+
+                @Override public Object apply(Object o) {
+                    assertNotNull(grid);
+
+                    return null;
+                }
+            }, new Object()).get();
+
+            grid.compute().broadcast(new GridClosure<Object, Object>() {
+                /** */
+                @GridInstanceResource
+                private Grid grid;
+
+                @Override public Object apply(Object o) {
+                    assertNotNull(grid);
+
+                    return null;
+                }
+            }, new Object()).get();
+
+            grid.compute().apply(new TestClosure(), new Object()).get();
+
+            grid.compute().broadcast(new TestClosure(), new Object()).get();
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Creates Spring context with registered test bean.
+     *
+     * @return Test Spring context.
+     */
+    private ApplicationContext createContext() {
+        GenericApplicationContext ctx = new GenericApplicationContext();
+
+        BeanDefinitionBuilder builder = BeanDefinitionBuilder.rootBeanDefinition(UserSpringBean.class);
+
+        ctx.registerBeanDefinition(SPRING_BEAN_RSRC_NAME, builder.getBeanDefinition());
+
+        return ctx;
+    }
+
     /** */
     public static class UserResource1 extends GridAbstractUserResource {
         // No-op.
@@ -109,16 +242,8 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
     /** */
     public static class UserResource5 extends GridAbstractUserResource {
         /** */
-        private UserSpringBean springBean;
-
-        /**
-         * @param springBean Bean provided from Spring context.
-         */
         @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
-        @SuppressWarnings("unused")
-        public void setSpringBean(UserSpringBean springBean) {
-            this.springBean = springBean;
-        }
+        private UserSpringBean springBean;
 
         /**
          * Method must be called.
@@ -146,8 +271,86 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
     }
 
     /** */
-    public static class UserSpringBean implements Serializable {
+    public static class UserSpringBean {
         // No-op.
+    }
+
+    /**
+     * Task that will always fail due to non-transient resource injection.
+     */
+    public static class NonTransientSpringBeanResourceTask extends GridComputeTaskSplitAdapter<Object, Object> {
+        /** */
+        @SuppressWarnings({"UnusedDeclaration", "unused"})
+        @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
+        private Object rsrc;
+
+        /** {@inheritDoc} */
+        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+            // Never reached.
+            assert false;
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+            // Never reached.
+            assert false;
+
+            return null;
+        }
+    }
+
+    /**
+     * Task that will always fail due to resource injection with unknown Spring bean name.
+     */
+    public static class UnknownNameSpringBeanResourceTask extends GridComputeTaskSplitAdapter<Object, Object> {
+        /** */
+        @SuppressWarnings({"UnusedDeclaration", "unused"})
+        @GridSpringResource(resourceName = "unknown-bean-name")
+        private transient Object springBean;
+
+        /** {@inheritDoc} */
+        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+            // Never reached.
+            assert false;
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+            // Never reached.
+            assert false;
+
+            return null;
+        }
+    }
+
+    /**
+     * Task that will always fail due to resource injection with invalid declared bean type.
+     */
+    public static class InvalidTypeSpringBeanResourceTask extends GridComputeTaskSplitAdapter<Object, Object> {
+        /** */
+        @SuppressWarnings({"UnusedDeclaration", "unused"})
+        @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
+        private transient Serializable springBean;
+
+        /** {@inheritDoc} */
+        @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
+            // Never reached.
+            assert false;
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object reduce(List<GridComputeJobResult> results) throws GridException {
+            // Never reached.
+            assert false;
+
+            return null;
+        }
     }
 
     /**
@@ -157,7 +360,7 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         /** */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
         @GridUserResource(resourceClass = UserResource1.class)
-        private GridAbstractUserResource rsrc;
+        private Object rsrc;
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends GridComputeJob> split(int gridSize, Object arg) throws GridException {
@@ -179,213 +382,80 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
     /** */
     public static class UserResourceTask extends GridComputeTaskSplitAdapter<Object, Object> {
         /** */
-        private transient GridAbstractUserResource rsrc1;
+        @GridUserResource(resourceClass = UserResource1.class)
+        private transient Object rsrc1;
 
         /** */
+        @GridUserResource
         private transient UserResource2 rsrc2;
 
         /** */
-        private transient GridAbstractUserResource rsrc3;
+        @GridUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
+        private transient Object rsrc3;
 
         /** */
+        @GridUserResource(resourceName = "rsrc4")
         private transient UserResource2 rsrc4;
 
         /** */
+        @GridLoggerResource
         private GridLogger log;
 
         /** */
+        @GridInstanceResource
         private Grid grid;
 
         /** */
-        private UUID nodeId;
-
-        /** */
-        private MBeanServer mbeanSrv;
-
-        /** */
-        private ExecutorService exec;
-
-        /** */
-        private String ggHome;
-
-        /** */
-        private String gridName;
-
-        /** */
+        @GridLocalHostResource
         private String locHost;
 
         /** */
-        private GridMarshaller marshaller;
+        @GridLocalNodeIdResource
+        private UUID nodeId;
 
         /** */
-        private ApplicationContext springCtx;
+        @GridMBeanServerResource
+        private MBeanServer mbeanSrv;
 
         /** */
-        private GridComputeTaskSession ses;
+        @GridExecutorServiceResource
+        private ExecutorService exec;
 
         /** */
+        @GridLoadBalancerResource
         private GridComputeLoadBalancer balancer;
 
         /** */
-        private GridComputeJobContext jobCtx;
-
-        /** */
-        private UserSpringBean springBean;
-
-        /** */
-        private transient GridComputeTaskContinuousMapper mapper;
-
-        /**
-         * @param rsrc1 Resource 1.
-         */
-        @GridUserResource(resourceClass = UserResource1.class)
-        public void setResource1(GridAbstractUserResource rsrc1) {
-            this.rsrc1 = rsrc1;
-        }
-
-        /**
-         * @param rsrc2 Resource 2.
-         */
-        @GridUserResource
-        public void setResource2(UserResource2 rsrc2) {
-            this.rsrc2 = rsrc2;
-        }
-
-        /**
-         * @param rsrc3 Resource 3.
-         */
-        @GridUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
-        public void setResource3(GridAbstractUserResource rsrc3) {
-            this.rsrc3 = rsrc3;
-        }
-
-        /**
-         * @param rsrc4 Resource 4.
-         */
-        @GridUserResource(resourceName = "rsrc4")
-        public void setResource4(UserResource2 rsrc4) {
-            this.rsrc4 = rsrc4;
-        }
-
-        /**
-         * @param log Logger.
-         */
-        @GridLoggerResource
-        public void setLog(GridLogger log) {
-            this.log = log;
-        }
-
-        /**
-         * @param grid Grid.
-         */
-        @GridInstanceResource
-        public void setGrid(Grid grid) {
-            this.grid = grid;
-        }
-
-        /**
-         * @param nodeId Node ID.
-         */
-        @GridLocalNodeIdResource
-        public void setNodeId(UUID nodeId) {
-            this.nodeId = nodeId;
-        }
-
-        /**
-         * @param mbeanSrv MBean server.
-         */
-        @GridMBeanServerResource
-        public void setMbeanServer(MBeanServer mbeanSrv) {
-            this.mbeanSrv = mbeanSrv;
-        }
-
-        /**
-         * @param exec Executor.
-         */
-        @GridExecutorServiceResource
-        public void setExecutor(ExecutorService exec) {
-            this.exec = exec;
-        }
-
-        /**
-         * @param ggHome GridGain home.
-         */
         @GridHomeResource
-        public void setGridgainHome(String ggHome) {
-            this.ggHome = ggHome;
-        }
+        private String ggHome;
 
-        /**
-         * @param gridName Grid name.
-         */
+        /** */
         @GridNameResource
-        public void setGridName(String gridName) {
-            this.gridName = gridName;
-        }
+        private String gridName;
 
-        /**
-         * @param marshaller Marshaller.
-         */
+        /** */
         @GridMarshallerResource
-        public void setMarshaller(GridMarshaller marshaller) {
-            this.marshaller = marshaller;
-        }
+        private GridMarshaller marshaller;
 
-        /**
-         * @param springCtx Spring context.
-         */
+        /** */
         @GridSpringApplicationContextResource
-        public void setSpringContext(ApplicationContext springCtx) {
-            this.springCtx = springCtx;
-        }
+        private ApplicationContext springCtx;
 
-        /**
-         * @param ses Task session.
-         */
-        @GridTaskSessionResource
-        public void setSession(GridComputeTaskSession ses) {
-            this.ses = ses;
-        }
-
-        /**
-         * @param locHost Local host.
-         */
-        @GridLocalHostResource
-        public void setLocalHost(String locHost) {
-            this.locHost = locHost;
-        }
-
-        /**
-         * @param balancer Load balancer.
-         */
-        @GridLoadBalancerResource
-        public void setBalancer(GridComputeLoadBalancer balancer) {
-            this.balancer = balancer;
-        }
-
-        /**
-         * @param jobCtx Job context.
-         */
-        @GridJobContextResource
-        public void setJobContext(GridComputeJobContext jobCtx) {
-            this.jobCtx = jobCtx;
-        }
-
-        /**
-         * @param springBean Bean provided from Spring context.
-         */
+        /** */
         @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
-        public void setSpringBean(UserSpringBean springBean) {
-            this.springBean = springBean;
-        }
+        private transient UserSpringBean springBean;
 
-        /**
-         * @param mapper Task Continuous Mapper.
-         */
+        /** */
+        @GridTaskSessionResource
+        private GridComputeTaskSession ses;
+
+        /** Job context is job resource, not task resource. */
+        @GridJobContextResource
+        private GridComputeJobContext outerJobCtx;
+
+        /** */
         @GridTaskContinuousMapperResource
-        public void setMapper(GridComputeTaskContinuousMapper mapper) {
-            this.mapper = mapper;
-        }
+        private transient GridComputeTaskContinuousMapper mapper;
 
         /** {@inheritDoc} */
         @Override protected Collection<GridComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
@@ -396,20 +466,21 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
             assert log != null;
             assert grid != null;
             assert nodeId != null;
+            assert locHost != null;
             assert mbeanSrv != null;
             assert exec != null;
             assert ggHome != null;
             assert gridName != null;
-            assert locHost != null;
             assert marshaller != null;
             assert springCtx != null;
+            assert springBean != null;
             assert ses != null;
             assert balancer != null;
-            assert springBean != null;
             assert mapper != null;
 
-            // Job context belongs to job, not to task.
-            assert jobCtx == null;
+            assert outerJobCtx == null;
+
+            assert gridSize == 2;
 
             log.info("Injected shared resource1 into task: " + rsrc1);
             log.info("Injected shared resource2 into task: " + rsrc2);
@@ -418,16 +489,16 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
             log.info("Injected log resource into task: " + log);
             log.info("Injected grid resource into task: " + grid);
             log.info("Injected nodeId resource into task: " + nodeId);
+            log.info("Injected local host resource into task: " + locHost);
             log.info("Injected mbean server resource into task: " + mbeanSrv);
             log.info("Injected executor service resource into task: " + exec);
             log.info("Injected gridgain home resource into task: " + ggHome);
             log.info("Injected grid name resource into task: " + gridName);
-            log.info("Injected local host resource into task: " + locHost);
             log.info("Injected marshaller resource into task: " + marshaller);
             log.info("Injected spring context resource into task: " + springCtx);
-            log.info("Injected session resource into task: " + ses);
-            log.info("Injected load balancer into task: " + balancer);
             log.info("Injected spring bean resource into task: " + springBean);
+            log.info("Injected load balancer into task: " + balancer);
+            log.info("Injected session resource into task: " + ses);
             log.info("Injected continuous mapper: " + mapper);
 
             Collection<GridComputeJobAdapter> jobs = new ArrayList<>(gridSize);
@@ -435,85 +506,33 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new GridComputeJobAdapter() {
                     /** */
+                    @GridUserResource(resourceClass = UserResource3.class)
                     private transient GridAbstractUserResource rsrc5;
 
                     /** */
-                    private transient UserResource4 rsrc6;
+                    @GridUserResource private transient UserResource4 rsrc6;
 
                     /** */
-                    private transient UserResource5 rsrc7;
+                    @GridUserResource private transient UserResource5 rsrc7;
 
                     /** */
+                    @GridUserResource(resourceClass = UserResource3.class, resourceName = "rsrc8")
                     private transient GridAbstractUserResource rsrc8;
 
                     /** */
+                    @GridUserResource(resourceName = "rsrc9")
                     private transient UserResource4 rsrc9;
 
                     /** */
+                    @GridUserResource(resourceName = "rsrc10")
                     private transient UserResource5 rsrc10;
 
                     /** */
-                    private UserSpringBean springBean2;
-
-                    /**
-                     * @param rsrc5 Resource 5.
-                     */
-                    @GridUserResource(resourceClass = UserResource3.class)
-                    public void setResource5(GridAbstractUserResource rsrc5) {
-                        this.rsrc5 = rsrc5;
-                    }
-
-                    /**
-                     * @param rsrc6 Resource 6.
-                     */
-                    @GridUserResource
-                    public void setResource6(UserResource4 rsrc6) {
-                        this.rsrc6 = rsrc6;
-                    }
-
-                    /**
-                     * @param rsrc7 Resource 7.
-                     */
-                    @GridUserResource
-                    public void setResource7(UserResource5 rsrc7) {
-                        this.rsrc7 = rsrc7;
-                    }
-
-                    /**
-                     * @param rsrc8 Resource 8.
-                     */
-                    @GridUserResource(resourceClass = UserResource3.class, resourceName = "rsrc8")
-                    public void setResource8(GridAbstractUserResource rsrc8) {
-                        this.rsrc8 = rsrc8;
-                    }
-
-                    /**
-                     * @param rsrc9 Resource 9.
-                     */
-                    @GridUserResource(resourceName = "rsrc9")
-                    public void setResource9(UserResource4 rsrc9) {
-                        this.rsrc9 = rsrc9;
-                    }
-
-                    /**
-                     * @param rsrc10 Resource 10.
-                     */
-                    @GridUserResource(resourceName = "rsrc10")
-                    public void setResource10(UserResource5 rsrc10) {
-                        this.rsrc10 = rsrc10;
-                    }
+                    @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
+                    private transient UserSpringBean springBean2;
 
                     /** */
-                    @GridJobContextResource
-                    private GridComputeJobContext jobCtx;
-
-                    /**
-                     * @param springBean2 Bean provided from Spring context.
-                     */
-                    @GridSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
-                    public void setSpringBean2(UserSpringBean springBean2) {
-                        this.springBean2 = springBean2;
-                    }
+                    @GridJobContextResource private GridComputeJobContext jobCtx;
 
                     /** {@inheritDoc} */
                     @Override public Serializable execute() {
@@ -528,13 +547,14 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
                         assert exec != null;
                         assert ggHome != null;
                         assert gridName != null;
-                        assert locHost != null;
                         assert marshaller != null;
                         assert springCtx != null;
-                        assert ses != null;
-                        assert jobCtx != null;
                         assert springBean != null;
                         assert springBean2 != null;
+                        assert ses != null;
+                        assert jobCtx != null;
+                        assert outerJobCtx == null;
+                        assert locHost != null;
 
                         assert rsrc5 != null;
                         assert rsrc6 != null;
@@ -556,16 +576,17 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
                         log.info("Injected log resource into job: " + log);
                         log.info("Injected grid resource into job: " + grid);
                         log.info("Injected nodeId resource into job: " + nodeId);
-                        log.info("Injected local Host resource into job: " + locHost);
+                        log.info("Injected localHost resource into job: " + locHost);
                         log.info("Injected mbean server resource into job: " + mbeanSrv);
                         log.info("Injected executor service resource into job: " + exec);
                         log.info("Injected gridgain home resource into job: " + ggHome);
-                        log.info("Injected grid name resource into job: " + ggHome);
+                        log.info("Injected grid name resource into job: " + gridName);
                         log.info("Injected marshaller resource into job: " + marshaller);
                         log.info("Injected spring context resource into job: " + springCtx);
+                        log.info("Injected spring bean resource into job: " + springBean2);
                         log.info("Injected session resource into job: " + ses);
                         log.info("Injected job context resource into job: " + jobCtx);
-                        log.info("Injected spring bean2 resource into job: " + springBean2);
+                        log.info("Injected job context resource into outer class: " + outerJobCtx);
 
                         return null;
                     }
@@ -584,18 +605,16 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
             assert log != null;
             assert grid != null;
             assert nodeId != null;
-            assert locHost != null;
             assert mbeanSrv != null;
             assert exec != null;
             assert ggHome != null;
+            assert gridName != null;
             assert marshaller != null;
             assert springCtx != null;
+            assert springBean != null;
             assert ses != null;
             assert balancer != null;
-            assert springBean != null;
-
-            // Job context is job resource, not task resource.
-            assert jobCtx == null;
+            assert locHost != null;
 
             // Nothing to reduce.
             return null;

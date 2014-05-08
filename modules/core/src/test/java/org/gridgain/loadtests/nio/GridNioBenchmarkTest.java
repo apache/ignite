@@ -11,9 +11,8 @@ package org.gridgain.loadtests.nio;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.logger.*;
-import org.gridgain.grid.logger.log4j.*;
+import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.nio.*;
 import org.jetbrains.annotations.*;
 
@@ -71,7 +70,8 @@ public class GridNioBenchmarkTest {
             }
         };
 
-        GridLogger log  = new GridLog4jLogger(U.resolveGridGainUrl("config/gridgain-log4j.xml"));
+        // TODO: 8242.
+        GridLogger log  = new GridJavaLogger();//new GridLog4jLogger(U.resolveGridGainUrl("config/gridgain-log4j.xml"));
 
         GridNioServer.<ByteBuffer>builder()
             .address(InetAddress.getByName("localhost"))
