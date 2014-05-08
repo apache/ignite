@@ -32,6 +32,7 @@ public class GridCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheOffHeapAndSwapSelfTest.class);
         suite.addTest(new TestSuite(GridIndexingWithNoopSwapSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedHitsAndMissesSelfTest.class));
+        suite.addTestSuite(GridCacheSwapSelfTest.class);
 
         suite.addTestSuite(GridCacheQueryLoadSelfTest.class);
         suite.addTestSuite(GridCacheQueryMetricsSelfTest.class);
