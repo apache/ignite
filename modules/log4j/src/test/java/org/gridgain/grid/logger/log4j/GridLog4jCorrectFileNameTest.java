@@ -10,7 +10,6 @@
 package org.gridgain.grid.logger.log4j;
 
 import junit.framework.*;
-import org.apache.commons.io.*;
 import org.apache.log4j.*;
 import org.apache.log4j.varia.*;
 import org.gridgain.grid.*;
@@ -78,8 +77,10 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
             assertNotNull("Failed to resolve path: " + logPath, logFile);
             assertTrue("Log file does not exist: " + logFile, logFile.exists());
 
+            String logContent = U.readFileToString(logFile.getAbsolutePath(), "UTF-8");
+
             assertTrue("Log file does not contain it's node ID: " + logFile,
-                FileUtils.readFileToString(logFile).contains(">>> Local node [ID=" + id8.toUpperCase()));
+                logContent.contains(">>> Local node [ID=" + id8.toUpperCase()));
         }
     }
 

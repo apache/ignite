@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.ggfs;
 
-import org.apache.commons.io.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.net.*;
+import java.nio.file.*;
 import java.util.*;
 
 /**
@@ -80,7 +80,7 @@ public final class GridGgfsPath implements Comparable<GridGgfsPath>, Externaliza
     public GridGgfsPath(GridGgfsPath parentPath, String childPath) {
         A.notNull(parentPath, "parentPath");
 
-        String path = FilenameUtils.concat(parentPath.path, childPath);
+        String path = Paths.get(parentPath.path, childPath).toString();
 
         if (F.isEmpty(path))
             throw new IllegalArgumentException("Failed to parse path" +
@@ -98,12 +98,12 @@ public final class GridGgfsPath implements Comparable<GridGgfsPath>, Externaliza
     private static String normalizePath(String path) {
         assert path != null;
 
-        String normalizedPath = FilenameUtils.normalizeNoEndSeparator(path, true);
+        String normalizedPath = Paths.get(path).normalize().toString();
 
         if (F.isEmpty(normalizedPath))
             throw new IllegalArgumentException("Failed to normalize path: " + path);
 
-        if (!SLASH.equals(FilenameUtils.getPrefix(normalizedPath)))
+        if (normalizedPath.indexOf(SLASH) != 0)
             throw new IllegalArgumentException("Path should be absolute: " + path);
 
         assert !normalizedPath.isEmpty() : "Expects normalized path is not empty.";
@@ -119,7 +119,12 @@ public final class GridGgfsPath implements Comparable<GridGgfsPath>, Externaliza
      * @return The final component of this path.
      */
     public String name() {
-        return FilenameUtils.getName(path);
+        Path p = Paths.get(path);
+
+        if (p.getNameCount() == 0)
+            return "";
+
+        return p.getName(p.getNameCount() - 1).toString();
     }
 
     /**
@@ -156,7 +161,7 @@ public final class GridGgfsPath implements Comparable<GridGgfsPath>, Externaliza
         if (path.length() == 1)
             return null; // Current path is root.
 
-        path = FilenameUtils.getFullPathNoEndSeparator(path);
+        path = Paths.get(path).getParent().toString();
 
         return new GridGgfsPath(path);
     }
@@ -223,7 +228,7 @@ public final class GridGgfsPath implements Comparable<GridGgfsPath>, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(GridGgfsPath o) {
+    @Override public int compareTo(@NotNull GridGgfsPath o) {
         return path.compareTo(o.path);
     }
 

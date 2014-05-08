@@ -44,6 +44,7 @@ import java.net.*;
 import java.nio.*;
 import java.nio.channels.*;
 import java.nio.channels.spi.*;
+import java.nio.charset.*;
 import java.security.*;
 import java.security.cert.*;
 import java.sql.*;
@@ -1967,6 +1968,77 @@ public abstract class GridUtils {
         }
 
         return cnt;
+    }
+
+    /**
+     * Writes string to file.
+     *
+     * @param file File.
+     * @param s String to write.
+     * @throws IOException Thrown if an I/O error occurs.
+     */
+    public static void writeStringToFile(File file, String s) throws IOException {
+        writeStringToFile(file, s, Charset.defaultCharset().toString(), false);
+    }
+
+    /**
+     * Writes string to file.
+     *
+     * @param file File.
+     * @param s String to write.
+     * @param charset Encoding.
+     * @throws IOException Thrown if an I/O error occurs.
+     */
+    public static void writeStringToFile(File file, String s, String charset) throws IOException {
+        writeStringToFile(file, s, charset, false);
+    }
+
+    /**
+     * Reads file to string using specified charset.
+     *
+     * @param fileName File name.
+     * @param charset File charset.
+     * @return File content.
+     * @throws IOException If error occurred.
+     */
+    public static String readFileToString(String fileName, String charset) throws IOException {
+        Reader input = new InputStreamReader(new FileInputStream(fileName), charset);
+
+        StringWriter output = new StringWriter();
+
+        char[] buf = new char[4096];
+
+        int n;
+
+        while ((n = input.read(buf)) != -1)
+            output.write(buf, 0, n);
+
+        return output.toString();
+    }
+
+    /**
+     * Writes string to file.
+     *
+     * @param file File.
+     * @param s String to write.
+     * @param charset Encoding.
+     * @param append If {@code true}, then specified string will be added to the end of the file.
+     * @throws IOException Thrown if an I/O error occurs.
+     */
+    public static void writeStringToFile(File file, String s, String charset, boolean append) throws IOException {
+        if (s == null)
+            return;
+
+        OutputStream out = null;
+
+        try {
+            out = new FileOutputStream(file, append);
+
+            if (s != null)
+                out.write(s.getBytes(charset));
+        } finally {
+            closeQuiet(out);
+        }
     }
 
     /**
