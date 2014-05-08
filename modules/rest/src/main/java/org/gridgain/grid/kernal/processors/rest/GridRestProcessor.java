@@ -13,6 +13,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
+import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.log.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.task.*;
@@ -20,10 +21,11 @@ import org.gridgain.grid.kernal.processors.rest.handlers.top.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.version.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.http.jetty.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
+import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.lang.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.future.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -38,14 +40,11 @@ public class GridRestProcessor extends GridRestProcessorAdapter {
     /** */
     private static final byte[] EMPTY_ID = new byte[0];
 
-    /** Array of parameter names which values should pass interception. */
-    private static final String[] INTERCEPTED_PARAMS = {"key", "val", "val1", "val2", "p1"};
-
     /** Protocols. */
     private final Collection<GridRestProtocol> protos = new ArrayList<>();
 
     /** Command handlers. */
-    private final Collection<GridRestCommandHandler> handlers = new ArrayList<>();
+    private final Map<GridRestCommand, GridRestCommandHandler> handlers = new EnumMap<>(GridRestCommand.class);
 
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -80,19 +79,13 @@ public class GridRestProcessor extends GridRestProcessorAdapter {
 
             interceptRequest(req);
 
-            GridFuture<GridRestResponse> res = null;
+            GridRestCommandHandler hnd = handlers.get(req.command());
 
-            for (GridRestCommandHandler handler : handlers) {
-                if (handler.supported(req.getCommand())) {
-                    res = handler.handleAsync(req);
-
-                    break;
-                }
-            }
+            GridFuture<GridRestResponse> res = hnd == null ? null : hnd.handleAsync(req);
 
             if (res == null)
                 return new GridFinishedFuture<>(ctx,
-                    new GridException("Failed to find registered handler for command: " + req.getCommand()));
+                    new GridException("Failed to find registered handler for command: " + req.command()));
 
             return res.chain(new C1<GridFuture<GridRestResponse>, GridRestResponse>() {
                 @Override public GridRestResponse apply(GridFuture<GridRestResponse> f) {
@@ -102,7 +95,7 @@ public class GridRestProcessor extends GridRestProcessorAdapter {
                         res = f.get();
                     }
                     catch (Exception e) {
-                        LT.error(log, e, "Failed to handle request: " + req.getCommand());
+                        LT.error(log, e, "Failed to handle request: " + req.command());
 
                         if (log.isDebugEnabled())
                             log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
@@ -141,32 +134,37 @@ public class GridRestProcessor extends GridRestProcessorAdapter {
         if (interceptor == null)
             return;
 
-        for (String param : INTERCEPTED_PARAMS) {
-            Object oldVal = req.parameter(param);
+        if (req instanceof GridRestCacheRequest) {
+            GridRestCacheRequest req0 = (GridRestCacheRequest) req;
 
-            if (oldVal != null) {
-                Object newVal = interceptor.onReceive(oldVal);
+            req0.key(interceptor.onReceive(req0.key()));
+            req0.value(interceptor.onReceive(req0.value()));
+            req0.value2(interceptor.onReceive(req0.value2()));
 
-                req.parameter(param, newVal);
+            Map<Object, Object> oldVals = req0.values();
+
+            if (oldVals != null) {
+                Map<Object, Object> newVals = new HashMap<>(oldVals.size());
+
+                for (Map.Entry<Object, Object> e : oldVals.entrySet())
+                    newVals.put(interceptor.onReceive(e.getKey()), interceptor.onReceive(e.getValue()));
+
+                req0.values(U.sealMap(newVals));
             }
         }
+        else if (req instanceof GridRestTaskRequest) {
+            GridRestTaskRequest req0 = (GridRestTaskRequest) req;
 
-        int i = 1;
+            List<Object> oldParams = req0.params();
 
-        while (true) {
-            Object k = req.parameter("k" + i);
-            Object v = req.parameter("v" + i);
+            if (oldParams != null) {
+                Collection<Object> newParams = new ArrayList<>(oldParams.size());
 
-            if (k == null && v == null)
-                break;
+                for (Object o : oldParams)
+                    newParams.add(interceptor.onReceive(o));
 
-            if (k != null)
-                req.parameter("k" + i, interceptor.onReceive(k));
-
-            if (v != null)
-                req.parameter("v" + i, interceptor.onReceive(v));
-
-            i++;
+                req0.params(U.sealList(newParams));
+            }
         }
     }
 
@@ -181,7 +179,7 @@ public class GridRestProcessor extends GridRestProcessorAdapter {
         GridClientMessageInterceptor interceptor = ctx.config().getClientMessageInterceptor();
 
         if (interceptor != null && res.getResponse() != null) {
-            switch (req.getCommand()) {
+            switch (req.command()) {
                 case CACHE_GET:
                 case CACHE_GET_ALL:
                 case CACHE_PUT:
@@ -261,11 +259,11 @@ public class GridRestProcessor extends GridRestProcessorAdapter {
      * @throws GridException If authentication failed.
      */
     private void authenticate(GridRestRequest req) throws GridException {
-        UUID clientId = req.getClientId();
+        UUID clientId = req.clientId();
 
         byte[] clientIdBytes = clientId != null ? U.uuidToBytes(clientId) : EMPTY_ID;
 
-        byte[] sesTok = req.getSessionToken();
+        byte[] sesTok = req.sessionToken();
 
         // Validate session.
         if (sesTok != null && ctx.secureSession().validate(REMOTE_CLIENT, clientIdBytes, sesTok, null) != null)
@@ -273,8 +271,8 @@ public class GridRestProcessor extends GridRestProcessorAdapter {
             return;
 
         // Authenticate client if invalid session.
-        if (!ctx.auth().authenticate(REMOTE_CLIENT, clientIdBytes, req.getCredentials()))
-            if (req.getCredentials() == null)
+        if (!ctx.auth().authenticate(REMOTE_CLIENT, clientIdBytes, req.credentials()))
+            if (req.credentials() == null)
                 throw new GridException("Failed to authenticate remote client (secure session SPI not set?): " + req);
             else
                 throw new GridException("Failed to authenticate remote client (invalid credentials?): " + req);
@@ -288,13 +286,13 @@ public class GridRestProcessor extends GridRestProcessorAdapter {
      * @throws GridException If session token update process failed.
      */
     private byte[] updateSessionToken(GridRestRequest req) throws GridException {
-        byte[] subjId = U.uuidToBytes(req.getClientId());
+        byte[] subjId = U.uuidToBytes(req.clientId());
 
-        byte[] sesTok = req.getSessionToken();
+        byte[] sesTok = req.sessionToken();
 
         // Update token from request to actual state.
         if (sesTok != null)
-            sesTok = ctx.secureSession().validate(REMOTE_CLIENT, subjId, req.getSessionToken(), null);
+            sesTok = ctx.secureSession().validate(REMOTE_CLIENT, subjId, req.sessionToken(), null);
 
         // Create new session token, if request doesn't valid session token.
         if (sesTok == null)
@@ -357,15 +355,18 @@ public class GridRestProcessor extends GridRestProcessorAdapter {
 
     /**
      * @param hnd Command handler.
-     * @return {@code True} if class for handler was found.
      */
-    private boolean addHandler(GridRestCommandHandler hnd) {
-        assert !handlers.contains(hnd);
+    private void addHandler(GridRestCommandHandler hnd) {
+        assert !handlers.containsValue(hnd);
 
         if (log.isDebugEnabled())
             log.debug("Added REST command handler: " + hnd);
 
-        return handlers.add(hnd);
+        for (GridRestCommand cmd : hnd.supportedCommands()) {
+            assert !handlers.containsKey(cmd);
+
+            handlers.put(cmd, hnd);
+        }
     }
 
     /**

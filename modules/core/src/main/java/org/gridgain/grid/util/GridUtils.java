@@ -112,6 +112,9 @@ public abstract class GridUtils {
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
 
+    /** Project work directory. */
+    private static volatile String ggWork;
+
     /** OS JDK string. */
     private static String osJdkStr;
 
@@ -1239,6 +1242,17 @@ public abstract class GridUtils {
     }
 
     /**
+     * Convert array to seal list.
+     *
+     * @param a Array for convert to seal list.
+     * @param <E> Entry type
+     * @return Sealed collection.
+     */
+    public static <E> List<E> sealList(E... a) {
+        return Collections.unmodifiableList(Arrays.asList(a));
+    }
+
+    /**
      * Gets display name of the network interface this IP address belongs to.
      *
      * @param addr IP address for which to find network interface name.
@@ -2220,8 +2234,6 @@ public abstract class GridUtils {
         File file = new File(path);
 
         if (file.exists())
-            // Note: we use that method's chain instead of File.getURL() with due
-            // Sun bug http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6179468
             return file;
 
         return null;
@@ -4952,8 +4964,10 @@ public abstract class GridUtils {
         if (ldr == null)
             ldr = gridClassLoader;
 
+        String lambdaParent = U.lambdaEnclosingClassName(clsName);
+
         try {
-            ldr.loadClass(clsName);
+            ldr.loadClass(lambdaParent == null ? clsName : lambdaParent);
 
             return true;
         }
@@ -7866,39 +7880,89 @@ public abstract class GridUtils {
     }
 
     /**
+     * @param userWorkDir GridGain work folder provided by user.
+     * @param userGgHome GridGain home folder provided by user.
+     */
+    public static void setWorkDirectory(@Nullable String userWorkDir, @Nullable String userGgHome)
+        throws GridException {
+        String ggWork0 = ggWork;
+
+        if (ggWork0 == null) {
+            synchronized (GridUtils.class) {
+                // Double check.
+                ggWork0 = ggWork;
+
+                if (ggWork0 != null)
+                    return;
+
+                File workDir;
+
+                if (!F.isEmpty(userWorkDir))
+                    workDir = new File(userWorkDir);
+                else if (!F.isEmpty(userGgHome))
+                    workDir = new File(userGgHome, "work");
+                else {
+                    String tmpDirPath = System.getProperty("java.io.tmpdir");
+
+                    if (tmpDirPath == null)
+                        throw new GridException("Failed to create work directory in OS temp " +
+                            "(property 'java.io.tmpdir' is null).");
+
+                    workDir = new File(tmpDirPath, "gridgain" + File.separator + "work");
+                }
+
+                if (!workDir.isAbsolute())
+                    throw new GridException("Work directory path must be absolute: " + workDir);
+
+                if (!mkdirs(workDir))
+                    throw new GridException("Work directory does not exist and cannot be created: " + workDir);
+
+                if (!workDir.canRead())
+                    throw new GridException("Cannot read from work directory: " + workDir);
+
+                if (!workDir.canWrite())
+                    throw new GridException("Cannot write to work directory: " + workDir);
+
+                ggWork = workDir.getAbsolutePath();
+            }
+        }
+    }
+
+    /**
+     * Nullifies GridGain home directory. For test purposes only.
+     */
+    static void nullifyHomeDirectory() {
+        ggHome = null;
+    }
+
+    /**
+     * Nullifies work directory. For test purposes only.
+     */
+    static void nullifyWorkDirectory() {
+        ggWork = null;
+    }
+
+    /**
      * Resolves work directory.
      *
      * @param path Path to resolve.
-     * @param tmpSubDir Subdirectory in temporary folder. It's used when GridGain home is null.
-     * @param failOnEmptyGridGainHome {@code True} if exception should be thrown on empty GridGain home,
-     * {@code false} otherwise.
-     * @param deleteIfExist Flag indicating whether to delete the specify directory or not.
+     * @param delIfExist Flag indicating whether to delete the specify directory or not.
      * @return Resolved work directory.
      * @throws GridException If failed.
      */
-    public static File resolveWorkDirectory(String path, String tmpSubDir, boolean failOnEmptyGridGainHome,
-        boolean deleteIfExist) throws GridException {
-        String ggHome = getGridGainHome();
-
+    public static File resolveWorkDirectory(String path, boolean delIfExist) throws GridException {
         File dir = new File(path);
 
         if (!dir.isAbsolute()) {
-            if (F.isEmpty(ggHome)) {
-                if (failOnEmptyGridGainHome)
-                    throw new GridException("Failed to create directory, property " + GG_HOME + " is null.");
+            String ggWork0 = ggWork;
 
-                String tmpDirPath = System.getProperty("java.io.tmpdir");
+            if (F.isEmpty(ggWork0))
+                throw new GridException("Failed to resolve path (work directory has not been set): " + path);
 
-                if (tmpDirPath == null)
-                    throw new GridException("System property 'java.io.tmpdir' is null.");
-
-                dir = tmpSubDir == null ? new File(tmpDirPath) : new File(tmpDirPath, tmpSubDir);
-            }
-            else
-                dir = new File(ggHome, dir.getPath());
+            dir = new File(ggWork0, dir.getPath());
         }
 
-        if (deleteIfExist && dir.exists()) {
+        if (delIfExist && dir.exists()) {
             if (!U.delete(dir))
                 throw new GridException("Failed to delete directory: " + dir);
         }

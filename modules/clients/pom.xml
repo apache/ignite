@@ -90,86 +90,6 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.9.1</version>
-                <executions>
-                    <execution>
-                        <id>javadoc</id>
-                        <goals>
-                            <goal>javadoc</goal>
-                        </goals>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <doctitle>GridGain ${gridgain.version} - Java Client</doctitle>
-                            <windowtitle>GridGain ${gridgain.version} - Java Client</windowtitle>
-                            <breakiterator>true</breakiterator>
-                            <verbose>true</verbose>
-                            <show>protected</show>
-                            <use>true</use>
-                            <author>false</author>
-                            <version>false</version>
-                            <source>1.7</source>
-                            <links>
-                                <link>http://docs.oracle.com/javase/7/docs/api/</link>
-                            </links>
-                            <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
-                            <excludePackageNames>*.impl:*.util:*.marshaller:*.typedef:*.router.impl</excludePackageNames>
-                            <groups>
-                                <group>
-                                    <title>Client APIs</title>
-                                    <packages>org.gridgain.client:org.gridgain.client.balancer</packages>
-                                </group>
-                                <group>
-                                    <title>Router APIs</title>
-                                    <packages>org.gridgain.client.router</packages>
-                                </group>
-                            </groups>
-                            <header>
-                                <![CDATA[
-                                    Java Client
-                                    <br>
-                                    GridGain ver. <b>${gridgain.version}</b>
-                                ]]>
-                            </header>
-                            <bottom>
-                                <![CDATA[
-                                    <table width="100%" border="0">
-                                        <tr>
-                                            <td>
-                                                <nobr>GridGain&#153; - Java Client, ver. <strong>${gridgain.version}</strong></nobr>
-                                                <br>
-                                                <a target=_blank href="http://www.gridgain.org/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
-                                            </td>
-                                            <td width="100%" align="right" valign="center">
-                                                <table border=0>
-                                                <tr>
-                                                    <td>
-                                                        <nobr>Follow us:&nbsp;&nbsp;</nobr>
-                                                    </td>
-                                                    <td style="padding-right: 5px">
-                                                        <a class='img_link' target=twitter href='http://www.twitter.com/gridgain'>
-                                                            <img border=0 align=absmiddle src='http://www.gridgain.com/images/twitter_bw.png' alt='Follow GridGain on Twitter'/>
-                                                        </a>
-                                                    </td>
-                                                    <td style="padding-right: 5px">
-                                                        <a class='img_link' target=vimeo href='http://www.vimeo.com/gridgain'>
-                                                            <img border=0 align=absmiddle src='http://www.gridgain.com/images/vimeo_bw.png' alt='Follow GridGain on Vimeo'/>
-                                                        </a>
-                                                    </td>
-                                                </tr>
-                                                </table>
-                                            </td>
-                                        </tr>
-                                    </table>
-                                ]]>
-                            </bottom>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>1.7</version>
                 <dependencies>
@@ -180,34 +100,6 @@
                     </dependency>
                 </dependencies>
                 <executions>
-                    <execution>
-                        <id>javadoc-postprocessing</id>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <target>
-                                <copy todir="target/site/apidocs">
-                                    <fileset dir="../../assembly/docfiles">
-                                        <include name="img/**"/>
-                                        <include name="*.js"/>
-                                    </fileset>
-                                </copy>
-
-                                <taskdef name="javadoctask"
-                                    classname="org.gridgain.grid.tools.ant.beautifier.GridJavadocAntTask"/>
-
-                                <javadoctask css="dotted" dir="target/site/apidocs">
-                                    <include name="**/*.html"/>
-                                    <exclude name="overview-frame.html"/>
-                                    <exclude name="allclasses-frame.html"/>
-                                    <exclude name="**/class-use/*"/>
-                                </javadoctask>
-                            </target>
-                        </configuration>
-                    </execution>
-
                     <execution>
                         <id>dotnetdoc</id>
                         <goals>

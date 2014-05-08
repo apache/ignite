@@ -13,7 +13,11 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
+import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
+import java.util.*;
 
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 
@@ -21,6 +25,9 @@ import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
  * Handler for {@link GridRestCommand#VERSION} command.
  */
 public class GridVersionCommandHandler extends GridRestCommandHandlerAdapter {
+    /** Supported commands. */
+    private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(VERSION);
+
     /**
      * @param ctx Context.
      */
@@ -29,12 +36,16 @@ public class GridVersionCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean supported(GridRestCommand cmd) {
-        return cmd == VERSION;
+    @Override public Collection<GridRestCommand> supportedCommands() {
+        return SUPPORTED_COMMANDS;
     }
 
     /** {@inheritDoc} */
     @Override public GridFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+        assert req != null;
+
+        assert SUPPORTED_COMMANDS.contains(req.command());
+
         return new GridFinishedFuture<>(ctx, new GridRestResponse(ctx.version()));
     }
 }

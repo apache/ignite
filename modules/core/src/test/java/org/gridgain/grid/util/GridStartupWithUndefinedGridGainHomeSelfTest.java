@@ -6,7 +6,7 @@
  *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
-package org.gridgain.grid.kernal;
+package org.gridgain.grid.util;
 
 import junit.framework.*;
 import org.gridgain.grid.*;
@@ -19,7 +19,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
-import java.io.*;
+import static org.gridgain.grid.util.GridUtils.*;
 
 /**
  * Checks that node can be started without operations with undefined GRIDGAIN_HOME.
@@ -34,12 +34,22 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
-    public static final int COUNT = 2;
+    private static final int GRID_COUNT = 2;
+
+    /** {@inheritDoc} */
+    @Override protected void tearDown() throws Exception {
+        // Next grid in the same VM shouldn't use cached values produced by these tests.
+        nullifyHomeDirectory();
+
+        U.getGridGainHome();
+    }
 
     /**
      * @throws Exception If failed.
      */
     public void testStartStopWithUndefinedGridGainHome() throws Exception {
+        GridUtils.nullifyHomeDirectory();
+
         // We can't use U.getGridGainHome() here because
         // it will initialize cached value which is forbidden to override.
         String ggHome = X.getSystemOrEnv(GridSystemProperties.GG_HOME);
@@ -55,21 +65,22 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
         GridLogger log = new GridJavaLogger();
 
         log.info(">>> Test started: " + getName());
-        log.info("Grid start-stop test count: " + COUNT);
+        log.info("Grid start-stop test count: " + GRID_COUNT);
 
-        for (int i = 0; i < COUNT; i++) {
+        for (int i = 0; i < GRID_COUNT; i++) {
             GridTcpDiscoverySpi disc = new GridTcpDiscoverySpi();
 
             disc.setIpFinder(IP_FINDER);
 
             GridConfiguration cfg = new GridConfiguration();
 
-            // We have to explicitly configure paths to license and jetty configs because of undefined GRIDGAIN_HOME.
+            // We have to explicitly configure path to license config because of undefined GRIDGAIN_HOME.
             cfg.setLicenseUrl("file:///" + ggHome + "/" + GridGain.DFLT_LIC_FILE_NAME);
-            cfg.setRestJettyPath(ggHome + File.separator + "modules/core/src/test/config/jetty/rest-jetty.xml");
+
             // Default console logger is used
             cfg.setGridLogger(log);
             cfg.setDiscoverySpi(disc);
+            cfg.setRestEnabled(false);
 
             try (Grid g = G.start(cfg)) {
                 assert g != null;
