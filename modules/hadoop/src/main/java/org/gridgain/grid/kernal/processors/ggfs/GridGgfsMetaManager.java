@@ -2123,8 +2123,11 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     }
                 }
 
-                if (changed != null)
+                if (changed != null) {
+                    finished = true;
+
                     throw new GridGgfsConcurrentModificationException(changed);
+                }
                 else {
                     boolean newParents = false;
 
