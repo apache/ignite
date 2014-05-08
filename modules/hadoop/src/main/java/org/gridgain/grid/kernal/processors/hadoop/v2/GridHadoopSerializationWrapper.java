@@ -14,6 +14,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import java.io.*;
 
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -64,22 +65,31 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
      * @param serialization External serializer to wrap.
      * @param cls The class to serialize.
      */
-    public GridHadoopSerializationWrapper(Serialization<T> serialization, Class<T> cls) {
+    public GridHadoopSerializationWrapper(Serialization<T> serialization, Class<T> cls) throws GridException {
+        A.notNull(cls, "cls");
+
         serializer = serialization.getSerializer(cls);
         deserializer = serialization.getDeserializer(cls);
+
+        try {
+            serializer.open(outStream);
+            deserializer.open(inStream);
+        }
+        catch (IOException e) {
+            throw new GridException(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void write(DataOutput out, Object obj) throws GridException {
-        try {
-            boolean isFirstWrite = (currOut == null);
+        A.notNull(out, "out", obj, "obj");
 
+        try {
             currOut = out;
 
-            if (isFirstWrite)
-                serializer.open(outStream);
-
             serializer.serialize((T)obj);
+
+            currOut = null;
         }
         catch (IOException e) {
             throw new GridException(e);
@@ -88,15 +98,16 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
 
     /** {@inheritDoc} */
     @Override public Object read(DataInput in, @Nullable Object obj) throws GridException {
-        try {
-            boolean isFirstRead = (currIn == null);
+        A.notNull(in, "in");
 
+        try {
             currIn = in;
 
-            if (isFirstRead)
-                deserializer.open(inStream);
+            T res = deserializer.deserialize((T) obj);
 
-            return deserializer.deserialize((T)obj);
+            currIn = null;
+
+            return res;
         }
         catch (IOException e) {
             throw new GridException(e);
@@ -106,11 +117,8 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
     /** {@inheritDoc} */
     @Override public void close() throws GridException {
         try {
-            if ((currOut != null))
-                serializer.close();
-
-            if ((currIn != null))
-                deserializer.close();
+            serializer.close();
+            deserializer.close();
         }
         catch (IOException e) {
             throw new GridException(e);
