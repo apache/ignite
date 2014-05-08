@@ -63,12 +63,14 @@ public class GridHadoopV2JobSelfTest extends GridHadoopAbstractSelfTest {
 
         assertEquals(GridHadoopSerializationWrapper.class, ser.getClass());
 
-        assertEquals(TEST_SERIALIZED_VALUE, ser.read(null, null).toString());
+        DataInput in = new DataInputStream(new ByteArrayInputStream(new byte[0]));
+
+        assertEquals(TEST_SERIALIZED_VALUE, ser.read(in, null).toString());
 
         ser = job.valueSerialization();
 
         assertEquals(GridHadoopSerializationWrapper.class, ser.getClass());
 
-        assertEquals(TEST_SERIALIZED_VALUE, ser.read(null, null).toString());
+        assertEquals(TEST_SERIALIZED_VALUE, ser.read(in, null).toString());
     }
 }
