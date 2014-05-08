@@ -57,7 +57,7 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setTransactionManagerLookup(new TestTmLookup());
+        cfg.setTransactionManagerLookupClassName(TestTmLookup.class.getName());
 
         return cfg;
     }

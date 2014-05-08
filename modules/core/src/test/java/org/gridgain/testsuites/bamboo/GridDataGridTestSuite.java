@@ -11,9 +11,7 @@ package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
 import org.gridgain.grid.cache.affinity.fair.*;
-import org.gridgain.grid.cache.hibernate.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.cache.store.hibernate.*;
 import org.gridgain.grid.cache.store.jdbc.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
@@ -51,8 +49,6 @@ public class GridDataGridTestSuite extends TestSuite {
         // Common tests.
         suite.addTestSuite(GridCacheAffinityMapperSelfTest.class);
         suite.addTestSuite(GridCacheAffinityRoutingSelfTest.class);
-        suite.addTestSuite(GridCacheJtaSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedJtaSelfTest.class);
         suite.addTestSuite(GridCacheMvccSelfTest.class);
         suite.addTestSuite(GridCacheMvccPartitionedSelfTest.class);
         suite.addTestSuite(GridCacheMvccManagerSelfTest.class);
