@@ -1452,7 +1452,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             if (!drNeedResolve) { // Perform version check only in case there will be no explicit conflict resolution.
                 if (verCheck) {
-                    if (!isNew() && ATOMIC_VER_COMPARATOR.compare(ver, newVer) > 0) {
+                    if (!isNew() && ATOMIC_VER_COMPARATOR.compare(ver, newVer) >= 0) {
                         if (log.isDebugEnabled())
                             log.debug("Received entry update for with smaller version than current (will ignore) " +
                                 "[entry=" + this + ", newVer=" + newVer + ']');

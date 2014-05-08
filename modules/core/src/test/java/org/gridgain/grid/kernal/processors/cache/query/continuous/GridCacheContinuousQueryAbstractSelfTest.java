@@ -117,8 +117,26 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         for (int i = 0; i < gridCount(); i++)
             assertEquals(gridCount(), grid(i).nodes().size());
 
+        for (int i = 0; i < gridCount(); i++) {
+            int j;
+
+            for (j = 0; j < 3; j++) {
+                try {
+                    grid(i).cache(null).removeAll();
+
+                    break;
+                }
+                catch (GridCachePartialUpdateException ignored) {
+                    U.sleep(500);
+                }
+            }
+
+            if (j == 3)
+                fail("Failed to clear cache on grid " + i);
+        }
+
         for (int i = 0; i < gridCount(); i++)
-            grid(i).cache(null).removeAll();
+            assertEquals(0, grid(i).cache(null).size());
 
         for (int i = 0; i < gridCount(); i++) {
             GridContinuousProcessor proc = ((GridKernal)grid(i)).context().continuous();
@@ -1031,7 +1049,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         GridCache<Object, Object> cache = grid(0).cache(null);
 
         GridCacheContinuousQuery<Integer, Integer> qry =
-            cache.<Integer, Integer>projection(Integer.class, Integer.class).queries().createContinuousQuery();
+            cache.projection(Integer.class, Integer.class).queries().createContinuousQuery();
 
         final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(2);
