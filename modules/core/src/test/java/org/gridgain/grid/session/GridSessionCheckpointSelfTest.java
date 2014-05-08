@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.session;
 
-import com.amazonaws.auth.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
@@ -18,10 +17,8 @@ import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.checkpoint.*;
 import org.gridgain.grid.spi.checkpoint.cache.*;
 import org.gridgain.grid.spi.checkpoint.jdbc.*;
-import org.gridgain.grid.spi.checkpoint.s3.*;
 import org.gridgain.grid.spi.checkpoint.sharedfs.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.common.*;
 import org.hsqldb.jdbc.*;
 
@@ -34,7 +31,7 @@ import java.util.*;
 @GridCommonTest(group = "Task Session")
 public class GridSessionCheckpointSelfTest extends GridCommonAbstractTest {
     /** */
-    private static GridCheckpointSpi spi;
+    protected static GridCheckpointSpi spi;
 
     /** */
     private static final int SPLIT_COUNT = 5;
@@ -144,28 +141,6 @@ public class GridSessionCheckpointSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testS3Checkpoint() throws Exception {
-        GridConfiguration cfg = getConfiguration();
-
-        GridS3CheckpointSpi spi = new GridS3CheckpointSpi();
-
-        AWSCredentials cred = new BasicAWSCredentials(GridTestProperties.getProperty("amazon.access.key"),
-            GridTestProperties.getProperty("amazon.secret.key"));
-
-        spi.setAwsCredentials(cred);
-
-        spi.setBucketNameSuffix("test");
-
-        cfg.setCheckpointSpi(spi);
-
-        GridSessionCheckpointSelfTest.spi = spi;
-
-        checkCheckpoints(cfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testCacheCheckpoint() throws Exception {
         GridConfiguration cfg = getConfiguration();
 
@@ -192,7 +167,7 @@ public class GridSessionCheckpointSelfTest extends GridCommonAbstractTest {
      * @param cfg Configuration.
      * @throws Exception If check failed.
      */
-    private void checkCheckpoints(GridConfiguration cfg) throws Exception {
+    protected void checkCheckpoints(GridConfiguration cfg) throws Exception {
         Grid grid = G.start(cfg);
 
         try {

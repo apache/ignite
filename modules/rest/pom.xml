@@ -88,5 +88,13 @@
             <version>2.4</version>
             <classifier>jdk15</classifier>
         </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-core</artifactId>
+            <version>${gridgain.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

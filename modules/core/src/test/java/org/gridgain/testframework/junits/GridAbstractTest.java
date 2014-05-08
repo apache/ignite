@@ -437,7 +437,7 @@ public abstract class GridAbstractTest extends TestCase {
             if (startGrid) {
                 GridConfiguration cfg = optimize(getConfiguration());
 
-                G.start(cfg, new GenericApplicationContext());
+                G.start(cfg);
             }
 
             try {

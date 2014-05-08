@@ -30,6 +30,7 @@ public class GridS3TestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridS3CheckpointSpiSelfTest.class));
         suite.addTest(new TestSuite(GridS3CheckpointSpiStartStopSelfTest.class));
         suite.addTest(new TestSuite(GridS3CheckpointManagerSelfTest.class));
+        suite.addTest(new TestSuite(GridS3SessionCheckpointSelfTest.class));
 
         // S3 IP finder.
         suite.addTest(new TestSuite(GridTcpDiscoveryS3IpFinderSelfTest.class));

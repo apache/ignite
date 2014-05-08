@@ -30,19 +30,6 @@ public class GridSpiDeploymentSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridLocalDeploymentSpiSelfTest.class));
         suite.addTest(new TestSuite(GridLocalDeploymentSpiStartStopSelfTest.class));
 
-        // UriDeploymentSpi tests
-        suite.addTest(new TestSuite(GridUriDeploymentConfigSelfTest.class));
-        suite.addTest(new TestSuite(GridUriDeploymentSimpleSelfTest.class));
-        suite.addTest(new TestSuite(GridUriDeploymentClassloaderRegisterSelfTest.class));
-        suite.addTest(new TestSuite(GridUriDeploymentFileProcessorSelfTest.class));
-        suite.addTest(new TestSuite(GridUriDeploymentClassLoaderSelfTest.class));
-        suite.addTest(new TestSuite(GridUriDeploymentClassLoaderMultiThreadedSelfTest.class));
-        suite.addTest(new TestSuite(GridUriDeploymentMultiScannersSelfTest.class));
-        suite.addTest(new TestSuite(GridUriDeploymentConfigSelfTest.class));
-
-        suite.addTest(new TestSuite(GridFileDeploymentUndeploySelfTest.class));
-        suite.addTest(new TestSuite(GridHttpDeploymentSelfTest.class));
-
         return suite;
     }
 }

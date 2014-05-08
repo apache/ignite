@@ -104,9 +104,6 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
 //        suite.addTestSuite(GridCacheReplicatedFullApiMultithreadedSelfTest.class);
 //        suite.addTestSuite(GridCachePartitionedFullApiMultithreadedSelfTest.class);
 
-        // The rest cache stuff.
-        suite.addTestSuite(GridCacheCommandHandlerSelfTest.class);
-
         // Cache API tests for cache configured as DR target.
         // Multi node.
         suite.addTest(new TestSuite(GridDrCachePartitionedNearDisabledMultiNodeFullApiSelfTest.class));
