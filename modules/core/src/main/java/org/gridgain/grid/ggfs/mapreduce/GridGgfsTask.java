@@ -79,7 +79,7 @@ public abstract class GridGgfsTask<T, R> extends GridComputeTaskAdapter<GridGgfs
         assert args != null;
 
         GridGgfs ggfs = grid.ggfs(args.ggfsName());
-        GridGgfsProcessor ggfsProc = ((GridKernal)grid).context().ggfs();
+        GridGgfsProcessorAdapter ggfsProc = ((GridKernal)grid).context().ggfs();
 
         Map<GridComputeJob, GridNode> splitMap = new HashMap<>();
 

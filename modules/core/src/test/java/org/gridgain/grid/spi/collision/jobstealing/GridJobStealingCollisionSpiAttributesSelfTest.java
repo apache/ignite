@@ -82,7 +82,6 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
      */
     private void addSpiDependency(GridTestNode node) throws Exception {
         node.addAttribute(U.spiAttribute(getSpi(), ATTR_SPI_CLASS), GridJobStealingFailoverSpi.class.getName());
-        node.addAttribute(U.spiAttribute(getSpi(), ATTR_SPI_VER), "1");
     }
 
     /** {@inheritDoc} */

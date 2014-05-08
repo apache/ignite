@@ -34,9 +34,6 @@ import static org.gridgain.grid.events.GridEventType.*;
  * This class provides convenient adapter for SPI implementations.
  */
 public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean, GridSpiJsonConfigurable {
-    /** Instance of SPI annotation. */
-    private GridSpiInfo spiAnn;
-
     /** */
     private ObjectName spiMBean;
 
@@ -81,12 +78,6 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
      * (see {@link Class#getSimpleName()}).
      */
     protected GridSpiAdapter() {
-        for (Class<?> cls = getClass(); cls != null; cls = cls.getSuperclass())
-            if ((spiAnn = cls.getAnnotation(GridSpiInfo.class)) != null)
-                break;
-
-        assert spiAnn != null : "Every SPI must have @GridSpiInfo annotation.";
-
         name = U.getSimpleName(getClass());
     }
 
@@ -95,26 +86,6 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
      */
     protected void startStopwatch() {
         startTstamp = U.currentTimeMillis();
-    }
-
-    /** {@inheritDoc} */
-    @Override public final String getAuthor() {
-        return spiAnn.author();
-    }
-
-    /** {@inheritDoc} */
-    @Override public final String getVendorUrl() {
-        return spiAnn.url();
-    }
-
-    /** {@inheritDoc} */
-    @Override public final String getVendorEmail() {
-        return spiAnn.email();
-    }
-
-    /** {@inheritDoc} */
-    @Override public final String getVersion() {
-        return spiAnn.version();
     }
 
     /** {@inheritDoc} */
@@ -281,14 +252,8 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
      * Gets uniformly formatted message for SPI start.
      *
      * @return Uniformly formatted message for SPI start.
-     * @throws GridSpiException If SPI is missing {@link GridSpiInfo} annotation.
      */
-    protected final String startInfo() throws GridSpiException {
-        GridSpiInfo ann = getClass().getAnnotation(GridSpiInfo.class);
-
-        if (ann == null)
-            throw new GridSpiException("@GridSpiInfo annotation is missing for the SPI.");
-
+    protected final String startInfo() {
         return "SPI started ok [startMs=" + getUpTime() + ", spiMBean=" + spiMBean + ']';
     }
 
@@ -445,7 +410,6 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
             return;
 
         String clsAttr = createSpiAttributeName(GridNodeAttributes.ATTR_SPI_CLASS);
-        String verAttr = createSpiAttributeName(GridNodeAttributes.ATTR_SPI_VER);
 
         String name = getName();
 
@@ -489,9 +453,9 @@ public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean,
             List<String> attrs = getConsistentAttributeNames();
 
             // Process all SPI specific attributes.
-            for (String attr: attrs) {
+            for (String attr : attrs) {
                 // Ignore class and version attributes processed above.
-                if (!attr.equals(clsAttr) && !attr.equals(verAttr)) {
+                if (!attr.equals(clsAttr)) {
                     // This check is considered as optional if no attributes
                     Object rmtVal = node.attribute(attr);
                     Object locVal = spiCtx.localNode().attribute(attr);

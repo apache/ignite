@@ -12,9 +12,8 @@ package org.gridgain.grid.kernal.processors.hadoop;
 import org.apache.hadoop.mapreduce.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
-import org.gridgain.grid.kernal.processors.hadoop.hadoop2impl.*;
+import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -27,20 +26,25 @@ public class GridHadoopTasksV2Test extends GridHadoopTasksAllVersionsTest {
      * @param inFile Input file name for the job.
      * @param outFile Output file name for the job.
      * @return Hadoop job.
-     * @throws IOException if fails.
+     * @throws Exception if fails.
      */
-    @Override public GridHadoopJob getHadoopJob(String inFile, String outFile) throws IOException {
-        Job hadoopJob = GridGainWordCount2.getJob(inFile, outFile);
+    @Override public GridHadoopJob getHadoopJob(String inFile, String outFile) throws Exception {
+        Job hadoopJob = GridHadoopWordCount2.getJob(inFile, outFile);
 
         GridHadoopDefaultJobInfo jobInfo = new GridHadoopDefaultJobInfo(hadoopJob.getConfiguration());
 
         GridHadoopJobId jobId = new GridHadoopJobId(new UUID(0, 0), 0);
 
-        GridHadoopV2JobImpl gridHadoopJob = new GridHadoopV2JobImpl(jobId, jobInfo);
+        GridHadoopV2Job gridHadoopJob = new GridHadoopV2Job(jobId, jobInfo);
 
         hadoopJob.setJobID(gridHadoopJob.hadoopJobContext().getJobID());
 
         return gridHadoopJob;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getOutputFileNamePrefix() {
+        return "part-r-";
     }
 
     /** {@inheritDoc} */
