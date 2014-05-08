@@ -22,6 +22,9 @@ import java.util.concurrent.locks.*;
  *
  */
 public class GridIpcSharedMemorySpace implements Closeable {
+    /** Debug flag (enable for testing). */
+    private static final boolean DEBUG = false;
+
     /** Shared memory segment size (operable). */
     private final int opSize;
 
@@ -74,7 +77,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
 
         opSize = size;
 
-        shmemPtr = GridIpcSharedMemoryUtils.allocateSystemResources(tokFileName, size, log.isDebugEnabled());
+        shmemPtr = GridIpcSharedMemoryUtils.allocateSystemResources(tokFileName, size, DEBUG);
 
         shmemId = GridIpcSharedMemoryUtils.sharedMemoryId(shmemPtr);
         semId = GridIpcSharedMemoryUtils.semaphoreId(shmemPtr);
@@ -85,7 +88,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
         this.readerPid = readerPid;
         this.writerPid = writerPid;
 
-        if (log.isDebugEnabled())
+        if (DEBUG && log.isDebugEnabled())
             log.debug("Shared memory space has been created: " + this);
     }
 
@@ -114,7 +117,8 @@ public class GridIpcSharedMemorySpace implements Closeable {
         this.readerPid = readerPid;
         this.tokFileName = tokFileName;
 
-        shmemPtr = GridIpcSharedMemoryUtils.attach(shmemId, log.isDebugEnabled());
+        shmemPtr = GridIpcSharedMemoryUtils.attach(shmemId, DEBUG);
+
         semId = GridIpcSharedMemoryUtils.semaphoreId(shmemPtr);
     }
 
@@ -289,7 +293,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
             lock.writeLock().unlock();
         }
 
-        if (log.isDebugEnabled())
+        if (DEBUG && log.isDebugEnabled())
             log.debug("Shared memory space has been closed: " + this);
     }
 
