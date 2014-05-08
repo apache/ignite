@@ -38,11 +38,6 @@ public class GridSpiCheckpointSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridJdbcCheckpointSpiDefaultConfigSelfTest.class));
         suite.addTest(new TestSuite(GridJdbcCheckpointSpiStartStopSelfTest.class));
 
-        // S3.
-        suite.addTest(new TestSuite(GridS3CheckpointSpiConfigSelfTest.class));
-        suite.addTest(new TestSuite(GridS3CheckpointSpiSelfTest.class));
-        suite.addTest(new TestSuite(GridS3CheckpointSpiStartStopSelfTest.class));
-
         // Shared FS.
         suite.addTest(new TestSuite(GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest.class));
         suite.addTest(new TestSuite(GridSharedFsCheckpointSpiSelfTest.class));

@@ -35,13 +35,11 @@ public class GridSpiDiscoverySelfTestSuite extends TestSuite {
         // Tcp.
         suite.addTest(new TestSuite(GridTcpDiscoveryVmIpFinderSelfTest.class));
         suite.addTest(new TestSuite(GridTcpDiscoverySharedFsIpFinderSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpDiscoveryS3IpFinderSelfTest.class));
         suite.addTest(new TestSuite(GridTcpDiscoveryJdbcIpFinderSelfTest.class));
         suite.addTest(new TestSuite(GridTcpDiscoveryMulticastIpFinderSelfTest.class));
 
         suite.addTest(new TestSuite(GridTcpDiscoveryVmMetricsStoreSelfTest.class));
         suite.addTest(new TestSuite(GridTcpDiscoverySharedFsMetricsStoreSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpDiscoveryS3MetricsStoreSelfTest.class));
         suite.addTest(new TestSuite(GridTcpDiscoveryJdbcMetricsStoreSelfTest.class));
 
         suite.addTest(new TestSuite(GridTcpDiscoverySelfTest.class));
