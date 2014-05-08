@@ -72,8 +72,7 @@ public class GridJmxPortFinder {
                     if (startPort < MIN_PORT || startPort > MAX_PORT)
                         startPort = MIN_PORT;
                 }
-                catch (NumberFormatException e) {
-                    e.printStackTrace();
+                catch (NumberFormatException ignored) {
                     // Ignore, just use default lower bound port.
                 }
             }
