@@ -10,7 +10,10 @@
 package org.gridgain.examples;
 
 import org.gridgain.examples.datagrid.hibernate.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
+
+import java.io.*;
 
 /**
  * Tests the {@link HibernateL2CacheExample}.
@@ -20,8 +23,8 @@ public class GridHibernateL2CacheExampleSelfTest extends GridAbstractExamplesTes
      * @throws Exception If failed.
      */
     public void testGridHibernateL2CacheExample() throws Exception {
-        String hibernateCfg = "os/examples/config/hibernate/example-hibernate-L2-cache.xml";
+        File cfgFile = U.resolveGridGainPath("examples/config/hibernate/example-hibernate-L2-cache.xml");
 
-        HibernateL2CacheExample.main(new String[] { hibernateCfg });
+        HibernateL2CacheExample.main(new String[] { cfgFile.getAbsolutePath() });
     }
 }

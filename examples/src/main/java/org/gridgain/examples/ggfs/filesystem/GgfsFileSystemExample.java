@@ -14,7 +14,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.product.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -30,19 +29,22 @@ import static org.gridgain.grid.product.GridProductEdition.*;
 @GridOnlyAvailableIn(HADOOP)
 public class GgfsFileSystemExample {
     /** Path to the default hadoop configuration. */
-    private static final String HADOOP_FS_CFG = "examples/config/hadoop/core-site.xml";
+    private static final String HADOOP_FS_CFG = "hadoop/core-site.xml";
 
     /** Flag to mark HDFS installation is configured, started and available for this example. */
     private static final boolean USE_HDFS = false;
 
-    /** Default path to the folder to copy in case it is not specified explicitly in arguments. */
-    private static final String DFLT_PATH = "examples/src/main/java/org/gridgain/examples";
+    /**
+     * Default path to the folder related to application {@code CLASSPATH}. This folder will be used to copy
+     * in case it is not specified explicitly in arguments.
+     */
+    private static final String DFLT_PATH = "hadoop";
 
     /**
      * Executes example.
      *
-     * @param args Command line arguments. Expected 1 argument - path to folder to copy relative to GRIDGAIN_HOME).
-     *             In case omitted, "examples/java/org/gridgain/examples" will be used.
+     * @param args Command line arguments. Expected 1 argument - absolute path to folder to copy.
+     *             If this argument is not defined than {@code GRIDGAIN_HOME/examples/config/hadoop} will be used.
      * @throws IOException If failed.
      */
     @SuppressWarnings("TooBroadScope")
@@ -51,10 +53,12 @@ public class GgfsFileSystemExample {
             System.out.println();
             System.out.println(">>> GGFS file system example started.");
 
-            String path = args.length > 0 ? args[0] : DFLT_PATH;
+            ClassLoader clsLdr = Thread.currentThread().getContextClassLoader();
+
+            String path = args.length > 0 ? args[0] : clsLdr.getResource(DFLT_PATH).getFile();
 
             /** Local FS home path. */
-            Path locHome = new Path("file:///" + U.getGridGainHome() + "/");
+            Path locHome = new Path("file:///" + path + '/');
 
             /** GGFS home path. */
             Path ggfsHome = new Path("ggfs://ipc");
@@ -64,7 +68,7 @@ public class GgfsFileSystemExample {
 
             Configuration cfg = new Configuration(true);
 
-            cfg.addResource(U.resolveGridGainUrl(HADOOP_FS_CFG));
+            cfg.addResource(clsLdr.getResourceAsStream(HADOOP_FS_CFG));
             cfg.setInt("io.file.buffer.size", 65536);
 
             FileSystem loc = FileSystem.get(locHome.toUri(), cfg);
@@ -77,7 +81,6 @@ public class GgfsFileSystemExample {
 
             Path locSrc = new Path(locHome, path);
 
-            Path locTmp = new Path(locHome, "work/tmp");
             Path ggfsTmp1 = new Path(ggfsHome, "/tmp1");
             Path ggfsTmp2 = new Path(ggfsHome, "/tmp2");
             Path hdfsTmp1 = new Path(hdfsHome, "/tmp1");
@@ -85,9 +88,6 @@ public class GgfsFileSystemExample {
 
             copy("LOC => GGFS", loc, locSrc, ggfs, ggfsTmp1);
             copy("LOC => HDFS", loc, locSrc, hdfs, hdfsTmp1);
-
-            copy("GGFS => LOC", ggfs, ggfsTmp1, loc, locTmp);
-            copy("HDFS => LOC", hdfs, hdfsTmp1, loc, locTmp);
 
             copy("GGFS => GGFS", ggfs, ggfsTmp1, ggfs, ggfsTmp2);
             copy("HDFS => HDFS", hdfs, hdfsTmp1, hdfs, hdfsTmp2);
