@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.kernal;
 
-import org.apache.commons.logging.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.compute.*;
@@ -133,7 +132,8 @@ public class GridGainEx {
                 "is not supported: " + U.jdkVersion());
 
         // Turn off default logging for Spring Framework.
-        LogFactory.getFactory().setAttribute("org.apache.commons.logging.Log", null);
+        // TODO
+        //LogFactory.getFactory().setAttribute("org.apache.commons.logging.Log", null);
 
         // To avoid nasty race condition in UUID.randomUUID() in JDK prior to 6u34.
         // For details please see:
