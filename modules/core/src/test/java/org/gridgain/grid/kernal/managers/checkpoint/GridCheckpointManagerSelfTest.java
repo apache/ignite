@@ -20,14 +20,12 @@ import org.gridgain.grid.logger.*;
 import org.gridgain.grid.resources.*;
 import org.gridgain.grid.spi.checkpoint.cache.*;
 import org.gridgain.grid.spi.checkpoint.jdbc.*;
-import org.gridgain.grid.spi.checkpoint.s3.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.common.*;
 import org.hsqldb.jdbc.*;
 import org.jetbrains.annotations.*;
@@ -96,7 +94,7 @@ public class GridCheckpointManagerSelfTest extends GridCommonAbstractTest {
      * It is needed for s3-based tests because of weak s3 consistency model.
      */
     @SuppressWarnings("RedundantFieldInitialization")
-    private static int retries = 0;
+    protected static int retries = 0;
 
     /**
      * Returns checkpoint manager instance for given Grid.
@@ -156,18 +154,6 @@ public class GridCheckpointManagerSelfTest extends GridCommonAbstractTest {
 
             cfg.setCheckpointSpi(spi);
         }
-        else if (gridName.contains("s3")) {
-            GridS3CheckpointSpi spi = new GridS3CheckpointSpi();
-
-            AWSCredentials cred = new BasicAWSCredentials(GridTestProperties.getProperty("amazon.access.key"),
-                GridTestProperties.getProperty("amazon.secret.key"));
-
-            spi.setAwsCredentials(cred);
-
-            spi.setBucketNameSuffix("test");
-
-            cfg.setCheckpointSpi(spi);
-        }
 
         return cfg;
     }
@@ -196,15 +182,6 @@ public class GridCheckpointManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown if any exception occurs.
      */
-    public void testS3Based() throws Exception {
-        retries = 6;
-
-        doTest("s3");
-    }
-
-    /**
-     * @throws Exception Thrown if any exception occurs.
-     */
     public void testMultiNodeCacheBased() throws Exception {
         doMultiNodeTest("cache");
     }
@@ -224,19 +201,10 @@ public class GridCheckpointManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception Thrown if any exception occurs.
-     */
-    public void testMultiNodeS3Based() throws Exception {
-        retries = 6;
-
-        doMultiNodeTest("s3");
-    }
-
-    /**
      * @param gridName Grid name.
      * @throws Exception If test failed.
      */
-    private void doTest(String gridName) throws Exception {
+    protected void doTest(String gridName) throws Exception {
         final AtomicInteger savedCnt = new AtomicInteger();
         final AtomicInteger loadedCnt = new AtomicInteger();
         final AtomicInteger rmvCnt = new AtomicInteger();
@@ -298,7 +266,7 @@ public class GridCheckpointManagerSelfTest extends GridCommonAbstractTest {
      * @param gridName Grid name.
      * @throws Exception If test failed.
      */
-    private void doMultiNodeTest(String gridName) throws Exception {
+    protected void doMultiNodeTest(String gridName) throws Exception {
         startLatch = new CountDownLatch(3);
 
         read1Latch = new CountDownLatch(1);

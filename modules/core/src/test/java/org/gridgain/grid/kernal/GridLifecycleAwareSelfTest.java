@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal;
 
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.logger.java.*;
 import org.gridgain.grid.logger.log4j.*;
 import org.gridgain.grid.marshaller.optimized.*;
 import org.gridgain.grid.segmentation.*;
@@ -115,7 +116,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
     /**
      */
-    private static class TestLogger extends GridLog4jLogger implements GridLifecycleAware {
+    private static class TestLogger extends GridJavaLogger implements GridLifecycleAware {
         /** */
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(null);
 

@@ -145,7 +145,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         cfg.setLifecycleBeans(bean1, bean2);
         cfg.setGridName(gridName);
 
-        try (Grid g = G.start(cfg, new GenericApplicationContext())) {
+        try (Grid g = G.start(cfg)) {
             bean1.checkState(gridName, true);
             bean2.checkState(gridName, true);
         }
