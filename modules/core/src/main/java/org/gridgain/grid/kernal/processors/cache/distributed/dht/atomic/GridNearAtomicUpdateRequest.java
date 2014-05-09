@@ -101,6 +101,10 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     /** Flag indicating whether request contains primary keys. */
     private boolean hasPrimary;
 
+    /** Skip version check flag. */
+    @GridDirectVersion(2)
+    private boolean skipVerCheck;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -131,6 +135,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         GridCacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         boolean retval,
+        boolean skipVerCheck,
         long ttl,
         @Nullable GridPredicate<GridCacheEntry<K, V>>[] filter
     ) {
@@ -143,6 +148,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         this.syncMode = syncMode;
         this.op = op;
         this.retval = retval;
+        this.skipVerCheck = skipVerCheck;
         this.ttl = ttl;
         this.filter = filter;
 
@@ -428,6 +434,13 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         return hasPrimary;
     }
 
+    /**
+     * @return Skip version check flag.
+     */
+    public boolean skipVersionCheck() {
+        return skipVerCheck;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheContext<K, V> ctx) throws GridException {
         super.prepareMarshal(ctx);
@@ -481,6 +494,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         _clone.filter = filter;
         _clone.filterBytes = filterBytes;
         _clone.hasPrimary = hasPrimary;
+        _clone.skipVerCheck = skipVerCheck;
     }
 
     /** {@inheritDoc} */
@@ -670,6 +684,12 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                     if (!commState.putInt(-1))
                         return false;
                 }
+
+                commState.idx++;
+
+            case 17:
+                if (!commState.putBoolean(skipVerCheck))
+                    return false;
 
                 commState.idx++;
 
@@ -900,6 +920,14 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 commState.readSize = -1;
                 commState.readItems = 0;
+
+                commState.idx++;
+
+            case 17:
+                if (buf.remaining() < 1)
+                    return false;
+
+                skipVerCheck = commState.getBoolean();
 
                 commState.idx++;
 
